@@ -122,12 +122,11 @@ try:
         app.register_blueprint(admin_user_bp, url_prefix='/admin')
         print("Registered admin_user_bp")
     except Exception as e:
-        print(f"Error with user_bp: {str(e)}")
-    
+        print(f"Error with user_bp: {str(e)}")    
     try:
         print("Importing question_bp...")
         from admin.controllers.question_controller import question_bp
-        app.register_blueprint(question_bp, url_prefix='/admin')
+        app.register_blueprint(question_bp, url_prefix='/admin/questions')  # Changed to avoid conflict with user routes
         print("Registered question_bp")
     except Exception as e:
         print(f"Error with question_bp: {str(e)}")
@@ -159,7 +158,7 @@ try:
     try:
         print("Importing question_group_bp...")
         from admin.controllers.question_group_controller import question_group_bp
-        app.register_blueprint(question_group_bp, url_prefix='/admin')
+        app.register_blueprint(question_group_bp, url_prefix='/admin/groups')  # Changed to avoid conflict
         print("Registered question_group_bp")
     except Exception as e:
         print(f"Error with question_group_bp: {str(e)}")
@@ -227,11 +226,11 @@ except Exception as e:
     # Register the blueprints that are more likely to exist
     app.register_blueprint(auth_bp, url_prefix='/admin')
     app.register_blueprint(dashboard_bp, url_prefix='/admin')
-    app.register_blueprint(question_bp, url_prefix='/admin')
+    app.register_blueprint(question_bp, url_prefix='/admin/questions')  # Changed to avoid conflict with user routes
     app.register_blueprint(score_bp, url_prefix='/admin')
     app.register_blueprint(essay_bp, url_prefix='/admin')
     app.register_blueprint(scenario_bp, url_prefix='/admin')
-    app.register_blueprint(question_group_bp, url_prefix='/admin')
+    app.register_blueprint(question_group_bp, url_prefix='/admin/groups')  # Changed to avoid conflict
     
     print("Admin blueprints registered successfully")
 except Exception as e:

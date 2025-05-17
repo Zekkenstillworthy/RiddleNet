@@ -12,9 +12,9 @@ from admin.models.user import AdminUser, Admin
 from admin.models.activity_log import ActivityLog
 
 # Create audit log blueprint
-audit_log_bp = Blueprint('audit_log', __name__, url_prefix='/logs')
+audit_log_bp = Blueprint('audit_log', __name__)
 
-@audit_log_bp.route('/')
+@audit_log_bp.route('/audit-logs')
 @login_required
 def index():
     """Display the audit logs page with filtering options"""

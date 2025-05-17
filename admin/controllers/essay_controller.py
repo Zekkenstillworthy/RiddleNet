@@ -7,9 +7,9 @@ from sqlalchemy import func
 from datetime import datetime
 from flask_login import login_required, current_user
 
-essay_bp = Blueprint('essay', __name__, url_prefix='/admin/essays')
+essay_bp = Blueprint('essay', __name__)
 
-@essay_bp.route('/')
+@essay_bp.route('/essays')
 @login_required
 def index():
     """Display all essay responses with filters"""

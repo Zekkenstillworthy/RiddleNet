@@ -8,11 +8,11 @@ from ..app import db
 from ..models.score import AdminScore  # Updated to use renamed model
 from ..models.user import AdminUser  # Use the correct class name from user.py
 
-score_bp = Blueprint('score', __name__, url_prefix='/scores')
+score_bp = Blueprint('score', __name__)
 
 class ScoreController:
     @staticmethod
-    @score_bp.route('/')
+    @score_bp.route('/scores')
     @login_required
     def index():
         scores = AdminScore.query.order_by(AdminScore.date_attempted.desc()).all()

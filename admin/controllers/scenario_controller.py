@@ -8,9 +8,9 @@ from admin import db
 from admin.models.scenario import Scenario
 
 # Create scenario blueprint
-scenario_bp = Blueprint('scenario', __name__, url_prefix='/scenarios')
+scenario_bp = Blueprint('scenario', __name__)
 
-@scenario_bp.route('/')
+@scenario_bp.route('/scenarios')
 @login_required
 def index():
     """

@@ -498,7 +498,7 @@
                 
                 questionsContainer.innerHTML = '<div class="no-questions">Loading questions...</div>';
                 
-                fetch(`/questions/api/ungrouped?category=${category}`)
+                fetch(`/admin/questions/api/ungrouped?category=${category}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Failed to fetch questions: ' + response.status);
@@ -852,15 +852,14 @@
                     }
                 });
             });
-            
-            // Load ungrouped questions for the modal
+              // Load ungrouped questions for the modal
             function loadUngroupedQuestionsForModal(category, preSelectedQuestionIds = []) {
                 const container = document.querySelector('.ungrouped-questions-container');
                 if (!container) return;
                 
                 container.innerHTML = '<div class="loading-spinner">Loading questions...</div>';
                 
-                fetch(`/questions/api/ungrouped?category=${category}`)
+                fetch(`/admin/questions/api/ungrouped?category=${category}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Failed to fetch questions: ' + response.status);
@@ -1086,15 +1085,14 @@
                 // Initial load of ungrouped questions
                 loadUngroupedQuestionsForMainView('all');
             }
-            
-            // Function to load ungrouped questions for the main view
+              // Function to load ungrouped questions for the main view
             function loadUngroupedQuestionsForMainView(category) {
                 const container = document.getElementById('main-ungrouped-container');
                 if (!container) return;
                 
                 container.innerHTML = '<div class="loading-spinner">Loading questions...</div>';
                 
-                fetch(`/questions/api/ungrouped?category=${category}`)
+                fetch(`/admin/questions/api/ungrouped?category=${category}`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Failed to fetch questions: ' + response.status);
