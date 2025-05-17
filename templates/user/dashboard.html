@@ -327,6 +327,66 @@
   object-fit: cover;
   z-index: -1;
 }
+
+/* Custom styles for the table rows on hover */
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+  
+/* Ensure table rows maintain white text color even on hover */
+.table-hover tbody tr:hover td {
+    color: white !important;
+}
+  
+/* Custom styles for the custom-hover-table class */
+.custom-hover-table tbody tr:hover {
+    color: white !important;
+}
+  
+/* Leaderboard category toggle styles */
+.leaderboard-categories {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+  
+.category-btn {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+  
+.category-btn:hover {
+    background-color: rgba(0, 195, 181, 0.2);
+    border-color: #00C3B5;
+}
+  
+.category-btn.active {
+    background-color: #00C3B5;
+    border-color: #00C3B5;
+    color: #000;
+    font-weight: bold;
+}
+  
+.leaderboard-table-container {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+  
+.leaderboard-table-container.active {
+    display: block;
+}
+  
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 </style>
 
 <script src="{{ url_for('static', filename='js/navigation.js') }}" defer></script>
@@ -459,119 +519,122 @@
 </section>
 
 <section id="leaderboard" class="leaderboards-container with-padding">
-  <!-- Leaderboard Section -->
-  <section  class="leaderboard-section">
+  <!-- Consolidated Leaderboard Section -->
+  <section class="leaderboard-section">
     <div class="leaderboard-container">
-      <h3>Riddle Leaderboard</h3>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Highest Score</th>
-            <th>Last Attempt</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in leaderboard %}
-          <tr>
-            <td>{{ item[0] }}</td>
-            <td>{{ item[1] }}</td>
-            <td>{{ item[2].strftime('%Y-%m-%d %H:%M:%S') }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3">No leaderboard data available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- Topology Leaderboard Section -->
-  <section id="leaderboard" class="leaderboard-section">
-    <div class="leaderboard-container">
-      <h3>Topology Leaderboard</h3>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Highest Score</th>
-            <th>Last Attempt</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in topology_leaderboard %}
-          <tr>
-            <td>{{ item.username }}</td>
-            <td>{{ item.highest_score }}</td>
-            <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3">No leaderboard data available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- Crimping Leaderboard Section -->
-  <section id="leaderboard" class="leaderboard-section">
-    <div class="leaderboard-container">
-      <h3>Crimping Leaderboard</h3>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Highest Score</th>
-            <th>Last Attempt</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in crimping_leaderboard %}
-          <tr>
-            <td>{{ item.username }}</td>
-            <td>{{ item.highest_score }}</td>
-            <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3">No leaderboard data available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- troubleshoot Leaderboard Section -->
-  <section id="leaderboard" class="leaderboard-section">
-    <div class="leaderboard-container">
-      <h3>Troubleshoot Leaderboard</h3>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Highest Score</th>
-            <th>Last Attempt</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in troubleshoot_leaderboard %}
-          <tr>
-            <td>{{ item.username }}</td>
-            <td>{{ item.highest_score }}</td>
-            <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="3">No leaderboard data available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <h3>Leaderboards</h3>
+      
+      <!-- Category Toggle Buttons -->
+      <div class="leaderboard-categories">
+        <button class="category-btn active" data-category="riddle">Riddle</button>
+        <button class="category-btn" data-category="topology">Topology</button>
+        <button class="category-btn" data-category="crimping">Crimping</button>
+        <button class="category-btn" data-category="troubleshoot">Troubleshoot</button>
+      </div>
+      
+      <!-- Riddle Leaderboard Table (shown by default) -->
+      <div class="leaderboard-table-container active" id="riddle-leaderboard">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Highest Score</th>
+              <th>Last Attempt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in leaderboard %}
+            <tr>
+              <td>{{ item[0] }}</td>
+              <td>{{ item[1] }}</td>
+              <td>{{ item[2].strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3">No leaderboard data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Topology Leaderboard Table (hidden by default) -->
+      <div class="leaderboard-table-container" id="topology-leaderboard">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Highest Score</th>
+              <th>Last Attempt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in topology_leaderboard %}
+            <tr>
+              <td>{{ item.username }}</td>
+              <td>{{ item.highest_score }}</td>
+              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3">No leaderboard data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Crimping Leaderboard Table (hidden by default) -->
+      <div class="leaderboard-table-container" id="crimping-leaderboard">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Highest Score</th>
+              <th>Last Attempt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in crimping_leaderboard %}
+            <tr>
+              <td>{{ item.username }}</td>
+              <td>{{ item.highest_score }}</td>
+              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3">No leaderboard data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Troubleshoot Leaderboard Table (hidden by default) -->
+      <div class="leaderboard-table-container" id="troubleshoot-leaderboard">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Highest Score</th>
+              <th>Last Attempt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in troubleshoot_leaderboard %}
+            <tr>
+              <td>{{ item.username }}</td>
+              <td>{{ item.highest_score }}</td>
+              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3">No leaderboard data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 </section>
@@ -802,6 +865,30 @@
 
     window.addEventListener('scroll', checkVisibility);
     checkVisibility();
+    
+    // Leaderboard category toggle functionality
+    const categoryButtons = document.querySelectorAll('.category-btn');
+    const leaderboardContainers = document.querySelectorAll('.leaderboard-table-container');
+    
+    categoryButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Update active button
+        categoryButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show the selected leaderboard
+        const category = this.getAttribute('data-category');
+        leaderboardContainers.forEach(container => {
+          container.classList.remove('active');
+        });
+        document.getElementById(`${category}-leaderboard`).classList.add('active');
+        
+        // Play click sound if available
+        if (typeof playClickSound === 'function') {
+          playClickSound();
+        }
+      });
+    });
   });
             function playClickSound() {
                 const click = document.getElementById('clickSound');
