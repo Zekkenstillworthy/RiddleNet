@@ -6,7 +6,7 @@ from sqlalchemy import func
 from flask_login import login_required, current_user
 from ..app import db
 from ..models.score import AdminScore  # Updated to use renamed model
-from ..models.user import User as AdminUser  # Rename to avoid conflicts
+from ..models.user import AdminUser  # Use the correct class name from user.py
 
 score_bp = Blueprint('score', __name__, url_prefix='/scores')
 

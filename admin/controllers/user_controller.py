@@ -7,11 +7,11 @@ import qrcode
 import os
 from flask_login import login_required, current_user
 from __init__ import db  # Import db from main app
-from ..models.user import User as AdminUser, Admin  # Rename to avoid conflicts
+from ..models.user import AdminUser, Admin  # Import the correct models
 from ..models.score import AdminScore  # Use renamed model
 from ..models.essay_response import EssayResponse
 
-user_bp = Blueprint('user', __name__, url_prefix='/users')
+user_bp = Blueprint('admin_user', __name__, url_prefix='/users')
 
 class UserController:
     @staticmethod
