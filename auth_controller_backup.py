@@ -7,8 +7,7 @@ from admin.models.user import Admin
 
 auth_bp = Blueprint('auth', __name__)
 
-class AuthController:
-    @staticmethod
+class AuthController:    @staticmethod
     @auth_bp.route('/login', methods=['GET', 'POST'])
     def login():
         # Check if admin is already logged in
@@ -34,8 +33,7 @@ class AuthController:
                 
                 # Debug logging
                 print(f"Login successful: {admin.username}, ID: {admin.id}, is_authenticated: {current_user.is_authenticated}")
-                
-                flash('Welcome to Admin Dashboard', 'success')
+                  flash('Welcome to Admin Dashboard', 'success')
                 
                 # Check if there's a next parameter in the query string or form data
                 next_url = request.args.get('next') or request.form.get('next')
@@ -46,9 +44,7 @@ class AuthController:
             else:
                 flash('Invalid admin credentials', 'error')
         
-        return render_template('admin/login.html')
-        
-    @staticmethod
+        return render_template('admin/login.html')    @staticmethod
     @auth_bp.route('/logout')
     @login_required
     def logout():

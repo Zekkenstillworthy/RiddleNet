@@ -25,7 +25,7 @@ quiz_controller = QuizController(app)
 
 # Set up Flask-Login
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'user.login'  # Use user login view by default
 login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
@@ -55,11 +55,9 @@ def check_admin_auth():
     if request.path.startswith('/admin'):
         # List of paths that don't require authentication
         exempt_routes = [
-            '/static/', 
-            '/login',
-            '/auth/login',
-            '/logout',
-            '/auth/logout'
+            '/admin/login',
+            '/admin/logout',
+            '/admin/static/'
         ]
         
         # Skip check for exempt routes
@@ -69,7 +67,8 @@ def check_admin_auth():
         # Check if user is authenticated
         if not current_user.is_authenticated:
             flash('Please log in to access the admin area', 'warning')
-            return redirect(url_for('auth.login', next=request.url))
+            # Since the auth blueprint is registered with a prefix, we need to construct the login URL directly
+            return redirect('/admin/login')
 
 # Now register the API blueprint AFTER the QuizController to avoid conflicts
 # Any conflicts will result in the QuizController routes taking precedence

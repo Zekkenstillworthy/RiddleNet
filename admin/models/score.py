@@ -27,7 +27,17 @@ class AdminScore(db.Model):
     @property
     def user(self):
         """Property that returns the user object - used by templates"""
-        return self.get_user()
+        user = self.get_user()
+        # Sometimes the relationship might be broken, so provide a fallback
+        if not user:
+            print(f"Warning: User with ID {self.user_id} not found for score {self.id}")
+            from admin.models.user import AdminUser
+            # Create a dummy user object for templates
+            dummy = AdminUser()
+            dummy.id = self.user_id
+            dummy.username = f"User {self.user_id}"
+            return dummy
+        return user
     
     def __repr__(self):
         return f'<Score {self.id}: {self.score}>'

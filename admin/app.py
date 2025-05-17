@@ -42,7 +42,8 @@ class AdminApp:
     def init_login_manager(self):
         """Initialize the Flask-Login manager with the app."""
         login_manager.init_app(self.app)
-        login_manager.login_view = 'auth.login'
+        # We no longer use url_for for login_view since we're using a prefixed blueprint
+        login_manager.login_view = '/admin/login'
         login_manager.login_message_category = 'info'
         
         @login_manager.user_loader
