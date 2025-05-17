@@ -43,17 +43,18 @@ class Class(db.Model):
     @property
     def students(self):
         """Get students enrolled in this class using a direct query"""
-        from sqlalchemy import text
         from user.models.user import User
+        from sqlalchemy import select
         
-        # Direct SQL query using the association table
-        result = db.session.query(User).join(
-            text('class_students ON user.id = class_students.user_id')
-        ).filter(
-            text('class_students.class_id = :class_id')
-        ).params(class_id=self.id)
+        # Use proper SQLAlchemy constructs instead of text() to avoid errors
+        stmt = select(User).join(
+            class_students,
+            User.id == class_students.c.user_id
+        ).where(class_students.c.class_id == self.id)
         
-        return result
+        result = db.session.execute(stmt).scalars()
+        
+        return list(result)
     
     def __repr__(self):
         return f"<Class {self.name} ({self.code})>"

@@ -7,6 +7,48 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"/>
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/class.css') }}" />
+<style>
+  /* Custom styles for the table rows on hover */
+  .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+  
+  /* Ensure table rows maintain white text color even on hover */
+  .table-hover tbody tr:hover td {
+    color: white !important;
+  }
+  
+  /* Custom styles for the custom-hover-table class */
+  .custom-hover-table tbody tr:hover {
+    color: white !important;
+  }
+  
+  .custom-hover-table tbody tr:hover td {
+    color: white !important;
+  }
+    /* Make sure links in table cells remain visible on hover */
+  .table-hover tbody tr:hover td a,
+  .custom-hover-table tbody tr:hover td a,
+  .table-hover tbody tr:hover td button,
+  .custom-hover-table tbody tr:hover td button {
+    color: #00c3b5 !important;
+  }
+  
+  /* Style for remove button */
+  .btn-outline-danger {
+    color: #ff6b6b !important;
+    border-color: #ff6b6b !important;
+  }
+  
+  .btn-outline-danger:hover,
+  .table-hover tbody tr:hover td .btn-outline-danger,
+  .custom-hover-table tbody tr:hover td .btn-outline-danger,
+  .remove-student-btn:hover {
+    color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
+  }
+</style>
 {% endblock %} 
 {% block body %} 
 {{ super() }}
@@ -306,7 +348,6 @@
           </li>
         </ul>
         <div class="tab-content pt-3" id="classDetailsTabsContent">
-          <!-- Tab content remains the same -->
           <!-- Class Info Tab -->
           <div
             class="tab-pane fade show active"
@@ -314,7 +355,6 @@
             role="tabpanel"
             tabindex="0"
           >
-            <!-- Content remains the same as before, just styled for dark theme -->
           </div>
 
           <!-- Students Tab -->
@@ -344,7 +384,6 @@
             role="tabpanel"
             tabindex="0"
           >
-            <!-- Content remains the same as before, just styled for dark theme -->
           </div>
         </div>
       </div>
@@ -640,8 +679,7 @@
 
       let html = "";
       classes.forEach((cls) => {
-        html += `
-            <tr>
+        html += `            <tr data-class-id="${cls.id}">
                 
                 <td>${cls.name} ${
           cls.section
@@ -877,8 +915,137 @@
           </div>
         `;
       }
+      
+      // Populate the students tab
+      const studentsTabEl = document.getElementById("students-tab-pane");
+      if (studentsTabEl) {
+        // Show loading indicator
+        studentsTabEl.innerHTML = `
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading students...</span>
+            </div>
+            <p class="mt-2">Loading enrolled students...</p>
+          </div>
+        `;
+        
+        // Fetch students data from API
+        fetch(`/admin/api/classes/${classData.id}/students`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("Failed to fetch students");
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (!data.students || data.students.length === 0) {
+              studentsTabEl.innerHTML = `              <div class="alert alert-info text-dark">
+                  <i class="bx bx-info-circle me-2"></i>
+                  No students enrolled in this class yet.
+                </div>
+              `;
+              return;
+            }
+            
+            // Build the students table
+            let html = `              <div class="table-responsive">
+                <table class="table table-hover text-white custom-hover-table" style="color: white !important;">                  <thead>
+                    <tr style="color: white !important;">
+                      <th class="text-white" style="color: white !important;">Username</th>
+                      <th class="text-white" style="color: white !important;">Email</th>
+                      <th class="text-white" style="color: white !important;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody style="color: white !important;">
+            `;
+            
+            // Add each student to the table
+            data.students.forEach(student => {              html += `                <tr style="color: white !important;">
+                  <td style="color: white !important;">${student.username}</td>
+                  <td style="color: white !important;">${student.email || 'N/A'}</td>
+                  <td style="color: white !important;"><span class="badge bg-success">Active</span></td>
+                </tr>
+              `;
+            });
+            
+            html += `
+                  </tbody>
+                </table>
+              </div>
+              <p class="mt-3 text-white">Total students: <strong>${data.students.length}/${classData.maxStudents}</strong></p>
+            `;            
+            studentsTabEl.innerHTML = html;
+          })
+          .catch(error => {
+            console.error("Error fetching students:", error);
+            studentsTabEl.innerHTML = `              <div class="alert alert-danger text-white">
+                <i class="bx bx-error-circle me-2"></i>
+                Failed to load students. Please try again.
+              </div>
+            `;
+          });
+      }
     }
     
+    // Function to remove a student from a class
+    function removeStudentFromClass(classId, studentId) {
+      // API call to remove student from class
+      fetch(`/admin/api/classes/${classId}/students/${studentId}`, {
+        method: "DELETE"
+      })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || "Failed to remove student");
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert(data.message || "Student removed successfully!");
+          
+          // Refresh the students tab
+          const studentsTabButton = document.getElementById("students-tab");
+          if (studentsTabButton) {
+            // Re-fetch the class data to update counts
+            fetch(`/admin/api/classes/${classId}`)
+              .then(response => response.json())
+              .then(updatedClassData => {
+                // Update the students count in the info tab
+                const infoTab = document.getElementById("info-tab-pane");
+                if (infoTab) {                  // Find the paragraph containing the student count
+                  const paragraphs = infoTab.querySelectorAll("p");
+                  for (const p of paragraphs) {
+                    if (p.textContent.includes('Students:')) {
+                      p.innerHTML = `<strong>Students:</strong> ${updatedClassData.studentCount || 0}/${updatedClassData.maxStudents}`;
+                      break;
+                    }
+                  }
+                }
+                    // Reload the students tab content
+                openClassDetailsModal(classId);
+                
+                // Also update the class in the main table list
+                const studentCountCells = document.querySelectorAll(`tr[data-class-id="${classId}"] td:nth-child(3)`);
+                if (studentCountCells.length > 0) {
+                  studentCountCells.forEach(cell => {
+                    cell.textContent = `${updatedClassData.studentCount || 0}/${updatedClassData.maxStudents}`;
+                  });
+                }
+              })
+              .catch(error => {
+                console.error("Error refreshing class data:", error);
+                // Just reload the students tab if we can't refresh the whole class
+                openClassDetailsModal(classId);
+              });
+          }
+        })
+        .catch(error => {
+          console.error("Error removing student:", error);
+          alert("Error removing student: " + error.message);
+        });
+    }
+
     // Edit class function
     function editClass(classId) {
       // Fetch class details for editing

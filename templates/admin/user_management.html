@@ -754,7 +754,7 @@
                                 <td>
                                     <div class="user-actions">
                                         <a href="#" class="btn-text view-admin" data-id="{{ admin.id }}">View</a> |
-                                        <a href="{{ url_for('user.edit_admin', admin_id=admin.id) }}" class="btn-text edit-user">Edit</a> |
+                                        <a href="{{ url_for('admin_user.edit_admin', admin_id=admin.id) }}" class="btn-text edit-user">Edit</a> |
                                         {% if admins|length > 1 %}
                                         <a href="#" class="btn-text delete-admin" data-id="{{ admin.id }}">Delete</a>
                                         {% else %}
@@ -785,7 +785,7 @@
             <div class="modal-content">
                 <span class="close-modal" id="closeAddUser">&times;</span>
                 <h3>Add New User</h3>
-                <form id="addUserForm" method="POST" action="{{ url_for('user.add_user') }}">
+                <form id="addUserForm" method="POST" action="{{ url_for('admin_user.add_user') }}">
                     <div class="form-group">
                         <label for="userType">User Type:</label>
                         <select id="userType" name="userType" class="filter-select">
@@ -1516,13 +1516,13 @@
                     adminFields.forEach(field => field.style.display = '');
                     regularFields.forEach(field => field.style.display = 'none');
                     // Change form action to admin creation endpoint
-                    addUserForm.action = "{{ url_for('user.add_admin') }}";
+                    addUserForm.action = "{{ url_for('admin_user.add_admin') }}";
                 } else {
                     // Show regular fields, hide admin fields
                     adminFields.forEach(field => field.style.display = 'none');
                     regularFields.forEach(field => field.style.display = '');
                     // Change form action to regular user creation endpoint
-                    addUserForm.action = "{{ url_for('user.add_user') }}";
+                    addUserForm.action = "{{ url_for('admin_user.add_user') }}";
                 }
             });
             
@@ -1616,7 +1616,7 @@
             });
             
             // Edit admin buttons
-            document.querySelectorAll('a[href^="{{ url_for("user.edit_admin", admin_id=0) }}'.replace('/0', '/')).forEach(btn => {
+            document.querySelectorAll('a[href^="{{ url_for("admin_user.edit_admin", admin_id=0) }}'.replace('/0', '/')).forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const adminId = btn.href.split('/').pop();
@@ -1656,7 +1656,7 @@
                 }
                 
                 // Set form action
-                document.getElementById('editAdminForm').setAttribute('action', `{{ url_for('user.edit_admin', admin_id=0) }}`.replace('0', adminId));
+                document.getElementById('editAdminForm').setAttribute('action', `{{ url_for('admin_user.edit_admin', admin_id=0) }}`.replace('0', adminId));
                 
                 // Show the modal
                 document.getElementById('editAdminModal').style.display = 'flex';

@@ -47,8 +47,8 @@ def get_classes():
         # Convert classes to dictionary format for JSON response
         result = []
         for cls in classes:
-            # Count students (to be implemented with actual student relationship)
-            student_count = 0  # Replace with actual query when student model is available
+            # Use the students property to get the actual count
+            student_count = len(cls.students) if cls.students else 0
             
             result.append({
                 'id': cls.id,
@@ -125,7 +125,11 @@ def get_class(class_id):
     """API endpoint to retrieve a specific class details"""
     try:
         cls = Class.query.get_or_404(class_id)
-        return jsonify(cls.to_dict())
+        class_data = cls.to_dict()
+        # Ensure studentCount is correctly provided
+        if 'studentCount' not in class_data or class_data['studentCount'] is None:
+            class_data['studentCount'] = len(cls.students) if cls.students else 0
+        return jsonify(class_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
