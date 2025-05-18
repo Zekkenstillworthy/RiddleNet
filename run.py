@@ -4,9 +4,22 @@ from user.quiz import QuizController
 from admin.controllers.question_controller import QuestionController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
+from flask_cors import CORS
 
 # Create the Flask application
 app = create_app()
+
+# Enable CORS for specific routes
+cors = CORS(app, resources={
+    r"/admin/topology/*": {"origins": "*"},
+    r"/admin/troubleshooting/*": {"origins": "*"}
+})
+print("CORS enabled for topology and troubleshooting API endpoints")
+
+# Print all registered routes for debugging
+print("Registered routes:")
+for rule in app.url_map.iter_rules():
+    print(f"{rule.endpoint}: {rule.rule}")
 
 # Create an application context for use outside of request handling
 ctx = app.app_context()
@@ -57,7 +70,9 @@ def check_admin_auth():
         exempt_routes = [
             '/admin/login',
             '/admin/logout',
-            '/admin/static/'
+            '/admin/static/',
+            '/admin/topology/',
+            '/admin/troubleshooting/'
         ]
         
         # Skip check for exempt routes
@@ -77,11 +92,18 @@ try:
     import sys
     import os
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-    
-    # Direct import from the api.py file
+      # Direct import from the api.py file
     from user.api import api_blueprint as user_api_blueprint
     app.register_blueprint(user_api_blueprint, url_prefix='/api')
     print("API Blueprint registered successfully")
+    
+    # Register topology progress API blueprint
+    try:
+        from user.api.topology_progress_api import topology_progress_bp
+        app.register_blueprint(topology_progress_bp)
+        print("Topology Progress API Blueprint registered successfully")
+    except Exception as e:
+        print(f"Error registering Topology Progress API blueprint: {e}")
 except Exception as e:
     print(f"Error registering API blueprint: {e}")
     # If we can't import from the package, try to import from the file directly
@@ -178,14 +200,21 @@ try:
         print("Registered audit_log_bp")
     except Exception as e:
         print(f"Error with audit_log_bp: {str(e)}")
-    
     try:
         print("Importing topology_bp...")
         from admin.routes.topology_routes import topology_bp
-        app.register_blueprint(topology_bp, url_prefix='/admin')
+        app.register_blueprint(topology_bp)  # No url_prefix since it already has /admin/topology in the blueprint
         print("Registered topology_bp")
     except Exception as e:
         print(f"Error with topology_bp: {str(e)}")
+    
+    try:
+        print("Importing troubleshooting_bp...")
+        from admin.routes.troubleshooting_routes import troubleshooting_bp
+        app.register_blueprint(troubleshooting_bp)  # No url_prefix since it already has /admin/troubleshooting in the blueprint
+        print("Registered troubleshooting_bp")
+    except Exception as e:
+        print(f"Error with troubleshooting_bp: {str(e)}")
     
     try:
         print("Importing scenario_routes...")
@@ -204,7 +233,6 @@ except Exception as e:
         app.register_blueprint(class_controller, url_prefix='/admin')
     except ImportError as e:
         print(f"Could not import class_controller: {e}")
-    
     try:
         from admin.controllers.audit_log_controller import audit_log_bp
         app.register_blueprint(audit_log_bp, url_prefix='/admin')
@@ -213,9 +241,15 @@ except Exception as e:
         
     try:
         from admin.routes.topology_routes import topology_bp
-        app.register_blueprint(topology_bp, url_prefix='/admin')
+        app.register_blueprint(topology_bp)  # No url_prefix since it already has /admin/topology in the blueprint
     except ImportError as e:
         print(f"Could not import topology_routes: {e}")
+        
+    try:
+        from admin.routes.troubleshooting_routes import troubleshooting_bp
+        app.register_blueprint(troubleshooting_bp)  # No url_prefix since it already has /admin/troubleshooting in the blueprint
+    except ImportError as e:
+        print(f"Could not import troubleshooting_routes: {e}")
         
     try:
         from admin.routes.scenario_routes import scenario_routes

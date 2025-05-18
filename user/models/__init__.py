@@ -7,6 +7,7 @@ from .user import User
 from admin.models.question import Question
 from admin.models.essay_response import EssayResponse
 from .score import Score
+from .topology_progress import TopologyProgress
 
 # Import association tables last to avoid circular imports
 from .association_tables import class_students

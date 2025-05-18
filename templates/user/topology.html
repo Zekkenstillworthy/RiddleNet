@@ -4,6 +4,16 @@
 <title>Network Troubleshooting | RiddleNet</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+<!-- Initialize database topology data with Jinja -->
+<script>
+    // Data from the server (populated by Flask)
+    const SERVER_TOPOLOGY_DATA = {{ topology_data|tojson|safe if topology_data else '{}' }};
+    const AVAILABLE_TOPOLOGY_TYPES = {{ topology_types|tojson|safe if topology_types else '[]' }};
+    const USER_COMPLETED_TOPOLOGIES = {{ completed_topologies|tojson|safe if completed_topologies else '[]' }};
+    console.log("Loaded topology data from database:", SERVER_TOPOLOGY_DATA);
+</script>
+<script src="/static/js/topology-requirements.js"></script>
+<script src="/static/js/topology-validator.js"></script>
 <style>
     body {
         background-color: #fff;
@@ -428,6 +438,13 @@
             <!-- Replace the dropdown with a button to open the topology modal -->
             <div class="action-btn" id="select-topology-btn" onclick="showTopologySelection()">Select Topology</div>
             <div class="action-btn" id="check-topology-btn">Check Topology</div>
+            
+            <!-- Device Requirements -->
+            <div id="device-requirements" style="display: none; background-color: rgba(0,0,0,0.2); padding: 10px; margin: 15px 0; border-radius: 5px; font-size: 13px; color: white; border: 1px solid #fff;"></div>
+            
+            <!-- Device Count Display -->
+            <div id="device-count" style="display: none; background-color: rgba(0,0,0,0.1); padding: 8px; margin: 10px 0; border-radius: 5px; font-size: 12px; color: white;"></div>
+            
             <h3>Devices</h3>
             <div class="device" draggable="true" data-type="router">
                 <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon">
@@ -456,14 +473,12 @@
         <!-- Update the modal to use the .scenario-popup class -->
         <div id="topologyModal" class="scenario-popup">
             <h2>Select a Topology</h2>
-            <div class="scenariomodal-content">
-                <button class="scenario-btn" onclick="selectTopology('point-to-point')">Point-to-Point</button>
-                <button class="scenario-btn" onclick="selectTopology('mesh')">Mesh</button>
-                <button class="scenario-btn" onclick="selectTopology('star')">Star</button>
-                <button class="scenario-btn" onclick="selectTopology('bus')">Bus</button>
-                <button class="scenario-btn" onclick="selectTopology('ring')">Ring</button>
-                <button class="scenario-btn" onclick="selectTopology('tree')">Tree</button>
-                <button class="scenario-btn" onclick="selectTopology('hybrid')">Hybrid</button>
+            <div class="scenariomodal-content" id="topology-buttons-container">
+                <!-- Topology buttons will be dynamically loaded here -->
+                <div class="loading-spinner" style="text-align: center; padding: 20px;">
+                    <div class="spinner"></div>
+                    <p>Loading topologies...</p>
+                </div>
             </div>
             <div class="modal-buttons">
                 <button class="back-btn" onclick="closeTopologyModal(),showTutorial()"><i class='bx bxs-left-arrow'></i></button>
@@ -490,12 +505,74 @@
             let firstDevice = null;
             let isDragging = false;
             let draggedDevice = null;
+            let selectedTopology = null;
+            let startTime = null; // To track time spent on a topology
+            let deviceRequirementsDisplayed = false;
+
+            // Load topology types from the API when the page loads
+            window.addEventListener('DOMContentLoaded', () => {
+                loadTopologyTypes();
+            });
+
+            // Function to load topology types from the server data or API
+            function loadTopologyTypes() {
+                // First check if we have topology types from the server (through Jinja)
+                if (AVAILABLE_TOPOLOGY_TYPES && AVAILABLE_TOPOLOGY_TYPES.length > 0) {
+                    console.log('Using topology types from server:', AVAILABLE_TOPOLOGY_TYPES);
+                    displayTopologyTypes(AVAILABLE_TOPOLOGY_TYPES);
+                    return;
+                }
+                
+                // Fall back to API if no server data is available
+                fetch('/api/topology/types')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            displayTopologyTypes(data.topology_types);
+                        } else {
+                            console.error('Error loading topology types:', data.message);
+                            // Display default topology types if API fails
+                            displayTopologyTypes([
+                                'point-to-point', 'mesh', 'star', 'bus', 'ring', 'tree', 'hybrid'
+                            ]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading topology types:', error);
+                        // Display default topology types if API fails
+                        displayTopologyTypes([
+                            'point-to-point', 'mesh', 'star', 'bus', 'ring', 'tree', 'hybrid'
+                        ]);
+                    });
+            }
+
+            // Function to display topology types in the UI
+            function displayTopologyTypes(topologyTypes) {
+                const container = document.getElementById('topology-buttons-container');
+                
+                // Clear the loading spinner
+                container.innerHTML = '';
+                
+                // Add a button for each topology type
+                topologyTypes.forEach(type => {
+                    const button = document.createElement('button');
+                    button.className = 'scenario-btn';
+                    // Check if this topology is completed and add the class for checkmark
+                    if (USER_COMPLETED_TOPOLOGIES.includes(type)) {
+                        button.classList.add('completed');
+                    }
+                    button.onclick = function() { selectTopology(type); };
+                    button.textContent = type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' ');
+                    container.appendChild(button);
+                });
+            }
 
             // Preload images
             const images = {
                 pc: new Image(),
                 router: new Image(),
-                switch: new Image()
+                switch: new Image(),
+                server: new Image()
             };
             images.pc.src = "{{ url_for('static', filename='img/PC.png') }}";
             images.router.src = "{{ url_for('static', filename='img/Router.png') }}";
@@ -689,6 +766,9 @@
                 devices.push(newDevice);
                 selectedDevice = newDevice;
                 redrawCanvas();
+                
+                // Update device count display
+                updateDeviceCountDisplay();
             }
 
 
@@ -732,15 +812,52 @@
                     alert("Please select a topology first.");
                     return;
                 }
-                const isCorrect = correctTopologies[selectedTopology](devices, connections);
-
-                if (isCorrect) {
-                    alert("Correct topology!");
-                    updateScore(1);  // Increment score by 1 for each correct topology
-                    saveTopologyScore(totalScore, 'topology');  // Save the total score
+                
+                // Get elapsed time since starting this topology
+                const timeTaken = (startTime) ? (Date.now() - startTime) / 1000 : 300; // in seconds
+                
+                // Use the topology validator to check the user's solution
+                const result = topologyValidator.validateTopology(selectedTopology, devices, connections);
+                
+                if (result.valid) {
+                    // Calculate score based on validation and time
+                    const score = topologyValidator.calculateScore(timeTaken, true);
+                    
+                    // Show congratulations message with score breakdown
+                    const scoreBreakdown = getScoreBreakdown(topologyValidator.topologyConfig, timeTaken);
+                    
+                    let message = `<h3 style="color:#8AFF8A">Congratulations! 🎉</h3>
+                                   <p>Your network topology is correct!</p>
+                                   <div class="score-breakdown">
+                                       <h4>Score Breakdown:</h4>
+                                       <div>Base Score: ${topologyValidator.topologyConfig.base_score} points</div>
+                                       <div>Time Bonus: ${scoreBreakdown.timeBonus} points</div>`;
+                    
+                    // Add breakdown for individual metrics                                   
+                    for (const [key, value] of Object.entries(scoreBreakdown.metrics)) {
+                        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        message += `<div>${formattedKey}: ${value} points</div>`;
+                    }
+                    
+                    message += `<div class="total-score">Total Score: ${score} points</div>
+                               </div>`;
+                    
+                    // Save progress in database if connected
+                    saveTopologyProgress(selectedTopology, true, score);
+                    
+                    // Show success notification
+                    showNotification(message, 'success', 10000);
+                    updateScore(score);
+                    
+                    // Mark the topology as completed
                     markTopologyAsCompleted(selectedTopology);
                 } else {
-                    alert("Incorrect topology. Please try again.");
+                    // Show error message
+                    let message = `<h3 style="color:#FFB3B3">Incorrect Topology ❌</h3>
+                                   <p>${result.message}</p>
+                                   <p>Please review the requirements and try again.</p>`;
+                    
+                    showNotification(message, 'error', 5000);
                 }
             });
 
@@ -938,6 +1055,9 @@
 
                     selectedDevice = null;  // Clear selection
                     redrawCanvas();  // Redraw canvas after deletion
+                    
+                    // Update device count display
+                    updateDeviceCountDisplay();
                 } else {
                     alert("No device selected to delete.");
                 }
@@ -1079,6 +1199,102 @@
                 topologySound.loop = false;
             }
 
+            function updateDeviceCountDisplay() {
+                if (!selectedTopology) return;
+                
+                const deviceCounts = countDeviceTypes(devices);
+                const requirements = topologyValidator.deviceRequirements;
+                const deviceCountDiv = document.getElementById("device-count");
+                
+                if (!deviceCountDiv) return;
+                
+                // Create the device count display HTML
+                let html = "<strong>Current devices:</strong><br>";
+                let allRequirementsMet = true;
+                
+                for (const type in requirements) {
+                    const count = deviceCounts[type] || 0;
+                    const required = requirements[type] || 0;
+                    const met = count >= required;
+                    
+                    if (!met) allRequirementsMet = false;
+                    
+                    const color = met ? "#8AFF8A" : "#FFB3B3";
+                    if (required > 0) {
+                        html += `<span style="color: ${color}">${count}/${required} ${type}${count !== 1 ? 's' : ''}</span><br>`;
+                    }
+                }
+                
+                // Add overall status
+                html += "<br><strong>Status: </strong>";
+                if (allRequirementsMet) {
+                    html += '<span style="color: #8AFF8A">✓ All device requirements met</span>';
+                } else {
+                    html += '<span style="color: #FFB3B3">✗ Missing required devices</span>';
+                }
+                
+                // Display validation rules if available
+                if (topologyValidator.validationRules && topologyValidator.validationRules.rules && topologyValidator.validationRules.rules.length > 0) {
+                    html += "<br><br><strong>Validation Rules:</strong><br>";
+                    topologyValidator.validationRules.rules.forEach(rule => {
+                        let ruleDescription = rule.description || getDefaultRuleDescription(rule);
+                        html += `<span style="color: #FFFFFF">- ${ruleDescription}</span><br>`;
+                    });
+                }
+                
+                // Display scoring metrics if available
+                if (topologyValidator.scoringMetrics) {
+                    html += "<br><strong>Scoring Metrics:</strong><br>";
+                    const metrics = topologyValidator.scoringMetrics;
+                    const total = Object.values(metrics).reduce((a, b) => a + b, 0);
+                    
+                    html += `<span style="color: #FFFFFF">Time Efficiency: ${metrics.time_efficiency} pts</span><br>`;
+                    html += `<span style="color: #FFFFFF">Configuration: ${metrics.config_process} pts</span><br>`;
+                    html += `<span style="color: #FFFFFF">Design: ${metrics.design_layout} pts</span><br>`;
+                    html += `<span style="color: #FFFFFF">Completeness: ${metrics.completeness} pts</span><br>`;
+                    html += `<span style="color: #FFFFFF">Correctness: ${metrics.correctness} pts</span><br>`;
+                    html += `<span style="color: #FFFFFF">Total: ${total} pts</span>`;
+                }
+                
+                deviceCountDiv.innerHTML = html;
+                deviceCountDiv.style.display = "block";
+            }
+            
+            // Generate a description for a rule if not provided
+            function getDefaultRuleDescription(rule) {
+                switch (rule.type) {
+                    case 'connection-count':
+                        if (rule.min && rule.max) {
+                            return `Need ${rule.min} to ${rule.max} connections`;
+                        } else if (rule.min) {
+                            return `Need at least ${rule.min} connections`;
+                        } else if (rule.max) {
+                            return `Need at most ${rule.max} connections`;
+                        }
+                        break;
+                    case 'device-type-connection':
+                        if (rule.sourceType && rule.targetType) {
+                            return `Each ${rule.sourceType} must connect to a ${rule.targetType}`;
+                        }
+                        break;
+                    default:
+                        return "Custom validation rule";
+                }
+                return "Topology rule";
+            }
+
+            // Helper function to count device types
+            function countDeviceTypes(devices) {
+                return devices.reduce((counts, device) => {
+                    const type = device.type.toLowerCase();
+                    counts[type] = (counts[type] || 0) + 1;
+                    return counts;
+                }, {});
+            }
+
+            // Initialize topology validator
+            const topologyValidator = new TopologyValidator();
+            
             function selectTopology(topologyType) {
                 // Hide topology modal
                 const topologyModal = document.getElementById("topologyModal");
@@ -1090,11 +1306,61 @@
                 document.getElementById("select-topology-btn").innerText = topologyType.charAt(0).toUpperCase() + topologyType.slice(1) + " Topology";
                 document.getElementById("select-topology-btn").classList.add('selected');
 
+                // Reset the start time
+                startTime = Date.now();
+
+                // Load topology configuration from server
+                topologyValidator.loadTopologyConfig(topologyType)
+                    .then(() => {
+                        // Display device requirements
+                        displayTopologyRequirements(topologyType);
+                        
+                        // Update device count display
+                        updateDeviceCountDisplay();
+                    });
+
                 // Play topology sound on loop
                 const topologySound = document.getElementById('bgSound');
                 topologySound.currentTime = 0;
                 topologySound.play();
                 topologySound.loop = true;
+            }
+            
+            // Display requirements for selected topology
+            function displayTopologyRequirements(topologyType) {
+                const requirementsDiv = document.getElementById("device-requirements");
+                if (!requirementsDiv) return;
+                
+                // Get requirements from validator
+                const requirements = topologyValidator.deviceRequirements;
+                
+                // Build HTML for requirements display
+                let html = `<strong>Required Devices for ${topologyType.charAt(0).toUpperCase() + topologyType.slice(1)} Topology:</strong><br>`;
+                
+                for (const type in requirements) {
+                    const count = requirements[type];
+                    if (count > 0) {
+                        html += `${count} ${type}${count !== 1 ? 's' : ''}<br>`;
+                    }
+                }
+                
+                // Add scoring information
+                const metrics = topologyValidator.scoringMetrics;
+                html += `<br><strong>Scoring Metrics:</strong><br>`;
+                
+                if (metrics) {
+                    const total = Object.values(metrics).reduce((sum, value) => sum + value, 0);
+                    
+                    for (const [key, value] of Object.entries(metrics)) {
+                        const percentage = Math.round((value / total) * 100);
+                        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        html += `${label}: ${percentage}%<br>`;
+                    }
+                }
+                
+                requirementsDiv.innerHTML = html;
+                requirementsDiv.style.display = "block";
+                deviceRequirementsDisplayed = true;
             }
 
             function closeTopologyModal() {
@@ -1126,6 +1392,167 @@
             document.querySelectorAll('i').forEach(button => {
                 button.addEventListener('click', playExitSound);
             });
+
+            // Calculate detailed score breakdown
+            function getScoreBreakdown(config, timeTaken) {
+                const scoreBreakdown = {
+                    timeBonus: 0,
+                    metrics: {}
+                };
+                
+                // Calculate time efficiency bonus
+                const timeMetric = config.scoring_metrics.time_efficiency || 10;
+                if (timeTaken < 60) { // Less than 1 minute
+                    scoreBreakdown.timeBonus = timeMetric;
+                } else if (timeTaken < 120) { // Less than 2 minutes
+                    scoreBreakdown.timeBonus = Math.floor(timeMetric * 0.8);
+                } else if (timeTaken < 180) { // Less than 3 minutes
+                    scoreBreakdown.timeBonus = Math.floor(timeMetric * 0.6);
+                } else if (timeTaken < 300) { // Less than 5 minutes
+                    scoreBreakdown.timeBonus = Math.floor(timeMetric * 0.4);
+                } else {
+                    scoreBreakdown.timeBonus = Math.floor(timeMetric * 0.2);
+                }
+                
+                // Add individual metrics - in a more complete implementation, these would be
+                // calculated based on how well each aspect was done
+                scoreBreakdown.metrics = {
+                    config_process: config.scoring_metrics.config_process || 25,
+                    design_layout: config.scoring_metrics.design_layout || 20,
+                    completeness: config.scoring_metrics.completeness || 20,
+                    correctness: config.scoring_metrics.correctness || 25
+                };
+                
+                return scoreBreakdown;
+            }
+            
+            // Save topology progress to the server
+            function saveTopologyProgress(topologyType, completed, score) {
+                fetch('/topology/progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        topology_type: topologyType,
+                        completed: completed,
+                        score: score,
+                        timestamp: new Date().toISOString()
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Add to completed list in memory to update UI without reload
+                        if (completed && !USER_COMPLETED_TOPOLOGIES.includes(topologyType)) {
+                            USER_COMPLETED_TOPOLOGIES.push(topologyType);
+                        }
+                        console.log('Progress saved:', data);
+                    } else {
+                        console.warn('Failed to save topology progress:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving topology progress:', error);
+                });
+            }
+
+            // Show a notification message
+            function showNotification(message, type = 'info', duration = 3000) {
+                // Check if notification container exists, if not create it
+                let notificationContainer = document.getElementById('notification-container');
+                if (!notificationContainer) {
+                    notificationContainer = document.createElement('div');
+                    notificationContainer.id = 'notification-container';
+                    notificationContainer.style.position = 'fixed';
+                    notificationContainer.style.top = '20px';
+                    notificationContainer.style.right = '20px';
+                    notificationContainer.style.maxWidth = '400px';
+                    notificationContainer.style.zIndex = '9999';
+                    document.body.appendChild(notificationContainer);
+                }
+                
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = message;
+                notification.style.backgroundColor = type === 'success' ? '#00645C' : '#FF5252';
+                notification.style.color = '#fff';
+                notification.style.padding = '15px';
+                notification.style.marginBottom = '10px';
+                notification.style.borderRadius = '5px';
+                notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                notification.style.animation = 'fadeIn 0.3s ease';
+                
+                // Add a close button
+                const closeBtn = document.createElement('span');
+                closeBtn.innerHTML = '&times;';
+                closeBtn.style.position = 'absolute';
+                closeBtn.style.top = '5px';
+                closeBtn.style.right = '10px';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.style.fontSize = '18px';
+                closeBtn.onclick = () => notificationContainer.removeChild(notification);
+                notification.appendChild(closeBtn);
+                
+                // Add to container
+                notificationContainer.appendChild(notification);
+                
+                // Auto remove after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        if (notification.parentNode === notificationContainer) {
+                            notificationContainer.removeChild(notification);
+                        }
+                    }, duration);
+                }
+            }
+            
+            // Add CSS for notifications
+            const notificationStyles = document.createElement('style');
+            notificationStyles.innerHTML = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .notification {
+                    position: relative;
+                    transition: all 0.3s ease;
+                    opacity: 0.9;
+                }
+                
+                .notification:hover {
+                    opacity: 1;
+                }
+                
+                .score-breakdown {
+                    margin-top: 15px;
+                    background-color: rgba(255, 255, 255, 0.1);
+                    padding: 10px;
+                    border-radius: 5px;
+                }
+                
+                .score-breakdown h4 {
+                    margin-top: 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+                    padding-bottom: 5px;
+                }
+                
+                .score-breakdown div {
+                    margin: 5px 0;
+                    font-size: 14px;
+                }
+                
+                .total-score {
+                    font-weight: bold;
+                    font-size: 16px !important;
+                    margin-top: 10px !important;
+                    border-top: 1px solid rgba(255, 255, 255, 0.2);
+                    padding-top: 5px;
+                }
+            `;
+            document.head.appendChild(notificationStyles);
         </script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
     <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>

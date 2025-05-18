@@ -89,6 +89,8 @@ class AdminApp:
         from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
         from admin.routes.topology_routes import topology_bp
+        from admin.routes.topology_api_routes import topology_api_bp
+        from admin.routes.troubleshooting_routes import troubleshooting_bp
         
         # Register only available blueprints
         self.app.register_blueprint(auth_bp)
@@ -97,12 +99,13 @@ class AdminApp:
         self.app.register_blueprint(score_bp)
         self.app.register_blueprint(essay_bp)
         self.app.register_blueprint(dashboard_bp)
-        self.app.register_blueprint(question_group_bp)
+        self.app.register_blueprint(question_group_bp)        
         self.app.register_blueprint(class_controller)
         self.app.register_blueprint(scenario_bp)
-        self.app.register_blueprint(audit_log_bp)
-        # audit_log_bp registration removed (controller deleted)
-        self.app.register_blueprint(topology_bp, url_prefix='/admin/topology')
+        self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)
+        self.app.register_blueprint(topology_bp)
+        self.app.register_blueprint(topology_api_bp)
+        self.app.register_blueprint(troubleshooting_bp)
         
         # Add root route to redirect to admin dashboard
         @self.app.route('/')

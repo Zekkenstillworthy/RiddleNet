@@ -4,6 +4,7 @@ from admin.models.question_group import QuestionGroup
 from admin.controllers.question_controller import QuestionController
 from admin.controllers.question_group_controller import QuestionGroupController
 from admin.models.topology import Topology
+from admin.controllers.topology_controller import TopologyController
 from admin.models.score import AdminScore  # Updated to use the renamed model directly
 from admin.models.class_model import Class
 from user.models import db, User as UserModel  # Rename to avoid conflicts
@@ -15,6 +16,7 @@ from datetime import datetime
 api_blueprint = Blueprint('api', __name__)
 question_controller = QuestionController()
 question_group_controller = QuestionGroupController()
+topology_controller = TopologyController()
 
 @api_blueprint.route('/classes', methods=['GET'])
 def get_classes():
@@ -123,6 +125,52 @@ def get_questions():
         print(f"Error in get_questions: {str(e)}")
         traceback.print_exc()
         return jsonify([]), 500
+
+@api_blueprint.route('/topology/types', methods=['GET'])
+def get_topology_types():
+    """Get available topology types for the topology UI"""
+    try:
+        # Return all available topology types
+        topology_types = db.session.query(Topology.topology_type).distinct().all()
+        topology_types = [t[0] for t in topology_types]
+        
+        # If no types in the database yet, return the default ones
+        if not topology_types:
+            topology_types = [
+                'point-to-point', 'mesh', 'star', 'bus', 'ring', 'tree', 'hybrid'
+            ]
+        
+        return jsonify({
+            "status": "success",
+            "topology_types": topology_types
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_blueprint.route('/topology/list', methods=['GET'])
+def get_topologies():
+    """Get all active topologies for the user UI"""
+    try:
+        # Get all active topologies
+        topologies = Topology.query.filter_by(is_active=True).all()
+        
+        # Format for response
+        topology_data = []
+        for topology in topologies:
+            topology_data.append({
+                'id': topology.id,
+                'title': topology.title,
+                'description': topology.description,
+                'difficulty': topology.difficulty,
+                'topology_type': topology.topology_type
+            })
+        
+        return jsonify({
+            "status": "success",
+            "topologies": topology_data
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/join-class', methods=['POST'])
 def join_class():

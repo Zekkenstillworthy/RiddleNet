@@ -1,14 +1,16 @@
 from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
 from sqlalchemy import func
 import os
-import time  # Add the missing time module import
+import time
+import datetime
 from werkzeug.utils import secure_filename
 # Use specific imports with module paths to avoid conflicts
 from .models import db
 from .models import User as UserModel  # Rename to avoid conflicts
 from .models import Score as UserScore  # Rename to avoid conflicts
 from admin.models.topology import Topology
-from admin.models.class_model import Class  # Add Class model import
+from user.models.topology_progress import TopologyProgress
+from admin.models.class_model import Class
 from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
 
@@ -378,11 +380,46 @@ def generate_qr():
 @user_bp.route('/topology')
 @user_login_required
 def topology():
-    """Render the topology page."""
+    """Render the topology page with database-driven topology configurations."""
     print(f"In topology route. User authenticated: {current_user.is_authenticated}")
     print(f"Session user_id: {session.get('user_id')}")
-    # Both Flask-Login and session authentication are now verified by the decorator
-    return render_template('user/topology.html')
+    
+    # Get all active topology types and data from the database
+    topologies = Topology.query.filter_by(is_active=True).all()
+    
+    # Format the topology data for the frontend
+    topology_data = {}
+    topology_types = []
+    
+    for topology in topologies:
+        topology_types.append(topology.topology_type)
+        topology_data[topology.topology_type] = {
+            'title': topology.title,
+            'description': topology.description,
+            'device_requirements': topology.device_requirements,
+            'base_score': topology.base_score,
+            'scoring_metrics': topology.scoring_metrics,
+            'validation_rules': {
+                'expected_config': topology.expected_config,
+                'rules': []  # Add validation rules if needed
+            }
+        }
+    
+    # Get user's completed topologies
+    completed_topologies = []
+    if current_user.is_authenticated:
+        user_progress = TopologyProgress.query.filter_by(user_id=current_user.id).all()
+        for progress in user_progress:
+            if progress.completion_count > 0:
+                completed_topologies.append(progress.topology_type)
+    
+    # Render the template with the data
+    return render_template(
+        'user/topology.html',
+        topology_data=topology_data,
+        topology_types=topology_types,
+        completed_topologies=completed_topologies
+    )
 
 @user_bp.route('/topology/challenges')
 @user_login_required
@@ -459,4 +496,124 @@ def save_topology_score():
     
     return jsonify({'status': 'success', 'message': 'Score saved successfully'}), 200
 
-# API endpoint for saving essay was moved to api.py
+@user_bp.route('/topology/progress', methods=['POST'])
+@user_login_required
+def save_topology_progress():
+    """Save user's topology progress to the database"""
+    if not request.is_json:
+        return jsonify({'status': 'error', 'message': 'Invalid request format'}), 400
+    
+    data = request.json
+    topology_type = data.get('topology_type')
+    completed = data.get('completed', False)
+    score = data.get('score', 0)
+    
+    if not topology_type:
+        return jsonify({'status': 'error', 'message': 'Topology type is required'}), 400
+    
+    try:
+        # Check if progress record exists for this user and topology type
+        progress = TopologyProgress.query.filter_by(
+            user_id=current_user.id,
+            topology_type=topology_type
+        ).first()
+        
+        if progress:
+            # Update existing record
+            if score > progress.highest_score:
+                progress.highest_score = score
+            
+            if completed:
+                progress.completion_count += 1
+            
+            progress.last_attempt = datetime.datetime.utcnow()
+        else:
+            # Create new record
+            progress = TopologyProgress(
+                user_id=current_user.id,
+                topology_type=topology_type,
+                highest_score=score,
+                completion_count=1 if completed else 0,
+            )
+            db.session.add(progress)
+        
+        db.session.commit()
+        return jsonify({
+            'status': 'success', 
+            'message': 'Progress saved',
+            'progress': {
+                'topology_type': topology_type,
+                'highest_score': progress.highest_score,
+                'completion_count': progress.completion_count
+            }
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving topology progress: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@user_bp.route('/api/topology/config/<topology_type>', methods=['GET'])
+@user_login_required
+def get_topology_config(topology_type):
+    """Get configuration for a specific topology type"""
+    try:
+        # Find the topology in the database
+        topology = Topology.query.filter_by(
+            topology_type=topology_type,
+            is_active=True
+        ).first()
+        
+        if not topology:
+            return jsonify({
+                'status': 'error',
+                'message': f'No active topology found with type: {topology_type}'
+            }), 404
+        
+        # Return the configuration data
+        return jsonify({
+            'status': 'success',
+            'config': {
+                'title': topology.title,
+                'description': topology.description,
+                'device_requirements': topology.device_requirements,
+                'base_score': topology.base_score,
+                'scoring_metrics': topology.scoring_metrics,
+                'validation_rules': {
+                    'expected_config': topology.expected_config,
+                    'rules': []  # Add validation rules if needed
+                }
+            }
+        })
+    
+    except Exception as e:
+        print(f"Error retrieving topology config: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to retrieve topology configuration: {str(e)}'
+        }), 500
+
+@user_bp.route('/api/topology/types', methods=['GET'])
+@user_login_required
+def get_topology_types():
+    """Get all available topology types"""
+    try:
+        # Query all active topologies and get their types
+        topologies = Topology.query.filter_by(is_active=True).all()
+        topology_types = [topology.topology_type for topology in topologies]
+        
+        # If no topologies are found, use default types
+        if not topology_types:
+            topology_types = ['point-to-point', 'mesh', 'star', 'bus', 'ring', 'tree', 'hybrid']
+            
+        return jsonify({
+            'status': 'success',
+            'topology_types': topology_types
+        })
+        
+    except Exception as e:
+        print(f"Error retrieving topology types: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to retrieve topology types: {str(e)}'
+        }), 500

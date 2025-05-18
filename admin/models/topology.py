@@ -16,13 +16,15 @@ class Topology(db.Model):
     topology_type = db.Column(db.String(50), default='point-to-point')  # 'point-to-point', 'mesh', 'star', etc.
     _initial_config = db.Column('initial_config', db.Text, nullable=True)  # JSON string
     _expected_config = db.Column('expected_config', db.Text, nullable=False)  # JSON string
+    _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string for scoring metrics
+    _device_requirements = db.Column('device_requirements', db.Text, nullable=True)  # JSON string for required devices
     base_score = db.Column(db.Integer, default=10)  # Base points for completing
     time_bonus = db.Column(db.Integer, default=0)  # Additional points for completing quickly
     perfect_match_bonus = db.Column(db.Integer, default=5)  # Bonus for exact match with expected solution
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     @property
     def initial_config(self):
         """Get the initial configuration as a Python object"""
@@ -33,23 +35,81 @@ class Topology(db.Model):
     @initial_config.setter
     def initial_config(self, config):
         """Set the initial configuration from a Python object"""
-        if isinstance(config, dict):
-            self._initial_config = json.dumps(config)
-        else:
-            self._initial_config = config
+        try:
+            if isinstance(config, dict):
+                self._initial_config = json.dumps(config)
+            else:
+                self._initial_config = config
+        except Exception as e:
+            print(f"Error setting initial_config: {str(e)}")
+            raise ValueError(f"Invalid initial_config format: {str(e)}")
             
     @property
     def expected_config(self):
         """Get the expected configuration as a Python object"""
+        if not self._expected_config:
+            return {"devices": [], "connections": []}
         return json.loads(self._expected_config)
         
     @expected_config.setter
     def expected_config(self, config):
         """Set the expected configuration from a Python object"""
-        if isinstance(config, dict):
-            self._expected_config = json.dumps(config)
-        else:
-            self._expected_config = config
+        try:
+            if isinstance(config, dict):
+                self._expected_config = json.dumps(config)
+            else:
+                self._expected_config = config
+        except Exception as e:
+            print(f"Error setting expected_config: {str(e)}")
+            raise ValueError(f"Invalid expected_config format: {str(e)}")
+            
+    @property
+    def scoring_metrics(self):
+        """Get the scoring metrics as a Python object"""
+        if not self._scoring_metrics:
+            return {
+                "time_efficiency": 20,
+                "config_process": 20,
+                "design_layout": 20,
+                "completeness": 20,
+                "correctness": 20
+            }
+        return json.loads(self._scoring_metrics)
+        
+    @scoring_metrics.setter
+    def scoring_metrics(self, metrics):
+        """Set the scoring metrics from a Python object"""
+        try:
+            if isinstance(metrics, dict):
+                self._scoring_metrics = json.dumps(metrics)
+            else:
+                self._scoring_metrics = metrics
+        except Exception as e:
+            print(f"Error setting scoring_metrics: {str(e)}")
+            raise ValueError(f"Invalid scoring_metrics format: {str(e)}")
+            
+    @property
+    def device_requirements(self):
+        """Get the device requirements as a Python object"""
+        if not self._device_requirements:
+            return {
+                "pc": 0,
+                "router": 0,
+                "switch": 0
+            }
+        return json.loads(self._device_requirements)
+        
+    @device_requirements.setter
+    def device_requirements(self, requirements):
+        """Set the device requirements from a Python object"""
+        try:
+            if isinstance(requirements, dict):
+                self._device_requirements = json.dumps(requirements)
+            else:
+                self._device_requirements = requirements
+        except Exception as e:
+            print(f"Error setting device_requirements: {str(e)}")
+            raise ValueError(f"Invalid device_requirements format: {str(e)}")
             
     def get_initial_config(self):
         """Get the initial configuration as a Python object"""
@@ -69,6 +129,8 @@ class Topology(db.Model):
             'topology_type': self.topology_type,
             'initial_config': self.initial_config,
             'expected_config': self.expected_config,
+            'scoring_metrics': self.scoring_metrics,
+            'device_requirements': self.device_requirements,
             'base_score': self.base_score,
             'time_bonus': self.time_bonus,
             'perfect_match_bonus': self.perfect_match_bonus,
