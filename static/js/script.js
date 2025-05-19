@@ -424,23 +424,56 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Reset character count
             const charCount = document.querySelector('.character-count');
-            charCount.textContent = '0 characters';
+            const countNumberElement = document.querySelector('.count-number');
+            if (countNumberElement) {
+                countNumberElement.textContent = '0';
+            } else {
+                charCount.innerHTML = '<span class="count-number">0</span> characters';
+            }
             
             // Reset feedback area
             const feedbackArea = document.querySelector('.essay-feedback');
             feedbackArea.innerHTML = '';
+            feedbackArea.className = 'essay-feedback';
+            feedbackArea.style.display = 'none';
             
-            // Add character count functionality
+            // Add character count functionality with smooth animation
             essayInput.addEventListener('input', function() {
                 const count = this.value.length;
-                charCount.textContent = `${count} character${count !== 1 ? 's' : ''}`;
+                const countElement = document.querySelector('.count-number');
+                
+                // Animate the character count change
+                if (countElement) {
+                    // Slight scale animation on change
+                    countElement.style.transition = 'transform 0.2s ease';
+                    countElement.style.transform = 'scale(1.1)';
+                    countElement.textContent = count;
+                    
+                    setTimeout(() => {
+                        countElement.style.transform = 'scale(1)';
+                    }, 200);
+                } else {
+                    charCount.innerHTML = `<span class="count-number">${count}</span> character${count !== 1 ? 's' : ''}`;
+                }
             });
             
-            // Add event listener for the submit button
+            // Add event listener for the submit button with loading state
             const submitBtn = document.querySelector('.submit-essay-btn');
             submitBtn.addEventListener('click', function() {
                 const userInput = document.querySelector('.essay-input').value;
-                handleEssaySubmission(userInput);
+                
+                // Show loading state
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span class="loading-dots"></span>';
+                this.disabled = true;
+                
+                // Process submission after a short delay to show animation
+                setTimeout(() => {
+                    handleEssaySubmission(userInput);
+                    // Reset button
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 800);
             });
             
             // Also allow pressing Ctrl+Enter to submit
@@ -448,7 +481,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (event.key === 'Enter' && event.ctrlKey) {
                     event.preventDefault();
                     const userInput = this.value;
-                    handleEssaySubmission(userInput);
+                    
+                    // Show loading state on button
+                    const submitBtn = document.querySelector('.submit-essay-btn');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="loading-dots"></span>';
+                    submitBtn.disabled = true;
+                    
+                    // Process submission
+                    setTimeout(() => {
+                        handleEssaySubmission(userInput);
+                        // Reset button
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }, 800);
                 }
             });
             
@@ -1552,7 +1598,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to handle essay submissions
     function handleEssaySubmission(userInput) {
         if (!userInput || userInput.trim() === '') {
-            alert('Please write your answer before submitting.');
+            // Show elegant error message
+            const feedbackArea = document.querySelector('.essay-feedback');
+            feedbackArea.innerHTML = 'Please write your answer before submitting.';
+            feedbackArea.className = 'essay-feedback error';
+            feedbackArea.style.display = 'block';
+            
+            // Shake the textarea to indicate error
+            const essayInput = document.querySelector('.essay-input');
+            essayInput.classList.add('shake');
+            setTimeout(() => essayInput.classList.remove('shake'), 500);
+            
             return;
         }
         
@@ -1578,6 +1634,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Send the essay to the server through the API endpoint
         console.log("Attempting to submit essay to /save_essay (direct endpoint)...");
+        
+        // Show loading state in feedback area
+        const feedbackArea = document.querySelector('.essay-feedback');
+        feedbackArea.innerHTML = '<div class="loading-animation"><div></div><div></div><div></div></div><span>Submitting your answer...</span>';
+        feedbackArea.className = 'essay-feedback';
+        feedbackArea.style.display = 'block';
+        
         // Try the direct endpoint first since we know QuizController is properly registered
         fetch('/save_essay', {
             method: 'POST',
@@ -1611,35 +1674,43 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.status === 'success') {
                 console.log('Essay submitted successfully');
+                
+                // Show success feedback
+                feedbackArea.innerHTML = `
+                    <div class="success-icon">✓</div>
+                    <div class="feedback-message">
+                        <p>Your response has been successfully submitted.</p>
+                        <p>You may proceed to the next question.</p>
+                    </div>
+                `;
+                feedbackArea.className = 'essay-feedback success';
             } else {
                 console.error('Error submitting essay:', data.message);
+                
+                // Show error feedback
+                feedbackArea.innerHTML = `
+                    <div class="error-icon">!</div>
+                    <div class="feedback-message">
+                        <p>There was an issue submitting your response: ${data.message || 'Unknown error'}</p>
+                        <p>Your answer has been saved locally. Please try again or proceed to the next question.</p>
+                    </div>
+                `;
+                feedbackArea.className = 'essay-feedback error';
             }
         })
         .catch(error => {
             console.error('Network error when submitting essay:', error);
+            
+            // Show network error feedback
+            feedbackArea.innerHTML = `
+                <div class="error-icon">!</div>
+                <div class="feedback-message">
+                    <p>Network error: ${error.message || 'Could not connect to the server'}</p>
+                    <p>Your answer has been saved locally. Please check your connection and try again.</p>
+                </div>
+            `;
+            feedbackArea.className = 'essay-feedback error';
         });
-        
-        // Provide feedback to user
-        const feedbackArea = document.querySelector('.essay-feedback');
-        feedbackArea.innerHTML = `
-            <div class="essay-submission-feedback">
-                <p>Your essay has been submitted for review. Essays cannot be automatically graded.</p>
-                <p>You may proceed to the next question.</p>
-            </div>
-        `;
-        
-        // Add some styling to the feedback
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            .essay-submission-feedback {
-                margin-top: 15px;
-                padding: 10px;
-                background-color: rgba(76, 175, 80, 0.2);
-                border-radius: 4px;
-                color: white;
-            }
-        `;
-        feedbackArea.appendChild(styleElement);
         
         // Disable the text area and submit button to prevent multiple submissions
         document.querySelector('.essay-input').disabled = true;
