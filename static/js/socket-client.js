@@ -27,16 +27,16 @@ class SocketClient {
     
     /**
      * Optimize video loading to prevent connection issues
-     * By delaying video loading until after WebSocket connection is established
+     * Load video backgrounds quickly while ensuring WebSocket connection priority
      */
     optimizeVideoLoading() {
         // Find all videos on the page
         const videos = document.querySelectorAll('video');
         
         videos.forEach(video => {
-            // For background videos, only load when needed
+            // For background videos, load immediately with low priority
             if (video.classList.contains('video-background')) {
-                // Create placeholder until video is needed
+                // Create placeholder until video is loaded
                 const placeholder = document.createElement('div');
                 placeholder.className = 'video-placeholder';
                 placeholder.style.cssText = 'width: 100%; height: 100%; background-color: #000;';
@@ -44,33 +44,47 @@ class SocketClient {
                     video.parentNode.insertBefore(placeholder, video);
                 }
                 
-                // Replace src with data-src to prevent immediate loading
-                const sources = video.querySelectorAll('source');
-                sources.forEach(source => {
-                    if (source.src) {
-                        source.dataset.src = source.src;
-                        source.removeAttribute('src');
-                    }
-                });
-                
-                // Only load the video when user has been on page for a few seconds
-                setTimeout(() => {
-                    // Remove placeholder
-                    if (placeholder.parentNode) {
-                        placeholder.parentNode.removeChild(placeholder);
-                    }
-                    
-                    // Load video source after a delay
-                    sources.forEach(source => {
-                        const src = source.dataset.src;
-                        if (src) {
-                            source.src = src;
-                        }
-                    });
-                    video.load();
-                }, 3000); // 3 second delay to prioritize WebSocket
+                // Use requestIdleCallback to load video when browser is idle
+                // This prioritizes more important tasks like WebSocket connection
+                // Falls back to a minimal delay for browsers without requestIdleCallback
+                if (window.requestIdleCallback) {
+                    requestIdleCallback(() => {
+                        this.loadVideoSource(video, placeholder);
+                    }, { timeout: 500 }); // timeout ensures it runs within 500ms max
+                } else {
+                    // Minimal delay fallback for older browsers - 500ms instead of 3000ms
+                    setTimeout(() => {
+                        this.loadVideoSource(video, placeholder);
+                    }, 500);
+                }
             }
         });
+    }
+    
+    /**
+     * Helper method to load video source
+     */
+    loadVideoSource(video, placeholder) {
+        // Remove placeholder
+        if (placeholder && placeholder.parentNode) {
+            placeholder.parentNode.removeChild(placeholder);
+        }
+        
+        // Load video source
+        const sources = video.querySelectorAll('source');
+        if (sources.length > 0) {
+            sources.forEach(source => {
+                const src = source.dataset.src || source.src;
+                if (src) {
+                    source.src = src;
+                }
+            });
+            video.load();
+        } else if (video.dataset.src) {
+            // Handle videos without source elements
+            video.src = video.dataset.src;
+            video.load();
+        }
     }
 
     /**
