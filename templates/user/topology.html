@@ -14,6 +14,9 @@
 </script>
 <script src="/static/js/topology-requirements.js"></script>
 <script src="/static/js/topology-validator.js"></script>
+<!-- Load socket client for real-time capabilities -->
+<script src="/static/js/socket-client.js"></script>
+<link rel="stylesheet" href="/static/css/socket-notifications.css">
 <style>
     body {
         background-color: #fff;
@@ -409,14 +412,19 @@
         object-fit: cover;
     }
 </style>
-<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+<link rel="icon" href="{{ static_url('img/Logo.png') }}">
 
 </head>
 
 <body>
     <video class="video-background" autoplay muted loop playsinline>
-        <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+        <source data-src="{{ media_url('video', 'RiddleNet.mp4') }}" type="video/mp4">
     </video>
+    
+    <!-- The video loading is now handled by socket-client.js optimizeVideoLoading method -->
+        }, 1000);
+    });
+    </script>
     
     <div id="app">
 
@@ -1554,10 +1562,105 @@
             `;
             document.head.appendChild(notificationStyles);
         </script>
-    <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
-    <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
-    <audio id="bgSound" src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}"></audio>
+    <audio id="clickSound" src="{{ url_for('user.serve_audio', filename='Start.mp3') }}"></audio>
+    <audio id="exitSound" src="{{ url_for('user.serve_audio', filename='Exit.mp3') }}"></audio>
+    <audio id="bgSound" src="{{ url_for('user.serve_audio', filename='Bg_sound.mp3') }}"></audio>
+    
+    <script>
+    // Delay loading of audio files to improve performance
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load audio files after a short delay
+        setTimeout(() => {
+            document.getElementById('clickSound').load();
+            document.getElementById('exitSound').load();
+            document.getElementById('bgSound').load();
+        }, 2000);
+    });
+    </script>
 
-
+    <!-- WebSocket Integration -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/socket-notifications.css') }}">
+    <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
+    <script>
+        // Set up WebSocket for the topology page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Join the appropriate topology room when a topology is selected
+            function handleTopologySelection(topologyId) {
+                // Join the topology-specific room
+                socketClient.joinTopology(topologyId);
+                console.log('Joined topology room:', topologyId);
+            }
+            
+            // When a topology is selected
+            document.querySelectorAll('.topology-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const topologyId = this.getAttribute('data-id') || this.dataset.topologyType;
+                    if (topologyId) {
+                        handleTopologySelection(topologyId);
+                    }
+                });
+            });
+            
+            // Listen for updates to this topology from other users or admins
+            socketClient.on('topology_state_updated', function(data) {
+                console.log('Topology state updated:', data);
+                // Update your network visualization based on data.network_state if needed
+            });
+            
+            // Register for completion events
+            socketClient.on('topology_completed', function(data) {
+                console.log('Topology completed event received:', data);
+                // Show a special notification or update UI
+                showNotification('success', `Topology Completed: ${data.topology_type}`, 
+                    `You've earned a score of ${data.score}!`, 8000);
+            });
+            
+            // Send network updates when user makes changes
+            // This listens for the custom event you dispatch when topology changes
+            window.addEventListener('network-topology-changed', function(event) {
+                if (!event.detail) return;
+                
+                const currentTopologyId = document.querySelector('.topology-type-selector.active')?.dataset?.topologyType;
+                if (currentTopologyId) {
+                    // Get network state - you may need to customize this
+                    const networkState = getNetworkState();
+                    
+                    // Send update
+                    socketClient.updateTopologyNetwork(currentTopologyId, networkState);
+                }
+            });
+            
+            // Helper function to get current network state
+            function getNetworkState() {
+                // You'll need to implement this based on your topology data structure
+                // This is just a placeholder that collects basic information
+                const devices = [];
+                document.querySelectorAll('.device-instance').forEach(device => {
+                    devices.push({
+                        id: device.id,
+                        type: device.dataset.deviceType,
+                        x: parseInt(device.style.left),
+                        y: parseInt(device.style.top),
+                        connections: [] // You'd populate this from your connection data
+                    });
+                });
+                
+                const connections = [];
+                document.querySelectorAll('.connection').forEach(conn => {
+                    connections.push({
+                        id: conn.id,
+                        source: conn.dataset.sourceId,
+                        target: conn.dataset.targetId
+                    });
+                });
+                
+                return {
+                    devices: devices,
+                    connections: connections,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        });
+    </script>
 </body>
 {% endblock %}

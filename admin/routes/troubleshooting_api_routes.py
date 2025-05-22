@@ -1,0 +1,73 @@
+# filepath: c:\Users\gilbe\Documents\Flask_Main_Official_2 - Copy\admin\routes\troubleshooting_api_routes.py
+from flask import Blueprint, request, jsonify
+from admin.controllers.troubleshooting_controller import TroubleshootingController
+from admin.utils.admin_auth import admin_login_required
+from flask_cors import cross_origin
+
+# Create the troubleshooting API blueprint
+troubleshooting_api_bp = Blueprint('troubleshooting_api', __name__, url_prefix='/api/admin/troubleshooting')
+
+# Initialize controller
+controller = TroubleshootingController()
+
+@troubleshooting_api_bp.route('/list', methods=['GET'])
+@admin_login_required
+@cross_origin()
+def list_troubleshootings():
+    """Get all troubleshooting scenarios with pagination support"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search = request.args.get('search', '')
+    difficulty = request.args.get('difficulty', '')
+    
+    return controller.list_troubleshootings(page, per_page, search, difficulty)
+
+@troubleshooting_api_bp.route('/<int:troubleshooting_id>', methods=['GET'])
+@admin_login_required
+@cross_origin()
+def get_troubleshooting(troubleshooting_id):
+    """Get details of a specific troubleshooting scenario"""
+    return controller.get_troubleshooting(troubleshooting_id)
+
+@troubleshooting_api_bp.route('/', methods=['POST'])
+@admin_login_required
+@cross_origin()
+def create_troubleshooting():
+    """Create a new troubleshooting scenario"""
+    return controller.create_troubleshooting()
+
+@troubleshooting_api_bp.route('/<int:troubleshooting_id>', methods=['PUT'])
+@admin_login_required
+@cross_origin()
+def update_troubleshooting(troubleshooting_id):
+    """Update an existing troubleshooting scenario"""
+    return controller.update_troubleshooting(troubleshooting_id)
+
+@troubleshooting_api_bp.route('/<int:troubleshooting_id>', methods=['DELETE'])
+@admin_login_required
+@cross_origin()
+def delete_troubleshooting(troubleshooting_id):
+    """Delete a troubleshooting scenario"""
+    return controller.delete_troubleshooting(troubleshooting_id)
+
+@troubleshooting_api_bp.route('/stats', methods=['GET'])
+@admin_login_required
+@cross_origin()
+def get_troubleshooting_stats():
+    """Get statistics about troubleshooting scenarios usage"""
+    return controller.get_troubleshooting_stats()
+
+@troubleshooting_api_bp.route('/preview', methods=['POST'])
+@admin_login_required
+@cross_origin()
+def preview_troubleshooting():
+    """Preview a troubleshooting scenario before saving"""
+    return controller.preview_troubleshooting()
+
+@troubleshooting_api_bp.route('/<int:troubleshooting_id>/toggle-status', methods=['POST'])
+@admin_login_required
+@cross_origin()
+def toggle_troubleshooting_status(troubleshooting_id):
+    """Toggle the active status of a troubleshooting scenario"""
+    action = request.json.get('action', 'activate' if not request.json.get('is_active', True) else 'deactivate')
+    return controller.toggle_troubleshooting_status(troubleshooting_id, action)

@@ -61,6 +61,51 @@ def get_classes():
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"Error fetching classes: {str(e)}"}), 500
 
+@api_blueprint.route('/class/<int:class_id>', methods=['GET'])
+def get_class_details(class_id):
+    """API endpoint to get details of a specific class by ID"""
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "User not logged in"}), 401
+    
+    try:
+        user_id = session['user_id']
+        
+        # Check if the user is enrolled in this class
+        enrollment = db.session.query(class_students).filter(
+            class_students.c.class_id == class_id,
+            class_students.c.user_id == user_id
+        ).first()
+        
+        if not enrollment:
+            return jsonify({"status": "error", "message": "You are not enrolled in this class"}), 403
+        
+        # Get the class details
+        cls = Class.query.get_or_404(class_id)
+        
+        # Count total students in this class
+        student_count = db.session.query(class_students).filter(
+            class_students.c.class_id == cls.id
+        ).count()
+        
+        # Format for response
+        class_data = {
+            'id': cls.id,
+            'name': cls.name,
+            'section': cls.section,
+            'description': cls.description,
+            'start_date': cls.start_date.isoformat() if cls.start_date else None,
+            'end_date': cls.end_date.isoformat() if cls.end_date else None,
+            'enrollment_count': student_count,
+            'code': cls.code
+        }
+        
+        return jsonify(class_data)
+    except Exception as e:
+        import traceback
+        print(f"Error fetching class details: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": f"Error fetching class details: {str(e)}"}), 500
+
 @api_blueprint.route('/save_essay', methods=['POST'])
 def save_essay():
     """Save an essay response for the current user"""

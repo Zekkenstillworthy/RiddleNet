@@ -47,6 +47,17 @@
         background: transparent;
         box-shadow: none;
     }
+    
+    /* Message styling */
+    .message-container {
+        transition: all 0.3s ease;
+    }
+    .success-message {
+        color: #48c774;
+    }
+    .error-message {
+        color: #ff3860;
+    }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -59,8 +70,7 @@
 </video>
 
 <div class="container" id="container">
-    <div class="form-container sign-up">
-        <form action="{{ url_for('user.signup') }}" method="POST" id="signupForm">
+    <div class="form-container sign-up">        <form action="{{ url_for('user.signup') }}" method="POST" id="signupForm">
             <img id="signup-logo" style="height: 200px; width: 200px;"  
             src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo">
             {% if qr_code_path %}
@@ -70,12 +80,14 @@
             {% endif %}
             <h1>Create Account</h1>
             <input type="text" name="username" placeholder="Username" required autocomplete="off">
+            <input type="email" name="email" placeholder="Email" required autocomplete="off">
             <input type="password" name="password" placeholder="Password" required>
+            <!-- Add a container for displaying messages -->
+            <div id="signup-message" style="display: none; margin-top: 10px; padding: 10px; border-radius: 4px; text-align: center;"></div>
             <button type="submit">Sign Up</button>
             
         </form>
-    </div>
-    <div class="form-container sign-in">
+    </div>    <div class="form-container sign-in">
         <form action="{{ url_for('user.login') }}" method="POST">
             <img style="height: 150px; width: 150px;"         
             src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo">
@@ -83,9 +95,16 @@
             {% if next %}
             <input type="hidden" name="next" value="{{ next }}">
             {% endif %}
-            <input type="text" name="username" placeholder="Username" required autocomplete="off">
+            <input type="text" name="username" id="login-username" placeholder="Username" required autocomplete="off">
             <input type="password" name="password" placeholder="Password" required>
-            <input type="text" name="otp" placeholder="OTP (if enabled)">
+            <div id="message" class="message-container" style="margin-bottom: 10px; color: #ff3860; font-size: 14px; text-align: center; min-height: 20px;"></div>
+            <div style="display: flex; width: 100%;">
+                <input type="text" name="otp" id="otp" placeholder="OTP Code" style="flex: 1; margin-right: 10px;">
+                <button type="button" id="requestOtp" style="flex: none; width: auto; padding: 10px; background: #00C3B5; font-size: 12px;">Request OTP</button>
+            </div>
+            <div id="otp-timer" style="display: none; margin-top: 5px; font-size: 12px; color: #00C3B5; text-align: center;">
+                OTP expires in: <span id="countdown">10:00</span>
+            </div>
             <button type="submit">Sign In</button>
         </form>
     </div>
@@ -111,6 +130,7 @@
     alert("{{ message }}");
 </script>
 {% endif %}
+<script src="{{ url_for('static', filename='js/otp.js') }}"></script>
 <script>
     function playClickSound() {
         const audio = document.getElementById('clickSound');
@@ -141,12 +161,30 @@
     overviewBtn.addEventListener('click', () => {
         playClickSound();
         window.location.href="{{ url_for('user.overview') }}";
-    });
-
-    document.querySelector('.sign-up form').addEventListener('submit', function(event) {
+    });    document.querySelector('.sign-up form').addEventListener('submit', function(event) {
         event.preventDefault(); // Prevent the form from submitting the traditional way
         const formData = new FormData(this);
         const username = formData.get('username');
+        
+        // Show loading state
+        const messageElement = document.getElementById('signup-message');
+        messageElement.style.display = 'block';
+        messageElement.style.backgroundColor = 'rgba(0, 195, 181, 0.2)';
+        messageElement.style.color = '#00C3B5';
+        messageElement.innerHTML = '<span style="display:inline-block;width:20px;height:20px;border:3px solid #00C3B5;border-radius:50%;border-top-color:transparent;animation:spin 1s linear infinite;"></span> Creating your account...';
+        
+        // Add animation style
+        if (!document.getElementById('spin-animation')) {
+            const style = document.createElement('style');
+            style.id = 'spin-animation';
+            style.textContent = '@keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}';
+            document.head.appendChild(style);
+        }
+
+        // Disable submit button to prevent multiple submissions
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.style.opacity = '0.7';
 
         fetch("{{ url_for('user.signup') }}", {
             method: 'POST',
@@ -158,56 +196,59 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'error') {
-                // Show alert for existing username
-                alert(data.message);
-                // Clear only the username field and focus on it
-                document.querySelector('input[name="username"]').value = '';
-                document.querySelector('input[name="username"]').focus();
-                return Promise.reject('Username exists'); // Stop the chain
+                // Show error message in the form
+                messageElement.style.backgroundColor = 'rgba(255, 56, 96, 0.2)';
+                messageElement.style.color = '#ff3860';
+                messageElement.textContent = data.message;
+                
+                // Clear and focus on the appropriate field based on the error message
+                if (data.message.includes('Username already exists')) {
+                    document.querySelector('input[name="username"]').value = '';
+                    document.querySelector('input[name="username"]').focus();
+                } else if (data.message.includes('Email address already in use')) {
+                    document.querySelector('input[name="email"]').value = '';
+                    document.querySelector('input[name="email"]').focus();
+                }
+                
+                // Re-enable submit button
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+                
+                return Promise.reject('Registration error'); // Stop the chain
             }
             
-            // If signup successful, generate QR code
-            alert(data.message);
-            return fetch("{{ url_for('user.generate_qr') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ username })
-            });
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Get reference to the logo
-                const signupLogo = document.getElementById('signup-logo');
-                
-                // Create the QR code image
-                const qrImage = document.createElement('img');
-                qrImage.src = data.qr_code_path;
-                qrImage.alt = 'QR Code';
-                qrImage.style.maxWidth = '250px'; // Increased from 200px
-                qrImage.style.height = '200px';   // Increased from 150px
-                qrImage.style.display = 'block';
-                qrImage.style.border = '4px solid #fff';
-                qrImage.style.borderRadius = '10px';
-                qrImage.id = 'qr-code';
-                
-                // Replace the logo with the QR code
-                signupLogo.parentNode.replaceChild(qrImage, signupLogo);
-                
-                
-                
-                alert('QR code generated successfully! You can now log in using the OTP from your authenticator app.');
-            } else {
-                alert(data.message);
-            }
+            // If signup successful, show success message in the form
+            messageElement.style.backgroundColor = 'rgba(72, 199, 116, 0.2)';
+            messageElement.style.color = '#48c774';
+            messageElement.textContent = data.message;
+            
+            // Reset the form except for message
+            const inputs = this.querySelectorAll('input');
+            inputs.forEach(input => input.value = '');
+            
+            // Switch to login form after a short delay
+            setTimeout(() => {
+                container.classList.remove("active");
+                // Reset the message display for next time
+                messageElement.style.display = 'none';
+                // Re-enable the button
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+            }, 2000);
         })
         .catch(error => {
-            if (error === 'Username exists') return; // Already handled
+            if (error === 'Registration error') return; // Already handled
+            
+            // Show general error message
+            messageElement.style.backgroundColor = 'rgba(255, 56, 96, 0.2)';
+            messageElement.style.color = '#ff3860';
+            messageElement.textContent = 'An error occurred. Please try again.';
+            
             console.error('Error:', error);
-            alert('An error occurred while creating the account or generating the QR code.');
+            
+            // Re-enable submit button
+            submitButton.disabled = false;
+            submitButton.style.opacity = '1';
         });
     });
 </script>

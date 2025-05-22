@@ -4,7 +4,7 @@ from admin.controllers.troubleshooting_controller import TroubleshootingControll
 from flask_cors import cross_origin
 
 # Create the troubleshooting blueprint 
-troubleshooting_bp = Blueprint('troubleshooting', __name__, url_prefix='/admin/troubleshooting')
+troubleshooting_bp = Blueprint('admin_troubleshooting', __name__, url_prefix='/admin/troubleshooting')
 
 # Initialize controller
 controller = TroubleshootingController()

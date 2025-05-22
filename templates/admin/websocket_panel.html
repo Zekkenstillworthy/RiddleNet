@@ -1,0 +1,204 @@
+{% extends 'admin/base.html' %}
+
+{% block head %}
+<title>WebSocket Control Panel | Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/socket-notifications.css') }}">
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+<body>
+    <!-- Main Content -->
+    <main>
+        <header>
+            <h2>WebSocket Control Panel</h2>
+            <div class="admin-info">
+                <span>Welcome, Admin</span>
+            </div>
+        </header>
+
+        <div class="admin-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="dashboard-section">
+                <h3><i class='bx bx-broadcast'></i> Real-Time Communication</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Send Message to Users</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="broadcast-message">Message</label>
+                            <textarea id="broadcast-message" class="form-control" rows="3" placeholder="Enter your announcement..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="broadcast-target">Send To</label>
+                            <select id="broadcast-target" class="form-control">
+                                <option value="all_users">All Users</option>
+                                <option value="topology_users">Topology Users</option>
+                                <option value="troubleshooting_users">Troubleshooting Users</option>
+                            </select>
+                        </div>
+                        
+                        <button id="send-broadcast" class="btn btn-primary">
+                            <i class='bx bx-send'></i> Send Message
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>Live Activity Feed</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="live-activity-feed" class="activity-feed">
+                            <!-- Activity items will be added here dynamically -->
+                            <div class="empty-feed-placeholder">
+                                <i class='bx bx-time'></i>
+                                <p>Waiting for user activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>Connected Users</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="connected-users-list">
+                            <p>Loading connected users...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- WebSocket Integration -->
+    <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle broadcasting messages to users
+            document.getElementById('send-broadcast').addEventListener('click', function() {
+                const message = document.getElementById('broadcast-message').value.trim();
+                const target = document.getElementById('broadcast-target').value;
+                
+                if (!message) {
+                    alert('Please enter a message to broadcast');
+                    return;
+                }
+                
+                // Send the broadcast through WebSocket
+                socketClient.emit('admin_broadcast', {
+                    message: message,
+                    target: target
+                });
+                
+                // Clear the message input
+                document.getElementById('broadcast-message').value = '';
+                
+                // Show success message
+                alert('Message broadcast sent successfully');
+            });
+            
+            // Listen for real-time events to populate the activity feed
+            const activityFeed = document.getElementById('live-activity-feed');
+            
+            function addActivityItem(icon, title, details, timestamp) {
+                // Remove empty placeholder if present
+                const placeholder = activityFeed.querySelector('.empty-feed-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+                
+                // Create new activity item
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                
+                // Format the timestamp
+                const time = new Date(timestamp);
+                const formattedTime = time.toLocaleTimeString();
+                
+                item.innerHTML = `
+                    <div class="activity-icon"><i class='bx ${icon}'></i></div>
+                    <div class="activity-content">
+                        <div class="activity-title">${title}</div>
+                        <div class="activity-details">${details}</div>
+                        <div class="activity-time">${formattedTime}</div>
+                    </div>
+                `;
+                
+                // Add to the top of the feed
+                activityFeed.insertBefore(item, activityFeed.firstChild);
+                
+                // Trim old items if too many
+                const items = activityFeed.querySelectorAll('.activity-item');
+                if (items.length > 50) {
+                    activityFeed.removeChild(items[items.length - 1]);
+                }
+            }
+            
+            // Listen for topology completions
+            socketClient.on('user_completed_topology', function(data) {
+                addActivityItem(
+                    'bx-check-circle',
+                    'Topology Completed',
+                    `User ${data.username} completed the ${data.topology_type} topology with score: ${data.score}`,
+                    new Date()
+                );
+            });
+            
+            // Listen for new essay submissions
+            socketClient.on('new_essay_submission', function(data) {
+                addActivityItem(
+                    'bx-pencil',
+                    'Essay Submitted',
+                    `User ${data.username} submitted an essay response for ${data.category}`,
+                    new Date()
+                );
+            });
+            
+            // Listen for troubleshooting progress
+            socketClient.on('user_troubleshooting_progress', function(data) {
+                addActivityItem(
+                    'bx-wrench',
+                    'Troubleshooting Progress',
+                    `User ${data.username} is working on step ${data.current_step} of scenario ${data.scenario_id}`,
+                    data.timestamp
+                );
+            });
+            
+            // Add a connection status event to show in activity feed
+            socketClient.on('connected', function() {
+                addActivityItem(
+                    'bx-wifi',
+                    'WebSocket Connected',
+                    'Admin console is now receiving real-time updates',
+                    new Date()
+                );
+            });
+            
+            // Add a disconnect status event
+            socketClient.on('disconnected', function(reason) {
+                addActivityItem(
+                    'bx-wifi-off',
+                    'WebSocket Disconnected',
+                    `Connection lost: ${reason}`,
+                    new Date()
+                );
+            });
+        });
+    </script>
+</body>
+{% endblock %}

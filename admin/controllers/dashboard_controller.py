@@ -1,16 +1,17 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
+from flask import Blueprint, redirect, url_for, flash, jsonify, request
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, and_, extract, or_
 import json
 from flask_login import login_required, current_user
 
 # Import models
-from admin import db  # Add this import for db
+from __init__ import db  # Use the main app db instance
 from admin.models.user import AdminUser
 from admin.models.score import AdminScore  # Updated to use renamed model
 from admin.models.question import Question
 from admin.models.essay_response import EssayResponse
 from admin.models.activity_log import ActivityLog
+from utils.render_utils import render_safe_template
 
 # Create dashboard blueprint
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/admin')
@@ -128,7 +129,7 @@ def index():
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
     
-    return render_template('admin/dashboard.html', 
+    return render_safe_template('admin/dashboard.html', 
                            total_users=total_users,
                            total_scores=total_scores,
                            total_questions=question_count_main,
@@ -275,3 +276,9 @@ def export_data():
     }
     
     return jsonify(response)
+
+@dashboard_bp.route('/websocket-panel')
+@login_required
+def websocket_panel():
+    """Render the WebSocket control panel for admins"""
+    return render_template('admin/websocket_panel.html', active_page='websocket')

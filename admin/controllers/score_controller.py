@@ -4,7 +4,7 @@ from io import StringIO
 from datetime import datetime
 from sqlalchemy import func
 from flask_login import login_required, current_user
-from ..app import db
+from __init__ import db
 from ..models.score import AdminScore  # Updated to use renamed model
 from ..models.user import AdminUser  # Use the correct class name from user.py
 

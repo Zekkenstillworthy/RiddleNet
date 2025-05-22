@@ -1,4 +1,4 @@
-from .import db
+from __init__ import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
@@ -28,6 +28,8 @@ class User(db.Model, UserMixin):
     last_active = db.Column(db.DateTime)
     totp_secret = db.Column(db.String(32))
     totp_enabled = db.Column(db.Boolean, default=False)
+    otp = db.Column(db.String(6))  # For storing the email OTP
+    otp_generated_at = db.Column(db.DateTime)  # Timestamp when OTP was generated
     
     # Define relationship with scores
     scores = db.relationship('Score', backref='user', lazy=True)
