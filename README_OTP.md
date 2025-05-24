@@ -29,12 +29,16 @@ This application uses email-based One-Time Passwords (OTP) for two-factor authen
    python test_email.py
    ```
 
+<<<<<<< HEAD
 6. Validate the complete OTP system:
    ```
    python validate_otp_system.py
    ```
 
 7. Start the application:
+=======
+6. Start the application:
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
    ```
    python run.py
    ```
@@ -65,8 +69,13 @@ If you're getting a "Failed to send OTP" error, try the following steps:
    - Run `python test_email.py` to test the email configuration
 
 2. **Validate System Setup**:
+<<<<<<< HEAD
    - Run `python validate_otp_system.py` to check all components
    - Check if your OTP columns are properly added to the database with `python add_otp_columns.py`
+=======
+   - Ensure that your database has the OTP columns (otp and otp_generated_at)
+   - You can verify this by checking your user table schema in the database
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 3. **Common Email Issues**:
    - Gmail security might block the app - check your Gmail security settings

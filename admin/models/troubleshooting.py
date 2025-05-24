@@ -17,6 +17,7 @@ class Troubleshooting(db.Model):
     solution = db.Column(db.Text, nullable=False)
     problem_type = db.Column(db.String(50), default='network')  # network, passive, version, etc.
     _hints = db.Column('hints', db.Text, nullable=True)  # JSON string
+<<<<<<< HEAD
     _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string for custom scoring
     _initial_topology = db.Column('initial_topology', db.Text, nullable=True)  # JSON string for initial device setup
     _solution_topology = db.Column('solution_topology', db.Text, nullable=True)  # JSON string for solution topology
@@ -25,7 +26,20 @@ class Troubleshooting(db.Model):
     base_score = db.Column(db.Integer, default=10)  # Default base score
     time_bonus = db.Column(db.Integer, default=5)  # Default time bonus
     solution_bonus = db.Column(db.Integer, default=5)  # Default bonus for perfect solution
+=======
+    _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string
+    _required_devices = db.Column('required_devices', db.Text, nullable=True)  # JSON string
+    _topology_config = db.Column('topology_config', db.Text, nullable=True)  # JSON string for network topology
+    _initial_topology = db.Column('initial_topology', db.Text, nullable=True)  # JSON string for initial topology state
+    _expected_topology = db.Column('expected_topology', db.Text, nullable=True)  # JSON string for expected solution
+    _tasks = db.Column('tasks', db.Text, nullable=True)  # JSON string for required tasks
+    base_score = db.Column(db.Integer, default=100)
+    time_bonus = db.Column(db.Integer, default=20)
+    perfect_match_bonus = db.Column(db.Integer, default=10)
+    topology_type = db.Column(db.String(50), nullable=True)
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     is_active = db.Column(db.Boolean, default=True)
+    time_limit = db.Column(db.Integer, default=1800)  # Time limit in seconds (default 30 minutes)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -129,6 +143,114 @@ class Troubleshooting(db.Model):
         else:
             self._required_steps = steps
 
+    @property
+    def scoring_metrics(self):
+        """Get the scoring metrics as a dictionary"""
+        if not self._scoring_metrics:
+            return {}
+        try:
+            return json.loads(self._scoring_metrics)
+        except (ValueError, TypeError):
+            return {}
+
+    @scoring_metrics.setter
+    def scoring_metrics(self, metrics_dict):
+        """Set the scoring metrics from a dictionary"""
+        if isinstance(metrics_dict, dict):
+            self._scoring_metrics = json.dumps(metrics_dict)
+        else:
+            self._scoring_metrics = metrics_dict
+            
+    @property
+    def required_devices(self):
+        """Get the required devices as a dictionary"""
+        if not self._required_devices:
+            return {}
+        try:
+            return json.loads(self._required_devices)
+        except (ValueError, TypeError):
+            return {}
+
+    @required_devices.setter
+    def required_devices(self, devices_dict):
+        """Set the required devices from a dictionary"""
+        if isinstance(devices_dict, dict):
+            self._required_devices = json.dumps(devices_dict)
+        else:
+            self._required_devices = devices_dict
+            
+    @property
+    def topology_config(self):
+        """Get the topology configuration as a dictionary"""
+        if not self._topology_config:
+            return {}
+        try:
+            return json.loads(self._topology_config)
+        except (ValueError, TypeError):
+            return {}
+
+    @topology_config.setter
+    def topology_config(self, config_dict):
+        """Set the topology configuration from a dictionary"""
+        if isinstance(config_dict, dict):
+            self._topology_config = json.dumps(config_dict)
+        else:
+            self._topology_config = config_dict
+            
+    @property
+    def initial_topology(self):
+        """Get the initial topology as a dictionary"""
+        if not self._initial_topology:
+            return {}
+        try:
+            return json.loads(self._initial_topology)
+        except (ValueError, TypeError):
+            return {}
+            
+    @initial_topology.setter
+    def initial_topology(self, topology_dict):
+        """Set the initial topology from a dictionary"""
+        if isinstance(topology_dict, dict):
+            self._initial_topology = json.dumps(topology_dict)
+        else:
+            self._initial_topology = topology_dict
+            
+    @property
+    def expected_topology(self):
+        """Get the expected topology as a dictionary"""
+        if not self._expected_topology:
+            return {}
+        try:
+            return json.loads(self._expected_topology)
+        except (ValueError, TypeError):
+            return {}
+            
+    @expected_topology.setter
+    def expected_topology(self, topology_dict):
+        """Set the expected topology from a dictionary"""
+        if isinstance(topology_dict, dict):
+            self._expected_topology = json.dumps(topology_dict)
+        else:
+            self._expected_topology = topology_dict
+
+    @property
+    def tasks(self):
+        """Get the tasks list as a list of dictionaries"""
+        if not self._tasks:
+            return []
+        try:
+            return json.loads(self._tasks)
+        except (ValueError, TypeError):
+            return []
+            
+    @tasks.setter
+    def tasks(self, tasks_list):
+        """Set the tasks from a list of dictionaries"""
+        if isinstance(tasks_list, list):
+            self._tasks = json.dumps(tasks_list)
+        else:
+            self._tasks = tasks_list
+            
     def to_dict(self):
         """Convert the model to a dictionary for API responses"""
         return {
@@ -141,6 +263,7 @@ class Troubleshooting(db.Model):
             'solution': self.solution,
             'hints': self.hints,
             'scoring_metrics': self.scoring_metrics,
+<<<<<<< HEAD
             'initial_topology': self.initial_topology,
             'solution_topology': self.solution_topology,
             'required_steps': self.required_steps,
@@ -148,7 +271,19 @@ class Troubleshooting(db.Model):
             'base_score': self.base_score,
             'time_bonus': self.time_bonus,
             'solution_bonus': self.solution_bonus,
+=======
+            'required_devices': self.required_devices,
+            'topology_config': self.topology_config,
+            'initial_topology': self.initial_topology,
+            'expected_topology': self.expected_topology,
+            'tasks': self.tasks,
+            'base_score': self.base_score,
+            'time_bonus': self.time_bonus,
+            'perfect_match_bonus': self.perfect_match_bonus,
+            'topology_type': self.topology_type,
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
             'is_active': self.is_active,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
-            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+            'time_limit': self.time_limit,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S')
         }

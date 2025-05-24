@@ -1,6 +1,9 @@
 /**
  * WebSocket connection management for RiddleNet
+<<<<<<< HEAD
  * Non-disruptive real-time features that preserve template rendering
+=======
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
  */
 
 // Helper for getting the current host with the correct protocol
@@ -19,6 +22,7 @@ class SocketClient {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // Start with 2 seconds
+<<<<<<< HEAD
         this.healthCheckInterval = null;
         
         // Initialize video optimization when DOM is ready
@@ -29,6 +33,13 @@ class SocketClient {
         } else {
             this.optimizeVideoLoading();
         }
+=======
+        
+        // Initialize video optimization when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            this.optimizeVideoLoading();
+        });
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     }
     
     /**
@@ -108,11 +119,15 @@ class SocketClient {
             const script = document.createElement('script');
             script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
             script.onload = () => this.initializeSocket();
+<<<<<<< HEAD
             script.onerror = (err) => {
                 console.error('Error loading socket.io client:', err);
                 // Graceful fallback - continue without WebSocket
                 this.showConnectionStatus(false, true);
             };
+=======
+            script.onerror = (err) => console.error('Error loading socket.io client:', err);
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
             document.head.appendChild(script);
         } else {
             this.initializeSocket();
@@ -299,6 +314,7 @@ class SocketClient {
     /**
      * Show a notification to the user
      */
+<<<<<<< HEAD
     showNotification(title, message, type = 'info', duration = 5000) {
         // Create notification container if it doesn't exist
         let container = document.getElementById('notification-area');
@@ -368,6 +384,58 @@ class SocketClient {
             `;
             document.head.appendChild(style);
         }
+=======
+    showNotification(title, message) {
+        // Check if browser supports notifications
+        if ('Notification' in window) {
+            // First check if we already have permission
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body: message });
+            } 
+            // Otherwise, ask for permission
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, { body: message });
+                    }
+                });
+            }
+        }
+        
+        // Also show an in-app notification
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'in-app-notification';
+        notificationDiv.innerHTML = `
+            <div class="notification-header">
+                <h4>${title}</h4>
+                <button class="close-notification">&times;</button>
+            </div>
+            <div class="notification-body">
+                <p>${message}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notificationDiv);
+        
+        // Animation
+        setTimeout(() => {
+            notificationDiv.classList.add('show');
+        }, 10);
+        
+        // Close button
+        notificationDiv.querySelector('.close-notification').addEventListener('click', () => {
+            notificationDiv.classList.remove('show');
+            setTimeout(() => notificationDiv.remove(), 300);
+        });
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(notificationDiv)) {
+                notificationDiv.classList.remove('show');
+                setTimeout(() => notificationDiv.remove(), 300);
+            }
+        }, 5000);
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     }
 
     /**
@@ -453,6 +521,71 @@ class SocketClient {
             this.connected = false;
         }
     }
+<<<<<<< HEAD
+=======
+    /**
+     * Show a notification to the user
+     * @param {string} title - The notification title
+     * @param {string} message - The notification message
+     * @param {string} type - The notification type (info, success, warning, error)
+     * @param {number} duration - How long to show the notification in ms
+     */
+    showNotification(title, message, type = 'info', duration = 5000) {
+        // Create notification container if it doesn't exist
+        let container = document.getElementById('notification-area');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-area';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '10000';
+            document.body.appendChild(container);
+        }
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `in-app-notification ${type}`;
+        
+        // Add header with title and close button
+        const header = document.createElement('div');
+        header.className = 'notification-header';
+        header.innerHTML = `
+            <h4>${title}</h4>
+            <button class="close-notification">&times;</button>
+        `;
+        
+        // Add message body
+        const body = document.createElement('div');
+        body.className = 'notification-body';
+        body.innerHTML = `<p>${message}</p>`;
+        
+        // Add event listener to close button
+        notification.appendChild(header);
+        notification.appendChild(body);
+        container.appendChild(notification);
+        
+        // Add close button handler
+        const closeBtn = notification.querySelector('.close-notification');
+        closeBtn.addEventListener('click', () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        });
+        
+        // Show the notification with animation
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Auto-remove after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }
+        
+        return notification;
+    }
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
     /**
      * Start a health check to ensure connection is maintained
@@ -470,11 +603,70 @@ class SocketClient {
             }
         }, 20000);
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * Show a notification to the user
+     */
+    showNotification(title, message) {
+        // Check if browser supports notifications
+        if ('Notification' in window) {
+            // First check if we already have permission
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body: message });
+            } 
+            // Otherwise, ask for permission
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, { body: message });
+                    }
+                });
+            }
+        }
+        
+        // Also show an in-app notification
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'in-app-notification';
+        notificationDiv.innerHTML = `
+            <div class="notification-header">
+                <h4>${title}</h4>
+                <button class="close-notification">&times;</button>
+            </div>
+            <div class="notification-body">
+                <p>${message}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notificationDiv);
+        
+        // Animation
+        setTimeout(() => {
+            notificationDiv.classList.add('show');
+        }, 10);
+        
+        // Close button
+        notificationDiv.querySelector('.close-notification').addEventListener('click', () => {
+            notificationDiv.classList.remove('show');
+            setTimeout(() => notificationDiv.remove(), 300);
+        });
+        
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(notificationDiv)) {
+                notificationDiv.classList.remove('show');
+                setTimeout(() => notificationDiv.remove(), 300);
+            }
+        }, 5000);
+    }
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 }
 
 // Create a global instance
 const socketClient = new SocketClient();
 
+<<<<<<< HEAD
 // Connect when the page loads (with delay to ensure page loads fully)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -486,3 +678,10 @@ if (document.readyState === 'loading') {
 
 // Make it available globally
 window.socketClient = socketClient;
+=======
+// Connect when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Delay connection to ensure page loads fully
+    setTimeout(() => socketClient.connect(), 500);
+});
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26

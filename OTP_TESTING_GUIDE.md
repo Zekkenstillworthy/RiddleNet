@@ -65,6 +65,7 @@ If you encounter issues during testing:
    - Verify that the database is being updated with the new OTP
 
 3. **Database Issues**:
+<<<<<<< HEAD
    - If you're getting database errors, make sure you've run the database migrations:
      ```bash
      python add_otp_columns.py
@@ -73,6 +74,10 @@ If you encounter issues during testing:
      ```bash
      python update_db_otp.py
      ```
+=======
+   - Make sure your database has OTP columns (otp and otp_generated_at) in the user table
+   - You can verify this by inspecting your database schema
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 ## Security Considerations
 

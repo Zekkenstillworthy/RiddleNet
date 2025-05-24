@@ -7,7 +7,7 @@ from admin import db
 from datetime import datetime
 
 # Create the troubleshooting blueprint 
-troubleshooting_bp = Blueprint('troubleshooting', __name__, url_prefix='/admin/troubleshooting')
+troubleshooting_bp = Blueprint('admin_troubleshooting', __name__, url_prefix='/admin/troubleshooting')
 
 # Initialize controller
 controller = TroubleshootingController()

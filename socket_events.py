@@ -15,6 +15,7 @@ except ImportError:
 @socketio.on('ping')
 def handle_ping(data):
     """Handle ping from client for health check"""
+<<<<<<< HEAD
     emit('pong', {
         'server_time': datetime.datetime.now().isoformat(),
         'client_time': data.get('timestamp', 0)
@@ -48,6 +49,16 @@ def handle_join_troubleshooting(scenario_id):
     emit('joined', {'room': f'troubleshooting_{scenario_id}'})
     print(f"User {current_user.id} joined troubleshooting room {scenario_id}")
 
+=======
+    timestamp = data.get('timestamp', datetime.datetime.utcnow().timestamp() * 1000)
+    emit('pong', {
+        'server_time': datetime.datetime.utcnow().timestamp() * 1000,
+        'client_time': timestamp,
+        'latency': 0  # Client will calculate
+    })
+
+# Troubleshooting events
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 @socketio.on('troubleshooting_progress')
 @authenticated_only
 def handle_troubleshooting_progress(data):
@@ -56,6 +67,7 @@ def handle_troubleshooting_progress(data):
     current_step = data.get('current_step')
     completed_steps = data.get('completed_steps', [])
     
+<<<<<<< HEAD
     # Broadcast to other users in the same troubleshooting room
     room = f"troubleshooting_{scenario_id}"
     emit('user_troubleshooting_progress', {
@@ -76,6 +88,26 @@ def handle_troubleshooting_progress(data):
         'completed_steps': completed_steps,
         'timestamp': datetime.datetime.now().isoformat()
     }, room='admin_room')
+=======
+    if not scenario_id:
+        return
+    
+    # Join the scenario room if not already joined
+    room_name = f"troubleshooting_{scenario_id}"
+    join_room(room_name)
+    
+    # Broadcast progress to all users in this scenario (including admins)
+    emit('user_troubleshooting_progress', {
+        'user_id': current_user.id,
+        'username': current_user.username,
+        'scenario_id': scenario_id,
+        'current_step': current_step,
+        'completed_steps': completed_steps,
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    }, room=room_name)
+    
+    # You could also save this progress to the database here
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 # Topology network events
 @socketio.on('topology_network_update')
@@ -85,6 +117,7 @@ def handle_topology_network_update(data):
     topology_id = data.get('topology_id')
     network_state = data.get('network_state')
     
+<<<<<<< HEAD
     # Broadcast to other users in the same topology room
     room = f"topology_{topology_id}"
     emit('topology_state_updated', {
@@ -142,11 +175,30 @@ def handle_essay_submission(data):
         'timestamp': datetime.datetime.now().isoformat()
     }, room='admin_room')
 
+=======
+    if not topology_id or not network_state:
+        return
+    
+    # Join the topology room if not already joined
+    room_name = f"topology_{topology_id}"
+    join_room(room_name)
+    
+    # Broadcast network state to all users in this topology
+    emit('topology_state_updated', {
+        'user_id': current_user.id,
+        'username': current_user.username, 
+        'topology_id': topology_id,
+        'network_state': network_state,
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    }, room=room_name)
+    
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 # Admin specific events
 @socketio.on('admin_broadcast')
 @authenticated_only
 def handle_admin_broadcast(data):
     """Allow admins to broadcast messages to all users"""
+<<<<<<< HEAD
     # Check if user is admin (implement your admin check here)
     if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
         emit('error', {'message': 'Unauthorized: Admin access required'})
@@ -247,3 +299,24 @@ def default_error_handler(e):
     """Handle WebSocket errors"""
     print(f"WebSocket error: {e}")
     emit('error', {'message': 'An error occurred during WebSocket communication'})
+=======
+    # Check for admin role
+    is_admin = hasattr(current_user, 'is_admin') and current_user.is_admin
+    
+    if not is_admin:
+        emit('error', {'message': 'Unauthorized'})
+        return
+    
+    message = data.get('message')
+    target = data.get('target', 'all')  # 'all', 'user_{id}', 'topology_{id}', etc.
+    
+    if not message:
+        return
+    
+    emit('admin_message', {
+        'message': message,
+        'admin_id': current_user.id,
+        'admin_name': current_user.username,
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    }, room=target)
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26

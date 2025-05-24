@@ -2,6 +2,13 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from flask import request
 from flask_login import current_user
 import functools
+<<<<<<< HEAD
+=======
+import eventlet
+
+# Apply eventlet monkey patch for better performance
+eventlet.monkey_patch()
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 # Initialize SocketIO without an app (we'll attach it later)
 socketio = SocketIO(
@@ -15,9 +22,12 @@ socketio = SocketIO(
 # Store active user connections
 user_connections = {}
 
+<<<<<<< HEAD
 # Store active user connections with additional details
 user_details = {}  # Store additional user info like connection time, activity
 
+=======
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 def authenticated_only(f):
     """Decorator to ensure WebSocket connections are authenticated"""
     @functools.wraps(f)
@@ -36,6 +46,7 @@ def init_socketio(app):
 
 def register_handlers():
     """Register all WebSocket event handlers"""
+<<<<<<< HEAD
     # Connection events
     @socketio.on('connect')
     def handle_connect():
@@ -101,6 +112,65 @@ def register_handlers():
         if hasattr(current_user, 'is_admin') and current_user.is_admin:
             join_room("admin_room")
             emit('joined', {'room': 'admin'})
+=======
+    
+    @socketio.on('connect')
+    def handle_connect():
+        """Handle new connections"""
+        if current_user.is_authenticated:
+            user_id = current_user.id
+            # Store connection info
+            if user_id not in user_connections:
+                user_connections[user_id] = set()
+            user_connections[user_id].add(request.sid)
+            
+            # Join user-specific room for direct messages
+            join_room(f"user_{user_id}")
+            
+            # Join room for admin broadcasts
+            join_room("all_users")
+            
+            print(f"User {user_id} connected with session ID: {request.sid}")
+        else:
+            print(f"Anonymous user connected: {request.sid}")
+    
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        """Handle client disconnections"""
+        if current_user.is_authenticated:
+            user_id = current_user.id
+            if user_id in user_connections and request.sid in user_connections[user_id]:
+                user_connections[user_id].remove(request.sid)
+                if not user_connections[user_id]:
+                    del user_connections[user_id]
+            print(f"User {user_id} disconnected")
+        else:
+            print(f"Anonymous user disconnected: {request.sid}")
+    
+    # Handle ping-pong for health checks
+    @socketio.on('ping')
+    def handle_ping(data):
+        """Handle ping from client for connection health checks"""
+        emit('pong', {'timestamp': data.get('timestamp')})
+    
+    # Topology-related events
+    @socketio.on('join_topology')
+    @authenticated_only
+    def handle_join_topology(topology_id):
+        """Join a specific topology room"""
+        room_name = f"topology_{topology_id}"
+        join_room(room_name)
+        print(f"User {current_user.id} joined topology room: {room_name}")
+    
+    # Troubleshooting-related events
+    @socketio.on('join_troubleshooting')
+    @authenticated_only
+    def handle_join_troubleshooting(scenario_id):
+        """Join a specific troubleshooting scenario room"""
+        room_name = f"troubleshooting_{scenario_id}"
+        join_room(room_name)
+        print(f"User {current_user.id} joined troubleshooting room: {room_name}")
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 # Helper functions for emitting events
 def notify_user(user_id, event, data):
@@ -109,18 +179,27 @@ def notify_user(user_id, event, data):
     socketio.emit(event, data, room=room)
 
 def notify_topology_users(topology_id, event, data):
+<<<<<<< HEAD
     """Send event to users in a specific topology room"""
+=======
+    """Send event to all users in a specific topology room"""
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     room = f"topology_{topology_id}"
     socketio.emit(event, data, room=room)
 
 def notify_troubleshooting_users(scenario_id, event, data):
+<<<<<<< HEAD
     """Send event to users in a specific troubleshooting room"""
+=======
+    """Send event to all users in a specific troubleshooting room"""
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     room = f"troubleshooting_{scenario_id}"
     socketio.emit(event, data, room=room)
 
 def broadcast_to_all(event, data):
     """Send event to all connected users"""
     socketio.emit(event, data, room="all_users")
+<<<<<<< HEAD
 
 def notify_admins(event, data):
     """Send event to all connected admins"""
@@ -179,3 +258,5 @@ def update_user_activity(user_id, activity):
     
     if session_id and session_id in user_details:
         user_details[session_id]['current_activity'] = activity
+=======
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26

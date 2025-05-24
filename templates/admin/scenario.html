@@ -14,9 +14,7 @@
         margin-bottom: 20px;
         border: 1px solid rgba(0, 195, 181, 0.2);
         padding: 20px;
-    }
-
-    /* Tab styling */
+    }    /* Tab styling */
     .tab-container {
         display: flex;
         margin-bottom: 20px;
@@ -32,6 +30,27 @@
         transition: all 0.3s ease;
         margin-right: 5px;
         opacity: 0.7;
+    }
+    
+    /* Scoring metrics styles */
+    .scoring-metrics-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: rgba(0, 195, 181, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(0, 195, 181, 0.2);
+    }
+    
+    .metrics-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .metric-item {
+        flex: 1;
+        min-width: 200px;
     }
 
     .tab:hover {
@@ -598,13 +617,51 @@
         color: rgba(255, 255, 255, 0.5);
     }
     
-    /* Small text */
-    .small {
+    /* Small text */    .small {
         font-size: 12px;
     }
     
     .text-muted {
         color: rgba(255, 255, 255, 0.6);
+    }
+    
+    /* Modal Tab Styling */
+    .modal-tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(0, 195, 181, 0.3);
+        margin-bottom: 20px;
+    }
+    
+    .modal-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 2px solid transparent;
+        opacity: 0.7;
+    }
+    
+    .modal-tab:hover {
+        opacity: 1;
+    }
+    
+    .modal-tab.active {
+        opacity: 1;
+        border-bottom: 2px solid var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .modal-tab-content {
+        display: none;
+    }
+    
+    .modal-tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 </style>
 {% endblock %}
@@ -722,17 +779,21 @@
 <div id="troubleshooting-modal" class="modal">
     <div class="modal-content">
         <span class="close-btn" id="close-troubleshooting-modal">&times;</span>
-        <h2 id="troubleshooting-modal-title">Add New Troubleshooting</h2>
+        <h2 id="troubleshooting-modal-title">Add New Troubleshooting Scenario</h2>
         <form id="troubleshooting-form">
-            <input type="hidden" id="troubleshooting-id">
+            <input type="hidden" id="troubleshooting-id" name="id" value="">
+            
             <div class="form-group">
                 <label for="troubleshooting-title">Title:</label>
-                <input type="text" id="troubleshooting-title" class="form-control" required>
+                <input type="text" id="troubleshooting-title" name="title" class="form-control" required>
             </div>
+            
             <div class="form-group">
-                <label for="troubleshooting-description">Description:</label>
-                <textarea id="troubleshooting-description" class="form-control" required></textarea>
+                <label for="troubleshooting-description">Brief Description:</label>
+                <textarea id="troubleshooting-description" name="description" class="form-control" rows="2"></textarea>
+                <small class="form-text">Short description shown in scenario listings</small>
             </div>
+<<<<<<< HEAD
               <div class="form-row">
                 <div class="form-group form-col">
                     <label for="troubleshooting-difficulty">Difficulty:</label>
@@ -764,12 +825,59 @@
                 <h3><i class='bx bx-trophy'></i> Scoring Parameters</h3>
                 <div class="form-row">
                     <div class="form-group form-col">
-                        <label for="troubleshooting-base-score">Base Score:</label>
-                        <input type="number" id="troubleshooting-base-score" class="form-control" value="10" min="1" required>
+=======
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="troubleshooting-difficulty">Difficulty:</label>
+                        <select id="troubleshooting-difficulty" name="difficulty" class="form-control">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
                     </div>
-                    <div class="form-group form-col">
-                        <label for="troubleshooting-time-limit">Time Limit (minutes):</label>
-                        <input type="number" id="troubleshooting-time-limit" class="form-control" value="15" min="1">
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="troubleshooting-topology-type">Topology Type:</label>
+                        <select id="troubleshooting-topology-type" name="topology_type" class="form-control">
+                            <option value="enterprise">Enterprise</option>
+                            <option value="home">Home/SOHO</option>
+                            <option value="datacenter">Data Center</option>
+                            <option value="wan">WAN</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
+                        <label for="troubleshooting-base-score">Base Score:</label>
+                        <input type="number" id="troubleshooting-base-score" name="base_score" class="form-control" value="100" min="0" max="1000">
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="troubleshooting-time-bonus">Time Bonus:</label>
+                        <input type="number" id="troubleshooting-time-bonus" name="time_bonus" class="form-control" value="20" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="troubleshooting-perfect-match-bonus">Perfect Match Bonus:</label>
+                        <input type="number" id="troubleshooting-perfect-match-bonus" name="perfect_match_bonus" class="form-control" value="30" min="0" max="100">
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="troubleshooting-is-active" name="is_active" checked>
+                            <label for="troubleshooting-is-active">Active</label>
+                        </div>
                     </div>
                 </div>
                 <div class="form-row">
@@ -790,6 +898,7 @@
                     </div>
                 </div>
             </div>
+<<<<<<< HEAD
               <div class="config-section">
                 <h3><i class='bx bx-code-alt'></i> Scenario Configuration</h3>
                 <div class="form-group">
@@ -843,13 +952,170 @@
                 <label for="troubleshooting-hints">Hints (one per line):</label>
                 <textarea id="troubleshooting-hints" class="form-control"></textarea>
                 <small class="form-text">Enter each hint on a new line. These will be shown to users when they request help.</small>
+=======
+            
+            <div class="tabs-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="scenario">Scenario</div>
+                    <div class="tab" data-tab="solution">Solution</div>
+                    <div class="tab" data-tab="hints">Hints</div>
+                    <div class="tab" data-tab="topology">Topology</div>
+                    <div class="tab" data-tab="scoring">Scoring</div>
+                </div>
+                
+                <div class="tab-pane active" id="scenario-tab-pane">
+                    <div class="form-group">
+                        <label for="troubleshooting-scenario">Scenario Description:</label>
+                        <textarea id="troubleshooting-scenario" name="scenario" class="form-control" rows="10" required></textarea>
+                        <small class="form-text">Describe the problem scenario in detail (supports Markdown)</small>
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="solution-tab-pane">
+                    <div class="form-group">
+                        <label for="troubleshooting-solution">Solution Guide:</label>
+                        <textarea id="troubleshooting-solution" name="solution" class="form-control" rows="10" required></textarea>
+                        <small class="form-text">Provide a detailed solution guide (supports Markdown)</small>
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="hints-tab-pane">
+                    <div class="hints-section">
+                        <div class="hint-header">
+                            <h4>Scenario Hints</h4>
+                            <button type="button" id="add-hint-btn" class="btn-sm"><i class="bx bx-plus"></i> Add Hint</button>
+                        </div>
+                        <div id="hints-container">
+                            <!-- Hints will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="topology-tab-pane">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="initial-topology-json">Initial Topology (JSON):</label>
+                                <textarea id="initial-topology-json" name="initial_topology" class="form-control code" rows="12"></textarea>
+                                <small class="form-text">Initial network topology configuration</small>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="expected-topology-json">Expected Solution Topology (JSON):</label>
+                                <textarea id="expected-topology-json" name="expected_topology" class="form-control code" rows="12"></textarea>
+                                <small class="form-text">Expected solution topology</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="topology-config-json">Topology Configuration (JSON):</label>
+                        <textarea id="topology-config-json" name="topology_config" class="form-control code" rows="8"></textarea>
+                        <small class="form-text">Advanced configuration settings for the topology builder</small>
+                    </div>
+                </div>
+                
+                <div class="tab-pane" id="scoring-tab-pane">
+                    <div class="scoring-metrics-container">
+                        <h4>Scoring Metrics</h4>
+                        <p>Adjust the weights of different scoring components (total should equal 100)</p>
+                        
+                        <div class="metrics-row">
+                            <div class="metric-item">
+                                <label for="troubleshooting-speed">Speed:</label>
+                                <input type="range" id="troubleshooting-speed" min="0" max="50" value="20" oninput="updateTroubleshootingMetricValue('speed')">
+                                <span id="troubleshooting-speed-value">20</span>
+                                <small class="form-text">Time taken to solve the problem</small>
+                            </div>
+                            <div class="metric-item">
+                                <label for="troubleshooting-accuracy">Accuracy:</label>
+                                <input type="range" id="troubleshooting-accuracy" min="0" max="50" value="30" oninput="updateTroubleshootingMetricValue('accuracy')">
+                                <span id="troubleshooting-accuracy-value">30</span>
+                                <small class="form-text">How closely the solution matches expected result</small>
+                            </div>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-item">
+                                <label for="troubleshooting-completion">Completion:</label>
+                                <input type="range" id="troubleshooting-completion" min="0" max="50" value="25" oninput="updateTroubleshootingMetricValue('completion')">
+                                <span id="troubleshooting-completion-value">25</span>
+                                <small class="form-text">All required elements are included</small>
+                            </div>
+                            <div class="metric-item">
+                                <label for="troubleshooting-correctness">Correctness:</label>
+                                <input type="range" id="troubleshooting-correctness" min="0" max="50" value="25" oninput="updateTroubleshootingMetricValue('correctness')">
+                                <span id="troubleshooting-correctness-value">25</span>
+                                <small class="form-text">Functional topology with working communication</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
             </div>
             
             <div class="btn-row">
+                <button type="button" id="preview-troubleshooting-btn" class="btn-secondary"><i class='bx bx-show'></i> Preview</button>
+                <button type="button" id="debug-troubleshooting-btn" class="btn-secondary"><i class='bx bx-code'></i> Debug JSON</button>
                 <button type="button" id="cancel-troubleshooting-btn" class="btn-secondary">Cancel</button>
                 <button type="submit" class="btn-primary"><i class='bx bx-save'></i> Save Troubleshooting</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Troubleshooting Preview Modal -->
+<div id="troubleshooting-preview-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" id="close-troubleshooting-preview">&times;</span>
+        <h2>Scenario Preview</h2>
+        
+        <div class="preview-header">
+            <h3 id="preview-title">Scenario Title</h3>
+            <div class="badge-row">
+                <span id="preview-difficulty-badge" class="badge badge-medium">Medium</span>
+                <span id="preview-topology-type-badge" class="badge badge-info">Enterprise</span>
+            </div>
+            <p id="preview-description">Scenario brief description will appear here.</p>
+        </div>
+        
+        <div class="tabs-container">
+            <div class="tabs">
+                <div class="tab active" data-tab="preview-scenario">Scenario</div>
+                <div class="tab" data-tab="preview-solution">Solution</div>
+                <div class="tab" data-tab="preview-scoring">Scoring</div>
+                <div class="tab" data-tab="preview-hints">Hints</div>
+            </div>
+            
+            <div class="tab-pane active" id="preview-scenario-tab-pane">
+                <div class="preview-scenario-content">
+                    <h4>Problem Description</h4>
+                    <div id="preview-scenario" class="markdown-content"></div>
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="preview-solution-tab-pane">
+                <div class="preview-solution-content">
+                    <h4>Solution Guide</h4>
+                    <div id="preview-solution" class="markdown-content"></div>
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="preview-scoring-tab-pane">
+                <div class="preview-scoring-content">
+                    <h4>Scoring Metrics</h4>
+                    <div class="chart-container">
+                        <canvas id="scoring-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane" id="preview-hints-tab-pane">
+                <div id="preview-hints-section">
+                    <h4>Available Hints</h4>
+                    <div id="preview-hints"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1179,6 +1445,16 @@ function showTroubleshootingModal() {
     document.getElementById('troubleshooting-id').value = '';
     troubleshootingForm.reset();
     
+    // Reset JSON fields to default values
+    document.getElementById('troubleshooting-initial-topology').value = JSON.stringify({ devices: [], connections: [] }, null, 2);
+    document.getElementById('troubleshooting-expected-topology').value = JSON.stringify({ devices: [], connections: [] }, null, 2);
+    
+    // Ensure first tab is active
+    document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector('.modal-tab[data-tab="basic-info"]').classList.add('active');
+    document.getElementById('basic-info-content').classList.add('active');
+    
     // Show modal with animation
     showModal(troubleshootingModal);
 }
@@ -1470,6 +1746,20 @@ window.addEventListener('click', event => {
     if (event.target === topologyModal) hideModal(topologyModal);
     if (event.target === previewModal) hideModal(previewModal);
     if (event.target === deleteConfirmModal) hideModal(deleteConfirmModal);
+});
+
+// Set up event listeners for troubleshooting modal tabs
+document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Hide all tab contents and remove active class from all tabs
+        document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Set active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        const contentId = tab.getAttribute('data-tab') + '-content';
+        document.getElementById(contentId).classList.add('active');
+    });
 });
 
 // Validate JSON in the configuration editors
@@ -1980,6 +2270,694 @@ document.getElementById('debug-topology-btn').addEventListener('click', () => {
         console.error('Debug error:', error);
         alert('Error debugging JSON: ' + error);
     });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    // ------------------------
+    // Troubleshooting Management
+    // ------------------------
+    
+    // DOM elements
+    const troubleshootingTable = document.getElementById('troubleshooting-table');
+    const troubleshootingTableBody = troubleshootingTable.querySelector('tbody');
+    const addTroubleshootingBtn = document.getElementById('add-troubleshooting-btn');
+    const emptyAddTroubleshootingBtn = document.getElementById('empty-add-troubleshooting-btn');
+    const troubleshootingEmptyState = document.getElementById('troubleshooting-empty-state');
+    const troubleshootingSearch = document.getElementById('troubleshooting-search');
+    const filterTroubleshootingDifficulty = document.getElementById('filter-troubleshooting-difficulty');
+    
+    // Initialize troubleshooting management
+    loadTroubleshootings();
+    
+    // Event listeners
+    addTroubleshootingBtn.addEventListener('click', showTroubleshootingModal);
+    emptyAddTroubleshootingBtn.addEventListener('click', showTroubleshootingModal);
+    troubleshootingSearch.addEventListener('input', debounce(loadTroubleshootings, 300));
+    filterTroubleshootingDifficulty.addEventListener('change', loadTroubleshootings);
+    
+    document.addEventListener('click', function(e) {
+        // Edit troubleshooting button
+        if (e.target.closest('.edit-troubleshooting-btn')) {
+            const id = e.target.closest('.edit-troubleshooting-btn').dataset.id;
+            editTroubleshooting(id);
+        }
+        
+        // Delete troubleshooting button
+        if (e.target.closest('.delete-troubleshooting-btn')) {
+            const id = e.target.closest('.delete-troubleshooting-btn').dataset.id;
+            const title = e.target.closest('.delete-troubleshooting-btn').dataset.title;
+            confirmDeleteTroubleshooting(id, title);
+        }
+        
+        // Preview troubleshooting button
+        if (e.target.closest('.preview-troubleshooting-btn')) {
+            const id = e.target.closest('.preview-troubleshooting-btn').dataset.id;
+            previewTroubleshooting(id);
+        }
+        
+        // Toggle status button
+        if (e.target.closest('.toggle-status-btn')) {
+            const btn = e.target.closest('.toggle-status-btn');
+            const id = btn.dataset.id;
+            const isActive = btn.dataset.active === 'true';
+            toggleTroubleshootingStatus(id, !isActive);
+        }
+    });
+    
+    // Load troubleshooting scenarios with filtering
+    function loadTroubleshootings() {
+        const search = troubleshootingSearch.value;
+        const difficulty = filterTroubleshootingDifficulty.value;
+        
+        fetch(`/api/admin/troubleshooting/list?search=${search}&difficulty=${difficulty}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load troubleshooting scenarios');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayTroubleshootings(data.troubleshootings);
+            })
+            .catch(error => {
+                console.error('Error loading troubleshooting scenarios:', error);
+                showToast('error', 'Failed to load troubleshooting scenarios. Please try again.');
+            });
+    }
+    
+    // Display troubleshooting scenarios in the table
+    function displayTroubleshootings(troubleshootings) {
+        troubleshootingTableBody.innerHTML = '';
+        
+        if (troubleshootings.length === 0) {
+            troubleshootingEmptyState.style.display = 'flex';
+            troubleshootingTable.style.display = 'none';
+            return;
+        }
+        
+        troubleshootingEmptyState.style.display = 'none';
+        troubleshootingTable.style.display = 'table';
+        
+        troubleshootings.forEach(item => {
+            const row = document.createElement('tr');
+            
+            const titleCell = document.createElement('td');
+            titleCell.textContent = item.title;
+            
+            const difficultyCell = document.createElement('td');
+            const difficultyBadge = document.createElement('span');
+            difficultyBadge.className = `badge badge-${item.difficulty}`;
+            difficultyBadge.textContent = item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1);
+            difficultyCell.appendChild(difficultyBadge);
+            
+            const createdCell = document.createElement('td');
+            createdCell.textContent = new Date(item.created_at).toLocaleDateString();
+            
+            const statusCell = document.createElement('td');
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `badge badge-${item.is_active ? 'active' : 'inactive'}`;
+            statusBadge.textContent = item.is_active ? 'Active' : 'Inactive';
+            statusCell.appendChild(statusBadge);
+            
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'actions';
+            
+            const previewBtn = document.createElement('button');
+            previewBtn.className = 'preview-troubleshooting-btn';
+            previewBtn.dataset.id = item.id;
+            previewBtn.innerHTML = '<i class="bx bx-show"></i>';
+            previewBtn.title = 'Preview';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'edit-troubleshooting-btn';
+            editBtn.dataset.id = item.id;
+            editBtn.innerHTML = '<i class="bx bx-edit"></i>';
+            editBtn.title = 'Edit';
+            
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-status-btn';
+            toggleBtn.dataset.id = item.id;
+            toggleBtn.dataset.active = item.is_active.toString();
+            toggleBtn.innerHTML = item.is_active ? 
+                '<i class="bx bx-toggle-right"></i>' : 
+                '<i class="bx bx-toggle-left"></i>';
+            toggleBtn.title = item.is_active ? 'Deactivate' : 'Activate';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-troubleshooting-btn';
+            deleteBtn.dataset.id = item.id;
+            deleteBtn.dataset.title = item.title;
+            deleteBtn.innerHTML = '<i class="bx bx-trash"></i>';
+            deleteBtn.title = 'Delete';
+            
+            actionsCell.appendChild(previewBtn);
+            actionsCell.appendChild(editBtn);
+            actionsCell.appendChild(toggleBtn);
+            actionsCell.appendChild(deleteBtn);
+            
+            row.appendChild(titleCell);
+            row.appendChild(difficultyCell);
+            row.appendChild(createdCell);
+            row.appendChild(statusCell);
+            row.appendChild(actionsCell);
+            
+            troubleshootingTableBody.appendChild(row);
+        });
+    }
+    
+    // Show troubleshooting modal for adding new scenario
+    function showTroubleshootingModal() {
+        document.getElementById('troubleshooting-form').reset();
+        document.getElementById('troubleshooting-id').value = '';
+        document.getElementById('troubleshooting-modal-title').textContent = 'Add New Troubleshooting Scenario';
+        
+        // Reset any previous hint items
+        const hintsContainer = document.getElementById('hints-container');
+        hintsContainer.innerHTML = '';
+        addHintItem(); // Add one empty hint by default
+        
+        document.getElementById('troubleshooting-modal').classList.add('active');
+    }
+    
+    // Edit troubleshooting scenario
+    function editTroubleshooting(id) {
+        fetch(`/api/admin/troubleshooting/${id}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load troubleshooting data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                populateTroubleshootingForm(data);
+                document.getElementById('troubleshooting-modal-title').textContent = 'Edit Troubleshooting Scenario';
+                document.getElementById('troubleshooting-modal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error loading troubleshooting data:', error);
+                showToast('error', 'Failed to load troubleshooting data. Please try again.');
+            });
+    }
+    
+    // Populate the troubleshooting form with data
+    function populateTroubleshootingForm(data) {
+        document.getElementById('troubleshooting-id').value = data.id;
+        document.getElementById('troubleshooting-title').value = data.title;
+        document.getElementById('troubleshooting-description').value = data.description;
+        document.getElementById('troubleshooting-difficulty').value = data.difficulty;
+        document.getElementById('troubleshooting-scenario').value = data.scenario;
+        document.getElementById('troubleshooting-solution').value = data.solution;
+        document.getElementById('troubleshooting-base-score').value = data.base_score;
+        document.getElementById('troubleshooting-time-bonus').value = data.time_bonus;
+        document.getElementById('troubleshooting-perfect-match-bonus').value = data.perfect_match_bonus;
+        document.getElementById('troubleshooting-topology-type').value = data.topology_type || '';
+        document.getElementById('troubleshooting-is-active').checked = data.is_active;
+        
+        // Reset and populate hints
+        const hintsContainer = document.getElementById('hints-container');
+        hintsContainer.innerHTML = '';
+        
+        if (data.hints && data.hints.length > 0) {
+            data.hints.forEach(hint => {
+                addHintItem(hint);
+            });
+        } else {
+            addHintItem(); // Add one empty hint if none exists
+        }
+        
+        // Set scoring metrics
+        if (data.scoring_metrics) {
+            const metrics = data.scoring_metrics;
+            document.getElementById('troubleshooting-speed').value = metrics.speed || 20;
+            document.getElementById('troubleshooting-accuracy').value = metrics.accuracy || 30;
+            document.getElementById('troubleshooting-completion').value = metrics.completion || 25;
+            document.getElementById('troubleshooting-correctness').value = metrics.correctness || 25;
+            
+            // Update displayed values
+            updateTroubleshootingMetricValue('speed');
+            updateTroubleshootingMetricValue('accuracy');
+            updateTroubleshootingMetricValue('completion');
+            updateTroubleshootingMetricValue('correctness');
+        }
+        
+        // Set topology configuration
+        if (data.initial_topology) {
+            document.getElementById('initial-topology-json').value = JSON.stringify(data.initial_topology, null, 2);
+        }
+        
+        if (data.expected_topology) {
+            document.getElementById('expected-topology-json').value = JSON.stringify(data.expected_topology, null, 2);
+        }
+        
+        if (data.topology_config) {
+            document.getElementById('topology-config-json').value = JSON.stringify(data.topology_config, null, 2);
+        }
+    }
+    
+    // Add a hint item to the container
+    function addHintItem(hintText = '') {
+        const hintsContainer = document.getElementById('hints-container');
+        const hintIndex = hintsContainer.childElementCount;
+        
+        const hintItem = document.createElement('div');
+        hintItem.className = 'hint-item';
+        
+        const hintInput = document.createElement('input');
+        hintInput.type = 'text';
+        hintInput.className = 'form-control';
+        hintInput.name = `hints[${hintIndex}]`;
+        hintInput.value = hintText;
+        hintInput.placeholder = 'Enter a helpful hint';
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-hint-btn';
+        removeBtn.innerHTML = '<i class="bx bx-minus"></i>';
+        removeBtn.addEventListener('click', function() {
+            hintsContainer.removeChild(hintItem);
+        });
+        
+        hintItem.appendChild(hintInput);
+        hintItem.appendChild(removeBtn);
+        hintsContainer.appendChild(hintItem);
+    }
+    
+    // Update displayed value for metric sliders
+    function updateTroubleshootingMetricValue(metric) {
+        const slider = document.getElementById(`troubleshooting-${metric}`);
+        const valueDisplay = document.getElementById(`troubleshooting-${metric}-value`);
+        valueDisplay.textContent = slider.value;
+    }
+    
+    // Preview troubleshooting scenario
+    function previewTroubleshooting(id) {
+        fetch(`/api/admin/troubleshooting/${id}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load troubleshooting data for preview');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showTroubleshootingPreview(data);
+            })
+            .catch(error => {
+                console.error('Error loading troubleshooting preview:', error);
+                showToast('error', 'Failed to load troubleshooting preview. Please try again.');
+            });
+    }
+    
+    // Show preview of troubleshooting scenario
+    function showTroubleshootingPreview(data) {
+        document.getElementById('preview-title').textContent = data.title;
+        document.getElementById('preview-description').textContent = data.description;
+        
+        // Set difficulty badge
+        const difficultyBadge = document.getElementById('preview-difficulty-badge');
+        difficultyBadge.className = `badge badge-${data.difficulty}`;
+        difficultyBadge.textContent = data.difficulty.charAt(0).toUpperCase() + data.difficulty.slice(1);
+        
+        // Populate scenario and solution
+        document.getElementById('preview-scenario').innerHTML = marked.parse(data.scenario);
+        document.getElementById('preview-solution').innerHTML = marked.parse(data.solution);
+        
+        // Show hints if available
+        const hintsContainer = document.getElementById('preview-hints');
+        hintsContainer.innerHTML = '';
+        
+        if (data.hints && data.hints.length > 0) {
+            const hintsList = document.createElement('ul');
+            data.hints.forEach(hint => {
+                const hintItem = document.createElement('li');
+                hintItem.textContent = hint;
+                hintsList.appendChild(hintItem);
+            });
+            hintsContainer.appendChild(hintsList);
+            document.getElementById('preview-hints-section').style.display = 'block';
+        } else {
+            document.getElementById('preview-hints-section').style.display = 'none';
+        }
+        
+        // Display scoring metrics
+        if (data.scoring_metrics) {
+            const metrics = data.scoring_metrics;
+            
+            // Create or update chart if it exists
+            if (window.scoringChart) {
+                window.scoringChart.data.datasets[0].data = [
+                    metrics.speed || 0,
+                    metrics.accuracy || 0,
+                    metrics.completion || 0,
+                    metrics.correctness || 0
+                ];
+                window.scoringChart.update();
+            } else {
+                const ctx = document.getElementById('scoring-chart').getContext('2d');
+                window.scoringChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Speed', 'Accuracy', 'Completion', 'Correctness'],
+                        datasets: [{
+                            label: 'Scoring Weights',
+                            data: [
+                                metrics.speed || 0,
+                                metrics.accuracy || 0,
+                                metrics.completion || 0,
+                                metrics.correctness || 0
+                            ],
+                            backgroundColor: 'rgba(0, 195, 181, 0.2)',
+                            borderColor: 'rgba(0, 195, 181, 1)',
+                            pointBackgroundColor: 'rgba(0, 195, 181, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(0, 195, 181, 1)'
+                        }]
+                    },
+                    options: {
+                        scale: {
+                            ticks: {
+                                beginAtZero: true,
+                                max: 50,
+                                min: 0
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Show preview modal
+        document.getElementById('troubleshooting-preview-modal').classList.add('active');
+    }
+    
+    // Toggle troubleshooting scenario status (active/inactive)
+    function toggleTroubleshootingStatus(id, setActive) {
+        const action = setActive ? 'activate' : 'deactivate';
+        
+        fetch(`/api/admin/troubleshooting/${id}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: action }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to update status');
+            }
+            return response.json();
+        })
+        .then(data => {
+            showToast('success', data.message);
+            loadTroubleshootings(); // Reload the table
+        })
+        .catch(error => {
+            console.error('Error toggling status:', error);
+            showToast('error', 'Failed to update status. Please try again.');
+        });
+    }
+    
+    // Confirm and delete troubleshooting scenario
+    function confirmDeleteTroubleshooting(id, title) {
+        if (confirm(`Are you sure you want to delete the troubleshooting scenario "${title}"? This action cannot be undone.`)) {
+            deleteTroubleshooting(id);
+        }
+    }
+    
+    // Delete troubleshooting scenario
+    function deleteTroubleshooting(id) {
+        fetch(`/api/admin/troubleshooting/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete troubleshooting scenario');
+            }
+            return response.json();
+        })
+        .then(data => {
+            showToast('success', data.message);
+            loadTroubleshootings(); // Reload the table
+        })
+        .catch(error => {
+            console.error('Error deleting troubleshooting scenario:', error);
+            showToast('error', 'Failed to delete troubleshooting scenario. Please try again.');
+        });
+    }
+    
+    // Form submission handler for troubleshooting
+    document.getElementById('troubleshooting-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveTroubleshooting();
+    });
+    
+    // Save troubleshooting scenario
+    function saveTroubleshooting() {
+        const id = document.getElementById('troubleshooting-id').value;
+        const isNewRecord = !id;
+        
+        // Collect form data
+        const formData = {
+            title: document.getElementById('troubleshooting-title').value,
+            description: document.getElementById('troubleshooting-description').value,
+            difficulty: document.getElementById('troubleshooting-difficulty').value,
+            scenario: document.getElementById('troubleshooting-scenario').value,
+            solution: document.getElementById('troubleshooting-solution').value,
+            base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
+            time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
+            perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
+            topology_type: document.getElementById('troubleshooting-topology-type').value,
+            is_active: document.getElementById('troubleshooting-is-active').checked,
+        };
+        
+        // Collect hints
+        const hintInputs = document.querySelectorAll('#hints-container input');
+        formData.hints = Array.from(hintInputs)
+            .map(input => input.value.trim())
+            .filter(hint => hint);  // Filter out empty hints
+        
+        // Collect scoring metrics
+        formData.scoring_metrics = {
+            speed: parseInt(document.getElementById('troubleshooting-speed').value),
+            accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
+            completion: parseInt(document.getElementById('troubleshooting-completion').value),
+            correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
+        };
+        
+        // Collect topology configurations
+        try {
+            const initialTopologyText = document.getElementById('initial-topology-json').value;
+            if (initialTopologyText) {
+                formData.initial_topology = JSON.parse(initialTopologyText);
+            }
+            
+            const expectedTopologyText = document.getElementById('expected-topology-json').value;
+            if (expectedTopologyText) {
+                formData.expected_topology = JSON.parse(expectedTopologyText);
+            }
+            
+            const topologyConfigText = document.getElementById('topology-config-json').value;
+            if (topologyConfigText) {
+                formData.topology_config = JSON.parse(topologyConfigText);
+            }
+        } catch (error) {
+            showToast('error', 'Invalid JSON in topology configuration. Please check your input.');
+            console.error('JSON parse error:', error);
+            return;
+        }
+        
+        // API endpoint and method
+        const url = isNewRecord ? '/api/admin/troubleshooting/' : `/api/admin/troubleshooting/${id}`;
+        const method = isNewRecord ? 'POST' : 'PUT';
+        
+        // Send request
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save troubleshooting scenario');
+            }
+            return response.json();
+        })
+        .then(data => {
+            showToast('success', data.message);
+            document.getElementById('troubleshooting-modal').classList.remove('active');
+            loadTroubleshootings();
+        })
+        .catch(error => {
+            console.error('Error saving troubleshooting:', error);
+            showToast('error', 'Failed to save troubleshooting scenario. Please try again.');
+        });
+    }
+    
+    // Debug JSON button handler
+    document.getElementById('debug-troubleshooting-btn').addEventListener('click', function() {
+        try {
+            // Collect all form data
+            const formData = {
+                title: document.getElementById('troubleshooting-title').value,
+                description: document.getElementById('troubleshooting-description').value,
+                difficulty: document.getElementById('troubleshooting-difficulty').value,
+                scenario: document.getElementById('troubleshooting-scenario').value,
+                solution: document.getElementById('troubleshooting-solution').value,
+                base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
+                time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
+                perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
+                topology_type: document.getElementById('troubleshooting-topology-type').value,
+                is_active: document.getElementById('troubleshooting-is-active').checked,
+            };
+            
+            // Add hints
+            const hintInputs = document.querySelectorAll('#hints-container input');
+            formData.hints = Array.from(hintInputs)
+                .map(input => input.value.trim())
+                .filter(hint => hint);
+            
+            // Add scoring metrics
+            formData.scoring_metrics = {
+                speed: parseInt(document.getElementById('troubleshooting-speed').value),
+                accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
+                completion: parseInt(document.getElementById('troubleshooting-completion').value),
+                correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
+            };
+            
+            // Parse topology data if present
+            const initialTopologyText = document.getElementById('initial-topology-json').value;
+            if (initialTopologyText) {
+                formData.initial_topology = JSON.parse(initialTopologyText);
+            }
+            
+            const expectedTopologyText = document.getElementById('expected-topology-json').value;
+            if (expectedTopologyText) {
+                formData.expected_topology = JSON.parse(expectedTopologyText);
+            }
+            
+            const topologyConfigText = document.getElementById('topology-config-json').value;
+            if (topologyConfigText) {
+                formData.topology_config = JSON.parse(topologyConfigText);
+            }
+            
+            // Display formatted JSON
+            alert(JSON.stringify(formData, null, 2));
+        } catch (error) {
+            alert('Error parsing JSON: ' + error.message);
+        }
+    });
+    
+    // Add hint button handler
+    document.getElementById('add-hint-btn').addEventListener('click', function() {
+        addHintItem();
+    });
+    
+    // Cancel button handler
+    document.getElementById('cancel-troubleshooting-btn').addEventListener('click', function() {
+        document.getElementById('troubleshooting-modal').classList.remove('active');
+    });
+    
+    // Close preview modal handler
+    document.getElementById('close-troubleshooting-preview').addEventListener('click', function() {
+        document.getElementById('troubleshooting-preview-modal').classList.remove('active');
+    });
+    
+    // Close modal handler
+    document.getElementById('close-troubleshooting-modal').addEventListener('click', function() {
+        document.getElementById('troubleshooting-modal').classList.remove('active');
+    });
+    
+    // Preview button handler
+    document.getElementById('preview-troubleshooting-btn').addEventListener('click', function() {
+        // Collect current form data and send for preview
+        const formData = {
+            title: document.getElementById('troubleshooting-title').value,
+            description: document.getElementById('troubleshooting-description').value,
+            difficulty: document.getElementById('troubleshooting-difficulty').value,
+            scenario: document.getElementById('troubleshooting-scenario').value,
+            solution: document.getElementById('troubleshooting-solution').value,
+            base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
+            time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
+            perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
+            topology_type: document.getElementById('troubleshooting-topology-type').value,
+        };
+        
+        // Add hints
+        const hintInputs = document.querySelectorAll('#hints-container input');
+        formData.hints = Array.from(hintInputs)
+            .map(input => input.value.trim())
+            .filter(hint => hint);
+        
+        // Add scoring metrics
+        formData.scoring_metrics = {
+            speed: parseInt(document.getElementById('troubleshooting-speed').value),
+            accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
+            completion: parseInt(document.getElementById('troubleshooting-completion').value),
+            correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
+        };
+        
+        // Parse topology data if present
+        try {
+            const initialTopologyText = document.getElementById('initial-topology-json').value;
+            if (initialTopologyText) {
+                formData.initial_topology = JSON.parse(initialTopologyText);
+            }
+            
+            const expectedTopologyText = document.getElementById('expected-topology-json').value;
+            if (expectedTopologyText) {
+                formData.expected_topology = JSON.parse(expectedTopologyText);
+            }
+            
+            const topologyConfigText = document.getElementById('topology-config-json').value;
+            if (topologyConfigText) {
+                formData.topology_config = JSON.parse(topologyConfigText);
+            }
+            
+            // Send for preview
+            fetch('/api/admin/troubleshooting/preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to generate preview');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showTroubleshootingPreview(data.preview);
+            })
+            .catch(error => {
+                console.error('Error generating preview:', error);
+                showToast('error', 'Failed to generate preview. Please check your input and try again.');
+            });
+            
+        } catch (error) {
+            showToast('error', 'Invalid JSON in topology configuration. Please check your input.');
+            console.error('JSON parse error:', error);
+        }
+    });
+    
+    // Initialize metric value displays
+    updateTroubleshootingMetricValue('speed');
+    updateTroubleshootingMetricValue('accuracy');
+    updateTroubleshootingMetricValue('completion');
+    updateTroubleshootingMetricValue('correctness');
+    
+    // Add event listeners for metric sliders
+    document.getElementById('troubleshooting-speed').addEventListener('input', () => updateTroubleshootingMetricValue('speed'));
+    document.getElementById('troubleshooting-accuracy').addEventListener('input', () => updateTroubleshootingMetricValue('accuracy'));
+    document.getElementById('troubleshooting-completion').addEventListener('input', () => updateTroubleshootingMetricValue('completion'));
+    document.getElementById('troubleshooting-correctness').addEventListener('input', () => updateTroubleshootingMetricValue('correctness'));
 });
 </script>
 {% endblock %}

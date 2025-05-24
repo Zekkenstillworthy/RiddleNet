@@ -3,6 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
+<<<<<<< HEAD
+=======
+from flask_socketio import SocketIO  # Add this import
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 import os
 import sys
 from dotenv import load_dotenv
@@ -13,19 +17,32 @@ load_dotenv()
 # Add the project directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
+# Skip static file handling in main app - will be served by static_server
+os.environ['FLASK_SKIP_STATIC'] = '1'
+
 # Initialize extensions
 # Create a SINGLE SQLAlchemy instance for the entire application
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
+<<<<<<< HEAD
 
 # Note: SocketIO is imported and initialized in run.py to avoid circular imports
+=======
+socketio = SocketIO()  # Initialize SocketIO
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 def create_app(config=None):
     # Set the instance path explicitly to ensure using the correct database location
     instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-    app = Flask(__name__, instance_path=instance_path)
+    
+    # Get template folder from config or use default
+    template_folder = None
+    if config and 'TEMPLATE_FOLDER' in config:
+        template_folder = config['TEMPLATE_FOLDER']
+    
+    app = Flask(__name__, instance_path=instance_path, template_folder=template_folder)
 
     # Configure the app
     # Use local config file instead of user.config
@@ -42,10 +59,14 @@ def create_app(config=None):
         app.config.update(config)    # Initialize extensions with the app
     db.init_app(app)
     migrate.init_app(app, db)
+<<<<<<< HEAD
     
     # Initialize SocketIO with the app - moved to run.py to avoid circular imports
     
     # Initialize Login Manager
+=======
+      # Initialize Login Manager
+>>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     login_manager.init_app(app)
     login_manager.login_view = 'user.login'  # Specify the login view endpoint
       # Initialize Flask-Mail
@@ -103,6 +124,20 @@ def create_app(config=None):
             print(f"{rule.endpoint}: {rule.rule}")
     except ImportError as e:
         # If a blueprint can't be imported, continue without it
-        print(f"Warning: Could not import blueprint: {e}")
-
+        print(f"Warning: Could not import blueprint: {e}")    # Initialize SocketIO with the app
+    socketio.init_app(app, cors_allowed_origins="*")
+    
+    # Add context processors for static file server
+    @app.context_processor
+    def utility_processor():
+        def static_url(path):
+            """Generate URL for static files from separate server"""
+            return f"http://localhost:5001/static/{path}"
+            
+        def media_url(type, path):
+            """Generate URL for media files (video/audio)"""
+            return f"http://localhost:5001/media/{type}/{path}"
+            
+        return dict(static_url=static_url, media_url=media_url)
+    
     return app

@@ -13,9 +13,28 @@ from user.models.topology_progress import TopologyProgress
 from admin.models.class_model import Class
 from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
+# Import media utilities
+from utils.media_utils import serve_optimized_video, serve_optimized_audio
 
 # Create blueprint as expected by main __init__.py
 user_bp = Blueprint('user', __name__)
+
+# Add optimized media routes
+@user_bp.route('/media/video/<path:filename>')
+def serve_video(filename):
+    """Serve video files with optimized settings for WebSocket compatibility"""
+    response = serve_optimized_video(filename)
+    if response is None:
+        return "Video not found", 404
+    return response
+
+@user_bp.route('/media/audio/<path:filename>')
+def serve_audio(filename):
+    """Serve audio files with optimized settings for WebSocket compatibility"""
+    response = serve_optimized_audio(filename)
+    if response is None:
+        return "Audio not found", 404
+    return response
 
 @user_bp.route('/')
 def index():

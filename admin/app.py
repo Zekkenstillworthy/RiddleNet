@@ -2,7 +2,6 @@ from flask import Flask, redirect, url_for, request, flash, session
 import os
 from admin import db, login_manager
 from flask_login import current_user
-
 class AdminApp:
     def __init__(self):
         # Specify the template folder as an absolute path pointing to the project's templates directory
@@ -61,19 +60,32 @@ class AdminApp:
             if admin:
                 return admin
                 
-            # If not found in Admin, try User table
-            user = User.query.get(int(user_id))
-            return user
-
-    def register_template_filters(self):
-        """Register custom template filters."""
-        @self.app.template_filter('from_json')
-        def from_json_filter(value):
-            import json
-            try:
-                return json.loads(value)
-            except (ValueError, TypeError):
-                return []
+                # If not found in Admin, try User table
+                user = User.query.get(int(user_id))
+                return user
+                
+        def register_template_filters(self):
+            """Register custom template filters."""
+            @self.app.template_filter('from_json')
+            def from_json_filter(value):
+                import json
+                try:
+                    return json.loads(value)
+                except (ValueError, TypeError):
+                    return []
+                    
+            # Add context processors for static file server
+            @self.app.context_processor
+            def utility_processor():
+                def static_url(path):
+                    """Generate URL for static files from separate server"""
+                    return f"http://localhost:5001/static/{path}"
+                    
+                def media_url(type, path):
+                    """Generate URL for media files (video/audio)"""
+                    return f"http://localhost:5001/media/{type}/{path}"
+                    
+                return dict(static_url=static_url, media_url=media_url)
 
     def register_blueprints(self):
         """Register all blueprints with the application."""
