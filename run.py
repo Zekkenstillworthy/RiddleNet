@@ -2,16 +2,9 @@
 import eventlet
 eventlet.monkey_patch()
 
-<<<<<<< HEAD
 # Now import the rest of the modules
 from __init__ import create_app, db, login_manager
 from socket_manager import socketio  # Import socketio directly from socket_manager
-=======
-
-
-# Now import the rest of the modules
-from __init__ import create_app, db, login_manager, socketio
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 import os
 from user.quiz import QuizController
 from admin.controllers.question_controller import QuestionController
@@ -190,18 +183,18 @@ try:
     import sys
     import os
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-      # Direct import from the api.py file
+    # Direct import from the api.py file
     from user.api import api_blueprint as user_api_blueprint
     app.register_blueprint(user_api_blueprint, url_prefix='/api')
     print("API Blueprint registered successfully")
-      # Register topology progress API blueprint
+    # Register topology progress API blueprint
     try:
         from user.api.topology_progress_api import topology_progress_bp
         app.register_blueprint(topology_progress_bp)
         print("Topology Progress API Blueprint registered successfully")
     except Exception as e:
         print(f"Error registering Topology Progress API blueprint: {e}")
-    
+
     # Register user troubleshooting routes
     try:
         from user.routes.troubleshooting_routes import troubleshooting_bp
@@ -223,7 +216,7 @@ except Exception as e:
         print("API Blueprint registered successfully using direct file import")
     except Exception as e2:
         print(f"Second attempt also failed: {e2}")
-        
+
 # Register Admin routes
 print("\n=== Registering Admin Blueprints ===")
 try:    # Import admin blueprints using a more robust approach
@@ -276,7 +269,6 @@ for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
     print(f"{rule.endpoint:30} {methods:20} {rule.rule}")
 print("=========================\n")
 
-<<<<<<< HEAD
 if __name__ == "__main__":
     import logging
     from flask import send_from_directory
@@ -327,15 +319,15 @@ if __name__ == "__main__":
             return response
         except Exception as e:
             logger.error(f"Error serving audio file {filename}: {e}")
-            return f"Error serving audio: {filename}", 404
-
-    @app.route('/health')
+            return f"Error serving audio: {filename}", 404    @app.route('/health')
     def health_check():
-        return {'status': 'healthy', 'server': 'main'}, 200    # Start the unified server with WebSocket support
+        return {'status': 'healthy', 'server': 'main'}, 200
+
+    # Start the unified server with WebSocket support
     print("Starting unified Flask-SocketIO server on port 5001...")
     print("WebSocket events loaded and ready")
     print("Static files will be served by Flask's built-in handler")
-      # Start the Flask-SocketIO server
+    # Start the Flask-SocketIO server
     socketio.run(
         app, 
         debug=True, 
@@ -344,7 +336,6 @@ if __name__ == "__main__":
         use_reloader=False,  # Disable reloader to prevent threading issues
         allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
     )
-=======
 # Set up Jinja2 environment to ensure it can find templates
 def setup_jinja_environment():
     """Configure the Jinja2 environment to properly find templates"""
@@ -468,5 +459,4 @@ if __name__ == "__main__":
     
     # Run the WebSocket server in the main thread
     run_websocket_server()
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 

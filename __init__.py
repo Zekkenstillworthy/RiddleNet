@@ -3,10 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
-<<<<<<< HEAD
-=======
+
 from flask_socketio import SocketIO  # Add this import
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 import os
 import sys
 from dotenv import load_dotenv
@@ -26,7 +24,6 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
-<<<<<<< HEAD
 
 # Note: SocketIO is imported and initialized in run.py to avoid circular imports
 =======
