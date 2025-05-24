@@ -95,10 +95,61 @@
 
     tr:last-child td {
         border-bottom: none;
-    }
-
-    tr:hover {
+    }    tr:hover {
         background-color: rgba(0, 195, 181, 0.05);
+    }
+    
+    /* Topology Editor Styles */
+    .topology-editor {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .editor-toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .toolbar-btn {
+        background-color: rgba(0, 195, 181, 0.2);
+        color: var(--text-color);
+        border: 1px solid rgba(0, 195, 181, 0.3);
+        border-radius: var(--border-radius);
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .toolbar-btn:hover {
+        background-color: rgba(0, 195, 181, 0.4);
+    }
+    
+    .topology-canvas {
+        width: 100%;
+        height: 200px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border: 1px dashed rgba(0, 195, 181, 0.3);
+        border-radius: var(--border-radius);
+        margin-bottom: 10px;
+        position: relative;
+    }
+    
+    .topology-json-editor {
+        width: 100%;
+        height: 80px;
+        background-color: rgba(0, 0, 0, 0.1);
+        color: var(--text-color);
+        border: 1px solid rgba(0, 195, 181, 0.2);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        resize: vertical;
     }
 
     /* Button styling */
@@ -682,14 +733,23 @@
                 <label for="troubleshooting-description">Description:</label>
                 <textarea id="troubleshooting-description" class="form-control" required></textarea>
             </div>
-            
-            <div class="form-row">
+              <div class="form-row">
                 <div class="form-group form-col">
                     <label for="troubleshooting-difficulty">Difficulty:</label>
                     <select id="troubleshooting-difficulty" class="form-control" required>
                         <option value="easy">Easy</option>
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <div class="form-group form-col">
+                    <label for="troubleshooting-type">Problem Type:</label>
+                    <select id="troubleshooting-type" class="form-control" required>
+                        <option value="network">Network Configuration</option>
+                        <option value="passive">Passive Analysis</option>
+                        <option value="version">Version Compatibility</option>
+                        <option value="security">Security Issue</option>
+                        <option value="performance">Performance Problem</option>
                     </select>
                 </div>
                 <div class="form-group form-col">
@@ -700,8 +760,7 @@
                     </select>
                 </div>
             </div>
-            
-            <div class="scoring-section">
+              <div class="scoring-section">
                 <h3><i class='bx bx-trophy'></i> Scoring Parameters</h3>
                 <div class="form-row">
                     <div class="form-group form-col">
@@ -713,18 +772,71 @@
                         <input type="number" id="troubleshooting-time-limit" class="form-control" value="15" min="1">
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group form-col">
+                        <label for="troubleshooting-time-bonus">Time Bonus Points:</label>
+                        <input type="number" id="troubleshooting-time-bonus" class="form-control" value="5" min="0">
+                        <small class="form-text">Bonus points awarded for completing quickly</small>
+                    </div>
+                    <div class="form-group form-col">
+                        <label for="troubleshooting-solution-bonus">Perfect Solution Bonus:</label>
+                        <input type="number" id="troubleshooting-solution-bonus" class="form-control" value="5" min="0">
+                        <small class="form-text">Bonus for matching expected solution</small>
+                    </div>
+                    <div class="form-group form-col">
+                        <label for="troubleshooting-hint-penalty">Hint Penalty:</label>
+                        <input type="number" id="troubleshooting-hint-penalty" class="form-control" value="1" min="0">
+                        <small class="form-text">Points deducted per hint used</small>
+                    </div>
+                </div>
             </div>
-            
-            <div class="config-section">
+              <div class="config-section">
                 <h3><i class='bx bx-code-alt'></i> Scenario Configuration</h3>
                 <div class="form-group">
-                    <label for="troubleshooting-scenario">Scenario:</label>
+                    <label for="troubleshooting-scenario">Scenario Description:</label>
                     <textarea id="troubleshooting-scenario" class="form-control" required></textarea>
+                    <small class="form-text">Describe the scenario and what users need to fix</small>
                 </div>
                 <div class="form-group">
-                    <label for="troubleshooting-solution">Solution:</label>
+                    <label for="troubleshooting-solution">Solution Description:</label>
                     <textarea id="troubleshooting-solution" class="form-control" required></textarea>
+                    <small class="form-text">Detailed explanation of the solution</small>
                 </div>
+            </div>
+            
+            <div class="topology-config-section">
+                <h3><i class='bx bx-network-chart'></i> Network Topology Configuration</h3>
+                <div class="form-group">
+                    <label>Initial Topology (Starting Configuration):</label>
+                    <div id="initial-topology-editor" class="topology-editor">
+                        <div class="editor-toolbar">
+                            <button type="button" id="add-device-btn" class="toolbar-btn">Add Device</button>
+                            <button type="button" id="add-connection-btn" class="toolbar-btn">Add Connection</button>
+                            <button type="button" id="clear-topology-btn" class="toolbar-btn">Clear All</button>
+                        </div>
+                        <div id="initial-topology-canvas" class="topology-canvas"></div>
+                        <textarea id="initial-topology-json" class="topology-json-editor" placeholder="Initial topology JSON structure"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Solution Topology (Expected Final Configuration):</label>
+                    <div id="solution-topology-editor" class="topology-editor">
+                        <div class="editor-toolbar">
+                            <button type="button" id="add-solution-device-btn" class="toolbar-btn">Add Device</button>
+                            <button type="button" id="add-solution-connection-btn" class="toolbar-btn">Add Connection</button>
+                            <button type="button" id="copy-from-initial-btn" class="toolbar-btn">Copy from Initial</button>
+                            <button type="button" id="clear-solution-topology-btn" class="toolbar-btn">Clear All</button>
+                        </div>
+                        <div id="solution-topology-canvas" class="topology-canvas"></div>
+                        <textarea id="solution-topology-json" class="topology-json-editor" placeholder="Solution topology JSON structure"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="troubleshooting-required-steps">Required Steps (one per line):</label>
+                <textarea id="troubleshooting-required-steps" class="form-control"></textarea>
+                <small class="form-text">Enter key steps users must complete, one per line</small>
             </div>
             
             <div class="form-group">

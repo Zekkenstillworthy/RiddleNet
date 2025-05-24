@@ -1,13 +1,24 @@
+# Configure eventlet to work better with Windows - MUST BE FIRST
+import eventlet
+eventlet.monkey_patch()
+
+# Now import the rest of the modules
 from __init__ import create_app, db, login_manager
+from socket_manager import socketio  # Import socketio directly from socket_manager
 import os
 from user.quiz import QuizController
 from admin.controllers.question_controller import QuestionController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
 from flask_cors import CORS
+import socket_events  # Import the socket events module
 
 # Create the Flask application
 app = create_app()
+
+# Initialize SocketIO with the app (moved here to avoid circular imports)
+from socket_manager import init_socketio
+init_socketio(app)
 
 # Enable CORS for specific routes
 cors = CORS(app, resources={
@@ -278,6 +289,70 @@ for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
 print("=========================\n")
 
 if __name__ == "__main__":
-    # Run the app with debug mode enabled
-    app.run(debug=True)
+    import logging
+    from flask import send_from_directory
+    
+    # Setup logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Define static folder path
+    STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    
+    # Add optimized static file routes directly to the main app
+    @app.route('/media/video/<path:filename>')
+    def serve_video(filename):
+        """Serve video files with optimized settings"""
+        try:
+            video_path = os.path.join(STATIC_FOLDER, 'video')
+            response = send_from_directory(video_path, filename)
+            
+            # Set proper headers for video streaming
+            response.headers['Accept-Ranges'] = 'bytes'
+            response.headers['Content-Type'] = 'video/mp4'
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Range'
+            
+            logger.info(f"Served video file: {filename}")
+            return response
+        except Exception as e:
+            logger.error(f"Error serving video file {filename}: {e}")
+            return f"Error serving video: {filename}", 404
+
+    @app.route('/media/audio/<path:filename>')
+    def serve_audio(filename):
+        """Serve audio files with optimized settings"""
+        try:
+            audio_path = os.path.join(STATIC_FOLDER, 'audio')
+            response = send_from_directory(audio_path, filename)
+            
+            # Set proper headers for audio streaming
+            response.headers['Accept-Ranges'] = 'bytes'
+            response.headers['Content-Type'] = 'audio/mpeg'
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Range'
+            
+            logger.info(f"Served audio file: {filename}")
+            return response
+        except Exception as e:
+            logger.error(f"Error serving audio file {filename}: {e}")
+            return f"Error serving audio: {filename}", 404
+
+    @app.route('/health')
+    def health_check():
+        return {'status': 'healthy', 'server': 'main'}, 200    # Start the unified server with WebSocket support
+    print("Starting unified Flask-SocketIO server on port 5001...")
+    print("WebSocket events loaded and ready")
+    print("Static files will be served by Flask's built-in handler")
+      # Start the Flask-SocketIO server
+    socketio.run(
+        app, 
+        debug=True, 
+        host='127.0.0.1',
+        port=5001,
+        use_reloader=False,  # Disable reloader to prevent threading issues
+        allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
+    )
 

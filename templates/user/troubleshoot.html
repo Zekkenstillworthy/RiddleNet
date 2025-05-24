@@ -2563,6 +2563,100 @@
             document.querySelectorAll('i').forEach(button => {
                 button.addEventListener('click', playExitSound);
             });
+            
+            // WebSocket Integration for Real-time Troubleshooting Updates
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.socketClient) {
+                    console.log('Setting up troubleshooting WebSocket handlers...');
+                    
+                    // Join troubleshooting-specific room when scenario is selected
+                    function joinTroubleshootingRoom(scenarioId) {
+                        if (scenarioId) {
+                            window.socketClient.emit('join_troubleshooting', {
+                                scenario_id: scenarioId,
+                                page: 'troubleshooting'
+                            });
+                            console.log('Joined troubleshooting room:', scenarioId);
+                        }
+                    }
+                    
+                    // Listen for troubleshooting progress events
+                    window.socketClient.on('troubleshooting_progress', function(data) {
+                        console.log('Troubleshooting progress update:', data);
+                        
+                        // Update progress indicators
+                        if (data.progress_percentage !== undefined) {
+                            const progressElement = document.querySelector('#progress-indicator');
+                            if (progressElement) {
+                                progressElement.textContent = `Progress: ${data.progress_percentage}%`;
+                            }
+                        }
+                        
+                        // Show step completion notifications
+                        if (data.step_completed) {
+                            window.socketClient.showNotification(
+                                'Step Completed!', 
+                                `You completed step ${data.step_number}: ${data.step_name}`
+                            );
+                        }
+                    });
+                    
+                    // Listen for troubleshooting completion events
+                    window.socketClient.on('troubleshooting_completed', function(data) {
+                        console.log('Troubleshooting completed via WebSocket:', data);
+                        window.socketClient.showNotification(
+                            'Troubleshooting Completed!', 
+                            `Excellent work! You completed the ${data.scenario_name} troubleshooting scenario with a score of ${data.score || 'N/A'}!`
+                        );
+                    });
+                    
+                    // Listen for real-time scenario updates
+                    window.socketClient.on('scenario_update', function(data) {
+                        console.log('Scenario update received:', data);
+                        // Refresh scenario data if needed
+                        if (data.scenario_id && data.updates) {
+                            window.socketClient.showNotification(
+                                'Scenario Updated', 
+                                'The troubleshooting scenario has been updated with new information.'
+                            );
+                        }
+                    });
+                    
+                    // Listen for admin messages specific to troubleshooting
+                    window.socketClient.on('admin_troubleshooting_message', function(data) {
+                        console.log('Admin troubleshooting message:', data);
+                        window.socketClient.showNotification(
+                            `Message from ${data.admin_name}`, 
+                            data.message
+                        );
+                    });
+                    
+                    // Emit troubleshooting events when user interacts
+                    window.emitTroubleshootingUpdate = function(updateData) {
+                        if (window.socketClient) {
+                            window.socketClient.emit('troubleshooting_progress', {
+                                ...updateData,
+                                timestamp: new Date().toISOString(),
+                                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
+                            });
+                        }
+                    };
+                    
+                    // Override scenario selection to join appropriate rooms
+                    const originalSelectScenario = window.selectScenario;
+                    if (originalSelectScenario) {
+                        window.selectScenario = function(scenarioId) {
+                            const result = originalSelectScenario(scenarioId);
+                            joinTroubleshootingRoom(scenarioId);
+                            return result;
+                        };
+                    }
+                    
+                    console.log('Troubleshooting WebSocket handlers initialized');
+                } else {
+                    console.warn('SocketClient not available for troubleshooting WebSocket integration');
+                }
+            });
         </script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
     <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>

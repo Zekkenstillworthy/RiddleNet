@@ -2,8 +2,13 @@ from flask import Flask, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_mail import Mail
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add the project directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -13,6 +18,9 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+mail = Mail()
+
+# Note: SocketIO is imported and initialized in run.py to avoid circular imports
 
 def create_app(config=None):
     # Set the instance path explicitly to ensure using the correct database location
@@ -31,15 +39,24 @@ def create_app(config=None):
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
     
     if config:
-        app.config.update(config)
-
-    # Initialize extensions with the app
+        app.config.update(config)    # Initialize extensions with the app
     db.init_app(app)
     migrate.init_app(app, db)
+    
+    # Initialize SocketIO with the app - moved to run.py to avoid circular imports
     
     # Initialize Login Manager
     login_manager.init_app(app)
     login_manager.login_view = 'user.login'  # Specify the login view endpoint
+      # Initialize Flask-Mail
+    app.config["MAIL_SERVER"] = "smtp.gmail.com"
+    app.config["MAIL_PORT"] = 587
+    app.config["MAIL_USE_TLS"] = True
+    app.config["MAIL_USE_SSL"] = False
+    app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
+    app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
+    app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
+    mail.init_app(app)
     
     # Define the user loader function
     @login_manager.user_loader

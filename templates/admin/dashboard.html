@@ -72,6 +72,60 @@
                     </div>
                 </div>
                 
+                <!-- Real-time WebSocket Control Panel -->
+                <div class="websocket-panel">
+                    <h2 class="section-title"><i class='bx bx-broadcast'></i> Real-time Communications</h2>
+                    
+                    <div class="websocket-controls">
+                        <div class="connection-status">
+                            <h3>Connection Status</h3>
+                            <div id="admin-socket-status" class="status-indicator">
+                                <span class="status-dot disconnected"></span>
+                                <span class="status-text">Disconnected</span>
+                            </div>
+                            <button id="connect-websocket" class="btn btn-primary">Connect to WebSocket</button>
+                        </div>
+                        
+                        <div class="broadcast-controls">
+                            <h3>Broadcast Message to Users</h3>
+                            <form id="broadcast-form">
+                                <div class="form-group">
+                                    <label for="broadcast-title">Message Title:</label>
+                                    <input type="text" id="broadcast-title" name="title" placeholder="Enter message title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="broadcast-message">Message:</label>
+                                    <textarea id="broadcast-message" name="message" rows="3" placeholder="Enter your message to all users" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="broadcast-type">Message Type:</label>
+                                    <select id="broadcast-type" name="type">
+                                        <option value="info">Information</option>
+                                        <option value="success">Success</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="error">Error</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-broadcast">Send Broadcast</button>
+                            </form>
+                        </div>
+                        
+                        <div class="active-connections">
+                            <h3>Active Connections</h3>
+                            <div id="active-users-list">
+                                <p>Loading active users...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-feed">
+                            <h3>Real-time Activity</h3>
+                            <div id="activity-log">
+                                <p>Waiting for activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Analytics Section -->
                 <h2 class="section-title">Analytics Dashboard</h2>
                 
@@ -477,6 +531,249 @@
                 })
                 .catch(error => console.error('Error fetching chart data:', error));
         }
+
+        // Admin WebSocket functionality
+        let adminSocketConnected = false;
+        let activityLogMessages = [];
+        let maxActivityMessages = 50;
+
+        // Initialize admin WebSocket functionality when document loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAdminWebSocket();
+        });
+
+        function initializeAdminWebSocket() {
+            const connectBtn = document.getElementById('connect-websocket');
+            const statusIndicator = document.getElementById('admin-socket-status');
+            const broadcastForm = document.getElementById('broadcast-form');
+
+            // Connect button handler
+            connectBtn.addEventListener('click', function() {
+                if (!adminSocketConnected && window.SocketClient) {
+                    window.SocketClient.connect();
+                }
+            });
+
+            // Broadcast form handler
+            broadcastForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendBroadcastMessage();
+            });
+
+            // Check if SocketClient is available and set up admin-specific handlers
+            if (window.SocketClient) {
+                setupAdminSocketHandlers();
+                
+                // Try to connect automatically if not connected
+                if (!window.SocketClient.isConnected()) {
+                    window.SocketClient.connect();
+                }
+            } else {
+                console.warn('SocketClient not available for admin dashboard');
+            }
+        }
+
+        function setupAdminSocketHandlers() {
+            const socket = window.SocketClient.socket;
+            
+            // Override connection status updates for admin interface
+            const originalOnConnect = window.SocketClient.onConnect;
+            window.SocketClient.onConnect = function() {
+                originalOnConnect.call(this);
+                updateAdminConnectionStatus(true);
+                adminSocketConnected = true;
+                requestActiveUsers();
+                logActivity('Admin connected to WebSocket', 'info');
+            };
+
+            const originalOnDisconnect = window.SocketClient.onDisconnect;
+            window.SocketClient.onDisconnect = function() {
+                originalOnDisconnect.call(this);
+                updateAdminConnectionStatus(false);
+                adminSocketConnected = false;
+                logActivity('Admin disconnected from WebSocket', 'warning');
+            };
+
+            // Admin-specific event handlers
+            socket.on('user_connected', function(data) {
+                logActivity(`User ${data.username || data.user_id} connected`, 'info');
+                updateActiveUsers();
+            });
+
+            socket.on('user_disconnected', function(data) {
+                logActivity(`User ${data.username || data.user_id} disconnected`, 'info');
+                updateActiveUsers();
+            });
+
+            socket.on('topology_completed', function(data) {
+                logActivity(`User ${data.username || data.user_id} completed topology: ${data.score}% score`, 'success');
+            });
+
+            socket.on('troubleshoot_step_completed', function(data) {
+                logActivity(`User ${data.username || data.user_id} completed troubleshooting step ${data.step}`, 'success');
+            });
+
+            socket.on('troubleshoot_completed', function(data) {
+                logActivity(`User ${data.username || data.user_id} completed troubleshooting scenario: ${data.score}% score`, 'success');
+            });
+
+            socket.on('active_users_update', function(data) {
+                displayActiveUsers(data.users);
+            });
+
+            socket.on('broadcast_status', function(data) {
+                if (data.success) {
+                    logActivity(`Broadcast sent successfully to ${data.recipients || 'all'} users`, 'success');
+                    document.getElementById('broadcast-form').reset();
+                } else {
+                    logActivity(`Broadcast failed: ${data.error}`, 'error');
+                }
+            });
+        }
+
+        function updateAdminConnectionStatus(connected) {
+            const statusIndicator = document.getElementById('admin-socket-status');
+            const statusDot = statusIndicator.querySelector('.status-dot');
+            const statusText = statusIndicator.querySelector('.status-text');
+            const connectBtn = document.getElementById('connect-websocket');
+
+            if (connected) {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'Connected';
+                connectBtn.textContent = 'Connected';
+                connectBtn.disabled = true;
+                connectBtn.classList.add('btn-success');
+                connectBtn.classList.remove('btn-primary');
+            } else {
+                statusDot.className = 'status-dot disconnected';
+                statusText.textContent = 'Disconnected';
+                connectBtn.textContent = 'Connect to WebSocket';
+                connectBtn.disabled = false;
+                connectBtn.classList.add('btn-primary');
+                connectBtn.classList.remove('btn-success');
+            }
+        }
+
+        function sendBroadcastMessage() {
+            if (!adminSocketConnected || !window.SocketClient) {
+                logActivity('Cannot send broadcast: WebSocket not connected', 'error');
+                return;
+            }
+
+            const title = document.getElementById('broadcast-title').value.trim();
+            const message = document.getElementById('broadcast-message').value.trim();
+            const type = document.getElementById('broadcast-type').value;
+
+            if (!title || !message) {
+                logActivity('Cannot send broadcast: Title and message are required', 'error');
+                return;
+            }
+
+            window.SocketClient.socket.emit('admin_broadcast', {
+                title: title,
+                message: message,
+                type: type,
+                timestamp: new Date().toISOString()
+            });
+
+            logActivity(`Sending broadcast: "${title}"`, 'info');
+        }
+
+        function requestActiveUsers() {
+            if (adminSocketConnected && window.SocketClient) {
+                window.SocketClient.socket.emit('get_active_users');
+            }
+        }
+
+        function displayActiveUsers(users) {
+            const usersList = document.getElementById('active-users-list');
+            
+            if (!users || users.length === 0) {
+                usersList.innerHTML = '<p>No active users</p>';
+                return;
+            }
+
+            let usersHtml = '<div class="users-grid">';
+            users.forEach(user => {
+                const connectionTime = user.connected_at ? 
+                    new Date(user.connected_at).toLocaleTimeString() : 'Unknown';
+                
+                usersHtml += `
+                    <div class="user-card">
+                        <div class="user-info">
+                            <strong>${user.username || user.user_id}</strong>
+                            <small>Connected: ${connectionTime}</small>
+                        </div>
+                        <div class="user-status">
+                            ${user.current_activity ? `<span class="activity">${user.current_activity}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            usersHtml += '</div>';
+            
+            usersList.innerHTML = usersHtml;
+        }
+
+        function logActivity(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const activityItem = {
+                message: message,
+                type: type,
+                timestamp: timestamp
+            };
+
+            // Add to beginning of array
+            activityLogMessages.unshift(activityItem);
+            
+            // Keep only last N messages
+            if (activityLogMessages.length > maxActivityMessages) {
+                activityLogMessages = activityLogMessages.slice(0, maxActivityMessages);
+            }
+
+            updateActivityDisplay();
+        }
+
+        function updateActivityDisplay() {
+            const activityLog = document.getElementById('activity-log');
+            
+            if (activityLogMessages.length === 0) {
+                activityLog.innerHTML = '<p>Waiting for activity...</p>';
+                return;
+            }
+
+            let activityHtml = '<div class="activity-list">';
+            activityLogMessages.forEach(item => {
+                const iconClass = getActivityIcon(item.type);
+                activityHtml += `
+                    <div class="activity-item ${item.type}">
+                        <span class="activity-icon"><i class="${iconClass}"></i></span>
+                        <span class="activity-message">${item.message}</span>
+                        <span class="activity-time">${item.timestamp}</span>
+                    </div>
+                `;
+            });
+            activityHtml += '</div>';
+            
+            activityLog.innerHTML = activityHtml;
+        }
+
+        function getActivityIcon(type) {
+            switch(type) {
+                case 'success': return 'bx bx-check-circle';
+                case 'warning': return 'bx bx-warning';
+                case 'error': return 'bx bx-error-circle';
+                case 'info':
+                default: return 'bx bx-info-circle';
+            }
+        }
+
+        // Auto-refresh active users every 30 seconds
+        setInterval(function() {
+            if (adminSocketConnected) {
+                requestActiveUsers();
+            }
+        }, 30000);
     </script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
 </body>

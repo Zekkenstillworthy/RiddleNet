@@ -224,29 +224,38 @@ def login():
     
     # Debug info
     print(f"User found: {user.username}, TOTP enabled: {user.totp_enabled}, TOTP secret exists: {'Yes' if user.totp_secret else 'No'}")
-    
-    # Validate password
+      # Validate password
     if not user.check_password(password):
         print(f"Invalid password for user: {username}")
         return render_template('user/index.html', message='Invalid password.')
-    
-    # Validate OTP if TOTP is enabled for this user
-    if user.totp_enabled and user.totp_secret:
+      # Validate OTP if TOTP is enabled for this user
+    if user.totp_enabled:
         if not otp:
             print(f"OTP required but not provided for user: {username}")
-            return render_template('user/index.html', message='OTP is required for this account. Please use your authenticator app.')
+            return render_template('user/index.html', message='OTP is required for this account. Please click "Request OTP" to receive a code via email.')
         
         try:
-            import pyotp
-            totp = pyotp.TOTP(user.totp_secret)
+            # Check if OTP matches and hasn't expired (10 minute validity)
+            if user.otp != otp:
+                print(f"Invalid OTP code for user: {username}")
+                return render_template('user/index.html', message='Invalid OTP code. Please try again or request a new code.')
+                
+            # Check if OTP is expired (10 minutes)
+            current_time = datetime.datetime.now()
+            if user.otp_generated_at:
+                otp_age = current_time - user.otp_generated_at
+                if otp_age.total_seconds() > 600:  # 10 minutes in seconds
+                    print(f"Expired OTP code for user: {username}")
+                    return render_template('user/index.html', message='OTP code has expired. Please click "Request OTP" for a new code.')
+            else:
+                print(f"OTP generation timestamp missing for user: {username}")
+                return render_template('user/index.html', message='Invalid OTP. Please click "Request OTP" for a new code.')
+                
+            # Clear the OTP after successful validation
+            user.otp = None
+            user.otp_generated_at = None
+            db.session.commit()
             
-            # Check with a larger window of validity to account for time drift
-            # This adds a window of 30 seconds before and after the current time
-            if not totp.verify(otp, valid_window=1):
-                # Try with an even larger window if the first attempt fails
-                if not totp.verify(otp, valid_window=2):
-                    print(f"Invalid OTP code for user: {username}")
-                    return render_template('user/index.html', message='Invalid OTP code. Please make sure your device time is synchronized.')
         except Exception as e:
             print(f"Error validating OTP for user {username}: {str(e)}")
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
@@ -278,32 +287,43 @@ def signup():
         # Handle AJAX request
         username = request.form.get('username')
         password = request.form.get('password')
+        email = request.form.get('email')  # Add email field
         
         # Check if username exists
         existing_user = UserModel.query.filter_by(username=username).first()
         if existing_user:
-            return {'status': 'error', 'message': 'Username already exists. Please choose another one.'}, 400
+            return jsonify({'status': 'error', 'message': 'Username already exists. Please choose another one.'}), 400
+        
+        # Check if email exists
+        existing_email = UserModel.query.filter_by(email=email).first()
+        if existing_email:
+            return jsonify({'status': 'error', 'message': 'Email address already in use. Please use a different email.'}), 400
         
         # Create new user
-        new_user = UserModel(username=username)
+        new_user = UserModel(username=username, email=email)  # Include email
         new_user.set_password(password)
         
         db.session.add(new_user)
         db.session.commit()
         
-        return {'status': 'success', 'message': 'Account created successfully!'}, 201
+        return jsonify({'status': 'success', 'message': 'Account created successfully! You can now log in.'}), 201
     else:
         # Handle regular form submission
         username = request.form.get('username')
         password = request.form.get('password')
-        
-        # Check if username exists
+        email = request.form.get('email')  # Add email field
+          # Check if username exists
         existing_user = UserModel.query.filter_by(username=username).first()
         if existing_user:
             return render_template('user/index.html', message='Username already exists. Please choose another one.')
         
+        # Check if email exists
+        existing_email = UserModel.query.filter_by(email=email).first()
+        if existing_email:
+            return render_template('user/index.html', message='Email address already in use. Please use a different email.')
+        
         # Create new user
-        new_user = UserModel(username=username)
+        new_user = UserModel(username=username, email=email)  # Include email
         new_user.set_password(password)
         
         db.session.add(new_user)
@@ -311,8 +331,8 @@ def signup():
         
         return redirect(url_for('user.index', message='Account created successfully! Please log in.'))
 
-@user_bp.route('/generate_qr', methods=['POST'])
-def generate_qr():
+@user_bp.route('/send_otp', methods=['POST'])
+def send_otp():
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         try:
             data = request.get_json()
@@ -326,54 +346,52 @@ def generate_qr():
             if not user:
                 return {'status': 'error', 'message': 'User not found'}, 404
             
-            # Generate a random secret key for TOTP
-            import pyotp
-            import qrcode
-            import os
-            from io import BytesIO
-            import base64
+            # Check if user has an email
+            if not user.email:
+                return {'status': 'error', 'message': 'Email not found for this user. Please update your profile with an email address.'}, 400
             
-            # Generate a new TOTP secret
-            totp_secret = pyotp.random_base32()
+            # Generate a random 6-digit OTP
+            import random
+            otp = str(random.randint(100000, 999999))
             
-            # Update the user's TOTP secret in the database
-            user.totp_secret = totp_secret
-            user.totp_enabled = True  # Enable TOTP for this user
+            # Update the user's OTP in the database
+            user.otp = otp
+            user.otp_generated_at = datetime.datetime.now()
+            user.totp_enabled = True  # Keep this flag for consistency
             db.session.commit()
+              # Send OTP via email
+            from flask_mail import Message
+            from flask import current_app
             
-            # Create the provisioning URI for the QR code
-            totp = pyotp.TOTP(totp_secret)
-            provisioning_uri = totp.provisioning_uri(username, issuer_name="RiddleNet")
-            
-            # Generate QR code image
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(provisioning_uri)
-            qr.make(fit=True)
-            
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            # Save the QR code to a file
-            qr_code_dir = os.path.join('static', 'qrcodes')
-            os.makedirs(qr_code_dir, exist_ok=True)
-            
-            qr_code_filename = f"qr_{username}_{int(time.time())}.png"
-            qr_code_path = os.path.join(qr_code_dir, qr_code_filename)
-            
-            img.save(qr_code_path)
-            
-            # Return the path to the QR code image
-            web_path = os.path.join('static', 'qrcodes', qr_code_filename).replace('\\', '/')
-            
-            return {'status': 'success', 'message': 'QR code generated', 'qr_code_path': web_path}, 200
+            try:
+                msg = Message(
+                    "Your RiddleNet OTP Code",
+                    recipients=[user.email]
+                )
+                msg.body = f"Your verification code is: {otp}\n\nThis code will expire in 10 minutes."
+                
+                mail = current_app.extensions['mail']
+                mail.send(msg)
+                
+                return {'status': 'success', 'message': 'OTP sent to your email'}, 200
+            except Exception as e:
+                error_message = str(e)
+                # Log the detailed error
+                import traceback
+                print(f"Error sending email: {error_message}")
+                print(traceback.format_exc())
+                
+                # Provide a more specific error message to the user
+                if "SMTP" in error_message:
+                    return {'status': 'error', 'message': 'Email server connection failed. Check EMAIL_SETUP_INSTRUCTIONS.md file.'}, 500
+                elif "Authentication" in error_message:
+                    return {'status': 'error', 'message': 'Email authentication failed. Check your .env file and Gmail app password.'}, 500
+                else:
+                    return {'status': 'error', 'message': 'Failed to send OTP. Check EMAIL_SETUP_INSTRUCTIONS.md for troubleshooting.'}, 500
             
         except Exception as e:
-            print(f"Error generating QR code: {str(e)}")
-            return {'status': 'error', 'message': 'Failed to generate QR code'}, 500
+            print(f"Error sending OTP: {str(e)}")
+            return {'status': 'error', 'message': 'Failed to send OTP'}, 500
     else:
         return {'status': 'error', 'message': 'This endpoint only accepts AJAX requests'}, 400
 

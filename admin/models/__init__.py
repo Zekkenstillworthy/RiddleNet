@@ -7,3 +7,4 @@ from admin.models.score import AdminScore  # Using the renamed class
 from admin.models.scenario import Scenario
 from admin.models.topology import Topology
 from admin.models.troubleshooting import Troubleshooting
+from admin.models.troubleshooting_progress import TroubleshootingProgress

@@ -1553,6 +1553,92 @@
                 }
             `;
             document.head.appendChild(notificationStyles);
+            
+            // WebSocket Integration for Real-time Topology Updates
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.socketClient) {
+                    console.log('Setting up topology WebSocket handlers...');
+                    
+                    // Join topology-specific room when topology type is selected
+                    function joinTopologyRoom(topologyType) {
+                        if (topologyType) {
+                            window.socketClient.emit('join_topology', {
+                                topology_type: topologyType,
+                                page: 'topology'
+                            });
+                            console.log('Joined topology room:', topologyType);
+                        }
+                    }
+                    
+                    // Listen for topology completion events
+                    window.socketClient.on('topology_completed', function(data) {
+                        console.log('Topology completed via WebSocket:', data);
+                        window.socketClient.showNotification(
+                            'Topology Completed!', 
+                            `Great job! You completed the ${data.topology_type} topology with a score of ${data.score || 'N/A'}!`
+                        );
+                    });
+                    
+                    // Listen for real-time topology network updates
+                    window.socketClient.on('topology_network_update', function(data) {
+                        console.log('Topology network update received:', data);
+                        // Update the UI based on network changes
+                        if (data.devices || data.connections) {
+                            // Refresh the topology display if needed
+                            window.socketClient.showNotification(
+                                'Network Updated', 
+                                'The topology network has been updated in real-time.'
+                            );
+                        }
+                    });
+                    
+                    // Listen for topology progress updates
+                    window.socketClient.on('topology_progress_updated', function(data) {
+                        console.log('Topology progress updated:', data);
+                        // Update progress indicators
+                        if (data.progress_percentage !== undefined) {
+                            const progressElement = document.querySelector('#progress-indicator');
+                            if (progressElement) {
+                                progressElement.textContent = `Progress: ${data.progress_percentage}%`;
+                            }
+                        }
+                    });
+                    
+                    // Listen for admin messages specific to topology
+                    window.socketClient.on('admin_topology_message', function(data) {
+                        console.log('Admin topology message:', data);
+                        window.socketClient.showNotification(
+                            `Message from ${data.admin_name}`, 
+                            data.message
+                        );
+                    });
+                    
+                    // Override topology selection to join appropriate rooms
+                    const originalSelectTopology = window.selectTopology;
+                    if (originalSelectTopology) {
+                        window.selectTopology = function(topology) {
+                            const result = originalSelectTopology(topology);
+                            joinTopologyRoom(topology);
+                            return result;
+                        };
+                    }
+                    
+                    // Emit topology events when user interacts
+                    window.emitTopologyUpdate = function(updateData) {
+                        if (window.socketClient) {
+                            window.socketClient.emit('topology_network_update', {
+                                ...updateData,
+                                timestamp: new Date().toISOString(),
+                                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
+                            });
+                        }
+                    };
+                    
+                    console.log('Topology WebSocket handlers initialized');
+                } else {
+                    console.warn('SocketClient not available for topology WebSocket integration');
+                }
+            });
         </script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
     <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
