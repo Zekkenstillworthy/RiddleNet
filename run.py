@@ -187,7 +187,7 @@ try:
     from user.api import api_blueprint as user_api_blueprint
     app.register_blueprint(user_api_blueprint, url_prefix='/api')
     print("API Blueprint registered successfully")
-    # Register topology progress API blueprint
+      # Register topology progress API blueprint
     try:
         from user.api.topology_progress_api import topology_progress_bp
         app.register_blueprint(topology_progress_bp)
@@ -216,10 +216,12 @@ except Exception as e:
         print("API Blueprint registered successfully using direct file import")
     except Exception as e2:
         print(f"Second attempt also failed: {e2}")
-
+        
 # Register Admin routes
 print("\n=== Registering Admin Blueprints ===")
-try:    # Import admin blueprints using a more robust approach
+try:
+    import importlib
+    # Import admin blueprints using a more robust approach
     blueprints_to_register = [
         ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
@@ -307,8 +309,7 @@ if __name__ == "__main__":
         try:
             audio_path = os.path.join(STATIC_FOLDER, 'audio')
             response = send_from_directory(audio_path, filename)
-            
-            # Set proper headers for audio streaming
+              # Set proper headers for audio streaming
             response.headers['Accept-Ranges'] = 'bytes'
             response.headers['Content-Type'] = 'audio/mpeg'
             response.headers['Access-Control-Allow-Origin'] = '*'
@@ -319,7 +320,9 @@ if __name__ == "__main__":
             return response
         except Exception as e:
             logger.error(f"Error serving audio file {filename}: {e}")
-            return f"Error serving audio: {filename}", 404    @app.route('/health')
+            return f"Error serving audio: {filename}", 404
+
+    @app.route('/health')
     def health_check():
         return {'status': 'healthy', 'server': 'main'}, 200
 

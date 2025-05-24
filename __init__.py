@@ -26,9 +26,6 @@ login_manager = LoginManager()
 mail = Mail()
 
 # Note: SocketIO is imported and initialized in run.py to avoid circular imports
-=======
-socketio = SocketIO()  # Initialize SocketIO
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
 def create_app(config=None):
     # Set the instance path explicitly to ensure using the correct database location
@@ -39,9 +36,7 @@ def create_app(config=None):
     if config and 'TEMPLATE_FOLDER' in config:
         template_folder = config['TEMPLATE_FOLDER']
     
-    app = Flask(__name__, instance_path=instance_path, template_folder=template_folder)
-
-    # Configure the app
+    app = Flask(__name__, instance_path=instance_path, template_folder=template_folder)    # Configure the app
     # Use local config file instead of user.config
     app.config.from_pyfile('config.py', silent=True)
     
@@ -53,20 +48,17 @@ def create_app(config=None):
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
     
     if config:
-        app.config.update(config)    # Initialize extensions with the app
+        app.config.update(config)
+    
+    # Initialize extensions with the app
     db.init_app(app)
     migrate.init_app(app, db)
-<<<<<<< HEAD
-    
-    # Initialize SocketIO with the app - moved to run.py to avoid circular imports
     
     # Initialize Login Manager
-=======
-      # Initialize Login Manager
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     login_manager.init_app(app)
     login_manager.login_view = 'user.login'  # Specify the login view endpoint
-      # Initialize Flask-Mail
+    
+    # Initialize Flask-Mail
     app.config["MAIL_SERVER"] = "smtp.gmail.com"
     app.config["MAIL_PORT"] = 587
     app.config["MAIL_USE_TLS"] = True
@@ -115,14 +107,12 @@ def create_app(config=None):
             # Continue without the API if it fails to load
         '''
         
-        # Print registered rules for debugging
-        print("Registered URL rules:")
+        # Print registered rules for debugging        print("Registered URL rules:")
         for rule in app.url_map.iter_rules():
             print(f"{rule.endpoint}: {rule.rule}")
     except ImportError as e:
         # If a blueprint can't be imported, continue without it
-        print(f"Warning: Could not import blueprint: {e}")    # Initialize SocketIO with the app
-    socketio.init_app(app, cors_allowed_origins="*")
+        print(f"Warning: Could not import blueprint: {e}")
     
     # Add context processors for static file server
     @app.context_processor
