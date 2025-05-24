@@ -17,7 +17,6 @@ class Troubleshooting(db.Model):
     solution = db.Column(db.Text, nullable=False)
     problem_type = db.Column(db.String(50), default='network')  # network, passive, version, etc.
     _hints = db.Column('hints', db.Text, nullable=True)  # JSON string
-<<<<<<< HEAD
     _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string for custom scoring
     _initial_topology = db.Column('initial_topology', db.Text, nullable=True)  # JSON string for initial device setup
     _solution_topology = db.Column('solution_topology', db.Text, nullable=True)  # JSON string for solution topology
@@ -26,7 +25,6 @@ class Troubleshooting(db.Model):
     base_score = db.Column(db.Integer, default=10)  # Default base score
     time_bonus = db.Column(db.Integer, default=5)  # Default time bonus
     solution_bonus = db.Column(db.Integer, default=5)  # Default bonus for perfect solution
-=======
     _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string
     _required_devices = db.Column('required_devices', db.Text, nullable=True)  # JSON string
     _topology_config = db.Column('topology_config', db.Text, nullable=True)  # JSON string for network topology
@@ -37,7 +35,6 @@ class Troubleshooting(db.Model):
     time_bonus = db.Column(db.Integer, default=20)
     perfect_match_bonus = db.Column(db.Integer, default=10)
     topology_type = db.Column(db.String(50), nullable=True)
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     is_active = db.Column(db.Boolean, default=True)
     time_limit = db.Column(db.Integer, default=1800)  # Time limit in seconds (default 30 minutes)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -263,7 +260,6 @@ class Troubleshooting(db.Model):
             'solution': self.solution,
             'hints': self.hints,
             'scoring_metrics': self.scoring_metrics,
-<<<<<<< HEAD
             'initial_topology': self.initial_topology,
             'solution_topology': self.solution_topology,
             'required_steps': self.required_steps,
@@ -271,7 +267,6 @@ class Troubleshooting(db.Model):
             'base_score': self.base_score,
             'time_bonus': self.time_bonus,
             'solution_bonus': self.solution_bonus,
-=======
             'required_devices': self.required_devices,
             'topology_config': self.topology_config,
             'initial_topology': self.initial_topology,
@@ -281,7 +276,6 @@ class Troubleshooting(db.Model):
             'time_bonus': self.time_bonus,
             'perfect_match_bonus': self.perfect_match_bonus,
             'topology_type': self.topology_type,
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
             'is_active': self.is_active,
             'time_limit': self.time_limit,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),

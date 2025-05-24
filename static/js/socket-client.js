@@ -1,9 +1,6 @@
 /**
  * WebSocket connection management for RiddleNet
-<<<<<<< HEAD
  * Non-disruptive real-time features that preserve template rendering
-=======
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
  */
 
 // Helper for getting the current host with the correct protocol
@@ -22,7 +19,6 @@ class SocketClient {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // Start with 2 seconds
-<<<<<<< HEAD
         this.healthCheckInterval = null;
         
         // Initialize video optimization when DOM is ready
@@ -33,13 +29,11 @@ class SocketClient {
         } else {
             this.optimizeVideoLoading();
         }
-=======
         
         // Initialize video optimization when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.optimizeVideoLoading();
         });
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     }
     
     /**
@@ -119,15 +113,12 @@ class SocketClient {
             const script = document.createElement('script');
             script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
             script.onload = () => this.initializeSocket();
-<<<<<<< HEAD
             script.onerror = (err) => {
                 console.error('Error loading socket.io client:', err);
                 // Graceful fallback - continue without WebSocket
                 this.showConnectionStatus(false, true);
             };
-=======
             script.onerror = (err) => console.error('Error loading socket.io client:', err);
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
             document.head.appendChild(script);
         } else {
             this.initializeSocket();
@@ -314,7 +305,6 @@ class SocketClient {
     /**
      * Show a notification to the user
      */
-<<<<<<< HEAD
     showNotification(title, message, type = 'info', duration = 5000) {
         // Create notification container if it doesn't exist
         let container = document.getElementById('notification-area');
@@ -384,7 +374,6 @@ class SocketClient {
             `;
             document.head.appendChild(style);
         }
-=======
     showNotification(title, message) {
         // Check if browser supports notifications
         if ('Notification' in window) {
@@ -435,7 +424,6 @@ class SocketClient {
                 setTimeout(() => notificationDiv.remove(), 300);
             }
         }, 5000);
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
     }
 
     /**
@@ -521,8 +509,6 @@ class SocketClient {
             this.connected = false;
         }
     }
-<<<<<<< HEAD
-=======
     /**
      * Show a notification to the user
      * @param {string} title - The notification title
@@ -585,7 +571,6 @@ class SocketClient {
         
         return notification;
     }
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 
     /**
      * Start a health check to ensure connection is maintained
@@ -603,8 +588,6 @@ class SocketClient {
             }
         }, 20000);
     }
-<<<<<<< HEAD
-=======
 
     /**
      * Show a notification to the user
@@ -660,13 +643,11 @@ class SocketClient {
             }
         }, 5000);
     }
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
 }
 
 // Create a global instance
 const socketClient = new SocketClient();
 
-<<<<<<< HEAD
 // Connect when the page loads (with delay to ensure page loads fully)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -678,10 +659,8 @@ if (document.readyState === 'loading') {
 
 // Make it available globally
 window.socketClient = socketClient;
-=======
 // Connect when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Delay connection to ensure page loads fully
     setTimeout(() => socketClient.connect(), 500);
 });
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26

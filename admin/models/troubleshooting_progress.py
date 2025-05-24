@@ -1,5 +1,4 @@
 from datetime import datetime
-<<<<<<< HEAD
 import json
 from __init__ import db
 
@@ -26,7 +25,6 @@ class TroubleshootingProgress(db.Model):
     @property
     def user_solution(self):
         """Get the user solution as a Python object"""
-=======
 from __init__ import db
 from user.models.user import User
 
@@ -63,7 +61,6 @@ class TroubleshootingProgress(db.Model):
     def user_solution(self):
         """Get the user solution as a dictionary"""
         import json
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
         if not self._user_solution:
             return {}
         try:
@@ -72,7 +69,6 @@ class TroubleshootingProgress(db.Model):
             return {}
     
     @user_solution.setter
-<<<<<<< HEAD
     def user_solution(self, solution):
         """Set the user solution from a Python object"""
         if isinstance(solution, dict):
@@ -109,7 +105,6 @@ class TroubleshootingProgress(db.Model):
         # Additional solution_bonus would be added there if solution perfectly matches
         
         return score
-=======
     def user_solution(self, solution_dict):
         """Set the user solution from a dictionary"""
         import json
@@ -133,4 +128,3 @@ class TroubleshootingProgress(db.Model):
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S')
         }
->>>>>>> b4bcdda9fa30ee62712a08acef07916d94b94d26
