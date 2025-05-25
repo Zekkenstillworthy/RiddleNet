@@ -1,4 +1,4 @@
-from __init__ import db
+from admin import db
 import datetime
 
 class TopologyProgress(db.Model):

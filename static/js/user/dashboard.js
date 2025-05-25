@@ -1,6 +1,123 @@
 // Dashboard and navigation logic migrated from script.js
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Safely get elements with null checks
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.querySelector('.start-btn');
+    const popup = document.querySelector('.popup-info');
+    const profileSection = document.querySelector('.profile-section');
+    const profileExitBtn = document.querySelector('.profile-exit-btn');
+    
+    // Only add event listeners if elements exist
+    if (startBtn && popup) {
+        startBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            popup.classList.add('active');
+            // Apply blur to main content sections, not the entire body
+            const sections = document.querySelectorAll('section:not(.popup-info)');
+            const header = document.querySelector('.header');
+            sections.forEach(section => section.classList.add('blur'));
+            if (header) header.classList.add('blur');
+        });
+    }
+    
+    if (profileExitBtn && profileSection) {
+        profileExitBtn.addEventListener('click', function() {
+            profileSection.classList.remove('active');
+            const sections = document.querySelectorAll('section');
+            const header = document.querySelector('.header');
+            sections.forEach(section => section.classList.remove('blur'));
+            if (header) header.classList.remove('blur');
+        });
+    }
+    
+    // Close popup when clicking outside
+    if (popup) {
+        popup.addEventListener('click', function(e) {
+            if (e.target === popup) {
+                popup.classList.remove('active');
+                const sections = document.querySelectorAll('section');
+                const header = document.querySelector('.header');
+                sections.forEach(section => section.classList.remove('blur'));
+                if (header) header.classList.remove('blur');
+            }
+        });
+    }
+    
+    // Initialize WebSocket events for dashboard updates
+    if (typeof window.socketClient !== 'undefined') {
+        window.socketClient.on('connected', function() {
+            console.log('Dashboard: WebSocket connected');
+            // Join dashboard room for real-time updates with error handling
+            try {
+                window.socketClient.emit('join_dashboard', {
+                    user_id: getCurrentUserId(),
+                    page: 'dashboard'
+                });
+            } catch (error) {
+                console.warn('Failed to join dashboard room:', error);
+                // Continue without real-time updates
+            }
+        });
+        
+        // Handle real-time score updates
+        window.socketClient.on('score_updated', function(data) {
+            updateScoreDisplay(data);
+        });
+        
+        // Handle leaderboard updates
+        window.socketClient.on('leaderboard_updated', function(data) {
+            updateLeaderboard(data);
+        });
+        
+        // Handle WebSocket errors gracefully
+        window.socketClient.on('socket_error', function(error) {
+            console.log('WebSocket error occurred, continuing with basic functionality');
+            // Don't show intrusive error messages, just log
+        });
+        
+        window.socketClient.on('connection_error', function(error) {
+            console.log('WebSocket connection error, real-time features may be limited');
+            // Continue with static functionality
+        });
+    } else {
+        console.log('WebSocket client not available, running in static mode');
+    }
+    
+    // Helper function to get current user ID (implement based on your auth system)
+    function getCurrentUserId() {
+        // This should be implemented based on how you store user info
+        // Could be from a meta tag, data attribute, or global variable
+        const userMeta = document.querySelector('meta[name="user-id"]');
+        return userMeta ? userMeta.content : null;
+    }
+    
+    // Update score display in real-time
+    function updateScoreDisplay(scoreData) {
+        const scoreElements = document.querySelectorAll('.score-display');
+        scoreElements.forEach(element => {
+            if (element && scoreData.category === element.dataset.category) {
+                element.textContent = scoreData.score;
+            }
+        });
+    }
+    
+    // Update leaderboard in real-time
+    function updateLeaderboard(leaderboardData) {
+        const leaderboardTable = document.querySelector('.leaderboard-table tbody');
+        if (leaderboardTable && leaderboardData.entries) {
+            leaderboardTable.innerHTML = '';
+            leaderboardData.entries.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${entry.username}</td>
+                    <td>${entry.score}</td>
+                `;
+                leaderboardTable.appendChild(row);
+            });
+        }
+    }
     
     // Global event delegation for all submission buttons (essay, fill-in-blank, short answer)
     document.body.addEventListener('click', function(event) {
@@ -62,7 +179,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const sections = document.querySelectorAll('section');
     const navlinks = document.querySelectorAll('header nav a');
     const profileLink = document.querySelector('.profile-link');
-    const profileExitBtn = document.querySelector('.profile-exit-btn');
     const profile = document.querySelector('#profile');
 
     // Intersection Observer to highlight nav links on scroll
@@ -456,7 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let questions = []; // Will be populated from API
 
     // Start RiddleNet Button const
-    const startBtn = document.querySelector('.start-btn');
     const popupInfo = document.querySelector('.popup-info');
     const exitBtn = document.querySelector('.exit-btn');
     const main = document.querySelector('#dashboard');

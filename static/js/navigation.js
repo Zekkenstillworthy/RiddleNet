@@ -7,8 +7,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get the current path
     const currentPath = window.location.pathname;
     
+    // Safely get navbar elements
+    const navbarLinks = document.querySelectorAll('.navbar a');
+    
+    if (navbarLinks.length === 0) {
+        console.log('No navbar links found, skipping navigation highlighting');
+        return;
+    }
+    
     // Highlight active navigation item based on current path
-    document.querySelectorAll('.navbar a').forEach(link => {
+    navbarLinks.forEach(link => {
+        if (!link) return; // Skip null elements
+        
         const linkHref = link.getAttribute('href');
         
         // If this is a page link (not an anchor)
@@ -22,11 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
                      (currentPath.startsWith(linkHref) && linkHref !== '/')) {
                 link.classList.add('active');
             }
-              // Fix the error with querySelector - prevent default only for non-page links
-            link.addEventListener('click', function(e) {
-                // Let the browser handle the navigation normally
-                // The script.js already has logic to return early for page nav links
-            });
         }
     });
 });

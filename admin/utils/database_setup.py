@@ -31,14 +31,60 @@ def setup_database():
         print("Creating admin account...")
         admin = Admin(
             username="admin", 
-            password_hash=generate_password_hash("admin"),  # Direct password hash instead of using set_password
+            password_hash=generate_password_hash("admin"),
             email="admin@riddlenet.com"
         )
         db.session.add(admin)
         db.session.commit()
         print("Admin account created successfully!")
     
+    # Migrate existing tables to add missing columns
+    migrate_existing_tables()
+    
     print("Database setup complete!")
+
+def migrate_existing_tables():
+    """Add missing columns to existing tables"""
+    try:
+        from sqlalchemy import text
+        connection = db.engine.raw_connection()
+        cursor = connection.cursor()
+        
+        # Check and add updated_at column to classes table
+        cursor.execute("PRAGMA table_info(classes)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'updated_at' not in columns:
+            print("Adding updated_at column to classes table...")
+            cursor.execute("ALTER TABLE classes ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            connection.commit()
+            print("Successfully added updated_at column to classes table")
+        
+        # Check other tables that might need updated_at column
+        tables_needing_updated_at = [
+            'scenarios', 'topologies', 'troubleshootings', 
+            'troubleshooting_progress', 'question_groups'
+        ]
+        
+        for table_name in tables_needing_updated_at:
+            try:
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                table_columns = [column[1] for column in cursor.fetchall()]
+                
+                if table_columns and 'updated_at' not in table_columns:
+                    print(f"Adding updated_at column to {table_name} table...")
+                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                    connection.commit()
+                    print(f"Successfully added updated_at column to {table_name} table")
+            except Exception as e:
+                print(f"Table {table_name} might not exist yet: {e}")
+                continue
+        
+        connection.close()
+        print("Database migration completed successfully")
+        
+    except Exception as e:
+        print(f"Error during database migration: {e}")
 
 def ensure_scenarios_table_exists():
     """Ensure that the scenarios table exists with all required columns."""

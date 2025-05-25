@@ -1,5 +1,4 @@
-
-        // Add audio feedback for better user experience
+// Add audio feedback for better user experience
         function playClickSound() {
             const clickSound = document.getElementById('clickSound');
             if (clickSound) {
@@ -799,7 +798,11 @@
                     
                     selectAllContainer.appendChild(selectAllCheckbox);
                     selectAllContainer.appendChild(selectAllLabel);
-                    header.appendChild(selectAllContainer);
+                    
+                    // Safely append to header if it exists
+                    if (header && header.parentNode) {
+                        header.appendChild(selectAllContainer);
+                    }
                     
                     // Add select all functionality
                     selectAllCheckbox.addEventListener('change', function() {
@@ -1139,7 +1142,11 @@
                                 
                                 selectAllContainer.appendChild(selectAllCheckbox);
                                 selectAllContainer.appendChild(selectAllLabel);
-                                header.appendChild(selectAllContainer);
+                                
+                                // Safely append to header if it exists
+                                if (header && header.parentNode) {
+                                    header.appendChild(selectAllContainer);
+                                }
                                 
                                 // Add select all functionality
                                 selectAllCheckbox.addEventListener('change', function() {
@@ -1891,4 +1898,3 @@
                 });
             }
         }
- 

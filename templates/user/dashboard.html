@@ -75,7 +75,6 @@
   .classes-section input::placeholder {
     color: #fff; 
   }
-
   /* Classes section styling */
   .classes-section {
     position: fixed;
@@ -93,6 +92,8 @@
     display: none;
     overflow-y: auto;
     will-change: opacity;
+    filter: none !important; /* Prevent blur from affecting classes popup */
+    backdrop-filter: none !important; /* Also prevent backdrop blur */
   }
   @keyframes classesPopupFadeIn {
     from { opacity: 0; transform: translate(-50%, -48%); }
@@ -672,7 +673,7 @@
 <link rel="icon" href="{{ static_url('img/Logo.png') }}" />
 {% endblock %} {% block body %}
 <video class="video-background" autoplay muted loop playsinline>
-    <source data-src="{{ media_url('video', 'RiddleNet.mp4') }}" type="video/mp4">
+    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
 </video>
 
 <!-- Header -->
@@ -1130,6 +1131,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Check if elements exist before adding event listeners
     const sections = document.querySelectorAll('.leaderboard-section, .score-section, .about-us');
 
     function checkVisibility() {
@@ -1165,7 +1167,11 @@
         leaderboardContainers.forEach(container => {
           container.classList.remove('active');
         });
-        document.getElementById(`${category}-leaderboard`).classList.add('active');
+        
+        const targetContainer = document.getElementById(`${category}-leaderboard`);
+        if (targetContainer) {
+          targetContainer.classList.add('active');
+        }
         
         // Play click sound if available
         if (typeof playClickSound === 'function') {
@@ -1173,7 +1179,26 @@
         }
       });
     });
+
+    // Initialize socket client connection if available - with delay to ensure scripts loaded
+    setTimeout(() => {
+      if (window.socketClient) {
+        console.log('Socket client available, setting up event handlers');
+        
+        // Set up event handlers for real-time updates
+        window.socketClient.on('connected', () => {
+          console.log('Dashboard: Socket connected');
+        });
+        
+        window.socketClient.on('disconnected', (reason) => {
+          console.log('Dashboard: Socket disconnected:', reason);
+        });
+      } else {
+        console.log('Socket client not available, continuing without real-time features');
+      }
+    }, 1500); // Give socket client time to initialize
   });
+
             function playClickSound() {
                 const click = document.getElementById('clickSound');
                 if (window.playSound) {

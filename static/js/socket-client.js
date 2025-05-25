@@ -29,11 +29,6 @@ class SocketClient {
         } else {
             this.optimizeVideoLoading();
         }
-        
-        // Initialize video optimization when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            this.optimizeVideoLoading();
-        });
     }
     
     /**
@@ -102,8 +97,19 @@ class SocketClient {
      * Connect to the WebSocket server
      */
     connect() {
+        if (this.socket && this.connected) {
+            console.log('Already connected to WebSocket server');
+            return;
+        }
+
         if (this.socket) {
-            console.log('Already connected or connecting to WebSocket server');
+            console.log('Connection in progress...');
+            return;
+        }
+
+        // Check if we're in an environment where WebSocket should be available
+        if (typeof window === 'undefined') {
+            console.warn('Not in browser environment, skipping WebSocket connection');
             return;
         }
 
@@ -112,13 +118,15 @@ class SocketClient {
             console.log('Loading socket.io client...');
             const script = document.createElement('script');
             script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
-            script.onload = () => this.initializeSocket();
+            script.onload = () => {
+                // Add a small delay to ensure the script is fully loaded
+                setTimeout(() => this.initializeSocket(), 100);
+            };
             script.onerror = (err) => {
                 console.error('Error loading socket.io client:', err);
                 // Graceful fallback - continue without WebSocket
                 this.showConnectionStatus(false, true);
             };
-            script.onerror = (err) => console.error('Error loading socket.io client:', err);
             document.head.appendChild(script);
         } else {
             this.initializeSocket();
@@ -134,21 +142,24 @@ class SocketClient {
         const url = getHostUrl();
         
         this.socket = io(url, {
-            transports: ['websocket', 'polling'],  // Try WebSocket first, then polling
+            transports: ['websocket', 'polling'],
             withCredentials: true,
             reconnection: true,
             reconnectionDelay: this.reconnectDelay,
             reconnectionDelayMax: 10000,
-            timeout: 20000,  // Increased timeout
+            timeout: 20000,
             forceNew: false,
-            autoConnect: true
+            autoConnect: true,
+            upgrade: true,
+            rememberUpgrade: false
         });
 
-        // Set up event handlers
+        // Set up event handlers with better error handling
         this.socket.on('connect', () => {
-            console.log('Connected to WebSocket server');
+            console.log('✅ Connected to WebSocket server');
             this.connected = true;
             this.reconnectAttempts = 0;
+            this.reconnectDelay = 2000; // Reset delay
             this.trigger('connected');
             
             // Start health check
@@ -159,7 +170,7 @@ class SocketClient {
         });
 
         this.socket.on('disconnect', (reason) => {
-            console.log('Disconnected from WebSocket server:', reason);
+            console.log('🔌 Disconnected from WebSocket server:', reason);
             this.connected = false;
             this.trigger('disconnected', reason);
             
@@ -169,40 +180,49 @@ class SocketClient {
                 this.healthCheckInterval = null;
             }
             
-            // Display connection status
-            this.showConnectionStatus(false);
-            
-            if (reason === 'io server disconnect') {
-                // Server initiated disconnect, try to reconnect manually
-                setTimeout(() => this.connect(), this.reconnectDelay);
+            // Display connection status only if not a planned disconnect
+            if (reason !== 'io client disconnect') {
+                this.showConnectionStatus(false);
             }
         });
 
         this.socket.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', error);
+            console.warn('⚠️ WebSocket connection error:', error.message || error);
             this.reconnectAttempts++;
             
             if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                console.log('Maximum reconnect attempts reached, stopping reconnect');
-                this.socket.disconnect();
+                console.log('❌ Maximum reconnect attempts reached');
                 this.showConnectionStatus(false, true);
             } else {
-                // Increase delay on each attempt (exponential backoff)
-                this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 10000);
+                console.log(`🔄 Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+                this.reconnectDelay = Math.min(this.reconnectDelay * 1.2, 10000);
             }
             
             this.trigger('connection_error', error);
         });
 
+        // Handle general errors more gracefully
+        this.socket.on('error', (error) => {
+            console.warn('⚠️ WebSocket general error:', error);
+            // Don't trigger disconnect for general errors, just log them
+            this.trigger('socket_error', error);
+        });
+
         // Handle pong responses for health checks
         this.socket.on('pong', (data) => {
-            const roundTripTime = Date.now() - data.client_time;
-            console.debug(`WebSocket health: ${roundTripTime}ms latency`);
-            
-            // Update connection quality indicator if latency is too high
-            if (roundTripTime > 500) {
-                console.warn(`High WebSocket latency: ${roundTripTime}ms`);
+            if (data && data.client_time) {
+                const roundTripTime = Date.now() - data.client_time;
+                console.debug(`💓 WebSocket health: ${roundTripTime}ms latency`);
+                
+                if (roundTripTime > 1000) {
+                    console.warn(`🐌 High WebSocket latency: ${roundTripTime}ms`);
+                }
             }
+        });
+
+        // Handle health status responses
+        this.socket.on('health_status', (data) => {
+            console.debug('💓 Health status:', data);
         });
         
         // Set up handlers for application-specific events
@@ -257,55 +277,93 @@ class SocketClient {
      * Set up handlers for application events
      */
     setupEventHandlers() {
+        // Add error handling wrapper for all event handlers
+        const safeHandler = (eventName, handler) => {
+            return (data) => {
+                try {
+                    handler(data);
+                } catch (error) {
+                    console.error(`Error in ${eventName} handler:`, error);
+                }
+            };
+        };
+
         // Topology-related events
-        this.socket.on('topology_completed', (data) => {
-            console.log('Topology completed:', data);
+        this.socket.on('topology_completed', safeHandler('topology_completed', (data) => {
+            console.log('🎯 Topology completed:', data);
             this.trigger('topology_completed', data);
             
-            // Show notification
-            this.showNotification('Topology Completed', 
-                `You've completed the ${data.topology_type} topology with a score of ${data.score}!`);
-        });
+            if (data.score !== undefined) {
+                this.showNotification('Topology Completed', 
+                    `You've completed the ${data.topology_type} topology with a score of ${data.score}!`,
+                    'success');
+            }
+        }));
         
-        this.socket.on('topology_progress_updated', (data) => {
-            console.log('Topology progress updated:', data);
+        this.socket.on('topology_progress_updated', safeHandler('topology_progress_updated', (data) => {
+            console.log('📊 Topology progress updated:', data);
             this.trigger('topology_progress_updated', data);
-        });
+        }));
         
-        this.socket.on('topology_state_updated', (data) => {
-            console.log('Topology state updated:', data);
+        this.socket.on('topology_state_updated', safeHandler('topology_state_updated', (data) => {
+            console.log('🔄 Topology state updated:', data);
             this.trigger('topology_state_updated', data);
-        });
+        }));
         
         // Essay-related events
-        this.socket.on('essay_submitted', (data) => {
-            console.log('Essay submitted:', data);
+        this.socket.on('essay_submitted', safeHandler('essay_submitted', (data) => {
+            console.log('📝 Essay submitted:', data);
             this.trigger('essay_submitted', data);
             
-            // Show notification
-            this.showNotification('Essay Submitted', data.message);
-        });
+            this.showNotification('Essay Submitted', 
+                data.message || 'Your essay has been submitted for review', 'success');
+        }));
         
         // Admin messages
-        this.socket.on('admin_message', (data) => {
-            console.log('Admin message received:', data);
+        this.socket.on('admin_message', safeHandler('admin_message', (data) => {
+            console.log('👤 Admin message received:', data);
             this.trigger('admin_message', data);
             
-            // Show notification
-            this.showNotification('Message from Admin', data.message);
-        });
+            this.showNotification('Message from Admin', 
+                data.message || 'You have a new message', 'info');
+        }));
         
-        // Error events
-        this.socket.on('error', (data) => {
-            console.error('WebSocket error:', data);
-            this.trigger('error', data);
-        });
+        // User connection events (for admin dashboard)
+        this.socket.on('user_connected', safeHandler('user_connected', (data) => {
+            console.log('👋 User connected:', data);
+            this.trigger('user_connected', data);
+        }));
+        
+        this.socket.on('user_disconnected', safeHandler('user_disconnected', (data) => {
+            console.log('👋 User disconnected:', data);
+            this.trigger('user_disconnected', data);
+        }));
     }
 
     /**
      * Show a notification to the user
+     * @param {string} title - The notification title
+     * @param {string} message - The notification message
+     * @param {string} type - The notification type (info, success, warning, error)
+     * @param {number} duration - How long to show the notification in ms
      */
     showNotification(title, message, type = 'info', duration = 5000) {
+        // Check if browser supports notifications
+        if ('Notification' in window) {
+            // First check if we already have permission
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body: message });
+            } 
+            // Otherwise, ask for permission
+            else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, { body: message });
+                    }
+                });
+            }
+        }
+        
         // Create notification container if it doesn't exist
         let container = document.getElementById('notification-area');
         if (!container) {
@@ -371,72 +429,49 @@ class SocketClient {
                     from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
                 }
+                .in-app-notification.show {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                .in-app-notification {
+                    opacity: 0;
+                    transform: translateX(100%);
+                    transition: all 0.3s ease;
+                }
             `;
             document.head.appendChild(style);
         }
-    showNotification(title, message) {
-        // Check if browser supports notifications
-        if ('Notification' in window) {
-            // First check if we already have permission
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body: message });
-            } 
-            // Otherwise, ask for permission
-            else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body: message });
-                    }
-                });
-            }
-        }
         
-        // Also show an in-app notification
-        const notificationDiv = document.createElement('div');
-        notificationDiv.className = 'in-app-notification';
-        notificationDiv.innerHTML = `
-            <div class="notification-header">
-                <h4>${title}</h4>
-                <button class="close-notification">&times;</button>
-            </div>
-            <div class="notification-body">
-                <p>${message}</p>
-            </div>
-        `;
-        
-        document.body.appendChild(notificationDiv);
-        
-        // Animation
-        setTimeout(() => {
-            notificationDiv.classList.add('show');
-        }, 10);
-        
-        // Close button
-        notificationDiv.querySelector('.close-notification').addEventListener('click', () => {
-            notificationDiv.classList.remove('show');
-            setTimeout(() => notificationDiv.remove(), 300);
-        });
-        
-        // Auto-close after 5 seconds
-        setTimeout(() => {
-            if (document.body.contains(notificationDiv)) {
-                notificationDiv.classList.remove('show');
-                setTimeout(() => notificationDiv.remove(), 300);
-            }
-        }, 5000);
+        return notification;
     }
 
     /**
-     * Send an event to the server
+     * Send an event to the server with error handling
      */
     emit(event, data) {
-        if (!this.socket || !this.connected) {
-            console.warn('Cannot emit event, not connected to WebSocket server');
+        if (!this.socket) {
+            console.warn('⚠️ Cannot emit event, socket not initialized');
+            // Try to reconnect if not already connecting
+            if (!this.connected && this.reconnectAttempts < this.maxReconnectAttempts) {
+                console.log('🔄 Attempting to reconnect...');
+                this.connect();
+            }
             return false;
         }
         
-        this.socket.emit(event, data);
-        return true;
+        if (!this.connected) {
+            console.warn('⚠️ Cannot emit event, not connected to WebSocket server');
+            return false;
+        }
+        
+        try {
+            this.socket.emit(event, data);
+            console.debug(`📤 Emitted ${event}:`, data);
+            return true;
+        } catch (error) {
+            console.error(`❌ Error emitting ${event}:`, error);
+            return false;
+        }
     }
 
     /**
@@ -500,6 +535,32 @@ class SocketClient {
     }
 
     /**
+     * Start a health check to ensure connection is maintained
+     */
+    startHealthCheck() {
+        // Clear any existing interval
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+        }
+        
+        // Send a ping every 60 seconds (reduced frequency to minimize server load)
+        this.healthCheckInterval = setInterval(() => {
+            if (this.connected && this.socket) {
+                try {
+                    // Use a simple emit instead of relying on server timestamp functions
+                    this.socket.emit('ping', { 
+                        client_time: Date.now(),
+                        client_id: this.socket.id 
+                    });
+                } catch (error) {
+                    console.warn('Health check ping failed:', error);
+                    // Don't treat this as a fatal error, just log it
+                }
+            }
+        }, 60000); // Changed from 30000 to 60000 (60 seconds)
+    }
+
+    /**
      * Disconnect from the WebSocket server
      */
     disconnect() {
@@ -509,158 +570,36 @@ class SocketClient {
             this.connected = false;
         }
     }
-    /**
-     * Show a notification to the user
-     * @param {string} title - The notification title
-     * @param {string} message - The notification message
-     * @param {string} type - The notification type (info, success, warning, error)
-     * @param {number} duration - How long to show the notification in ms
-     */
-    showNotification(title, message, type = 'info', duration = 5000) {
-        // Create notification container if it doesn't exist
-        let container = document.getElementById('notification-area');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'notification-area';
-            container.style.position = 'fixed';
-            container.style.top = '20px';
-            container.style.right = '20px';
-            container.style.zIndex = '10000';
-            document.body.appendChild(container);
-        }
-        
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `in-app-notification ${type}`;
-        
-        // Add header with title and close button
-        const header = document.createElement('div');
-        header.className = 'notification-header';
-        header.innerHTML = `
-            <h4>${title}</h4>
-            <button class="close-notification">&times;</button>
-        `;
-        
-        // Add message body
-        const body = document.createElement('div');
-        body.className = 'notification-body';
-        body.innerHTML = `<p>${message}</p>`;
-        
-        // Add event listener to close button
-        notification.appendChild(header);
-        notification.appendChild(body);
-        container.appendChild(notification);
-        
-        // Add close button handler
-        const closeBtn = notification.querySelector('.close-notification');
-        closeBtn.addEventListener('click', () => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        });
-        
-        // Show the notification with animation
-        setTimeout(() => notification.classList.add('show'), 10);
-        
-        // Auto-remove after duration
-        if (duration > 0) {
+}
+
+// Ensure we only create one instance with better error handling
+if (typeof window !== 'undefined' && typeof window.SocketClient === 'undefined') {
+    window.SocketClient = SocketClient;
+}
+
+if (typeof window !== 'undefined' && typeof window.socketClient === 'undefined') {
+    window.socketClient = new window.SocketClient();
+    
+    // Connect with better timing and error handling
+    const connectWhenReady = () => {
+        try {
+            // Wait for DOM and other critical scripts to load
             setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 300);
-            }, duration);
+                console.log('🔌 Initiating WebSocket connection...');
+                window.socketClient.connect();
+            }, 1000); // Reduced delay but still sufficient
+        } catch (error) {
+            console.error('Error during WebSocket initialization:', error);
         }
-        
-        return notification;
+    };
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', connectWhenReady);
+    } else {
+        connectWhenReady();
     }
-
-    /**
-     * Start a health check to ensure connection is maintained
-     */
-    startHealthCheck() {
-        // Clear any existing interval
-        if (this.healthCheckInterval) {
-            clearInterval(this.healthCheckInterval);
-        }
-        
-        // Send a ping every 20 seconds
-        this.healthCheckInterval = setInterval(() => {
-            if (this.connected) {
-                this.emit('ping', { timestamp: Date.now() });
-            }
-        }, 20000);
-    }
-
-    /**
-     * Show a notification to the user
-     */
-    showNotification(title, message) {
-        // Check if browser supports notifications
-        if ('Notification' in window) {
-            // First check if we already have permission
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body: message });
-            } 
-            // Otherwise, ask for permission
-            else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body: message });
-                    }
-                });
-            }
-        }
-        
-        // Also show an in-app notification
-        const notificationDiv = document.createElement('div');
-        notificationDiv.className = 'in-app-notification';
-        notificationDiv.innerHTML = `
-            <div class="notification-header">
-                <h4>${title}</h4>
-                <button class="close-notification">&times;</button>
-            </div>
-            <div class="notification-body">
-                <p>${message}</p>
-            </div>
-        `;
-        
-        document.body.appendChild(notificationDiv);
-        
-        // Animation
-        setTimeout(() => {
-            notificationDiv.classList.add('show');
-        }, 10);
-        
-        // Close button
-        notificationDiv.querySelector('.close-notification').addEventListener('click', () => {
-            notificationDiv.classList.remove('show');
-            setTimeout(() => notificationDiv.remove(), 300);
-        });
-        
-        // Auto-close after 5 seconds
-        setTimeout(() => {
-            if (document.body.contains(notificationDiv)) {
-                notificationDiv.classList.remove('show');
-                setTimeout(() => notificationDiv.remove(), 300);
-            }
-        }, 5000);
-    }
+    
+    console.log('✅ SocketClient initialized and ready');
+} else if (typeof window !== 'undefined') {
+    console.log('ℹ️ SocketClient already exists, skipping initialization');
 }
-
-// Create a global instance
-const socketClient = new SocketClient();
-
-// Connect when the page loads (with delay to ensure page loads fully)
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => socketClient.connect(), 500);
-    });
-} else {
-    setTimeout(() => socketClient.connect(), 500);
-}
-
-// Make it available globally
-window.socketClient = socketClient;
-// Connect when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    // Delay connection to ensure page loads fully
-    setTimeout(() => socketClient.connect(), 500);
-});

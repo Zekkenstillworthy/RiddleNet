@@ -48,15 +48,87 @@
         box-shadow: none;
     }
     
-    /* Message styling */
+    /* Message styling - Consistent with websocket notifications */
     .message-container {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 12px 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        border-left: 5px solid #00C3B5;
+        backdrop-filter: blur(10px);
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10001;
+        overflow: hidden;
         transition: all 0.3s ease;
+        animation: slideInRight 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        opacity: 0;
+        max-width: 380px;
+        min-width: 280px;
+        text-align: left;
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+        display: none;
     }
-    .success-message {
-        color: #48c774;
+    
+    .message-container.show {
+        opacity: 1;
+        display: block;
     }
-    .error-message {
-        color: #ff3860;
+    
+    .message-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(0, 195, 181, 0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    .message-container.success-message {
+        border-left-color: #28a745;
+        background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+        color: #155724;
+    }
+    
+    .message-container.success-message::before {
+        background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+    }
+    
+    .message-container.error-message {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #fff8f8 0%, #fdeaea 100%);
+        color: #721c24;
+    }
+    
+    .message-container.error-message::before {
+        background: linear-gradient(90deg, transparent, rgba(220, 53, 69, 0.3), transparent);
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes shimmer {
+        0%, 100% {
+            opacity: 0.3;
+        }
+        50% {
+            opacity: 0.8;
+        }
     }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -82,8 +154,7 @@
             <input type="text" name="username" placeholder="Username" required autocomplete="off">
             <input type="email" name="email" placeholder="Email" required autocomplete="off">
             <input type="password" name="password" placeholder="Password" required>
-            <!-- Add a container for displaying messages -->
-            <div id="signup-message" style="display: none; margin-top: 10px; padding: 10px; border-radius: 4px; text-align: center;"></div>
+            <div id="signup-message" class="message-container"></div>
             <button type="submit">Sign Up</button>
             
         </form>
@@ -97,7 +168,7 @@
             {% endif %}
             <input type="text" name="username" id="login-username" placeholder="Username" required autocomplete="off">
             <input type="password" name="password" placeholder="Password" required>
-            <div id="message" class="message-container" style="margin-bottom: 10px; color: #ff3860; font-size: 14px; text-align: center; min-height: 20px;"></div>
+            <div id="message" class="message-container"></div>
             <div style="display: flex; width: 100%;">
                 <input type="text" name="otp" id="otp" placeholder="OTP Code" style="flex: 1; margin-right: 10px;">
                 <button type="button" id="requestOtp" style="flex: none; width: auto; padding: 10px; background: #00C3B5; font-size: 12px;">Request OTP</button>
@@ -127,7 +198,18 @@
 <!--<button id="overview">Overview</button>-->
 {% if message %}
 <script>
-    alert("{{ message }}");
+    // Display backend messages using notification styling
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageElement = document.getElementById('message');
+        messageElement.className = 'message-container error-message show';
+        messageElement.textContent = "{{ message }}";
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            messageElement.className = 'message-container';
+            messageElement.style.display = 'none';
+        }, 5000);
+    });
 </script>
 {% endif %}
 <script src="{{ url_for('static', filename='js/otp.js') }}"></script>
@@ -168,10 +250,8 @@
         
         // Show loading state
         const messageElement = document.getElementById('signup-message');
-        messageElement.style.display = 'block';
-        messageElement.style.backgroundColor = 'rgba(0, 195, 181, 0.2)';
-        messageElement.style.color = '#00C3B5';
-        messageElement.innerHTML = '<span style="display:inline-block;width:20px;height:20px;border:3px solid #00C3B5;border-radius:50%;border-top-color:transparent;animation:spin 1s linear infinite;"></span> Creating your account...';
+        messageElement.className = 'message-container show';
+        messageElement.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-radius:50%;border-top-color:transparent;animation:spin 1s linear infinite;margin-right:8px;"></span>Creating your account...';
         
         // Add animation style
         if (!document.getElementById('spin-animation')) {
@@ -196,9 +276,8 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === 'error') {
-                // Show error message in the form
-                messageElement.style.backgroundColor = 'rgba(255, 56, 96, 0.2)';
-                messageElement.style.color = '#ff3860';
+                // Show error message with notification styling
+                messageElement.className = 'message-container error-message show';
                 messageElement.textContent = data.message;
                 
                 // Clear and focus on the appropriate field based on the error message
@@ -214,12 +293,17 @@
                 submitButton.disabled = false;
                 submitButton.style.opacity = '1';
                 
+                // Auto-hide error message after 5 seconds
+                setTimeout(() => {
+                    messageElement.className = 'message-container';
+                    messageElement.style.display = 'none';
+                }, 5000);
+                
                 return Promise.reject('Registration error'); // Stop the chain
             }
             
-            // If signup successful, show success message in the form
-            messageElement.style.backgroundColor = 'rgba(72, 199, 116, 0.2)';
-            messageElement.style.color = '#48c774';
+            // If signup successful, show success message with notification styling
+            messageElement.className = 'message-container success-message show';
             messageElement.textContent = data.message;
             
             // Reset the form except for message
@@ -229,7 +313,8 @@
             // Switch to login form after a short delay
             setTimeout(() => {
                 container.classList.remove("active");
-                // Reset the message display for next time
+                // Hide the message with animation
+                messageElement.className = 'message-container';
                 messageElement.style.display = 'none';
                 // Re-enable the button
                 submitButton.disabled = false;
@@ -239,9 +324,8 @@
         .catch(error => {
             if (error === 'Registration error') return; // Already handled
             
-            // Show general error message
-            messageElement.style.backgroundColor = 'rgba(255, 56, 96, 0.2)';
-            messageElement.style.color = '#ff3860';
+            // Show general error message with notification styling
+            messageElement.className = 'message-container error-message show';
             messageElement.textContent = 'An error occurred. Please try again.';
             
             console.error('Error:', error);
@@ -249,6 +333,12 @@
             // Re-enable submit button
             submitButton.disabled = false;
             submitButton.style.opacity = '1';
+            
+            // Auto-hide error message after 5 seconds
+            setTimeout(() => {
+                messageElement.className = 'message-container';
+                messageElement.style.display = 'none';
+            }, 5000);
         });
     });
 </script>

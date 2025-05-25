@@ -215,7 +215,7 @@ class ScenarioController:
             if data.get('difficulty'):
                 scenario.difficulty = data.get('difficulty')
             
-            scenario.updated_at = datetime.now()
+            scenario.updated_at = datetime.utcnow()
             
             db.session.commit()
             

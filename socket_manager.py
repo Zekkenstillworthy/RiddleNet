@@ -3,6 +3,7 @@ from flask import request
 from flask_login import current_user
 import functools
 import eventlet
+import datetime
 
 # Apply eventlet monkey patch for better performance
 eventlet.monkey_patch()
@@ -13,7 +14,9 @@ socketio = SocketIO(
     async_mode='eventlet',
     ping_timeout=60,
     ping_interval=25,
-    max_http_buffer_size=1024 * 1024 * 10  # 10MB buffer
+    max_http_buffer_size=1024 * 1024 * 10,
+    logger=False,  # Disable verbose logging
+    engineio_logger=False  # Disable engine.io logging
 )
 
 # Store active user connections
@@ -37,61 +40,97 @@ def init_socketio(app):
 
 def register_handlers():
     """Register all WebSocket event handlers"""
+    from utils.socket_monitor import socket_monitor
+    
     # Connection events
     @socketio.on('connect')
     def handle_connect():
         """Handle user connection"""
-        if current_user.is_authenticated:
-            user_id = current_user.id
-            username = getattr(current_user, 'username', f'User{user_id}')
-            
-            # Store connection info
-            user_connections[request.sid] = {
-                'user_id': user_id,
-                'username': username,
-                'connected_at': socketio.server.manager.get_timestamp()
-            }
-            
-            # Join user-specific room
-            join_room(f'user_{user_id}')
-            join_room('all_users')
-            
-            # Check if user is admin and join admin room
-            if hasattr(current_user, 'is_admin') and current_user.is_admin:
-                join_room('admin_room')
-            
-            print(f"✅ User {username} (ID: {user_id}) connected via WebSocket")
-            
-            # Notify admins of user connection
-            emit('user_connected', {
-                'user_id': user_id,
-                'username': username,
-                'timestamp': socketio.server.manager.get_timestamp()
-            }, room='admin_room')
-            
-        else:
-            print("❌ Unauthenticated user attempted WebSocket connection")
-            disconnect()
+        try:
+            if current_user.is_authenticated:
+                user_id = current_user.id
+                username = getattr(current_user, 'username', f'User{user_id}')
+                
+                # Register with monitor
+                socket_monitor.register_connection(request.sid, user_id)
+                
+                # Store connection info
+                user_connections[request.sid] = {
+                    'user_id': user_id,
+                    'username': username,
+                    'connected_at': datetime.datetime.utcnow().isoformat()
+                }
+                
+                # Join user-specific room
+                join_room(f'user_{user_id}')
+                join_room('all_users')
+                
+                # Check if user is admin and join admin room
+                if hasattr(current_user, 'is_admin') and current_user.is_admin:
+                    join_room('admin_room')
+                
+                print(f"✅ User {username} (ID: {user_id}) connected via WebSocket")
+                
+                # Notify admins of user connection
+                emit('user_connected', {
+                    'user_id': user_id,
+                    'username': username,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                }, room='admin_room')
+                
+            else:
+                print("❌ Unauthenticated user attempted WebSocket connection")
+                disconnect()
+        except Exception as e:
+            print(f"❌ Error in connect handler: {str(e)}")
+            socket_monitor.register_error(request.sid, e)
 
     @socketio.on('disconnect')
-    def handle_disconnect():
+    def handle_disconnect(reason=None):
         """Handle user disconnection"""
-        if request.sid in user_connections:
-            user_info = user_connections[request.sid]
-            user_id = user_info['user_id']
-            username = user_info['username']
-            
-            # Remove from tracking
-            del user_connections[request.sid]
-            
-            print(f"🔌 User {username} (ID: {user_id}) disconnected from WebSocket")
-            
-            # Notify admins of user disconnection
-            emit('user_disconnected', {
-                'user_id': user_id,
-                'username': username,
-                'timestamp': socketio.server.manager.get_timestamp()
-            }, room='admin_room')
+        try:
+            if request.sid in user_connections:
+                user_info = user_connections[request.sid]
+                user_id = user_info['user_id']
+                username = user_info['username']
+                
+                # Register with monitor
+                socket_monitor.register_disconnect(request.sid)
+                
+                # Remove from tracking
+                del user_connections[request.sid]
+                
+                print(f"🔌 User {username} (ID: {user_id}) disconnected from WebSocket")
+                
+                # Notify admins of user disconnection
+                emit('user_disconnected', {
+                    'user_id': user_id,
+                    'username': username,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                }, room='admin_room')
+        except Exception as e:
+            print(f"❌ Error in disconnect handler: {str(e)}")
+
+    @socketio.on('health_check')
+    def handle_health_check(data):
+        """Handle health check requests"""
+        try:
+            socket_monitor.update_activity(request.sid)
+            emit('health_status', {
+                'status': 'healthy',
+                'server_time': datetime.datetime.utcnow().isoformat(),
+                'active_connections': len(user_connections),
+                'client_time': data.get('client_time') if data else None
+            })
+        except Exception as e:
+            print(f"❌ Error in health check handler: {str(e)}")
+            socket_monitor.register_error(request.sid, e)
+
+    @socketio.on_error_default
+    def default_error_handler(e):
+        """Handle any unhandled socket errors"""
+        print(f"❌ Unhandled WebSocket error: {str(e)}")
+        socket_monitor.register_error(request.sid, e)
 
 def get_active_users_list():
     """Get list of currently connected users"""
@@ -117,14 +156,17 @@ def broadcast_to_all(event_name, data):
     """Helper function to broadcast to all connected users"""
     socketio.emit(event_name, data, room='all_users')
 
-# Health check endpoint
-@socketio.on('health_check')
-def handle_health_check():
-    """Handle health check requests"""
-    emit('health_status', {
-        'status': 'healthy',
-        'server_time': socketio.server.manager.get_timestamp(),
-        'active_connections': len(user_connections)
-    })
+def update_user_activity(user_id, activity_type):
+    """Update user activity tracking"""
+    try:
+        from utils.socket_monitor import socket_monitor
+        
+        # Find the user's session
+        for sid, user_info in user_connections.items():
+            if user_info['user_id'] == user_id:
+                socket_monitor.update_activity(sid)
+                break
+    except Exception as e:
+        print(f"❌ Error updating user activity: {str(e)}")
 
 print("✅ Socket manager initialized successfully")

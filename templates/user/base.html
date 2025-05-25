@@ -14,57 +14,62 @@
 
 <!-- Global WebSocket Support -->
 <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
-<script src="{{ static_url('js/socket-client.js') }}"></script>
 <script>
   // Basic WebSocket setup for all pages
   document.addEventListener('DOMContentLoaded', function() {
-    // Initialize socket client
-    const socketClient = new SocketClient();
-    socketClient.connect();
-    
-    // Join general room
-    socketClient.emit('join_general', {});
-    
-    // Listen for admin messages
-    socketClient.on('admin_message', function(data) {
-      console.log('Message from admin:', data);
-      // Display notification
-      socketClient.showNotification(data.admin_name, data.message);
-    });
-    
-    // Create notification area if it doesn't exist
-    if (!document.getElementById('notification-area')) {
-      const notifArea = document.createElement('div');
-      notifArea.id = 'notification-area';
-      document.body.appendChild(notifArea);
+    // Socket client is already initialized from the included script
+    if (window.socketClient) {
+      // Join general room
+      window.socketClient.emit('join_general', {});
+      
+      // Listen for admin messages
+      window.socketClient.on('admin_message', function(data) {
+        console.log('Message from admin:', data);
+        // Display notification
+        window.socketClient.showNotification(data.admin_name, data.message);
+      });
+      
+      // Create notification area if it doesn't exist
+      if (!document.getElementById('notification-area')) {
+        const notifArea = document.createElement('div');
+        notifArea.id = 'notification-area';
+        document.body.appendChild(notifArea);
+      }
+      
+      // Add connection status indicator
+      const statusIndicator = document.createElement('div');
+      statusIndicator.id = 'socket-status';
+      statusIndicator.className = 'socket-status disconnected';
+      statusIndicator.innerHTML = '<span class="status-dot"></span><span class="status-text">Disconnected</span>';
+      document.body.appendChild(statusIndicator);
+      
+      // Update connection status when socket connects/disconnects
+      window.socketClient.on('connected', function() {
+        const indicator = document.getElementById('socket-status');
+        if (indicator) {
+          indicator.className = 'socket-status connected';
+          indicator.querySelector('.status-text').textContent = 'Connected';
+        }
+      });
+      
+      window.socketClient.on('disconnected', function() {
+        const indicator = document.getElementById('socket-status');
+        if (indicator) {
+          indicator.className = 'socket-status disconnected';
+          indicator.querySelector('.status-text').textContent = 'Disconnected';
+        }
+      });
+    } else {
+      console.warn('SocketClient not available yet, will retry...');
+      // Retry after a short delay if socket client isn't ready
+      setTimeout(function() {
+        if (window.socketClient) {
+          console.log('SocketClient now available, initializing...');
+          // Re-run the initialization
+          arguments.callee.caller();
+        }
+      }, 500);
     }
-    
-    // Add connection status indicator
-    const statusIndicator = document.createElement('div');
-    statusIndicator.id = 'socket-status';
-    statusIndicator.className = 'socket-status disconnected';
-    statusIndicator.innerHTML = '<span class="status-dot"></span><span class="status-text">Disconnected</span>';
-    document.body.appendChild(statusIndicator);
-    
-    // Update connection status when socket connects/disconnects
-    socketClient.on('connected', function() {
-      const indicator = document.getElementById('socket-status');
-      if (indicator) {
-        indicator.className = 'socket-status connected';
-        indicator.querySelector('.status-text').textContent = 'Connected';
-      }
-    });
-    
-    socketClient.on('disconnected', function() {
-      const indicator = document.getElementById('socket-status');
-      if (indicator) {
-        indicator.className = 'socket-status disconnected';
-        indicator.querySelector('.status-text').textContent = 'Disconnected';
-      }
-    });
-    
-    // Make socketClient available globally
-    window.socketClient = socketClient;
   });
 </script>
 </body>

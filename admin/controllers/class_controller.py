@@ -32,10 +32,11 @@ def get_question_groups():
         return jsonify([{
             'id': group.id,
             'name': group.name,
-            'questionCount': len(group.questions)
+            'questionCount': len(group.questions) if hasattr(group, 'questions') and group.questions else 0
         } for group in groups])
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error fetching question groups: {e}")
+        return jsonify({"error": "Failed to fetch question groups"}), 500
 
 @class_controller.route('/api/classes', methods=['GET'])
 @login_required
@@ -48,24 +49,30 @@ def get_classes():
         # Convert classes to dictionary format for JSON response
         result = []
         for cls in classes:
-            # Use the correct method for dynamic relationship
-            student_count = cls.students.count() if cls.students else 0
+            # Safely get student count
+            try:
+                student_count = cls.students.count() if hasattr(cls, 'students') and cls.students else 0
+            except Exception:
+                student_count = 0
             
             result.append({
                 'id': cls.id,
-                'name': cls.name,
-                'section': cls.section,
-                'code': cls.code,
+                'name': cls.name or '',
+                'section': cls.section or '',
+                'code': cls.code or '',
                 'students': student_count,
-                'maxStudents': cls.max_students,
+                'maxStudents': cls.max_students or 0,
                 'startDate': cls.start_date.isoformat() if cls.start_date else None,
                 'endDate': cls.end_date.isoformat() if cls.end_date else None,
-                'status': cls.status
+                'status': cls.status or 'inactive'
             })
             
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error fetching classes: {e}")
+        # Return empty list instead of error to prevent frontend crash
+        return jsonify([])
+    
 
 @class_controller.route('/api/classes', methods=['POST'])
 @login_required
@@ -81,9 +88,9 @@ def create_class():
                 "error": f"Class code '{data.get('code')}' already exists. Please use a different code."
             }), 400
         
-        # Parse dates
-        start_date = datetime.fromisoformat(data.get('startDate')) if data.get('startDate') else None
-        end_date = datetime.fromisoformat(data.get('endDate')) if data.get('endDate') else None
+        # Parse dates (frontend sends YYYY-MM-DD format)
+        start_date = datetime.strptime(data.get('startDate'), '%Y-%m-%d').date() if data.get('startDate') else None
+        end_date = datetime.strptime(data.get('endDate'), '%Y-%m-%d').date() if data.get('endDate') else None
         
         # Create new class
         new_class = Class(
@@ -102,7 +109,8 @@ def create_class():
             question_groups = QuestionGroup.query.filter(
                 QuestionGroup.id.in_(data['questionGroups'])
             ).all()
-            new_class.question_groups = question_groups
+            for qg in question_groups:
+                new_class.question_groups.append(qg)
         
         # Save to database
         db.session.add(new_class)
@@ -160,20 +168,27 @@ def update_class(class_id):
         if 'description' in data:
             cls.description = data['description']
         if 'startDate' in data:
-            cls.start_date = datetime.fromisoformat(data['startDate'])
+            cls.start_date = datetime.strptime(data['startDate'], '%Y-%m-%d').date() if data['startDate'] else None
         if 'endDate' in data:
-            cls.end_date = datetime.fromisoformat(data['endDate'])
+            cls.end_date = datetime.strptime(data['endDate'], '%Y-%m-%d').date() if data['endDate'] else None
         if 'maxStudents' in data:
             cls.max_students = data['maxStudents']
         if 'status' in data:
             cls.status = data['status']
             
+        # Set updated_at explicitly
+        cls.updated_at = datetime.utcnow()
+            
         # Update question groups if provided
         if 'questionGroups' in data:
+            # Clear existing question groups
+            cls.question_groups.clear()
+            # Add new question groups
             question_groups = QuestionGroup.query.filter(
                 QuestionGroup.id.in_(data['questionGroups'])
             ).all()
-            cls.question_groups = question_groups
+            for qg in question_groups:
+                cls.question_groups.append(qg)
         
         db.session.commit()
         
@@ -205,17 +220,33 @@ def generate_class_code():
         chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'  # Removed confusing characters like 0, O, 1, I
         
         # Keep generating until we find a unique code
-        while True:
+        max_attempts = 100  # Prevent infinite loop
+        attempts = 0
+        code = None
+        
+        while attempts < max_attempts:
             code = ''.join(random.choice(chars) for _ in range(6))
             
             # Check if code already exists in database
-            existing = Class.query.filter_by(code=code).first()
-            if not existing:
+            try:
+                existing = Class.query.filter_by(code=code).first()
+                if not existing:
+                    break
+            except Exception as db_error:
+                print(f"Database error checking code: {db_error}")
+                # If DB check fails, just return the generated code
                 break
+            attempts += 1
+                
+        if attempts >= max_attempts:
+            return jsonify({"error": "Unable to generate unique code"}), 500
                 
         return jsonify({"code": code})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error generating class code: {e}")
+        # Return a fallback code
+        fallback_code = ''.join(random.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(6))
+        return jsonify({"code": fallback_code})
 
 @class_controller.route('/student-classes')
 @login_required
@@ -286,9 +317,8 @@ def remove_student_from_class(class_id, student_id):
     try:
         cls = Class.query.get_or_404(class_id)
         
-        # Find the student - assuming this is a User model
-        from user.models import User as UserModel  # Rename to avoid conflicts
-        student = UserModel.query.get_or_404(student_id)
+        # Find the student - using the imported User model
+        student = User.query.get_or_404(student_id)
         
         # Check if student is enrolled using the dynamic relationship
         if not cls.students.filter_by(id=student_id).first():

@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from __init__ import db
+from admin import db
 
 class TroubleshootingProgress(db.Model):
     """

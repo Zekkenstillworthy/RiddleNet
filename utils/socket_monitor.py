@@ -87,19 +87,24 @@ class SocketConnectionMonitor:
     
     def register_connection(self, sid, user_id=None):
         """Register a new WebSocket connection"""
-        self.active_connections[sid] = {
-            'user_id': user_id,
-            'connected_at': time.time(),
-            'last_activity': time.time(),
-            'events_sent': 0,
-            'events_received': 0,
-            'ip': request.remote_addr if request else None
-        }
-        
-        self.connection_counts['total'] += 1
-        self.connection_counts['active'] += 1
-        
-        logger.info(f"New connection: {sid} (User: {user_id})")
+        try:
+            self.active_connections[sid] = {
+                'user_id': user_id,
+                'connected_at': time.time(),
+                'last_activity': time.time(),
+                'events_sent': 0,
+                'events_received': 0,
+                'ip': request.remote_addr if request else None,
+                'errors': 0,
+                'last_error': None
+            }
+            
+            self.connection_counts['total'] += 1
+            self.connection_counts['active'] += 1
+            
+            logger.info(f"✅ New connection: {sid} (User: {user_id})")
+        except Exception as e:
+            logger.error(f"❌ Error registering connection {sid}: {str(e)}")
     
     def update_activity(self, sid):
         """Update last activity time for a connection"""
@@ -112,10 +117,11 @@ class SocketConnectionMonitor:
             conn_info = self.active_connections[sid]
             duration = time.time() - conn_info['connected_at']
             
-            logger.info(f"Connection closed: {sid} (Duration: {duration:.1f}s)")
+            logger.info(f"🔌 Connection closed: {sid} (Duration: {duration:.1f}s, Errors: {conn_info.get('errors', 0)})")
             
             self.connection_counts['disconnected'] += 1
-            self.connection_counts['active'] -= 1
+            if self.connection_counts['active'] > 0:
+                self.connection_counts['active'] -= 1
             
             del self.active_connections[sid]
     
@@ -124,8 +130,12 @@ class SocketConnectionMonitor:
         self.connection_counts['errors'] += 1
         
         if sid in self.active_connections:
-            logger.error(f"WebSocket error for {sid}: {str(error)}")
-    
+            self.active_connections[sid]['errors'] = self.active_connections[sid].get('errors', 0) + 1
+            self.active_connections[sid]['last_error'] = str(error)
+            logger.warning(f"⚠️ WebSocket error for {sid}: {str(error)}")
+        else:
+            logger.error(f"❌ WebSocket error for unknown connection {sid}: {str(error)}")
+
     def register_event(self, event_type, direction='in'):
         """Register an event sent or received"""
         key = f"{direction}:{event_type}"

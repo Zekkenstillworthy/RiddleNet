@@ -1,4 +1,4 @@
-from __init__ import db
+from admin import db
 from datetime import datetime
 
 class Scenario(db.Model):

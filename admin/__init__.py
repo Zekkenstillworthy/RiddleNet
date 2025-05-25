@@ -61,6 +61,14 @@ def create_app(config=None):
         app.register_blueprint(scenario_bp)
         app.register_blueprint(scenario_routes)
         
+        # Register API routes
+        try:
+            from admin.routes.api_routes import api_bp
+            app.register_blueprint(api_bp)
+            print("API routes registered successfully")
+        except ImportError as e:
+            print(f"Failed to import API routes: {e}")
+        
         # Create database tables
         db.create_all()
         

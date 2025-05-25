@@ -2,7 +2,7 @@
 This script adds the new fields to the troubleshooting table and creates 
 the troubleshooting_progress table for tracking user progress
 """
-from __init__ import db
+from admin import db
 from admin.models.troubleshooting import Troubleshooting
 from admin.models.troubleshooting_progress import TroubleshootingProgress
 from sqlalchemy import inspect, Column, Integer, String, Text, Boolean, DateTime, Float

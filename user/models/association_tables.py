@@ -3,7 +3,7 @@ Association tables for many-to-many relationships in the user model
 This module defines association tables that can be imported anywhere
 without causing import cycles
 """
-from . import db
+from admin import db
 from datetime import datetime
 
 # We're importing the existing definition from admin.models.class_model

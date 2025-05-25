@@ -1,4 +1,4 @@
-from __init__ import db
+from admin import db
 from datetime import datetime
 
 # Association table for many-to-many relationship between classes and question groups
@@ -32,6 +32,7 @@ class Class(db.Model):
     max_students = db.Column(db.Integer, default=30)
     status = db.Column(db.String(20), default='active')  # active, inactive, pending
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     question_groups = db.relationship('QuestionGroup', 

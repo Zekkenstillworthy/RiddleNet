@@ -405,53 +405,18 @@
       }
     }
 
-    // Fix for modal accessibility issues
-    const fixModalAccessibility = () => {
-      // Configure Bootstrap modals to properly handle focus
-      const modals = document.querySelectorAll('.modal');
-      modals.forEach(modal => {
-        // Set up event listeners for modals
-        modal.addEventListener('hide.bs.modal', function (event) {
-          // Before hiding, blur any focused elements inside the modal
-          // This prevents focus being trapped in an aria-hidden element
-          if (document.activeElement && modal.contains(document.activeElement)) {
-            document.activeElement.blur();
-          }
-        });
-        
-        // Add proper aria attributes when showing
-        modal.addEventListener('show.bs.modal', function (event) {
-          modal.setAttribute('aria-modal', 'true');
-          modal.removeAttribute('aria-hidden');
-        });
-      });
-      
-      // Fix close buttons to properly manage focus
-      document.querySelectorAll('.modal .btn-close').forEach(btn => {
-        btn.addEventListener('click', function() {
-          // Blur the button before the modal starts hiding
-          this.blur();
-          // Focus something outside the modal (body is a safe choice)
-          document.body.focus();
-        });
-      });
-    };
-    
-    // Call the function to set up modal accessibility fixes
-    fixModalAccessibility();
-    
-    // Generate class code from API
+    // Generate code from API with better error handling
     function generateCodeFromAPI() {
       fetch("/admin/api/generate-class-code")
         .then(response => {
           if (!response.ok) {
-            throw new Error("Failed to generate class code");
+            throw new Error(`HTTP ${response.status}: Failed to generate class code`);
           }
           return response.json();
         })
         .then(data => {
           const classCodeEl = document.getElementById("classCodeGen");
-          if (classCodeEl) {
+          if (classCodeEl && data.code) {
             classCodeEl.value = data.code;
           }
         })
@@ -504,14 +469,111 @@
     // Load existing classes
     loadClasses();
 
-    // Create class form submission
+    // Move createClass function to proper scope
+    window.createClass = function() {
+      // Get form values
+      const className = document.getElementById("className").value;
+      const classSection = document.getElementById("classSection").value;
+      const startDate = document.getElementById("classStart").value;
+      const endDate = document.getElementById("classEnd").value;
+      const maxStudents = document.getElementById("maxStudents").value;
+      const classCode = document.getElementById("classCodeGen").value;
+      const description = document.getElementById("classDescription").value;
+
+      // Get selected question groups
+      const selectedGroups = [];
+      document
+        .querySelectorAll(".question-group-checkbox:checked")
+        .forEach((checkbox) => {
+          selectedGroups.push(parseInt(checkbox.value));
+        });
+
+      // Prepare class data
+      const classData = {
+        name: className,
+        section: classSection,
+        startDate: startDate,
+        endDate: endDate,
+        maxStudents: parseInt(maxStudents),
+        code: classCode,
+        description: description,
+        questionGroups: selectedGroups,
+        status: new Date(startDate) > new Date() ? "pending" : "active",
+      };
+
+      console.log("Creating class with data:", classData);
+
+      // API call to create a class
+      fetch("/admin/api/classes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(classData),
+      })
+        .then(response => {
+          console.log("Create class response status:", response.status);
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || "Failed to create class");
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log("Class created successfully:", data);
+          // Show success message
+          alert(data.message || "Class created successfully!");
+
+          // Hide the modal
+          const modalEl = document.getElementById("createClassModal");
+          if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+          }
+
+          // Reset form and reload classes
+          const formEl = document.getElementById("createClassForm");
+          if (formEl) formEl.reset();
+          
+          const classStartEl = document.getElementById("classStart");
+          if (classStartEl) classStartEl.value = today;
+          
+          const classEndEl = document.getElementById("classEnd");
+          if (classEndEl) classEndEl.value = endDate.toISOString().split("T")[0];
+          
+          generateCodeFromAPI();
+          loadClasses();
+        })
+        .catch(error => {
+          console.error("Error creating class:", error);
+          
+          // Check if the error is related to duplicate class code
+          if (error.message && error.message.includes("already exists")) {
+            const confirmNewCode = confirm("This class code already exists. Would you like to generate a new code and try again?");
+            if (confirmNewCode) {
+              // Generate a new code and try again
+              generateCodeFromAPI();
+              setTimeout(() => {
+                // Show a notification that we're trying with a new code
+                const newCode = document.getElementById("classCodeGen").value;
+                alert(`Trying with new code: ${newCode}`);
+              }, 500);
+            }
+          } else {
+            alert("Error creating class: " + error.message);
+          }
+        });
+    };
+
+    // Create class form submission - fix the function reference
     addSafeEventListener("createClassBtn", "click", function () {
       // Get the form element
       const form = document.getElementById("createClassForm");
 
       // Check if the form is valid
       if (form && form.checkValidity()) {
-        createClass();
+        window.createClass(); // Use the global function
       } else if (form) {
         // Trigger form validation
         form.reportValidity();
@@ -625,9 +687,14 @@
         });
     }
 
-    // Function to load classes from API
+    // Function to load classes from API with better error handling and debugging
     function loadClasses(status = "all") {
       const tbody = document.getElementById("classListBody");
+      if (!tbody) {
+        console.error("classListBody element not found");
+        return;
+      }
+      
       tbody.innerHTML = `
         <tr>
             <td colspan="8" class="text-center py-4" id="classListMessage">
@@ -638,29 +705,52 @@
             </td>
         </tr>`;
         
+      // Add debugging information
+      console.log("Attempting to fetch classes from: /admin/api/classes");
+      console.log("Current status filter:", status);
+        
       fetch("/admin/api/classes")
         .then(response => {
+          console.log("Response status:", response.status);
+          console.log("Response headers:", response.headers);
+          
           if (!response.ok) {
-            throw new Error("Failed to fetch classes");
+            // Try to get error details from response
+            return response.text().then(text => {
+              console.error("Response text:", text);
+              throw new Error(`HTTP ${response.status}: ${text || 'Failed to fetch classes'}`);
+            });
           }
           return response.json();
         })
-        .then(classes => {
+        .then(data => {
+          console.log("Received data:", data);
+          console.log("Data type:", typeof data);
+          console.log("Is array:", Array.isArray(data));
+          
+          // Ensure we have an array
+          let classes = Array.isArray(data) ? data : (data.classes || []);
+          console.log("Processed classes array:", classes);
+          
           // Filter classes if status is specified
           let filteredClasses = classes;
           if (status !== "all") {
             filteredClasses = classes.filter(cls => cls.status === status);
           }
           
+          console.log("Filtered classes:", filteredClasses);
           displayClasses(filteredClasses);
         })
         .catch(error => {
-          console.error("Error loading classes:", error);
+          console.error("Detailed error loading classes:", error);
+          console.error("Error stack:", error.stack);
+          
           tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center py-4 text-danger">
                     <i class="bx bx-error-circle fs-1"></i>
-                    <p class="mt-2">Failed to load classes. Please try refreshing the page.</p>
+                    <p class="mt-2">Failed to load classes: ${error.message}</p>
+                    <p class="small">Check browser console for details</p>
                     <button class="btn btn-outline-light mt-2" onclick="window.location.reload()">Refresh</button>
                 </td>
             </tr>`;
@@ -763,98 +853,6 @@
           }
         });
       });
-    }
-
-    function createClass() {
-      // Get form values
-      const className = document.getElementById("className").value;
-      const classSection = document.getElementById("classSection").value;
-      const startDate = document.getElementById("classStart").value;
-      const endDate = document.getElementById("classEnd").value;
-      const maxStudents = document.getElementById("maxStudents").value;
-      const classCode = document.getElementById("classCodeGen").value;
-      const description = document.getElementById("classDescription").value;
-
-      // Get selected question groups
-      const selectedGroups = [];
-      document
-        .querySelectorAll(".question-group-checkbox:checked")
-        .forEach((checkbox) => {
-          selectedGroups.push(parseInt(checkbox.value));
-        });
-
-      // Prepare class data
-      const classData = {
-        name: className,
-        section: classSection,
-        startDate: startDate,
-        endDate: endDate,
-        maxStudents: parseInt(maxStudents),
-        code: classCode,
-        description: description,
-        questionGroups: selectedGroups,
-        status: new Date(startDate) > new Date() ? "pending" : "active",
-      };
-
-      // API call to create a class
-      fetch("/admin/api/classes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(classData),
-      })
-        .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error || "Failed to create class");
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          // Show success message
-          alert(data.message || "Class created successfully!");
-
-          // Hide the modal
-          const modalEl = document.getElementById("createClassModal");
-          if (modalEl) {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-          }
-
-          // Reset form and reload classes
-          const formEl = document.getElementById("createClassForm");
-          if (formEl) formEl.reset();
-          
-          const classStartEl = document.getElementById("classStart");
-          if (classStartEl) classStartEl.value = today;
-          
-          const classEndEl = document.getElementById("classEnd");
-          if (classEndEl) classEndEl.value = endDate.toISOString().split("T")[0];
-          
-          generateCodeFromAPI();
-          loadClasses();
-        })
-        .catch(error => {
-          console.error("Error creating class:", error);
-          
-          // Check if the error is related to duplicate class code
-          if (error.message && error.message.includes("already exists")) {
-            const confirmNewCode = confirm("This class code already exists. Would you like to generate a new code and try again?");
-            if (confirmNewCode) {
-              // Generate a new code and try again
-              generateCodeFromAPI();
-              setTimeout(() => {
-                // Show a notification that we're trying with a new code
-                const newCode = document.getElementById("classCodeGen").value;
-                alert(`Trying with new code: ${newCode}`);
-              }, 500);
-            }
-          } else {
-            alert("Error creating class: " + error.message);
-          }
-        });
     }
 
     // Open class details modal
@@ -1346,6 +1344,28 @@
     function capitalizeFirstLetter(string) {
       if (!string) return '';
       return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    // Add a test function to check API connectivity
+    function testAPIConnectivity() {
+      console.log("Testing API connectivity...");
+      
+      fetch("/admin/api/test")
+        .then(response => {
+          console.log("API test response:", response.status);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log("API test successful:", data);
+          console.log(`Database has ${data.class_count} classes`);
+        })
+        .catch(error => {
+          console.error("API test failed:", error);
+          console.log("This suggests the backend API might not be running or accessible");
+        });
     }
   });
 

@@ -230,7 +230,8 @@ try:
         ('admin.controllers.scenario_controller', 'scenario_bp', '/admin', None),
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
-        ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),        ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
+        ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
+        ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes
         ('admin.routes.scenario_routes', 'scenario_routes', '/admin', None)
     ]
@@ -460,4 +461,20 @@ if __name__ == "__main__":
     
     # Run the WebSocket server in the main thread
     run_websocket_server()
+
+if __name__ == '__main__':
+    with app.app_context():
+        try:
+            from admin.utils.database_setup import setup_database, migrate_existing_tables
+            
+            # First, try to migrate existing tables
+            print("Checking for database migrations...")
+            migrate_existing_tables()
+            
+            # Then set up database normally
+            setup_database()
+            
+        except Exception as e:
+            print(f"Database setup error: {e}")
+            print("Continuing with application startup...")
 

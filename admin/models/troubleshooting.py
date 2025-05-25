@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from __init__ import db
+from admin import db
 
 class Troubleshooting(db.Model):
     """
@@ -25,18 +25,13 @@ class Troubleshooting(db.Model):
     base_score = db.Column(db.Integer, default=10)  # Default base score
     time_bonus = db.Column(db.Integer, default=5)  # Default time bonus
     solution_bonus = db.Column(db.Integer, default=5)  # Default bonus for perfect solution
-    _scoring_metrics = db.Column('scoring_metrics', db.Text, nullable=True)  # JSON string
     _required_devices = db.Column('required_devices', db.Text, nullable=True)  # JSON string
     _topology_config = db.Column('topology_config', db.Text, nullable=True)  # JSON string for network topology
-    _initial_topology = db.Column('initial_topology', db.Text, nullable=True)  # JSON string for initial topology state
     _expected_topology = db.Column('expected_topology', db.Text, nullable=True)  # JSON string for expected solution
     _tasks = db.Column('tasks', db.Text, nullable=True)  # JSON string for required tasks
-    base_score = db.Column(db.Integer, default=100)
-    time_bonus = db.Column(db.Integer, default=20)
     perfect_match_bonus = db.Column(db.Integer, default=10)
     topology_type = db.Column(db.String(50), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
-    time_limit = db.Column(db.Integer, default=1800)  # Time limit in seconds (default 30 minutes)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
