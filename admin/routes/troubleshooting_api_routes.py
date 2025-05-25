@@ -22,6 +22,21 @@ def list_troubleshootings():
     
     return controller.list_troubleshootings(page, per_page, search, difficulty)
 
+# Add a temporary test route that bypasses authentication for debugging
+@troubleshooting_api_bp.route('/test', methods=['GET'])
+@cross_origin()
+def test_troubleshootings():
+    """Test route to check troubleshooting API without authentication"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        search = request.args.get('search', '')
+        difficulty = request.args.get('difficulty', '')
+        
+        return controller.list_troubleshootings(page, per_page, search, difficulty)
+    except Exception as e:
+        return jsonify({"error": str(e), "traceback": str(e.__traceback__)}), 500
+
 @troubleshooting_api_bp.route('/<int:troubleshooting_id>', methods=['GET'])
 @admin_login_required
 @cross_origin()

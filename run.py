@@ -232,7 +232,9 @@ try:
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
+        ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes
+        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
         ('admin.routes.scenario_routes', 'scenario_routes', '/admin', None)
     ]
     
@@ -450,8 +452,7 @@ if __name__ == "__main__":
     # Give the static server a moment to start
     import time
     time.sleep(1)
-    
-    # Check if static server is running
+      # Check if static server is running
     from utils.static_server_monitor import static_server_monitor
     if not static_server_monitor.check_availability():
         print("\n⚠️ WARNING: Static file server failed to start on port 5001!")
@@ -459,8 +460,12 @@ if __name__ == "__main__":
     else:
         print("✅ Static file server running at http://localhost:5001")
     
-    # Run the WebSocket server in the main thread
-    run_websocket_server()
+    # Run the WebSocket server in the main thread (commented out for API testing)
+    # run_websocket_server()
+    
+    # For now, run a simple Flask server for API testing
+    print("Starting Flask server for API testing on port 5001...")
+    app.run(debug=True, host='127.0.0.1', port=5001, use_reloader=False)
 
 if __name__ == '__main__':
     with app.app_context():

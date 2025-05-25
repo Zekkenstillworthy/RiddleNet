@@ -31,8 +31,7 @@
         margin-right: 5px;
         opacity: 0.7;
     }
-    
-    /* Scoring metrics styles */
+      /* Scoring metrics styles */
     .scoring-metrics-container {
         margin-top: 20px;
         padding: 15px;
@@ -41,16 +40,138 @@
         border: 1px solid rgba(0, 195, 181, 0.2);
     }
     
-    .metrics-row {
+    .config-section {
+        margin-bottom: 25px;
+        padding: 15px;
+        background-color: rgba(9, 0, 29, 0.3);
+        border-radius: 6px;
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .config-section h5 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .metrics-row, .device-row, .time-row {
         display: flex;
         flex-wrap: wrap;
         gap: 15px;
         margin-bottom: 15px;
     }
     
-    .metric-item {
+    .metric-item, .device-item, .time-item {
         flex: 1;
         min-width: 200px;
+    }
+
+    .metric-item label, .device-item label, .time-item label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .metric-item input[type="range"] {
+        width: 100%;
+        margin: 8px 0;
+    }
+
+    .metric-item span {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-left: 10px;
+    }
+
+    .device-item input[type="number"], .time-item input[type="number"] {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid rgba(0, 195, 181, 0.3);
+        border-radius: 4px;
+        background-color: rgba(9, 0, 29, 0.6);
+        color: var(--text-color);
+    }
+
+    .metric-validation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .validation-status {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .validation-status.valid {
+        background-color: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+        border: 1px solid #4CAF50;
+    }
+
+    .validation-status.invalid {
+        background-color: rgba(244, 67, 54, 0.2);
+        color: #F44336;
+        border: 1px solid #F44336;
+    }
+
+    .validation-rules {
+        margin-bottom: 15px;
+    }
+
+    .validation-rule {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: rgba(0, 195, 181, 0.1);
+        border-radius: 4px;
+        border: 1px solid rgba(0, 195, 181, 0.2);
+    }
+
+    .validation-rule select, .validation-rule input {
+        padding: 5px 8px;
+        border: 1px solid rgba(0, 195, 181, 0.3);
+        border-radius: 3px;
+        background-color: rgba(9, 0, 29, 0.8);
+        color: var(--text-color);
+    }
+
+    .validation-rule .remove-rule {
+        background-color: #F44336;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 5px 8px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .score-preview {
+        padding: 15px;
+        background-color: rgba(0, 195, 181, 0.1);
+        border-radius: 6px;
+        border: 1px solid rgba(0, 195, 181, 0.3);
+    }
+
+    .preview-scenario {
+        font-size: 14px;
+    }
+
+    .preview-line {
+        margin: 8px 0;
+        padding: 5px 0;
+    }
+
+    .preview-breakdown {
+        margin-top: 10px;
+        font-size: 12px;
+        opacity: 0.8;
     }
 
     .tab:hover {
@@ -1009,38 +1130,141 @@
                         <small class="form-text">Advanced configuration settings for the topology builder</small>
                     </div>
                 </div>
-                
-                <div class="tab-pane" id="scoring-tab-pane">
+                  <div class="tab-pane" id="scoring-tab-pane">
                     <div class="scoring-metrics-container">
-                        <h4>Scoring Metrics</h4>
-                        <p>Adjust the weights of different scoring components (total should equal 100)</p>
+                        <h4>Topology Scoring Configuration</h4>
+                        <p>Configure how student topologies are scored and validated</p>
                         
-                        <div class="metrics-row">
-                            <div class="metric-item">
-                                <label for="troubleshooting-speed">Speed:</label>
-                                <input type="range" id="troubleshooting-speed" min="0" max="50" value="20" oninput="updateTroubleshootingMetricValue('speed')">
-                                <span id="troubleshooting-speed-value">20</span>
-                                <small class="form-text">Time taken to solve the problem</small>
+                        <!-- Scoring Metrics Section -->
+                        <div class="config-section">
+                            <h5>Scoring Metrics (Total: <span id="metrics-total">100</span>%)</h5>
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <label for="time-efficiency">Time Efficiency:</label>
+                                    <input type="range" id="time-efficiency" min="0" max="50" value="10" oninput="updateScoringMetric('time_efficiency', this.value)">
+                                    <span id="time-efficiency-value">10</span>%
+                                    <small class="form-text">Points based on completion speed</small>
+                                </div>
+                                <div class="metric-item">
+                                    <label for="config-process">Configuration Process:</label>
+                                    <input type="range" id="config-process" min="0" max="50" value="25" oninput="updateScoringMetric('config_process', this.value)">
+                                    <span id="config-process-value">25</span>%
+                                    <small class="form-text">Quality of device configuration steps</small>
+                                </div>
                             </div>
-                            <div class="metric-item">
-                                <label for="troubleshooting-accuracy">Accuracy:</label>
-                                <input type="range" id="troubleshooting-accuracy" min="0" max="50" value="30" oninput="updateTroubleshootingMetricValue('accuracy')">
-                                <span id="troubleshooting-accuracy-value">30</span>
-                                <small class="form-text">How closely the solution matches expected result</small>
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <label for="design-layout">Design Layout:</label>
+                                    <input type="range" id="design-layout" min="0" max="50" value="20" oninput="updateScoringMetric('design_layout', this.value)">
+                                    <span id="design-layout-value">20</span>%
+                                    <small class="form-text">Logical network design and structure</small>
+                                </div>
+                                <div class="metric-item">
+                                    <label for="completeness">Completeness:</label>
+                                    <input type="range" id="completeness" min="0" max="50" value="20" oninput="updateScoringMetric('completeness', this.value)">
+                                    <span id="completeness-value">20</span>%
+                                    <small class="form-text">All required devices and connections present</small>
+                                </div>
+                            </div>
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <label for="correctness">Correctness:</label>
+                                    <input type="range" id="correctness" min="0" max="50" value="25" oninput="updateScoringMetric('correctness', this.value)">
+                                    <span id="correctness-value">25</span>%
+                                    <small class="form-text">Functional network with proper connectivity</small>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-validation" id="metrics-validation">
+                                        <span class="validation-status valid" id="validation-status">✓ Valid Distribution</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="metrics-row">
-                            <div class="metric-item">
-                                <label for="troubleshooting-completion">Completion:</label>
-                                <input type="range" id="troubleshooting-completion" min="0" max="50" value="25" oninput="updateTroubleshootingMetricValue('completion')">
-                                <span id="troubleshooting-completion-value">25</span>
-                                <small class="form-text">All required elements are included</small>
+
+                        <!-- Device Requirements Section -->
+                        <div class="config-section">
+                            <h5>Device Requirements</h5>
+                            <div class="device-requirements">
+                                <div class="device-row">
+                                    <div class="device-item">
+                                        <label for="required-pcs">PCs Required:</label>
+                                        <input type="number" id="required-pcs" min="0" max="20" value="2" onchange="updateDeviceRequirement('pc', this.value)">
+                                        <small class="form-text">Minimum number of PC devices</small>
+                                    </div>
+                                    <div class="device-item">
+                                        <label for="required-routers">Routers Required:</label>
+                                        <input type="number" id="required-routers" min="0" max="20" value="0" onchange="updateDeviceRequirement('router', this.value)">
+                                        <small class="form-text">Minimum number of router devices</small>
+                                    </div>
+                                </div>
+                                <div class="device-row">
+                                    <div class="device-item">
+                                        <label for="required-switches">Switches Required:</label>
+                                        <input type="number" id="required-switches" min="0" max="20" value="0" onchange="updateDeviceRequirement('switch', this.value)">
+                                        <small class="form-text">Minimum number of switch devices</small>
+                                    </div>
+                                    <div class="device-item">
+                                        <label for="required-servers">Servers Required:</label>
+                                        <input type="number" id="required-servers" min="0" max="20" value="0" onchange="updateDeviceRequirement('server', this.value)">
+                                        <small class="form-text">Minimum number of server devices</small>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="metric-item">
-                                <label for="troubleshooting-correctness">Correctness:</label>
-                                <input type="range" id="troubleshooting-correctness" min="0" max="50" value="25" oninput="updateTroubleshootingMetricValue('correctness')">
-                                <span id="troubleshooting-correctness-value">25</span>
-                                <small class="form-text">Functional topology with working communication</small>
+                        </div>
+
+                        <!-- Time Scoring Configuration -->
+                        <div class="config-section">
+                            <h5>Time-Based Scoring</h5>
+                            <div class="time-thresholds">
+                                <div class="time-row">
+                                    <div class="time-item">
+                                        <label for="excellent-time">Excellent Time (seconds):</label>
+                                        <input type="number" id="excellent-time" min="10" max="300" value="60" onchange="updateTimeThreshold('excellent', this.value)">
+                                        <small class="form-text">Full time bonus threshold</small>
+                                    </div>
+                                    <div class="time-item">
+                                        <label for="good-time">Good Time (seconds):</label>
+                                        <input type="number" id="good-time" min="30" max="600" value="120" onchange="updateTimeThreshold('good', this.value)">
+                                        <small class="form-text">80% time bonus threshold</small>
+                                    </div>
+                                </div>
+                                <div class="time-row">
+                                    <div class="time-item">
+                                        <label for="average-time">Average Time (seconds):</label>
+                                        <input type="number" id="average-time" min="60" max="900" value="180" onchange="updateTimeThreshold('average', this.value)">
+                                        <small class="form-text">60% time bonus threshold</small>
+                                    </div>
+                                    <div class="time-item">
+                                        <label for="slow-time">Slow Time (seconds):</label>
+                                        <input type="number" id="slow-time" min="120" max="1200" value="300" onchange="updateTimeThreshold('slow', this.value)">
+                                        <small class="form-text">40% time bonus threshold</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Validation Rules -->
+                        <div class="config-section">
+                            <h5>Custom Validation Rules</h5>
+                            <div class="validation-rules" id="validation-rules-container">
+                                <!-- Dynamic validation rules will be added here -->
+                            </div>
+                            <button type="button" class="btn-secondary" onclick="addValidationRule()">
+                                <i class='bx bx-plus'></i> Add Custom Rule
+                            </button>
+                        </div>
+
+                        <!-- Score Preview -->
+                        <div class="config-section">
+                            <h5>Score Preview</h5>
+                            <div class="score-preview" id="score-preview">
+                                <div class="preview-scenario">
+                                    <strong>Example Scenario:</strong>
+                                    <div class="preview-line">Perfect completion in <span id="preview-time">60</span> seconds: <span id="preview-score">100</span> points</div>
+                                    <div class="preview-breakdown" id="preview-breakdown">
+                                        <!-- Score breakdown will be shown here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1364,6 +1588,67 @@
 </div>
 
 <script>
+// Utility Functions
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Toast notification function
+function showToast(type, message) {
+    // Create toast element if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.top = '20px';
+        toastContainer.style.right = '20px';
+        toastContainer.style.zIndex = '10000';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Remove after 4 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 4000);
+}
+
 // Tab Switching Logic
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -2264,694 +2549,6 @@ document.getElementById('debug-topology-btn').addEventListener('click', () => {
         console.error('Debug error:', error);
         alert('Error debugging JSON: ' + error);
     });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching functionality
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    // ------------------------
-    // Troubleshooting Management
-    // ------------------------
-    
-    // DOM elements
-    const troubleshootingTable = document.getElementById('troubleshooting-table');
-    const troubleshootingTableBody = troubleshootingTable.querySelector('tbody');
-    const addTroubleshootingBtn = document.getElementById('add-troubleshooting-btn');
-    const emptyAddTroubleshootingBtn = document.getElementById('empty-add-troubleshooting-btn');
-    const troubleshootingEmptyState = document.getElementById('troubleshooting-empty-state');
-    const troubleshootingSearch = document.getElementById('troubleshooting-search');
-    const filterTroubleshootingDifficulty = document.getElementById('filter-troubleshooting-difficulty');
-    
-    // Initialize troubleshooting management
-    loadTroubleshootings();
-    
-    // Event listeners
-    addTroubleshootingBtn.addEventListener('click', showTroubleshootingModal);
-    emptyAddTroubleshootingBtn.addEventListener('click', showTroubleshootingModal);
-    troubleshootingSearch.addEventListener('input', debounce(loadTroubleshootings, 300));
-    filterTroubleshootingDifficulty.addEventListener('change', loadTroubleshootings);
-    
-    document.addEventListener('click', function(e) {
-        // Edit troubleshooting button
-        if (e.target.closest('.edit-troubleshooting-btn')) {
-            const id = e.target.closest('.edit-troubleshooting-btn').dataset.id;
-            editTroubleshooting(id);
-        }
-        
-        // Delete troubleshooting button
-        if (e.target.closest('.delete-troubleshooting-btn')) {
-            const id = e.target.closest('.delete-troubleshooting-btn').dataset.id;
-            const title = e.target.closest('.delete-troubleshooting-btn').dataset.title;
-            confirmDeleteTroubleshooting(id, title);
-        }
-        
-        // Preview troubleshooting button
-        if (e.target.closest('.preview-troubleshooting-btn')) {
-            const id = e.target.closest('.preview-troubleshooting-btn').dataset.id;
-            previewTroubleshooting(id);
-        }
-        
-        // Toggle status button
-        if (e.target.closest('.toggle-status-btn')) {
-            const btn = e.target.closest('.toggle-status-btn');
-            const id = btn.dataset.id;
-            const isActive = btn.dataset.active === 'true';
-            toggleTroubleshootingStatus(id, !isActive);
-        }
-    });
-    
-    // Load troubleshooting scenarios with filtering
-    function loadTroubleshootings() {
-        const search = troubleshootingSearch.value;
-        const difficulty = filterTroubleshootingDifficulty.value;
-        
-        fetch(`/api/admin/troubleshooting/list?search=${search}&difficulty=${difficulty}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load troubleshooting scenarios');
-                }
-                return response.json();
-            })
-            .then(data => {
-                displayTroubleshootings(data.troubleshootings);
-            })
-            .catch(error => {
-                console.error('Error loading troubleshooting scenarios:', error);
-                showToast('error', 'Failed to load troubleshooting scenarios. Please try again.');
-            });
-    }
-    
-    // Display troubleshooting scenarios in the table
-    function displayTroubleshootings(troubleshootings) {
-        troubleshootingTableBody.innerHTML = '';
-        
-        if (troubleshootings.length === 0) {
-            troubleshootingEmptyState.style.display = 'flex';
-            troubleshootingTable.style.display = 'none';
-            return;
-        }
-        
-        troubleshootingEmptyState.style.display = 'none';
-        troubleshootingTable.style.display = 'table';
-        
-        troubleshootings.forEach(item => {
-            const row = document.createElement('tr');
-            
-            const titleCell = document.createElement('td');
-            titleCell.textContent = item.title;
-            
-            const difficultyCell = document.createElement('td');
-            const difficultyBadge = document.createElement('span');
-            difficultyBadge.className = `badge badge-${item.difficulty}`;
-            difficultyBadge.textContent = item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1);
-            difficultyCell.appendChild(difficultyBadge);
-            
-            const createdCell = document.createElement('td');
-            createdCell.textContent = new Date(item.created_at).toLocaleDateString();
-            
-            const statusCell = document.createElement('td');
-            const statusBadge = document.createElement('span');
-            statusBadge.className = `badge badge-${item.is_active ? 'active' : 'inactive'}`;
-            statusBadge.textContent = item.is_active ? 'Active' : 'Inactive';
-            statusCell.appendChild(statusBadge);
-            
-            const actionsCell = document.createElement('td');
-            actionsCell.className = 'actions';
-            
-            const previewBtn = document.createElement('button');
-            previewBtn.className = 'preview-troubleshooting-btn';
-            previewBtn.dataset.id = item.id;
-            previewBtn.innerHTML = '<i class="bx bx-show"></i>';
-            previewBtn.title = 'Preview';
-            
-            const editBtn = document.createElement('button');
-            editBtn.className = 'edit-troubleshooting-btn';
-            editBtn.dataset.id = item.id;
-            editBtn.innerHTML = '<i class="bx bx-edit"></i>';
-            editBtn.title = 'Edit';
-            
-            const toggleBtn = document.createElement('button');
-            toggleBtn.className = 'toggle-status-btn';
-            toggleBtn.dataset.id = item.id;
-            toggleBtn.dataset.active = item.is_active.toString();
-            toggleBtn.innerHTML = item.is_active ? 
-                '<i class="bx bx-toggle-right"></i>' : 
-                '<i class="bx bx-toggle-left"></i>';
-            toggleBtn.title = item.is_active ? 'Deactivate' : 'Activate';
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-troubleshooting-btn';
-            deleteBtn.dataset.id = item.id;
-            deleteBtn.dataset.title = item.title;
-            deleteBtn.innerHTML = '<i class="bx bx-trash"></i>';
-            deleteBtn.title = 'Delete';
-            
-            actionsCell.appendChild(previewBtn);
-            actionsCell.appendChild(editBtn);
-            actionsCell.appendChild(toggleBtn);
-            actionsCell.appendChild(deleteBtn);
-            
-            row.appendChild(titleCell);
-            row.appendChild(difficultyCell);
-            row.appendChild(createdCell);
-            row.appendChild(statusCell);
-            row.appendChild(actionsCell);
-            
-            troubleshootingTableBody.appendChild(row);
-        });
-    }
-    
-    // Show troubleshooting modal for adding new scenario
-    function showTroubleshootingModal() {
-        document.getElementById('troubleshooting-form').reset();
-        document.getElementById('troubleshooting-id').value = '';
-        document.getElementById('troubleshooting-modal-title').textContent = 'Add New Troubleshooting Scenario';
-        
-        // Reset any previous hint items
-        const hintsContainer = document.getElementById('hints-container');
-        hintsContainer.innerHTML = '';
-        addHintItem(); // Add one empty hint by default
-        
-        document.getElementById('troubleshooting-modal').classList.add('active');
-    }
-    
-    // Edit troubleshooting scenario
-    function editTroubleshooting(id) {
-        fetch(`/api/admin/troubleshooting/${id}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load troubleshooting data');
-                }
-                return response.json();
-            })
-            .then(data => {
-                populateTroubleshootingForm(data);
-                document.getElementById('troubleshooting-modal-title').textContent = 'Edit Troubleshooting Scenario';
-                document.getElementById('troubleshooting-modal').classList.add('active');
-            })
-            .catch(error => {
-                console.error('Error loading troubleshooting data:', error);
-                showToast('error', 'Failed to load troubleshooting data. Please try again.');
-            });
-    }
-    
-    // Populate the troubleshooting form with data
-    function populateTroubleshootingForm(data) {
-        document.getElementById('troubleshooting-id').value = data.id;
-        document.getElementById('troubleshooting-title').value = data.title;
-        document.getElementById('troubleshooting-description').value = data.description;
-        document.getElementById('troubleshooting-difficulty').value = data.difficulty;
-        document.getElementById('troubleshooting-scenario').value = data.scenario;
-        document.getElementById('troubleshooting-solution').value = data.solution;
-        document.getElementById('troubleshooting-base-score').value = data.base_score;
-        document.getElementById('troubleshooting-time-bonus').value = data.time_bonus;
-        document.getElementById('troubleshooting-perfect-match-bonus').value = data.perfect_match_bonus;
-        document.getElementById('troubleshooting-topology-type').value = data.topology_type || '';
-        document.getElementById('troubleshooting-is-active').checked = data.is_active;
-        
-        // Reset and populate hints
-        const hintsContainer = document.getElementById('hints-container');
-        hintsContainer.innerHTML = '';
-        
-        if (data.hints && data.hints.length > 0) {
-            data.hints.forEach(hint => {
-                addHintItem(hint);
-            });
-        } else {
-            addHintItem(); // Add one empty hint if none exists
-        }
-        
-        // Set scoring metrics
-        if (data.scoring_metrics) {
-            const metrics = data.scoring_metrics;
-            document.getElementById('troubleshooting-speed').value = metrics.speed || 20;
-            document.getElementById('troubleshooting-accuracy').value = metrics.accuracy || 30;
-            document.getElementById('troubleshooting-completion').value = metrics.completion || 25;
-            document.getElementById('troubleshooting-correctness').value = metrics.correctness || 25;
-            
-            // Update displayed values
-            updateTroubleshootingMetricValue('speed');
-            updateTroubleshootingMetricValue('accuracy');
-            updateTroubleshootingMetricValue('completion');
-            updateTroubleshootingMetricValue('correctness');
-        }
-        
-        // Set topology configuration
-        if (data.initial_topology) {
-            document.getElementById('initial-topology-json').value = JSON.stringify(data.initial_topology, null, 2);
-        }
-        
-        if (data.expected_topology) {
-            document.getElementById('expected-topology-json').value = JSON.stringify(data.expected_topology, null, 2);
-        }
-        
-        if (data.topology_config) {
-            document.getElementById('topology-config-json').value = JSON.stringify(data.topology_config, null, 2);
-        }
-    }
-    
-    // Add a hint item to the container
-    function addHintItem(hintText = '') {
-        const hintsContainer = document.getElementById('hints-container');
-        const hintIndex = hintsContainer.childElementCount;
-        
-        const hintItem = document.createElement('div');
-        hintItem.className = 'hint-item';
-        
-        const hintInput = document.createElement('input');
-        hintInput.type = 'text';
-        hintInput.className = 'form-control';
-        hintInput.name = `hints[${hintIndex}]`;
-        hintInput.value = hintText;
-        hintInput.placeholder = 'Enter a helpful hint';
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'remove-hint-btn';
-        removeBtn.innerHTML = '<i class="bx bx-minus"></i>';
-        removeBtn.addEventListener('click', function() {
-            hintsContainer.removeChild(hintItem);
-        });
-        
-        hintItem.appendChild(hintInput);
-        hintItem.appendChild(removeBtn);
-        hintsContainer.appendChild(hintItem);
-    }
-    
-    // Update displayed value for metric sliders
-    function updateTroubleshootingMetricValue(metric) {
-        const slider = document.getElementById(`troubleshooting-${metric}`);
-        const valueDisplay = document.getElementById(`troubleshooting-${metric}-value`);
-        valueDisplay.textContent = slider.value;
-    }
-    
-    // Preview troubleshooting scenario
-    function previewTroubleshooting(id) {
-        fetch(`/api/admin/troubleshooting/${id}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to load troubleshooting data for preview');
-                }
-                return response.json();
-            })
-            .then(data => {
-                showTroubleshootingPreview(data);
-            })
-            .catch(error => {
-                console.error('Error loading troubleshooting preview:', error);
-                showToast('error', 'Failed to load troubleshooting preview. Please try again.');
-            });
-    }
-    
-    // Show preview of troubleshooting scenario
-    function showTroubleshootingPreview(data) {
-        document.getElementById('preview-title').textContent = data.title;
-        document.getElementById('preview-description').textContent = data.description;
-        
-        // Set difficulty badge
-        const difficultyBadge = document.getElementById('preview-difficulty-badge');
-        difficultyBadge.className = `badge badge-${data.difficulty}`;
-        difficultyBadge.textContent = data.difficulty.charAt(0).toUpperCase() + data.difficulty.slice(1);
-        
-        // Populate scenario and solution
-        document.getElementById('preview-scenario').innerHTML = marked.parse(data.scenario);
-        document.getElementById('preview-solution').innerHTML = marked.parse(data.solution);
-        
-        // Show hints if available
-        const hintsContainer = document.getElementById('preview-hints');
-        hintsContainer.innerHTML = '';
-        
-        if (data.hints && data.hints.length > 0) {
-            const hintsList = document.createElement('ul');
-            data.hints.forEach(hint => {
-                const hintItem = document.createElement('li');
-                hintItem.textContent = hint;
-                hintsList.appendChild(hintItem);
-            });
-            hintsContainer.appendChild(hintsList);
-            document.getElementById('preview-hints-section').style.display = 'block';
-        } else {
-            document.getElementById('preview-hints-section').style.display = 'none';
-        }
-        
-        // Display scoring metrics
-        if (data.scoring_metrics) {
-            const metrics = data.scoring_metrics;
-            
-            // Create or update chart if it exists
-            if (window.scoringChart) {
-                window.scoringChart.data.datasets[0].data = [
-                    metrics.speed || 0,
-                    metrics.accuracy || 0,
-                    metrics.completion || 0,
-                    metrics.correctness || 0
-                ];
-                window.scoringChart.update();
-            } else {
-                const ctx = document.getElementById('scoring-chart').getContext('2d');
-                window.scoringChart = new Chart(ctx, {
-                    type: 'radar',
-                    data: {
-                        labels: ['Speed', 'Accuracy', 'Completion', 'Correctness'],
-                        datasets: [{
-                            label: 'Scoring Weights',
-                            data: [
-                                metrics.speed || 0,
-                                metrics.accuracy || 0,
-                                metrics.completion || 0,
-                                metrics.correctness || 0
-                            ],
-                            backgroundColor: 'rgba(0, 195, 181, 0.2)',
-                            borderColor: 'rgba(0, 195, 181, 1)',
-                            pointBackgroundColor: 'rgba(0, 195, 181, 1)',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: 'rgba(0, 195, 181, 1)'
-                        }]
-                    },
-                    options: {
-                        scale: {
-                            ticks: {
-                                beginAtZero: true,
-                                max: 50,
-                                min: 0
-                            }
-                        }
-                    }
-                });
-            }
-        }
-        
-        // Show preview modal
-        document.getElementById('troubleshooting-preview-modal').classList.add('active');
-    }
-    
-    // Toggle troubleshooting scenario status (active/inactive)
-    function toggleTroubleshootingStatus(id, setActive) {
-        const action = setActive ? 'activate' : 'deactivate';
-        
-        fetch(`/api/admin/troubleshooting/${id}/toggle-status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action: action }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to update status');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showToast('success', data.message);
-            loadTroubleshootings(); // Reload the table
-        })
-        .catch(error => {
-            console.error('Error toggling status:', error);
-            showToast('error', 'Failed to update status. Please try again.');
-        });
-    }
-    
-    // Confirm and delete troubleshooting scenario
-    function confirmDeleteTroubleshooting(id, title) {
-        if (confirm(`Are you sure you want to delete the troubleshooting scenario "${title}"? This action cannot be undone.`)) {
-            deleteTroubleshooting(id);
-        }
-    }
-    
-    // Delete troubleshooting scenario
-    function deleteTroubleshooting(id) {
-        fetch(`/api/admin/troubleshooting/${id}`, {
-            method: 'DELETE',
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to delete troubleshooting scenario');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showToast('success', data.message);
-            loadTroubleshootings(); // Reload the table
-        })
-        .catch(error => {
-            console.error('Error deleting troubleshooting scenario:', error);
-            showToast('error', 'Failed to delete troubleshooting scenario. Please try again.');
-        });
-    }
-    
-    // Form submission handler for troubleshooting
-    document.getElementById('troubleshooting-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveTroubleshooting();
-    });
-    
-    // Save troubleshooting scenario
-    function saveTroubleshooting() {
-        const id = document.getElementById('troubleshooting-id').value;
-        const isNewRecord = !id;
-        
-        // Collect form data
-        const formData = {
-            title: document.getElementById('troubleshooting-title').value,
-            description: document.getElementById('troubleshooting-description').value,
-            difficulty: document.getElementById('troubleshooting-difficulty').value,
-            scenario: document.getElementById('troubleshooting-scenario').value,
-            solution: document.getElementById('troubleshooting-solution').value,
-            base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
-            time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
-            perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
-            topology_type: document.getElementById('troubleshooting-topology-type').value,
-            is_active: document.getElementById('troubleshooting-is-active').checked,
-        };
-        
-        // Collect hints
-        const hintInputs = document.querySelectorAll('#hints-container input');
-        formData.hints = Array.from(hintInputs)
-            .map(input => input.value.trim())
-            .filter(hint => hint);  // Filter out empty hints
-        
-        // Collect scoring metrics
-        formData.scoring_metrics = {
-            speed: parseInt(document.getElementById('troubleshooting-speed').value),
-            accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
-            completion: parseInt(document.getElementById('troubleshooting-completion').value),
-            correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
-        };
-        
-        // Collect topology configurations
-        try {
-            const initialTopologyText = document.getElementById('initial-topology-json').value;
-            if (initialTopologyText) {
-                formData.initial_topology = JSON.parse(initialTopologyText);
-            }
-            
-            const expectedTopologyText = document.getElementById('expected-topology-json').value;
-            if (expectedTopologyText) {
-                formData.expected_topology = JSON.parse(expectedTopologyText);
-            }
-            
-            const topologyConfigText = document.getElementById('topology-config-json').value;
-            if (topologyConfigText) {
-                formData.topology_config = JSON.parse(topologyConfigText);
-            }
-        } catch (error) {
-            showToast('error', 'Invalid JSON in topology configuration. Please check your input.');
-            console.error('JSON parse error:', error);
-            return;
-        }
-        
-        // API endpoint and method
-        const url = isNewRecord ? '/api/admin/troubleshooting/' : `/api/admin/troubleshooting/${id}`;
-        const method = isNewRecord ? 'POST' : 'PUT';
-        
-        // Send request
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save troubleshooting scenario');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showToast('success', data.message);
-            document.getElementById('troubleshooting-modal').classList.remove('active');
-            loadTroubleshootings();
-        })
-        .catch(error => {
-            console.error('Error saving troubleshooting:', error);
-            showToast('error', 'Failed to save troubleshooting scenario. Please try again.');
-        });
-    }
-    
-    // Debug JSON button handler
-    document.getElementById('debug-troubleshooting-btn').addEventListener('click', function() {
-        try {
-            // Collect all form data
-            const formData = {
-                title: document.getElementById('troubleshooting-title').value,
-                description: document.getElementById('troubleshooting-description').value,
-                difficulty: document.getElementById('troubleshooting-difficulty').value,
-                scenario: document.getElementById('troubleshooting-scenario').value,
-                solution: document.getElementById('troubleshooting-solution').value,
-                base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
-                time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
-                perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
-                topology_type: document.getElementById('troubleshooting-topology-type').value,
-                is_active: document.getElementById('troubleshooting-is-active').checked,
-            };
-            
-            // Add hints
-            const hintInputs = document.querySelectorAll('#hints-container input');
-            formData.hints = Array.from(hintInputs)
-                .map(input => input.value.trim())
-                .filter(hint => hint);
-            
-            // Add scoring metrics
-            formData.scoring_metrics = {
-                speed: parseInt(document.getElementById('troubleshooting-speed').value),
-                accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
-                completion: parseInt(document.getElementById('troubleshooting-completion').value),
-                correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
-            };
-            
-            // Parse topology data if present
-            const initialTopologyText = document.getElementById('initial-topology-json').value;
-            if (initialTopologyText) {
-                formData.initial_topology = JSON.parse(initialTopologyText);
-            }
-            
-            const expectedTopologyText = document.getElementById('expected-topology-json').value;
-            if (expectedTopologyText) {
-                formData.expected_topology = JSON.parse(expectedTopologyText);
-            }
-            
-            const topologyConfigText = document.getElementById('topology-config-json').value;
-            if (topologyConfigText) {
-                formData.topology_config = JSON.parse(topologyConfigText);
-            }
-            
-            // Display formatted JSON
-            alert(JSON.stringify(formData, null, 2));
-        } catch (error) {
-            alert('Error parsing JSON: ' + error.message);
-        }
-    });
-    
-    // Add hint button handler
-    document.getElementById('add-hint-btn').addEventListener('click', function() {
-        addHintItem();
-    });
-    
-    // Cancel button handler
-    document.getElementById('cancel-troubleshooting-btn').addEventListener('click', function() {
-        document.getElementById('troubleshooting-modal').classList.remove('active');
-    });
-    
-    // Close preview modal handler
-    document.getElementById('close-troubleshooting-preview').addEventListener('click', function() {
-        document.getElementById('troubleshooting-preview-modal').classList.remove('active');
-    });
-    
-    // Close modal handler
-    document.getElementById('close-troubleshooting-modal').addEventListener('click', function() {
-        document.getElementById('troubleshooting-modal').classList.remove('active');
-    });
-    
-    // Preview button handler
-    document.getElementById('preview-troubleshooting-btn').addEventListener('click', function() {
-        // Collect current form data and send for preview
-        const formData = {
-            title: document.getElementById('troubleshooting-title').value,
-            description: document.getElementById('troubleshooting-description').value,
-            difficulty: document.getElementById('troubleshooting-difficulty').value,
-            scenario: document.getElementById('troubleshooting-scenario').value,
-            solution: document.getElementById('troubleshooting-solution').value,
-            base_score: parseInt(document.getElementById('troubleshooting-base-score').value),
-            time_bonus: parseInt(document.getElementById('troubleshooting-time-bonus').value),
-            perfect_match_bonus: parseInt(document.getElementById('troubleshooting-perfect-match-bonus').value),
-            topology_type: document.getElementById('troubleshooting-topology-type').value,
-        };
-        
-        // Add hints
-        const hintInputs = document.querySelectorAll('#hints-container input');
-        formData.hints = Array.from(hintInputs)
-            .map(input => input.value.trim())
-            .filter(hint => hint);
-        
-        // Add scoring metrics
-        formData.scoring_metrics = {
-            speed: parseInt(document.getElementById('troubleshooting-speed').value),
-            accuracy: parseInt(document.getElementById('troubleshooting-accuracy').value),
-            completion: parseInt(document.getElementById('troubleshooting-completion').value),
-            correctness: parseInt(document.getElementById('troubleshooting-correctness').value)
-        };
-        
-        // Parse topology data if present
-        try {
-            const initialTopologyText = document.getElementById('initial-topology-json').value;
-            if (initialTopologyText) {
-                formData.initial_topology = JSON.parse(initialTopologyText);
-            }
-            
-            const expectedTopologyText = document.getElementById('expected-topology-json').value;
-            if (expectedTopologyText) {
-                formData.expected_topology = JSON.parse(expectedTopologyText);
-            }
-            
-            const topologyConfigText = document.getElementById('topology-config-json').value;
-            if (topologyConfigText) {
-                formData.topology_config = JSON.parse(topologyConfigText);
-            }
-            
-            // Send for preview
-            fetch('/api/admin/troubleshooting/preview', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to generate preview');
-                }
-                return response.json();
-            })
-            .then(data => {
-                showTroubleshootingPreview(data.preview);
-            })
-            .catch(error => {
-                console.error('Error generating preview:', error);
-                showToast('error', 'Failed to generate preview. Please check your input and try again.');
-            });
-            
-        } catch (error) {
-            showToast('error', 'Invalid JSON in topology configuration. Please check your input.');
-            console.error('JSON parse error:', error);
-        }
-    });
-    
-    // Initialize metric value displays
-    updateTroubleshootingMetricValue('speed');
-    updateTroubleshootingMetricValue('accuracy');
-    updateTroubleshootingMetricValue('completion');
-    updateTroubleshootingMetricValue('correctness');
-    
-    // Add event listeners for metric sliders
-    document.getElementById('troubleshooting-speed').addEventListener('input', () => updateTroubleshootingMetricValue('speed'));
-    document.getElementById('troubleshooting-accuracy').addEventListener('input', () => updateTroubleshootingMetricValue('accuracy'));
-    document.getElementById('troubleshooting-completion').addEventListener('input', () => updateTroubleshootingMetricValue('completion'));
-    document.getElementById('troubleshooting-correctness').addEventListener('input', () => updateTroubleshootingMetricValue('correctness'));
 });
 </script>
 {% endblock %}

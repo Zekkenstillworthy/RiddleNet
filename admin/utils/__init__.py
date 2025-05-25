@@ -1,7 +1,7 @@
 # Admin utilities package
 from admin.utils.database_setup import setup_database, import_default_questions, create_default_admin
 from admin.utils.questions_data import get_networking_questions
-from admin.utils.update_user_table import migrate_user_table
+# from admin.utils.update_user_table import migrate_user_table  # File doesn't exist
 
 # Export commonly used functions
 __all__ = [
@@ -9,5 +9,6 @@ __all__ = [
     'import_default_questions', 
     'create_default_admin',
     'get_networking_questions',
+    # 'migrate_user_table',  # Function not available
     'migrate_user_table'
 ]

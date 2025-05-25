@@ -108,7 +108,7 @@ class Troubleshooting(db.Model):
             return json.loads(self._solution_topology)
         except (ValueError, TypeError):
             return {"devices": [], "connections": []}
-    
+            
     @solution_topology.setter
     def solution_topology(self, topology):
         """Set the solution topology from a dictionary"""
@@ -135,24 +135,6 @@ class Troubleshooting(db.Model):
         else:
             self._required_steps = steps
 
-    @property
-    def scoring_metrics(self):
-        """Get the scoring metrics as a dictionary"""
-        if not self._scoring_metrics:
-            return {}
-        try:
-            return json.loads(self._scoring_metrics)
-        except (ValueError, TypeError):
-            return {}
-
-    @scoring_metrics.setter
-    def scoring_metrics(self, metrics_dict):
-        """Set the scoring metrics from a dictionary"""
-        if isinstance(metrics_dict, dict):
-            self._scoring_metrics = json.dumps(metrics_dict)
-        else:
-            self._scoring_metrics = metrics_dict
-            
     @property
     def required_devices(self):
         """Get the required devices as a dictionary"""
@@ -190,24 +172,6 @@ class Troubleshooting(db.Model):
             self._topology_config = config_dict
             
     @property
-    def initial_topology(self):
-        """Get the initial topology as a dictionary"""
-        if not self._initial_topology:
-            return {}
-        try:
-            return json.loads(self._initial_topology)
-        except (ValueError, TypeError):
-            return {}
-            
-    @initial_topology.setter
-    def initial_topology(self, topology_dict):
-        """Set the initial topology from a dictionary"""
-        if isinstance(topology_dict, dict):
-            self._initial_topology = json.dumps(topology_dict)
-        else:
-            self._initial_topology = topology_dict
-            
-    @property
     def expected_topology(self):
         """Get the expected topology as a dictionary"""
         if not self._expected_topology:
@@ -216,7 +180,7 @@ class Troubleshooting(db.Model):
             return json.loads(self._expected_topology)
         except (ValueError, TypeError):
             return {}
-            
+
     @expected_topology.setter
     def expected_topology(self, topology_dict):
         """Set the expected topology from a dictionary"""
@@ -224,7 +188,7 @@ class Troubleshooting(db.Model):
             self._expected_topology = json.dumps(topology_dict)
         else:
             self._expected_topology = topology_dict
-
+            
     @property
     def tasks(self):
         """Get the tasks list as a list of dictionaries"""
@@ -264,15 +228,11 @@ class Troubleshooting(db.Model):
             'solution_bonus': self.solution_bonus,
             'required_devices': self.required_devices,
             'topology_config': self.topology_config,
-            'initial_topology': self.initial_topology,
             'expected_topology': self.expected_topology,
             'tasks': self.tasks,
-            'base_score': self.base_score,
-            'time_bonus': self.time_bonus,
             'perfect_match_bonus': self.perfect_match_bonus,
             'topology_type': self.topology_type,
             'is_active': self.is_active,
-            'time_limit': self.time_limit,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
         }
