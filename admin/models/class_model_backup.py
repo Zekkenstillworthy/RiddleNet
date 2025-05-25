@@ -9,7 +9,6 @@ class_question_groups = db.Table('class_question_groups',
 )
 
 # Association table for many-to-many relationship between classes and students (users)
-# IMPORTANT: This is defined here to break circular imports
 class_students = db.Table('class_students',
     db.Column('class_id', db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), primary_key=True),
     db.Column('user_id', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
@@ -25,32 +24,49 @@ class Class(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    section = db.Column(db.String(20), nullable=True)
+    section = db.Column(db.String(50))
     code = db.Column(db.String(20), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    start_date = db.Column(db.Date, nullable=True)
-    end_date = db.Column(db.Date, nullable=True)
+    description = db.Column(db.Text)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
     max_students = db.Column(db.Integer, default=30)
-    status = db.Column(db.String(20), default='active')  # active, inactive, archived
+    status = db.Column(db.String(20), default='active')  # active, inactive, pending
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    question_groups = db.relationship(
-        'QuestionGroup',
-        secondary=class_question_groups,
-        backref=db.backref('classes', lazy='dynamic'),
-        lazy='dynamic'
-    )
+    question_groups = db.relationship('QuestionGroup', 
+                                      secondary=class_question_groups, 
+                                      lazy='subquery',
+                                      backref=db.backref('classes', lazy=True))
     
-    # Use string-based relationship to avoid circular imports
-    # The backref will be available on User model as 'enrolled_classes'
-    students = db.relationship(
-        'User',
-        secondary=class_students,
-        backref=db.backref('enrolled_classes', lazy='dynamic'),
-        lazy='dynamic'
-    )
+    # Use a property to get students instead of a relationship
+    @property
+    def students(self):
+        """Get students enrolled in this class using a direct query"""
+        # Use string-based query to avoid circular imports
+        from sqlalchemy import text
+        
+        # Use a raw SQL query to avoid circular import issues
+        result = db.session.execute(
+            text("""
+                SELECT u.* FROM user u 
+                JOIN class_students cs ON u.id = cs.user_id 
+                WHERE cs.class_id = :class_id
+            """),
+            {'class_id': self.id}
+        )
+        
+        # Convert result to a list of dictionaries to avoid model dependencies
+        students = []
+        for row in result:
+            students.append({
+                'id': row.id,
+                'username': row.username,
+                'email': row.email if hasattr(row, 'email') else None,
+                'status': row.status if hasattr(row, 'status') else 'active'
+            })
+        
+        return students
     
     def __repr__(self):
         return f"<Class {self.name} ({self.code})>"
@@ -69,7 +85,7 @@ class Class(db.Model):
             'status': self.status,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'questionGroups': [qg.id for qg in self.question_groups] if self.question_groups else [],
-            'studentCount': self.students.count() if self.students else 0
+            'studentCount': len(self.students) if self.students else 0
         }
         
     def to_dict_with_question_groups(self):
@@ -88,17 +104,16 @@ class Class(db.Model):
                 for q in qg.questions:
                     if hasattr(q, 'type'):
                         question_types.add(q.type)
-                    elif hasattr(q, 'question_type'):
-                        question_types.add(q.question_type)
+                    elif hasattr(q, 'category'):
+                        question_types.add(q.category)
             
             question_groups_data.append({
                 'id': qg.id,
                 'name': qg.name,
-                'description': qg.description,
-                'category': qg.category,
-                'question_count': question_count,
-                'question_types': list(question_types)
+                'description': qg.description if hasattr(qg, 'description') else '',
+                'questionCount': question_count,
+                'questionTypes': list(question_types)
             })
         
-        data['questionGroupsDetailed'] = question_groups_data
+        data['questionGroups'] = question_groups_data
         return data

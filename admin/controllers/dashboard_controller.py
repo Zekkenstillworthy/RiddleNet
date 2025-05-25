@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, url_for, flash, jsonify, request
+from flask import Blueprint, redirect, url_for, flash, jsonify, request, render_template
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, and_, extract, or_
 import json

@@ -6,9 +6,6 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declared_attr
 
-# Import the class_students table from admin
-from admin.models.class_model import class_students
-
 class User(db.Model, UserMixin):
     """
     User model for the quiz application
@@ -31,18 +28,11 @@ class User(db.Model, UserMixin):
     otp = db.Column(db.String(6))  # For storing the email OTP
     otp_generated_at = db.Column(db.DateTime)  # Timestamp when OTP was generated
     
-    # Define relationship with scores
+    # Define relationship with scores using string reference
     scores = db.relationship('Score', backref='user', lazy=True)
     
-    # Define relationship with classes through the association table
-    # Using viewonly=True to fix the foreign key issues
-    enrolled_classes = db.relationship(
-        'admin.models.class_model.Class',
-        secondary=class_students,  # Using imported table reference
-        backref=db.backref('enrolled_students', lazy='dynamic'),  # Renamed backref to avoid conflicts
-        lazy='dynamic',
-        viewonly=True  # Fixes the foreign key error
-    )
+    # The relationship with classes is defined in the Class model
+    # It will be available as 'enrolled_classes' attribute due to the backref
     
     def set_password(self, password):
         """Set a hashed password for the user"""

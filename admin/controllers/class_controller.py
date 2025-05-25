@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
+from user.models.user import User  # Import User model for the relationship
 from admin import db
 from datetime import datetime
 import json
@@ -47,8 +48,8 @@ def get_classes():
         # Convert classes to dictionary format for JSON response
         result = []
         for cls in classes:
-            # Use the students property to get the actual count
-            student_count = len(cls.students) if cls.students else 0
+            # Use the correct method for dynamic relationship
+            student_count = cls.students.count() if cls.students else 0
             
             result.append({
                 'id': cls.id,
@@ -128,7 +129,7 @@ def get_class(class_id):
         class_data = cls.to_dict()
         # Ensure studentCount is correctly provided
         if 'studentCount' not in class_data or class_data['studentCount'] is None:
-            class_data['studentCount'] = len(cls.students) if cls.students else 0
+            class_data['studentCount'] = cls.students.count() if cls.students else 0
         return jsonify(class_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -242,7 +243,7 @@ def get_student_classes():
                 'startDate': cls.start_date.isoformat() if cls.start_date else None,
                 'endDate': cls.end_date.isoformat() if cls.end_date else None,
                 'status': cls.status,
-                'studentCount': len(cls.students),
+                'studentCount': cls.students.count() if cls.students else 0,
                 'maxStudents': cls.max_students
             })
             
@@ -258,7 +259,8 @@ def get_class_students(class_id):
         cls = Class.query.get_or_404(class_id)
         students = []
         
-        for student in cls.students:
+        # Use .all() to get actual student objects from dynamic relationship
+        for student in cls.students.all():
             students.append({
                 'id': student.id,
                 'username': student.username,
@@ -288,10 +290,11 @@ def remove_student_from_class(class_id, student_id):
         from user.models import User as UserModel  # Rename to avoid conflicts
         student = UserModel.query.get_or_404(student_id)
         
-        if student not in cls.students:
+        # Check if student is enrolled using the dynamic relationship
+        if not cls.students.filter_by(id=student_id).first():
             return jsonify({"error": "Student is not enrolled in this class"}), 400
         
-        # Remove the student from the class
+        # Remove the student from the class using the association table
         cls.students.remove(student)
         db.session.commit()
         

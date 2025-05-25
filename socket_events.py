@@ -1,12 +1,17 @@
 from socket_manager import socketio, authenticated_only
 from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
-from user.models import db
+from __init__ import db
 import datetime
 import json
 
 try:
-    from user.models import User as UserModel
+    # Use a lazy import to avoid circular dependencies
+    def get_user_model():
+        from user.models.user import User
+        return User
+    
+    UserModel = get_user_model()
 except ImportError:
     # Handle case where UserModel might be in a different module
     UserModel = None

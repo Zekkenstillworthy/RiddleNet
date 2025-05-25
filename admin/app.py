@@ -49,19 +49,18 @@ class AdminApp:
         def load_user(user_id):
             # Try to load from Admin model first (since admin login is being used)
             from admin.models.user import Admin, User
-            
-            # Check if the ID starts with 'admin-' which would indicate it's an admin
+              # Check if the ID starts with 'admin-' which would indicate it's an admin
             if isinstance(user_id, str) and user_id.startswith('admin-'):
                 admin_id = int(user_id.replace('admin-', ''))
-                return Admin.query.get(admin_id)
+                return db.session.get(Admin, admin_id)
             
             # Try Admin table first
-            admin = Admin.query.get(int(user_id))
+            admin = db.session.get(Admin, int(user_id))
             if admin:
                 return admin
                 
                 # If not found in Admin, try User table
-                user = User.query.get(int(user_id))
+                user = db.session.get(User, int(user_id))
                 return user
                 
         def register_template_filters(self):

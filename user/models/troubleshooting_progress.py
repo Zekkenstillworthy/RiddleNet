@@ -1,7 +1,12 @@
-# filepath: c:\Users\gilbe\Documents\Flask_Main_Official_2 - Copy\user\models\troubleshooting_progress.py
-from datetime import datetime
+# User-side entry point for troubleshooting progress
+# This file avoids circular imports by not importing anything directly
 from __init__ import db
-from admin.models.troubleshooting_progress import TroubleshootingProgress
 
-# Re-export the TroubleshootingProgress model for use in the user side
+# Define a function to get the model when needed
+def get_troubleshooting_progress_model():
+    """
+    Get the TroubleshootingProgress model lazily to avoid circular imports
+    """
+    from admin.models.troubleshooting_progress import TroubleshootingProgress
+    return TroubleshootingProgress
 # This allows for sharing the same model between admin and user modules

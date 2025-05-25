@@ -2,8 +2,7 @@ from datetime import datetime
 import json
 from __init__ import db
 
-class TroubleshootingProgress(db.Model):
-    """
+class TroubleshootingProgress(db.Model):    """
     Model for tracking user progress on troubleshooting scenarios
     """
     __tablename__ = 'troubleshooting_progress'
