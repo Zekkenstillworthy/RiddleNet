@@ -13,12 +13,166 @@
     
 </head>
 <style>
+    :root {
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        --dark-bg: rgba(0, 0, 0, 0.85);
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    }
+
     body {
-            background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
-            background-size: cover;
-            color: #fff;
-            min-height: 100vh;
+        background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+        background-size: cover;
+        color: #fff;
+        min-height: 100vh;
+        font-family: 'Orbitron', 'Poppins', sans-serif;
+    }
+
+    /* Enhanced glassmorphism effects */
+    .modern-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    /* Cyber-themed animations */
+    @keyframes dataFlow {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    .data-flow {
+        animation: dataFlow 2s ease-in-out infinite;
+    }
+
+    /* Enhanced stat cards */
+    .stat-card-modern {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 32px 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+
+    .stat-card-modern:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 16px 48px rgba(0, 217, 255, 0.25);
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 12px 0;
+        text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+    }
+
+    .stat-label {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        font-size: 2.5rem;
+        color: var(--cyber-glow);
+        margin-bottom: 16px;
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+
+    /* Network-themed decorative elements */
+    .network-node {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--cyber-glow);
+        border-radius: 50%;
+        box-shadow: 0 0 15px var(--cyber-glow);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { 
+            opacity: 0.6;
+            transform: scale(1);
         }
+        50% { 
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    }
+
+    /* Enhanced section headers */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 48px 0 32px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+        position: relative;
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-header .section-icon {
+        font-size: 1.8rem;
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
 </style>
 {% endblock %}
 
@@ -27,228 +181,337 @@
 <body>
         <!-- Main Content -->
         <main>
-            <header>
-                <h2>Admin Dashboard</h2>
-                <div class="admin-info">
-                    <span>Welcome, Admin</span>
-                </div>
-            </header>
+            
 
-            <div class="admin-container">
+            <div class="admin-container" style="background: transparent; padding: 0; box-shadow: none;">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                            <div class="modern-card alert alert-{{ category }}" style="margin-bottom: 24px; border-left: 4px solid var(--neon-green);">
+                                <i class="fas fa-info-circle" style="color: var(--neon-green); margin-right: 12px;"></i>
+                                {{ message }}
+                            </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
                 
-                <!-- New Features Announcement -->
-                
                 <!-- System Alerts Banner -->
                 {% if system_alerts %}
-                    <div class="alert-banner">
-                        <h3><i class='bx bxs-bell'></i> System Alerts</h3>
-                        <ul>
+                    <div class="modern-card alert-banner" style="margin-bottom: 32px; border-left: 4px solid #ff6b6b;">
+                        <h3 style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #ff6b6b;">
+                            <i class='bx bxs-bell'></i> System Alerts
+                        </h3>
+                        <ul style="list-style: none; padding: 0;">
                             {% for alert in system_alerts %}
-                                <li>{{ alert.message }} - <small>{{ alert.timestamp }}</small></li>
+                                <li style="padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                                    {{ alert.message }} - <small style="color: rgba(255, 255, 255, 0.6);">{{ alert.timestamp }}</small>
+                                </li>
                             {% endfor %}
                         </ul>
                     </div>
                 {% endif %}
                 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Total Users</h3>
-                        <p>{{ total_users }}</p>
+                <!-- Enhanced Stats Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 48px;">
+                    <div class="stat-card-modern">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value data-flow">{{ total_users }}</div>
+                        <div class="stat-label">Network Users</div>
+                        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+                            <i class="fas fa-arrow-up" style="color: var(--neon-green);"></i> Active connections
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <h3>Total Scores</h3>
-                        <p>{{ total_scores }}</p>
+                    <div class="stat-card-modern">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-value data-flow">{{ total_scores }}</div>
+                        <div class="stat-label">Performance Metrics</div>
+                        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+                            <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Score records
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <h3>Total Questions</h3>
-                        <p>{{ total_questions }}</p>
+                    <div class="stat-card-modern">
+                        <div class="stat-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="stat-value data-flow">{{ total_questions }}</div>
+                        <div class="stat-label">Network Challenges</div>
+                        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+                            <i class="fas fa-database" style="color: var(--neon-green);"></i> Question bank
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Real-time WebSocket Control Panel -->
-                <div class="websocket-panel">
-                    <h2 class="section-title"><i class='bx bx-broadcast'></i> Real-time Communications</h2>
+                  <!-- Real-time WebSocket Control Panel -->
+                <div class="modern-card" style="margin-bottom: 48px;">
+                    <div class="section-header">
+                        <i class="fas fa-broadcast-tower section-icon"></i>
+                        <h2>Real-time Communications Hub</h2>
+                    </div>
                     
-                    <div class="websocket-controls">
-                        <div class="connection-status">
-                            <h3>Connection Status</h3>
-                            <div id="admin-socket-status" class="status-indicator">
-                                <span class="status-dot disconnected"></span>
-                                <span class="status-text">Disconnected</span>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                        <div class="modern-card" style="background: var(--dark-bg);">
+                            <h3 style="color: var(--cyber-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-wifi"></i> Connection Status
+                            </h3>
+                            <div id="admin-socket-status" style="margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                                    <span class="status-dot disconnected" style="width: 12px; height: 12px; border-radius: 50%; background: #ff6b6b; box-shadow: 0 0 20px #ff6b6b;"></span>
+                                    <span class="status-text" style="font-weight: 500;">Disconnected</span>
+                                </div>
                             </div>
-                            <button id="connect-websocket" class="btn btn-primary">Connect to WebSocket</button>
+                            <button id="connect-websocket" class="btn" style="background: var(--gradient-primary); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; width: 100%;">
+                                Connect to WebSocket
+                            </button>
                         </div>
                         
-                        <div class="broadcast-controls">
-                            <h3>Broadcast Message to Users</h3>
-                            <form id="broadcast-form">
-                                <div class="form-group">
-                                    <label for="broadcast-title">Message Title:</label>
-                                    <input type="text" id="broadcast-title" name="title" placeholder="Enter message title" required>
+                        <div class="modern-card" style="background: var(--dark-bg);">
+                            <h3 style="color: var(--neon-green); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-users"></i> Active Connections
+                            </h3>
+                            <div id="active-users-list" style="max-height: 200px; overflow-y: auto;">
+                                <p style="color: rgba(255, 255, 255, 0.6);">Loading active users...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="modern-card" style="background: var(--dark-bg); grid-column: span 2;">
+                            <h3 style="color: var(--network-purple); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-bullhorn"></i> Broadcast Message
+                            </h3>
+                            <form id="broadcast-form" style="display: grid; gap: 16px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div>
+                                        <label for="broadcast-title" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Message Title:</label>
+                                        <input type="text" id="broadcast-title" name="title" placeholder="Enter message title" required 
+                                               style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                    </div>
+                                    <div>
+                                        <label for="broadcast-type" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Message Type:</label>
+                                        <select id="broadcast-type" name="type" 
+                                                style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                            <option value="info">Information</option>
+                                            <option value="success">Success</option>
+                                            <option value="warning">Warning</option>
+                                            <option value="error">Error</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="broadcast-message">Message:</label>
-                                    <textarea id="broadcast-message" name="message" rows="3" placeholder="Enter your message to all users" required></textarea>
+                                <div>
+                                    <label for="broadcast-message" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Message:</label>
+                                    <textarea id="broadcast-message" name="message" rows="3" placeholder="Enter your message to all users" required
+                                              style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; resize: vertical;"></textarea>
                                 </div>
-                                <div class="form-group">
-                                    <label for="broadcast-type">Message Type:</label>
-                                    <select id="broadcast-type" name="type">
-                                        <option value="info">Information</option>
-                                        <option value="success">Success</option>
-                                        <option value="warning">Warning</option>
-                                        <option value="error">Error</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-broadcast">Send Broadcast</button>
+                                <button type="submit" style="background: var(--gradient-secondary); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; color: #000;">
+                                    <i class="fas fa-paper-plane" style="margin-right: 8px;"></i>Send Broadcast
+                                </button>
                             </form>
                         </div>
                         
-                        <div class="active-connections">
-                            <h3>Active Connections</h3>
-                            <div id="active-users-list">
-                                <p>Loading active users...</p>
-                            </div>
-                        </div>
-                        
-                        <div class="activity-feed">
-                            <h3>Real-time Activity</h3>
-                            <div id="activity-log">
-                                <p>Waiting for activity...</p>
+                        <div class="modern-card" style="background: var(--dark-bg); grid-column: span 2;">
+                            <h3 style="color: var(--cyber-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-chart-line"></i> Real-time Activity Feed
+                            </h3>
+                            <div id="activity-log" style="max-height: 250px; overflow-y: auto; background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 16px;">
+                                <p style="color: rgba(255, 255, 255, 0.6);">Waiting for activity...</p>
                             </div>
                         </div>
                     </div>
                 </div>
+                  <!-- Enhanced Analytics Section -->
+                <div class="section-header">
+                    <i class="fas fa-chart-line section-icon"></i>
+                    <h2>Network Analytics Dashboard</h2>
+                </div>
                 
-                <!-- Analytics Section -->
-                <h2 class="section-title">Analytics Dashboard</h2>
-                
-                <div class="filter-controls">
-                    <div class="filter-group">
-                        <label for="date-range">Time Period:</label>
-                        <select id="date-range" class="filter-select" onchange="updateCharts()">
-                            <option value="7">Last 7 Days</option>
-                            <option value="30">Last 30 Days</option>
-                            <option value="90">Last 3 Months</option>
-                            <option value="all">All Time</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="category-filter">Category:</label>
-                        <select id="category-filter" class="filter-select" onchange="updateCharts()">
-                            <option value="all">All Categories</option>
-                            <option value="riddle">Riddle</option>
-                            <option value="topology">Topology</option>
-                            <option value="troubleshoot">Troubleshooting</option>
-                            <option value="crimping">Cable Crimping</option>
-                        </select>
+                <div class="modern-card" style="margin-bottom: 32px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="date-range" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
+                                <i class="fas fa-calendar-alt" style="margin-right: 8px; color: var(--cyber-glow);"></i>Time Period:
+                            </label>
+                            <select id="date-range" onchange="updateCharts()" 
+                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 3 Months</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="category-filter" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
+                                <i class="fas fa-filter" style="margin-right: 8px; color: var(--neon-green);"></i>Category:
+                            </label>
+                            <select id="category-filter" onchange="updateCharts()"
+                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                <option value="all">All Categories</option>
+                                <option value="riddle">Riddle</option>
+                                <option value="topology">Topology</option>
+                                <option value="troubleshoot">Troubleshooting</option>
+                                <option value="crimping">Cable Crimping</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="analytics-grid">
-                    <div class="analytics-card">
-                        <h3>Score Distribution</h3>
-                        <canvas id="scoreDistChart"></canvas>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 48px;">
+                    <div class="modern-card">
+                        <h3 style="color: var(--cyber-glow); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-chart-bar"></i> Score Distribution
+                        </h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="scoreDistChart"></canvas>
+                        </div>
                     </div>
-                    <div class="analytics-card">
-                        <h3>User Activity</h3>
-                        <canvas id="userActivityChart"></canvas>
+                    <div class="modern-card">
+                        <h3 style="color: var(--neon-green); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-users"></i> User Activity
+                        </h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="userActivityChart"></canvas>
+                        </div>
                     </div>
-                    <div class="analytics-card">
-                        <h3>Average Scores by Category</h3>
-                        <canvas id="categoryScoresChart"></canvas>
+                    <div class="modern-card">
+                        <h3 style="color: var(--network-purple); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-radar-chart"></i> Category Performance
+                        </h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="categoryScoresChart"></canvas>
+                        </div>
                     </div>
-                    <div class="analytics-card">
-                        <h3>Question Difficulty Analysis</h3>
-                        <canvas id="questionDifficultyChart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Recent Scores Section -->
-                <h2 class="section-title">Recent Scores</h2>
-                
-                <div class="filter-controls">
-                    <div class="filter-group">
-                        <label for="score-filter">Score Range:</label>
-                        <select id="score-filter" class="filter-select">
-                            <option value="all">All Scores</option>
-                            <option value="high">High (81-100%)</option>
-                            <option value="medium">Medium (50-80%)</option>
-                            <option value="low">Low (0-49%)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="score-category">Category:</label>
-                        <select id="score-category" class="filter-select">
-                            <option value="all">All Categories</option>
-                            <option value="riddle">Riddle</option>
-                            <option value="topology">Topology</option>
-                            <option value="troubleshoot">Troubleshooting</option>
-                            <option value="crimping">Cable Crimping</option>
-                        </select>
+                    <div class="modern-card">
+                        <h3 style="color: #ff6b6b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-chart-pie"></i> Question Difficulty
+                        </h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="questionDifficultyChart"></canvas>
+                        </div>
                     </div>
                 </div>
+                  <!-- Enhanced Recent Scores Section -->
+                <div class="section-header">
+                    <i class="fas fa-medal section-icon"></i>
+                    <h2>Recent Performance Data</h2>
+                </div>
                 
-                <table id="scores-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Score</th>
-                            <th>Category</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if recent_scores %}
-                            {% for score in recent_scores %}
-                                <tr>
-                                    <td>{{ score.user.username }}</td>
-                                    <td>{{ score.score }}</td>
-                                    <td>{{ score.category }}</td>
-                                    <td>{{ score.date_attempted.strftime('%Y-%m-%d %H:%M') }}</td>
+                <div class="modern-card" style="margin-bottom: 32px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-bottom: 24px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="score-filter" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
+                                <i class="fas fa-trophy" style="margin-right: 8px; color: var(--cyber-glow);"></i>Score Range:
+                            </label>
+                            <select id="score-filter" 
+                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                <option value="all">All Scores</option>
+                                <option value="high">High (81-100%)</option>
+                                <option value="medium">Medium (50-80%)</option>
+                                <option value="low">Low (0-49%)</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label for="score-category" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8); font-weight: 500;">
+                                <i class="fas fa-tags" style="margin-right: 8px; color: var(--neon-green);"></i>Category:
+                            </label>
+                            <select id="score-category" 
+                                    style="width: 100%; padding: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff;">
+                                <option value="all">All Categories</option>
+                                <option value="riddle">Riddle</option>
+                                <option value="topology">Topology</option>
+                                <option value="troubleshoot">Troubleshooting</option>
+                                <option value="crimping">Cable Crimping</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="overflow-x: auto; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <table id="scores-table" style="width: 100%; background: var(--dark-bg); border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--gradient-primary);">
+                                    <th style="padding: 16px; text-align: left; font-weight: 600; color: #000;">
+                                        <i class="fas fa-user" style="margin-right: 8px;"></i>Username
+                                    </th>
+                                    <th style="padding: 16px; text-align: left; font-weight: 600; color: #000;">
+                                        <i class="fas fa-star" style="margin-right: 8px;"></i>Score
+                                    </th>
+                                    <th style="padding: 16px; text-align: left; font-weight: 600; color: #000;">
+                                        <i class="fas fa-folder" style="margin-right: 8px;"></i>Category
+                                    </th>
+                                    <th style="padding: 16px; text-align: left; font-weight: 600; color: #000;">
+                                        <i class="fas fa-clock" style="margin-right: 8px;"></i>Date
+                                    </th>
                                 </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="4">No recent scores to display.</td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                {% if recent_scores %}
+                                    {% for score in recent_scores %}
+                                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease;" 
+                                            onmouseover="this.style.background='rgba(0, 217, 255, 0.1)'" 
+                                            onmouseout="this.style.background='transparent'">
+                                            <td style="padding: 16px; color: var(--cyber-glow); font-weight: 500;">{{ score.user.username }}</td>
+                                            <td style="padding: 16px;">
+                                                <span style="background: var(--gradient-secondary); padding: 4px 12px; border-radius: 20px; color: #000; font-weight: 600;">
+                                                    {{ score.score }}%
+                                                </span>
+                                            </td>
+                                            <td style="padding: 16px; color: rgba(255, 255, 255, 0.8);">{{ score.category }}</td>
+                                            <td style="padding: 16px; color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">
+                                                {{ score.date_attempted.strftime('%Y-%m-%d %H:%M') }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" style="padding: 32px; text-align: center; color: rgba(255, 255, 255, 0.6);">
+                                            <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 16px; display: block;"></i>
+                                            No recent scores to display.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 
-                <!-- Recent Activity Log -->
-                <h2 class="section-title">Recent Activity Log</h2>
-                <div class="activity-log">
+                <!-- Enhanced Activity Log -->
+                <div class="section-header">
+                    <i class="fas fa-history section-icon"></i>
+                    <h2>System Activity Monitor</h2>
+                </div>
+                
+                <div class="modern-card">
                     {% if activity_logs %}
-                        {% for log in activity_logs %}
-                            <div class="log-entry">
-                                <div class="log-icon">
-                                    {% if log.action_type == 'login' %}
-                                        <i class='bx bx-log-in'></i>
-                                    {% elif log.action_type == 'score' %}
-                                        <i class='bx bxs-trophy'></i>
-                                    {% elif log.action_type == 'essay' %}
-                                        <i class='bx bxs-file'></i>
-                                    {% elif log.action_type == 'edit' %}
-                                        <i class='bx bxs-edit'></i>
-                                    {% else %}
-                                        <i class='bx bx-info-circle'></i>
-                                    {% endif %}
+                        <div style="display: grid; gap: 12px;">
+                            {% for log in activity_logs %}
+                                <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--dark-bg); border-radius: 12px; border-left: 4px solid var(--cyber-glow);">
+                                    <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--glass-bg); border-radius: 50%; border: 1px solid var(--glass-border);">
+                                        {% if log.action_type == 'login' %}
+                                            <i class='bx bx-log-in' style="color: var(--neon-green); font-size: 1.2rem;"></i>
+                                        {% elif log.action_type == 'score' %}
+                                            <i class='bx bxs-trophy' style="color: #ffd700; font-size: 1.2rem;"></i>
+                                        {% elif log.action_type == 'essay' %}
+                                            <i class='bx bxs-file' style="color: var(--network-purple); font-size: 1.2rem;"></i>
+                                        {% elif log.action_type == 'edit' %}
+                                            <i class='bx bxs-edit' style="color: var(--cyber-glow); font-size: 1.2rem;"></i>
+                                        {% else %}
+                                            <i class='bx bx-info-circle' style="color: rgba(255, 255, 255, 0.6); font-size: 1.2rem;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="color: #fff; font-weight: 500; margin-bottom: 4px;">{{ log.message }}</div>
+                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">
+                                            <i class="fas fa-clock" style="margin-right: 6px;"></i>{{ log.timestamp }}
+                                        </div>
+                                    </div>
+                                    <div class="network-node" style="position: absolute; right: 20px;"></div>
                                 </div>
-                                <div class="log-content">
-                                    <div>{{ log.message }}</div>
-                                    <div class="log-time">{{ log.timestamp }}</div>
-                                </div>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                     {% else %}
-                        <p>No recent activity to display.</p>
+                        <div style="text-align: center; padding: 48px; color: rgba(255, 255, 255, 0.6);">
+                            <i class="fas fa-clock" style="font-size: 3rem; margin-bottom: 16px; color: var(--cyber-glow);"></i>
+                            <p style="font-size: 1.1rem;">No recent activity to display.</p>
+                        </div>
                     {% endif %}
                 </div>
                 

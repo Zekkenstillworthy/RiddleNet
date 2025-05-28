@@ -1,14 +1,14 @@
-{% extends 'admin/base.html' %} {% block head %}
+{% extends 'admin/base.html' %} 
+{% block head %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Essay Responses | RiddleNet Admin</title>
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/essay.css') }}">
-    <script src="{{ url_for('static', filename='js/admin/essay.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/essay.js') }}" defer></script>
 </head>
 {% endblock %}
 
@@ -18,46 +18,58 @@
 <body>
     <div class="container">
         <!-- Mobile sidebar toggle button -->
-        <button id="sidebar-toggle" class="sidebar-toggle">
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle navigation menu">
             <i class='bx bx-menu'></i>
         </button>
 
         <!-- Main Content -->
         <main>
             <header>
-                <h2>Essay Responses</h2>
+                <div>
+                    <h2>📝 Essay Responses</h2>
+                    <p class="header-subtitle">Manage and grade student essay submissions</p>
+                </div>
                 <div class="admin-info">
+                    <div class="status-indicator"></div>
                     <span>Welcome, Admin</span>
                 </div>
             </header>
 
             <div class="admin-container">
+                <!-- Flash Messages -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
+                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
                 {% endfor %}
                 {% endif %}
                 {% endwith %}
 
+                <!-- Stats Summary with Gaming Elements -->
                 <div class="stats-summary">
-                    <div class="stats-card">
+                    <div class="stats-card" data-stat="total">
+                        <div class="stat-icon">📊</div>
                         <h3>Total Essays</h3>
                         <p>{{ essays|length }}</p>
+                        <div class="stat-trend">All submissions</div>
                     </div>
-                    <div class="stats-card">
+                    <div class="stats-card" data-stat="pending">
+                        <div class="stat-icon">⏳</div>
                         <h3>Pending Review</h3>
                         <p>{{ essays|selectattr('is_graded', 'equalto', false)|list|length }}</p>
+                        <div class="stat-trend">Awaiting grading</div>
                     </div>
-                    <div class="stats-card">
+                    <div class="stats-card" data-stat="reviewed">
+                        <div class="stat-icon">✅</div>
                         <h3>Reviewed</h3>
                         <p>{{ essays|selectattr('is_graded', 'equalto', true)|list|length }}</p>
+                        <div class="stat-trend">Completed</div>
                     </div>
-                    <div class="stats-card">
+                    <div class="stats-card" data-stat="average">
+                        <div class="stat-icon">🎯</div>
                         <h3>Average Grade</h3>
                         <p>
-                            {% set reviewed_essays = essays|selectattr('is_graded', 'equalto',
-                            true)|selectattr('graded_score', 'defined')|list %}
+                            {% set reviewed_essays = essays|selectattr('is_graded', 'equalto', true)|selectattr('graded_score', 'defined')|list %}
                             {% if reviewed_essays %}
                             {% set total_grade = namespace(value=0) %}
                             {% for essay in reviewed_essays %}
@@ -68,106 +80,116 @@
                             N/A
                             {% endif %}
                         </p>
+                        <div class="stat-trend">Class performance</div>
                     </div>
-                </div>
+                </div>                <!-- Modern Filter Section -->
                 <div class="filters-row">
-                    <h3 style="width: 100%; margin-bottom: 12px; color: rgba(0, 195, 181, 1); font-size: 16px;">Filter
-                        Options</h3>
+                    <h3>🔧 Filter Options</h3>
                     <form action="{{ url_for('essay.index') }}" method="GET" id="filter-form">
                         <div class="filter-group">
-                            <label for="reviewed">Status:</label>
+                            <label for="reviewed">📋 Status:</label>
                             <select id="reviewed" name="reviewed" class="filter-select" onchange="this.form.submit()">
-                                <option value="all" {% if current_filters.reviewed=='all' %}selected{% endif %}>All
-                                </option>
-                                <option value="no" {% if current_filters.reviewed=='no' %}selected{% endif %}>Pending
-                                    Review</option>
-                                <option value="yes" {% if current_filters.reviewed=='yes' %}selected{% endif %}>Reviewed
-                                </option>
+                                <option value="all" {% if current_filters.reviewed=='all' %}selected{% endif %}>All Status</option>
+                                <option value="no" {% if current_filters.reviewed=='no' %}selected{% endif %}>⏳ Pending Review</option>
+                                <option value="yes" {% if current_filters.reviewed=='yes' %}selected{% endif %}>✅ Reviewed</option>
                             </select>
                         </div>
 
                         <div class="filter-group">
-                            <label for="category">Category:</label>
+                            <label for="category">🎯 Category:</label>
                             <select id="category" name="category" class="filter-select" onchange="this.form.submit()">
-                                <option value="all" {% if current_filters.category=='all' %}selected{% endif %}>All
-                                    Categories</option>
-                                <option value="riddle" {% if current_filters.category=='riddle' %}selected{% endif %}>
-                                    Riddle</option>
-                                <option value="topology" {% if current_filters.category=='topology' %}selected{% endif
-                                    %}>Topology</option>
-                                <option value="troubleshoot" {% if current_filters.category=='troubleshoot' %}selected{%
-                                    endif %}>Troubleshooting</option>
-                                <option value="crimping" {% if current_filters.category=='crimping' %}selected{% endif
-                                    %}>Cable Crimping</option>
+                                <option value="all" {% if current_filters.category=='all' %}selected{% endif %}>All Categories</option>
+                                <option value="riddle" {% if current_filters.category=='riddle' %}selected{% endif %}>🧩 Riddle</option>
+                                <option value="topology" {% if current_filters.category=='topology' %}selected{% endif %}>🌐 Topology</option>
+                                <option value="troubleshoot" {% if current_filters.category=='troubleshoot' %}selected{% endif %}>🔧 Troubleshooting</option>
+                                <option value="crimping" {% if current_filters.category=='crimping' %}selected{% endif %}>🔌 Cable Crimping</option>
                             </select>
                         </div>
 
                         <div class="filter-group">
-                            <label for="sort_by">Sort By:</label>
+                            <label for="sort_by">📊 Sort By:</label>
                             <select id="sort_by" name="sort_by" class="filter-select" onchange="this.form.submit()">
-                                <option value="newest" {% if current_filters.sort_by=='newest' %}selected{% endif %}>
-                                    Newest First</option>
-                                <option value="oldest" {% if current_filters.sort_by=='oldest' %}selected{% endif %}>
-                                    Oldest First</option>
-                                <option value="grade_high" {% if current_filters.sort_by=='grade_high' %}selected{%
-                                    endif %}>Grade (High to Low)</option>
-                                <option value="grade_low" {% if current_filters.sort_by=='grade_low' %}selected{% endif
-                                    %}>Grade (Low to High)</option>
+                                <option value="newest" {% if current_filters.sort_by=='newest' %}selected{% endif %}>📅 Newest First</option>
+                                <option value="oldest" {% if current_filters.sort_by=='oldest' %}selected{% endif %}>📅 Oldest First</option>
+                                <option value="grade_high" {% if current_filters.sort_by=='grade_high' %}selected{% endif %}>🏆 Grade (High to Low)</option>
+                                <option value="grade_low" {% if current_filters.sort_by=='grade_low' %}selected{% endif %}>📈 Grade (Low to High)</option>
                             </select>
                         </div>
                     </form>
-                </div>
-
+                </div>                <!-- Enhanced Table with Modern Design -->
                 <div class="table-responsive">
-                    <table>
+                    <table role="table" aria-label="Essay responses table">
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Question</th>
-                                <th>Category</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Grade</th>
-                                <th>Actions</th>
+                                <th scope="col">👤 Student</th>
+                                <th scope="col">❓ Question</th>
+                                <th scope="col">🏷️ Category</th>
+                                <th scope="col">📅 Date</th>
+                                <th scope="col">📊 Status</th>
+                                <th scope="col">🎯 Grade</th>
+                                <th scope="col">⚡ Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for essay in essays %}
-                            <tr data-id="{{ essay.id }}" style="--row-index: {{ loop.index }}">
+                            <tr data-id="{{ essay.id }}" style="--row-index: {{ loop.index }}" tabindex="0">
                                 <td class="username-cell">
-                                    <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="User"
-                                        class="user-profile-pic">
-                                    {{ essay.username if essay.username else essay.user_id }}
+                                    <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="User profile" class="user-profile-pic">
+                                    <span>{{ essay.username if essay.username else essay.user_id }}</span>
                                 </td>
                                 <td>
                                     <span class="essay-excerpt" title="{{ essay.question }}">
                                         {{ essay.question }}
                                     </span>
                                 </td>
-                                <td>{{ essay.category }}</td>
-                                <td>{{ essay.submission_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="category-badge">
+                                        {% if essay.category == 'riddle' %}🧩
+                                        {% elif essay.category == 'topology' %}🌐
+                                        {% elif essay.category == 'troubleshoot' %}🔧
+                                        {% elif essay.category == 'crimping' %}🔌
+                                        {% endif %}
+                                        {{ essay.category.title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <time datetime="{{ essay.submission_date.isoformat() }}">
+                                        {{ essay.submission_date.strftime('%Y-%m-%d %H:%M') }}
+                                    </time>
+                                </td>
                                 <td>
                                     <span class="status {% if essay.is_graded %}reviewed{% else %}pending{% endif %}">
                                         {{ 'Reviewed' if essay.is_graded else 'Pending Review' }}
                                     </span>
                                 </td>
-                                <td>{{ essay.graded_score if essay.graded_score is not none else 'N/A' }}</td>
+                                <td>
+                                    <span class="grade-display">
+                                        {{ essay.graded_score if essay.graded_score is not none else 'N/A' }}
+                                    </span>
+                                </td>
                                 <td class="actions-column">
-                                    <button class="btn btn-view view-essay-btn" data-id="{{ essay.id }}"
-                                        data-username="{{ essay.username if essay.username else essay.user_id }}"
-                                        data-question="{{ essay.question }}" data-answer="{{ essay.answer }}"
-                                        data-category="{{ essay.category }}"
-                                        data-date="{{ essay.submission_date.strftime('%Y-%m-%d %H:%M') }}"
-                                        data-status="{{ 'Reviewed' if essay.is_graded else 'Pending Review' }}"
-                                        data-score="{{ essay.graded_score if essay.graded_score is not none else '' }}">
+                                    <button class="btn btn-view view-essay-btn" 
+                                            data-id="{{ essay.id }}"
+                                            data-username="{{ essay.username if essay.username else essay.user_id }}"
+                                            data-question="{{ essay.question }}" 
+                                            data-answer="{{ essay.answer }}"
+                                            data-category="{{ essay.category }}"
+                                            data-date="{{ essay.submission_date.strftime('%Y-%m-%d %H:%M') }}"
+                                            data-status="{{ 'Reviewed' if essay.is_graded else 'Pending Review' }}"
+                                            data-score="{{ essay.graded_score if essay.graded_score is not none else '' }}"
+                                            aria-label="View essay details">
                                         <i class='bx bx-show'></i> View
-                                    </button>                                    <button class="btn btn-edit edit-essay-btn" data-id="{{ essay.id }}">
+                                    </button>
+                                    <button class="btn btn-edit edit-essay-btn" 
+                                            data-id="{{ essay.id }}"
+                                            aria-label="Edit essay">
                                         <i class='bx bx-edit'></i> Edit
                                     </button>
                                     <form action="{{ url_for('essay.delete', essay_id=essay.id) }}" method="POST"
-                                        style="display:inline;" class="delete-form">
+                                          style="display:inline;" class="delete-form">
                                         <button type="submit" class="btn btn-delete delete-essay-btn"
-                                            data-id="{{ essay.id }}">
+                                                data-id="{{ essay.id }}"
+                                                aria-label="Delete essay">
                                             <i class='bx bx-trash'></i> Delete
                                         </button>
                                     </form>
@@ -175,7 +197,13 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" style="text-align: center;">No essay responses found.</td>
+                                <td colspan="7" class="empty-state">
+                                    <div class="empty-state-content">
+                                        <i class='bx bx-file'></i>
+                                        <p>No essay responses found.</p>
+                                        <small>Essays will appear here when students submit their responses.</small>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
