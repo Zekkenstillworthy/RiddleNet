@@ -4,30 +4,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Questions | Admin Panel</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <title>Network Question Management | RiddleNet</title>    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" crossorigin="anonymous"><style>
+        /* Ensure icon fonts load properly */
+        .fas, .fab, .far {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "Font Awesome 6 Pro" !important;
+        }
+        .bx {
+            font-family: "boxicons" !important;
+        }
+        /* Fallback for missing icons */
+        .icon-fallback::before {
+            content: "📡" !important;
+            font-family: initial !important;
+        }
+          /* Ensure all icons are properly sized and aligned */
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Fix icon alignment in buttons */
+        .btn i {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 4px;
+        }
+        
+        /* Ensure boxicons are properly loaded */
+        @import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
+          /* Additional icon fixes */
+        .fas.fa-network-wired::before { content: "\f6ff"; }
+        .fas.fa-database::before { content: "\f1c0"; }
+        .fas.fa-layer-group::before { content: "\f5fd"; }
+        .fas.fa-question-circle::before { content: "\f059"; }
+        .fas.fa-mouse-pointer::before { content: "\f245"; }
+        .fas.fa-share-alt::before { content: "\f1e0"; }
+        .fas.fa-list::before { content: "\f03a"; }
+        .fas.fa-edit::before { content: "\f044"; }
+        .fas.fa-trash::before { content: "\f2ed"; }
+        .fas.fa-spinner::before { content: "\f110"; }
+        
+        /* Boxicons fallbacks */
+        .bx {
+            font-size: inherit;
+            line-height: inherit;
+            vertical-align: baseline;
+        }
+        
+        /* Ensure icons are visible */
+        i[class*="bx"], i[class*="fas"], i[class*="far"], i[class*="fab"] {
+            opacity: 1;
+            visibility: visible;
+            display: inline-block;
+        }
+        
+        /* Loading state for icons */
+        .icon-loading {
+            opacity: 0.5;
+            animation: iconPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+    </style>
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/questions.css') }}">
     <script src="{{ url_for('static', filename='js/admin/questions.js') }}"></script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
 </head>
+<style>
+    :root {
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        --dark-bg: rgba(26, 35, 126, 0.85);
+        --glass-bg: rgba(139, 92, 246, 0.08);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    }
+
+    body {
+        background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+        background-size: cover;
+        color: #fff;
+        min-height: 100vh;
+        font-family: 'Orbitron', 'Poppins', sans-serif;
+    }
+
+    /* Enhanced glassmorphism effects */
+    .modern-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    /* Enhanced section headers */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 48px 0 32px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+        position: relative;
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-header .section-icon {
+        font-size: 1.8rem;
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+
+    /* Cyber-themed animations */
+    @keyframes dataFlow {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    .data-flow {
+        animation: dataFlow 2s ease-in-out infinite;
+    }    /* Network-themed decorative elements */
+    .network-node {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--cyber-glow);
+        border-radius: 50%;
+        box-shadow: 0 0 15px var(--cyber-glow);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { 
+            opacity: 0.6;
+            transform: scale(1);
+        }
+        50% { 
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    }
+
+    /* Enhanced stat cards */
+    .stat-card-modern {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 32px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 48px rgba(0, 217, 255, 0.25);
+    }
+
+    /* Enhanced button styles */
+    .modern-btn {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .modern-btn:hover::before {
+        left: 100%;
+    }
+
+    .modern-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    }
+</style>
 {% endblock %}
 
 {% block body %}
 {{ super() }}
 <body>
-    <div class="container">
-        <!-- Main Content -->
-        <main>
-            <div class="admin-container">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+    <!-- Main Content -->
+    <main class="main-content">        
+        <div class="admin-container" style="background: transparent; padding: 0; box-shadow: none;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="modern-card alert alert-{{ category }}" style="margin-bottom: 24px; border-left: 4px solid var(--neon-green); position: relative;">
+                            <i class="fas fa-info-circle" style="color: var(--neon-green); margin-right: 12px;"></i>
+                            {{ message }}
+                            <div class="network-node data-flow" style="top: 15px; right: 20px;"></div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
                 
                 <!-- Modal for Add Question -->
                 <div id="addQuestionModal" class="modal">
@@ -289,92 +515,214 @@
                             </form>
                         </div>
                     </div>
-                </div>
-                
-                <div class="section-actions">
+                </div>            <!-- Network Question Management Header -->
+            <div class="section-header" style="margin-top: 0;">
+                <i class="fas fa-network-wired section-icon data-flow"></i>
+                <h2>Network Question Management Hub</h2>
+            </div>
+            
+            <div class="modern-card stat-card-modern" style="margin-bottom: 32px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <div>
-                        <h2>Manage RiddleNet Questions</h2>
-                        <p class="info-text">Questions added here will appear in the RiddleNet game. Total questions across all groups: {{ question_count }}</p>
+                        <h3 style="color: var(--cyber-glow); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; font-size: 1.4rem;">
+                            <i class="fas fa-database" style="color: var(--neon-green);"></i> RiddleNet Question Database
+                        </h3>
+                        <p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 1rem; line-height: 1.5;">
+                            Questions added here will appear in the RiddleNet game. Total questions across all groups: 
+                            <span style="color: var(--neon-green); font-weight: 700; font-size: 1.2rem;">{{ question_count }}</span>
+                        </p>
                     </div>
-                    <div>
-                        <button onclick="openModal('addGroupModal')" class="btn"><i class='bx bx-folder-plus'></i> New Group</button>
-                        <button onclick="openModal('addQuestionModal')" class="btn"><i class='bx bx-plus'></i> Add Question</button>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">                        <button onclick="openModal('addGroupModal')" class="btn modern-btn" style="background: var(--gradient-primary); border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                            <i class='bx bxs-folder-plus'></i> New Group
+                        </button>
+                        <button onclick="openModal('addQuestionModal')" class="btn modern-btn" style="background: var(--gradient-secondary); border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                            <i class='bx bx-plus'></i> Add Question
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Information box about question management -->
-                <div class="info-box">
-                    <h3><i class='bx bx-info-circle'></i> About Question Management</h3>
-                    <p>Questions can be organized into groups for better management. Each group can contain questions from different categories.</p>
-                    <ul>
-                        <li>Click on a group to view, add, or remove questions within that group</li>
-                        <li>Questions can belong to multiple groups</li>
-                        <li>Ungrouped questions appear below in their respective categories</li>
-                    </ul>
+                <div class="network-node" style="top: 20px; right: 20px;"></div>
+                <div class="network-node data-flow" style="bottom: 20px; left: 20px; animation-delay: 1s;"></div>
+            </div>              <!-- Information box about question management -->
+            <div class="modern-card stat-card-modern" style="margin-bottom: 32px; border-left: 4px solid var(--network-purple);">                <h3 style="color: var(--network-purple); margin-bottom: 16px; display: flex; align-items: center; gap: 12px; font-size: 1.3rem;">
+                    <i class='bx bxs-info-circle data-flow'></i> Question Management Protocol
+                </h3>
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px; font-size: 1rem; line-height: 1.5;">
+                    Questions can be organized into groups for better network management and deployment efficiency.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                    <div class="modern-card" style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px;">
+                        <i class="fas fa-mouse-pointer" style="color: var(--cyber-glow); font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.95rem; color: rgba(255, 255, 255, 0.9);">Click on a group to view, add, or remove questions</span>
+                    </div>
+                    <div class="modern-card" style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(57, 255, 20, 0.12); border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 12px;">
+                        <i class="fas fa-share-alt" style="color: var(--neon-green); font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.95rem; color: rgba(255, 255, 255, 0.9);">Questions can belong to multiple groups</span>
+                    </div>
+                    <div class="modern-card" style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(0, 217, 255, 0.12); border: 1px solid rgba(0, 217, 255, 0.3); border-radius: 12px;">
+                        <i class="fas fa-list" style="color: var(--cyber-glow); font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.95rem; color: rgba(255, 255, 255, 0.9);">Ungrouped questions appear in categories below</span>
+                    </div>
+                </div>
+                <div class="network-node data-flow" style="top: 15px; right: 15px;"></div>
+                <div class="network-node" style="bottom: 15px; left: 15px; animation-delay: 0.7s;"></div>
+            </div>              <!-- Question Groups Section -->
+            <div class="modern-card stat-card-modern" style="margin-bottom: 48px;">
+                <div class="section-header" style="margin: 0 0 32px 0;">
+                    <i class="fas fa-layer-group section-icon data-flow"></i>
+                    <h2>Question Network Groups</h2>
                 </div>
                 
-                <!-- Question Groups Section -->
-                <div class="group-section">
-                    
-                    <div class="group-cards">
-                        {% for group in groups %}
-                        <div class="group-card" onclick="viewQuestionGroup('{{ group.id }}', '{{ group.name }}', '{{ group.description }}')">
-                            <div class="group-card-content">
-                                <div class="group-card-name">
-                                    <i class='bx bx-folder'></i> {{ group.name }}
-                                </div>
-                                <div class="group-card-description">
-                                    {{ group.description or 'No description available' }}
-                                </div>
-                                <div class="group-card-meta">
-                                    {{ group.questions|length }} questions
-                                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+                    {% for group in groups %}
+                    <div class="modern-card group-card" onclick="viewQuestionGroup('{{ group.id }}', '{{ group.name }}', '{{ group.description }}')" 
+                         style="cursor: pointer; background: var(--dark-bg); transition: all 0.3s ease; position: relative;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">                            <div style="background: var(--gradient-primary); padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);">
+                                <i class='bx bxs-folder' style="font-size: 1.5rem; color: white;"></i>
                             </div>
-                            <div class="group-card-actions">
-                                <button class="btn" onclick="event.stopPropagation(); editQuestionGroup('{{ group.id }}', '{{ group.name }}', '{{ group.description }}')">Edit</button>
-                                <button class="btn btn-danger" onclick="event.stopPropagation(); deleteQuestionGroup('{{ group.id }}', '{{ group.name }}')">Delete</button>
+                            <div style="flex: 1;">
+                                <h4 style="color: var(--cyber-glow); margin-bottom: 4px; font-weight: 700; font-size: 1.1rem;">{{ group.name }}</h4>
+                                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">
+                                    <i class="fas fa-database" style="color: var(--neon-green);"></i>
+                                    <span>{{ group.questions|length }} questions</span>
+                                </div>
                             </div>
                         </div>
-                        {% endfor %}
-                        <div class="create-group-card" onclick="openModal('addGroupModal')">
-                            <div class="create-group-icon">
-                                <i class='bx bx-plus'></i>
-                            </div>
+                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5;">
+                            {{ group.description or 'No description available' }}
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Ungrouped Questions Section -->
-                <div class="ungrouped-section">
-                    <div class="ungrouped-header">
-                        <h3>Ungrouped Questions</h3>
-                        <div class="filter-actions">
-                            <select id="main-ungrouped-category-filter" class="form-control">
-                                <option value="all">All Categories</option>
-                                <option value="riddle">Riddle</option>
-                                <option value="topology">Topology</option>
-                                <option value="crimping">Crimping</option>
-                                <option value="troubleshoot">Troubleshoot</option>
-                            </select>
-                            <button id="groupSelectedBtn" class="btn" style="display:none;">
-                                <i class='bx bx-folder-plus'></i> Group Selected Questions
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                            <button class="btn modern-btn" onclick="event.stopPropagation(); editQuestionGroup('{{ group.id }}', '{{ group.name }}', '{{ group.description }}')" 
+                                    style="background: var(--gradient-primary); border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn modern-btn" onclick="event.stopPropagation(); deleteQuestionGroup('{{ group.id }}', '{{ group.name }}')" 
+                                    style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+                                <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
+                        <div class="network-node" style="top: 20px; right: 20px;"></div>
+                        <div class="network-node data-flow" style="bottom: 20px; left: 20px; animation-delay: 1.5s;"></div>
                     </div>
+                    {% endfor %}
                     
-                    <div id="main-ungrouped-container" class="main-ungrouped-questions-container">
-                        <div class="loading-spinner">Loading ungrouped questions...</div>
-                    </div>
-                    
-                    {% if categorized_questions|length == 0 %}
-                        <div class="empty-state">
-                            <i class='bx bx-question-mark empty-icon'></i>
-                            <p>No ungrouped questions available. Click "Add Question" to create your first question.</p>
+                    <div class="modern-card" onclick="openModal('addGroupModal')" 
+                         style="cursor: pointer; background: var(--dark-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 220px; border: 2px dashed var(--glass-border); transition: all 0.3s ease; position: relative;">
+                        <div style="background: var(--gradient-secondary); padding: 20px; border-radius: 50%; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(57, 255, 20, 0.3);">
+                            <i class='bx bx-plus' style="font-size: 2rem; color: white;"></i>
                         </div>
-                    {% endif %}
+                        <h4 style="color: var(--neon-green); font-weight: 700; font-size: 1.1rem;">Create New Group</h4>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; text-align: center; margin-top: 8px; line-height: 1.4;">
+                            Organize questions into network clusters
+                        </p>
+                        <div class="network-node data-flow" style="top: 15px; right: 15px;"></div>
+                    </div>
                 </div>
+            </div>              <!-- Ungrouped Questions Section -->
+            <div class="modern-card stat-card-modern">
+                <div class="section-header" style="margin: 0 0 32px 0;">
+                    <i class="fas fa-question-circle section-icon data-flow"></i>
+                    <h2>Unassigned Network Questions</h2>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <label style="color: var(--cyber-glow); font-weight: 600; font-size: 1rem;">Filter by Category:</label>
+                        <select id="main-ungrouped-category-filter" style="background: var(--dark-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 16px; color: white; font-size: 0.95rem; font-weight: 500;">
+                            <option value="all">All Categories</option>
+                            <option value="riddle">Riddle</option>
+                            <option value="topology">Topology</option>
+                            <option value="crimping">Crimping</option>
+                            <option value="troubleshoot">Troubleshoot</option>
+                        </select>
+                    </div>                    <button id="groupSelectedBtn" class="btn modern-btn" style="display:none; background: var(--gradient-primary); border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">
+                        <i class='bx bxs-folder-plus'></i> Group Selected Questions
+                    </button>
+                </div>
+                
+                <div id="main-ungrouped-container" class="main-ungrouped-questions-container modern-card" style="background: var(--dark-bg); border-radius: 16px; padding: 32px; min-height: 200px; border: 1px solid var(--glass-border);">
+                    <div class="loading-spinner" style="text-align: center; color: var(--cyber-glow);">
+                        <i class="fas fa-spinner fa-spin data-flow" style="font-size: 2.5rem; margin-bottom: 20px;"></i>
+                        <p style="font-size: 1.1rem; font-weight: 500;">Loading ungrouped questions...</p>
+                    </div>
+                </div>
+                
+                {% if categorized_questions|length == 0 %}
+                    <div style="text-align: center; padding: 60px 20px; color: rgba(255, 255, 255, 0.7);">                        <div style="background: var(--gradient-primary); padding: 24px; border-radius: 50%; display: inline-block; margin-bottom: 24px; box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);">
+                            <i class='bx bx-help-circle' style="font-size: 2.5rem; color: white;"></i>
+                        </div>
+                        <h3 style="color: var(--cyber-glow); margin-bottom: 16px; font-size: 1.4rem; font-weight: 700;">No ungrouped questions available</h3>
+                        <p style="font-size: 1rem; line-height: 1.5;">Click "Add Question" to create your first network challenge.</p>
+                    </div>
+                {% endif %}
+                
+                <div class="network-node" style="top: 20px; right: 20px;"></div>
+                <div class="network-node data-flow" style="bottom: 20px; left: 20px; animation-delay: 2s;"></div>
             </div>
-        </main>
-    </div>
-</body>
+        </div>
+    </main>
+</body>    <script>
+        // Icon loading error handler
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Font Awesome loaded
+            const fontAwesome = document.querySelector('link[href*="font-awesome"]');
+            if (fontAwesome) {
+                fontAwesome.onerror = function() {
+                    console.warn('Font Awesome failed to load, using fallback');
+                    // Add fallback CSS
+                    const fallbackCSS = document.createElement('style');
+                    fallbackCSS.textContent = `
+                        .fas::before, .far::before, .fab::before { 
+                            content: "⚙️"; 
+                            font-family: initial; 
+                        }
+                        .fas.fa-network-wired::before { content: "🔗"; }
+                        .fas.fa-database::before { content: "🗄️"; }
+                        .fas.fa-layer-group::before { content: "📚"; }
+                        .fas.fa-question-circle::before { content: "❓"; }
+                        .fas.fa-mouse-pointer::before { content: "👆"; }
+                        .fas.fa-share-alt::before { content: "🔗"; }
+                        .fas.fa-list::before { content: "📋"; }
+                        .fas.fa-edit::before { content: "✏️"; }
+                        .fas.fa-trash::before { content: "🗑️"; }
+                        .fas.fa-spinner::before { content: "⚡"; }
+                    `;
+                    document.head.appendChild(fallbackCSS);
+                };
+            }
+            
+            // Check if Boxicons loaded
+            const boxicons = document.querySelector('link[href*="boxicons"]');
+            if (boxicons) {
+                boxicons.onerror = function() {
+                    console.warn('Boxicons failed to load, using fallback');
+                    // Add fallback CSS
+                    const fallbackCSS = document.createElement('style');
+                    fallbackCSS.textContent = `
+                        .bx::before { 
+                            content: "📋"; 
+                            font-family: initial; 
+                        }
+                        .bxs-folder-plus::before { content: "📁"; }
+                        .bx-plus::before { content: "➕"; }
+                        .bxs-info-circle::before { content: "ℹ️"; }
+                        .bxs-folder::before { content: "📂"; }
+                        .bx-help-circle::before { content: "❓"; }
+                    `;
+                    document.head.appendChild(fallbackCSS);
+                };
+            }
+            
+            // Verify icons are loaded after a short delay
+            setTimeout(function() {
+                const icons = document.querySelectorAll('i[class*="fas"], i[class*="bx"]');
+                icons.forEach(function(icon) {
+                    const computedStyle = window.getComputedStyle(icon, '::before');
+                    if (!computedStyle.content || computedStyle.content === 'none') {
+                        icon.classList.add('icon-loading');
+                        console.warn('Icon not loaded properly:', icon.className);
+                    }
+                });
+            }, 500);
+        });
+    </script>
 {% endblock %}

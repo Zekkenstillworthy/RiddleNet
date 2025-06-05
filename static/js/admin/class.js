@@ -1,1 +1,0 @@
-//Use Jinja for displaying the class table data and move the javascript to this file
