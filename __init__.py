@@ -57,8 +57,7 @@ def create_app(config=None):
     # Initialize Login Manager
     login_manager.init_app(app)
     login_manager.login_view = 'user.login'  # Specify the login view endpoint
-    
-    # Initialize Flask-Mail
+      # Initialize Flask-Mail
     app.config["MAIL_SERVER"] = "smtp.gmail.com"
     app.config["MAIL_PORT"] = 587
     app.config["MAIL_USE_TLS"] = True
@@ -66,6 +65,9 @@ def create_app(config=None):
     app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
     app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_USERNAME")
+    # Add timeout settings for better network handling
+    app.config["MAIL_TIMEOUT"] = 10
+    app.config["MAIL_MAX_EMAILS"] = None
     mail.init_app(app)
     
     # Define the user loader function

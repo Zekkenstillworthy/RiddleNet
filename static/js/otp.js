@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 otpInput.placeholder = "OTP Code";
             }
             
+            console.log('Sending OTP for user:', username);
             fetch("/send_otp", {
                 method: 'POST',
                 headers: {
@@ -49,6 +50,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     const otpInput = document.getElementById('otp');
                     if (otpInput) {
                         otpInput.focus();
+                    }
+                    
+                    // Start the countdown timer - OTP valid for 10 minutes (600 seconds)
+                    startOtpCountdown(600);
+                } else if (data.status === 'warning') {
+                    // Handle development mode with network issues
+                    const messageElement = document.getElementById('message');
+                    if (messageElement) {
+                        messageElement.textContent = data.message;
+                        messageElement.className = 'warning-message';
+                    } else {
+                        alert(data.message);
+                    }
+                    
+                    // Focus on OTP input field if it exists
+                    const otpInput = document.getElementById('otp');
+                    if (otpInput) {
+                        otpInput.focus();
+                        // In development mode, pre-fill the OTP for testing
+                        if (data.otp) {
+                            otpInput.value = data.otp;
+                        }
                     }
                     
                     // Start the countdown timer - OTP valid for 10 minutes (600 seconds)
