@@ -1,0 +1,686 @@
+{% extends 'user/base.html' %} 
+{% block head %}
+<title>My Classes | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/class-details.css') }}">
+<link rel="icon" href="{{ static_url('img/Logo.png') }}" />
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --text-primary: #111;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+
+  body {
+    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    transition: 0.3s ease;
+    position: relative;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+  }
+  
+  .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+  }
+
+  /* Classes specific styles */
+  .classes-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .classes-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .classes-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .classes-header p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.1rem;
+  }
+
+  .back-link {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    color: var(--cyber-glow);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+
+  .back-link:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    transform: scale(1.1);
+  }
+
+  .section-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title i {
+    font-size: 1.3rem;
+    filter: drop-shadow(0 0 8px var(--cyber-glow));
+  }
+
+  /* Join Class Form */
+  .join-class-form {
+    display: grid;
+    gap: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95rem;
+  }
+
+  .form-input {
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .join-button {
+    padding: 16px 24px;
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .join-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }
+
+  .join-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Class Cards Grid */
+  .classes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+
+  .class-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .class-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--cyber-glow);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+  }
+
+  .class-header {
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .class-name {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    margin: 0 0 8px 0;
+  }
+
+  .class-section {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+  }
+
+  .class-body {
+    padding: 24px;
+  }
+
+  .class-description {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .class-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  .class-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    text-decoration: none;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--cyber-glow);
+    border: 1px solid var(--cyber-glow);
+  }
+
+  .btn-outline:hover {
+    background: rgba(0, 217, 255, 0.1);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .alert-success {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    color: #2ecc71;
+  }
+
+  .alert-error {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+  }
+
+  .alert i {
+    font-size: 1.2rem;
+  }
+
+  /* Loading and Empty States */
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 217, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--cyber-glow);
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: var(--cyber-glow);
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 15px var(--cyber-glow));
+  }
+
+  .empty-state h3 {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 12px;
+  }
+
+  .empty-state p {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .classes-container {
+      padding: 16px;
+    }
+
+    .classes-header h1 {
+      font-size: 2rem;
+    }
+
+    .section-card {
+      padding: 24px 20px;
+    }
+
+    .classes-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .class-header,
+    .class-body {
+      padding: 20px;
+    }
+
+    .class-actions {
+      flex-direction: column;
+    }
+
+    .back-link {
+      top: 16px;
+      left: 16px;
+      width: 45px;
+      height: 45px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .classes-header h1 {
+      font-size: 1.6rem;
+    }
+
+    .section-card {
+      padding: 20px 16px;
+    }
+
+    .class-header,
+    .class-body {
+      padding: 16px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<video class="video-background" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+</video>
+
+<a href="{{ url_for('user.dashboard') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i>
+</a>
+
+<div class="classes-container">
+  <div class="classes-header">
+    <h1>My Classes</h1>
+    <p>Join classes and access course materials</p>
+  </div>
+
+  <!-- Join Class Section -->
+  <div class="section-card">
+    <h2 class="section-title">
+      <i class="fas fa-plus-circle"></i>
+      Join a Class
+    </h2>
+    
+    <div id="error-alert" class="alert alert-error" style="display: none;">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span id="error-message"></span>
+    </div>
+    
+    <div id="success-alert" class="alert alert-success" style="display: none;">
+      <i class="fas fa-check-circle"></i>
+      <span id="success-message"></span>
+    </div>
+    
+    <form id="join-class-form" class="join-class-form">
+      <div class="form-group">
+        <label for="class-code" class="form-label">Class Code</label>
+        <input type="text" 
+               id="class-code" 
+               class="form-input" 
+               maxlength="6" 
+               placeholder="Enter 6-character code" 
+               required>
+        <small style="color: rgba(255, 255, 255, 0.6); margin-top: 4px;">
+          Ask your instructor for the class code
+        </small>
+      </div>
+      
+      <button type="submit" class="join-button" id="join-button">
+        <i class="fas fa-sign-in-alt"></i>
+        Join Class
+      </button>
+    </form>
+  </div>
+
+  <!-- Enrolled Classes Section -->
+  <div class="section-card">
+    <h2 class="section-title">
+      <i class="fas fa-graduation-cap"></i>
+      Enrolled Classes
+    </h2>
+    
+    <div id="classes-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadEnrolledClasses();
+    setupJoinClassForm();
+    
+    // Add fade-in animation
+    const cards = document.querySelectorAll('.section-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+});
+
+function setupJoinClassForm() {
+    const form = document.getElementById('join-class-form');
+    const classCodeInput = document.getElementById('class-code');
+    const joinButton = document.getElementById('join-button');
+    
+    // Format class code input
+    classCodeInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const classCode = classCodeInput.value.trim();
+        if (!classCode || classCode.length !== 6) {
+            showAlert('error', 'Please enter a valid 6-character class code');
+            return;
+        }
+        
+        joinClass(classCode);
+    });
+}
+
+function joinClass(classCode) {
+    const joinButton = document.getElementById('join-button');
+    const originalText = joinButton.innerHTML;
+    
+    // Show loading state
+    joinButton.disabled = true;
+    joinButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+    
+    fetch('/user/api/join_class', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ class_code: classCode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert('success', data.message);
+            document.getElementById('class-code').value = '';
+            loadEnrolledClasses(); // Refresh the classes list
+        } else {
+            showAlert('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('error', 'Failed to join class. Please try again.');
+    })
+    .finally(() => {
+        joinButton.disabled = false;
+        joinButton.innerHTML = originalText;
+    });
+}
+
+function loadEnrolledClasses() {
+    const container = document.getElementById('classes-container');
+    
+    fetch('/user/api/enrolled_classes')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            renderClasses(data.classes);
+        } else {
+            renderEmptyState();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading classes:', error);
+        renderEmptyState();
+    });
+}
+
+function renderClasses(classes) {
+    const container = document.getElementById('classes-container');
+    
+    if (!classes || classes.length === 0) {
+        renderEmptyState();
+        return;
+    }
+    
+    const html = `
+        <div class="classes-grid">
+            ${classes.map(classItem => `
+                <div class="class-card">
+                    <div class="class-header">
+                        <h3 class="class-name">${classItem.name}</h3>
+                        <div class="class-section">Section: ${classItem.section || 'N/A'}</div>
+                    </div>
+                    <div class="class-body">
+                        <p class="class-description">
+                            ${classItem.description || 'No description available'}
+                        </p>
+                        <div class="class-meta">
+                            <span><i class="fas fa-user"></i> Instructor: ${classItem.instructor || 'N/A'}</span>
+                            <span><i class="fas fa-users"></i> Students: ${classItem.student_count || 0}</span>
+                        </div>
+                        <div class="class-actions">
+                            <a href="/user/class/${classItem.id}" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i>
+                                Enter Class
+                            </a>
+                            <button class="btn btn-outline" onclick="viewClassInfo(${classItem.id})">
+                                <i class="fas fa-info-circle"></i>
+                                Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function renderEmptyState() {
+    const container = document.getElementById('classes-container');
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-graduation-cap"></i>
+            <h3>No Classes Enrolled</h3>
+            <p>Join a class using the class code provided by your instructor</p>
+        </div>
+    `;
+}
+
+function viewClassInfo(classId) {
+    // Implement class info modal or redirect
+    console.log('Viewing info for class:', classId);
+}
+
+function showAlert(type, message) {
+    const errorAlert = document.getElementById('error-alert');
+    const successAlert = document.getElementById('success-alert');
+    
+    // Hide both alerts first
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+    
+    if (type === 'error') {
+        document.getElementById('error-message').textContent = message;
+        errorAlert.style.display = 'flex';
+    } else if (type === 'success') {
+        document.getElementById('success-message').textContent = message;
+        successAlert.style.display = 'flex';
+    }
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        errorAlert.style.display = 'none';
+        successAlert.style.display = 'none';
+    }, 5000);
+}
+</script>
+{% endblock %}

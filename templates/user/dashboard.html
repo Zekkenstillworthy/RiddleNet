@@ -8,12 +8,40 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/blank-question.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/short-answer.css') }}">
 <style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+    --text-primary: #111;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+
   body {
+    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+    background-size: cover;
     color: #fff;
     overflow-x: hidden;
-    height: 100vh;
+    min-height: 100vh;
     transition: 0.3s ease;
     position: relative;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
   }
   
   .video-background {
@@ -24,6 +52,1260 @@
     height: 100%;
     z-index: -1;
     object-fit: cover;
+  }
+
+  /* Enhanced glassmorphism effects - Admin Dashboard Style */
+  .modern-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow);
+  }
+
+  /* Cyber-themed animations */
+  @keyframes dataFlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .data-flow {
+    animation: dataFlow 2s ease-in-out infinite;
+  }
+
+  /* Enhanced stat cards - Admin Dashboard Style */
+  .stat-card-modern {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .stat-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+  }
+
+  .stat-card-modern:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(0, 217, 255, 0.25);
+  }
+
+  .stat-value {
+    font-size: 3rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 12px 0;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+  }
+
+  .stat-label {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    color: var(--cyber-glow);
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+  }
+
+  /* Network-themed decorative elements */
+  .network-node {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--cyber-glow);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--cyber-glow);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  /* Responsive design improvements */
+  @media (max-width: 1200px) {
+    .dashboard-container {
+      padding: 24px 16px;
+    }
+    
+    .stat-cards-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      width: 280px;
+    }
+
+    .sidebar.active {
+      transform: translateX(0);
+    }
+
+    .main-wrapper {
+      margin-left: 0;
+    }
+
+    .main-wrapper.collapsed {
+      margin-left: 0;
+    }
+
+    .dashboard-container {
+      padding: 16px;
+    }
+    
+    .stat-cards-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .stat-card-modern {
+      padding: 20px 16px;
+    }
+    
+    .stat-value {
+      font-size: 2.2rem;
+    }
+    
+    .section-header {
+      margin: 32px 0 24px;
+    }
+    
+    .section-header h2 {
+      font-size: 1.5rem;
+    }
+    
+    .modern-table {
+      font-size: 0.9rem;
+    }
+    
+    .modern-table th,
+    .modern-table td {
+      padding: 12px 8px;
+    }
+
+    /* Responsive design for new leaderboard */
+    .leaderboard-entry {
+      padding: 16px;
+      flex-direction: column;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .rank-badge {
+      margin-right: 0;
+      margin-bottom: 8px;
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+
+    .user-info {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      margin-right: 0;
+      font-size: 1.2rem;
+    }
+
+    .user-name {
+      font-size: 1.1rem;
+    }
+
+    .user-score {
+      font-size: 1rem;
+    }
+
+    .achievement-badge {
+      width: 35px;
+      height: 35px;
+      font-size: 1.3rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .sidebar {
+      width: 100%;
+    }
+
+    .stat-cards-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+    }
+    
+    .section-header h2 {
+      font-size: 1.3rem;
+    }
+    
+    .modern-card {
+      padding: 16px;
+    }
+
+    .leaderboard-entry {
+      padding: 12px;
+    }
+
+    .rank-badge {
+      width: 35px;
+      height: 35px;
+      font-size: 0.9rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+
+    .user-name {
+      font-size: 1rem;
+    }
+
+    .achievement-badge {
+      width: 30px;
+      height: 30px;
+      font-size: 1.1rem;
+    }
+  }
+
+  /* Mobile menu button */
+  .mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    color: var(--cyber-glow);
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 35, 126, 0.3);
+  }
+
+  .mobile-menu-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    transform: scale(1.1);
+  }
+
+  .mobile-menu-btn i {
+    font-size: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: flex;
+    }
+  }
+
+  /* Enhanced loading states and smooth transitions */
+  .fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Enhanced focus states for accessibility */
+  .modern-card:focus,
+  .stat-card-modern:focus,
+  .category-btn:focus {
+    outline: 2px solid var(--cyber-glow);
+    outline-offset: 2px;
+  }
+
+  /* Loading skeleton animation */
+  .skeleton {
+    background: linear-gradient(90deg, 
+      rgba(255, 255, 255, 0.1) 25%, 
+      rgba(255, 255, 255, 0.2) 50%, 
+      rgba(255, 255, 255, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* ===== MODERN SIDEBAR STYLING ===== */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid var(--glass-border);
+    z-index: 1000;
+    transform: translateX(0);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 24px rgba(26, 35, 126, 0.3);
+  }
+
+  .sidebar.collapsed {
+    width: 80px;
+  }
+
+  .sidebar.collapsed .nav-text,
+  .sidebar.collapsed .logo-text,
+  .sidebar.collapsed .sidebar-footer .status-text {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .sidebar.collapsed .sidebar-header .logo-container {
+    justify-content: center;
+  }
+
+  .sidebar.collapsed .sidebar-header .logo-text {
+    display: none;
+  }
+
+  /* Sidebar Header */
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 217, 255, 0.05);
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .sidebar-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-logo:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px rgba(0, 217, 255, 0.5);
+  }
+
+  .logo-text h3 {
+    color: var(--cyber-glow);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-text span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+
+  .sidebar-toggle {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--cyber-glow);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-toggle:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    transform: scale(1.1);
+  }
+
+  .sidebar-toggle i {
+    font-size: 1.2rem;
+  }
+
+  /* Sidebar Navigation */
+  .sidebar-nav {
+    flex: 1;
+    padding: 24px 0;
+    overflow-y: auto;
+  }
+
+  .nav-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-menu-bottom {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+
+  .nav-item {
+    margin: 8px 16px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+    gap: 16px;
+  }
+
+  .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: -1;
+  }
+
+  .nav-link:hover::before {
+    left: 0;
+    opacity: 0.1;
+  }
+
+  .nav-link:hover {
+    color: #fff;
+    background: rgba(0, 217, 255, 0.08);
+    border-left: 3px solid var(--cyber-glow);
+    transform: translateX(8px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+  }
+
+  .nav-link.active {
+    background: rgba(0, 217, 255, 0.15);
+    color: #fff;
+    border-left: 3px solid var(--cyber-glow);
+    box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+  }
+
+  .nav-link.active .nav-indicator {
+    transform: scaleX(1);
+  }
+
+  .nav-icon {
+    font-size: 1.25rem;
+    min-width: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .nav-link:hover .nav-icon {
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 8px var(--cyber-glow));
+  }
+
+  .nav-link.active .nav-icon {
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 8px var(--cyber-glow));
+  }
+
+  .nav-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s ease;
+  }
+
+  .nav-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+  }
+
+  /* Logout Link Special Styling */
+  .logout-link:hover {
+    background: rgba(255, 69, 69, 0.1);
+    border-left-color: #ff4545;
+    color: #ff4545;
+  }
+
+  .logout-link:hover .nav-icon {
+    color: #ff4545;
+    filter: drop-shadow(0 0 8px #ff4545);
+  }
+
+  /* Sidebar Divider */
+  .sidebar-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+    margin: 24px 20px;
+  }
+
+  /* Sidebar Footer */
+  .sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 217, 255, 0.03);
+  }
+
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .status-dot.disconnected {
+    background: #ff4545;
+    box-shadow: 0 0 10px #ff4545;
+  }
+
+  .status-text {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.3s ease;
+  }
+
+  /* Sidebar Overlay for Mobile */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Main Content Wrapper */
+  .main-wrapper {
+    margin-left: 280px;
+    transition: margin-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    min-height: 100vh;
+  }
+
+  .main-wrapper.collapsed {
+    margin-left: 80px;
+  }
+
+  /* Tooltip for collapsed sidebar */
+  .nav-link[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--dark-bg);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    z-index: 1001;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s ease forwards;
+  }
+
+  @keyframes tooltipFadeIn {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .sidebar:not(.collapsed) .nav-link[data-tooltip]:hover::after {
+    display: none;
+  }
+
+  /* Enhanced section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+    position: relative;
+  }
+
+  .section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-header .section-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+  }
+
+  /* ===== MODERN LEADERBOARD CARD STYLING ===== */
+  .leaderboard-cards-container {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+    margin-top: 32px;
+  }
+  
+  .leaderboard-cards-container.active {
+    display: block;
+  }
+
+  .leaderboard-card {
+    display: flex;
+    align-items: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+  }
+
+  .leaderboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0.6;
+  }
+
+  .leaderboard-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow);
+  }
+
+  .leaderboard-card:hover::before {
+    opacity: 1;
+    box-shadow: 0 0 20px var(--cyber-glow);
+  }
+
+  /* Special styling for top 3 positions */
+  .leaderboard-card[data-rank="1"] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--glass-bg));
+    border-color: #FFD700;
+  }
+
+  .leaderboard-card[data-rank="1"]::before {
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+  }
+
+  .leaderboard-card[data-rank="2"] {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), var(--glass-bg));
+    border-color: #C0C0C0;
+  }
+
+  .leaderboard-card[data-rank="2"]::before {
+    background: linear-gradient(90deg, #C0C0C0, #A0A0A0);
+  }
+
+  .leaderboard-card[data-rank="3"] {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), var(--glass-bg));
+    border-color: #CD7F32;
+  }
+
+  .leaderboard-card[data-rank="3"]::before {
+    background: linear-gradient(90deg, #CD7F32, #B8860B);
+  }
+
+  .rank-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--cyber-glow);
+    margin-right: 24px;
+    min-width: 60px;
+    text-align: center;
+    background: rgba(0, 217, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    border: 2px solid rgba(0, 217, 255, 0.3);
+  }
+
+  .leaderboard-card[data-rank="1"] .rank-number {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.5);
+    filter: drop-shadow(0 0 10px #FFD700);
+  }
+
+  .leaderboard-card[data-rank="2"] .rank-number {
+    color: #C0C0C0;
+    background: rgba(192, 192, 192, 0.1);
+    border-color: rgba(192, 192, 192, 0.5);
+    filter: drop-shadow(0 0 10px #C0C0C0);
+  }
+
+  .leaderboard-card[data-rank="3"] .rank-number {
+    color: #CD7F32;
+    background: rgba(205, 127, 50, 0.1);
+    border-color: rgba(205, 127, 50, 0.5);
+    filter: drop-shadow(0 0 10px #CD7F32);
+  }
+
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .user-avatar-large {
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    border: 3px solid var(--cyber-glow);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-card:hover .user-avatar-large {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+  }
+
+  .user-details h3.username {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 4px 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .user-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 400;
+  }
+
+  .score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-left: auto;
+    padding-left: 24px;
+  }
+
+  .score-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  .rank-indicator {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
+    border-radius: 0 16px 16px 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .leaderboard-card:hover .rank-indicator {
+    opacity: 1;
+  }
+
+  /* Empty leaderboard state */
+  .empty-leaderboard {
+    text-align: center;
+    padding: 80px 20px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .empty-leaderboard i {
+    font-size: 4rem;
+    color: var(--cyber-glow);
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 15px var(--cyber-glow));
+  }
+
+  .empty-leaderboard h3 {
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 12px;
+  }
+
+  .empty-leaderboard p {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ===== NEW SIMPLIFIED LEADERBOARD STYLING ===== */
+  .leaderboard-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .leaderboard-entry {
+    display: flex;
+    align-items: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .leaderboard-entry::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent, rgba(0, 217, 255, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .leaderboard-entry:hover {
+    transform: translateY(-2px);
+    border-color: var(--cyber-glow);
+    box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+  }
+
+  .leaderboard-entry:hover::before {
+    opacity: 1;
+  }
+
+  .leaderboard-entry[data-rank="1"] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--glass-bg));
+    border-color: #FFD700;
+  }
+
+  .leaderboard-entry[data-rank="2"] {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), var(--glass-bg));
+    border-color: #C0C0C0;
+  }
+
+  .leaderboard-entry[data-rank="3"] {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), var(--glass-bg));
+    border-color: #CD7F32;
+  }
+
+  .rank-badge {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+  }
+
+  .leaderboard-entry[data-rank="1"] .rank-badge {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+  }
+
+  .leaderboard-entry[data-rank="2"] .rank-badge {
+    background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+    color: #000;
+  }
+
+  .leaderboard-entry[data-rank="3"] .rank-badge {
+    background: linear-gradient(135deg, #CD7F32, #B8860B);
+    color: #000;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .user-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gradient-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    font-weight: 600;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(57, 255, 20, 0.3);
+  }
+
+  .user-details {
+    flex: 1;
+  }
+
+  .user-name {
+    margin: 0 0 4px 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .user-score {
+    color: var(--cyber-glow);
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+
+  .achievement-badge {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-entry[data-rank="1"] .achievement-badge {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
+  }
+
+  .leaderboard-entry[data-rank="2"] .achievement-badge {
+    color: #C0C0C0;
+    background: rgba(192, 192, 192, 0.1);
+  }
+
+  .leaderboard-entry[data-rank="3"] .achievement-badge {
+    color: #CD7F32;
+    background: rgba(205, 127, 50, 0.1);
+  }
+
+  .leaderboard-entry:not([data-rank="1"]):not([data-rank="2"]):not([data-rank="3"]) .achievement-badge {
+    color: var(--network-purple);
+    background: rgba(139, 92, 246, 0.1);
+  }
+
+  .achievement-badge:hover {
+    transform: scale(1.1);
+  }
+
+  /* Category buttons enhanced styling */
+  .leaderboard-categories {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .category-btn {
+    background: transparent;
+    border: 2px solid var(--glass-border);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .category-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.4s ease;
+  }
+  
+  .category-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+  }
+  
+  .category-btn:hover::before {
+    left: 100%;
+  }
+  
+  .category-btn.active {
+    background: var(--gradient-primary);
+    border-color: var(--cyber-glow);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }
+
+  /* Responsive design for leaderboard cards */
+  @media (max-width: 768px) {
+    .leaderboard-card {
+      padding: 16px 20px;
+      flex-direction: column;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .rank-number {
+      margin-right: 0;
+      margin-bottom: 8px;
+      font-size: 1.8rem;
+      min-width: 50px;
+      padding: 8px;
+    }
+
+    .user-profile {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .user-avatar-large {
+      width: 50px;
+      height: 50px;
+      font-size: 1.3rem;
+    }
+
+    .score-display {
+      margin-left: 0;
+      padding-left: 0;
+    }
+
+    .score-value {
+      font-size: 1.8rem;
+    }
+
+    .leaderboard-categories {
+      gap: 12px;
+    }
+
+    .category-btn {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .leaderboard-card {
+      padding: 12px 16px;
+    }
+
+    .rank-number {
+      font-size: 1.5rem;
+      min-width: 40px;
+      padding: 6px;
+    }
+
+    .user-avatar-large {
+      width: 45px;
+      height: 45px;
+      font-size: 1.2rem;
+    }
+
+    .user-details h3.username {
+      font-size: 1.1rem;
+    }
+
+    .score-value {
+      font-size: 1.6rem;
+    }
+
+    .category-btn {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Dashboard container - Admin Style */
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 32px;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
   }
 
   .main.active,
@@ -375,124 +1657,31 @@
 /* Custom styles for the custom-hover-table class */
 .custom-hover-table tbody tr:hover {
     color: white !important;
-}
-  
-/* Leaderboard category toggle styles */
-.leaderboard-categories {
+}  /* Leaderboard category toggle styles */
+  .leaderboard-categories {
     display: flex;
     justify-content: center;
     gap: 10px;
     margin-bottom: 20px;
-}
+    flex-wrap: wrap;
+  }
   
-.category-btn {
-    background-color: rgba(0, 0, 0, 0.3);
+  .category-btn {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 8px 15px;
-    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    padding: 12px 20px;
+    border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
-}
-  
-.category-btn:hover {
-    background-color: rgba(0, 195, 181, 0.2);
-    border-color: #00C3B5;
-}
-  
-.category-btn.active {
-    background-color: #00C3B5;
-    border-color: #00C3B5;
-    color: #000;
-    font-weight: bold;
-}
-  
-/* Essay Question Container Styles */
-.essay-container {
-    background: rgba(17, 17, 21, 0.6);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 1rem 0;
-    width: 600px;
-    margin: 0 auto;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    animation: fadeIn 0.4s ease;
-}
-
-.essay-instructions {
-    color: #ddd;
-    font-size: 1rem;
-    margin-bottom: 0.8rem;
-    font-weight: 300;
-    letter-spacing: 0.02rem;
-    text-align: left;
-}
-
-.essay-input {
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 0.6rem;
-    border-radius: 8px;
-    background: rgba(10, 10, 15, 0.6);
-    color: #fff;
-    font-family: inherit;
-    font-size: 0.95rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    resize: vertical;
-    transition: border 0.3s ease, box-shadow 0.3s ease;
-    line-height: 1.5;
-}
-
-.essay-input:focus {
-    outline: none;
-    border-color: #00C3B5;
-    box-shadow: 0 0 0 2px rgba(0, 195, 181, 0.15);
-}
-
-.essay-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-    font-style: italic;
-}
-
-.character-count {
-    text-align: right;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0.5rem 0;
-    font-weight: 300;
-}
-
-.count-number {
-    color: #00C3B5;
     font-weight: 500;
-}
-
-.essay-controls {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1rem;
-}
-
-.submit-essay-btn {
-    background: #00C3B5;
-    color: #111;
-    border: none;
-    border-radius: 6px;
-    padding: 0.7rem 1.4rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.submit-essay-btn::before {
+  }
+  
+  .category-btn::before {
     content: '';
     position: absolute;
     top: 0;
@@ -501,165 +1690,136 @@
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: all 0.4s ease;
-}
-
-.submit-essay-btn:hover {
-    background: #00a19a;
+  }
+  
+  .category-btn:hover {
+    background: rgba(0, 195, 181, 0.2);
+    border-color: #00C3B5;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.submit-essay-btn:hover::before {
+    box-shadow: 0 8px 25px rgba(0, 195, 181, 0.3);
+  }
+  
+  .category-btn:hover::before {
     left: 100%;
-}
+  }
+  
+  .category-btn.active {
+    background: var(--gradient-primary);
+    border-color: var(--cyber-glow);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }
 
-.submit-essay-btn:active {
-    transform: translateY(1px);
-}
+  /* Enhanced modern table styling */
+  .modern-table {
+    width: 100%;
+    background: var(--dark-bg);
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+  }
 
-.essay-feedback {
-    margin-top: 1rem;
-    padding: 0.8rem;
-    border-radius: 8px;
-    background: rgba(10, 10, 15, 0.4);
-    color: #fff;
-    font-size: 0.9rem;
-    min-height: 20px;
-    display: none;
-}
+  .modern-table thead tr {
+    background: var(--gradient-primary);
+  }
 
-.essay-feedback.success {
-    display: block;
-    background: rgba(0, 195, 181, 0.1);
-    border: 1px solid rgba(0, 195, 181, 0.3);
-}
+  .modern-table th {
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
 
-.essay-feedback.error {
-    display: block;
-    background: rgba(231, 76, 60, 0.1);
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    color: #e74c3c;
-}
+  .modern-table tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
 
-/* Loading animations */
-@keyframes loadingDots {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
-}
+  .modern-table tbody tr:hover {
+    background: rgba(0, 217, 255, 0.1);
+    transform: scale(1.01);
+  }
 
-.loading-dots {
-    display: inline-block;
-    position: relative;
-    width: 60px;
-    height: 10px;
-}
+  .modern-table td {
+    padding: 16px;
+    color: rgba(255, 255, 255, 0.9);
+  }
 
-.loading-dots:before,
-.loading-dots:after,
-.loading-dots span:before {
-    content: '';
-    display: inline-block;
-    position: absolute;
-    top: 0;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #fff;
-    animation: loadingDots 1.4s infinite ease-in-out both;
-}
+  .username-cell {
+    color: var(--cyber-glow) !important;
+    font-weight: 500;
+  }
 
-.loading-dots:before {
-    left: 0;
-    animation-delay: -0.32s;
-}
-
-.loading-dots span:before {
-    left: 20px;
-    animation-delay: -0.16s;
-}
-
-.loading-dots:after {
-    left: 40px;
-}
-
-.loading-animation {
+  .user-info {
     display: flex;
-    justify-content: center;
-    margin: 0 auto 10px;
-    text-align: center;
-}
+    align-items: center;
+    gap: 12px;
+  }
 
-.loading-animation div {
-    width: 10px;
-    height: 10px;
-    margin: 0 3px;
-    border-radius: 50%;
-    background: #00C3B5;
-    animation: loadingDots 1.4s infinite ease-in-out both;
-}
-
-.loading-animation div:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.loading-animation div:nth-child(2) {
-    animation-delay: -0.16s;
-}
-
-/* Success and error icons */
-.success-icon, .error-icon {
-    font-size: 1.4rem;
-    width: 28px;
-    height: 28px;
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-secondary);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 10px;
-}
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
 
-.success-icon {
-    background: rgba(0, 195, 181, 0.2);
-    color: #00C3B5;
-}
+  .score-badge {
+    background: var(--gradient-secondary);
+    padding: 6px 16px;
+    border-radius: 20px;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
 
-.error-icon {
-    background: rgba(231, 76, 60, 0.2);
-    color: #e74c3c;
-}
+  .date-cell {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.9rem;
+  }
 
-.feedback-message {
+  .empty-state {
     text-align: center;
-}
+    padding: 32px;
+    color: rgba(255, 255, 255, 0.6);
+  }
 
-.feedback-message p {
-    margin: 5px 0;
-}
+  .empty-state i {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    display: block;
+    color: var(--cyber-glow);
+  }
 
-/* Animation for textarea shake on error */
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-
-.essay-input.shake {
-    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+  }
   
-.leaderboard-table-container {
+  .leaderboard-table-container {
     display: none;
     animation: fadeIn 0.3s ease-in-out;
-}
+  }
   
-.leaderboard-table-container.active {
+  .leaderboard-table-container.active {
     display: block;
-}
+  }
   
-@keyframes fadeIn {
+  @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
+  }
 </style>
 
 <link
@@ -676,38 +1836,241 @@
     <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
 </video>
 
-<!-- Header -->
-<header class="header">
-  {% if user.profile_img %}
-  <img src="{{ url_for('static', filename=user.profile_img) }}" 
-  alt="Profile Image" 
-  style="height: 100px; width: 100px; border-radius: 100%; border: 2px solid #fff; background-color: #fff;"
-  class="profile-link"
-  >
-  {% else %}
-  <img
-    style="height: 100px; width: 100px; border-radius: 100%; border: 2px solid #fff;"
-    draggable="false"
-    src="{{ url_for('static', filename='img/Logo.png') }}"
-    alt="Logo"
-    class="profile-link"
-  />
-  {% endif %}
+<!-- Mobile Menu Button -->
+<button class="mobile-menu-btn" id="mobile-menu-btn">
+  <i class="fas fa-bars"></i>
+</button>
 
-  <nav class="navbar">
-    <a href="#dashboard" id="dashboard-link" class="active">Dashboard</a>
-    <a href="#leaderboard" id="leaderboard-link">Leaderboard</a>
-    <a href="#about-us" id="about-us-link">About Us</a>
-    <a href="#" id="classes-link">My Classes</a>
-    <a href="{{ url_for('user.logout') }}">Log out</a>
+<!-- Modern Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-container">
+      {% if user.profile_img %}
+      <img src="{{ url_for('static', filename=user.profile_img) }}" 
+      alt="Profile Image" 
+      class="sidebar-logo"
+      >
+      {% else %}
+      <img
+        draggable="false"
+        src="{{ url_for('static', filename='img/Logo.png') }}"
+        alt="Logo"
+        class="sidebar-logo"
+      />
+      {% endif %}
+      <div class="logo-text">
+        <h3>RiddleNet</h3>
+        <span>{{ user.username }}</span>
+      </div>
+    </div>
+    <button class="sidebar-toggle" id="sidebar-toggle">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a href="{{ url_for('user.dashboard') }}" id="dashboard-link" class="nav-link active" data-tooltip="Dashboard">
+          <i class="fas fa-tachometer-alt nav-icon"></i>
+          <span class="nav-text">Dashboard</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.leaderboard') }}" id="leaderboard-link" class="nav-link" data-tooltip="Leaderboard">
+          <i class="fas fa-trophy nav-icon"></i>
+          <span class="nav-text">Leaderboard</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.classes') }}" id="classes-link" class="nav-link" data-tooltip="My Classes">
+          <i class="fas fa-graduation-cap nav-icon"></i>
+          <span class="nav-text">My Classes</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.scores') }}" id="scores-link" class="nav-link" data-tooltip="My Scores">
+          <i class="fas fa-chart-line nav-icon"></i>
+          <span class="nav-text">My Scores</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.about_us') }}" id="about-us-link" class="nav-link" data-tooltip="About Us">
+          <i class="fas fa-info-circle nav-icon"></i>
+          <span class="nav-text">About Us</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-divider"></div>
+    
+    <ul class="nav-menu nav-menu-bottom">
+      <li class="nav-item">
+        <a href="{{ url_for('user.profile') }}" id="profile-link" class="nav-link" data-tooltip="Profile Settings">
+          <i class="fas fa-user-cog nav-icon"></i>
+          <span class="nav-text">Profile</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.logout') }}" class="nav-link logout-link" data-tooltip="Logout">
+          <i class="fas fa-sign-out-alt nav-icon"></i>
+          <span class="nav-text">Logout</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+    </ul>
   </nav>
-</header>
+
+  <div class="sidebar-footer">
+    <div class="connection-status">
+      <div class="status-indicator" id="connection-status">
+        <div class="status-dot"></div>
+        <span class="status-text">Connected</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- Main Content Wrapper -->
+<div class="main-wrapper" id="main-wrapper">
 <section id="dashboard" class="main">
-  
+  <div class="dashboard-container">
+    <!-- Enhanced Stats Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 48px;">
+      <div class="stat-card-modern">
+        <div class="stat-icon">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-value data-flow">{{ user.total_score|default(0) }}</div>
+        <div class="stat-label">Total Score</div>
+        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+          <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Across all Categories
+        </div>
+      </div>
+      <div class="stat-card-modern">
+        <div class="stat-icon">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-value data-flow">{{ user.total_score|default(0) }}</div>
+        <div class="stat-label">Total Score</div>
+        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+          <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Across all Categories
+        </div>
+      </div>
+      <div class="stat-card-modern">
+        <div class="stat-icon">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-value data-flow">{{ user.total_score|default(0) }}</div>
+        <div class="stat-label">Total Score</div>
+        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+          <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Across all Categories
+        </div>
+      </div>
+      <div class="stat-card-modern">
+        <div class="stat-icon">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-value data-flow">{{ user.total_score|default(0) }}</div>
+        <div class="stat-label">Total Score</div>
+        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
+          <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Across all Categories
+        </div>
+      </div>
+    </div>
 
-  
+    <!-- Daily Quest Section -->
+    <div class="modern-card" style="margin-bottom: 48px;">
+      <div class="section-header">
+        <i class="fas fa-calendar-check section-icon"></i>
+        <h2>Daily Quest</h2>
+      </div>
+      
+      <div style="background: var(--dark-bg); border-radius: 12px; padding: 24px; border-left: 4px solid #ffd700;">
+        <h3 style="color: #ffd700; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+          <i class="fas fa-graduation-cap"></i>
+          Complete 2 Course From your Class
+        </h3>
+        <div style="background: #ffd700; height: 8px; border-radius: 4px; margin: 16px 0;">
+          <div style="background: #ff8c00; height: 100%; width: 66%; border-radius: 4px; transition: width 0.3s ease;"></div>
+        </div>
+        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 8px;">
+          Join your enrolled classes and complete at least 2 network troubleshooting
+        </p>
+        <small style="color: rgba(255, 255, 255, 0.6);">2/3 completed</small>
+      </div>
+    </div>
 
-  <div class="container">
+    <!-- Announcements Section -->
+    <div class="modern-card" style="margin-bottom: 48px;">
+      <div class="section-header">
+        <i class="fas fa-bullhorn section-icon"></i>
+        <h2>Announcements</h2>
+      </div>
+      
+      <div style="background: var(--dark-bg); border-radius: 12px; padding: 24px; border-left: 4px solid var(--cyber-glow);">
+        <h3 style="color: var(--cyber-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+          <i class="fas fa-network-wired"></i>
+          Networking 1
+        </h3>
+        <p style="color: rgba(255, 255, 255, 0.8);">
+          You have a Quiz on Monday 10 am
+        </p>
+      </div>
+    </div>
+
+    <!-- Challenge Categories Section -->
+    <div class="section-header">
+      <i class="fas fa-gamepad section-icon"></i>
+      <h2>Challenge Categories</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 48px;">
+      <div class="modern-card" style="cursor: pointer;" onclick="showCategorySelection('riddle')">
+        <div style="text-align: center;">
+          <i class="fas fa-puzzle-piece" style="font-size: 3rem; color: var(--cyber-glow); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--cyber-glow));"></i>
+          <h3 style="color: var(--cyber-glow); margin-bottom: 12px;">Riddle Challenge</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Test your logical thinking and problem-solving skills</p>
+          <div class="network-node" style="top: 20px; right: 20px;"></div>
+        </div>
+      </div>
+      
+      <div class="modern-card" style="cursor: pointer;" onclick="goToNetworkTopology()">
+        <div style="text-align: center;">
+          <i class="fas fa-network-wired" style="font-size: 3rem; color: var(--neon-green); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--neon-green));"></i>
+          <h3 style="color: var(--neon-green); margin-bottom: 12px;">Network Topology</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Master network design and architecture concepts</p>
+          <div class="network-node" style="top: 20px; right: 20px;"></div>
+        </div>
+      </div>
+      
+      <div class="modern-card" style="cursor: pointer;" onclick="goTotroubleshoot()">
+        <div style="text-align: center;">
+          <i class="fas fa-tools" style="font-size: 3rem; color: var(--network-purple); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--network-purple));"></i>
+          <h3 style="color: var(--network-purple); margin-bottom: 12px;">Troubleshooting</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Diagnose and resolve network issues efficiently</p>
+          <div class="network-node" style="top: 20px; right: 20px;"></div>
+        </div>
+      </div>
+      
+      <div class="modern-card" style="cursor: pointer;" onclick="goToCrimp()">
+        <div style="text-align: center;">
+          <i class="fas fa-cable-car" style="font-size: 3rem; color: #ff6b6b; margin-bottom: 16px; filter: drop-shadow(0 0 10px #ff6b6b);"></i>
+          <h3 style="color: #ff6b6b; margin-bottom: 12px;">Cable Crimping</h3>
+          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Learn proper UTP cable termination techniques</p>
+          <div class="network-node" style="top: 20px; right: 20px;"></div>
+        </div>
+      </div>
+    </div>
     <section class="quiz-section">
       <video autoplay muted loop>
         <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
@@ -788,245 +2151,11 @@
   
 </section>
 
-<section id="leaderboard" class="leaderboards-container with-padding">
-  <!-- Consolidated Leaderboard Section -->
-  <section class="leaderboard-section">
-    <div class="leaderboard-container">
-      <h3>Leaderboards</h3>
-      
-      <!-- Category Toggle Buttons -->
-      <div class="leaderboard-categories">
-        <button class="category-btn active" data-category="riddle">Riddle</button>
-        <button class="category-btn" data-category="topology">Topology</button>
-        <button class="category-btn" data-category="crimping">Crimping</button>
-        <button class="category-btn" data-category="troubleshoot">Troubleshoot</button>
-      </div>
-      
-      <!-- Riddle Leaderboard Table (shown by default) -->
-      <div class="leaderboard-table-container active" id="riddle-leaderboard">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Highest Score</th>
-              <th>Last Attempt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in leaderboard %}
-            <tr>
-              <td>{{ item[0] }}</td>
-              <td>{{ item[1] }}</td>
-              <td>{{ item[2].strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="3">No leaderboard data available.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Topology Leaderboard Table (hidden by default) -->
-      <div class="leaderboard-table-container" id="topology-leaderboard">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Highest Score</th>
-              <th>Last Attempt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in topology_leaderboard %}
-            <tr>
-              <td>{{ item.username }}</td>
-              <td>{{ item.highest_score }}</td>
-              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="3">No leaderboard data available.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Crimping Leaderboard Table (hidden by default) -->
-      <div class="leaderboard-table-container" id="crimping-leaderboard">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Highest Score</th>
-              <th>Last Attempt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in crimping_leaderboard %}
-            <tr>
-              <td>{{ item.username }}</td>
-              <td>{{ item.highest_score }}</td>
-              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="3">No leaderboard data available.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>      <!-- Troubleshoot Leaderboard Table (hidden by default) -->
-      <div class="leaderboard-table-container" id="troubleshoot-leaderboard">
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Highest Score</th>
-              <th>Time Efficiency</th>
-              <th>Diagnosis</th>
-              <th>Solution</th>
-              <th>Documentation</th>
-              <th>Verification</th>
-              <th>Last Attempt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in troubleshoot_leaderboard %}
-            <tr>
-              <td>{{ item.username }}</td>
-              <td>{{ item.highest_score }}</td>
-              <td>{{ item.time_efficiency if item.time_efficiency else 0 }}</td>
-              <td>{{ item.diagnosis if item.diagnosis else 0 }}</td>
-              <td>{{ item.solution if item.solution else 0 }}</td>
-              <td>{{ item.documentation if item.documentation else 0 }}</td>
-              <td>{{ item.verification if item.verification else 0 }}</td>
-              <td>{{ item.latest_attempt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="8">No leaderboard data available.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-</section>
 
-<!-- Profile Section -->
-<section id="profile" class="profile-section hidden">
-  <div class="profile-content">
-    <i class="bx bx-x profile-exit-btn"></i>
-    <h3>Profile</h3>
-    <form action="{{ url_for('user.update_profile') }}" method="POST" enctype="multipart/form-data">
-      <label for="profile_img">
-        <img id="profile-img-preview" 
-        src="{{ url_for('static', filename=user.profile_img) if user.profile_img else url_for('static', filename='img/Logo.png') }}" 
-        alt="Profile Image Preview" 
-        style="height: 200px; 
-        width: 200px; 
-        border-radius: 100%; 
-        margin: 10px auto; 
-        display: block; 
-        cursor: pointer; 
-        border: 2px solid #fff; 
-        background-color: #fff;">
-      </label>
-      <input type="file" id="profile_img" name="profile_img" accept="image/*" onchange="previewImage(event)" style="display: none;">
-      <input
-        type="text"
-        id="username"
-        name="username"
-        placeholder="Username"
-        autocomplete="off"
-        required
-      />
-      <input
-        type="password"
-        id="password"
-        name="password"
-        placeholder="Password"
-        required
-      />
-      <button type="submit" class="profile-update-btn">Update</button>
-    </form>
-  </div>
-</section>
 
-<!-- Classes Section -->
-<section id="classes-popup" class="classes-section hidden">
-  <div class="classes-content">
-    <i class="bx bx-x classes-exit-btn"></i>
-    <h3>My Classes</h3>
-    
-    <!-- Join Class Form -->
-    <div class="join-class-section">
-      <h4>Join a Class</h4>
-      <form id="join-class-form">
-        <div id="error-alert" class="alert alert-error"></div>
-        <div id="success-alert" class="alert alert-success"></div>
-        
-        <div class="form-group">
-          <label for="class-code" class="form-label">Class Code:</label>
-          <div style="position: relative;">
-            <input type="text" id="class-code" class="form-control" maxlength="6" placeholder="Enter 6-character code" required>
-            <div class="spinner" id="join-spinner"></div>
-          </div>
-          <small style="color: #aaa; margin-top: 0.5rem; display: block;">Ask your instructor for the class code</small>
-        </div>
-        
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Join Class</button>
-      </form>
-    </div>
-    
-    <!-- My Classes Section -->
-    <div class="enrolled-classes-section">
-      <h4>Enrolled Classes</h4>
-      <div id="classes-container">
-        <!-- Classes will be loaded here -->
-        <div class="loading" style="text-align: center; padding: 1rem;">
-          <div class="spinner" style="display: inline-block; width: 30px; height: 30px;"></div>
-          <p>Loading your classes...</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- Scores Section -->
-<section id="leaderboard"class="scores-section">
-  <div class="scores-container">
-    <h3>My Scores</h3>
-    <table id="scores-list" class="score-table">
-      <thead>
-        <tr>
-          <th>Score</th>
-          <th>Category</th> <!-- Add this line -->
-          <th>Date</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-          {% for score in score %}
-          <tr>
-            <td>{{ score.score }}</td>
-            <td>{{ score.category }}</td>
-            <td>{{ score.date_attempted.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            <td>
-              <form action="{{ url_for('user.delete_score', score_id=score.id) }}" method="POST" style="display: inline">
-                <button type="submit" class="delete">Delete</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-    </table>
-  </div>
-</section>
+
+
 
 <!-- Popup Info -->
 <div class="popup-info">
@@ -1050,57 +2179,6 @@
   </div>
   
 </div>
-
-<!-- About Us Section -->
-<section id="about-us" class="with-padding">
-<div  class="about-us" >
-  <div class="about-us-container">
-    <h2>About Us</h2>
-    <p class="about-description">
-      We are a team of four dedicated individuals contributing to the RiddleNet
-      project. Together, we bring innovation, creativity, and technical
-      expertise to provide interactive learning experiences.
-    </p>
-    <div class="about-us-list work-list">
-      <div class="about-card work">
-        <img
-          src="{{ url_for('static', filename='img/Gilbert.jpg') }}"
-          alt="Gilbert I. Requitud Jr."
-        />
-        <div class="layer">
-          <h3>Gilbert I. Requitud Jr.</h3>
-          <span>Project Lead & Developer</span>
-          <a href="https://web.facebook.com/profile.php?id=100013736235548">Learn more</a>
-        </div>
-      </div>
-      <!---
-      <div class="about-card work">
-        <img
-          src="{{ url_for('static', filename='img/Xavier.jpg') }}"
-          alt="Xavier Caparas"
-        />
-        <div class="layer">
-          <h3>Xavier Caparas</h3>
-          <span>Lead Designer</span>
-          <a href="https://web.facebook.com/cep.caparas.3">Learn more</a>
-        </div>
-      </div>
-      <div class="about-card work">
-        <img
-          src="{{ url_for('static', filename='img/Barron.png') }}"
-          alt="Prince Barron Rosendal"
-        />
-        <div class="layer">
-          <h3>Prince Barron Rosendal</h3>
-          <span>Backend Developer</span>
-          <a href="https://web.facebook.com/princebarron.0510">Learn more</a>
-        </div>
-      </div>
-      -->
-    </div>
-  </div>
-</div>
-</section>
 
 
 <script>
@@ -1156,8 +2234,20 @@
     const categoryButtons = document.querySelectorAll('.category-btn');
     const leaderboardContainers = document.querySelectorAll('.leaderboard-table-container');
     
+    // Add ripple animation CSS
+    const rippleStyle = document.createElement('style');
+    rippleStyle.textContent = `
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(rippleStyle);
+    
     categoryButtons.forEach(button => {
-      button.addEventListener('click', function() {
+      button.addEventListener('click', function(e) {
         // Update active button
         categoryButtons.forEach(btn => btn.classList.remove('active'));
         this.classList.add('active');
@@ -1172,6 +2262,34 @@
         if (targetContainer) {
           targetContainer.classList.add('active');
         }
+        
+        // Add ripple effect
+        const rect = this.getBoundingClientRect();
+        const ripple = document.createElement('div');
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+            z-index: 0;
+        `;
+        
+        this.style.position = 'relative';
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
         
         // Play click sound if available
         if (typeof playClickSound === 'function') {
@@ -1197,186 +2315,301 @@
         console.log('Socket client not available, continuing without real-time features');
       }
     }, 1500); // Give socket client time to initialize
-  });
 
-            function playClickSound() {
-                const click = document.getElementById('clickSound');
-                if (window.playSound) {
-                    window.playSound(click);
-                } else {
-                    // Fallback if playSound function isn't available yet
-                    click.currentTime = 0;
-                    const playPromise = click.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Click sound playback prevented:", error);
-                        });
-                    }
-                }
+    // ===== SIDEBAR FUNCTIONALITY =====
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const mainWrapper = document.getElementById('main-wrapper');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    // Sidebar toggle functionality
+    function toggleSidebar() {
+        sidebar.classList.toggle('collapsed');
+        mainWrapper.classList.toggle('collapsed');
+        
+        // Save sidebar state to localStorage
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+        
+        // Add animation effect
+        sidebar.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+            sidebar.style.transform = 'scale(1)';
+        }, 150);
+    }
+
+    // Mobile sidebar toggle
+    function toggleMobileSidebar() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+    }
+
+    // Event listeners for sidebar
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+    }
+
+    // Restore sidebar state from localStorage
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState === 'true') {
+        sidebar.classList.add('collapsed');
+        mainWrapper.classList.add('collapsed');
+    }
+
+    // Navigation functionality
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            
+            // Handle special links
+            if (href === '#' || href.includes('logout')) {
+                return; // Let default behavior handle these
             }
-
-            function playExitSound() {
-                const exit = document.getElementById('exitSound');
-                if (window.playSound) {
-                    window.playSound(exit);
-                } else {
-                    // Fallback if playSound function isn't available yet
-                    exit.currentTime = 0;
-                    const playPromise = exit.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Exit sound playback prevented:", error);
-                        });
-                    }
-                }
-                console.log('exit');
+            
+            e.preventDefault();
+            
+            // Remove active class from all nav links
+            navLinks.forEach(nav => nav.classList.remove('active'));
+            
+            // Add active class to clicked link
+            this.classList.add('active');
+            
+            // Close mobile sidebar if open
+            if (window.innerWidth <= 768) {
+                toggleMobileSidebar();
             }
-
-            function playNavSound() {
-                const nav = document.getElementById('navSound');
-                if (window.playSound) {
-                    window.playSound(nav);
-                } else {
-                    // Fallback if playSound function isn't available yet
-                    nav.currentTime = 0;
-                    const playPromise = nav.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Nav sound playback prevented:", error);
-                        });
-                    }
-                }
-                console.log('nav');
-            }
-
-            // Export the sound functions to the window so they're globally available
-            window.playSound = function(sound) {
-                if (!sound) return;
+            
+            // Handle section navigation
+            const targetId = href.substring(1);
+            const targetSection = document.getElementById(targetId);
+            
+            if (targetSection) {
+                // Hide all sections
+                const sections = document.querySelectorAll('section[id]');
+                sections.forEach(section => {
+                    section.style.display = 'none';
+                    section.classList.remove('visible');
+                });
                 
-                // Create a tracking variable for the current sound's play state
-                if (!window.audioPlayPromises) {
-                    window.audioPlayPromises = new Map();
-                }
-                
-                // If this sound is already playing and has a pending promise, wait for it
-                const existingPromise = window.audioPlayPromises.get(sound);
-                if (existingPromise) {
-                    existingPromise.then(() => {
-                        // Reset sound and play
-                        sound.currentTime = 0;
-                        startNewPlay(sound);
-                    }).catch(error => {
-                        // If previous promise was rejected (e.g. autoplay blocked), try again
-                        console.log("Previous play was interrupted:", error);
-                        startNewPlay(sound);
-                    });
-                } else {
-                    // No existing promise, start new play
-                    startNewPlay(sound);
-                }
-                
-                function startNewPlay(audio) {
-                    // Store the promise of the play operation
-                    const playPromise = audio.play();
-                    
-                    if (playPromise !== undefined) {
-                        window.audioPlayPromises.set(audio, playPromise);
-                        
-                        // When play is finished, remove from tracking
-                        playPromise.then(() => {
-                            window.audioPlayPromises.delete(audio);
-                        }).catch(error => {
-                            // Handle autoplay restrictions or other errors
-                            window.audioPlayPromises.delete(audio);
-                            console.log("Audio playback error or prevented by browser:", error);
-                        });
-                    }
-                }
-            };
-
-            function playCorrectSound() {
-                const correct = document.getElementById('correctSound');
-                const click = document.getElementById('clickSound');
-                correct.currentTime = 0;
-                correct.play();
-                click.pause();
-                console.log('Correct');
+                // Show target section with animation
+                targetSection.style.display = 'block';
+                setTimeout(() => {
+                    targetSection.classList.add('visible');
+                }, 50);
             }
+            
+            // Add ripple effect
+            addRippleEffect(this, e);
+        });
+    });
 
-            function playIncorrectSound() {
-                const incorrect = document.getElementById('incorrectSound');
-                const click = document.getElementById('clickSound');
-                incorrect.currentTime = 0;
-                incorrect.play();
-                click.pause();
-                console.log('Incorrect');
+    // Ripple effect function
+    function addRippleEffect(element, event) {
+        const ripple = document.createElement('div');
+        const rect = element.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+        
+        ripple.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            background: radial-gradient(circle, rgba(0, 217, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+            z-index: 0;
+        `;
+        
+        element.style.position = 'relative';
+        element.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+
+    // Update connection status
+    function updateConnectionStatus(isConnected) {
+        const statusDot = document.querySelector('.status-dot');
+        const statusText = document.querySelector('.status-text');
+        
+        if (statusDot && statusText) {
+            if (isConnected) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'Disconnected';
             }
+        }
+    }
 
-            // Add click sound to all buttons
-            document.querySelectorAll('button, .action-btn, .device, img').forEach(button => {
-                button.addEventListener('click', playClickSound);
-            });
+    // WebSocket connection monitoring
+    if (typeof window.socketClient !== 'undefined') {
+        window.socketClient.on('connected', () => updateConnectionStatus(true));
+        window.socketClient.on('disconnected', () => updateConnectionStatus(false));
+    }
 
-            document.querySelectorAll('i').forEach(button => {
-                button.addEventListener('click', playExitSound);
-            });
+    // Handle window resize
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (window.innerWidth > 768) {
+                // Close mobile sidebar on desktop
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }, 250);
+    });
 
-            document.querySelectorAll('a').forEach(button => {
-                button.addEventListener('click', playNavSound);
-            });
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        // Escape key to close mobile sidebar
+        if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+            toggleMobileSidebar();
+        }
+        
+        // Ctrl+B to toggle sidebar
+        if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            if (window.innerWidth > 768) {
+                toggleSidebar();
+            } else {
+                toggleMobileSidebar();
+            }
+        }
+    });
 
-  // Add this to debug questions loading
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dashboard loaded - will fetch questions when quiz starts');
-  });
+    // Initialize sections visibility
+    const currentHash = window.location.hash || '#dashboard';
+    const activeNavLink = document.querySelector(`a[href="${currentHash}"]`);
+    if (activeNavLink) {
+        navLinks.forEach(nav => nav.classList.remove('active'));
+        activeNavLink.classList.add('active');
+    }
+
+    // Add fade-in animation to dashboard elements
+    const dashboardElements = document.querySelectorAll('.stat-card-modern, .modern-card, .section-header');
+    dashboardElements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            element.classList.add('fade-in');
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Enhanced stat cards hover effects
+    const statCards = document.querySelectorAll('.stat-card-modern');
+    statCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-6px) scale(1.02)';
+            this.style.boxShadow = '0 16px 48px rgba(0, 217, 255, 0.25)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = '0 8px 32px rgba(26, 35, 126, 0.4)';
+        });
+    });
+
+    // Smooth scrolling for navigation
+    const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
+    smoothScrollLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Enhanced table row animations
+    const tableRows = document.querySelectorAll('.modern-table tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            row.style.transition = 'all 0.3s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+
+    // Add loading skeleton effect for dynamic content
+    function showSkeleton(element) {
+        element.classList.add('skeleton');
+        setTimeout(() => {
+            element.classList.remove('skeleton');
+        }, 1000);
+    }
+
+    // Intersection Observer for lazy loading animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Observe elements for lazy loading
+    const observeElements = document.querySelectorAll('.modern-card:not(.fade-in)');
+    observeElements.forEach(element => {
+        observer.observe(element);
+    });
+
+    // Enhanced network nodes animation
+    const networkNodes = document.querySelectorAll('.network-node');
+    networkNodes.forEach((node, index) => {
+        node.style.animationDelay = `${index * 0.5}s`;
+    });
+
+    // Auto-refresh leaderboard data every 30 seconds
+    setInterval(() => {
+        const tables = document.querySelectorAll('.modern-table tbody');
+        tables.forEach(table => {
+            // Add subtle loading indication
+            table.style.opacity = '0.8';
+            setTimeout(() => {
+                table.style.opacity = '1';
+            }, 500);
+        });
+    }, 30000);
+
+    console.log('Enhanced dashboard with sidebar loaded successfully');
+});
 </script>
-    <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
-    <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
-    <audio id="navSound" src="{{ url_for('static', filename='audio/Nav.mp3') }}"></audio>
-    <audio id="correctSound" src="{{ url_for('static', filename='audio/Correct.mp3') }}"></audio>
-    <audio id="incorrectSound" src="{{ url_for('static', filename='audio/Incorrect.mp3') }}"></audio>
-    <audio id="bgSound" src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}"></audio>
 
-<!-- Class Item Template -->
-<template id="class-template">
-  <div class="class-card">
-    <div class="class-header">
-      <h3 class="class-name"></h3>
-      <div class="class-section"></div>
-      <!-- Info button to show class details in a popup -->
-      
-    </div>
-    <div class="class-body">
-      <div class="class-description"></div>
-      <div class="class-meta">
-        <div class="class-dates">
-          <span class="start-date"></span>
-          <span class="end-date"></span>
-        </div>
-        <div class="class-stats">
-          <span class="student-count"></span>
-        </div>
-      </div>
-    </div>
-    <div class="class-footer">
-      <a href="#" class="btn btn-primary view-class-btn">View Details</a>
-      <button class="btn btn-outline leave-class-btn">Leave Class</button>
-    </div>
-  </div>
-</template>
+</div> <!-- End Main Wrapper -->
 
-<!-- Empty State Template -->
-<template id="empty-state-template">
-  <div class="no-classes">
-    <i class="fas fa-book-open empty-state-icon"></i>
-    <h3>No Classes Found</h3>
-    <p class="empty-state-text">You haven't joined any classes yet. Use the form above to join a class with a code from your instructor.</p>
-  </div>
-</template>
-
-{% if message %}
-<script>
-    alert("{{ message }}");
-</script>
-{% endif %}
 {% endblock %}

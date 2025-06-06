@@ -156,19 +156,96 @@ def dashboard():
 
 @user_bp.route('/leaderboard')
 def leaderboard():
+    if 'user_id' not in session:
+        return render_template('user/index.html', message='You need to log in first!')
+    
     try:
+        # Overall leaderboard data
         leaderboard_data = (
-            db.session.query(UserModel.username, func.max(UserScore.score).label('highest_score'), func.max(UserScore.date_attempted).label('latest_attempt'))
+            db.session.query(
+                UserModel.username, 
+                func.max(UserScore.score).label('highest_score'), 
+                func.max(UserScore.date_attempted).label('latest_attempt')
+            )
             .join(UserScore)
             .group_by(UserModel.id)
             .order_by(func.max(UserScore.score).desc())
             .all()
         )
+        
+        # Category-specific leaderboards
+        categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
+        category_leaderboards = {}
+        
+        for category in categories:
+            category_leaderboards[f"{category}_leaderboard"] = (
+                db.session.query(
+                    UserModel.username, 
+                    func.max(UserScore.score).label('highest_score'), 
+                    func.max(UserScore.date_attempted).label('latest_attempt')
+                )
+                .join(UserScore)
+                .filter(UserScore.category == category)
+                .group_by(UserModel.id)
+                .order_by(func.max(UserScore.score).desc())
+                .all()
+            )
     except Exception as e:
         print(f"Error fetching leaderboard: {e}")
         leaderboard_data = []
+        category_leaderboards = {}
 
-    return render_template('user/dashboard.html', leaderboard=leaderboard_data)
+    return render_template('user/leaderboard.html', 
+                         leaderboard=leaderboard_data, 
+                         **category_leaderboards)
+
+@user_bp.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        return render_template('user/index.html', message='You need to log in first!')
+    
+    user = UserModel.query.get(session['user_id'])
+    return render_template('user/profile.html', user=user)
+
+@user_bp.route('/scores')
+def scores():
+    if 'user_id' not in session:
+        return render_template('user/index.html', message='You need to log in first!')
+    
+    user = UserModel.query.get(session['user_id'])
+    user_scores = UserScore.query.filter_by(user_id=user.id).order_by(UserScore.date_attempted.desc()).all()
+    
+    # Calculate statistics
+    total_attempts = len(user_scores)
+    total_score = sum(score.score for score in user_scores)
+    average_score = total_score / total_attempts if total_attempts > 0 else 0
+    highest_score = max(score.score for score in user_scores) if user_scores else 0
+    
+    # Category statistics
+    categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
+    category_stats = {}
+    for category in categories:
+        category_scores = [score for score in user_scores if score.category == category]
+        category_stats[category] = {
+            'attempts': len(category_scores),
+            'best_score': max(score.score for score in category_scores) if category_scores else 0,
+            'average': sum(score.score for score in category_scores) / len(category_scores) if category_scores else 0
+        }
+    
+    return render_template('user/scores.html', 
+                         user=user, 
+                         scores=user_scores,
+                         total_attempts=total_attempts,
+                         average_score=average_score,
+                         highest_score=highest_score,
+                         category_stats=category_stats)
+
+@user_bp.route('/about_us')
+def about_us():
+    if 'user_id' not in session:
+        return render_template('user/index.html', message='You need to log in first!')
+    
+    return render_template('user/about_us.html')
 
 @user_bp.route('/update_profile', methods=['POST'])
 def update_profile():

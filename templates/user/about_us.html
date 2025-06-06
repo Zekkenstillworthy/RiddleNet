@@ -1,0 +1,411 @@
+{% extends 'user/base.html' %}
+
+{% block head %}
+<title>About Us | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+    --text-primary: #111;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+
+  body {
+    background: var(--gradient-dark);
+    color: #fff;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Video Background */
+  .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    opacity: 0.3;
+  }
+
+  /* Network Grid Background Animation */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+      linear-gradient(rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+  }
+
+  /* Modern Card Styles */
+  .modern-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .modern-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 48px rgba(26, 35, 126, 0.6);
+    border-color: rgba(0, 217, 255, 0.3);
+  }
+
+  /* Enhanced section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 32px 0;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+    position: relative;
+  }
+
+  .section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-header .section-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+  }
+
+  /* Container */
+  .about-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .about-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 32px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  /* Team Grid */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 32px;
+    margin-top: 24px;
+  }
+
+  .team-member {
+    text-align: center;
+    position: relative;
+  }
+
+  .team-member img {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    border: 3px solid var(--cyber-glow);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .team-member:nth-child(2) img {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+  }
+
+  .team-member:nth-child(3) img {
+    border-color: var(--network-purple);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+
+  .team-member:hover img {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+  }
+
+  .team-member h3 {
+    color: var(--cyber-glow);
+    margin-bottom: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .team-member:nth-child(2) h3 {
+    color: var(--neon-green);
+  }
+
+  .team-member:nth-child(3) h3 {
+    color: var(--network-purple);
+  }
+
+  .team-member .role {
+    color: rgba(255, 255, 255, 0.8);
+    display: block;
+    margin-bottom: 16px;
+    font-weight: 500;
+    font-size: 1rem;
+  }
+
+  .team-member .learn-more {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+
+  .team-member:nth-child(2) .learn-more {
+    background: var(--gradient-secondary);
+  }
+
+  .team-member:nth-child(3) .learn-more {
+    background: linear-gradient(135deg, var(--network-purple), #ff6b6b);
+  }
+
+  .team-member .learn-more:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
+  }
+
+  /* Back Navigation */
+  .back-nav {
+    position: fixed;
+    top: 32px;
+    left: 32px;
+    z-index: 1000;
+  }
+
+  .back-btn {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    color: var(--cyber-glow);
+    padding: 12px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .back-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    color: #fff;
+    transform: translateX(-4px);
+  }
+
+  /* Fade-in animation */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s ease forwards;
+  }
+
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .about-container {
+      padding: 20px;
+    }
+
+    .team-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .team-member img {
+      width: 150px;
+      height: 150px;
+    }
+
+    .section-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .about-description {
+      font-size: 1rem;
+    }
+
+    .back-nav {
+      top: 20px;
+      left: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .about-container {
+      padding: 16px;
+    }
+
+    .team-member img {
+      width: 120px;
+      height: 120px;
+    }
+
+    .team-member h3 {
+      font-size: 1.2rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<video class="video-background" autoplay muted loop playsinline>
+  <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+</video>
+
+<!-- Back Navigation -->
+<div class="back-nav">
+  <a href="{{ url_for('user.dashboard') }}" class="back-btn">
+    <i class="fas fa-arrow-left"></i>
+    Back to Dashboard
+  </a>
+</div>
+
+<!-- Main Content -->
+<div class="about-container">
+  <div class="modern-card fade-in">
+    <div class="section-header">
+      <i class="fas fa-users section-icon"></i>
+      <h2>About Us</h2>
+    </div>
+    
+    <p class="about-description">
+      We are a team of four dedicated individuals contributing to the RiddleNet
+      project. Together, we bring innovation, creativity, and technical
+      expertise to provide interactive learning experiences.
+    </p>
+
+    <div class="team-grid">
+      <div class="team-member fade-in" style="animation-delay: 0.2s;">
+        <img
+          src="{{ url_for('static', filename='img/Gilbert.jpg') }}"
+          alt="Gilbert I. Requitud Jr."
+        />
+        <h3>Gilbert I. Requitud Jr.</h3>
+        <span class="role">Project Lead & Developer</span>
+        <a href="https://web.facebook.com/profile.php?id=100013736235548" 
+           class="learn-more" target="_blank" rel="noopener noreferrer">
+          Learn more
+        </a>
+      </div>
+
+      <!-- Additional team members can be uncommented when needed -->
+      <!--
+      <div class="team-member fade-in" style="animation-delay: 0.4s;">
+        <img
+          src="{{ url_for('static', filename='img/Xavier.jpg') }}"
+          alt="Xavier Caparas"
+        />
+        <h3>Xavier Caparas</h3>
+        <span class="role">Lead Designer</span>
+        <a href="https://web.facebook.com/cep.caparas.3"
+           class="learn-more" target="_blank" rel="noopener noreferrer">
+          Learn more
+        </a>
+      </div>
+
+      <div class="team-member fade-in" style="animation-delay: 0.6s;">
+        <img
+          src="{{ url_for('static', filename='img/Barron.png') }}"
+          alt="Prince Barron Rosendal"
+        />
+        <h3>Prince Barron Rosendal</h3>
+        <span class="role">Backend Developer</span>
+        <a href="https://web.facebook.com/princebarron.0510"
+           class="learn-more" target="_blank" rel="noopener noreferrer">
+          Learn more
+        </a>
+      </div>
+      -->
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize fade-in animations
+    const fadeElements = document.querySelectorAll('.fade-in');
+    
+    fadeElements.forEach((element, index) => {
+      element.style.animationDelay = `${index * 0.2}s`;
+    });
+  });
+</script>
+{% endblock %}

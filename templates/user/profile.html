@@ -1,0 +1,497 @@
+{% extends 'user/base.html' %} 
+{% block head %}
+<title>Profile | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
+<link rel="icon" href="{{ static_url('img/Logo.png') }}" />
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --text-primary: #111;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+
+  body {
+    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    transition: 0.3s ease;
+    position: relative;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+  }
+  
+  .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+  }
+
+  /* Profile specific styles */
+  .profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .profile-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .profile-header h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .profile-header p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+  }
+
+  .profile-image-container {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .profile-image-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .profile-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid var(--cyber-glow);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    object-fit: cover;
+  }
+
+  .profile-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+  }
+
+  .image-upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+  }
+
+  .profile-image-wrapper:hover .image-upload-overlay {
+    opacity: 1;
+  }
+
+  .image-upload-overlay i {
+    font-size: 2rem;
+    color: var(--cyber-glow);
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .update-button {
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 16px;
+  }
+
+  .update-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }
+
+  .update-button:active {
+    transform: translateY(0);
+  }
+
+  .back-link {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    color: var(--cyber-glow);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .back-link:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    transform: scale(1.1);
+  }
+
+  .back-link i {
+    font-size: 1.2rem;
+  }
+
+  /* Success/Error messages */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+
+  .alert-success {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    color: #2ecc71;
+  }
+
+  .alert-error {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+  }
+
+  /* Profile stats */
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .profile-container {
+      padding: 16px;
+    }
+
+    .profile-card {
+      padding: 32px 24px;
+    }
+
+    .profile-header h2 {
+      font-size: 1.6rem;
+    }
+
+    .profile-image {
+      width: 120px;
+      height: 120px;
+    }
+
+    .profile-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .back-link {
+      top: 16px;
+      left: 16px;
+      width: 45px;
+      height: 45px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .profile-card {
+      padding: 24px 16px;
+    }
+
+    .profile-image {
+      width: 100px;
+      height: 100px;
+    }
+
+    .profile-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<video class="video-background" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+</video>
+
+<a href="{{ url_for('user.dashboard') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i>
+</a>
+
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <h2>Profile Settings</h2>
+      <p>Update your personal information and preferences</p>
+    </div>
+
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Profile Stats -->
+    <div class="profile-stats">
+      <div class="stat-item">
+        <div class="stat-value">{{ user.total_score|default(0) }}</div>
+        <div class="stat-label">Total Score</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ score|length }}</div>
+        <div class="stat-label">Challenges</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ user.username|length }}</div>
+        <div class="stat-label">Username Length</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('user.update_profile') }}" method="POST" enctype="multipart/form-data">
+      <!-- Profile Image -->
+      <div class="profile-image-container">
+        <div class="profile-image-wrapper">
+          <label for="profile_img" class="profile-image-label">
+            <img id="profile-img-preview" 
+                 src="{{ url_for('static', filename=user.profile_img) if user.profile_img else url_for('static', filename='img/Logo.png') }}" 
+                 alt="Profile Image" 
+                 class="profile-image">
+            <div class="image-upload-overlay">
+              <i class="fas fa-camera"></i>
+            </div>
+          </label>
+          <input type="file" id="profile_img" name="profile_img" accept="image/*" onchange="previewImage(event)" style="display: none;">
+        </div>
+      </div>
+
+      <!-- Username Field -->
+      <div class="form-group">
+        <label for="username" class="form-label">
+          <i class="fas fa-user"></i> Username
+        </label>
+        <input type="text" 
+               id="username" 
+               name="username" 
+               class="form-input"
+               value="{{ user.username }}"
+               placeholder="Enter your username"
+               autocomplete="off"
+               required>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password" class="form-label">
+          <i class="fas fa-lock"></i> New Password
+        </label>
+        <input type="password" 
+               id="password" 
+               name="password" 
+               class="form-input"
+               placeholder="Enter new password (leave blank to keep current)"
+               autocomplete="new-password">
+      </div>
+
+      <!-- Email Field (if available) -->
+      {% if user.email %}
+      <div class="form-group">
+        <label for="email" class="form-label">
+          <i class="fas fa-envelope"></i> Email
+        </label>
+        <input type="email" 
+               id="email" 
+               name="email" 
+               class="form-input"
+               value="{{ user.email }}"
+               placeholder="Enter your email"
+               readonly>
+        <small style="color: rgba(255, 255, 255, 0.6); margin-top: 4px; display: block;">
+          Contact admin to change email address
+        </small>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="update-button">
+        <i class="fas fa-save"></i> Update Profile
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+        const output = document.getElementById('profile-img-preview');
+        output.src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Add fade-in animation
+    const profileCard = document.querySelector('.profile-card');
+    profileCard.style.opacity = '0';
+    profileCard.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        profileCard.style.transition = 'all 0.6s ease';
+        profileCard.style.opacity = '1';
+        profileCard.style.transform = 'translateY(0)';
+    }, 100);
+
+    // Add interactive effects to form inputs
+    const inputs = document.querySelectorAll('.form-input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}
