@@ -1,201 +1,99 @@
 {% extends 'user/base.html' %} 
 {% block head %}
 <title>Leaderboard | RiddleNet</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/blank-question.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/short-answer.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user/class-details.css') }}">
-<link rel="icon" href="{{ static_url('img/Logo.png') }}" />
 
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
-
-  :root {
-    --cyber-glow: #00D9FF;
-    --neon-green: #39FF14;
-    --network-purple: #8B5CF6;
-    --dark-navy: #1a237e;
-    --deep-purple: #2a1b3d;
-    --dark-bg: rgba(26, 35, 126, 0.85);
-    --glass-bg: rgba(139, 92, 246, 0.08);
-    --glass-border: rgba(0, 217, 255, 0.15);
-    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
-    --text-primary: #111;
-  }
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-  }
-
-  body {
-    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
-    background-size: cover;
-    color: #fff;
-    overflow-x: hidden;
-    min-height: 100vh;
-    transition: 0.3s ease;
-    position: relative;
-    font-family: 'Orbitron', 'Poppins', sans-serif;
-  }
-  
-  .video-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    object-fit: cover;
-  }
-
   /* Leaderboard specific styles */
   .leaderboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .leaderboard-wrapper {
+    background-color: #1E1E1E;
+    border: 2px solid var(--cyber-glow);
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+    overflow: hidden;
+    width: 100%;
+    max-width: 800px;
+  }
+  
+  /* Large heading at the top */
+  .leaderboard-heading {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    text-align: center;
+    margin: 0;
+    padding: 12px 0;
+    color: var(--cyber-glow);
+    background-color: transparent;
+    border-bottom: 2px solid var(--cyber-glow);
   }
 
   .modern-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-    transition: all 0.3s ease;
+    background: transparent;
+    padding: 0;
     position: relative;
     overflow: hidden;
+    width: 100%;
   }
-
-  .modern-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--gradient-primary);
-    opacity: 0.8;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 0 0 32px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
-  }
-
-  .section-header h2 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .section-icon {
-    font-size: 1.8rem;
-    color: var(--cyber-glow);
-    filter: drop-shadow(0 0 10px var(--cyber-glow));
-  }
-
+  
   .leaderboard-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    padding: 5px;
   }
 
   .leaderboard-entry {
     display: flex;
     align-items: center;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 20px;
+    background: #00a090;
+    padding: 12px 20px;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-  }
-
-  .leaderboard-entry::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, transparent, rgba(0, 217, 255, 0.1), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    margin: 5px;
+    border-radius: 5px;
   }
 
   .leaderboard-entry:hover {
-    transform: translateY(-2px);
-    border-color: var(--cyber-glow);
-    box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+    background: #00b8a9;
   }
-
-  .leaderboard-entry:hover::before {
-    opacity: 1;
+  
+  /* All entries have the same background */
+  .leaderboard-entry[data-rank="1"],
+  .leaderboard-entry[data-rank="2"],
+  .leaderboard-entry[data-rank="3"],
+  .leaderboard-entry[data-rank="4"],
+  .leaderboard-entry[data-rank="5"] {
+    background: #00a090;
   }
-
-  .leaderboard-entry[data-rank="1"] {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--glass-bg));
-    border-color: #FFD700;
-  }
-
-  .leaderboard-entry[data-rank="2"] {
-    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), var(--glass-bg));
-    border-color: #C0C0C0;
-  }
-
-  .leaderboard-entry[data-rank="3"] {
-    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), var(--glass-bg));
-    border-color: #CD7F32;
+  
+  .leaderboard-entry[data-rank="1"]:hover,
+  .leaderboard-entry[data-rank="2"]:hover,
+  .leaderboard-entry[data-rank="3"]:hover,
+  .leaderboard-entry[data-rank="4"]:hover,
+  .leaderboard-entry[data-rank="5"]:hover {
+    background: #00b8a9;
   }
 
   .rank-badge {
     flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
+    width: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 20px;
+    margin-right: 15px;
     font-weight: 700;
-    font-size: 1.2rem;
-    color: var(--text-primary);
-    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
-  }
-
-  .leaderboard-entry[data-rank="1"] .rank-badge {
-    background: linear-gradient(135deg, #FFD700, #FFA500);
-    color: #000;
-  }
-
-  .leaderboard-entry[data-rank="2"] .rank-badge {
-    background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
-    color: #000;
-  }
-
-  .leaderboard-entry[data-rank="3"] .rank-badge {
-    background: linear-gradient(135deg, #CD7F32, #B8860B);
-    color: #000;
+    font-size: 1.4rem;
+    font-family: 'Orbitron', sans-serif;
+    color: #ffffff;
   }
 
   .user-info {
@@ -205,18 +103,30 @@
   }
 
   .user-avatar {
-    width: 56px;
-    height: 56px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
-    background: var(--gradient-secondary);
+    border: 2px solid #ffffff;
+    overflow: hidden;
+    margin-right: 16px;
+  }
+  
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .avatar-text {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 16px;
     font-weight: 600;
-    font-size: 1.4rem;
-    color: var(--text-primary);
-    box-shadow: 0 4px 15px rgba(57, 255, 20, 0.3);
+    font-size: 1.2rem;
+    color: #ffffff;
+    background-color: #008080;
   }
 
   .user-details {
@@ -224,221 +134,239 @@
   }
 
   .user-name {
-    margin: 0 0 4px 0;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
   }
 
   .user-score {
-    color: var(--cyber-glow);
-    font-weight: 500;
-    font-size: 1.1rem;
-  }
-
-  .achievement-badge {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-  }
-
-  .leaderboard-entry[data-rank="1"] .achievement-badge {
-    color: #FFD700;
-    background: rgba(255, 215, 0, 0.1);
-  }
-
-  .leaderboard-entry[data-rank="2"] .achievement-badge {
-    color: #C0C0C0;
-    background: rgba(192, 192, 192, 0.1);
-  }
-
-  .leaderboard-entry[data-rank="3"] .achievement-badge {
-    color: #CD7F32;
-    background: rgba(205, 127, 50, 0.1);
-  }
-
-  .leaderboard-entry:not([data-rank="1"]):not([data-rank="2"]):not([data-rank="3"]) .achievement-badge {
-    color: var(--network-purple);
-    background: rgba(139, 92, 246, 0.1);
-  }
-
-  .achievement-badge:hover {
-    transform: scale(1.1);
+    display: none; /* Hide the score as it's not shown in the reference image */
   }
 
   .empty-leaderboard {
     text-align: center;
-    padding: 80px 20px;
+    padding: 40px 20px 80px;
     color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
   .empty-leaderboard i {
-    font-size: 4rem;
+    font-size: 5rem;
     color: var(--cyber-glow);
     margin-bottom: 24px;
-    filter: drop-shadow(0 0 15px var(--cyber-glow));
+    filter: drop-shadow(0 0 20px var(--cyber-glow));
   }
 
   .empty-leaderboard h3 {
-    font-size: 1.5rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 12px;
+    font-size: 1.8rem;
+    font-family: 'Orbitron', sans-serif;
+    background: rgba(0, 150, 136, 0.8);
+    color: white;
+    margin-bottom: 20px;
+    padding: 10px 25px;
+    border-radius: 5px;
   }
 
   .empty-leaderboard p {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 80%;
   }
 
-  /* Responsive design */
+  /* Responsive design for smaller screens */
   @media (max-width: 768px) {
-    .leaderboard-container {
-      padding: 16px;
+    .leaderboard-heading {
+      font-size: 2rem;
+      padding: 10px 0;
     }
 
     .leaderboard-entry {
-      padding: 16px;
-      flex-direction: column;
-      text-align: center;
-      gap: 16px;
+      padding: 15px;
     }
 
     .rank-badge {
-      margin-right: 0;
-      margin-bottom: 8px;
-      width: 40px;
-      height: 40px;
-      font-size: 1rem;
-    }
-
-    .user-info {
-      flex-direction: column;
-      gap: 12px;
+      margin-right: 10px;
+      font-size: 1.2rem;
     }
 
     .user-avatar {
-      width: 48px;
-      height: 48px;
-      margin-right: 0;
-      font-size: 1.2rem;
+      width: 40px;
+      height: 40px;
+      margin-right: 12px;
+    }
+    
+    .avatar-text {
+      font-size: 1.1rem;
     }
 
     .user-name {
       font-size: 1.1rem;
-    }
-
-    .user-score {
-      font-size: 1rem;
-    }
-
-    .achievement-badge {
-      width: 35px;
-      height: 35px;
-      font-size: 1.3rem;
     }
   }
 
   @media (max-width: 480px) {
+    .leaderboard-wrapper {
+      border-radius: 8px;
+    }
+    
+    .leaderboard-heading {
+      font-size: 1.8rem;
+      padding: 8px 0;
+    }
+    
     .leaderboard-entry {
-      padding: 12px;
+      padding: 12px 10px;
     }
 
     .rank-badge {
-      width: 35px;
-      height: 35px;
-      font-size: 0.9rem;
+      width: 25px;
+      font-size: 1rem;
+      margin-right: 8px;
     }
 
     .user-avatar {
-      width: 40px;
-      height: 40px;
-      font-size: 1rem;
+      width: 35px;
+      height: 35px;
+      margin-right: 10px;
+    }
+    
+    .avatar-text {
+      font-size: 0.9rem;
     }
 
     .user-name {
-      font-size: 1rem;
-    }
-
-    .achievement-badge {
-      width: 30px;
-      height: 30px;
-      font-size: 1.1rem;
+      font-size: 0.9rem;
     }
   }
 </style>
 {% endblock %}
 
-{% block content %}
-<video class="video-background" autoplay muted loop playsinline>
-    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-</video>
-
+{% block body %}
+<!-- Main Content -->
 <div class="leaderboard-container">
-  <div class="modern-card">
-    <div class="section-header">
-      <i class="fas fa-trophy section-icon"></i>
-      <h2>Leaderboard</h2>
-    </div>
+  <div class="leaderboard-wrapper">
+    <h1 class="leaderboard-heading">Leaderboard</h1>
     
-    <!-- Leaderboard List -->
-    <div class="leaderboard-list">
-      {% for item in leaderboard %}
-      <div class="leaderboard-entry" data-rank="{{ loop.index }}">
-        <div class="rank-badge">
-          <span class="rank-number">{{ loop.index }}</span>
-        </div>
-        <div class="user-info">
-          <div class="user-avatar">
-            <span class="avatar-text">{{ item[0][0].upper() }}</span>
+    <div class="modern-card">
+      <!-- Leaderboard List -->
+      <div class="leaderboard-list">
+        {% for item in leaderboard %}
+        <div class="leaderboard-entry" data-rank="{{ loop.index }}">
+          <div class="rank-badge">
+            <span class="rank-number">{{ loop.index }}</span>
           </div>
-          <div class="user-details">
-            <h4 class="user-name">{{ item[0] }}</h4>
-            <span class="user-score">{{ item[1] }} points</span>
+          <div class="user-info">
+            <div class="user-avatar">
+              <span class="avatar-text">{{ item[0][0].upper() }}</span>
+            </div>
+            <div class="user-details">
+              <h4 class="user-name">{{ item[0] }}</h4>
+            </div>
           </div>
         </div>
-        <div class="achievement-badge">
-          {% if loop.index == 1 %}
-            <i class="fas fa-crown"></i>
-          {% elif loop.index == 2 %}
-            <i class="fas fa-medal"></i>
-          {% elif loop.index == 3 %}
-            <i class="fas fa-trophy"></i>
-          {% else %}
-            <i class="fas fa-star"></i>
-          {% endif %}
+        {% else %}
+        <div class="empty-leaderboard">
+          <i class="fas fa-trophy"></i>
+          <h3>No leaderboard data yet</h3>
+          <p>Complete challenges to appear on the leaderboard!</p>
         </div>
+        {% endfor %}
       </div>
-      {% else %}
-      <div class="empty-leaderboard">
-        <i class="fas fa-trophy"></i>
-        <h3>No leaderboard data yet</h3>
-        <p>Complete challenges to appear on the leaderboard!</p>
-      </div>
-      {% endfor %}
     </div>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Add fade-in animation to leaderboard entries
-    const entries = document.querySelectorAll('.leaderboard-entry');
-    entries.forEach((entry, index) => {
-        entry.style.opacity = '0';
-        entry.style.transform = 'translateY(20px)';
+    // Add fade-in animation to the leaderboard wrapper
+    const leaderboardWrapper = document.querySelector('.leaderboard-wrapper');
+    if (leaderboardWrapper) {
+        leaderboardWrapper.style.opacity = '0';
+        
         setTimeout(() => {
-            entry.style.transition = 'all 0.6s ease';
-            entry.style.opacity = '1';
-            entry.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
+            leaderboardWrapper.style.transition = 'opacity 0.5s ease';
+            leaderboardWrapper.style.opacity = '1';
+        }, 300);
+    }
+    
+    // Add fade-in animation to main leaderboard header
+    const leaderboardHeading = document.querySelector('.leaderboard-heading');
+    if (leaderboardHeading) {
+        leaderboardHeading.style.opacity = '0';
+        
+        setTimeout(() => {
+            leaderboardHeading.style.transition = 'opacity 0.5s ease';
+            leaderboardHeading.style.opacity = '1';
+        }, 400);
+    }
+    
+    // Add fade-in animation to leaderboard entries or empty state with staggered delay
+    const entries = document.querySelectorAll('.leaderboard-entry');
+    if (entries.length > 0) {
+        entries.forEach((entry, index) => {
+            entry.style.opacity = '0';
+            entry.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                entry.style.transition = 'all 0.3s ease';
+                entry.style.opacity = '1';
+                entry.style.transform = 'translateY(0)';
+            }, 500 + (index * 100)); // Start after the header animation with staggered timing
+        });
+        
+        // Add hover effects for leaderboard entries
+        entries.forEach(entry => {
+            entry.addEventListener('mouseenter', function() {
+                this.style.background = '#00b8a9';
+            });
+            
+            entry.addEventListener('mouseleave', function() {
+                this.style.background = '#00a090';
+            });
+        });
+    } else {
+        // Add animation for empty leaderboard state
+        const emptyLB = document.querySelector('.empty-leaderboard');
+        if (emptyLB) {
+            const icon = emptyLB.querySelector('i');
+            const heading = emptyLB.querySelector('h3');
+            const text = emptyLB.querySelector('p');
+            
+            if (icon) icon.style.opacity = '0';
+            if (heading) heading.style.opacity = '0';
+            if (text) text.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (icon) {
+                    icon.style.transition = 'opacity 0.8s ease, transform 0.5s ease';
+                    icon.style.opacity = '1';
+                    icon.style.transform = 'scale(1.1)';
+                    
+                    setTimeout(() => {
+                        icon.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            }, 500);
+            
+            setTimeout(() => {
+                if (heading) {
+                    heading.style.transition = 'opacity 0.5s ease';
+                    heading.style.opacity = '1';
+                }
+            }, 800);
+            
+            setTimeout(() => {
+                if (text) {
+                    text.style.transition = 'opacity 0.5s ease';
+                    text.style.opacity = '1';
+                }
+            }, 1000);
+        }
+    }
 });
 </script>
 {% endblock %}

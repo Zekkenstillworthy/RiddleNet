@@ -1,0 +1,680 @@
+{% extends 'user/base.html' %} 
+{% block head %}
+<title>Leaderboard | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/blank-question.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/short-answer.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/class-details.css') }}">
+<link rel="icon" href="{{ static_url('img/Logo.png') }}" />
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+    --text-primary: #111;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+
+  body {
+    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    transition: 0.3s ease;
+    position: relative;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+  }
+  
+  .video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    object-fit: cover;
+  }
+
+  /* Leaderboard specific styles */
+  .leaderboard-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
+  }
+  
+  /* Sidebar for navigation */
+  .sidebar {
+    width: 120px;
+    background-color: #1a237e;
+    background-image: linear-gradient(to bottom, #1a237e, #283593);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    padding-top: 70px;
+    border-right: 1px solid rgba(0, 217, 255, 0.2);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .sidebar-item {
+    width: 100%;
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s;
+    margin-bottom: 5px;
+  }
+  
+  .sidebar-item i {
+    font-size: 1.2rem;
+    margin-right: 10px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .sidebar-item span {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .sidebar-item.active {
+    color: #00D9FF;
+    background: rgba(0, 217, 255, 0.2);
+    border-left: 3px solid #00D9FF;
+  }
+  
+  .sidebar-item.active i,
+  .sidebar-item.active span {
+    color: #00D9FF;
+  }
+  
+  .sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .sidebar-item:hover i,
+  .sidebar-item:hover span {
+    color: #00D9FF;
+  }
+  
+  .leaderboard-wrapper {
+    background-color: #1E1E1E;
+    border: 2px solid #00D9FF;
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+    overflow: hidden;
+    width: 100%;
+    max-width: 800px;
+    margin-left: 150px; /* Space for sidebar */
+  }
+  
+  /* Large heading at the top */
+  .leaderboard-heading {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    text-align: center;
+    margin: 0;
+    padding: 12px 0;
+    color: #00D9FF;
+    background-color: transparent;
+    border-bottom: 2px solid #00D9FF;
+  }
+
+  .modern-card {
+    background: transparent;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  /* RiddleNet logo styling */
+  .riddlenet-logo {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #00D9FF;
+    z-index: 20;
+  }
+  
+  .riddlenet-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .user-logo {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #00D9FF;
+    z-index: 20;
+  }
+  
+  .user-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+  }
+
+  .section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+  }
+
+  .leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+  }
+
+  .leaderboard-entry {
+    display: flex;
+    align-items: center;
+    background: #00a090;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin: 5px;
+    border-radius: 5px;
+  }
+
+  .leaderboard-entry:hover {
+    background: #00b8a9;
+  }
+  
+  /* All entries have the same background */
+  .leaderboard-entry[data-rank="1"],
+  .leaderboard-entry[data-rank="2"],
+  .leaderboard-entry[data-rank="3"],
+  .leaderboard-entry[data-rank="4"],
+  .leaderboard-entry[data-rank="5"] {
+    background: #00a090;
+  }
+  
+  .leaderboard-entry[data-rank="1"]:hover,
+  .leaderboard-entry[data-rank="2"]:hover,
+  .leaderboard-entry[data-rank="3"]:hover,
+  .leaderboard-entry[data-rank="4"]:hover,
+  .leaderboard-entry[data-rank="5"]:hover {
+    background: #00b8a9;
+  }
+
+  .rank-badge {
+    flex-shrink: 0;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-weight: 700;
+    font-size: 1.4rem;
+    font-family: 'Orbitron', sans-serif;
+    color: #ffffff;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    overflow: hidden;
+    margin-right: 16px;
+  }
+  
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .avatar-text {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #ffffff;
+    background-color: #008080;
+  }
+
+  .user-details {
+    flex: 1;
+  }
+
+  .user-name {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #ffffff;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .user-score {
+    display: none; /* Hide the score as it's not shown in the reference image */
+  }
+
+  .achievement-badge {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-entry[data-rank="1"] .achievement-badge {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
+  }
+
+  .leaderboard-entry[data-rank="2"] .achievement-badge {
+    color: #C0C0C0;
+    background: rgba(192, 192, 192, 0.1);
+  }
+
+  .leaderboard-entry[data-rank="3"] .achievement-badge {
+    color: #CD7F32;
+    background: rgba(205, 127, 50, 0.1);
+  }
+
+  .leaderboard-entry:not([data-rank="1"]):not([data-rank="2"]):not([data-rank="3"]) .achievement-badge {
+    color: var(--network-purple);
+    background: rgba(139, 92, 246, 0.1);
+  }
+
+  .achievement-badge:hover {
+    transform: scale(1.1);
+  }
+
+  .empty-leaderboard {
+    text-align: center;
+    padding: 40px 20px 80px;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-leaderboard i {
+    font-size: 5rem;
+    color: var(--cyber-glow);
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 20px var(--cyber-glow));
+  }
+
+  .empty-leaderboard h3 {
+    font-size: 1.8rem;
+    font-family: 'Orbitron', sans-serif;
+    background: rgba(0, 150, 136, 0.8);
+    color: white;
+    margin-bottom: 20px;
+    padding: 10px 25px;
+    border-radius: 5px;
+  }
+
+  .empty-leaderboard p {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 80%;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 80px;
+      padding-top: 60px;
+    }
+    
+    .sidebar-item span {
+      display: none;
+    }
+    
+    .sidebar-item {
+      justify-content: center;
+      padding: 12px 0;
+    }
+    
+    .sidebar-item i {
+      margin-right: 0;
+      font-size: 1.4rem;
+    }
+    
+    .leaderboard-wrapper {
+      margin-left: 80px;
+      max-width: calc(100% - 100px);
+    }
+    
+    .leaderboard-container {
+      padding: 10px;
+    }
+    
+    .leaderboard-heading {
+      font-size: 2rem;
+      padding: 10px 0;
+    }
+
+    .leaderboard-entry {
+      padding: 15px;
+    }
+
+    .rank-badge {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      margin-right: 12px;
+    }
+    
+    .avatar-text {
+      font-size: 1.1rem;
+    }
+
+    .user-name {
+      font-size: 1.1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .leaderboard-wrapper {
+      border-radius: 8px;
+      max-width: calc(100% - 80px);
+    }
+    
+    .sidebar {
+      width: 60px;
+    }
+    
+    .sidebar-item i {
+      font-size: 1.2rem;
+    }
+    
+    .leaderboard-wrapper {
+      margin-left: 60px;
+    }
+    
+    .leaderboard-heading {
+      font-size: 1.8rem;
+      padding: 8px 0;
+    }
+    
+    .leaderboard-entry {
+      padding: 12px 10px;
+    }
+
+    .rank-badge {
+      width: 25px;
+      font-size: 1rem;
+      margin-right: 8px;
+    }
+
+    .user-avatar {
+      width: 35px;
+      height: 35px;
+      margin-right: 10px;
+    }
+    
+    .avatar-text {
+      font-size: 0.9rem;
+    }
+
+    .user-name {
+      font-size: 0.9rem;
+    }
+    
+    .riddlenet-logo,
+    .user-logo {
+      width: 30px;
+      height: 30px;
+    }
+  }
+  
+  /* Additional styles for the background pattern */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("{{ url_for('static', filename='img/hexagon-pattern.png') }}");
+    background-size: cover;
+    opacity: 0.3;
+    z-index: -2;
+    pointer-events: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<video class="video-background" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+</video>
+
+<!-- Logo in top-left corner -->
+<div class="riddlenet-logo">
+  <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet">
+</div>
+
+<!-- User logo in top-right corner -->
+<div class="user-logo">
+  <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="User">
+</div>
+
+<!-- Sidebar Navigation -->
+<div class="sidebar">
+  <a href="{{ url_for('user.dashboard') }}" class="sidebar-item">
+    <i class="bx bx-grid-alt"></i>
+    <span>Dashboard</span>
+  </a>
+  <a href="{{ url_for('user.leaderboard') }}" class="sidebar-item active">
+    <i class="bx bx-trophy"></i>
+    <span>Leaderboard</span>
+  </a>
+  <a href="{{ url_for('user.classes') }}" class="sidebar-item">
+    <i class="bx bx-book-alt"></i>
+    <span>My Classes</span>
+  </a>
+  <a href="{{ url_for('user.profile') }}" class="sidebar-item">
+    <i class="bx bx-user"></i>
+    <span>Profile</span>
+  </a>
+  <a href="{{ url_for('user.about_us') }}" class="sidebar-item">
+    <i class="bx bx-info-circle"></i>
+    <span>About Us</span>
+  </a>
+  <a href="{{ url_for('user.logout') }}" class="sidebar-item">
+    <i class="bx bx-log-out"></i>
+    <span>Log out</span>
+  </a>
+</div>
+
+<!-- Main Content -->
+<div class="leaderboard-container">
+  <div class="leaderboard-wrapper">
+    <h1 class="leaderboard-heading">Leaderboard</h1>
+    
+    <div class="modern-card">
+      <!-- Leaderboard List -->
+      <div class="leaderboard-list">
+        <div class="empty-leaderboard">
+          <i class="fas fa-trophy"></i>
+          <h3>No leaderboard data yet</h3>
+          <p>Complete challenges to appear on the leaderboard!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Add fade-in animation to the sidebar
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.style.opacity = '0';
+        
+        setTimeout(() => {
+            sidebar.style.transition = 'opacity 0.5s ease';
+            sidebar.style.opacity = '1';
+        }, 100);
+    }
+    
+    // Add fade-in animation to logos
+    const logos = document.querySelectorAll('.riddlenet-logo, .user-logo');
+    logos.forEach(logo => {
+        logo.style.opacity = '0';
+        
+        setTimeout(() => {
+            logo.style.transition = 'opacity 0.5s ease';
+            logo.style.opacity = '1';
+        }, 200);
+    });
+    
+    // Add fade-in animation to the leaderboard wrapper
+    const leaderboardWrapper = document.querySelector('.leaderboard-wrapper');
+    if (leaderboardWrapper) {
+        leaderboardWrapper.style.opacity = '0';
+        
+        setTimeout(() => {
+            leaderboardWrapper.style.transition = 'opacity 0.5s ease';
+            leaderboardWrapper.style.opacity = '1';
+        }, 300);
+    }
+    
+    // Add fade-in animation to main leaderboard header
+    const leaderboardHeading = document.querySelector('.leaderboard-heading');
+    if (leaderboardHeading) {
+        leaderboardHeading.style.opacity = '0';
+        
+        setTimeout(() => {
+            leaderboardHeading.style.transition = 'opacity 0.5s ease';
+            leaderboardHeading.style.opacity = '1';
+        }, 400);
+    }
+    
+    // Add fade-in animation to the empty leaderboard message
+    const emptyLB = document.querySelector('.empty-leaderboard');
+    if (emptyLB) {
+        const icon = emptyLB.querySelector('i');
+        const heading = emptyLB.querySelector('h3');
+        const text = emptyLB.querySelector('p');
+        
+        if (icon) icon.style.opacity = '0';
+        if (heading) heading.style.opacity = '0';
+        if (text) text.style.opacity = '0';
+        
+        setTimeout(() => {
+            if (icon) {
+                icon.style.transition = 'opacity 0.8s ease, transform 0.5s ease';
+                icon.style.opacity = '1';
+                icon.style.transform = 'scale(1.1)';
+                
+                setTimeout(() => {
+                    icon.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }, 500);
+        
+        setTimeout(() => {
+            if (heading) {
+                heading.style.transition = 'opacity 0.5s ease';
+                heading.style.opacity = '1';
+            }
+        }, 800);
+        
+        setTimeout(() => {
+            if (text) {
+                text.style.transition = 'opacity 0.5s ease';
+                text.style.opacity = '1';
+            }
+        }, 1000);
+    }
+    
+    // Add active class to sidebar items when clicked
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function() {
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}
