@@ -6,11 +6,575 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/drag-drop-matching.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/socket-notifications.css') }}">
     <link rel="stylesheet" href="{{ static_url('css/drag-drop-matching.css') }}">
-    <link rel="stylesheet" href="{{ static_url('css/socket-notifications.css') }}">
+    <link rel="stylesheet" href="{{ static_url('css/socket-notifications.css') }}">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/user/sidebar.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user/class-details.css') }}">
+    <link rel="icon" href="{{ static_url('img/Logo.png') }}" />
     {% block head %}{% endblock %}
+    
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+
+      :root {
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        --dark-navy: #1a237e;
+        --deep-purple: #2a1b3d;
+        --dark-bg: rgba(26, 35, 126, 0.85);
+        --glass-bg: rgba(139, 92, 246, 0.08);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Poppins', sans-serif;
+        background: var(--gradient-dark);
+        color: var(--text-primary);
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+
+      .video-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+        opacity: 0.3;
+      }
+
+      /* ===== MODERN SIDEBAR STYLING ===== */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border-right: 1px solid var(--glass-border);
+        z-index: 1000;
+        transform: translateX(0);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 4px 0 24px rgba(26, 35, 126, 0.3);
+      }
+
+      .sidebar.collapsed {
+        width: 80px;
+      }
+
+      .sidebar.collapsed .nav-text,
+      .sidebar.collapsed .logo-text,
+      .sidebar.collapsed .sidebar-footer .status-text {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .sidebar.collapsed .sidebar-header .logo-container {
+        justify-content: center;
+      }
+
+      .sidebar.collapsed .sidebar-header .logo-text {
+        display: none;
+      }
+
+      /* Sidebar Header */
+      .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 217, 255, 0.05);
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .sidebar-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .sidebar-logo:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 25px rgba(0, 217, 255, 0.5);
+      }
+
+      .logo-text h3 {
+        color: var(--cyber-glow);
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .logo-text span {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      .sidebar-toggle {
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        color: var(--cyber-glow);
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .sidebar-toggle:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: scale(1.1);
+      }
+
+      .sidebar-toggle i {
+        font-size: 1.2rem;
+      }
+
+      /* Sidebar Navigation */
+      .sidebar-nav {
+        flex: 1;
+        padding: 24px 0;
+        overflow-y: auto;
+      }
+
+      .nav-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .nav-menu-bottom {
+        margin-top: auto;
+        padding-top: 24px;
+      }
+
+      .nav-item {
+        margin: 8px 16px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        overflow: hidden;
+        gap: 16px;
+      }
+
+      .nav-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: -1;
+      }
+
+      .nav-link:hover::before {
+        left: 0;
+        opacity: 0.1;
+      }
+
+      .nav-link:hover {
+        color: #fff;
+        background: rgba(0, 217, 255, 0.08);
+        border-left: 3px solid var(--cyber-glow);
+        transform: translateX(8px);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+      }
+
+      .nav-link.active {
+        background: rgba(0, 217, 255, 0.15);
+        color: #fff;
+        border-left: 3px solid var(--cyber-glow);
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+      }
+
+      .nav-link.active .nav-indicator {
+        transform: scaleX(1);
+      }
+
+      .nav-icon {
+        font-size: 1.25rem;
+        min-width: 24px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link:hover .nav-icon {
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+      }
+
+      .nav-link.active .nav-icon {
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+      }
+
+      .nav-text {
+        font-size: 0.95rem;
+        font-weight: 500;
+        opacity: 1;
+        visibility: visible;
+        transition: all 0.3s ease;
+      }
+
+      .nav-indicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 3px;
+        height: 100%;
+        background: var(--gradient-primary);
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.3s ease;
+      }
+
+      /* Logout Link Special Styling */
+      .logout-link:hover {
+        background: rgba(255, 69, 69, 0.1);
+        border-left-color: #ff4545;
+        color: #ff4545;
+      }
+
+      .logout-link:hover .nav-icon {
+        color: #ff4545;
+        filter: drop-shadow(0 0 8px #ff4545);
+      }
+
+      /* Sidebar Divider */
+      .sidebar-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+        margin: 24px 20px;
+      }
+
+      /* Sidebar Footer */
+      .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 217, 255, 0.03);
+      }
+
+      .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--neon-green);
+        box-shadow: 0 0 10px var(--neon-green);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .status-dot.disconnected {
+        background: #ff4545;
+        box-shadow: 0 0 10px #ff4545;
+      }
+
+      .status-text {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.3s ease;
+      }
+
+      /* Sidebar Overlay for Mobile */
+      .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* Main Content Wrapper */
+      .main-wrapper {
+        margin-left: 280px;
+        transition: margin-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        min-height: 100vh;
+      }
+
+      .main-wrapper.collapsed {
+        margin-left: 80px;
+      }
+
+      /* Mobile menu button */
+      .mobile-menu-btn {
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1001;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        color: var(--cyber-glow);
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(26, 35, 126, 0.3);
+      }
+
+      .mobile-menu-btn:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: scale(1.1);
+      }
+
+      .mobile-menu-btn i {
+        font-size: 1.5rem;
+      }
+
+      @media (max-width: 768px) {
+        .mobile-menu-btn {
+          display: flex;
+        }
+
+        .sidebar {
+          transform: translateX(-100%);
+          width: 280px;
+        }
+
+        .sidebar.active {
+          transform: translateX(0);
+        }
+
+        .main-wrapper {
+          margin-left: 0;
+        }
+
+        .main-wrapper.collapsed {
+          margin-left: 0;
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% { 
+          opacity: 0.6;
+          transform: scale(1);
+        }
+        50% { 
+          opacity: 1;
+          transform: scale(1.2);
+        }
+      }
+
+      /* Tooltip for collapsed sidebar */
+      .nav-link[data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: calc(100% + 12px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--dark-bg);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        z-index: 1001;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        animation: tooltipFadeIn 0.2s ease forwards;
+      }
+
+      @keyframes tooltipFadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .sidebar:not(.collapsed) .nav-link[data-tooltip]:hover::after {
+        display: none;
+      }
+    </style>
 </head>
 <body>
-{% block body %}{% endblock %}    
+{% block video %}
+<video class="video-background" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
+</video>
+{% endblock %}
+
+<!-- Mobile Menu Button -->
+<button class="mobile-menu-btn" id="mobile-menu-btn">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Modern Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">    <div class="logo-container">
+      {% if user and user.profile_img %}
+      <img src="{{ url_for('static', filename=user.profile_img) }}" 
+      alt="Profile Image" 
+      class="sidebar-logo"
+      >
+      {% else %}
+      <img
+        draggable="false"
+        src="{{ url_for('static', filename='img/Logo.png') }}"
+        alt="Logo"
+        class="sidebar-logo"
+      />
+      {% endif %}
+      <div class="logo-text">
+        <h3>RiddleNet</h3>
+        <span>{{ user.username if user else 'Guest' }}</span>
+      </div>
+    </div>
+    <button class="sidebar-toggle" id="sidebar-toggle">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a href="{{ url_for('user.dashboard') }}" id="dashboard-link" class="nav-link {% if request.endpoint == 'user.dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+          <i class="fas fa-tachometer-alt nav-icon"></i>
+          <span class="nav-text">Dashboard</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.leaderboard') }}" id="leaderboard-link" class="nav-link {% if request.endpoint == 'user.leaderboard' %}active{% endif %}" data-tooltip="Leaderboard">
+          <i class="fas fa-trophy nav-icon"></i>
+          <span class="nav-text">Leaderboard</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.classes') }}" id="classes-link" class="nav-link {% if request.endpoint == 'user.classes' %}active{% endif %}" data-tooltip="My Classes">
+          <i class="fas fa-graduation-cap nav-icon"></i>
+          <span class="nav-text">My Classes</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.scores') }}" id="scores-link" class="nav-link {% if request.endpoint == 'user.scores' %}active{% endif %}" data-tooltip="My Scores">
+          <i class="fas fa-chart-line nav-icon"></i>
+          <span class="nav-text">My Scores</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.about_us') }}" id="about-us-link" class="nav-link {% if request.endpoint == 'user.about_us' %}active{% endif %}" data-tooltip="About Us">
+          <i class="fas fa-info-circle nav-icon"></i>
+          <span class="nav-text">About Us</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-divider"></div>
+    
+    <ul class="nav-menu nav-menu-bottom">
+      <li class="nav-item">
+        <a href="{{ url_for('user.profile') }}" id="profile-link" class="nav-link {% if request.endpoint == 'user.profile' %}active{% endif %}" data-tooltip="Profile Settings">
+          <i class="fas fa-user-cog nav-icon"></i>
+          <span class="nav-text">Profile</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('user.logout') }}" class="nav-link logout-link" data-tooltip="Logout">
+          <i class="fas fa-sign-out-alt nav-icon"></i>
+          <span class="nav-text">Logout</span>
+          <div class="nav-indicator"></div>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="connection-status">
+      <div class="status-indicator" id="connection-status">
+        <div class="status-dot"></div>
+        <span class="status-text">Connected</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- Main Content Wrapper -->
+<div class="main-wrapper" id="main-wrapper">
+  {% block body %}{% endblock %}
+</div>
 
 <!-- Global WebSocket Support -->
 <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>

@@ -1,13 +1,9 @@
 from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
-from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
 from sqlalchemy import func
 import os
-import time
 import datetime
 import traceback
-import threading
-import concurrent.futures
-import subprocess
+import random
 from werkzeug.utils import secure_filename
 # Use specific imports with module paths to avoid conflicts
 from .models import db
@@ -43,11 +39,24 @@ def serve_audio(filename):
 
 @user_bp.route('/')
 def index():
-    return render_template('user/index.html')
+    # For login page, check if user is already logged in
+    user = None
+    if 'user_id' in session:
+        user = UserModel.query.get(session['user_id'])
+        # If user is already logged in, redirect to dashboard
+        if user:
+            return redirect(url_for('user.dashboard'))
+    
+    return render_template('user/index.html', user=user)
 
 @user_bp.route('/overview')
 def overview():
-    return render_template('user/overview.html')
+    # Overview can be accessed without login, but pass user if available
+    user = None
+    if 'user_id' in session:
+        user = UserModel.query.get(session['user_id'])
+    
+    return render_template('user/overview.html', user=user)
 
 @user_bp.route('/classes')
 def classes():
@@ -281,15 +290,55 @@ def delete_score(score_id):
 
 @user_bp.route('/troubleshoot')
 def troubleshoot():
-    return render_template('user/troubleshoot.html', title="troubleshoot")
+    # Pass user context if available
+    user = None
+    if 'user_id' in session:
+        user = UserModel.query.get(session['user_id'])
+    
+    return render_template('user/troubleshoot.html', title="troubleshoot", user=user)
 
 @user_bp.route('/crimp')
 def crimp():
-    return render_template('user/crimping-simulation.html', title="crimp")
+    # Pass user context if available
+    user = None
+    if 'user_id' in session:
+        user = UserModel.query.get(session['user_id'])
+    
+    return render_template('user/crimping-simulation.html', title="crimp", user=user)
 
 @user_bp.route('/logout')
 def logout():
-    # Log the logout event if user is in session - audit logging removed
+    # Get user info before clearing session for WebSocket notification
+    user_id = session.get('user_id')
+    username = None
+    
+    if user_id:
+        user = UserModel.query.get(user_id)
+        username = user.username if user else 'unknown'
+    
+    # Send WebSocket notification for logout attempt
+    try:
+        socketio = get_socketio()
+        if socketio and user_id:
+            # Notify admin of user logout
+            socketio.emit('user_login_activity', {
+                'user_id': user_id,
+                'username': username,
+                'action': 'logout',
+                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+            }, room='admin_room')
+            
+            # Send logout notification to user's personal room
+            socketio.emit('logout_complete', {
+                'status': 'success',
+                'message': f'Goodbye, {username}!',
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room=f'user_{user_id}')
+            
+            print(f"WebSocket logout notifications sent for user: {username}")
+    except Exception as ws_error:
+        print(f"WebSocket logout notification failed: {str(ws_error)}")
     
     # Use Flask-Login logout
     from flask_login import logout_user
@@ -316,11 +365,40 @@ def login():
     print(f"Login attempt for: {username}")
     print(f"OTP provided: {'Yes' if otp else 'No'}")
     
+    # Send WebSocket notification for login attempt start
+    try:
+        socketio = get_socketio()
+        if socketio:
+            socketio.emit('user_login_activity', {
+                'username': username,
+                'action': 'login_attempt_started',
+                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
+                'user_agent': request.headers.get('User-Agent', 'unknown')
+            }, room='admin_room')
+    except Exception as ws_error:
+        print(f"WebSocket login attempt notification failed: {str(ws_error)}")
+    
     # Find the user by username
     user = UserModel.query.filter_by(username=username).first()
     
     if not user:
         print(f"User not found: {username}")
+        
+        # Send WebSocket notification for failed login (user not found)
+        try:
+            socketio = get_socketio()
+            if socketio:
+                socketio.emit('user_login_activity', {
+                    'username': username,
+                    'action': 'login_failed',
+                    'reason': 'user_not_found',
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                }, room='admin_room')
+        except Exception as ws_error:
+            print(f"WebSocket login failure notification failed: {str(ws_error)}")
+        
         return render_template('user/index.html', message='Invalid username.')
     
     # Debug info
@@ -328,17 +406,64 @@ def login():
       # Validate password
     if not user.check_password(password):
         print(f"Invalid password for user: {username}")
-        return render_template('user/index.html', message='Invalid password.')
-      # Validate OTP if TOTP is enabled for this user
+        
+        # Send WebSocket notification for failed login (invalid password)
+        try:
+            socketio = get_socketio()
+            if socketio:
+                socketio.emit('user_login_activity', {
+                    'user_id': user.id,
+                    'username': username,
+                    'action': 'login_failed',
+                    'reason': 'invalid_password',
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                }, room='admin_room')
+        except Exception as ws_error:
+            print(f"WebSocket login failure notification failed: {str(ws_error)}")
+        
+        return render_template('user/index.html', message='Invalid password.')      # Validate OTP if TOTP is enabled for this user
     if user.totp_enabled:
         if not otp:
             print(f"OTP required but not provided for user: {username}")
+            
+            # Send WebSocket notification for missing OTP
+            try:
+                socketio = get_socketio()
+                if socketio:
+                    socketio.emit('user_login_activity', {
+                        'user_id': user.id,
+                        'username': username,
+                        'action': 'login_failed',
+                        'reason': 'otp_required_but_not_provided',
+                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                    }, room='admin_room')
+            except Exception as ws_error:
+                print(f"WebSocket OTP missing notification failed: {str(ws_error)}")
+            
             return render_template('user/index.html', message='OTP is required for this account. Please click "Request OTP" to receive a code via email.')
         
         try:
             # Check if OTP matches and hasn't expired (10 minute validity)
             if user.otp != otp:
                 print(f"Invalid OTP code for user: {username}")
+                
+                # Send WebSocket notification for invalid OTP
+                try:
+                    socketio = get_socketio()
+                    if socketio:
+                        socketio.emit('user_login_activity', {
+                            'user_id': user.id,
+                            'username': username,
+                            'action': 'login_failed',
+                            'reason': 'invalid_otp',
+                            'timestamp': datetime.datetime.utcnow().isoformat(),
+                            'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                        }, room='admin_room')
+                except Exception as ws_error:
+                    print(f"WebSocket invalid OTP notification failed: {str(ws_error)}")
+                
                 return render_template('user/index.html', message='Invalid OTP code. Please try again or request a new code.')
                 
             # Check if OTP is expired (10 minutes)
@@ -347,9 +472,42 @@ def login():
                 otp_age = current_time - user.otp_generated_at
                 if otp_age.total_seconds() > 600:  # 10 minutes in seconds
                     print(f"Expired OTP code for user: {username}")
+                    
+                    # Send WebSocket notification for expired OTP
+                    try:
+                        socketio = get_socketio()
+                        if socketio:
+                            socketio.emit('user_login_activity', {
+                                'user_id': user.id,
+                                'username': username,
+                                'action': 'login_failed',
+                                'reason': 'otp_expired',
+                                'otp_age_minutes': round(otp_age.total_seconds() / 60, 2),
+                                'timestamp': datetime.datetime.utcnow().isoformat(),
+                                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                            }, room='admin_room')
+                    except Exception as ws_error:
+                        print(f"WebSocket expired OTP notification failed: {str(ws_error)}")
+                    
                     return render_template('user/index.html', message='OTP code has expired. Please click "Request OTP" for a new code.')
             else:
                 print(f"OTP generation timestamp missing for user: {username}")
+                
+                # Send WebSocket notification for missing OTP timestamp
+                try:
+                    socketio = get_socketio()
+                    if socketio:
+                        socketio.emit('user_login_activity', {
+                            'user_id': user.id,
+                            'username': username,
+                            'action': 'login_failed',
+                            'reason': 'otp_timestamp_missing',
+                            'timestamp': datetime.datetime.utcnow().isoformat(),
+                            'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                        }, room='admin_room')
+                except Exception as ws_error:
+                    print(f"WebSocket OTP timestamp missing notification failed: {str(ws_error)}")
+                
                 return render_template('user/index.html', message='Invalid OTP. Please click "Request OTP" for a new code.')
                 
             # Clear the OTP after successful validation
@@ -359,9 +517,25 @@ def login():
             
         except Exception as e:
             print(f"Error validating OTP for user {username}: {str(e)}")
+            
+            # Send WebSocket notification for OTP validation error
+            try:
+                socketio = get_socketio()
+                if socketio:
+                    socketio.emit('user_login_activity', {
+                        'user_id': user.id,
+                        'username': username,
+                        'action': 'login_failed',
+                        'reason': 'otp_validation_error',
+                        'error': str(e),
+                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                    }, room='admin_room')
+            except Exception as ws_error:
+                print(f"WebSocket OTP validation error notification failed: {str(ws_error)}")
+            
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
-    
-    # Set user in session
+      # Set user in session
     session['user_id'] = user.id
     print(f"Login successful for user: {username}, user_id: {user.id}")
     
@@ -369,6 +543,32 @@ def login():
     # Remember=True ensures the user stays logged in for the session
     login_user(user, remember=True)
     print(f"Flask-Login current_user: {current_user.is_authenticated}")
+    
+    # Send WebSocket notification for successful login
+    try:
+        socketio = get_socketio()
+        if socketio:
+            # Notify admin of successful login
+            socketio.emit('user_login_activity', {
+                'user_id': user.id,
+                'username': username,
+                'action': 'login_successful',
+                'email': user.email,
+                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
+                'user_agent': request.headers.get('User-Agent', 'unknown')
+            }, room='admin_room')
+            
+            # Send welcome notification to user's personal room
+            socketio.emit('login_success', {
+                'status': 'success',
+                'message': f'Welcome back, {username}!',
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room=f'user_{user.id}')
+            
+            print(f"WebSocket login success notifications sent for user: {username}")
+    except Exception as ws_error:
+        print(f"WebSocket login success notification failed: {str(ws_error)}")
     
     # Check if there's a next parameter in the query string or form
     next_url = request.args.get('next') or request.form.get('next')
@@ -454,27 +654,112 @@ def send_otp():
             # Generate a random 6-digit OTP
             import random
             otp = str(random.randint(100000, 999999))
-              # Update the user's OTP in the database
+            
+            # Update the user's OTP in the database
             user.otp = otp
             user.otp_generated_at = datetime.datetime.now()
             user.totp_enabled = True  # Keep this flag for consistency
             db.session.commit()
             
-            # Send OTP via email using direct SMTP to bypass Eventlet DNS issues
+            # Send WebSocket notification to admin for real-time monitoring
+            try:
+                socketio = get_socketio()
+                if socketio:
+                    # Notify admin room about OTP request
+                    socketio.emit('user_otp_activity', {
+                        'user_id': user.id,
+                        'username': username,
+                        'action': 'otp_requested',
+                        'email': user.email,
+                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+                    }, room='admin_room')
+                    
+                    # Send real-time notification to user's personal room
+                    socketio.emit('otp_request_received', {
+                        'status': 'processing',
+                        'message': 'OTP request received, sending email...',
+                        'timestamp': datetime.datetime.utcnow().isoformat()
+                    }, room=f'user_{user.id}')
+                    
+                    print(f"WebSocket notifications sent for OTP request: {username}")
+            except Exception as ws_error:
+                print(f"WebSocket notification failed: {str(ws_error)}")
+            
+            # Send OTP via email using optimized direct SMTP connection
             success = send_otp_email_direct(user.email, user.username, otp)
+            
             if success:
+                # Send WebSocket success notification
+                try:
+                    socketio = get_socketio()
+                    if socketio:
+                        # Notify admin of successful OTP delivery
+                        socketio.emit('user_otp_activity', {
+                            'user_id': user.id,
+                            'username': username,
+                            'action': 'otp_sent_successfully',
+                            'email': user.email,
+                            'timestamp': datetime.datetime.utcnow().isoformat()
+                        }, room='admin_room')
+                        
+                        # Notify user of successful email delivery
+                        socketio.emit('otp_email_sent', {
+                            'status': 'success',
+                            'message': 'OTP sent to your email successfully',
+                            'timestamp': datetime.datetime.utcnow().isoformat()
+                        }, room=f'user_{user.id}')
+                except Exception as ws_error:
+                    print(f"WebSocket success notification failed: {str(ws_error)}")
+                
                 return jsonify({'status': 'success', 'message': 'OTP sent to your email'}), 200
             else:
-                # Fallback: show OTP in development mode
+                # Send WebSocket failure notification
+                try:
+                    socketio = get_socketio()
+                    if socketio:
+                        # Notify admin of failed OTP delivery
+                        socketio.emit('user_otp_activity', {
+                            'user_id': user.id,
+                            'username': username,
+                            'action': 'otp_failed',
+                            'email': user.email,
+                            'error': 'SMTP delivery failed',
+                            'timestamp': datetime.datetime.utcnow().isoformat()
+                        }, room='admin_room')
+                        
+                        # Notify user of failed email delivery
+                        socketio.emit('otp_email_failed', {
+                            'status': 'error',
+                            'message': 'Failed to send OTP email',
+                            'timestamp': datetime.datetime.utcnow().isoformat()
+                        }, room=f'user_{user.id}')
+                except Exception as ws_error:
+                    print(f"WebSocket failure notification failed: {str(ws_error)}")
+                
+                # Fast fallback for production: Return failure without development mode OTP display
                 return jsonify({
-                    'status': 'warning', 
-                    'message': f'OTP generated but email sending failed. Your OTP is: {otp} (Development Mode)',
-                    'otp': otp
-                }), 200
+                    'status': 'error', 
+                    'message': 'Failed to send OTP email. Please check your email configuration and try again.'
+                }), 500
         except Exception as e:
             print(f"Error in send_otp: {str(e)}")
             import traceback
             print(traceback.format_exc())
+            
+            # Send WebSocket error notification
+            try:
+                socketio = get_socketio()
+                if socketio:
+                    socketio.emit('user_otp_activity', {
+                        'username': username if 'username' in locals() else 'unknown',
+                        'action': 'otp_error',
+                        'error': str(e),
+                        'timestamp': datetime.datetime.utcnow().isoformat()
+                    }, room='admin_room')
+            except Exception as ws_error:
+                print(f"WebSocket error notification failed: {str(ws_error)}")
+            
             return jsonify({'status': 'error', 'message': 'Internal server error. Please try again.'}), 500
     else:
         return jsonify({'status': 'error', 'message': 'This endpoint only accepts AJAX requests'}), 400
@@ -699,8 +984,7 @@ def get_topology_config(topology_type):
 @user_login_required
 def get_topology_types():
     """Get all available topology types"""
-    try:
-        # Query all active topologies and get their types
+    try:        # Query all active topologies and get their types
         topologies = Topology.query.filter_by(is_active=True).all()
         topology_types = [topology.topology_type for topology in topologies]
         
@@ -720,229 +1004,352 @@ def get_topology_types():
             'message': f'Failed to retrieve topology types: {str(e)}'
         }), 500
 
+# =============================================================================
+# WebSocket Event Handlers for User Module
+# =============================================================================
+
+# Import WebSocket dependencies lazily to avoid circular imports
+def get_socketio():
+    """Get socketio instance lazily to avoid import issues"""
+    try:
+        from socket_manager import socketio
+        return socketio
+    except ImportError:
+        return None
+
+def get_socketio_decorators():
+    """Get socketio decorators lazily"""
+    try:
+        from flask_socketio import emit, join_room, leave_room
+        from socket_manager import authenticated_only
+        return emit, join_room, leave_room, authenticated_only
+    except ImportError:
+        return None, None, None, None
+
+# Register WebSocket events for user functionality
+def register_user_websocket_events():
+    """Register user-specific WebSocket events"""
+    socketio = get_socketio()
+    if not socketio:
+        print("WebSocket not available - running without real-time features")
+        return
+    
+    emit, join_room, leave_room, authenticated_only = get_socketio_decorators()
+    if not all([emit, join_room, leave_room, authenticated_only]):
+        print("WebSocket decorators not available")
+        return
+
+    @socketio.on('user_join_general')
+    @authenticated_only
+    def handle_user_join_general():
+        """Handle user joining general room for notifications"""
+        try:
+            if current_user.is_authenticated:
+                join_room('user_general')
+                emit('user_joined', {
+                    'user_id': current_user.id,
+                    'username': current_user.username,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                })
+                print(f"User {current_user.username} joined general room")
+        except Exception as e:
+            print(f"Error in user_join_general: {str(e)}")
+
+    @socketio.on('user_activity_update')
+    @authenticated_only
+    def handle_user_activity_update(data):
+        """Handle user activity updates (page visits, interactions)"""
+        try:
+            activity_type = data.get('activity_type', 'unknown')
+            page = data.get('page', 'unknown')
+            details = data.get('details', {})
+            
+            # Emit to admin room for monitoring
+            socketio.emit('user_activity', {
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'activity_type': activity_type,
+                'page': page,
+                'details': details,
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room='admin_room')
+            
+            print(f"User {current_user.username} activity: {activity_type} on {page}")
+        except Exception as e:
+            print(f"Error in user_activity_update: {str(e)}")
+
+    @socketio.on('user_topology_join')
+    @authenticated_only
+    def handle_user_topology_join(data):
+        """Handle user joining a topology challenge room"""
+        try:
+            topology_type = data.get('topology_type')
+            if not topology_type:
+                return
+            
+            room_name = f"topology_{topology_type}"
+            join_room(room_name)
+            
+            # Notify admin of user joining topology
+            socketio.emit('user_topology_activity', {
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'action': 'joined',
+                'topology_type': topology_type,
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room='admin_room')
+            
+            emit('topology_joined', {'topology_type': topology_type})
+            print(f"User {current_user.username} joined topology {topology_type}")
+        except Exception as e:
+            print(f"Error in user_topology_join: {str(e)}")
+
+    @socketio.on('user_topology_progress')
+    @authenticated_only
+    def handle_user_topology_progress(data):
+        """Handle real-time topology progress updates"""
+        try:
+            topology_type = data.get('topology_type')
+            progress = data.get('progress', 0)
+            score = data.get('score', 0)
+            completed = data.get('completed', False)
+            
+            if not topology_type:
+                return
+            
+            # Update progress in database
+            try:
+                topology_progress = TopologyProgress.query.filter_by(
+                    user_id=current_user.id,
+                    topology_type=topology_type
+                ).first()
+                
+                if topology_progress:
+                    if score > topology_progress.highest_score:
+                        topology_progress.highest_score = score
+                    if completed:
+                        topology_progress.completion_count += 1
+                    topology_progress.last_attempt = datetime.datetime.utcnow()
+                else:
+                    topology_progress = TopologyProgress(
+                        user_id=current_user.id,
+                        topology_type=topology_type,
+                        highest_score=score,
+                        completion_count=1 if completed else 0,
+                        last_attempt=datetime.datetime.utcnow()
+                    )
+                    db.session.add(topology_progress)
+                
+                db.session.commit()
+            except Exception as db_error:
+                print(f"Database error in topology progress: {str(db_error)}")
+                db.session.rollback()
+            
+            # Emit progress to admin room for monitoring
+            socketio.emit('user_topology_progress', {
+                'user_id': current_user.id,
+                'username': current_user.username,
+                'topology_type': topology_type,
+                'progress': progress,
+                'score': score,
+                'completed': completed,
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room='admin_room')
+            
+            # Emit to topology room
+            room_name = f"topology_{topology_type}"
+            socketio.emit('topology_progress_updated', {
+                'user_id': current_user.id,
+                'progress': progress,
+                'score': score
+            }, room=room_name)
+            
+            print(f"User {current_user.username} topology progress: {topology_type} - {progress}%")
+        except Exception as e:
+            print(f"Error in user_topology_progress: {str(e)}")
+
+    @socketio.on('user_score_update')
+    @authenticated_only
+    def handle_user_score_update(data):
+        """Handle user score updates with real-time notifications"""
+        try:
+            category = data.get('category', 'general')
+            score = data.get('score', 0)
+            topic_id = data.get('topic_id')
+            
+            # Save score to database
+            try:
+                new_score = UserScore(
+                    user_id=current_user.id,
+                    score=score,
+                    category=category
+                )
+                db.session.add(new_score)
+                db.session.commit()
+                
+                # Emit to admin room for monitoring
+                socketio.emit('user_score_achieved', {
+                    'user_id': current_user.id,
+                    'username': current_user.username,
+                    'category': category,
+                    'score': score,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                }, room='admin_room')
+                
+                emit('score_saved', {
+                    'status': 'success',
+                    'score': score,
+                    'category': category
+                })
+                
+                print(f"User {current_user.username} scored {score} in {category}")
+            except Exception as db_error:
+                print(f"Database error saving score: {str(db_error)}")
+                db.session.rollback()
+                emit('score_error', {'message': 'Failed to save score'})
+                
+        except Exception as e:
+            print(f"Error in user_score_update: {str(e)}")
+
+    @socketio.on('user_otp_requested')
+    @authenticated_only
+    def handle_user_otp_requested(data):
+        """Handle OTP request notifications for admin monitoring"""
+        try:
+            username = data.get('username', current_user.username)
+            
+            # Notify admin of OTP request
+            socketio.emit('user_otp_activity', {
+                'user_id': current_user.id,
+                'username': username,
+                'action': 'otp_requested',
+                'timestamp': datetime.datetime.utcnow().isoformat()
+            }, room='admin_room')
+            
+            print(f"OTP requested for user: {username}")
+        except Exception as e:
+            print(f"Error in user_otp_requested: {str(e)}")
+
+    @socketio.on('user_login_attempt')
+    def handle_user_login_attempt(data):
+        """Handle login attempt notifications (no auth required)"""
+        try:
+            username = data.get('username', 'unknown')
+            success = data.get('success', False)
+            method = data.get('method', 'password')  # 'password', 'otp'
+            
+            # Notify admin of login attempt
+            socketio.emit('user_login_activity', {
+                'username': username,
+                'success': success,
+                'method': method,
+                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
+            }, room='admin_room')
+            
+            print(f"Login attempt: {username} - {'Success' if success else 'Failed'} ({method})")
+        except Exception as e:
+            print(f"Error in user_login_attempt: {str(e)}")
+
+    print("User WebSocket events registered successfully")
+
+# Call the registration function when module is loaded
+try:
+    register_user_websocket_events()
+except Exception as e:
+    print(f"Could not register WebSocket events: {str(e)}")
+    print("Continuing without real-time features...")
+
+# =============================================================================
+# OTP Email Function (Enhanced with WebSocket Support)
+# =============================================================================
 def send_otp_email_direct(recipient_email, username, otp):
     """
-    Send OTP email using direct SMTP connection to bypass Eventlet DNS issues.
-    This function properly handles WebSocket/Eventlet environments by using IP addresses.
-    Returns True if successful, False otherwise.
+    Send OTP email using standard SMTP configuration.
+    Simple and reliable email delivery for OTP authentication.
     """
     import smtplib
     import ssl
-    import socket
     import os
-    import threading
+    import socket
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
-    import traceback
-    import subprocess
-    import sys
-    
-    def _resolve_smtp_server():
-        """Resolve Gmail SMTP server IP to bypass DNS issues"""
-        # Known Gmail SMTP IPs (these can change, but are relatively stable)
-        gmail_ips = [
-            '142.250.153.109',  # smtp.gmail.com
-            '142.250.153.108',
-            '142.251.167.109',
-            '172.253.115.109',
-            '64.233.184.109'
-        ]
-        
-        # Try to resolve using system DNS first
-        for attempt in range(3):
-            try:
-                # Use subprocess to bypass eventlet DNS resolution
-                result = subprocess.run(['nslookup', 'smtp.gmail.com'], 
-                                      capture_output=True, text=True, timeout=5)
-                if result.returncode == 0:
-                    lines = result.stdout.split('\n')
-                    for line in lines:
-                        if 'Address:' in line and not '::' in line:  # IPv4 only
-                            ip = line.split('Address:')[-1].strip()
-                            if ip and ip != '127.0.0.1':
-                                print(f"Resolved smtp.gmail.com to {ip}")
-                                return ip
-            except:
-                pass
-        
-        # Fallback to known IPs and test connectivity
-        for ip in gmail_ips:
-            try:
-                # Test if we can connect to this IP
-                test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                test_sock.settimeout(5)
-                test_sock.connect((ip, 587))
-                test_sock.close()
-                print(f"Using fallback Gmail IP: {ip}")
-                return ip
-            except:
-                continue
-                
-        print("Could not resolve smtp.gmail.com to any working IP")
-        return None
-    
-    def _send_email_threaded():
-        """Send email in a separate thread to avoid Eventlet interference"""
-        try:
-            # Get email configuration from environment
-            smtp_server_ip = _resolve_smtp_server()
-            if not smtp_server_ip:
-                print("Failed to resolve Gmail SMTP server")
-                return False
-                
-            smtp_port = 587
-            sender_email = os.getenv('MAIL_USERNAME')
-            sender_password = os.getenv('MAIL_PASSWORD')
-            
-            if not sender_email or not sender_password:
-                print("Email configuration missing from environment variables")
-                return False
-            
-            # Create message
-            message = MIMEMultipart("alternative")
-            message["Subject"] = "Your RiddleNet OTP Code"
-            message["From"] = sender_email
-            message["To"] = recipient_email
-            
-            # Create the plain-text part
-            text = f"""Hi {username},
-
-Your verification code is: {otp}
-
-This code will expire in 10 minutes.
-
-If you didn't request this code, please ignore this email.
-
-Best regards,
-RiddleNet Team"""
-            
-            # Turn these into plain MIMEText objects
-            part = MIMEText(text, "plain")
-            message.attach(part)
-            
-            success = False
-            
-            # Method 1: Try standard SMTP with IP address
-            try:
-                print(f"Attempting SMTP connection to {smtp_server_ip}:587")
-                server = smtplib.SMTP(smtp_server_ip, smtp_port, timeout=30)
-                
-                # Use the actual hostname for TLS verification
-                context = ssl.create_default_context()
-                server.starttls(context=context)
-                server.login(sender_email, sender_password)
-                server.sendmail(sender_email, recipient_email, message.as_string())
-                server.quit()
-                
-                print(f"OTP email sent successfully to {recipient_email} via IP {smtp_server_ip}")
-                success = True
-                
-            except Exception as smtp_error:
-                print(f"Method 1 SMTP error: {str(smtp_error)}")
-                
-                # Method 2: Try raw socket implementation
-                try:
-                    print(f"Attempting raw socket connection to {smtp_server_ip}:587")
-                    
-                    # Create raw socket connection
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sock.settimeout(30)
-                    sock.connect((smtp_server_ip, smtp_port))
-                    
-                    # Read initial response
-                    response = sock.recv(1024).decode()
-                    print(f"Initial response: {response.strip()}")
-                    if not response.startswith('220'):
-                        raise Exception(f"SMTP connection failed: {response}")
-                    
-                    # Send EHLO
-                    sock.send(b'EHLO localhost\r\n')
-                    response = sock.recv(1024).decode()
-                    print(f"EHLO response: {response.strip()}")
-                    
-                    # Start TLS
-                    sock.send(b'STARTTLS\r\n')
-                    response = sock.recv(1024).decode()
-                    print(f"STARTTLS response: {response.strip()}")
-                    
-                    # Wrap socket with SSL (use gmail hostname for cert verification)
-                    context = ssl.create_default_context()
-                    ssl_sock = context.wrap_socket(sock, server_hostname='smtp.gmail.com')
-                    
-                    # Send EHLO again
-                    ssl_sock.send(b'EHLO localhost\r\n')
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"SSL EHLO response: {response.strip()}")
-                    
-                    # Login
-                    import base64
-                    auth_string = f'\x00{sender_email}\x00{sender_password}'
-                    auth_b64 = base64.b64encode(auth_string.encode()).decode()
-                    ssl_sock.send(f'AUTH PLAIN {auth_b64}\r\n'.encode())
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"AUTH response: {response.strip()}")
-                    
-                    if not response.startswith('235'):
-                        raise Exception(f"SMTP authentication failed: {response}")
-                    
-                    # Send email commands
-                    ssl_sock.send(f'MAIL FROM:<{sender_email}>\r\n'.encode())
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"MAIL FROM response: {response.strip()}")
-                    
-                    ssl_sock.send(f'RCPT TO:<{recipient_email}>\r\n'.encode())
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"RCPT TO response: {response.strip()}")
-                    
-                    ssl_sock.send(b'DATA\r\n')
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"DATA response: {response.strip()}")
-                    
-                    # Send message
-                    ssl_sock.send(message.as_bytes())
-                    ssl_sock.send(b'\r\n.\r\n')
-                    response = ssl_sock.recv(1024).decode()
-                    print(f"Message response: {response.strip()}")
-                    
-                    ssl_sock.send(b'QUIT\r\n')
-                    ssl_sock.close()
-                    
-                    print(f"OTP email sent successfully via raw socket to {recipient_email}")
-                    success = True
-                    
-                except Exception as raw_error:
-                    print(f"Method 2 raw socket error: {str(raw_error)}")
-                    success = False
-                    
-            return success
-            
-        except Exception as e:
-            print(f"Error in _send_email_threaded: {str(e)}")
-            traceback.print_exc()
-            return False
     
     try:
-        # Use threading to completely escape eventlet context
-        import concurrent.futures
+        # Use hostname but override DNS to use direct IP to bypass Eventlet DNS issues
+        smtp_server = 'smtp.gmail.com'  # Use hostname for SSL certificate validation
+        smtp_server_ip = '142.250.153.109'  # Gmail SMTP server IP
+        smtp_port = 587
+        sender_email = os.getenv('MAIL_USERNAME')
+        sender_password = os.getenv('MAIL_PASSWORD')
         
-        print(f"Starting email send to {recipient_email} for user {username}")
-        
-        # Execute in thread pool to avoid eventlet blocking
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_send_email_threaded)
-            result = future.result(timeout=90)  # 90 second timeout
-            return result
-            
-    except Exception as e:
-        print(f"Error in send_otp_email_direct: {str(e)}")
-        traceback.print_exc()
-        
-        # Final fallback: Try synchronous sending
-        try:
-            print("Attempting final fallback synchronous email send")
-            return _send_email_threaded()
-        except Exception as fallback_error:
-            print(f"All email sending methods failed: {str(fallback_error)}")
+        if not sender_email or not sender_password:
+            print("Email configuration missing")
             return False
+        
+        print(f"Connecting to Gmail SMTP at {smtp_server_ip}:{smtp_port} (hostname: {smtp_server})")
+        
+        # Create message with proper hostname for SMTP HELO command
+        message = MIMEMultipart('alternative')
+        message['Subject'] = 'RiddleNet OTP Verification'
+        message['From'] = sender_email
+        message['To'] = recipient_email
+        
+        # Create the email content
+        text = f"""
+        Hello {username},
+        
+        Your OTP verification code is: {otp}
+        
+        This code will expire in 10 minutes.
+        
+        If you did not request this code, please ignore this email.
+        
+        Best regards,
+        RiddleNet Team
+        """
+        
+        html = f"""
+        <html>
+        <body>
+            <h2>RiddleNet OTP Verification</h2>
+            <p>Hello <strong>{username}</strong>,</p>
+            <p>Your OTP verification code is:</p>
+            <h1 style="color: #007bff; font-size: 32px; text-align: center; background-color: #f8f9fa; padding: 20px; border-radius: 5px;">{otp}</h1>
+            <p>This code will expire in <strong>10 minutes</strong>.</p>
+            <p>If you did not request this code, please ignore this email.</p>
+            <br>
+            <p>Best regards,<br>RiddleNet Team</p>
+        </body>
+        </html>
+        """
+        
+        # Convert to MIMEText objects
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(html, 'html')
+        
+        # Add parts to message
+        message.attach(part1)
+        message.attach(part2)
+        
+        # Create secure connection and send email - disable SSL verification for IP connection
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        
+        # Create connection using IP address
+        with smtplib.SMTP(smtp_server_ip, smtp_port) as server:
+            server.starttls(context=context)
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, message.as_string())
+        
+        print(f"OTP email sent successfully to {recipient_email}")
+        return True
+        
+    except Exception as e:
+        print(f"Error sending OTP email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 # Create blueprint as expected by main __init__.py

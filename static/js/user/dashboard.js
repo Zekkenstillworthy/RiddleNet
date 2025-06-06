@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.navbar a').forEach(link => {
         link.addEventListener('click', function(e) {
             const href = link.getAttribute('href');
-            if (href === '/logout' || (href.startsWith('/') && href !== '#')) return;
+            if (href === '/logout' || href === '/user/logout' || (href.startsWith('/') && href !== '#')) return;
             e.preventDefault();
             const targetId = this.getAttribute('href');
             if (targetId === '#') {

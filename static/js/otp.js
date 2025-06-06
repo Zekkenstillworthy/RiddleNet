@@ -132,9 +132,9 @@ function startOtpCountdown(duration) {
         clearInterval(window.otpCountdownInterval);
     }
     
-    // Update the countdown timer immediately and then every second
+    // Update the countdown timer immediately and then every 0.5 seconds
     updateCountdown();
-    window.otpCountdownInterval = setInterval(updateCountdown, 1000);
+    window.otpCountdownInterval = setInterval(updateCountdown, 500);
     
     function updateCountdown() {
         // Calculate minutes and seconds

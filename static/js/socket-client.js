@@ -327,8 +327,7 @@ class SocketClient {
             this.showNotification('Message from Admin', 
                 data.message || 'You have a new message', 'info');
         }));
-        
-        // User connection events (for admin dashboard)
+          // User connection events (for admin dashboard)
         this.socket.on('user_connected', safeHandler('user_connected', (data) => {
             console.log('👋 User connected:', data);
             this.trigger('user_connected', data);
@@ -337,6 +336,48 @@ class SocketClient {
         this.socket.on('user_disconnected', safeHandler('user_disconnected', (data) => {
             console.log('👋 User disconnected:', data);
             this.trigger('user_disconnected', data);
+        }));
+
+        // User Authentication Events
+        this.socket.on('login_success', safeHandler('login_success', (data) => {
+            console.log('✅ Login successful:', data);
+            this.trigger('login_success', data);
+            
+            this.showNotification('Login Successful', 
+                data.message || 'Welcome back! You have been successfully logged in.', 'success');
+        }));
+        
+        this.socket.on('logout_complete', safeHandler('logout_complete', (data) => {
+            console.log('👋 Logout complete:', data);
+            this.trigger('logout_complete', data);
+            
+            this.showNotification('Logout Complete', 
+                data.message || 'You have been successfully logged out. See you next time!', 'info');
+        }));
+
+        // OTP-related Events
+        this.socket.on('otp_request_received', safeHandler('otp_request_received', (data) => {
+            console.log('📧 OTP request received:', data);
+            this.trigger('otp_request_received', data);
+            
+            this.showNotification('OTP Requested', 
+                'Processing your OTP request...', 'info', 3000);
+        }));
+        
+        this.socket.on('otp_email_sent', safeHandler('otp_email_sent', (data) => {
+            console.log('📧 OTP email sent:', data);
+            this.trigger('otp_email_sent', data);
+            
+            this.showNotification('OTP Sent', 
+                'OTP has been sent to your email. Please check your inbox and enter the code.', 'success');
+        }));
+        
+        this.socket.on('otp_email_failed', safeHandler('otp_email_failed', (data) => {
+            console.log('❌ OTP email failed:', data);
+            this.trigger('otp_email_failed', data);
+            
+            this.showNotification('OTP Delivery Failed', 
+                data.message || 'Failed to send OTP email. Please try again or contact support.', 'error');
         }));
     }
 
