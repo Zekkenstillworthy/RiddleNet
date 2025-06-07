@@ -63,8 +63,56 @@ def classes():
     if 'user_id' not in session:
         return redirect(url_for('user.index', message='You need to log in first!'))
     
+    user = UserModel.query.get(session['user_id'])
     # No need to fetch classes here - we'll do it client-side with API
-    return render_template('user/class.html')
+    return render_template('user/class.html', user=user)
+    
+@user_bp.route('/learning/networking-1')
+def networking_1():
+    if 'user_id' not in session:
+        return redirect(url_for('user.index', message='You need to log in first!'))
+    
+    user_id = session['user_id']
+    user = UserModel.query.get(user_id)
+    
+    # Import NetworkingProgress model
+    from user.models.networking_progress import NetworkingProgress
+    
+    # Get user's progress for all networking lessons
+    progress = NetworkingProgress.query.filter_by(user_id=user_id).all()
+    
+    # Format progress data for the template
+    progress_data = {}
+    for item in progress:
+        # Module format: "1" for module 1
+        # Lesson format: "1.1" for module 1, lesson 1
+        if item.module_id not in progress_data:
+            progress_data[item.module_id] = {
+                "lessons": {},
+                "completed_count": 0,
+                "total_lessons": 0
+            }
+        
+        progress_data[item.module_id]["lessons"][item.lesson_id] = {
+            "completed": item.completed,
+            "progress": item.progress_percent
+        }
+        
+        # Update module completion stats
+        progress_data[item.module_id]["total_lessons"] += 1
+        if item.completed:
+            progress_data[item.module_id]["completed_count"] += 1
+    
+    # Calculate overall module progress percentages
+    for module_id, module_data in progress_data.items():
+        if module_data["total_lessons"] > 0:
+            module_data["progress_percent"] = int((module_data["completed_count"] / module_data["total_lessons"]) * 100)
+        else:
+            module_data["progress_percent"] = 0
+    
+    return render_template('user/learning_networking1.html', 
+                          user=user, 
+                          progress_data=progress_data)
 
 @user_bp.route('/class/<int:class_id>')
 def class_detail(class_id):
@@ -76,8 +124,7 @@ def class_detail(class_id):
     
     # Find the class
     class_obj = Class.query.get_or_404(class_id)
-    
-    # Check if user is enrolled in this class using direct query
+      # Check if user is enrolled in this class using direct query
     from user.models import class_students
     enrollment = db.session.query(class_students).filter(
         class_students.c.class_id == class_id,
@@ -87,6 +134,13 @@ def class_detail(class_id):
     if not enrollment:
         flash('You are not enrolled in this class', 'error')
         return redirect(url_for('user.classes'))
+      # Special handling for Networking 1 class
+    print(f"DEBUG: Class name is: '{class_obj.name}'")  # Debug line
+    if class_obj.name == "Networking 1" or class_obj.name == "Networking 1 ":
+        print("DEBUG: Redirecting to networking_1")  # Debug line
+        return redirect(url_for('user.networking_1'))
+    else:
+        print("DEBUG: No match for Networking 1, continuing with normal flow")  # Debug line
     
     # Format student data for template - use direct query
     # We already imported class_students above
@@ -168,6 +222,8 @@ def leaderboard():
     if 'user_id' not in session:
         return render_template('user/index.html', message='You need to log in first!')
     
+    user = UserModel.query.get(session['user_id'])
+    
     try:
         # Overall leaderboard data
         leaderboard_data = (
@@ -185,7 +241,6 @@ def leaderboard():
         # Category-specific leaderboards
         categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
         category_leaderboards = {}
-        
         for category in categories:
             category_leaderboards[f"{category}_leaderboard"] = (
                 db.session.query(
@@ -203,8 +258,9 @@ def leaderboard():
         print(f"Error fetching leaderboard: {e}")
         leaderboard_data = []
         category_leaderboards = {}
-
+    
     return render_template('user/leaderboard.html', 
+                         user=user,
                          leaderboard=leaderboard_data, 
                          **category_leaderboards)
 
@@ -254,7 +310,8 @@ def about_us():
     if 'user_id' not in session:
         return render_template('user/index.html', message='You need to log in first!')
     
-    return render_template('user/about_us.html')
+    user = UserModel.query.get(session['user_id'])
+    return render_template('user/about_us.html', user=user)
 
 @user_bp.route('/update_profile', methods=['POST'])
 def update_profile():
@@ -1352,4 +1409,734 @@ def send_otp_email_direct(recipient_email, username, otp):
         traceback.print_exc()
         return False
 
-# Create blueprint as expected by main __init__.py
+@user_bp.route('/api/networking/track-progress', methods=['POST'])
+def track_networking_progress():
+    """Track user progress in networking lessons"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    data = request.json
+    
+    if not data or 'lesson_id' not in data or 'module_id' not in data:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    lesson_id = data['lesson_id']
+    module_id = data['module_id']
+    completed = data.get('completed', False)
+    progress_percent = data.get('progress_percent', 0)
+    
+    # Import NetworkingProgress model
+    from user.models.networking_progress import NetworkingProgress
+    
+    # Check if progress record exists
+    progress = NetworkingProgress.query.filter_by(
+        user_id=user_id,
+        module_id=module_id,
+        lesson_id=lesson_id
+    ).first()
+    
+    if progress:
+        # Update existing record
+        progress.completed = completed
+        progress.progress_percent = progress_percent
+        progress.last_accessed = datetime.datetime.utcnow()
+    else:
+        # Create new record
+        progress = NetworkingProgress(
+            user_id=user_id,
+            module_id=module_id,
+            lesson_id=lesson_id,
+            completed=completed,
+            progress_percent=progress_percent
+        )
+        db.session.add(progress)
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "Progress updated",
+            "data": {
+                "lesson_id": lesson_id,
+                "completed": completed,
+                "progress_percent": progress_percent
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@user_bp.route('/api/networking/lesson/<lesson_id>')
+def get_networking_lesson(lesson_id):
+    """Get content for a specific networking lesson"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    # In a real application, this would be fetched from the database
+    # For now, we'll use hardcoded content based on the lesson_id
+    
+    lesson_content = {
+        # Module 1: Introduction to Computer Networks
+        "1.1": {
+            "title": "What is a Computer Network?",
+            "content": """
+                <div class="lesson-content">
+                    <h2>What is a Computer Network?</h2>
+                    
+                    <div class="lesson-section">
+                        <h3>Definition</h3>
+                        <p>A computer network is a set of computers sharing resources located on or provided by network nodes. 
+                        The computers use common communication protocols over digital interconnections to communicate with each other.</p>
+                        
+                        <div class="info-box">
+                            <h4>Key Concept</h4>
+                            <p>Networks enable computers to share data and resources, making communication possible between connected devices.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Purpose of Networks</h3>
+                        <ul>
+                            <li><strong>Resource Sharing:</strong> Printers, storage, and applications</li>
+                            <li><strong>Communication:</strong> Email, messaging, video conferencing</li>
+                            <li><strong>Centralized Software Management:</strong> Updates and security patches</li>
+                            <li><strong>Internet Access:</strong> Web browsing and online services</li>
+                            <li><strong>Data Sharing:</strong> File transfer and collaboration</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Key Benefits</h3>
+                        <div class="grid-layout">
+                            <div class="grid-item">
+                                <div class="icon"><i class="fas fa-share-alt"></i></div>
+                                <h4>Resource Sharing</h4>
+                                <p>Network resources can be shared by multiple users</p>
+                            </div>
+                            <div class="grid-item">
+                                <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                                <h4>Cost Reduction</h4>
+                                <p>Shared resources reduce individual hardware needs</p>
+                            </div>
+                            <div class="grid-item">
+                                <div class="icon"><i class="fas fa-sync"></i></div>
+                                <h4>Reliability</h4>
+                                <p>Data can be backed up on multiple systems</p>
+                            </div>
+                            <div class="grid-item">
+                                <div class="icon"><i class="fas fa-user-friends"></i></div>
+                                <h4>Communication</h4>
+                                <p>Enables easy communication between users</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="quiz-section">
+                        <h3>Quick Check</h3>
+                        <div class="quiz-question">
+                            <p>Which of the following is NOT a primary purpose of computer networks?</p>
+                            <div class="quiz-options">
+                                <div class="quiz-option" data-correct="false">
+                                    <input type="radio" name="q1" id="q1a">
+                                    <label for="q1a">Resource sharing</label>
+                                </div>
+                                <div class="quiz-option" data-correct="false">
+                                    <input type="radio" name="q1" id="q1b">
+                                    <label for="q1b">Communication</label>
+                                </div>
+                                <div class="quiz-option" data-correct="true">
+                                    <input type="radio" name="q1" id="q1c">
+                                    <label for="q1c">Cryptocurrency mining</label>
+                                </div>
+                                <div class="quiz-option" data-correct="false">
+                                    <input type="radio" name="q1" id="q1d">
+                                    <label for="q1d">File sharing</label>
+                                </div>
+                            </div>
+                            <div class="quiz-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+            """
+        },
+        "1.2": {
+            "title": "Computer Network Architecture",
+            "content": """
+                <div class="lesson-content">
+                    <h2>Computer Network Architecture</h2>
+                    
+                    <div class="lesson-section">
+                        <h3>Network Architecture Models</h3>
+                        <p>Network architecture refers to the design of the network, including both physical and logical layout. 
+                        It specifies the network's organization, its components, and their configuration.</p>
+                        
+                        <div class="info-box">
+                            <h4>Key Concept</h4>
+                            <p>The OSI (Open Systems Interconnection) and TCP/IP models provide frameworks for understanding how networks function at different layers.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>The OSI Model</h3>
+                        <p>The OSI Model divides network communication into 7 layers:</p>
+                        <div class="osi-model">
+                            <div class="osi-layer">
+                                <div class="layer-number">7</div>
+                                <div class="layer-name">Application</div>
+                                <div class="layer-desc">End-user services, file transfers, email</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">6</div>
+                                <div class="layer-name">Presentation</div>
+                                <div class="layer-desc">Data translation, encryption, compression</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">5</div>
+                                <div class="layer-name">Session</div>
+                                <div class="layer-desc">Connection management between applications</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">4</div>
+                                <div class="layer-name">Transport</div>
+                                <div class="layer-desc">End-to-end connections, reliability, flow control</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">3</div>
+                                <div class="layer-name">Network</div>
+                                <div class="layer-desc">Addressing, routing, packet forwarding</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">2</div>
+                                <div class="layer-name">Data Link</div>
+                                <div class="layer-desc">Physical addressing, error detection</div>
+                            </div>
+                            <div class="osi-layer">
+                                <div class="layer-number">1</div>
+                                <div class="layer-name">Physical</div>
+                                <div class="layer-desc">Physical connections, bit transmission</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>TCP/IP Model</h3>
+                        <p>The TCP/IP model is a more practical implementation with 4 layers:</p>
+                        <div class="tcp-ip-model">
+                            <div class="tcp-layer">
+                                <div class="layer-name">Application</div>
+                                <div class="layer-desc">Combines OSI layers 5-7: Application, Presentation, Session</div>
+                                <div class="layer-examples">HTTP, SMTP, FTP, DNS</div>
+                            </div>
+                            <div class="tcp-layer">
+                                <div class="layer-name">Transport</div>
+                                <div class="layer-desc">Matches OSI layer 4: Transport</div>
+                                <div class="layer-examples">TCP, UDP</div>
+                            </div>
+                            <div class="tcp-layer">
+                                <div class="layer-name">Internet</div>
+                                <div class="layer-desc">Matches OSI layer 3: Network</div>
+                                <div class="layer-examples">IP, ICMP, ARP</div>
+                            </div>
+                            <div class="tcp-layer">
+                                <div class="layer-name">Network Access</div>
+                                <div class="layer-desc">Combines OSI layers 1-2: Physical, Data Link</div>
+                                <div class="layer-examples">Ethernet, Wi-Fi, PPP</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Client-Server vs Peer-to-Peer</h3>
+                        <div class="comparison-grid">
+                            <div class="comparison-item">
+                                <h4>Client-Server</h4>
+                                <img src="/static/img/client-server.png" alt="Client-Server Architecture">
+                                <ul>
+                                    <li>Centralized management</li>
+                                    <li>Dedicated servers provide resources</li>
+                                    <li>Clients request services</li>
+                                    <li>Example: Web servers, file servers</li>
+                                </ul>
+                            </div>
+                            <div class="comparison-item">
+                                <h4>Peer-to-Peer (P2P)</h4>
+                                <img src="/static/img/peer-to-peer.png" alt="Peer-to-Peer Architecture">
+                                <ul>
+                                    <li>Decentralized structure</li>
+                                    <li>Each device is both client and server</li>
+                                    <li>Direct sharing between peers</li>
+                                    <li>Example: BitTorrent, blockchain networks</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+        },
+        "1.3": {
+            "title": "Network Components",
+            "content": """
+                <div class="lesson-content">
+                    <h2>Network Components</h2>
+                    
+                    <div class="lesson-section">
+                        <h3>Essential Networking Devices</h3>
+                        <p>Computer networks rely on various hardware components to establish connections and facilitate communication between devices.</p>
+                        
+                        <div class="network-components">
+                            <div class="component">
+                                <img src="/static/img/router.png" alt="Router">
+                                <h4>Router</h4>
+                                <p>Connects different networks and directs data packets between them using routing tables. Operates at the Network Layer (Layer 3).</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/switch.png" alt="Switch">
+                                <h4>Switch</h4>
+                                <p>Connects devices within a network and forwards data packets based on MAC addresses. Operates at the Data Link Layer (Layer 2).</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/hub.png" alt="Hub">
+                                <h4>Hub</h4>
+                                <p>A simple connector that broadcasts all data to every connected device. Less intelligent than switches. Operates at Physical Layer (Layer 1).</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/bridge.png" alt="Bridge">
+                                <h4>Bridge</h4>
+                                <p>Connects two network segments and filters traffic based on MAC addresses. Operates at the Data Link Layer (Layer 2).</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/modem.png" alt="Modem">
+                                <h4>Modem</h4>
+                                <p>Modulates and demodulates signals to convert digital data to analog signals for transmission over phone lines or cable.</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/access-point.png" alt="Access Point">
+                                <h4>Access Point</h4>
+                                <p>Provides wireless connectivity to a wired network, allowing Wi-Fi devices to connect.</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/firewall.png" alt="Firewall">
+                                <h4>Firewall</h4>
+                                <p>Monitors and filters incoming and outgoing network traffic based on security rules. Can be hardware or software.</p>
+                            </div>
+                            
+                            <div class="component">
+                                <img src="/static/img/nic.png" alt="Network Interface Card">
+                                <h4>Network Interface Card (NIC)</h4>
+                                <p>Hardware component that connects a device to a network, providing a physical interface and MAC address.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Transmission Media</h3>
+                        <div class="media-types">
+                            <div class="media-category">
+                                <h4>Wired Media</h4>
+                                <div class="media-items">
+                                    <div class="media-item">
+                                        <img src="/static/img/twisted-pair.png" alt="Twisted Pair Cable">
+                                        <h5>Twisted Pair</h5>
+                                        <ul>
+                                            <li>UTP (Unshielded Twisted Pair)</li>
+                                            <li>STP (Shielded Twisted Pair)</li>
+                                            <li>Common in Ethernet networks</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="media-item">
+                                        <img src="/static/img/coaxial.png" alt="Coaxial Cable">
+                                        <h5>Coaxial Cable</h5>
+                                        <ul>
+                                            <li>Better shielding than twisted pair</li>
+                                            <li>Used for cable TV and internet</li>
+                                            <li>Higher bandwidth</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="media-item">
+                                        <img src="/static/img/fiber-optic.png" alt="Fiber Optic Cable">
+                                        <h5>Fiber Optic</h5>
+                                        <ul>
+                                            <li>Uses light signals</li>
+                                            <li>Highest bandwidth and speed</li>
+                                            <li>Immune to electromagnetic interference</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="media-category">
+                                <h4>Wireless Media</h4>
+                                <div class="media-items">
+                                    <div class="media-item">
+                                        <img src="/static/img/radio-waves.png" alt="Radio Waves">
+                                        <h5>Radio Waves</h5>
+                                        <ul>
+                                            <li>Wi-Fi (IEEE 802.11)</li>
+                                            <li>Bluetooth</li>
+                                            <li>Cellular networks</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="media-item">
+                                        <img src="/static/img/microwaves.png" alt="Microwaves">
+                                        <h5>Microwaves</h5>
+                                        <ul>
+                                            <li>Line-of-sight transmission</li>
+                                            <li>Satellite communication</li>
+                                            <li>Point-to-point links</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="media-item">
+                                        <img src="/static/img/infrared.png" alt="Infrared">
+                                        <h5>Infrared</h5>
+                                        <ul>
+                                            <li>Short-range communication</li>
+                                            <li>Remote controls</li>
+                                            <li>Line-of-sight required</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Network Interfaces and Connections</h3>
+                        <p>Different types of ports and connectors used in networking:</p>
+                        <div class="connector-grid">
+                            <div class="connector">
+                                <img src="/static/img/rj45.png" alt="RJ45 Connector">
+                                <h5>RJ45</h5>
+                                <p>Standard Ethernet connector</p>
+                            </div>
+                            <div class="connector">
+                                <img src="/static/img/fiber-connector.png" alt="Fiber Connector">
+                                <h5>Fiber Connector</h5>
+                                <p>SC, LC, ST types for fiber optic</p>
+                            </div>
+                            <div class="connector">
+                                <img src="/static/img/usb.png" alt="USB">
+                                <h5>USB</h5>
+                                <p>For peripheral networking devices</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+        },
+        "1.4": {
+            "title": "Computer Network Types",
+            "content": """
+                <div class="lesson-content">
+                    <h2>Computer Network Types</h2>
+                    
+                    <div class="lesson-section">
+                        <h3>Networks Based on Scale</h3>
+                        <p>Networks can be classified based on their geographical coverage area:</p>
+                        
+                        <div class="network-types">
+                            <div class="network-type">
+                                <div class="type-icon">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                                <h4>PAN (Personal Area Network)</h4>
+                                <p>The smallest network type, covering a range of a few meters.</p>
+                                <ul>
+                                    <li>Range: 1-10 meters</li>
+                                    <li>Technologies: Bluetooth, NFC, Infrared</li>
+                                    <li>Use cases: Connecting personal devices like smartphones to headphones, smartwatches</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="network-type">
+                                <div class="type-icon">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <h4>LAN (Local Area Network)</h4>
+                                <p>Networks limited to a small geographical area like a home, office, or building.</p>
+                                <ul>
+                                    <li>Range: Up to a few kilometers</li>
+                                    <li>Technologies: Ethernet, Wi-Fi</li>
+                                    <li>Use cases: Home networks, office networks, school networks</li>
+                                    <li>Characteristics: High data transfer rates, limited geographical area</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="network-type">
+                                <div class="type-icon">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <h4>CAN (Campus Area Network)</h4>
+                                <p>Networks spanning multiple buildings in a campus-like environment.</p>
+                                <ul>
+                                    <li>Range: Several kilometers</li>
+                                    <li>Use cases: University campuses, business parks</li>
+                                    <li>Usually consists of multiple interconnected LANs</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="network-type">
+                                <div class="type-icon">
+                                    <i class="fas fa-city"></i>
+                                </div>
+                                <h4>MAN (Metropolitan Area Network)</h4>
+                                <p>Networks spanning a city or large campus.</p>
+                                <ul>
+                                    <li>Range: Up to 50 kilometers</li>
+                                    <li>Technologies: Fiber optic, microwave</li>
+                                    <li>Use cases: City networks, connecting multiple offices across a city</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="network-type">
+                                <div class="type-icon">
+                                    <i class="fas fa-globe-americas"></i>
+                                </div>
+                                <h4>WAN (Wide Area Network)</h4>
+                                <p>Networks spanning large geographical distances.</p>
+                                <ul>
+                                    <li>Range: Country-wide to global</li>
+                                    <li>Technologies: Leased lines, fiber optic cables, satellite</li>
+                                    <li>Use cases: The Internet, multinational corporate networks</li>
+                                    <li>Characteristics: Lower data rates compared to LANs, higher latency</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Networks Based on Topology</h3>
+                        <p>Network topology refers to the physical or logical arrangement of network devices:</p>
+                        
+                        <div class="topologies">
+                            <div class="topology">
+                                <img src="/static/img/bus-topology.png" alt="Bus Topology">
+                                <h4>Bus Topology</h4>
+                                <p>All devices connected to a single cable (backbone)</p>
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>Advantages</h5>
+                                        <ul>
+                                            <li>Easy to implement</li>
+                                            <li>Cost-effective</li>
+                                            <li>Suitable for small networks</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>Disadvantages</h5>
+                                        <ul>
+                                            <li>Single point of failure</li>
+                                            <li>Limited cable length</li>
+                                            <li>Performance degrades with more devices</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="topology">
+                                <img src="/static/img/star-topology.png" alt="Star Topology">
+                                <h4>Star Topology</h4>
+                                <p>All devices connected to a central device (hub/switch)</p>
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>Advantages</h5>
+                                        <ul>
+                                            <li>Easy to troubleshoot</li>
+                                            <li>Failure of one node doesn't affect others</li>
+                                            <li>Easy to add new devices</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>Disadvantages</h5>
+                                        <ul>
+                                            <li>Central device is a single point of failure</li>
+                                            <li>Requires more cabling</li>
+                                            <li>Higher cost due to central device</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                                       </div>
+                            
+                            <div class="topology">
+                                <img src="/static/img/ring-topology.png" alt="Ring Topology">
+                                <h4>Ring Topology</h4>
+                                <p>Devices connected in a closed loop</p>
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>Advantages</h5>
+                                        <ul>
+                                            <li>Equal access to resources</li>
+                                            <li>Predictable performance</li>
+                                            <li>No network collisions</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>Disadvantages</h5>
+                                        <ul>
+                                            <li>Failure of one node affects the entire network</li>
+                                            <li>Difficult to troubleshoot</li>
+                                            <li>Adding/removing devices disrupts the network</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="topology">
+                                <img src="/static/img/mesh-topology.png" alt="Mesh Topology">
+                                <h4>Mesh Topology</h4>
+                                <p>Every device connected to every other device</p>
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>Advantages</h5>
+                                        <ul>
+                                            <li>Highly reliable and fault-tolerant</li>
+                                            <li>No traffic congestion</li>
+                                            <li>Private and secure</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>Disadvantages</h5>
+                                        <ul>
+                                            <li>Expensive to implement</li>
+                                            <li>Complex management</li>
+                                            <li>Requires more resources</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="topology">
+                                <img src="/static/img/tree-topology.png" alt="Tree/Hierarchical Topology">
+                                <h4>Tree/Hierarchical Topology</h4>
+                                <p>Combination of bus and star topologies in a hierarchy</p>
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>Advantages</h5>
+                                        <ul>
+                                            <li>Scalable</li>
+                                            <li>Easy to manage and maintain</li>
+                                            <li>Supports future expansion</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>Disadvantages</h5>
+                                        <ul>
+                                            <li>Heavily dependent on root node</li>
+                                            <li>Requires more cabling</li>
+                                            <li>If backbone fails, network fails</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+        },
+        # Module 2: Network Protocols
+        "2.1": {
+            "title": "Introduction to Network Protocols",
+            "content": """
+                <div class="lesson-content">
+                    <h2>Introduction to Network Protocols</h2>
+                    
+                    <div class="lesson-section">
+                        <h3>What are Network Protocols?</h3>
+                        <p>Network protocols are a set of rules and conventions that govern how data is transmitted, received, and processed across networks. 
+                        They define the format, timing, sequencing, and error control of data transmission.</p>
+                        
+                        <div class="info-box">
+                            <h4>Key Concept</h4>
+                            <p>Protocols are to networks what language is to human communication - they provide a common way for devices to understand each other.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Why Are Protocols Important?</h3>
+                        <ul>
+                            <li><strong>Standardization:</strong> Ensures devices from different manufacturers can communicate</li>
+                            <li><strong>Reliability:</strong> Defines how to handle errors and ensure data delivery</li>
+                            <li><strong>Interoperability:</strong> Allows different systems to work together</li>
+                            <li><strong>Security:</strong> Provides mechanisms for secure data transmission</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="lesson-section">
+                        <h3>Protocol Classifications</h3>
+                        <div class="protocol-classifications">
+                            <div class="protocol-category">
+                                <h4>By OSI Layer</h4>
+                                <ul>
+                                    <li><strong>Physical Layer:</strong> USB, Bluetooth, Ethernet</li>
+                                    <li><strong>Data Link Layer:</strong> ARP, VLAN</li>
+                                    <li><strong>Network Layer:</strong> IP, ICMP, OSPF</li>
+                                    <li><strong>Transport Layer:</strong> TCP, UDP</li>
+                                    <li><strong>Session Layer:</strong> NetBIOS, RPC</li>
+                                    <li><strong>Presentation Layer:</strong> SSL/TLS, JPEG, MPEG</li>
+                                    <li><strong>Application Layer:</strong> HTTP, FTP, SMTP, DNS</li>
+                                </ul>
+                            </div>
+                            <div class="protocol-category">
+                                <h4>By Function</h4>
+                                <ul>
+                                    <li><strong>Communication:</strong> HTTP, SMTP, VoIP</li>
+                                    <li><strong>Security:</strong> SSL/TLS, IPsec, SSH</li>
+                                    <li><strong>Routing:</strong> OSPF, BGP, RIP</li>
+                                    <li><strong>Management:</strong> SNMP, ICMP</li>
+                                    <li><strong>File Transfer:</strong> FTP, SFTP, SCP</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+        }
+    }
+    
+    # Check if the requested lesson exists
+    if lesson_id in lesson_content:
+        # Update user's progress for this lesson (assuming module is first digit)
+        from user.models.networking_progress import NetworkingProgress
+        
+        user_id = session['user_id']
+        module_id = lesson_id.split('.')[0]  # "1.2" -> "1"
+        
+        # Check if progress record exists
+        progress = NetworkingProgress.query.filter_by(
+            user_id=user_id,
+            module_id=module_id,
+            lesson_id=lesson_id
+        ).first()
+        
+        if not progress:
+            # Create new record with 50% progress (viewed but not completed)
+            progress = NetworkingProgress(
+                user_id=user_id,
+                module_id=module_id,
+                lesson_id=lesson_id,
+                completed=False,
+                progress_percent=50
+            )
+            db.session.add(progress)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating progress: {str(e)}")
+        
+        return jsonify({
+            "title": lesson_content[lesson_id]["title"],
+            "content": lesson_content[lesson_id]["content"]
+        })
+    else:
+        return jsonify({"error": "Lesson not found"}), 404

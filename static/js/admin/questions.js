@@ -170,12 +170,13 @@ function viewQuestionGroup(groupId, groupName, groupDescription) {
             if (data.success) {
                 displayGroupQuestions(data.questions, groupName, groupDescription, groupId);
             } else {
-                alert('Error loading group questions: ' + data.message);
+                console.error('Error loading group questions:', data.message);
+                showNotification('Error loading group questions: ' + data.message, 'error');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading group questions. Please try again.');
+            console.error('Error loading group questions:', error);
+            showNotification('Error loading group questions. Please try again.', 'error');
         });
 }
 
@@ -240,31 +241,37 @@ function editQuestionGroup(groupId, groupName, groupDescription) {
 }
 
 function deleteQuestionGroup(groupId, groupName) {
-    if (confirm(`Are you sure you want to delete the group "${groupName}"? This will not delete the questions, only the group.`)) {
-        fetch(`/admin/questions/group/${groupId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
+    console.log('Requesting deletion of question group:', groupName, 'ID:', groupId);
+    
+    fetch(`/admin/questions/group/${groupId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            console.log('Question group deleted successfully:', groupName);
+            showNotification('Question group deleted successfully', 'success');
+            // Emit WebSocket event to refresh data
+            if (window.socketClient) {
+                window.socketClient.emit('question_group_deleted', { groupId, groupName });
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error deleting group: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting group. Please try again.');
-        });
-    }
+        } else {
+            console.error('Error deleting group:', data.message);
+            showNotification('Error deleting group: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting group:', error);
+        showNotification('Error deleting group. Please try again.', 'error');
+    });
 }
 
 // Ungrouped Questions Management
@@ -429,12 +436,13 @@ function editQuestion(questionId) {
                 populateEditForm(data.question);
                 openModal('editQuestionModal');
             } else {
-                alert('Error loading question: ' + data.message);
+                console.error('Error loading question:', data.message);
+                showNotification('Error loading question: ' + data.message, 'error');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading question. Please try again.');
+            console.error('Error loading question:', error);
+            showNotification('Error loading question. Please try again.', 'error');
         });
 }
 
@@ -449,31 +457,37 @@ function populateEditForm(question) {
 }
 
 function deleteQuestion(questionId) {
-    if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
-        fetch(`/admin/questions/${questionId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
+    console.log('Requesting deletion of question:', questionId);
+    
+    fetch(`/admin/questions/${questionId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            console.log('Question deleted successfully:', questionId);
+            showNotification('Question deleted successfully', 'success');
+            // Emit WebSocket event to refresh data
+            if (window.socketClient) {
+                window.socketClient.emit('question_deleted', { questionId });
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                loadUngroupedQuestions(); // Refresh the list
-            } else {
-                alert('Error deleting question: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting question. Please try again.');
-        });
-    }
+        } else {
+            console.error('Error deleting question:', data.message);
+            showNotification('Error deleting question: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting question:', error);
+        showNotification('Error deleting question. Please try again.', 'error');
+    });
 }
 
 // Form Submissions
@@ -555,15 +569,25 @@ function submitQuestionForm(form, action) {
     })
     .then(data => {
         if (data.success) {
+            console.log(`Question ${action}ed successfully:`, data);
+            showNotification(`Question ${action}ed successfully`, 'success');
             closeModal(action === 'add' ? 'addQuestionModal' : 'editQuestionModal');
-            location.reload(); // Refresh to show changes
+            
+            // Emit WebSocket event to refresh data
+            if (window.socketClient) {
+                window.socketClient.emit(`question_${action}ed`, { 
+                    questionId: data.question_id || formData.get('question_id'),
+                    action: action
+                });
+            }
         } else {
-            alert('Error saving question: ' + data.message);
+            console.error('Error saving question:', data.message);
+            showNotification('Error saving question: ' + data.message, 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error saving question. Please try again.');
+        console.error('Error saving question:', error);
+        showNotification('Error saving question. Please try again.', 'error');
     });
 }
 
@@ -572,7 +596,8 @@ function submitGroupingForm(form) {
     const selectedQuestions = Array.from(document.querySelectorAll('#ungroupedQuestionsModal input[name="selected_questions"]:checked')).map(cb => cb.value);
     
     if (selectedQuestions.length === 0) {
-        alert('Please select at least one question to group.');
+        console.warn('No questions selected for grouping');
+        showNotification('Please select at least one question to group.', 'warning');
         return;
     }
     
@@ -586,16 +611,192 @@ function submitGroupingForm(form) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            console.log('Questions grouped successfully:', data);
+            showNotification('Questions grouped successfully', 'success');
             closeModal('ungroupedQuestionsModal');
-            location.reload(); // Refresh to show changes
+            
+            // Emit WebSocket event to refresh data
+            if (window.socketClient) {
+                window.socketClient.emit('questions_grouped', { 
+                    questionIds: selectedQuestions,
+                    groupId: data.group_id,
+                    groupName: formData.get('group_name') || formData.get('existing_group')
+                });
+            }
         } else {
-            alert('Error grouping questions: ' + data.message);
+            console.error('Error grouping questions:', data.message);
+            showNotification('Error grouping questions: ' + data.message, 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error grouping questions');
+        console.error('Error grouping questions:', error);
+        showNotification('Error grouping questions. Please try again.', 'error');
     });
+}
+
+// Notification System
+function showNotification(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Create notification container if it doesn't exist
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        color: ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#74c0fc'};
+        border-left: 4px solid ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#74c0fc'};
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        pointer-events: auto;
+        cursor: pointer;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    
+    notification.textContent = message;
+    notification.title = 'Click to dismiss';
+    
+    // Add click to dismiss
+    notification.addEventListener('click', () => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    });
+    
+    container.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// WebSocket Event Listeners for Real-time Updates
+function setupWebSocketListeners() {
+    if (!window.socketClient) {
+        console.log('WebSocket client not available, skipping real-time setup');
+        return;
+    }
+    
+    // Listen for question-related events
+    window.socketClient.on('question_added', (data) => {
+        console.log('Question added via WebSocket:', data);
+        showNotification('Question added successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('question_updated', (data) => {
+        console.log('Question updated via WebSocket:', data);
+        showNotification('Question updated successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('question_deleted', (data) => {
+        console.log('Question deleted via WebSocket:', data);
+        showNotification('Question deleted successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('question_group_created', (data) => {
+        console.log('Question group created via WebSocket:', data);
+        showNotification('Question group created successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('question_group_deleted', (data) => {
+        console.log('Question group deleted via WebSocket:', data);
+        showNotification('Question group deleted successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('questions_grouped', (data) => {
+        console.log('Questions grouped via WebSocket:', data);
+        showNotification('Questions grouped successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+    });
+    
+    window.socketClient.on('question_removed_from_group', (data) => {
+        console.log('Question removed from group via WebSocket:', data);
+        showNotification('Question removed from group successfully', 'success');
+        loadUngroupedQuestions();
+        if (typeof loadQuestionGroups === 'function') {
+            loadQuestionGroups();
+        }
+        // Close the group modal if it's open
+        const groupModal = document.getElementById('groupQuestionsModal');
+        if (groupModal && groupModal.style.display === 'flex') {
+            closeModal('groupQuestionsModal');
+        }
+    });
+    
+    console.log('WebSocket listeners for questions management setup complete');
+}
+
+// Initialize WebSocket listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup WebSocket listeners after a short delay to ensure socketClient is available
+    setTimeout(setupWebSocketListeners, 1000);
+});
+
+// Also setup listeners if socketClient becomes available later
+if (window.socketClient) {
+    setupWebSocketListeners();
+} else {
+    // Check periodically for socketClient availability
+    const checkSocketClient = setInterval(() => {
+        if (window.socketClient) {
+            setupWebSocketListeners();
+            clearInterval(checkSocketClient);
+        }
+    }, 1000);
+    
+    // Stop checking after 30 seconds
+    setTimeout(() => clearInterval(checkSocketClient), 30000);
 }
 
 // Utility functions
@@ -616,43 +817,13 @@ document.addEventListener('click', function(e) {
 
 // Missing functions
 function editQuestionGroup(groupId, groupName, groupDescription) {
-    // This function was referenced but not implemented
-    // For now, we'll show an alert that this feature is not yet implemented
-    alert('Edit group functionality is not yet implemented. Please delete and recreate the group if changes are needed.');
-}
-
-function removeFromGroup(questionId, groupId) {
-    if (confirm('Are you sure you want to remove this question from the group?')) {
-        fetch(`/questions/group/${groupId}/remove/${questionId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Close the modal and refresh the group view
-                closeModal('groupQuestionsModal');
-                location.reload();
-            } else {
-                alert('Error removing question from group: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error removing question from group. Please try again.');
-        });
-    }
+    console.log('Edit group functionality called for:', groupName);
+    showNotification('Edit group functionality is not yet implemented. Please delete and recreate the group if changes are needed.', 'info');
 }
 
 function addQuestionsToGroup(groupId) {
-    alert('Add questions to group functionality is not yet implemented. Please use the main interface to manage group questions.');
+    console.log('Add questions to group functionality called for group:', groupId);
+    showNotification('Add questions to group functionality is not yet implemented. Please use the main interface to manage group questions.', 'info');
 }
 
 function loadUngroupedQuestionsInModal() {

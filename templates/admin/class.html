@@ -698,8 +698,52 @@
             role="tabpanel"
             tabindex="0"
           >
+          </div>        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Class Confirmation Modal -->
+<div class="modal fade" id="deleteClassModal" tabindex="-1" role="dialog" aria-labelledby="deleteClassModalTitle" aria-modal="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteClassModalTitle">
+          <i class="bx bx-trash" style="color: #ef4444; margin-right: 8px;"></i>
+          Confirm Delete Class
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center; padding: 20px;">
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+            <i class="bx bx-trash" style="font-size: 2.5rem; color: #ef4444;"></i>
+          </div>
+          <h4 style="color: var(--text-primary); margin-bottom: 12px;">Delete Class</h4>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Are you sure you want to delete the class "<span id="deleteClassName" style="color: var(--cyber-glow); font-weight: 600;"></span>"?
+          </p>
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="color: #ef4444; margin: 0; font-size: 0.9rem;">
+              <i class="bx bx-error-circle" style="margin-right: 8px;"></i>
+              <strong>Warning:</strong> This action cannot be undone. All students enrolled in this class and their progress will be permanently removed.
+            </p>
           </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bx bx-x"></i> Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteClass">
+          <i class="bx bx-trash"></i> Delete Class
+        </button>
       </div>
     </div>
   </div>
@@ -844,9 +888,7 @@
           if (modalEl) {
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
-          }
-
-          // Reset form and reload classes
+          }          // Reset form and reload classes
           const formEl = document.getElementById("createClassForm");
           if (formEl) formEl.reset();
           
@@ -854,7 +896,9 @@
           if (classStartEl) classStartEl.value = today;
           
           const classEndEl = document.getElementById("classEnd");
-          if (classEndEl) classEndEl.value = endDate.toISOString().split("T")[0];
+          const defaultEndDate = new Date();
+          defaultEndDate.setMonth(defaultEndDate.getMonth() + 3);
+          if (classEndEl) classEndEl.value = defaultEndDate.toISOString().split("T")[0];
           
           generateCodeFromAPI();
           loadClasses();
@@ -924,14 +968,20 @@
     function filterClasses(status) {
       // Re-load classes with the filter
       loadClasses(status);
-    }
-
-    // Select all checkbox
+    }    // Select all checkbox
     addSafeEventListener("selectAll", "change", function () {
       const isChecked = this.checked;
       document.querySelectorAll(".class-checkbox").forEach((checkbox) => {
         checkbox.checked = isChecked;
       });
+    });
+
+    // Delete confirmation button in modal
+    addSafeEventListener("confirmDeleteClass", "click", function () {
+      const classId = this.getAttribute("data-class-id");
+      if (classId) {
+        deleteClass(classId);
+      }
     });
 
     // Function to load question groups from API
@@ -1114,10 +1164,9 @@
                     }">View</a>
                     <a href="#" class="action-link edit-link" data-id="${
                       cls.id
-                    }">Edit</a>
-                    <a href="#" class="action-link delete-link" data-id="${
+                    }">Edit</a>                    <a href="#" class="action-link delete-link" data-id="${
                       cls.id
-                    }">Delete</a>
+                    }" data-name="${cls.name}">Delete</a>
                 </td>
             </tr>
         `;
@@ -1152,19 +1201,22 @@
           const classId = this.getAttribute("data-id");
           editClass(classId);
         });
-      });
-
-      document.querySelectorAll(".delete-link").forEach((btn) => {
+      });      document.querySelectorAll(".delete-link").forEach((btn) => {
         btn.addEventListener("click", function (e) {
           e.preventDefault();
           const classId = this.getAttribute("data-id");
-          if (
-            confirm(
-              "Are you sure you want to delete this class? This action cannot be undone."
-            )
-          ) {
-            deleteClass(classId);
-          }
+          const className = this.getAttribute("data-name") || "this class";
+          
+          // Set the class name in the modal
+          document.getElementById("deleteClassName").textContent = className;
+          
+          // Store class ID for deletion
+          const confirmBtn = document.getElementById("confirmDeleteClass");
+          confirmBtn.setAttribute("data-class-id", classId);
+          
+          // Show the modal
+          const modal = new bootstrap.Modal(document.getElementById('deleteClassModal'));
+          modal.show();
         });
       });
     }
@@ -1605,10 +1657,10 @@
           console.error("Error updating class:", error);
           alert("Error updating class: " + error.message);
         });
-    }
-
-    // Delete class
+    }    // Delete class
     function deleteClass(classId) {
+      console.log('Deleting class with ID:', classId);
+      
       // API call to delete the class
       fetch(`/admin/api/classes/${classId}`, {
         method: "DELETE"
@@ -1622,13 +1674,87 @@
           return response.json();
         })
         .then(data => {
-          alert(data.message || "Class deleted successfully!");
+          console.log('Class deleted successfully:', data);
+          showNotification(data.message || "Class deleted successfully!", 'success');
+          
+          // Hide the modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById('deleteClassModal'));
+          if (modal) modal.hide();
+          
+          // Emit WebSocket event for real-time updates
+          if (window.socketClient) {
+            window.socketClient.emit('class_deleted', { classId });
+          }
+          
           loadClasses(); // Refresh the class list
         })
         .catch(error => {
           console.error("Error deleting class:", error);
-          alert("Error deleting class: " + error.message);
-        });
+          showNotification("Error deleting class: " + error.message, 'error');
+        });    }
+
+    // Notification System
+    function showNotification(message, type = 'info') {
+      console.log(`[${type.toUpperCase()}] ${message}`);
+      
+      // Create notification container if it doesn't exist
+      let container = document.getElementById('notification-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 10000;
+          pointer-events: none;
+        `;
+        document.body.appendChild(container);
+      }
+      
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        color: ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#74c0fc'};
+        border-left: 4px solid ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#74c0fc'};
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        pointer-events: auto;
+        cursor: pointer;
+        max-width: 300px;
+        word-wrap: break-word;
+      `;
+      
+      notification.textContent = message;
+      notification.title = 'Click to dismiss';
+      
+      // Add click to dismiss
+      notification.addEventListener('click', () => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      });
+      
+      container.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.style.transform = 'translateX(100%)';
+          setTimeout(() => notification.remove(), 300);
+        }
+      }, 5000);
     }
 
     // Utility functions

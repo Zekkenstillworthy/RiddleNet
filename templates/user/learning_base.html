@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% block head %}{% endblock %}
+</head>
+
+<style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+    :root {
+        /* Modern Gaming Network Theme - Learning Version */
+        --primary-color: #0B1426;
+        --secondary-color: #1A2B47;
+        --accent-color: #00D4FF;
+        --success-color: #00FF88;
+        --warning-color: #FF8C42;
+        --danger-color: #FF4757;
+        --cyber-glow: #00D4FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #0B1426;
+        --surface: #1A2B47;
+        --surface-hover: #243B5C;
+        --border-color: rgba(0, 212, 255, 0.2);
+        --glass-bg: rgba(30, 41, 71, 0.8);
+        
+        /* Text Colors */
+        --text-primary: #FFFFFF;
+        --text-secondary: #B3E5FC;
+        --text-muted: #7DD3FC;
+        
+        /* Layout - No sidebar constraints */
+        --transition-speed: 0.4s;
+        --border-radius: 16px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+        --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+        --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+        
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --card-bg: linear-gradient(135deg, #1E3A5F, #243B5C);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--background);
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* Network Grid Background Animation */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: 
+            linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: -1;
+        animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(50px, 50px); }
+    }
+
+    /* Top navigation bar for learning pages */
+    .learning-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border-bottom: 2px solid var(--border-color);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .learning-nav::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+
+    .nav-brand .logo-icon {
+        height: 40px;
+        width: 40px;
+        border-radius: 12px;
+        padding: 6px;
+        background: var(--gradient-primary);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .nav-brand .logo-icon:hover {
+        box-shadow: var(--shadow-glow);
+        transform: scale(1.1);
+    }
+
+    .nav-brand .logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .nav-btn {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: var(--cyber-glow);
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-btn:hover {
+        background: rgba(0, 212, 255, 0.2);
+        border-color: var(--cyber-glow);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .nav-btn.primary {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+    }
+
+    .nav-btn.primary:hover {
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-2px);
+    }
+
+    .user-profile-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .user-profile-nav:hover {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .profile-avatar-nav {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .profile-name-nav {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    /* Main content area without sidebar constraints */
+    .learning-main {
+        margin-top: 70px;
+        min-height: calc(100vh - 70px);
+        padding: 24px;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .learning-nav {
+            padding: 0 16px;
+        }
+        
+        .nav-brand .logo-text {
+            display: none;
+        }
+        
+        .nav-actions {
+            gap: 8px;
+        }
+        
+        .nav-btn {
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+        
+        .learning-main {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .learning-nav {
+            height: 60px;
+        }
+        
+        .learning-main {
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            padding: 12px;
+        }
+        
+        .user-profile-nav .profile-name-nav {
+            display: none;
+        }
+    }
+</style>
+
+<body>
+    {% block body %}
+    <!-- Top Navigation for Learning Pages -->
+    <nav class="learning-nav">
+        <a href="{{ url_for('user.dashboard') }}" class="nav-brand">
+            <div class="logo-icon">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="logo-text">RiddleNet</div>
+        </a>
+        
+        <div class="nav-actions">
+            <a href="{{ url_for('user.classes') }}" class="nav-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Classes
+            </a>
+            
+            <div class="user-profile-nav" onclick="window.location.href='{{ url_for('user.profile') }}'">
+                <div class="profile-avatar-nav">
+                    {% if user %}
+                        {{ user.username[0].upper() }}
+                    {% else %}
+                        U
+                    {% endif %}
+                </div>
+                <div class="profile-name-nav">
+                    {% if user %}
+                        {{ user.username }}
+                    {% else %}
+                        User
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="learning-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Socket.IO for real-time features -->
+    <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+    {% endblock %}
+</body>
+
+</html>

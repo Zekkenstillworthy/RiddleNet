@@ -709,22 +709,24 @@
                     <span>Logout</span>
                 </a>
             </li>
-        </ul>
-
-        <!-- User Profile Section -->
+        </ul>        <!-- User Profile Section -->
         <div class="user-profile">
-            <div class="profile-info" onclick="window.location.href='{{ url_for('user.profile') }}'">
+            <div class="profile-info" onclick="window.location.href='{{ url_for('user.profile') }}'">                
                 <div class="profile-avatar">
-                    {% if session.user %}
-                        {{ session.user.username[0].upper() }}
+                    {% if user %}
+                        {% if user.profile_img %}
+                            <img src="{{ url_for('static', filename='img/' + user.profile_img) }}" alt="{{ user.username }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            {{ user.username[0].upper() }}
+                        {% endif %}
                     {% else %}
                         U
                     {% endif %}
                 </div>
                 <div class="profile-details">
                     <div class="profile-name">
-                        {% if session.user %}
-                            {{ session.user.username }}
+                        {% if user %}
+                            {{ user.username }}
                         {% else %}
                             User
                         {% endif %}
