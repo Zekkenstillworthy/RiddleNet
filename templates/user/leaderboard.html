@@ -1,16 +1,12 @@
 {% extends 'user/base.html' %} 
 {% block head %}
 <title>Leaderboard | RiddleNet</title>
-
 <style>
-  /* Leaderboard specific styles */
   .leaderboard-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
     width: 100%;
-    height: 100%;
   }
   
   .leaderboard-wrapper {
@@ -246,11 +242,11 @@
 </style>
 {% endblock %}
 
-{% block body %}
-<!-- Main Content -->
-<div class="leaderboard-container">
-  <div class="leaderboard-wrapper">
-    <h1 class="leaderboard-heading">Leaderboard</h1>
+{% block content %}
+<div class="page-container">
+  <div class="leaderboard-container">
+    <div class="leaderboard-wrapper">
+      <h1 class="leaderboard-heading">Leaderboard</h1>
     
     <div class="modern-card">
       <!-- Leaderboard List -->
@@ -367,6 +363,213 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 1000);
         }
     }
+});
+
+// WebSocket Integration for Leaderboard Page
+    if (window.socketClient) {
+        console.log('Leaderboard: Initializing WebSocket handlers...');
+        
+        // Join leaderboard-specific room
+        window.socketClient.emit('join_leaderboard', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+            page: 'leaderboard'
+        });
+        
+        // Handle real-time leaderboard updates
+        window.socketClient.on('leaderboard_update', function(data) {
+            console.log('Leaderboard: Update received:', data);
+            updateLeaderboardDisplay(data);
+            showLeaderboardNotification('Leaderboard Updated', 'New scores have been added!', 'info');
+        });
+        
+        // Handle new high score achievements
+        window.socketClient.on('new_high_score', function(data) {
+            console.log('Leaderboard: New high score received:', data);
+            highlightNewHighScore(data);
+            showLeaderboardNotification('New High Score!', `${data.username} achieved ${data.score}% in ${data.category}!`, 'success');
+        });
+        
+        // Handle user rank changes
+        window.socketClient.on('rank_change', function(data) {
+            console.log('Leaderboard: Rank change received:', data);
+            if (data.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}') {
+                showLeaderboardNotification('Rank Changed!', `You are now rank #${data.new_rank}!`, 'success');
+                highlightUserRank(data.new_rank);
+            }
+        });
+        
+        // Handle category filter updates
+        window.socketClient.on('leaderboard_category_update', function(data) {
+            console.log('Leaderboard: Category update received:', data);
+            updateCategoryLeaderboard(data);
+        });
+        
+        console.log('Leaderboard: WebSocket handlers initialized successfully');
+    } else {
+        console.warn('SocketClient not available for leaderboard WebSocket integration');
+    }
+    
+    // Leaderboard-specific helper functions
+    function updateLeaderboardDisplay(leaderboardData) {
+        const leaderboardList = document.querySelector('.leaderboard-list');
+        if (!leaderboardList || !leaderboardData.entries) return;
+        
+        // Save current scroll position
+        const scrollPosition = window.pageYOffset;
+        
+        // Add fade-out animation
+        leaderboardList.style.transition = 'opacity 0.3s ease';
+        leaderboardList.style.opacity = '0.5';
+        
+        setTimeout(() => {
+            // Clear current entries
+            leaderboardList.innerHTML = '';
+            
+            // Add new entries
+            leaderboardData.entries.forEach((entry, index) => {
+                const entryElement = createLeaderboardEntry(entry, index + 1);
+                leaderboardList.appendChild(entryElement);
+            });
+            
+            // Restore visibility
+            leaderboardList.style.opacity = '1';
+            
+            // Restore scroll position
+            window.scrollTo(0, scrollPosition);
+            
+            // Animate entries in
+            animateEntriesIn();
+        }, 300);
+    }
+    
+    function createLeaderboardEntry(entry, rank) {
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'leaderboard-entry';
+        entryDiv.dataset.userId = entry.user_id;
+        entryDiv.dataset.rank = rank;
+        
+        // Determine medal/rank display
+        let rankDisplay = '';
+        if (rank === 1) {
+            rankDisplay = '<i class="fas fa-crown rank-icon gold"></i>';
+        } else if (rank === 2) {
+            rankDisplay = '<i class="fas fa-medal rank-icon silver"></i>';
+        } else if (rank === 3) {
+            rankDisplay = '<i class="fas fa-medal rank-icon bronze"></i>';
+        } else {
+            rankDisplay = `<span class="rank-number">${rank}</span>`;
+        }
+        
+        entryDiv.innerHTML = `
+            <div class="rank-display">${rankDisplay}</div>
+            <div class="user-info">
+                <span class="username">${entry.username}</span>
+                <span class="user-details">${entry.category || 'Overall'} • ${entry.date || 'Recent'}</span>
+            </div>
+            <div class="score-display">
+                <span class="score-value">${entry.score}%</span>
+                <div class="score-bar">
+                    <div class="score-fill" style="width: ${entry.score}%"></div>
+                </div>
+            </div>
+        `;
+        
+        // Add hover effects
+        entryDiv.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.background = 'rgba(0, 217, 255, 0.1)';
+        });
+        
+        entryDiv.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.background = 'rgba(255, 255, 255, 0.05)';
+        });
+        
+        return entryDiv;
+    }
+    
+    function highlightNewHighScore(scoreData) {
+        const entries = document.querySelectorAll('.leaderboard-entry');
+        entries.forEach(entry => {
+            if (entry.dataset.userId === scoreData.user_id.toString()) {
+                // Add special highlighting
+                entry.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(0, 217, 255, 0.2))';
+                entry.style.border = '2px solid #ffd700';
+                entry.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.5)';
+                
+                // Add pulsing animation
+                entry.style.animation = 'pulse-gold 2s ease-in-out 3';
+                
+                // Reset after animation
+                setTimeout(() => {
+                    entry.style.background = 'rgba(255, 255, 255, 0.05)';
+                    entry.style.border = 'none';
+                    entry.style.boxShadow = 'none';
+                    entry.style.animation = 'none';
+                }, 6000);
+            }
+        });
+    }
+    
+    function highlightUserRank(newRank) {
+        const userEntry = document.querySelector(`.leaderboard-entry[data-rank="${newRank}"]`);
+        if (userEntry) {
+            userEntry.style.background = 'rgba(0, 217, 255, 0.3)';
+            userEntry.style.border = '2px solid var(--cyber-glow)';
+            userEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            setTimeout(() => {
+                userEntry.style.background = 'rgba(255, 255, 255, 0.05)';
+                userEntry.style.border = 'none';
+            }, 3000);
+        }
+    }
+    
+    function updateCategoryLeaderboard(categoryData) {
+        // Update category-specific leaderboard if filtered
+        const activeCategory = document.querySelector('.category-filter.active');
+        if (activeCategory && activeCategory.dataset.category === categoryData.category) {
+            updateLeaderboardDisplay(categoryData);
+        }
+    }
+    
+    function animateEntriesIn() {
+        const entries = document.querySelectorAll('.leaderboard-entry');
+        entries.forEach((entry, index) => {
+            entry.style.opacity = '0';
+            entry.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                entry.style.transition = 'all 0.5s ease';
+                entry.style.opacity = '1';
+                entry.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    }
+    
+    function showLeaderboardNotification(title, message, type = 'info') {
+        // Use the base template notification function if available
+        if (window.socketClient && window.socketClient.showNotification) {
+            window.socketClient.showNotification(title, message, type);
+        } else {
+            // Simple fallback notification
+            console.log(`${type.toUpperCase()}: ${title} - ${message}`);
+        }
+    }
+    
+    // Add pulse animation styles
+    const pulseStyles = document.createElement('style');
+    pulseStyles.textContent = `
+        @keyframes pulse-gold {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .rank-icon.gold { color: #ffd700; }
+        .rank-icon.silver { color: #c0c0c0; }
+        .rank-icon.bronze { color: #cd7f32; }
+    `;
+    document.head.appendChild(pulseStyles);
 });
 </script>
 {% endblock %}

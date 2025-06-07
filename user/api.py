@@ -6,10 +6,10 @@ from admin.controllers.question_group_controller import QuestionGroupController
 from admin.models.topology import Topology
 from admin.controllers.topology_controller import TopologyController
 from admin.models.score import AdminScore  # Updated to use the renamed model directly
-from admin.models.class_model import Class
-from user.models import db, User as UserModel  # Rename to avoid conflicts
-from user.models import Score as UserScore  # Use a clear name for the user's Score model
-from user.models.association_tables import class_students
+from admin.models.class_model import Class, class_students  # Import class_students from class_model
+from __init__ import db  # Import db from main app
+from user.models.user import User as UserModel  # Import User model directly
+from user.models.score import Score as UserScore  # Use a clear name for the user's Score model
 import json
 from datetime import datetime
 

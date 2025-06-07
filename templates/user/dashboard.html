@@ -1,5 +1,7 @@
-{% extends 'user/base.html' %} {% block head %}
-<title> Dashboard | RiddleNet</title>
+{% extends 'user/base.html' %} 
+
+{% block head %}
+<title>Dashboard | RiddleNet</title>
 <style>
 
   /* Enhanced glassmorphism effects - Admin Dashboard Style */
@@ -119,9 +121,13 @@
   }
 
   /* Responsive design improvements */
+  .dashboard-container {
+    /* No padding - handled by page-container */
+  }
+  
   @media (max-width: 1200px) {
     .dashboard-container {
-      padding: 24px 16px;
+      /* No additional padding needed */
     }
     
     .stat-cards-grid {
@@ -132,7 +138,7 @@
 
   @media (max-width: 768px) {
     .dashboard-container {
-      padding: 16px;
+      /* No additional padding needed */
     }
     
     .stat-cards-grid {
@@ -337,34 +343,19 @@
     }
   }
 </style>
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/user/dashboard.css') }}"
-/>
+
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/user/class-details.css') }}"
 />
 <link rel="icon" href="{{ static_url('img/Logo.png') }}" />
-{% endblock %} {% block content %}
-<video class="video-background" autoplay muted loop playsinline>
-    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-</video>
+{% endblock %}
 
-<section id="dashboard" class="main">
+{% block content %}
+<div class="page-container">
   <div class="dashboard-container">
     <!-- Enhanced Stats Grid -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 48px;">
-      <div class="stat-card-modern">
-        <div class="stat-icon">
-          <i class="fas fa-star"></i>
-        </div>
-        <div class="stat-value data-flow">{{ user.total_score|default(0) }}</div>
-        <div class="stat-label">Total Score</div>
-        <div style="margin-top: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">
-          <i class="fas fa-chart-line" style="color: var(--neon-green);"></i> Across all Categories
-        </div>
-      </div>
       <div class="stat-card-modern">
         <div class="stat-icon">
           <i class="fas fa-star"></i>
@@ -436,159 +427,6 @@
         </p>
       </div>
     </div>
-
-    <!-- Challenge Categories Section -->
-    <div class="section-header">
-      <i class="fas fa-gamepad section-icon"></i>
-      <h2>Challenge Categories</h2>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 48px;">
-      <div class="modern-card" style="cursor: pointer;" onclick="showCategorySelection('riddle')">
-        <div style="text-align: center;">
-          <i class="fas fa-puzzle-piece" style="font-size: 3rem; color: var(--cyber-glow); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--cyber-glow));"></i>
-          <h3 style="color: var(--cyber-glow); margin-bottom: 12px;">Riddle Challenge</h3>
-          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Test your logical thinking and problem-solving skills</p>
-          <div class="network-node" style="top: 20px; right: 20px;"></div>
-        </div>
-      </div>
-      
-      <div class="modern-card" style="cursor: pointer;" onclick="goToNetworkTopology()">
-        <div style="text-align: center;">
-          <i class="fas fa-network-wired" style="font-size: 3rem; color: var(--neon-green); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--neon-green));"></i>
-          <h3 style="color: var(--neon-green); margin-bottom: 12px;">Network Topology</h3>
-          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Master network design and architecture concepts</p>
-          <div class="network-node" style="top: 20px; right: 20px;"></div>
-        </div>
-      </div>
-      
-      <div class="modern-card" style="cursor: pointer;" onclick="goTotroubleshoot()">
-        <div style="text-align: center;">
-          <i class="fas fa-tools" style="font-size: 3rem; color: var(--network-purple); margin-bottom: 16px; filter: drop-shadow(0 0 10px var(--network-purple));"></i>
-          <h3 style="color: var(--network-purple); margin-bottom: 12px;">Troubleshooting</h3>
-          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Diagnose and resolve network issues efficiently</p>
-          <div class="network-node" style="top: 20px; right: 20px;"></div>
-        </div>
-      </div>
-      
-      <div class="modern-card" style="cursor: pointer;" onclick="goToCrimp()">
-        <div style="text-align: center;">
-          <i class="fas fa-cable-car" style="font-size: 3rem; color: #ff6b6b; margin-bottom: 16px; filter: drop-shadow(0 0 10px #ff6b6b);"></i>
-          <h3 style="color: #ff6b6b; margin-bottom: 12px;">Cable Crimping</h3>
-          <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">Learn proper UTP cable termination techniques</p>
-          <div class="network-node" style="top: 20px; right: 20px;"></div>
-        </div>
-      </div>
-    </div>
-    <section class="quiz-section">
-      <video autoplay muted loop>
-        <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-      </video>
-      <!-- Put result-box before quiz-box in the DOM structure so it appears on top -->
-      <div class="result-box">
-        <h2>Result!</h2>
-        <div class="percentage-container">
-          <div class="circular-progress">
-            <span class="progress-value">0%</span>
-          </div>
-          <span class="score-text">Your Score 0 out of 5</span>
-        </div>
-        <div class="buttons">
-          <button class="tryAgain-btn"><i class="fa-solid fa-arrow-rotate-right"></i></button>
-          <button class="goHome-result-btn"><i class='bx bxs-home'></i></button>
-        </div>
-      </div>
-      
-      <div class="quiz-box">
-        <h1>RiddleNet</h1>
-        <div class="quiz-header">
-          <span>Multiple Choice Riddle</span>
-          <span class="header-score"></span>
-        </div>
-        <h2 class="question-text">What does HTML stand for?</h2>
-        <div class="option-list"></div>
-        <!-- Add matching question container -->
-        <div class="matching-container" style="display:none;">
-          <div class="matching-instructions">Match items from the left column with their corresponding items on the right.</div>
-          <div class="matching-items">
-            <!-- Items will be dynamically added here -->
-          </div>
-          <div class="matching-dropdowns" style="display:none;">
-            <!-- Dropdown version will be populated here -->
-          </div>
-          <div class="matching-drag-drop" style="display:none;">
-            <div class="matching-sources">
-              <!-- Draggable items will be populated here -->
-            </div>
-            <div class="matching-targets">
-              <!-- Drop targets will be populated here -->
-            </div>
-          </div>
-          <div class="matching-feedback"></div>
-        </div>
-        <!-- Add essay question container -->
-        <div class="essay-container" style="display:none;">
-          <div class="essay-instructions">Write your response below</div>
-          <textarea class="essay-input" placeholder="Start typing your answer here..." rows="8"></textarea>
-          <p class="character-count"><span class="count-number">0</span> characters</p>
-          <div class="essay-controls">
-            <button class="submit-essay-btn"><span>Submit</span></button>
-          </div>
-          <div class="essay-feedback"></div>
-        </div>
-        <div class="quiz-footer">
-          <button class="goHome-quiz-btn"><i class='bx bxs-home'></i></button>
-          <span class="question-total">1 of 5 Questions</span>
-          <button class="next-btn"><i class='bx bxs-right-arrow'></i></button>
-        </div>
-      </div>
-    
-
-    
-  </section>
-
-    <!-- Home Section -->
-  <section class="home">
-    <div class="home-content">
-      <h1>RiddleNet</h1>
-      <p>The game may end, but the skills you’ve gained are just the beginning.</p>
-      <button class="start-btn">Start</button>
-    </div>
-  </section>
-  </div>
-
-  
-</section>
-
-
-
-
-
-
-
-<!-- Popup Info -->
-<div class="popup-info">
-  
-    <i class="bx bx-x profile-exit-btn exit-btn "></i>
-  
-  <h2>Choose Category</h2>
-  <div class="choices-btn-group">
-    <button class="choice-btn" onclick="goToNetworkTopology()">
-      Network Topology
-    </button>
-    <button class="choice-btn continue-btn">
-    Riddle
-    </button>
-    <button class="choice-btn" onclick="goTotroubleshoot()">
-      Troubleshooting
-    </button>
-    <button class="choice-btn" onclick="goToCrimp()">
-      UTP Cable Crimping 
-    </button>
-  </div>
-  
-</div>
-
 
 <script>
   function goToNetworkTopology() {
@@ -707,19 +545,76 @@
       });
     });
 
-    // Initialize socket client connection if available - with delay to ensure scripts loaded
+    // Enhanced WebSocket Integration for Dashboard
     setTimeout(() => {
       if (window.socketClient) {
-        console.log('Socket client available, setting up event handlers');
+        console.log('Dashboard: Initializing comprehensive WebSocket handlers...');
         
-        // Set up event handlers for real-time updates
+        // Join dashboard-specific room
+        window.socketClient.emit('join_dashboard', {
+          user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+          page: 'dashboard'
+        });
+        
+        // Handle real-time score updates
+        window.socketClient.on('score_update', function(data) {
+          console.log('Dashboard: Score update received:', data);
+          updateDashboardScore(data);
+          
+          // Show notification
+          if (window.socketClient.showNotification) {
+            window.socketClient.showNotification(
+              'Score Updated!', 
+              `Your ${data.category} score: ${data.score}`, 
+              'success'
+            );
+          }
+        });
+        
+        // Handle leaderboard updates
+        window.socketClient.on('leaderboard_update', function(data) {
+          console.log('Dashboard: Leaderboard update received:', data);
+          updateDashboardLeaderboard(data);
+        });
+        
+        // Handle dashboard statistics updates
+        window.socketClient.on('dashboard_stats_update', function(data) {
+          console.log('Dashboard: Stats update received:', data);
+          updateDashboardStats(data);
+        });
+        
+        // Handle user progress updates
+        window.socketClient.on('user_progress_update', function(data) {
+          console.log('Dashboard: Progress update received:', data);
+          updateProgressIndicators(data);
+        });
+        
+        // Handle announcements
+        window.socketClient.on('new_announcement', function(data) {
+          console.log('Dashboard: New announcement received:', data);
+          addAnnouncementToUI(data);
+          
+          if (window.socketClient.showNotification) {
+            window.socketClient.showNotification(
+              'New Announcement', 
+              data.title || 'Check the announcements section', 
+              'info'
+            );
+          }
+        });
+        
+        // Connection status handlers
         window.socketClient.on('connected', () => {
           console.log('Dashboard: Socket connected');
+          updateConnectionStatus(true);
         });
         
         window.socketClient.on('disconnected', (reason) => {
           console.log('Dashboard: Socket disconnected:', reason);
+          updateConnectionStatus(false);
         });
+        
+        console.log('Dashboard: WebSocket handlers initialized successfully');
       } else {
         console.log('Socket client not available, continuing without real-time features');
       }
@@ -881,9 +776,162 @@
     }, 30000);
 
     console.log('Enhanced dashboard with sidebar loaded successfully');
-});
-</script>
 
-</div> <!-- End Main Wrapper -->
+    // Dashboard-specific WebSocket helper functions
+    function updateDashboardScore(scoreData) {
+      const statCards = document.querySelectorAll('.stat-card-modern');
+      statCards.forEach(card => {
+        const statValue = card.querySelector('.stat-value');
+        const statLabel = card.querySelector('.stat-label');
+        
+        if (statLabel && statLabel.textContent.includes('Total Score')) {
+          if (statValue) {
+            const currentScore = parseInt(statValue.textContent) || 0;
+            const newScore = scoreData.total_score || currentScore;
+            
+            // Animate score change
+            animateNumberChange(statValue, currentScore, newScore);
+            
+            // Add glow effect
+            card.style.boxShadow = '0 8px 32px rgba(0, 217, 255, 0.6)';
+            setTimeout(() => {
+              card.style.boxShadow = '0 8px 32px rgba(26, 35, 126, 0.4)';
+            }, 2000);
+          }
+        }
+      });
+    }
+    
+    function updateDashboardLeaderboard(leaderboardData) {
+      const leaderboardTable = document.querySelector('.modern-table tbody');
+      if (leaderboardTable && leaderboardData.entries) {
+        // Add fade-out animation
+        leaderboardTable.style.opacity = '0.5';
+        
+        setTimeout(() => {
+          leaderboardTable.innerHTML = '';
+          leaderboardData.entries.forEach((entry, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td style="padding: 16px; color: var(--cyber-glow); font-weight: 500;">${index + 1}</td>
+              <td style="padding: 16px; color: var(--text-primary);">${entry.username}</td>
+              <td style="padding: 16px; color: var(--text-primary);">${entry.score}</td>
+              <td style="padding: 16px; color: var(--text-secondary); font-size: 0.9rem;">${entry.category || 'Overall'}</td>
+            `;
+            
+            // Add hover effects
+            row.style.transition = 'all 0.3s ease';
+            row.addEventListener('mouseenter', function() {
+              this.style.background = 'rgba(0, 217, 255, 0.1)';
+            });
+            row.addEventListener('mouseleave', function() {
+              this.style.background = 'transparent';
+            });
+            
+            leaderboardTable.appendChild(row);
+          });
+          
+          // Fade back in
+          leaderboardTable.style.opacity = '1';
+        }, 300);
+      }
+    }
+    
+    function updateDashboardStats(statsData) {
+      if (statsData.user_count !== undefined) {
+        const userCountElements = document.querySelectorAll('[data-stat="user-count"]');
+        userCountElements.forEach(element => {
+          const currentValue = parseInt(element.textContent) || 0;
+          animateNumberChange(element, currentValue, statsData.user_count);
+        });
+      }
+      
+      if (statsData.total_scores !== undefined) {
+        const scoreCountElements = document.querySelectorAll('[data-stat="score-count"]');
+        scoreCountElements.forEach(element => {
+          const currentValue = parseInt(element.textContent) || 0;
+          animateNumberChange(element, currentValue, statsData.total_scores);
+        });
+      }
+    }
+    
+    function updateProgressIndicators(progressData) {
+      if (progressData.completion_percentage !== undefined) {
+        const progressBars = document.querySelectorAll('.progress-bar');
+        progressBars.forEach(bar => {
+          bar.style.width = `${progressData.completion_percentage}%`;
+          bar.style.transition = 'width 1s ease-in-out';
+        });
+      }
+      
+      if (progressData.tasks_completed !== undefined) {
+        const taskElements = document.querySelectorAll('[data-progress="tasks"]');
+        taskElements.forEach(element => {
+          element.textContent = `${progressData.tasks_completed}/${progressData.total_tasks || 3} completed`;
+        });
+      }
+    }
+    
+    function addAnnouncementToUI(announcementData) {
+      const announcementsSection = document.querySelector('.modern-card:has(.section-header h2:contains("Announcements"))');
+      if (announcementsSection) {
+        const newAnnouncement = document.createElement('div');
+        newAnnouncement.style.cssText = `
+          background: var(--dark-bg);
+          border-radius: 12px;
+          padding: 24px;
+          border-left: 4px solid var(--cyber-glow);
+          margin-top: 16px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.3s ease;
+        `;
+        
+        newAnnouncement.innerHTML = `
+          <h3 style="color: var(--cyber-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-bullhorn"></i>
+            ${announcementData.title || 'New Announcement'}
+          </h3>
+          <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 8px;">
+            ${announcementData.message || announcementData.content}
+          </p>
+          <small style="color: rgba(255, 255, 255, 0.6);">
+            ${new Date().toLocaleDateString()} - Just now
+          </small>
+        `;
+        
+        announcementsSection.appendChild(newAnnouncement);
+        
+        // Animate in
+        setTimeout(() => {
+          newAnnouncement.style.opacity = '1';
+          newAnnouncement.style.transform = 'translateY(0)';
+        }, 100);
+      }
+    }
+    
+    function animateNumberChange(element, fromValue, toValue) {
+      const duration = 1000;
+      const startTime = performance.now();
+      
+      function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.round(fromValue + (toValue - fromValue) * easeOutCubic);
+        
+        element.textContent = currentValue;
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        }
+      }
+      
+      requestAnimationFrame(updateNumber);
+    }
+  });
+</script>
 
 {% endblock %}

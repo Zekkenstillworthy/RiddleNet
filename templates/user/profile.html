@@ -3,41 +3,10 @@
 <title>Profile | RiddleNet</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
 <link rel="icon" href="{{ static_url('img/Logo.png') }}" />
 
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
-
-  :root {
-    --cyber-glow: #00D9FF;
-    --neon-green: #39FF14;
-    --network-purple: #8B5CF6;
-    --dark-navy: #1a237e;
-    --deep-purple: #2a1b3d;
-    --dark-bg: rgba(26, 35, 126, 0.85);
-    --glass-bg: rgba(139, 92, 246, 0.08);
-    --glass-border: rgba(0, 217, 255, 0.15);
-    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --card-bg: rgba(26, 35, 126, 0.25);
-    --card-border: rgba(0, 217, 255, 0.2);
-  }
-
   /* Modern Profile Layout */
-  .modern-dashboard-page {
-    padding: 24px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 48px);
-  }
-  
   .profile-container {
     max-width: 1100px;
     width: 100%;
@@ -55,6 +24,7 @@
     font-weight: 700;
     font-family: 'Orbitron', sans-serif;
     background: var(--gradient-primary);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-transform: uppercase;
@@ -82,7 +52,6 @@
   
   .profile-header-title h1:after {
     left: 100%;
-    margin-left: 20px;
   }
   
   .profile-card {
@@ -663,10 +632,6 @@
   }
   
   @media (max-width: 768px) {
-    .modern-dashboard-page {
-      padding: 16px;
-    }
-    
     .profile-header-title h1 {
       font-size: 2rem;
     }
@@ -751,7 +716,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="modern-dashboard-page">
+<div class="page-container">
   <div class="profile-container">
     <div class="profile-header-title">
       <h1>Profile</h1>
@@ -937,6 +902,156 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-});
+    
+    // WebSocket Integration for Profile Page
+    if (window.socketClient) {
+        console.log('Profile: Initializing WebSocket handlers...');
+        
+        // Join profile-specific room
+        window.socketClient.emit('join_profile', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+            page: 'profile'
+        });
+        
+        // Handle profile update notifications
+        window.socketClient.on('profile_updated', function(data) {
+            console.log('Profile: Profile update received:', data);
+            showProfileNotification('Profile Updated', 'Your profile has been successfully updated!', 'success');
+            
+            // Refresh profile data if needed
+            if (data.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}') {
+                updateProfileDisplay(data);
+            }
+        });
+        
+        // Handle password change notifications
+        window.socketClient.on('password_changed', function(data) {
+            console.log('Profile: Password change notification received:', data);
+            showProfileNotification('Password Updated', 'Your password has been successfully changed!', 'success');
+        });
+        
+        // Handle profile image upload notifications
+        window.socketClient.on('profile_image_updated', function(data) {
+            console.log('Profile: Profile image update received:', data);
+            showProfileNotification('Profile Image Updated', 'Your profile image has been updated!', 'success');
+            
+            // Update the profile image in UI
+            if (data.image_url) {
+                const profileImages = document.querySelectorAll('.profile-image, .user-avatar');
+                profileImages.forEach(img => {
+                    img.src = data.image_url;
+                });
+            }
+        });
+        
+        // Handle account security notifications
+        window.socketClient.on('security_update', function(data) {
+            console.log('Profile: Security update received:', data);
+            showProfileNotification('Security Update', data.message || 'Your account security settings have been updated', 'info');
+        });
+        
+        console.log('Profile: WebSocket handlers initialized successfully');
+    } else {
+        console.warn('SocketClient not available for profile WebSocket integration');
+    }
+    
+    // Profile-specific notification function
+    function showProfileNotification(title, message, type = 'info') {
+        // Use the base template notification function if available
+        if (window.socketClient && window.socketClient.showNotification) {
+            window.socketClient.showNotification(title, message, type);
+        } else {
+            // Fallback notification system
+            createProfileNotification(title, message, type);
+        }
+    }
+    
+    function createProfileNotification(title, message, type) {
+        const notification = document.createElement('div');
+        notification.className = `profile-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <h4>${title}</h4>
+                <p>${message}</p>
+            </div>
+            <button class="notification-close">&times;</button>
+        `;
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? 'rgba(46, 204, 113, 0.9)' : 
+                      type === 'error' ? 'rgba(231, 76, 60, 0.9)' : 
+                      'rgba(52, 152, 219, 0.9)'};
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            min-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Close button functionality
+        const closeBtn = notification.querySelector('.notification-close');
+        closeBtn.addEventListener('click', () => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+    
+    function updateProfileDisplay(profileData) {
+        // Update username if changed
+        if (profileData.username) {
+            const usernameElements = document.querySelectorAll('.username-display, .current-username');
+            usernameElements.forEach(element => {
+                element.textContent = profileData.username;
+            });
+        }
+        
+        // Update email if changed
+        if (profileData.email) {
+            const emailElements = document.querySelectorAll('.email-display, .current-email');
+            emailElements.forEach(element => {
+                element.textContent = profileData.email;
+            });
+        }
+        
+        // Update profile statistics
+        if (profileData.stats) {
+            const statElements = document.querySelectorAll('.stat-item .stat-value');
+            statElements.forEach(element => {
+                const statType = element.parentElement.dataset.stat;
+                if (profileData.stats[statType] !== undefined) {
+                    element.textContent = profileData.stats[statType];
+                }
+            });
+        }
+    }
 </script>
 {% endblock %}

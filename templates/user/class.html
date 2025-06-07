@@ -1,295 +1,104 @@
-{% extends 'user/base.html' %} 
+{% extends 'user/base.html' %}
+
 {% block head %}
-<title>My Classes | RiddleNet</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-<script src="{{ url_for('static', filename='js/user/dashboard.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user/dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user/class-details.css') }}">
-<link rel="icon" href="{{ static_url('img/Logo.png') }}" />
-
+<title>Classes | RiddleNet</title>
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
-
-  :root {
-    --cyber-glow: #00D9FF;
-    --neon-green: #39FF14;
-    --network-purple: #8B5CF6;
-    --dark-navy: #1a237e;
-    --deep-purple: #2a1b3d;
-    --dark-bg: rgba(26, 35, 126, 0.85);
-    --glass-bg: rgba(139, 92, 246, 0.08);
-    --glass-border: rgba(0, 217, 255, 0.15);
-    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-    --text-primary: #111;
-  }
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-  }
-
-  body {
-    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
-    background-size: cover;
-    color: #fff;
-    overflow-x: hidden;
-    min-height: 100vh;
-    transition: 0.3s ease;
-    position: relative;
-    font-family: 'Orbitron', 'Poppins', sans-serif;
-  }
-  
-  .video-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    object-fit: cover;
-  }
-
-  /* Classes specific styles */
   .classes-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 32px;
   }
 
+  /* Header section with gradient text */
   .classes-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 48px;
-  }
-
-  .section-title {
-    display: flex;
     align-items: center;
-    gap: 12px;
+    margin-bottom: 32px;
+    padding: 0 8px;
   }
 
-  .section-title h2 {
-    font-size: 2rem;
+  .page-title {
+    font-size: 2.5rem;
     font-weight: 700;
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0;
-  }
-  
-  .section-icon {
-    font-size: 2rem;
-    color: var(--cyber-glow);
-    filter: drop-shadow(0 0 8px var(--cyber-glow));
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
   }
 
-  .back-button {
-    padding: 12px 24px;
-    background: transparent;
-    border: 1px solid var(--cyber-glow);
-    border-radius: 8px;
-    color: var(--cyber-glow);
-    font-size: 0.9rem;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    transition: all 0.3s ease;
+  .page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-top: 8px;
+    font-weight: 400;
   }
 
-  .back-button:hover {
-    background: rgba(0, 217, 255, 0.1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
-  }
-
-  .section-card, .modern-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+  /* Join class button with glow effect */
+  .join-class-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    border: none;
     border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 32px;
-    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-    transition: all 0.3s ease;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 16px 32px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    box-shadow: var(--glow-cyan);
+    display: flex;
+    align-items: center;
+    gap: 12px;
     position: relative;
     overflow: hidden;
   }
 
-  .section-card::before, .modern-card::before {
+  .join-class-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--glow-cyan-intense);
+  }
+
+  .join-class-btn:active {
+    transform: scale(0.98);
+  }
+
+  .join-class-btn::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--gradient-primary);
-    opacity: 0.8;
-  }
-  
-  .section-card:hover, .modern-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
-    border-color: var(--cyber-glow);
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
   }
 
-  .section-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--cyber-glow);
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .join-class-btn:hover::before {
+    left: 100%;
   }
 
-  .section-title i {
-    font-size: 1.3rem;
-    filter: drop-shadow(0 0 8px var(--cyber-glow));
-  }
-
-  /* Join Class Form */
-  .join-class-form {
-    display: grid;
-    gap: 20px;
-  }
-  
-  .join-class-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  
-  .join-class-header i {
-    font-size: 1.5rem;
-    color: var(--cyber-glow);
-    filter: drop-shadow(0 0 8px var(--cyber-glow));
-  }
-  
-  .join-class-header h3 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--cyber-glow);
-    margin: 0;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .form-label {
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.95rem;
-  }
-
-  .form-input {
-    padding: 16px 20px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid var(--glass-border);
-    border-radius: 12px;
-    color: white;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-    font-family: 'JetBrains Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-align: center;
-  }
-
-  .form-input:focus {
-    outline: none;
-    border-color: var(--cyber-glow);
-    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
-    background: rgba(0, 0, 0, 0.4);
-  }
-
-  .form-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: none;
-    letter-spacing: normal;
-  }
-
-  .join-button {
-    padding: 16px 24px;
-    background: var(--gradient-primary);
-    color: var(--text-primary);
-    border: none;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .join-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
-  }
-
-  .join-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  .action-button {
-    background: var(--gradient-primary);
-    color: #111;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 24px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    text-align: center;
-  }
-  
-  .action-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 217, 255, 0.3);
-  }
-
-  /* Class Cards Grid */
+  /* Classes grid layout */
   .classes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
     gap: 24px;
-    margin-top: 32px;
+    margin-top: 24px;
   }
 
+  /* Class card with admin dashboard styling */
   .class-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    background: var(--card-bg);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 28px;
+    transition: all 300ms ease;
+    box-shadow: 
+      var(--glow-cyan),
+      0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
-    animation: fadeIn 0.6s ease forwards;
-    opacity: 0;
+    overflow: hidden;
+    cursor: pointer;
   }
 
   .class-card::before {
@@ -298,560 +107,763 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 2px;
-    background: var(--gradient-primary);
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
     opacity: 0.8;
   }
 
   .class-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    border-color: var(--cyber-glow);
-    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 
+      var(--glow-cyan-intense),
+      0 20px 60px rgba(0, 212, 255, 0.2);
+    border-color: var(--accent-cyan);
   }
 
-  .class-header {
-    padding: 24px;
-    background: rgba(0, 0, 0, 0.3);
-    border-bottom: 1px solid var(--glass-border);
+  .class-card:hover::before {
+    height: 4px;
+    box-shadow: 0 0 20px var(--accent-cyan);
+  }
+
+  /* Card content layout */
+  .class-card-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-  }
-  
-  .class-info {
-    display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
   }
 
-  .class-name {
-    font-size: 1.3rem;
+  .class-info h3 {
+    color: var(--text-primary);
+    font-size: 1.4rem;
     font-weight: 600;
-    color: var(--cyber-glow);
     margin: 0 0 8px 0;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    line-height: 1.3;
   }
 
-  .class-section {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
+  .class-code {
+    color: var(--accent-cyan);
+    font-size: 0.95rem;
+    font-weight: 500;
+    background: rgba(0, 212, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
   }
-  
-  .class-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: 2px solid var(--cyber-glow);
-    box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
-    overflow: hidden;
+
+  .class-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+  }
+
+  .class-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    padding: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
   }
-  
-  .class-avatar img {
+
+  .action-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+  }
+
+  .instructor-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-cyan);
+    box-shadow: var(--glow-cyan);
+    transition: all 300ms ease;
+    overflow: hidden;
+  }
+
+  .instructor-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: var(--glow-cyan-intense);
+  }
+
+  .instructor-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .class-body {
-    padding: 24px;
-  }
-
-  .class-description {
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.6;
-    margin-bottom: 20px;
-  }
-
-  .class-meta {
+  /* Card footer with stats */
+  .class-stats {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.85rem;
-    margin-bottom: 20px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .class-actions {
+  .stat-item {
     display: flex;
-    gap: 12px;
-  }
-
-  .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: none;
-    text-decoration: none;
-    text-align: center;
-    display: inline-flex;
     align-items: center;
     gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
   }
 
-  .btn-primary {
-    background: var(--gradient-primary);
-    color: var(--text-primary);
+  .stat-icon {
+    color: var(--accent-cyan);
+    font-size: 1rem;
   }
 
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--cyber-glow);
-    border: 1px solid var(--cyber-glow);
-  }
-
-  .btn-outline:hover {
-    background: rgba(0, 217, 255, 0.1);
-  }
-
-  /* Alerts */
-  .alert {
-    padding: 16px 20px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .alert-success {
-    background: rgba(46, 204, 113, 0.1);
-    border: 1px solid rgba(46, 204, 113, 0.3);
-    color: #2ecc71;
-  }
-
-  .alert-error {
-    background: rgba(231, 76, 60, 0.1);
-    border: 1px solid rgba(231, 76, 60, 0.3);
-    color: #e74c3c;
-  }
-
-  .alert i {
-    font-size: 1.2rem;
-  }
-
-  /* Loading and Empty States */
-  .loading-spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(0, 217, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: var(--cyber-glow);
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
+  /* Empty state styling */
   .empty-state {
     text-align: center;
-    padding: 60px 20px;
-    color: rgba(255, 255, 255, 0.6);
+    padding: 80px 40px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    border: 2px dashed rgba(0, 212, 255, 0.3);
+    margin-top: 40px;
   }
 
-  .empty-state i {
+  .empty-state-icon {
     font-size: 4rem;
-    color: var(--cyber-glow);
+    color: var(--accent-cyan);
     margin-bottom: 24px;
-    filter: drop-shadow(0 0 15px var(--cyber-glow));
+    opacity: 0.6;
   }
 
   .empty-state h3 {
+    color: var(--text-primary);
     font-size: 1.5rem;
-    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 12px;
   }
 
   .empty-state p {
+    color: var(--text-secondary);
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
   }
 
-  /* Cyber-themed animations */
-  @keyframes dataFlow {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 1; }
+  /* Modal styling */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(11, 20, 38, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 300ms ease;
   }
 
-  .data-flow {
-      animation: dataFlow 2s ease-in-out infinite;
+  .modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
   }
-  
-  /* Glow effects */
-  .glow-effect {
+
+  .modal-container {
+    background: var(--card-bg);
+    border: 2px solid var(--accent-cyan);
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 
+      var(--glow-cyan-intense),
+      0 20px 60px rgba(0, 212, 255, 0.3);
+    transform: scale(0.9);
+    transition: transform 300ms ease;
     position: relative;
   }
-  
-  .glow-effect::after {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
-    z-index: -1;
-    background: var(--gradient-primary);
-    filter: blur(15px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+
+  .modal-backdrop.active .modal-container {
+    transform: scale(1);
   }
-  
-  .glow-effect:hover::after {
-    opacity: 0.4;
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 300ms ease;
+  }
+
+  .modal-close:hover {
+    color: var(--accent-cyan);
+    background: rgba(0, 212, 255, 0.1);
+  }
+
+  .modal-title {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  .form-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 300ms ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-cyan);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    margin-top: 32px;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 2px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(0, 212, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+    box-shadow: var(--glow-cyan);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-cyan-intense);
   }
 
   /* Responsive design */
   @media (max-width: 768px) {
-    .classes-container {
-      padding: 16px;
-    }
-
-    .section-title h2 {
-      font-size: 1.6rem;
-    }
-
-    .modern-card, .section-card {
-      padding: 24px 20px;
-    }
-
     .classes-grid {
       grid-template-columns: 1fr;
       gap: 16px;
     }
-
-    .class-header,
-    .class-body {
-      padding: 20px;
+    
+    .page-title {
+      font-size: 2rem;
     }
-
-    .class-actions {
+    
+    .classes-header {
       flex-direction: column;
-    }
-
-    .back-link {
-      top: 16px;
-      left: 16px;
-      width: 45px;
-      height: 45px;
+      gap: 20px;
+      align-items: flex-start;
     }
   }
 
-  @media (max-width: 480px) {
-    .classes-header h1 {
-      font-size: 1.6rem;
+  /* Animation keyframes */
+  @keyframes glow-pulse {
+    0%, 100% { 
+      box-shadow: var(--glow-cyan);
     }
+    50% { 
+      box-shadow: var(--glow-cyan-intense);
+    }
+  }
 
-    .section-card {
-      padding: 20px 16px;
-    }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 
-    .class-header,
-    .class-body {
-      padding: 16px;
-    }
+  .pulse-glow {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* Loading spinner */
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
+  }
+
+  .loading-spinner i {
+    font-size: 3rem;
+    color: var(--accent-cyan);
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  .loading-spinner span {
+    font-size: 1.1rem;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<video class="video-background" autoplay muted loop playsinline>
-    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-</video>
-
-<div class="classes-container">
-  <!-- Header Section with Back Button -->
-  <div class="modern-card">
+<div class="page-container">
+  <div class="classes-container">
+    <!-- Header Section -->
     <div class="classes-header">
-      <div class="section-title">
-        <i class="fas fa-graduation-cap section-icon"></i>
-        <h2>My Classes</h2>
+      <div>
+        <h1 class="page-title">My Classes</h1>
+        <p class="page-subtitle">Access your enrolled courses and learning materials</p>
       </div>
-      <a href="{{ url_for('user.dashboard') }}" class="action-button">
-        <i class="fas fa-arrow-left"></i>
-        Back to Dashboard
-      </a>
-    </div>
-  </div>
-
-  <!-- Join Class Section -->
-  <div class="modern-card">
-    <div class="join-class-header">
-      <i class="fas fa-plus-circle"></i>
-      <h3>Join a Class</h3>
-    </div>
-    
-    <div id="error-alert" class="alert alert-error" style="display: none;">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span id="error-message"></span>
-    </div>
-    
-    <div id="success-alert" class="alert alert-success" style="display: none;">
-      <i class="fas fa-check-circle"></i>
-      <span id="success-message"></span>
-    </div>
-    
-    <form id="join-class-form" class="join-class-form">
-      <div class="form-group">
-        <label for="class-code" class="form-label">
-          <i class="fas fa-key" style="color: var(--cyber-glow); margin-right: 8px;"></i>
-          Class Code
-        </label>
-        <input type="text" 
-               id="class-code" 
-               class="form-input" 
-               maxlength="6" 
-               placeholder="Enter 6-character code" 
-               required>
-        <small style="color: rgba(255, 255, 255, 0.6); margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-          <i class="fas fa-info-circle"></i>
-          Ask your instructor for the class code
-        </small>
-      </div>
-      
-      <button type="submit" class="join-button glow-effect" id="join-button">
-        <i class="fas fa-sign-in-alt"></i>
+      <button class="join-class-btn" onclick="openJoinModal()">
+        <i class="bx bx-plus"></i>
         Join Class
       </button>
-    </form>
-  </div>
-
-  <!-- Enrolled Classes Section -->
-  <div class="modern-card">
-    <div class="join-class-header">
-      <i class="fas fa-chalkboard"></i>
-      <h3>Enrolled Classes</h3>
     </div>
-    
-    <div id="classes-container">
-      <div class="loading-spinner">
-        <div class="spinner"></div>
+
+    <!-- Classes Grid -->
+    <div class="classes-grid" id="classesGrid">
+      <!-- Loading spinner -->
+      <div class="loading-spinner" id="loadingSpinner">
+        <i class="bx bx-loader-alt"></i>
+        <span>Loading your classes...</span>
       </div>
     </div>
+
+    <!-- Empty State (hidden by default, shown when no classes) -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <i class="bx bx-book-reader empty-state-icon"></i>
+      <h3>No Classes Yet</h3>
+      <p>You haven't joined any classes yet. Click the "Join Class" button above to get started with your learning journey!</p>
+    </div>
   </div>
+
+<!-- Join Class Modal -->
+<div class="modal-backdrop" id="joinModal">
+  <div class="modal-container">
+    <button class="modal-close" onclick="closeJoinModal()">
+      <i class="bx bx-x"></i>
+    </button>
+    <h2 class="modal-title">Join Class</h2>
+    <form onsubmit="joinClass(event)">
+      <div class="form-group">
+        <label class="form-label" for="classCode">Enter Class Code:</label>
+        <input 
+          type="text" 
+          id="classCode" 
+          class="form-input" 
+          placeholder="Enter your class code here..."
+          required
+        >
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" onclick="closeJoinModal()">Cancel</button>
+        <button type="submit" class="btn-primary">Join Class</button>
+      </div>
+    </form>
+  </div>
+</div>
 </div>
 
 <script>
+// Global variables
+let currentClasses = [];
+
+// Load classes when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    loadEnrolledClasses();
-    setupJoinClassForm();
-    
-    // Add fade-in animation
-    const cards = document.querySelectorAll('.modern-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 200);
-    });
-    
-    // Add glow effect to buttons
-    const buttons = document.querySelectorAll('.action-button, .join-button');
-    buttons.forEach(button => {
-        button.classList.add('glow-effect');
-    });
+  loadClasses();
 });
 
-function setupJoinClassForm() {
-    const form = document.getElementById('join-class-form');
-    const classCodeInput = document.getElementById('class-code');
-    const joinButton = document.getElementById('join-button');
+// Load classes from API
+async function loadClasses() {
+  try {
+    const response = await fetch('/api/classes');
+    const data = await response.json();
     
-    // Format class code input
-    classCodeInput.addEventListener('input', function() {
-        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    });
-    
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const classCode = classCodeInput.value.trim();
-        if (!classCode || classCode.length !== 6) {
-            showAlert('error', 'Please enter a valid 6-character class code');
-            return;
-        }
-        
-        joinClass(classCode);
-    });
-}
-
-function joinClass(classCode) {
-    const joinButton = document.getElementById('join-button');
-    const originalText = joinButton.innerHTML;
-    
-    // Show loading state
-    joinButton.disabled = true;
-    joinButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
-    
-    fetch('/api/join-class', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code: classCode })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            showAlert('success', data.message);
-            document.getElementById('class-code').value = '';
-            loadEnrolledClasses(); // Refresh the classes list
-        } else {
-            showAlert('error', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showAlert('error', 'Failed to join class. Please try again.');
-    })
-    .finally(() => {
-        joinButton.disabled = false;
-        joinButton.innerHTML = originalText;
-    });
-}
-
-function loadEnrolledClasses() {
-    const container = document.getElementById('classes-container');
-    
-    fetch('/api/classes')
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            renderClasses(data.classes);
-        } else {
-            renderEmptyState();
-        }
-    })
-    .catch(error => {
-        console.error('Error loading classes:', error);
-        renderEmptyState();
-    });
-}
-
-function renderClasses(classes) {
-    const container = document.getElementById('classes-container');
-    
-    if (!classes || classes.length === 0) {
-        renderEmptyState();
-        return;
+    if (data.status === 'success') {
+      currentClasses = data.classes;
+      displayClasses(currentClasses);
+    } else {
+      console.error('Failed to load classes:', data.message);
+      showEmptyState();
     }
-    
-    const html = `
-        <div class="classes-grid">
-            ${classes.map((classItem, index) => `
-                <div class="class-card" style="animation-delay: ${index * 0.1}s">
-                    <div class="class-header">
-                        <div class="class-info">
-                            <h3 class="class-name">${classItem.name}</h3>
-                            <div class="class-section">Section: ${classItem.section || 'N/A'}</div>
-                        </div>
-                        <div class="class-avatar">
-                            <img src="${classItem.avatar_url || '/static/img/default_avatar.png'}" alt="Class Avatar" 
-                                 onerror="this.src='/static/img/default_avatar.png'">
-                        </div>
-                    </div>
-                    <div class="class-body">
-                        <p class="class-description">
-                            ${classItem.description || 'No description available'}
-                        </p>
-                        <div class="class-meta">
-                            <span><i class="fas fa-user"></i> Instructor: ${classItem.instructor || 'N/A'}</span>
-                            <span><i class="fas fa-users"></i> Students: ${classItem.student_count || 0}</span>
-                        </div>
-                        <div class="class-actions">
-                            <a href="/user/class/${classItem.id}" class="action-button">
-                                <i class="fas fa-external-link-alt"></i>
-                                Enter Class
-                            </a>
-                            <button class="btn btn-outline" onclick="viewClassInfo(${classItem.id})">
-                                <i class="fas fa-info-circle"></i>
-                                Details
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
-    
-    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error loading classes:', error);
+    showEmptyState();
+  }
 }
 
-function renderEmptyState() {
-    const container = document.getElementById('classes-container');
-    container.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-graduation-cap data-flow"></i>
-            <h3>No Classes Enrolled</h3>
-            <p>Join a class using the class code provided by your instructor</p>
-            <div class="action-button" onclick="document.getElementById('class-code').focus()" style="margin-top: 20px; display: inline-flex;">
-                <i class="fas fa-plus-circle"></i>
-                Join a Class Now
-            </div>
-        </div>
-    `;
+// Display classes in the grid
+function displayClasses(classes) {
+  const grid = document.getElementById('classesGrid');
+  const emptyState = document.getElementById('emptyState');
+  
+  // Hide loading spinner
+  const loadingSpinner = document.getElementById('loadingSpinner');
+  if (loadingSpinner) {
+    loadingSpinner.style.display = 'none';
+  }
+  
+  if (classes.length === 0) {
+    grid.style.display = 'none';
+    emptyState.style.display = 'block';
+    return;
+  }
+  
+  grid.innerHTML = '';
+  emptyState.style.display = 'none';
+  grid.style.display = 'grid';
+  
+  classes.forEach(classData => {
+    const classCard = createClassCard(classData);
+    grid.appendChild(classCard);
+  });
 }
 
-function viewClassInfo(classId) {
-    // Implement class info modal or redirect
-    console.log('Viewing info for class:', classId);
+// Create a class card element
+function createClassCard(classData) {
+  const card = document.createElement('div');
+  card.className = 'class-card';
+  card.onclick = () => enterClass(classData.id);
+  
+  // Format dates
+  const startDate = classData.startDate ? new Date(classData.startDate).toLocaleDateString() : 'Not set';
+  const endDate = classData.endDate ? new Date(classData.endDate).toLocaleDateString() : 'Not set';
+  const isActive = classData.endDate ? new Date(classData.endDate) > new Date() : true;
+  
+  card.innerHTML = `
+    <div class="class-card-header">
+      <div class="class-info">
+        <h3>${escapeHtml(classData.name)}</h3>
+        <span class="class-code">${escapeHtml(classData.section || 'No Section')}</span>
+      </div>
+      <div class="class-actions">
+        <button class="action-btn" title="Leave Class" onclick="event.stopPropagation(); leaveClass(${classData.id})">
+          <i class="bx bx-exit"></i>
+        </button>
+      </div>
+    </div>
+    ${classData.description ? `<p class="class-description">${escapeHtml(classData.description)}</p>` : ''}
+    <div class="class-stats">
+      <div class="stat-item">
+        <i class="bx bx-group stat-icon"></i>
+        <span>${classData.studentCount || 0} Students</span>
+      </div>
+      <div class="stat-item">
+        <i class="bx bx-book-open stat-icon"></i>
+        <span>4 Modules</span>
+      </div>
+      <div class="stat-item">
+        <i class="bx bx-time stat-icon"></i>
+        <span>${isActive ? 'Active' : 'Ended'}</span>
+      </div>
+    </div>
+  `;
+  
+  return card;
 }
 
-function showAlert(type, message) {
-    const errorAlert = document.getElementById('error-alert');
-    const successAlert = document.getElementById('success-alert');
+// Show empty state
+function showEmptyState() {
+  const grid = document.getElementById('classesGrid');
+  const emptyState = document.getElementById('emptyState');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+  
+  if (loadingSpinner) {
+    loadingSpinner.style.display = 'none';
+  }
+  
+  grid.style.display = 'none';
+  emptyState.style.display = 'block';
+}
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Modal functions
+function openJoinModal() {
+  document.getElementById('joinModal').classList.add('active');
+  document.getElementById('classCode').focus();
+}
+
+function closeJoinModal() {
+  document.getElementById('joinModal').classList.remove('active');
+  document.getElementById('classCode').value = '';
+}
+
+// Join class function
+async function joinClass(event) {
+  event.preventDefault();
+  const classCode = document.getElementById('classCode').value.trim();
+  
+  if (!classCode) {
+    showAlert('Please enter a class code', 'error');
+    return;
+  }
+
+  // Show loading state
+  const submitBtn = event.target.querySelector('.btn-primary');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Joining...';
+  submitBtn.disabled = true;
+
+  try {
+    const response = await fetch('/api/join-class', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code: classCode })
+    });
     
-    // Hide both alerts first
-    errorAlert.style.display = 'none';
-    successAlert.style.display = 'none';
+    const data = await response.json();
     
-    if (type === 'error') {
-        document.getElementById('error-message').textContent = message;
-        errorAlert.style.display = 'flex';
-    } else if (type === 'success') {
-        document.getElementById('success-message').textContent = message;
-        successAlert.style.display = 'flex';
+    if (data.status === 'success') {
+      closeJoinModal();
+      showAlert(data.message, 'success');
+      // Reload classes
+      loadClasses();
+    } else {
+      showAlert(data.message, 'error');
     }
+  } catch (error) {
+    console.error('Error joining class:', error);
+    showAlert('Failed to join class. Please try again.', 'error');
+  } finally {
+    // Reset button state
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+}
+
+// Leave class function
+async function leaveClass(classId) {
+  if (!confirm('Are you sure you want to leave this class?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/leave-class/${classId}`, {
+      method: 'POST'
+    });
     
-    // Auto-hide after 5 seconds
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      showAlert(data.message, 'success');
+      // Reload classes
+      loadClasses();
+    } else {
+      showAlert(data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Error leaving class:', error);
+    showAlert('Failed to leave class. Please try again.', 'error');
+  }
+}
+
+// Enter class function
+function enterClass(classId) {
+  // Add loading animation
+  event.currentTarget.style.opacity = '0.7';
+  
+  // Navigate to class detail page
+  window.location.href = `/user/class/${classId}`;
+}
+
+// Simple alert function (replace with better toast notifications if needed)
+function showAlert(message, type = 'info') {
+  // Create alert element
+  const alert = document.createElement('div');
+  alert.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    z-index: 3000;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 300ms ease;
+    transform: translateX(100%);
+  `;
+  
+  // Set background color based on type
+  if (type === 'success') {
+    alert.style.background = 'linear-gradient(135deg, var(--success-green), #00CC70)';
+  } else if (type === 'error') {
+    alert.style.background = 'linear-gradient(135deg, #FF4444, #CC3333)';
+  } else {
+    alert.style.background = 'linear-gradient(135deg, var(--accent-cyan), var(--accent-blue))';
+  }
+  
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  
+  // Animate in
+  setTimeout(() => {
+    alert.style.transform = 'translateX(0)';
+  }, 100);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    alert.style.transform = 'translateX(100%)';
     setTimeout(() => {
-        errorAlert.style.display = 'none';
-        successAlert.style.display = 'none';
-    }, 5000);
+      document.body.removeChild(alert);
+    }, 300);
+  }, 5000);
 }
+
+// Close modal on backdrop click
+document.getElementById('joinModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeJoinModal();
+  }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeJoinModal();
+  }
+});
+
+// Add pulse glow effect to join button periodically
+setInterval(() => {
+  const joinBtn = document.querySelector('.join-class-btn');
+  if (joinBtn) {
+    joinBtn.classList.add('pulse-glow');
+    setTimeout(() => {
+      joinBtn.classList.remove('pulse-glow');
+    }, 2000);
+  }
+}, 8000);
+
+// WebSocket Integration for Classes Page
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.socketClient) {
+    console.log('Initializing WebSocket for classes page...');
+    
+    // Handle real-time class updates
+    window.socketClient.on('class_update', function(data) {
+      console.log('Class update received:', data);
+      showAlert(data.message || 'Class information updated', 'info');
+      // Refresh the classes list
+      loadClasses();
+    });
+    
+    // Handle class enrollment notifications
+    window.socketClient.on('class_enrollment', function(data) {
+      console.log('Class enrollment notification:', data);
+      if (data.success) {
+        showAlert(`Successfully joined ${data.class_name}!`, 'success');
+        loadClasses(); // Refresh classes list
+      } else {
+        showAlert(data.message || 'Failed to join class', 'error');
+      }
+    });
+    
+    // Handle admin messages specific to classes
+    window.socketClient.on('admin_message', function(data) {
+      console.log('Admin message received:', data);
+      if (data.target === 'classes' || data.target === 'all') {
+        showAlert(`Admin: ${data.message}`, 'info');
+      }
+    });
+    
+    // Handle class capacity updates
+    window.socketClient.on('class_capacity_update', function(data) {
+      console.log('Class capacity updated:', data);
+      // Update specific class card if it's visible
+      const classCards = document.querySelectorAll('.class-card');
+      classCards.forEach(card => {
+        const classId = card.getAttribute('data-class-id');
+        if (classId && parseInt(classId) === data.class_id) {
+          const studentCountElement = card.querySelector('.stat-item span');
+          if (studentCountElement && studentCountElement.textContent.includes('Students')) {
+            studentCountElement.textContent = `${data.student_count} Students`;
+          }
+        }
+      });
+    });
+    
+    // Handle real-time notifications for class-related activities
+    window.socketClient.on('class_activity', function(data) {
+      console.log('Class activity notification:', data);
+      if (data.type === 'assignment_posted') {
+        showAlert(`New assignment posted in ${data.class_name}`, 'info');
+      } else if (data.type === 'grade_updated') {
+        showAlert(`Grade updated in ${data.class_name}`, 'success');
+      }
+    });
+    
+    console.log('Classes page WebSocket handlers initialized');
+  } else {
+    console.warn('SocketClient not available for classes page');
+  }
+});
 </script>
 {% endblock %}

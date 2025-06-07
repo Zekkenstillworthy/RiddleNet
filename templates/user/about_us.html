@@ -3,409 +3,805 @@
 {% block head %}
 <title>About Us | RiddleNet</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
-
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
-  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
-
-  :root {
-    --cyber-glow: #00D9FF;
-    --neon-green: #39FF14;
-    --network-purple: #8B5CF6;
-    --dark-navy: #1a237e;
-    --deep-purple: #2a1b3d;
-    --dark-bg: rgba(26, 35, 126, 0.85);
-    --glass-bg: rgba(139, 92, 246, 0.08);
-    --glass-border: rgba(0, 217, 255, 0.15);
-    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
-    --text-primary: #111;
+  /* About Us Page Styles */
+  .about-us-container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
   }
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-  }
-
-  body {
-    background: var(--gradient-dark);
-    color: #fff;
-    min-height: 100vh;
+  
+  /* Cyber-themed hero section with animated elements */
+  .hero-section {
     position: relative;
-    overflow-x: hidden;
-  }
-
-  /* Video Background */
-  .video-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -2;
-    opacity: 0.3;
-  }
-
-  /* Network Grid Background Animation */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-image: 
-      linear-gradient(rgba(0, 217, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
-    animation: gridMove 20s linear infinite;
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  @keyframes gridMove {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(50px, 50px); }
-  }
-
-  /* Modern Card Styles */
-  .modern-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-    position: relative;
+    background: linear-gradient(135deg, rgba(26, 43, 71, 0.7) 0%, rgba(11, 20, 38, 0.9) 100%);
+    border-radius: 20px;
+    padding: 60px 40px;
+    margin-bottom: 60px;
     overflow: hidden;
-    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
   }
-
-  .modern-card::before {
+  
+  .hero-section::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--gradient-primary);
-    opacity: 0.8;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+    z-index: 1;
   }
-
-  .modern-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 16px 48px rgba(26, 35, 126, 0.6);
-    border-color: rgba(0, 217, 255, 0.3);
-  }
-
-  /* Enhanced section headers */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 0 0 32px 0;
-    padding-bottom: 16px;
-    border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+  
+  .hero-content {
     position: relative;
+    z-index: 2;
+    text-align: center;
   }
-
-  .section-header h2 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    background: var(--gradient-primary);
+  
+  .hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    margin-bottom: 20px;
+    font-family: 'Orbitron', sans-serif;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s forwards 0.2s;
   }
-
-  .section-header .section-icon {
-    font-size: 1.8rem;
-    color: var(--cyber-glow);
-    filter: drop-shadow(0 0 10px var(--cyber-glow));
-  }
-
-  /* Container */
-  .about-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 32px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .about-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 32px;
-    font-size: 1.1rem;
+  
+  .hero-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    max-width: 800px;
+    margin: 0 auto 40px;
     line-height: 1.6;
-    text-align: center;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s forwards 0.4s;
   }
-
-  /* Team Grid */
+  
+  /* Floating cyber shapes in background */
+  .cyber-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .shape {
+    position: absolute;
+    opacity: 0.1;
+    border: 2px solid var(--cyber-glow);
+    pointer-events: none;
+  }
+  
+  .shape-1 {
+    top: 10%;
+    left: 10%;
+    width: 120px;
+    height: 120px;
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    animation: float 8s ease-in-out infinite, pulse 5s ease-in-out infinite;
+  }
+  
+  .shape-2 {
+    bottom: 15%;
+    right: 15%;
+    width: 150px;
+    height: 150px;
+    border-radius: 60% 40% 40% 60% / 50% 60% 40% 50%;
+    animation: float 10s ease-in-out infinite, pulse 6s ease-in-out infinite;
+    border-color: var(--network-purple);
+  }
+  
+  .shape-3 {
+    top: 40%;
+    right: 20%;
+    width: 100px;
+    height: 100px;
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    animation: float 12s ease-in-out infinite, pulse 7s ease-in-out infinite;
+  }
+  
+  .shape-4 {
+    bottom: 20%;
+    left: 20%;
+    width: 80px;
+    height: 80px;
+    border-radius: 50% 50% 30% 70% / 60% 40% 60% 40%;
+    animation: float 9s ease-in-out infinite, pulse 4s ease-in-out infinite;
+    border-color: var(--network-purple);
+  }
+  
+  /* Mission Vision Section */
+  .mission-vision {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-bottom: 60px;
+  }
+  
+  .mission-card, .vision-card {
+    background: rgba(26, 43, 71, 0.7);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: all 0.4s ease;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  
+  .mission-card {
+    animation: fadeInUp 0.8s forwards 0.6s;
+  }
+  
+  .vision-card {
+    animation: fadeInUp 0.8s forwards 0.8s;
+  }
+  
+  .mission-card:hover, .vision-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 212, 255, 0.3);
+    border-color: var(--cyber-glow);
+  }
+  
+  .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+  }
+  
+  .vision-card .card-icon {
+    color: var(--network-purple);
+    filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+  }
+  
+  .card-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+  }
+  
+  .card-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  
+  /* Team Section */
+  .team-section {
+    margin-bottom: 60px;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 40px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    position: relative;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0;
+    animation: fadeInUp 0.8s forwards 1s;
+  }
+  
+  .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyber-glow), var(--network-purple), transparent);
+  }
+  
   .team-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 32px;
-    margin-top: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
   }
-
+  
   .team-member {
+    background: rgba(26, 43, 71, 0.7);
+    border-radius: 16px;
+    padding: 30px;
     text-align: center;
     position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: all 0.4s ease;
+    opacity: 0;
+    transform: translateY(30px);
   }
-
-  .team-member img {
+  
+  .team-member:nth-child(1) {
+    animation: fadeInUp 0.8s forwards 1.2s;
+  }
+  
+  .team-member:nth-child(2) {
+    animation: fadeInUp 0.8s forwards 1.4s;
+  }
+  
+  .team-member:nth-child(3) {
+    animation: fadeInUp 0.8s forwards 1.6s;
+  }
+  
+  .team-member:nth-child(4) {
+    animation: fadeInUp 0.8s forwards 1.8s;
+  }
+  
+  .team-member::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyber-glow), transparent);
+    z-index: 1;
+  }
+  
+  .team-member:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 212, 255, 0.3);
+    border-color: var(--cyber-glow);
+  }
+  
+  .member-photo {
     width: 180px;
     height: 180px;
     border-radius: 50%;
-    margin: 0 auto 20px;
+    object-fit: cover;
     border: 3px solid var(--cyber-glow);
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-    transition: all 0.3s ease;
+    margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    transition: all 0.4s ease;
   }
-
-  .team-member:nth-child(2) img {
-    border-color: var(--neon-green);
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
-  }
-
-  .team-member:nth-child(3) img {
-    border-color: var(--network-purple);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-  }
-
-  .team-member:hover img {
+  
+  .team-member:hover .member-photo {
     transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
   }
-
-  .team-member h3 {
-    color: var(--cyber-glow);
-    margin-bottom: 8px;
-    font-size: 1.4rem;
+  
+  .member-name {
+    font-size: 1.5rem;
     font-weight: 600;
-  }
-
-  .team-member:nth-child(2) h3 {
-    color: var(--neon-green);
-  }
-
-  .team-member:nth-child(3) h3 {
-    color: var(--network-purple);
-  }
-
-  .team-member .role {
-    color: rgba(255, 255, 255, 0.8);
-    display: block;
-    margin-bottom: 16px;
-    font-weight: 500;
-    font-size: 1rem;
-  }
-
-  .team-member .learn-more {
-    background: var(--gradient-primary);
-    color: var(--text-primary);
-    padding: 10px 20px;
-    border-radius: 25px;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    display: inline-block;
-  }
-
-  .team-member:nth-child(2) .learn-more {
-    background: var(--gradient-secondary);
-  }
-
-  .team-member:nth-child(3) .learn-more {
-    background: linear-gradient(135deg, var(--network-purple), #ff6b6b);
-  }
-
-  .team-member .learn-more:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
-  }
-
-  /* Back Navigation */
-  .back-nav {
-    position: fixed;
-    top: 32px;
-    left: 32px;
-    z-index: 1000;
-  }
-
-  .back-btn {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    margin-bottom: 8px;
     color: var(--cyber-glow);
-    padding: 12px 20px;
-    border-radius: 25px;
-    text-decoration: none;
+  }
+  
+  .member-title {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+  }
+  
+  .member-bio {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+  }
+  
+  .social-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .social-link {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 500;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-primary);
     transition: all 0.3s ease;
+    font-size: 1.2rem;
+    text-decoration: none;
   }
-
-  .back-btn:hover {
-    background: rgba(0, 217, 255, 0.1);
-    border-color: var(--cyber-glow);
-    color: #fff;
-    transform: translateX(-4px);
+  
+  .social-link:hover {
+    background: var(--cyber-glow);
+    color: #0B1426;
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
   }
-
-  /* Fade-in animation */
-  .fade-in {
+  
+  /* Contact Section */
+  .contact-section {
+    background: rgba(26, 43, 71, 0.7);
+    border-radius: 16px;
+    padding: 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    margin-bottom: 60px;
     opacity: 0;
-    transform: translateY(30px);
-    animation: fadeInUp 0.8s ease forwards;
+    animation: fadeInUp 0.8s forwards 2s;
   }
-
+  
+  .contact-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    color: var(--text-primary);
+  }
+  
+  .contact-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .contact-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: var(--text-primary);
+    padding: 14px 28px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+  }
+  
+  .contact-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 212, 255, 0.5);
+  }
+  
+  /* Animations */
   @keyframes fadeInUp {
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
-
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(10deg);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.1;
+    }
+    50% {
+      opacity: 0.2;
+    }
+  }
+  
   /* Responsive Design */
+  @media (max-width: 1024px) {
+    .about-us-container {
+      padding: 30px;
+    }
+    
+    .hero-title {
+      font-size: 2.8rem;
+    }
+  }
+  
   @media (max-width: 768px) {
-    .about-container {
+    .mission-vision {
+      grid-template-columns: 1fr;
+    }
+    
+    .hero-section {
+      padding: 40px 30px;
+    }
+    
+    .hero-title {
+      font-size: 2.5rem;
+    }
+    
+    .team-grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    
+    .contact-section {
+      padding: 40px 30px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .about-us-container {
       padding: 20px;
     }
-
+    
+    .hero-title {
+      font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+    
     .team-grid {
       grid-template-columns: 1fr;
-      gap: 24px;
     }
-
-    .team-member img {
+    
+    .member-photo {
       width: 150px;
       height: 150px;
     }
-
-    .section-header h2 {
-      font-size: 1.5rem;
-    }
-
-    .about-description {
-      font-size: 1rem;
-    }
-
-    .back-nav {
-      top: 20px;
-      left: 20px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .about-container {
-      padding: 16px;
-    }
-
-    .team-member img {
-      width: 120px;
-      height: 120px;
-    }
-
-    .team-member h3 {
-      font-size: 1.2rem;
+    
+    .section-title {
+      font-size: 2rem;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<video class="video-background" autoplay muted loop playsinline>
-  <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-</video>
-
-<!-- Back Navigation -->
-<div class="back-nav">
-  <a href="{{ url_for('user.dashboard') }}" class="back-btn">
-    <i class="fas fa-arrow-left"></i>
-    Back to Dashboard
-  </a>
-</div>
-
-<!-- Main Content -->
-<div class="about-container">
-  <div class="modern-card fade-in">
-    <div class="section-header">
-      <i class="fas fa-users section-icon"></i>
-      <h2>About Us</h2>
+<div class="about-us-container">
+  <!-- Hero Section with animated elements -->
+  <div class="hero-section">
+    <div class="cyber-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
     </div>
     
-    <p class="about-description">
-      We are a team of four dedicated individuals contributing to the RiddleNet
-      project. Together, we bring innovation, creativity, and technical
-      expertise to provide interactive learning experiences.
-    </p>
-
-    <div class="team-grid">
-      <div class="team-member fade-in" style="animation-delay: 0.2s;">
-        <img
-          src="{{ url_for('static', filename='img/Gilbert.jpg') }}"
-          alt="Gilbert I. Requitud Jr."
-        />
-        <h3>Gilbert I. Requitud Jr.</h3>
-        <span class="role">Project Lead & Developer</span>
-        <a href="https://web.facebook.com/profile.php?id=100013736235548" 
-           class="learn-more" target="_blank" rel="noopener noreferrer">
-          Learn more
-        </a>
-      </div>
-
-      <!-- Additional team members can be uncommented when needed -->
-      <!--
-      <div class="team-member fade-in" style="animation-delay: 0.4s;">
-        <img
-          src="{{ url_for('static', filename='img/Xavier.jpg') }}"
-          alt="Xavier Caparas"
-        />
-        <h3>Xavier Caparas</h3>
-        <span class="role">Lead Designer</span>
-        <a href="https://web.facebook.com/cep.caparas.3"
-           class="learn-more" target="_blank" rel="noopener noreferrer">
-          Learn more
-        </a>
-      </div>
-
-      <div class="team-member fade-in" style="animation-delay: 0.6s;">
-        <img
-          src="{{ url_for('static', filename='img/Barron.png') }}"
-          alt="Prince Barron Rosendal"
-        />
-        <h3>Prince Barron Rosendal</h3>
-        <span class="role">Backend Developer</span>
-        <a href="https://web.facebook.com/princebarron.0510"
-           class="learn-more" target="_blank" rel="noopener noreferrer">
-          Learn more
-        </a>
-      </div>
-      -->
+    <div class="hero-content">
+      <h1 class="hero-title">About RiddleNet</h1>
+      <p class="hero-subtitle">Empowering the next generation of network engineers through innovative, interactive learning experiences</p>
     </div>
+  </div>
+  
+  <!-- Mission & Vision Section -->
+  <div class="mission-vision">
+    <div class="mission-card">
+      <i class="fas fa-rocket card-icon"></i>
+      <h2 class="card-title">Our Mission</h2>
+      <p class="card-description">To revolutionize cybersecurity education by providing accessible, engaging, and practical learning experiences that prepare students for real-world challenges. We aim to close the skills gap in the cybersecurity industry by making complex networking concepts more approachable.</p>
+    </div>
+    
+    <div class="vision-card">
+      <i class="fas fa-lightbulb card-icon"></i>
+      <h2 class="card-title">Our Vision</h2>
+      <p class="card-description">To build a world where cybersecurity knowledge is accessible to everyone, fostering a new generation of experts equipped to protect our increasingly digital society. We envision RiddleNet becoming the gold standard for interactive cybersecurity learning.</p>
+    </div>
+  </div>
+  
+  <!-- Team Section -->
+  <div class="team-section">
+    <h2 class="section-title">Our Team</h2>
+    
+    <div class="team-grid">
+      <div class="team-member">
+        <img src="{{ url_for('static', filename='img/Gilbert.jpg') }}" alt="Gilbert I. Requitud Jr." class="member-photo">
+        <h3 class="member-name">Gilbert I. Requitud Jr.</h3>
+        <p class="member-title">Project Lead & Developer</p>
+        <p class="member-bio">Gilbert is the driving force behind RiddleNet, bringing his expertise in network security and software development to create an innovative learning platform.</p>
+        <div class="social-links">
+          <a href="https://web.facebook.com/profile.php?id=100013736235548" class="social-link" target="_blank"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      
+      <div class="team-member">
+        <img src="{{ url_for('static', filename='img/Xavier.jpg') }}" alt="Xavier Caparas" class="member-photo">
+        <h3 class="member-name">Xavier Caparas</h3>
+        <p class="member-title">Lead Designer</p>
+        <p class="member-bio">Xavier brings creative vision to RiddleNet, crafting engaging user interfaces and ensuring an exceptional user experience across the platform.</p>
+        <div class="social-links">
+          <a href="https://web.facebook.com/cep.caparas.3" class="social-link" target="_blank"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      
+      <div class="team-member">
+        <img src="{{ url_for('static', filename='img/Barron.png') }}" alt="Prince Barron Rosendal" class="member-photo">
+        <h3 class="member-name">Prince Barron Rosendal</h3>
+        <p class="member-title">Backend Developer</p>
+        <p class="member-bio">Barron excels in building robust backend systems that power RiddleNet's interactive challenges and real-time learning features.</p>
+        <div class="social-links">
+          <a href="https://web.facebook.com/princebarron.0510" class="social-link" target="_blank"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+          <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      
+      
+      </div>
+    </div>
+  </div>
+  
+  <!-- Contact Section -->
+  <div class="contact-section">
+    <h2 class="contact-title">Get In Touch</h2>
+    <p class="contact-description">Have questions about RiddleNet or interested in collaborating? Our team is always eager to connect with cybersecurity enthusiasts, educators, and industry professionals.</p>
+    <a href="mailto:contact@riddlenet.edu" class="contact-button">
+      <i class="fas fa-envelope"></i>
+      Contact Us
+    </a>
   </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Initialize fade-in animations
-    const fadeElements = document.querySelectorAll('.fade-in');
+    // Add dynamic hover effects to team members
+    const teamMembers = document.querySelectorAll('.team-member');
     
-    fadeElements.forEach((element, index) => {
-      element.style.animationDelay = `${index * 0.2}s`;
+    teamMembers.forEach(member => {
+      const photo = member.querySelector('.member-photo');
+      const nameEl = member.querySelector('.member-name');
+      
+      member.addEventListener('mouseenter', () => {
+        photo.style.transform = 'scale(1.05) rotate(5deg)';
+        nameEl.style.textShadow = '0 0 15px rgba(0, 212, 255, 0.7)';
+      });
+      
+      member.addEventListener('mouseleave', () => {
+        photo.style.transform = 'scale(1)';
+        nameEl.style.textShadow = 'none';
+      });
     });
+
+    // WebSocket Integration for About Us Page
+    if (typeof socket !== 'undefined' && socket) {
+        // About Us specific WebSocket event handlers
+        
+        // Team updates
+        socket.on('team_update', function(data) {
+            console.log('Team update:', data);
+            showAboutNotification('Team Update: ' + data.message, 'info');
+        });
+
+        // Company announcements
+        socket.on('company_announcement', function(data) {
+            console.log('Company announcement:', data);
+            showAboutNotification(data.message, 'info');
+            
+            // Add visual effect to hero section
+            addHeroGlow();
+        });
+
+        // Achievement notifications
+        socket.on('achievement_notification', function(data) {
+            console.log('Achievement notification:', data);
+            showAboutNotification(`🏆 ${data.message}`, 'success');
+        });
+
+        // Contact form notifications (if someone submitted feedback)
+        socket.on('contact_form_update', function(data) {
+            console.log('Contact form update:', data);
+            showAboutNotification('Thank you for your feedback!', 'success');
+        });
+
+        // General notifications
+        socket.on('notification', function(data) {
+            console.log('General notification received:', data);
+            showAboutNotification(data.message, data.type || 'info');
+        });
+
+        // User milestone celebrations
+        socket.on('user_milestone', function(data) {
+            console.log('User milestone:', data);
+            if (data.milestone_type === 'new_user_count') {
+                showAboutNotification(`🎉 We've reached ${data.count} users!`, 'success');
+                addCelebrationEffect();
+            }
+        });
+
+        console.log('About Us WebSocket handlers initialized');
+    } else {
+        console.log('WebSocket not available on about us page');
+    }
   });
+
+  // Helper function to show notifications on about us page
+  function showAboutNotification(message, type = 'info') {
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `about-notification ${type}`;
+      notification.innerHTML = `
+          <i class="fas ${getAboutNotificationIcon(type)}"></i>
+          <span>${message}</span>
+          <button class="close-about-notification" onclick="this.parentElement.remove()">
+              <i class="fas fa-times"></i>
+          </button>
+      `;
+
+      // Add to page
+      document.body.appendChild(notification);
+
+      // Auto remove after 6 seconds
+      setTimeout(() => {
+          if (notification.parentElement) {
+              notification.style.animation = 'slideOutRight 0.3s ease-in';
+              setTimeout(() => notification.remove(), 300);
+          }
+      }, 6000);
+  }
+
+  // Helper function to get notification icon
+  function getAboutNotificationIcon(type) {
+      switch(type) {
+          case 'success': return 'fa-check-circle';
+          case 'warning': return 'fa-exclamation-triangle';
+          case 'error': return 'fa-times-circle';
+          case 'info': return 'fa-info-circle';
+          default: return 'fa-bell';
+      }
+  }
+
+  // Add celebration effect for milestones
+  function addCelebrationEffect() {
+      const heroSection = document.querySelector('.hero-section');
+      if (heroSection) {
+          heroSection.style.animation = 'pulse 2s ease-in-out';
+          setTimeout(() => {
+              heroSection.style.animation = '';
+          }, 2000);
+      }
+  }
+
+  // Add glow effect to hero section
+  function addHeroGlow() {
+      const heroSection = document.querySelector('.hero-section');
+      if (heroSection) {
+          heroSection.style.boxShadow = '0 10px 30px rgba(0, 212, 255, 0.5), 0 0 50px rgba(0, 212, 255, 0.3)';
+          setTimeout(() => {
+              heroSection.style.boxShadow = '0 10px 30px rgba(0, 212, 255, 0.2)';
+          }, 3000);
+      }
+  }
 </script>
+
+<style>
+    /* About Us notification styles */
+    .about-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, rgba(26, 43, 71, 0.95) 0%, rgba(11, 20, 38, 0.95) 100%);
+        border: 1px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1000;
+        max-width: 400px;
+        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        animation: slideInRight 0.4s ease-out;
+        backdrop-filter: blur(10px);
+    }
+
+    .about-notification.success {
+        border-color: #4CAF50;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    }
+
+    .about-notification.warning {
+        border-color: #FF9800;
+        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
+    }
+
+    .about-notification.error {
+        border-color: #F44336;
+        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+    }
+
+    .about-notification.info {
+        border-color: var(--network-purple);
+        box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+    }
+
+    .about-notification i {
+        font-size: 20px;
+        flex-shrink: 0;
+        color: var(--cyber-glow);
+    }
+
+    .about-notification.success i {
+        color: #4CAF50;
+    }
+
+    .about-notification.warning i {
+        color: #FF9800;
+    }
+
+    .about-notification.error i {
+        color: #F44336;
+    }
+
+    .about-notification span {
+        flex: 1;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .close-about-notification {
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 14px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .close-about-notification:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--cyber-glow);
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.02);
+        }
+    }
+
+    /* Enhanced hero section for celebration effects */
+    .hero-section {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}

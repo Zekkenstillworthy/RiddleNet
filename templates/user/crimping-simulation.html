@@ -19,15 +19,8 @@
     overflow-x: hidden;
     position: relative;
   }
-  
-  .video-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    object-fit: cover;
+    .video-background {
+    display: none;
   }
 
   .container {
@@ -441,11 +434,7 @@
 {% endblock %} 
 
 {% block content %}
-<video class="video-background" autoplay muted loop playsinline>
-    <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
-</video>
-
-<div class="container">
+  <div class="container">
   <h1>UTP Cable Crimping Simulation</h1>
 
   <div id="tutorialModal" class="modal">
@@ -724,246 +713,184 @@
       wiresContainer.addEventListener("dragover", allowDrop);
     });
 
-    // Check wiring order based on selected wiring type
-    function checkWiring() {
-      const wiringType = document.getElementById("wiring-select").value;
-
-      // T568A standard (used for one end of a crossover)
-      const t568AOrder = [
-        "white-green",
-        "green",
-        "white-orange",
-        "blue",
-        "white-blue",
-        "orange",
-        "white-brown",
-        "brown",
-      ];
-
-      // T568B standard (used for straight-through)
-      const t568BOrder = [
-        "white-orange",
-        "orange",
-        "white-green",
-        "blue",
-        "white-blue",
-        "green",
-        "white-brown",
-        "brown",
-      ];
-
-      // Correct wiring for each end
-      let correctEndA = [];
-      let correctEndB = [];
-
-      if (wiringType === "straightthrough") {
-        correctEndA = t568BOrder; // Both ends are T568B
-        correctEndB = t568BOrder;
-      } else if (wiringType === "crossover") {
-        correctEndA = t568AOrder; // End A is T568A, End B is T568B
-        correctEndB = t568BOrder;
-      }
-
-      // Get user wiring for End A
-      let userOrderEndA = [];
-      const slotsEndA = document.querySelectorAll("#endA .wire-slot");
-      slotsEndA.forEach((slot) => {
-        if (slot.children.length > 0) {
-          userOrderEndA.push(slot.children[0].id.replace("-A", ""));
+    // WebSocket Integration for Crimping Simulation
+    if (window.socketClient) {
+        console.log('Crimping: Initializing WebSocket handlers...');
+        
+        // Join crimping-specific room
+        window.socketClient.emit('join_crimping', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+            page: 'crimping-simulation'
+        });
+        
+        // Handle real-time crimping progress updates
+        window.socketClient.on('crimping_progress', function(data) {
+            console.log('Crimping: Progress update received:', data);
+            updateCrimpingProgress(data);
+        });
+        
+        // Handle crimping completion events
+        window.socketClient.on('crimping_completed', function(data) {
+            console.log('Crimping: Completion event received:', data);
+            if (data.success) {
+                showCrimpingNotification('Crimping Complete!', `You successfully completed the ${data.wiring_type} crimping with ${data.score}% accuracy!`, 'success');
+            }
+        });
+        
+        // Handle crimping score updates
+        window.socketClient.on('crimping_score_update', function(data) {
+            console.log('Crimping: Score update received:', data);
+            showCrimpingNotification('Score Updated', `Your crimping score: ${data.score}%`, 'success');
+        });
+        
+        // Handle tutorial progress
+        window.socketClient.on('tutorial_progress', function(data) {
+            console.log('Crimping: Tutorial progress received:', data);
+            if (data.step !== undefined) {
+                updateTutorialProgress(data.step);
+            }
+        });
+        
+        // Handle real-time wiring validation
+        window.socketClient.on('wiring_validation', function(data) {
+            console.log('Crimping: Wiring validation received:', data);
+            handleRealtimeValidation(data);
+        });
+        
+        console.log('Crimping: WebSocket handlers initialized successfully');
+    } else {
+        console.warn('SocketClient not available for crimping WebSocket integration');
+    }
+    
+    // Crimping-specific helper functions
+    function updateCrimpingProgress(progressData) {
+        if (progressData.wires_placed !== undefined) {
+            const progressIndicator = document.querySelector('.crimping-progress');
+            if (progressIndicator) {
+                progressIndicator.textContent = `Wires placed: ${progressData.wires_placed}/8`;
+            }
         }
-      });
-
-      // Get user wiring for End B
-      let userOrderEndB = [];
-      const slotsEndB = document.querySelectorAll("#endB .wire-slot");
-      slotsEndB.forEach((slot) => {
-        if (slot.children.length > 0) {
-          userOrderEndB.push(slot.children[0].id.replace("-B", ""));
+        
+        if (progressData.completion_percentage !== undefined) {
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${progressData.completion_percentage}%`;
+            }
         }
-      });
-
-      // Validate wiring for both ends
-      if (
-        JSON.stringify(userOrderEndA) === JSON.stringify(correctEndA) &&
-        JSON.stringify(userOrderEndB) === JSON.stringify(correctEndB)
-      ) {
-        alert("Wiring is correct! You can crimp the cable.");
-        saveCrimpingScore(1, 'crimping');  // Save score when wiring is correct
-      } else {
-        alert("Wiring is incorrect. Please try again.");
-      }
-    }
-
-    function saveCrimpingScore(score, category) {
-      fetch('/save_crimping_score', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ score: score, category: category })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            alert('Score saved successfully');
-          } else {
-            alert('Error saving score:', data.message);
-          }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-    const tutorialSteps = [
-      {
-        text: "Welcome to the UTP Cable Crimping Simulation! Follow these steps to learn how to play:",
-        highlight: null
-      },
-      {
-        text: "Step 1: Select the wiring type from the dropdown menu.",
-        highlight: "#wiring-select"
-      },
-      {
-        text: "Step 2: Drag and drop the wires into the correct slots for End A.",
-        highlight: "#endA-wires"
-      },
-      {
-        text: "Step 3: Drag and drop the wires into the correct slots for End B.",
-        highlight: "#endB-wires"
-      },
-      {
-        text: "Step 4: Click the 'Crimp the Cable' button to check your wiring.",
-        highlight: ".action-buttons button:nth-child(1)"
-      },
-      {
-        text: "Step 5: If the wiring is correct, you will see a success message. If not, try again.",
-        highlight: null
-      },
-      {
-        text: "Step 6: Use the 'Try Again' button to reset the simulation and start over.",
-        highlight: ".lowered-button button:nth-child(1)"
-      },
-      {
-        text: "Step 7: Use the 'Go to Home' button to return to the dashboard.",
-        highlight: ".lowered-button button:nth-child(2)"
-      }
-    ];
-
-    let currentStep = 0;
-
-    function showTutorial() {
-      currentStep = 0; // Reset to step 1
-      document.getElementById("tutorialModal").style.display = "flex";
-      updateTutorialStep();
-
-      const topologySound = document.getElementById('bgSound');
-      topologySound.pause();
-      topologySound.loop = false;
-    }
-
-    function updateTutorialStep() {
-      const step = tutorialSteps[currentStep];
-      document.getElementById("tutorialStep").innerHTML = `<p>${step.text}</p>`;
-
-      // Remove highlight from previous step
-      document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-
-      // Highlight the current step element
-      if (step.highlight) {
-        const highlightElement = document.querySelector(step.highlight);
-        highlightElement.classList.add('highlight');
-
-        // Position the modal near the highlighted element
-        const rect = highlightElement.getBoundingClientRect();
-        const modal = document.getElementById("tutorialModal");
-        const modalHeight = modal.offsetHeight;
-        const modalWidth = modal.offsetWidth;
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-
-        // Determine the best position for the modal
-        let top = rect.top + window.scrollY + rect.height + 10; // Default position below the element
-        let left = rect.left + window.scrollX + (rect.width / 2) - (modalWidth / 2);
-
-        if (top + modalHeight > viewportHeight) {
-          top = rect.top + window.scrollY - modalHeight - 10; // Position above the element if it overflows
+        
+        // Emit progress update to other connected users
+        if (window.socketClient) {
+            window.socketClient.emit('crimping_progress_update', {
+                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                progress: progressData,
+                timestamp: new Date().toISOString()
+            });
         }
-        if (left + modalWidth > viewportWidth) {
-          left = viewportWidth - modalWidth - 10; // Adjust to the left if it overflows
+    }
+    
+    function handleRealtimeValidation(validationData) {
+        if (validationData.wire_position) {
+            const wireSlot = document.querySelector(`#${validationData.wire_position}`);
+            if (wireSlot) {
+                if (validationData.correct) {
+                    wireSlot.style.border = '2px solid #4ade80';
+                    wireSlot.style.boxShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
+                } else {
+                    wireSlot.style.border = '2px solid #ef4444';
+                    wireSlot.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
+                }
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    wireSlot.style.border = '';
+                    wireSlot.style.boxShadow = '';
+                }, 2000);
+            }
         }
-        if (left < 0) {
-          left = 10; // Adjust to the right if it overflows
+    }
+    
+    function updateTutorialProgress(step) {
+        if (currentStep === step) {
+            // Highlight current tutorial step
+            const tutorialContent = document.querySelector('.tutorial-content');
+            if (tutorialContent) {
+                tutorialContent.style.background = 'rgba(0, 217, 255, 0.1)';
+                setTimeout(() => {
+                    tutorialContent.style.background = '';
+                }, 1000);
+            }
         }
-
-        modal.style.top = `${top}px`;
-        modal.style.left = `${left}px`;
-        modal.style.transform = `none`;
-      } else {
-        // Center the modal if no highlight
-        const modal = document.getElementById("tutorialModal");
-        modal.style.top = `50%`;
-        modal.style.left = `50%`;
-        modal.style.transform = `translate(-50%, -50%)`;
-      }
-
-      // Enable/disable buttons
-      document.getElementById("prevStep").disabled = currentStep === 0;
-      document.getElementById("nextStep").disabled = currentStep === tutorialSteps.length - 1;
     }
-
-    function nextTutorialStep() {
-      if (currentStep < tutorialSteps.length - 1) {
-        currentStep++;
-        updateTutorialStep();
-      }
+    
+    function showCrimpingNotification(title, message, type = 'info') {
+        // Use the base template notification function if available
+        if (window.socketClient && window.socketClient.showNotification) {
+            window.socketClient.showNotification(title, message, type);
+        } else {
+            // Fallback to alert for crimping simulation
+            alert(`${title}: ${message}`);
+        }
     }
-
-    function prevTutorialStep() {
-      if (currentStep > 0) {
-        currentStep--;
-        updateTutorialStep();
-      }
+    
+    // Override existing functions to emit WebSocket events
+    const originalCheckWiring = window.checkWiring;
+    if (originalCheckWiring) {
+        window.checkWiring = function() {
+            const result = originalCheckWiring();
+            
+            // Emit wiring check event
+            if (window.socketClient) {
+                window.socketClient.emit('crimping_wiring_checked', {
+                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                    wiring_type: document.getElementById('wiring-select').value,
+                    success: result,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            return result;
+        };
     }
-
-    function closeTutorial() {
-      document.getElementById("tutorialModal").style.display = "none";
-      document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-
-      const topologySound = document.getElementById('bgSound');
-      topologySound.currentTime = 0;
-      topologySound.play();
-      topologySound.loop = true;
+    
+    const originalSaveCrimpingScore = window.saveCrimpingScore;
+    if (originalSaveCrimpingScore) {
+        window.saveCrimpingScore = function(score, category) {
+            const result = originalSaveCrimpingScore(score, category);
+            
+            // Emit score save event
+            if (window.socketClient) {
+                window.socketClient.emit('crimping_score_saved', {
+                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                    score: score,
+                    category: category,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            return result;
+        };
     }
-
-    window.onload = function () {
-      showTutorial();
-    };
-
-    function playClickSound() {
-      const click = document.getElementById('clickSound');
-      const exit = document.getElementById('exitSound');
-      click.currentTime = 0;
-      click.play();
-      exit.pause();
-    }
-
-
-    function playExitSound() {
-      const exit = document.getElementById('exitSound');
-      const click = document.getElementById('clickSound');
-      exit.currentTime = 0;
-      exit.play();
-      click.pause();
-      console.log('exit');
-    }
-
-    // Add click sound to all buttons
-    document.querySelectorAll('button').forEach(button => {
-      button.addEventListener('click', playClickSound);
+    
+    // Add real-time wire placement tracking
+    const wireSlots = document.querySelectorAll('.wire-slot');
+    wireSlots.forEach(slot => {
+        slot.addEventListener('drop', function(e) {
+            // Track wire placement in real-time
+            setTimeout(() => {
+                if (window.socketClient) {
+                    const wireCount = document.querySelectorAll('.wire-slot:not(:empty)').length;
+                    window.socketClient.emit('crimping_wire_placed', {
+                        user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                        slot_id: this.id,
+                        total_wires_placed: wireCount,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }, 100);
+        });
     });
 
-    document.querySelectorAll('i').forEach(button => {
-      button.addEventListener('click', playExitSound);
-    });
+    // ...existing code...
   </script>
   <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
   <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>

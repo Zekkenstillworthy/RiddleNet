@@ -13,11 +13,10 @@
     background-position: center;
     transition: 0.3s ease;
   }
-
   .container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
     background: rgba(0, 0, 0, 0.7);
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 195, 181, 0.4);
@@ -73,6 +72,80 @@
   .back-button:hover {
     background: transparent;
     box-shadow: none;
+  }
+
+  /* System notification styles for overview page */
+  .system-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #00C3B5;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    max-width: 350px;
+    box-shadow: 0 4px 12px rgba(0, 195, 181, 0.3);
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .system-notification.success {
+    border-color: #4CAF50;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  }
+
+  .system-notification.warning {
+    border-color: #FF9800;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+  }
+
+  .system-notification.error {
+    border-color: #F44336;
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  }
+
+  .system-notification.info {
+    border-color: #2196F3;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  }
+
+  .system-notification i {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .system-notification span {
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .close-notification {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .close-notification:hover {
+    color: #00C3B5;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 </style>
 {% endblock %}
@@ -139,5 +212,98 @@
     backBtn.addEventListener('click', () => {
         window.location.href="{{ url_for('index') }}";
     })   
+
+    // WebSocket Integration for Overview Page
+    if (typeof socket !== 'undefined' && socket) {
+        // Overview-specific WebSocket event handlers
+        
+        // System status updates
+        socket.on('system_status_update', function(data) {
+            console.log('System status update:', data);
+            showSystemNotification('System Status: ' + data.status, data.type || 'info');
+        });
+
+        // Feature availability updates
+        socket.on('feature_update', function(data) {
+            console.log('Feature update:', data);
+            if (data.feature && data.status) {
+                showSystemNotification(`${data.feature} is now ${data.status}`, 'info');
+            }
+        });
+
+        // Maintenance notifications
+        socket.on('maintenance_notification', function(data) {
+            console.log('Maintenance notification:', data);
+            showSystemNotification(data.message, 'warning');
+        });
+
+        // System announcements
+        socket.on('system_announcement', function(data) {
+            console.log('System announcement:', data);
+            showSystemNotification(data.message, 'info');
+        });
+
+        // User count updates (for system overview)
+        socket.on('user_count_update', function(data) {
+            console.log('User count update:', data);
+            updateSystemStats(data);
+        });
+
+        // General notifications
+        socket.on('notification', function(data) {
+            console.log('General notification received:', data);
+            showSystemNotification(data.message, data.type || 'info');
+        });
+
+        console.log('Overview WebSocket handlers initialized');
+    } else {
+        console.log('WebSocket not available on overview page');
+    }
+
+    // Helper function to show system notifications
+    function showSystemNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `system-notification ${type}`;
+        notification.innerHTML = `
+            <i class="bx ${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+            <button class="close-notification" onclick="this.parentElement.remove()">
+                <i class="bx bx-x"></i>
+            </button>
+        `;
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Helper function to get notification icon
+    function getNotificationIcon(type) {
+        switch(type) {
+            case 'success': return 'bx-check-circle';
+            case 'warning': return 'bx-error-circle';
+            case 'error': return 'bx-x-circle';
+            case 'info': return 'bx-info-circle';
+            default: return 'bx-bell';
+        }
+    }
+
+    // Helper function to update system statistics
+    function updateSystemStats(data) {
+        // This could update any system statistics displayed on the overview page
+        if (data.online_users) {
+            console.log(`Current online users: ${data.online_users}`);
+        }
+        if (data.total_users) {
+            console.log(`Total registered users: ${data.total_users}`);
+        }
+    }
 </script>
 {% endblock %}
