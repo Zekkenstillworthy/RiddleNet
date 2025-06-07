@@ -64,7 +64,7 @@ def classes():
         return redirect(url_for('user.index', message='You need to log in first!'))
     
     # No need to fetch classes here - we'll do it client-side with API
-    return render_template('user/classes.html')
+    return render_template('user/class.html')
 
 @user_bp.route('/class/<int:class_id>')
 def class_detail(class_id):

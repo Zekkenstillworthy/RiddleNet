@@ -62,50 +62,56 @@
   }
 
   .classes-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 48px;
   }
 
-  .classes-header h1 {
-    font-size: 2.5rem;
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title h2 {
+    font-size: 2rem;
     font-weight: 700;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 16px;
+    margin: 0;
   }
-
-  .classes-header p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.1rem;
-  }
-
-  .back-link {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--glass-border);
+  
+  .section-icon {
+    font-size: 2rem;
     color: var(--cyber-glow);
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
+    filter: drop-shadow(0 0 8px var(--cyber-glow));
+  }
+
+  .back-button {
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid var(--cyber-glow);
+    border-radius: 8px;
+    color: var(--cyber-glow);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
     text-decoration: none;
     transition: all 0.3s ease;
-    z-index: 100;
   }
 
-  .back-link:hover {
+  .back-button:hover {
     background: rgba(0, 217, 255, 0.1);
-    border-color: var(--cyber-glow);
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
   }
 
-  .section-card {
+  .section-card, .modern-card {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
@@ -118,7 +124,7 @@
     overflow: hidden;
   }
 
-  .section-card::before {
+  .section-card::before, .modern-card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -127,6 +133,12 @@
     height: 2px;
     background: var(--gradient-primary);
     opacity: 0.8;
+  }
+  
+  .section-card:hover, .modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow);
   }
 
   .section-title {
@@ -149,6 +161,26 @@
     display: grid;
     gap: 20px;
   }
+  
+  .join-class-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .join-class-header i {
+    font-size: 1.5rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 8px var(--cyber-glow));
+  }
+  
+  .join-class-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    margin: 0;
+  }
 
   .form-group {
     display: flex;
@@ -168,9 +200,9 @@
     border: 2px solid var(--glass-border);
     border-radius: 12px;
     color: white;
-    font-size: 1rem;
+    font-size: 1.1rem;
     transition: all 0.3s ease;
-    font-family: monospace;
+    font-family: 'JetBrains Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 2px;
     text-align: center;
@@ -201,6 +233,10 @@
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
 
   .join-button:hover {
@@ -213,6 +249,28 @@
     cursor: not-allowed;
     transform: none;
   }
+  
+  .action-button {
+    background: var(--gradient-primary);
+    color: #111;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    text-align: center;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 217, 255, 0.3);
+  }
 
   /* Class Cards Grid */
   .classes-grid {
@@ -223,24 +281,57 @@
   }
 
   .class-card {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     overflow: hidden;
     transition: all 0.3s ease;
     position: relative;
+    animation: fadeIn 0.6s ease forwards;
+    opacity: 0;
+  }
+
+  .class-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
   }
 
   .class-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) scale(1.02);
     border-color: var(--cyber-glow);
     box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .class-header {
     padding: 24px;
     background: rgba(0, 0, 0, 0.3);
     border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .class-info {
+    display: flex;
+    flex-direction: column;
   }
 
   .class-name {
@@ -248,11 +339,33 @@
     font-weight: 600;
     color: var(--cyber-glow);
     margin: 0 0 8px 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .class-section {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
+  }
+  
+  .class-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .class-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .class-body {
@@ -386,17 +499,50 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
+  /* Cyber-themed animations */
+  @keyframes dataFlow {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+  }
+
+  .data-flow {
+      animation: dataFlow 2s ease-in-out infinite;
+  }
+  
+  /* Glow effects */
+  .glow-effect {
+    position: relative;
+  }
+  
+  .glow-effect::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    z-index: -1;
+    background: var(--gradient-primary);
+    filter: blur(15px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .glow-effect:hover::after {
+    opacity: 0.4;
+  }
+
   /* Responsive design */
   @media (max-width: 768px) {
     .classes-container {
       padding: 16px;
     }
 
-    .classes-header h1 {
-      font-size: 2rem;
+    .section-title h2 {
+      font-size: 1.6rem;
     }
 
-    .section-card {
+    .modern-card, .section-card {
       padding: 24px 20px;
     }
 
@@ -444,22 +590,27 @@
     <source src="{{ url_for('static', filename='video/RiddleNet.mp4') }}" type="video/mp4">
 </video>
 
-<a href="{{ url_for('user.dashboard') }}" class="back-link">
-  <i class="fas fa-arrow-left"></i>
-</a>
-
 <div class="classes-container">
-  <div class="classes-header">
-    <h1>My Classes</h1>
-    <p>Join classes and access course materials</p>
+  <!-- Header Section with Back Button -->
+  <div class="modern-card">
+    <div class="classes-header">
+      <div class="section-title">
+        <i class="fas fa-graduation-cap section-icon"></i>
+        <h2>My Classes</h2>
+      </div>
+      <a href="{{ url_for('user.dashboard') }}" class="action-button">
+        <i class="fas fa-arrow-left"></i>
+        Back to Dashboard
+      </a>
+    </div>
   </div>
 
   <!-- Join Class Section -->
-  <div class="section-card">
-    <h2 class="section-title">
+  <div class="modern-card">
+    <div class="join-class-header">
       <i class="fas fa-plus-circle"></i>
-      Join a Class
-    </h2>
+      <h3>Join a Class</h3>
+    </div>
     
     <div id="error-alert" class="alert alert-error" style="display: none;">
       <i class="fas fa-exclamation-triangle"></i>
@@ -473,19 +624,23 @@
     
     <form id="join-class-form" class="join-class-form">
       <div class="form-group">
-        <label for="class-code" class="form-label">Class Code</label>
+        <label for="class-code" class="form-label">
+          <i class="fas fa-key" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+          Class Code
+        </label>
         <input type="text" 
                id="class-code" 
                class="form-input" 
                maxlength="6" 
                placeholder="Enter 6-character code" 
                required>
-        <small style="color: rgba(255, 255, 255, 0.6); margin-top: 4px;">
+        <small style="color: rgba(255, 255, 255, 0.6); margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-info-circle"></i>
           Ask your instructor for the class code
         </small>
       </div>
       
-      <button type="submit" class="join-button" id="join-button">
+      <button type="submit" class="join-button glow-effect" id="join-button">
         <i class="fas fa-sign-in-alt"></i>
         Join Class
       </button>
@@ -493,11 +648,11 @@
   </div>
 
   <!-- Enrolled Classes Section -->
-  <div class="section-card">
-    <h2 class="section-title">
-      <i class="fas fa-graduation-cap"></i>
-      Enrolled Classes
-    </h2>
+  <div class="modern-card">
+    <div class="join-class-header">
+      <i class="fas fa-chalkboard"></i>
+      <h3>Enrolled Classes</h3>
+    </div>
     
     <div id="classes-container">
       <div class="loading-spinner">
@@ -513,7 +668,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupJoinClassForm();
     
     // Add fade-in animation
-    const cards = document.querySelectorAll('.section-card');
+    const cards = document.querySelectorAll('.modern-card');
     cards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
@@ -522,6 +677,12 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
         }, index * 200);
+    });
+    
+    // Add glow effect to buttons
+    const buttons = document.querySelectorAll('.action-button, .join-button');
+    buttons.forEach(button => {
+        button.classList.add('glow-effect');
     });
 });
 
@@ -556,12 +717,12 @@ function joinClass(classCode) {
     joinButton.disabled = true;
     joinButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
     
-    fetch('/user/api/join_class', {
+    fetch('/api/join-class', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ class_code: classCode })
+        body: JSON.stringify({ code: classCode })
     })
     .then(response => response.json())
     .then(data => {
@@ -586,7 +747,7 @@ function joinClass(classCode) {
 function loadEnrolledClasses() {
     const container = document.getElementById('classes-container');
     
-    fetch('/user/api/enrolled_classes')
+    fetch('/api/classes')
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
@@ -611,11 +772,17 @@ function renderClasses(classes) {
     
     const html = `
         <div class="classes-grid">
-            ${classes.map(classItem => `
-                <div class="class-card">
+            ${classes.map((classItem, index) => `
+                <div class="class-card" style="animation-delay: ${index * 0.1}s">
                     <div class="class-header">
-                        <h3 class="class-name">${classItem.name}</h3>
-                        <div class="class-section">Section: ${classItem.section || 'N/A'}</div>
+                        <div class="class-info">
+                            <h3 class="class-name">${classItem.name}</h3>
+                            <div class="class-section">Section: ${classItem.section || 'N/A'}</div>
+                        </div>
+                        <div class="class-avatar">
+                            <img src="${classItem.avatar_url || '/static/img/default_avatar.png'}" alt="Class Avatar" 
+                                 onerror="this.src='/static/img/default_avatar.png'">
+                        </div>
                     </div>
                     <div class="class-body">
                         <p class="class-description">
@@ -626,7 +793,7 @@ function renderClasses(classes) {
                             <span><i class="fas fa-users"></i> Students: ${classItem.student_count || 0}</span>
                         </div>
                         <div class="class-actions">
-                            <a href="/user/class/${classItem.id}" class="btn btn-primary">
+                            <a href="/user/class/${classItem.id}" class="action-button">
                                 <i class="fas fa-external-link-alt"></i>
                                 Enter Class
                             </a>
@@ -648,9 +815,13 @@ function renderEmptyState() {
     const container = document.getElementById('classes-container');
     container.innerHTML = `
         <div class="empty-state">
-            <i class="fas fa-graduation-cap"></i>
+            <i class="fas fa-graduation-cap data-flow"></i>
             <h3>No Classes Enrolled</h3>
             <p>Join a class using the class code provided by your instructor</p>
+            <div class="action-button" onclick="document.getElementById('class-code').focus()" style="margin-top: 20px; display: inline-flex;">
+                <i class="fas fa-plus-circle"></i>
+                Join a Class Now
+            </div>
         </div>
     `;
 }

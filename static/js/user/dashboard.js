@@ -259,6 +259,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyStateTemplate = document.getElementById('empty-state-template');
 
     function showClassesPopup() {
+        // Check if we have the popup element before trying to use it
+        if (!classesPopup) {
+            // If no popup exists, navigate to the classes page instead
+            window.location.href = '/classes';
+            return;
+        }
+        
         classesPopup.classList.add('active');
         sections.forEach(section => {
             if (section !== classesPopup) {
@@ -277,11 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
         loadEnrolledClasses();
     }
     function hideClassesPopup() {
+        // Check if we have the popup element before trying to use it
+        if (!classesPopup) return;
+        
         classesPopup.classList.remove('active');
         sections.forEach(section => section.classList.remove('blur'));
         header.classList.remove('blur');
         document.body.style.overflow = '';
     }
+    // Event listeners with safety checks
     if (classesLink) {
         classesLink.addEventListener('click', function(e) {
             e.preventDefault();
@@ -294,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (popupInfo) {
                 popupInfo.classList.remove('active');
                 sections.forEach(section => section.classList.remove('blur'));
-                header.classList.remove('blur');
+                if (header) header.classList.remove('blur');
             }
             showClassesPopup();
         });
@@ -319,13 +330,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (joinClassForm) {
         joinClassForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            if (!classCodeInput) return;
             const classCode = classCodeInput.value.trim();
             if (!classCode || classCode.length !== 6) {
                 showError('Please enter a valid 6-character class code');
                 return;
             }
             hideAlerts();
-            joinSpinner.style.display = 'inline-block';
+            if (joinSpinner) joinSpinner.style.display = 'inline-block';
             fetch('/api/join-class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -333,17 +345,17 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                joinSpinner.style.display = 'none';
+                if (joinSpinner) joinSpinner.style.display = 'none';
                 if (data.status === 'error') {
                     showError(data.message || 'Failed to join class');
                     return;
                 }
                 showSuccess(data.message || 'Successfully joined the class!');
-                classCodeInput.value = '';
+                if (classCodeInput) classCodeInput.value = '';
                 loadEnrolledClasses();
             })
             .catch(error => {
-                joinSpinner.style.display = 'none';
+                if (joinSpinner) joinSpinner.style.display = 'none';
                 showError('An error occurred. Please try again.');
                 console.error('Error:', error);
             });
@@ -353,14 +365,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorAlert) {
             errorAlert.textContent = message;
             errorAlert.style.display = 'block';
-            successAlert.style.display = 'none';
+            if (successAlert) successAlert.style.display = 'none';
         }
     }
     function showSuccess(message) {
         if (successAlert) {
             successAlert.textContent = message;
             successAlert.style.display = 'block';
-            errorAlert.style.display = 'none';
+            if (errorAlert) errorAlert.style.display = 'none';
         }
     }
     function hideAlerts() {
@@ -369,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     function loadEnrolledClasses() {
         if (!classesContainer) return;
+        
         classesContainer.innerHTML = `<div class="loading" style="text-align: center; padding: 1rem;"><div class="spinner" style="display: inline-block; width: 30px; height: 30px;"></div><p>Loading your classes...</p></div>`;
         fetch('/api/classes')
         .then(response => response.json())
@@ -379,27 +392,43 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (!data.classes || data.classes.length === 0) {
                 classesContainer.innerHTML = '';
-                const emptyState = document.importNode(emptyStateTemplate.content, true);
-                classesContainer.appendChild(emptyState);
+                if (emptyStateTemplate) {
+                    const emptyState = document.importNode(emptyStateTemplate.content, true);
+                    classesContainer.appendChild(emptyState);
+                } else {
+                    classesContainer.innerHTML = '<p class="empty-state">No classes found. Join a class to get started!</p>';
+                }
                 return;
             }
             const classesGrid = document.createElement('div');
             classesGrid.className = 'classes-grid';
             data.classes.forEach(classItem => {
-                const classCard = document.importNode(classTemplate.content, true);
-                classCard.querySelector('.class-name').textContent = classItem.name;
-                classCard.querySelector('.class-section').textContent = classItem.section || '';
-                classCard.querySelector('.class-description').textContent = classItem.description || 'No description available';
-                classCard.querySelector('.start-date').textContent = `Start: ${formatDate(classItem.startDate)}`;
-                classCard.querySelector('.end-date').textContent = `End: ${formatDate(classItem.endDate)}`;
-                classCard.querySelector('.student-count').textContent = `Students: ${classItem.studentCount || 0}`;
-                const viewBtn = classCard.querySelector('.view-class-btn');
-                viewBtn.href = '#';
-                viewBtn.setAttribute('data-class-id', classItem.id);
-                const leaveBtn = classCard.querySelector('.leave-class-btn');
-                leaveBtn.setAttribute('data-class-id', classItem.id);
-                leaveBtn.setAttribute('data-class-name', classItem.name);
-                classesGrid.appendChild(classCard);
+                if (classTemplate) {
+                    const classCard = document.importNode(classTemplate.content, true);
+                    const nameEl = classCard.querySelector('.class-name');
+                    if (nameEl) nameEl.textContent = classItem.name;
+                    const sectionEl = classCard.querySelector('.class-section');
+                    if (sectionEl) sectionEl.textContent = classItem.section || '';
+                    const descEl = classCard.querySelector('.class-description');
+                    if (descEl) descEl.textContent = classItem.description || 'No description available';
+                    const startEl = classCard.querySelector('.start-date');
+                    if (startEl) startEl.textContent = `Start: ${formatDate(classItem.startDate)}`;
+                    const endEl = classCard.querySelector('.end-date');
+                    if (endEl) endEl.textContent = `End: ${formatDate(classItem.endDate)}`;
+                    const countEl = classCard.querySelector('.student-count');
+                    if (countEl) countEl.textContent = `Students: ${classItem.studentCount || 0}`;
+                    const viewBtn = classCard.querySelector('.view-class-btn');
+                    if (viewBtn) {
+                        viewBtn.href = '#';
+                        viewBtn.setAttribute('data-class-id', classItem.id);
+                    }
+                    const leaveBtn = classCard.querySelector('.leave-class-btn');
+                    if (leaveBtn) {
+                        leaveBtn.setAttribute('data-class-id', classItem.id);
+                        leaveBtn.setAttribute('data-class-name', classItem.name);
+                    }
+                    classesGrid.appendChild(classCard);
+                }
             });
             classesContainer.innerHTML = '';
             classesContainer.appendChild(classesGrid);
