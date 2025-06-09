@@ -102,6 +102,52 @@ def networking_1():
         progress_data[item.module_id]["total_lessons"] += 1
         if item.completed:
             progress_data[item.module_id]["completed_count"] += 1
+      # Calculate overall module progress percentages
+    for module_id, module_data in progress_data.items():
+        if module_data["total_lessons"] > 0:
+            module_data["progress_percent"] = int((module_data["completed_count"] / module_data["total_lessons"]) * 100)
+        else:
+            module_data["progress_percent"] = 0
+    
+    return render_template('user/learning_networking1.html', 
+                          user=user, 
+                          progress_data=progress_data)
+
+@user_bp.route('/learning/networking-2')
+def networking_2():
+    if 'user_id' not in session:
+        return redirect(url_for('user.index', message='You need to log in first!'))
+    
+    user_id = session['user_id']
+    user = UserModel.query.get(user_id)
+    
+    # Import Networking2Progress model 
+    from user.models.networking2_progress import Networking2Progress
+    
+    # Get user's progress for all networking 2 lessons
+    progress = Networking2Progress.query.filter_by(user_id=user_id).all()
+    
+    # Format progress data for the template
+    progress_data = {}
+    for item in progress:
+        # Module format: "1" for module 1
+        # Lesson format: "1.1" for module 1, lesson 1
+        if item.module_id not in progress_data:
+            progress_data[item.module_id] = {
+                "lessons": {},
+                "completed_count": 0,
+                "total_lessons": 0
+            }
+        
+        progress_data[item.module_id]["lessons"][item.lesson_id] = {
+            "completed": item.completed,
+            "progress": item.progress_percent
+        }
+        
+        # Update module completion stats
+        progress_data[item.module_id]["total_lessons"] += 1
+        if item.completed:
+            progress_data[item.module_id]["completed_count"] += 1
     
     # Calculate overall module progress percentages
     for module_id, module_data in progress_data.items():
@@ -110,7 +156,7 @@ def networking_1():
         else:
             module_data["progress_percent"] = 0
     
-    return render_template('user/learning_networking1.html', 
+    return render_template('user/learning_networking2.html', 
                           user=user, 
                           progress_data=progress_data)
 
@@ -124,7 +170,8 @@ def class_detail(class_id):
     
     # Find the class
     class_obj = Class.query.get_or_404(class_id)
-      # Check if user is enrolled in this class using direct query
+    
+    # Check if user is enrolled in this class using direct query
     from user.models import class_students
     enrollment = db.session.query(class_students).filter(
         class_students.c.class_id == class_id,
@@ -134,13 +181,17 @@ def class_detail(class_id):
     if not enrollment:
         flash('You are not enrolled in this class', 'error')
         return redirect(url_for('user.classes'))
-      # Special handling for Networking 1 class
+    
+    # Special handling for Networking classes
     print(f"DEBUG: Class name is: '{class_obj.name}'")  # Debug line
     if class_obj.name == "Networking 1" or class_obj.name == "Networking 1 ":
         print("DEBUG: Redirecting to networking_1")  # Debug line
         return redirect(url_for('user.networking_1'))
+    elif class_obj.name == "Networking 2" or class_obj.name == "Networking 2 ":
+        print("DEBUG: Redirecting to networking_2")  # Debug line
+        return redirect(url_for('user.networking_2'))
     else:
-        print("DEBUG: No match for Networking 1, continuing with normal flow")  # Debug line
+        print("DEBUG: No match for Networking classes, continuing with normal flow")  # Debug line
     
     # Format student data for template - use direct query
     # We already imported class_students above
@@ -1527,3 +1578,147 @@ def get_networking_lesson(lesson_id):
         })
     else:
         return jsonify({"error": "Lesson not found"}), 404
+
+@user_bp.route('/api/networking2/lessons')
+def get_networking2_lessons():
+    """Get all networking 2 lesson content"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    # Load lesson content from extracted module files
+    try:
+        import sys
+        import os
+        # Add the root directory to Python path
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root_dir not in sys.path:
+            sys.path.insert(0, root_dir)
+        from networking2_module_loader import get_networking2_lesson_content
+    except ImportError as e:
+        print(f"Import error: {e}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Python path: {sys.path}")
+        return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
+    
+    lesson_content = get_networking2_lesson_content()
+    return jsonify(lesson_content)
+
+@user_bp.route('/api/networking2/lesson/<lesson_id>')
+def get_networking2_lesson(lesson_id):
+    """Get content for a specific networking 2 lesson"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    # Load lesson content from extracted module files
+    try:
+        import sys
+        import os
+        # Add the root directory to Python path
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root_dir not in sys.path:
+            sys.path.insert(0, root_dir)
+        from networking2_module_loader import get_networking2_lesson_content
+    except ImportError as e:
+        print(f"Import error: {e}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Python path: {sys.path}")
+        return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
+    
+    lesson_content = get_networking2_lesson_content()
+    
+    # Check if the requested lesson exists
+    if lesson_id in lesson_content:
+        # Update user's progress for this lesson (assuming module is first digit)
+        from user.models.networking2_progress import Networking2Progress
+        
+        user_id = session['user_id']
+        module_id = lesson_id.split('.')[0]  # "1.2" -> "1"
+        
+        # Check if progress record exists
+        progress = Networking2Progress.query.filter_by(
+            user_id=user_id,
+            module_id=module_id,
+            lesson_id=lesson_id
+        ).first()
+        
+        if not progress:
+            # Create new record with 50% progress (viewed but not completed)
+            progress = Networking2Progress(
+                user_id=user_id,
+                module_id=module_id,
+                lesson_id=lesson_id,
+                completed=False,
+                progress_percent=50
+            )
+            db.session.add(progress)
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating progress: {str(e)}")
+        
+        return jsonify({
+            "title": lesson_content[lesson_id]["title"],
+            "content": lesson_content[lesson_id]["content"]
+        })
+    else:
+        return jsonify({"error": "Lesson not found"}), 404
+
+@user_bp.route('/api/networking2/progress', methods=['POST'])
+def track_networking2_progress():
+    """Track user progress in networking 2 lessons"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    user_id = session['user_id']
+    data = request.json
+    
+    if not data or 'lesson_id' not in data:
+        return jsonify({"error": "Invalid data"}), 400
+    
+    lesson_id = data['lesson_id']
+    # For Networking 2, derive module_id from lesson_id (e.g., "1.1" -> "1")
+    module_id = lesson_id.split('.')[0] if '.' in lesson_id else lesson_id
+    completed = data.get('completed', False)
+    progress_percent = data.get('progress_percent', 0)
+    
+    # Import Networking2Progress model
+    from user.models.networking2_progress import Networking2Progress
+    
+    # Check if progress record exists
+    progress = Networking2Progress.query.filter_by(
+        user_id=user_id,
+        module_id=module_id,
+        lesson_id=lesson_id
+    ).first()
+    
+    if progress:
+        # Update existing record
+        progress.completed = completed
+        progress.progress_percent = progress_percent
+        progress.last_accessed = datetime.datetime.utcnow()
+    else:
+        # Create new record
+        progress = Networking2Progress(
+            user_id=user_id,
+            module_id=module_id,
+            lesson_id=lesson_id,
+            completed=completed,
+            progress_percent=progress_percent
+        )
+        db.session.add(progress)
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "Progress updated",
+            "data": {
+                "lesson_id": lesson_id,
+                "completed": completed,
+                "progress_percent": progress_percent
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

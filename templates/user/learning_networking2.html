@@ -1,0 +1,1234 @@
+{% extends 'user/learning_base.html' %}
+
+{% block head %}
+<title>Networking 2 | RiddleNet</title>
+<style>
+  .learning-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  /* Header section */
+  .learning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }
+  
+  .page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-top: 8px;
+    font-weight: 400;
+  }
+
+  /* Course navigation */
+  .course-navigation {
+    display: flex;
+    align-items: center;
+  }
+  
+  .course-nav-btn {
+    background: linear-gradient(135deg, var(--network-purple), var(--cyber-glow));
+    color: #fff;
+    text-decoration: none;
+    padding: 16px 24px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 300ms ease;
+    border: 2px solid transparent;
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+    min-width: 200px;
+    text-align: center;
+  }
+  
+  .course-nav-btn.back-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 212, 255, 0.2));
+    border-color: rgba(0, 212, 255, 0.3);
+  }
+  
+  .course-nav-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
+    border-color: var(--cyber-glow);
+  }
+  
+  .course-nav-btn i {
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+  }
+  
+  .course-nav-btn span {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  
+  .course-nav-btn small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    font-weight: 400;
+  }
+
+  /* Learning path sidebar */
+  .learning-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    position: relative;
+  }
+  
+  .learning-sidebar {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+  }
+  
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar-tab {
+    flex: 1;
+    text-align: center;
+    padding: 16px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 300ms ease;
+    position: relative;
+  }
+  
+  .sidebar-tab.active {
+    color: var(--cyber-glow);
+  }
+  
+  .sidebar-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+  }
+  
+  /* Modules list styling */
+  .module-list {
+    padding: 16px;
+  }
+  
+  .module-item {
+    margin-bottom: 20px;
+  }
+  
+  .module-header {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: all 300ms ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .module-header.active {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.5);
+  }
+  
+  .module-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1rem;
+  }
+  
+  .module-progress {
+    font-size: 0.8rem;
+    color: var(--cyber-glow);
+    background: rgba(0, 212, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 20px;
+  }
+  
+  .module-content {
+    padding: 8px 8px 8px 16px;
+    margin-top: 8px;
+    display: none;
+  }
+  
+  .module-content.active {
+    display: block;
+  }
+  
+  .lesson-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .lesson-item {
+    padding: 10px 16px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .lesson-item:hover {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--text-primary);
+    transform: translateX(5px);
+  }
+  
+  .lesson-item.active {
+    background: rgba(0, 212, 255, 0.15);
+    color: var(--cyber-glow);
+    border-left: 3px solid var(--cyber-glow);
+  }
+  
+  /* Content area styling */
+  .learning-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 32px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    min-height: 700px;
+  }
+  
+  .content-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .content-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  .content-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+  }
+  
+  .action-btn {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .action-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: var(--cyber-glow);
+    transform: translateY(-2px);
+  }
+  
+  .action-btn.primary {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border: none;
+    color: #fff;
+  }
+  
+  .content-body {
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  
+  .content-body h2 {
+    color: var(--text-primary);
+    margin: 28px 0 16px;
+    font-size: 1.5rem;
+  }
+  
+  .content-body p {
+    margin: 0 0 16px;
+  }
+  
+  /* Component styling */
+  .component {
+    margin: 32px 0;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  
+  .component-header {
+    background: rgba(0, 212, 255, 0.1);
+    padding: 16px;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .component-body {
+    padding: 24px;
+  }
+  
+  /* Network diagram */
+  .network-diagram {
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin: 24px 0;
+  }
+  
+  .network-diagram img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Launch simulation button */
+  .simulation-btn {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: linear-gradient(135deg, #00763c, #14bf5e);
+    color: white;
+    border: none;
+    padding: 16px 30px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 300ms ease;
+    box-shadow: 0 10px 30px rgba(20, 191, 94, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 100;
+  }
+  
+  .simulation-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(20, 191, 94, 0.5);
+  }
+  
+  /* Progress indicator */
+  .progress-indicator {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    margin: 16px 0;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+    width: 25%; /* Adjust based on actual completion % */
+  }
+  
+  /* Resources tab styling */
+  .resources-content {
+    padding: 16px;
+  }
+  
+  .resource-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .resource-list li {
+    margin-bottom: 12px;
+  }
+  
+  .resource-link {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 300ms ease;
+  }
+  
+  .resource-link:hover {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--cyber-glow);
+    transform: translateX(5px);
+  }
+  
+  .resource-link i {
+    margin-right: 10px;
+    color: var(--cyber-glow);
+  }
+  
+  /* Quiz styling */
+  .quiz-section {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 30px 0;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+  }
+  
+  .quiz-question {
+    margin-bottom: 20px;
+  }
+  
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+  }
+  
+  .quiz-option {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+  }
+  
+  .quiz-option:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+  }
+  
+  .quiz-option.selected {
+    border-width: 2px;
+  }
+  
+  .quiz-option.correct {
+    background: rgba(30, 215, 96, 0.1);
+    border-color: rgba(30, 215, 96, 0.5);
+  }
+  
+  .quiz-option.incorrect {
+    background: rgba(248, 113, 113, 0.1);
+    border-color: rgba(248, 113, 113, 0.5);
+  }
+  
+  .quiz-feedback {
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  
+  .correct-feedback {
+    color: #1ed760;
+  }
+  
+  .incorrect-feedback {
+    color: #f87171;
+  }
+  
+  /* Special lesson styling for Networking 2 content */
+  .lesson-section {
+    margin: 24px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border-left: 4px solid var(--cyber-glow);
+  }
+  
+  .lesson-section h3 {
+    color: var(--cyber-glow);
+    margin-top: 0;
+  }
+  
+  .info-box {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 20px 0;
+  }
+  
+  .info-box h4 {
+    color: var(--cyber-glow);
+    margin-top: 0;
+  }
+  
+  .routing-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  
+  .routing-type {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  
+  .type-number {
+    background: var(--cyber-glow);
+    color: #000;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin: 0 auto 12px;
+  }
+  
+  .type-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  
+  .type-desc {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .security-components {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  
+  .security-components .component {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0;
+  }
+  
+  .security-components .component h4 {
+    color: var(--cyber-glow);
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  
+  .network-protocol-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .network-protocol-list li {
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 3px solid var(--cyber-glow);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 0 8px 8px 0;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .learning-layout {
+      grid-template-columns: 280px 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .learning-layout {
+      grid-template-columns: 1fr;
+    }
+    
+    .learning-sidebar {
+      position: relative;
+      top: auto;
+      max-height: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="learning-container">
+  <!-- Header -->
+  <div class="learning-header">
+    <div>
+      <h1 class="page-title">Networking 2</h1>
+      <p class="page-subtitle">Advanced Network Management & Security</p>
+    </div>
+    <div class="course-navigation">
+      <a href="{{ url_for('user.networking_1') }}" class="course-nav-btn back-btn">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to Networking 1</span>
+        <small>Review Fundamentals</small>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="learning-layout">
+    <!-- Sidebar -->
+    <div class="learning-sidebar">
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" id="modulesTab">Modules</div>
+        <div class="sidebar-tab" id="resourcesTab">Resources</div>
+      </div>
+
+      <!-- Modules List -->
+      <div class="module-list">
+        <!-- Module 1: Routing Fundamentals -->
+        <div class="module-item">
+          <div class="module-header active" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 1: Routing Fundamentals</h3>
+            <span class="module-progress" id="module-progress-net2_1">0%</span>
+          </div>
+          <div class="module-content active">
+            <ul class="lesson-list">
+              <li class="lesson-item active" data-lesson-id="net2_1.1" onclick="loadLesson('net2_1.1')">
+                <span class="lesson-num">1.1.</span> Advanced Network Protocols
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_1.2" onclick="loadLesson('net2_1.2')">
+                <span class="lesson-num">1.2.</span> Dynamic Routing Protocols
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_1.3" onclick="loadLesson('net2_1.3')">
+                <span class="lesson-num">1.3.</span> Static vs Dynamic Routing
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_1.4" onclick="loadLesson('net2_1.4')">
+                <span class="lesson-num">1.4.</span> Load Balancing
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 2: Network Security -->
+        <div class="module-item">
+          <div class="module-header" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 2: Network Security Fundamentals</h3>
+            <span class="module-progress" id="module-progress-net2_2">0%</span>
+          </div>
+          <div class="module-content">
+            <ul class="lesson-list">
+              <li class="lesson-item" data-lesson-id="net2_2.1" onclick="loadLesson('net2_2.1')">
+                <span class="lesson-num">2.1.</span> Security Principles
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_2.2" onclick="loadLesson('net2_2.2')">
+                <span class="lesson-num">2.2.</span> Firewall Implementation
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_2.3" onclick="loadLesson('net2_2.3')">
+                <span class="lesson-num">2.3.</span> VPN Technologies
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_2.4" onclick="loadLesson('net2_2.4')">
+                <span class="lesson-num">2.4.</span> Intrusion Detection
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 3: Wireless Networks -->
+        <div class="module-item">
+          <div class="module-header" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 3: Wireless Networks</h3>
+            <span class="module-progress" id="module-progress-net2_3">0%</span>
+          </div>
+          <div class="module-content">
+            <ul class="lesson-list">
+              <li class="lesson-item" data-lesson-id="net2_3.1" onclick="loadLesson('net2_3.1')">
+                <span class="lesson-num">3.1.</span> Wireless Standards
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_3.2" onclick="loadLesson('net2_3.2')">
+                <span class="lesson-num">3.2.</span> WLAN Configuration
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_3.3" onclick="loadLesson('net2_3.3')">
+                <span class="lesson-num">3.3.</span> Wireless Security
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_3.4" onclick="loadLesson('net2_3.4')">
+                <span class="lesson-num">3.4.</span> Troubleshooting Wireless
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 4: Network Management -->
+        <div class="module-item">
+          <div class="module-header" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 4: Network Management</h3>
+            <span class="module-progress" id="module-progress-net2_4">0%</span>
+          </div>
+          <div class="module-content">
+            <ul class="lesson-list">
+              <li class="lesson-item" data-lesson-id="net2_4.1" onclick="loadLesson('net2_4.1')">
+                <span class="lesson-num">4.1.</span> Network Monitoring
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_4.2" onclick="loadLesson('net2_4.2')">
+                <span class="lesson-num">4.2.</span> SNMP Protocol
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_4.3" onclick="loadLesson('net2_4.3')">
+                <span class="lesson-num">4.3.</span> Performance Analysis
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_4.4" onclick="loadLesson('net2_4.4')">
+                <span class="lesson-num">4.4.</span> Network Documentation
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 5: Advanced Routing/OSPF -->
+        <div class="module-item">
+          <div class="module-header" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 5: Advanced Routing/OSPF</h3>
+            <span class="module-progress" id="module-progress-net2_5">0%</span>
+          </div>
+          <div class="module-content">
+            <ul class="lesson-list">
+              <li class="lesson-item" data-lesson-id="net2_5.1" onclick="loadLesson('net2_5.1')">
+                <span class="lesson-num">5.1.</span> OSPF Fundamentals
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_5.2" onclick="loadLesson('net2_5.2')">
+                <span class="lesson-num">5.2.</span> OSPF Configuration
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_5.3" onclick="loadLesson('net2_5.3')">
+                <span class="lesson-num">5.3.</span> Area Design
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_5.4" onclick="loadLesson('net2_5.4')">
+                <span class="lesson-num">5.4.</span> OSPF Troubleshooting
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Module 7: Network Troubleshooting -->
+        <div class="module-item">
+          <div class="module-header" onclick="toggleModule(this)">
+            <h3 class="module-title">Module 7: Network Troubleshooting</h3>
+            <span class="module-progress" id="module-progress-net2_7">0%</span>
+          </div>
+          <div class="module-content">
+            <ul class="lesson-list">
+              <li class="lesson-item" data-lesson-id="net2_7.1" onclick="loadLesson('net2_7.1')">
+                <span class="lesson-num">7.1.</span> Troubleshooting Methodology
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_7.2" onclick="loadLesson('net2_7.2')">
+                <span class="lesson-num">7.2.</span> Network Diagnostic Tools
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_7.3" onclick="loadLesson('net2_7.3')">
+                <span class="lesson-num">7.3.</span> Common Network Issues
+              </li>
+              <li class="lesson-item" data-lesson-id="net2_7.4" onclick="loadLesson('net2_7.4')">
+                <span class="lesson-num">7.4.</span> Advanced Troubleshooting
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="learning-content">
+      <div class="content-header">
+        <h1 class="content-title" id="lesson-title">Advanced Network Protocols</h1>
+        <div class="progress-indicator">
+          <div class="progress-bar" id="lesson-progress-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="content-body" id="lesson-content">
+        <div class="lesson-content">
+          <h2>Welcome to Networking 2</h2>
+          
+          <div class="lesson-section">
+            <h3>Course Overview</h3>
+            <p>Networking 2 builds upon the fundamental concepts learned in Networking 1, diving deeper into advanced network management, security, and troubleshooting techniques.</p>
+            
+            <div class="info-box">
+              <h4>What You'll Learn</h4>
+              <p>This course covers advanced routing protocols, network security fundamentals, wireless networking, network management, and comprehensive troubleshooting methodologies.</p>
+            </div>
+          </div>
+          
+          <div class="lesson-section">
+            <h3>Course Modules</h3>
+            <ul class="network-protocol-list">
+              <li><strong>Module 1:</strong> Routing Fundamentals - Advanced routing concepts and protocols</li>
+              <li><strong>Module 2:</strong> Network Security - Implementing security measures and protocols</li>
+              <li><strong>Module 3:</strong> Wireless Networks - Configuration and management of wireless networks</li>
+              <li><strong>Module 4:</strong> Network Management - Monitoring and maintaining network infrastructure</li>
+              <li><strong>Module 5:</strong> Advanced Routing/OSPF - Deep dive into OSPF protocol</li>
+              <li><strong>Module 7:</strong> Network Troubleshooting - Systematic approach to solving network issues</li>
+            </ul>
+          </div>
+          
+          <div class="lesson-section">
+            <h3>Getting Started</h3>
+            <p>Select a lesson from the sidebar to begin your learning journey. Each module contains comprehensive content, practical examples, and hands-on exercises.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-actions">
+        <button class="action-btn" onclick="previousLesson()">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <button class="action-btn primary" onclick="nextLesson()">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Launch Simulation Button -->
+<button class="simulation-btn" onclick="launchSimulation()">
+  <i class="fas fa-play"></i>
+  Launch Simulation
+</button>
+
+<script>
+  // Networking 2 lesson content - imported from module loader
+  const NETWORKING2_LESSONS = {};
+  
+  // Load lesson content from server
+  async function loadLessonContent() {
+    try {
+      const response = await fetch('/api/networking2/lessons');
+      if (response.ok) {
+        const data = await response.json();
+        Object.assign(NETWORKING2_LESSONS, data);
+      }
+    } catch (error) {
+      console.log('Using fallback lesson content');
+      // Fallback content will be provided by default lesson content
+    }
+  }
+  
+  // Module toggle functionality
+  function toggleModule(element) {
+    const content = element.nextElementSibling;
+    const isActive = content.classList.contains('active');
+    
+    // Close all modules
+    document.querySelectorAll('.module-content').forEach(mod => {
+      mod.classList.remove('active');
+    });
+    document.querySelectorAll('.module-header').forEach(header => {
+      header.classList.remove('active');
+    });
+    
+    // Open clicked module if it wasn't active
+    if (!isActive) {
+      content.classList.add('active');
+      element.classList.add('active');
+    }
+  }
+  
+  // Load lesson content
+  function loadLesson(lessonId) {
+    // Remove active class from all lessons
+    document.querySelectorAll('.lesson-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Add active class to clicked lesson
+    const clickedLesson = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+    if (clickedLesson) {
+      clickedLesson.classList.add('active');
+    }
+    
+    // Update content title and body
+    const titleElement = document.getElementById('lesson-title');
+    const contentElement = document.getElementById('lesson-content');
+    
+    // Check if we have content for this lesson
+    if (NETWORKING2_LESSONS[lessonId]) {
+      titleElement.textContent = NETWORKING2_LESSONS[lessonId].title;
+      contentElement.innerHTML = NETWORKING2_LESSONS[lessonId].content;
+    } else {
+      // Fallback content based on lesson ID
+      const fallbackContent = getFallbackContent(lessonId);
+      titleElement.textContent = fallbackContent.title;
+      contentElement.innerHTML = fallbackContent.content;
+    }
+    
+    // Update progress
+    updateLessonProgress(lessonId, 25, false);
+    
+    // Initialize any quiz elements
+    initializeQuizElements();
+    
+    // Scroll to top of content
+    document.querySelector('.learning-content').scrollTop = 0;
+  }
+  
+  // Get fallback content for lessons
+  function getFallbackContent(lessonId) {
+    const fallbackMap = {
+      'net2_1.1': {
+        title: 'Advanced Network Protocols',
+        content: `
+          <div class="lesson-content">
+            <h2>Advanced Network Protocols</h2>
+            
+            <div class="lesson-section">
+              <h3>Introduction to Advanced Routing</h3>
+              <p>This lesson introduces advanced routing concepts essential for modern network infrastructure.</p>
+              
+              <div class="info-box">
+                <h4>Learning Objectives</h4>
+                <ul>
+                  <li>Define what is routing</li>
+                  <li>Understand the importance of implementing routing on a corporate network</li>
+                  <li>Demonstrate simple Static routing</li>
+                  <li>Identify default routes</li>
+                  <li>Understand the importance of Load Balancing</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div class="lesson-section">
+              <h3>What is Routing?</h3>
+              <p>Routing is the process of selecting paths in a network along which to send network traffic. Routers use routing tables to determine the best path for forwarding packets.</p>
+            </div>
+            
+            <div class="lesson-section">
+              <h3>Types of Routing</h3>
+              <div class="routing-types">
+                <div class="routing-type">
+                  <div class="type-number">1</div>
+                  <div class="type-name">Static Routing</div>
+                  <div class="type-desc">Manually configured routes that don't change</div>
+                </div>
+                <div class="routing-type">
+                  <div class="type-number">2</div>
+                  <div class="type-name">Dynamic Routing</div>
+                  <div class="type-desc">Automatically updated routes using protocols</div>
+                </div>
+                <div class="routing-type">
+                  <div class="type-number">3</div>
+                  <div class="type-name">Default Routing</div>
+                  <div class="type-desc">Route used when no specific route is available</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      'net2_2.1': {
+        title: 'Network Security Fundamentals',
+        content: `
+          <div class="lesson-content">
+            <h2>Network Security Fundamentals</h2>
+            
+            <div class="lesson-section">
+              <h3>Security Principles</h3>
+              <p>Network security is based on fundamental principles that guide the implementation of security measures.</p>
+              
+              <div class="security-components">
+                <div class="component">
+                  <h4>Confidentiality</h4>
+                  <p>Ensuring that information is accessible only to authorized users</p>
+                </div>
+                <div class="component">
+                  <h4>Integrity</h4>
+                  <p>Maintaining the accuracy and completeness of data</p>
+                </div>
+                <div class="component">
+                  <h4>Availability</h4>
+                  <p>Ensuring that authorized users have access when needed</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      'net2_3.1': {
+        title: 'Wireless Network Standards',
+        content: `
+          <div class="lesson-content">
+            <h2>Wireless Network Standards</h2>
+            
+            <div class="lesson-section">
+              <h3>IEEE 802.11 Standards</h3>
+              <p>Understanding the evolution and capabilities of wireless networking standards.</p>
+              
+              <ul class="network-protocol-list">
+                <li><strong>802.11a:</strong> 5 GHz,  up to 54 Mbps</li>
+                <li><strong>802.11b:</strong> 2.4 GHz, up to 11 Mbps</li>
+                <li><strong>802.11g:</strong> 2.4 GHz, up to 54 Mbps</li>
+                <li><strong>802.11n:</strong> 2.4/5 GHz, up to 600 Mbps</li>
+                <li><strong>802.11ac:</strong> 5 GHz, up to 6.93 Gbps</li>
+                <li><strong>802.11ax (Wi-Fi 6):</strong> 2.4/5 GHz, up to 9.6 Gbps</li>
+              </ul>
+            </div>
+          </div>
+        `
+      }
+      // Add more fallback content as needed
+    };
+    
+    return fallbackMap[lessonId] || {
+      title: 'Lesson Content',
+      content: '<div class="lesson-content"><h2>Lesson content loading...</h2><p>Please select a lesson from the sidebar to view its content.</p></div>'
+    };
+  }
+  
+  // Progress tracking
+  function updateLessonProgress(lessonId, progressPercent, completed) {
+    // Update local progress
+    const progressBar = document.getElementById('lesson-progress-bar');
+    if (progressBar) {
+      progressBar.style.width = progressPercent + '%';
+    }
+    
+    // Send progress to server
+    fetch('/api/networking2/progress', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        lesson_id: lessonId,
+        progress_percent: progressPercent,
+        completed: completed
+      })
+    }).catch(error => {
+      console.log('Progress update failed:', error);
+    });
+    
+    // Update module progress
+    updateModuleProgress(lessonId);
+  }
+  
+  // Update module progress based on lesson completion
+  function updateModuleProgress(lessonId) {
+    const moduleId = lessonId.split('.')[0]; // Extract module ID (e.g., "net2_1" from "net2_1.1")
+    
+    // Count completed lessons in this module
+    const moduleElement = document.querySelector(`[id="module-progress-${moduleId}"]`);
+    if (!moduleElement) return;
+    
+    const moduleContent = moduleElement.closest('.module-item');
+    const lessons = moduleContent.querySelectorAll('.lesson-item');
+    const completedLessons = 0; // Would be calculated based on actual progress data
+    const totalLessons = lessons.length;
+    
+    // Calculate percentage
+    const progressPercent = Math.round((completedLessons / totalLessons) * 100);
+    
+    // Update progress indicator
+    moduleElement.textContent = `${progressPercent}%`;
+  }
+  
+  // Initialize quiz elements in loaded content
+  function initializeQuizElements() {
+    // Add event listeners to quiz options
+    document.querySelectorAll('.quiz-option').forEach(option => {
+      option.addEventListener('click', function() {
+        const isCorrect = this.getAttribute('data-correct') === 'true';
+        const questionEl = this.closest('.quiz-question');
+        const feedbackEl = questionEl.querySelector('.quiz-feedback');
+        
+        // Mark all options in this question
+        questionEl.querySelectorAll('.quiz-option').forEach(opt => {
+          opt.classList.remove('correct', 'incorrect', 'selected');
+          opt.querySelector('input').checked = false;
+        });
+        
+        // Mark this option as selected
+        this.classList.add('selected');
+        this.querySelector('input').checked = true;
+        
+        // Show feedback
+        if (isCorrect) {
+          this.classList.add('correct');
+          feedbackEl.innerHTML = '<div class="correct-feedback"><i class="fas fa-check-circle"></i> Correct!</div>';
+          
+          // If all questions are answered correctly, mark lesson as completed
+          const allQuestions = document.querySelectorAll('.quiz-question');
+          const allCorrect = Array.from(allQuestions).every(q => 
+            q.querySelector('.quiz-option.correct.selected')
+          );
+          
+          if (allCorrect) {
+            const lessonId = document.querySelector('.lesson-item.active').getAttribute('data-lesson-id');
+            updateLessonProgress(lessonId, 100, true);
+          }
+        } else {
+          this.classList.add('incorrect');
+          feedbackEl.innerHTML = '<div class="incorrect-feedback"><i class="fas fa-times-circle"></i> Incorrect, try again.</div>';
+        }
+      });
+    });
+  }
+  
+  // Navigation functions
+  function previousLesson() {
+    const active = document.querySelector('.lesson-item.active');
+    const prev = active.previousElementSibling;
+    if (prev) {
+      prev.click();
+    } else {
+      // Check if there's a previous module
+      const currentModule = active.closest('.module-item');
+      const prevModule = currentModule.previousElementSibling;
+      
+      if (prevModule) {
+        // If module is collapsed, expand it
+        if (!prevModule.querySelector('.module-content').classList.contains('active')) {
+          prevModule.querySelector('.module-header').click();
+        }
+        // Select last lesson in previous module
+        const lessons = prevModule.querySelectorAll('.lesson-item');
+        if (lessons.length > 0) {
+          lessons[lessons.length - 1].click();
+        }
+      }
+    }
+  }
+  
+  function nextLesson() {
+    const active = document.querySelector('.lesson-item.active');
+    const next = active.nextElementSibling;
+    if (next) {
+      next.click();
+    } else {
+      // Check if there's a next module
+      const currentModule = active.closest('.module-item');
+      const nextModule = currentModule.nextElementSibling;
+      
+      if (nextModule) {
+        // If module is collapsed, expand it
+        if (!nextModule.querySelector('.module-content').classList.contains('active')) {
+          nextModule.querySelector('.module-header').click();
+        }
+        // Select first lesson in next module
+        const firstLesson = nextModule.querySelector('.lesson-item');
+        if (firstLesson) {
+          firstLesson.click();
+        }
+      }
+    }
+  }
+  
+  // Launch simulation
+  function launchSimulation() {
+    window.location.href = "{{ url_for('user.topology') }}";
+  }
+  
+  // Tab switching and initialization
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load lesson content from server
+    loadLessonContent();
+    
+    // Initial module setup - only show the first module's content
+    const firstModuleContent = document.querySelector('.module-content');
+    if (firstModuleContent) {
+      firstModuleContent.classList.add('active');
+    }
+    
+    // Set up tab switching
+    document.querySelectorAll('.sidebar-tab').forEach((tab, index) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Show appropriate content based on the tab
+        if (tab.id === 'resourcesTab') {
+          // Hide modules and show resources
+          document.querySelector('.module-list').style.display = 'none';
+          
+          // Show resources content
+          let resourcesContent = document.querySelector('.resources-content');
+          if (!resourcesContent) {
+            resourcesContent = document.createElement('div');
+            resourcesContent.className = 'resources-content';
+            resourcesContent.innerHTML = `
+              <div class="p-4">
+                <h3>Additional Resources</h3>
+                <ul class="resource-list">
+                  <li><a href="#" class="resource-link"><i class="fas fa-file-pdf"></i> Advanced Routing Guide</a></li>
+                  <li><a href="#" class="resource-link"><i class="fas fa-file-alt"></i> Network Security Handbook</a></li>
+                  <li><a href="#" class="resource-link"><i class="fas fa-video"></i> OSPF Configuration Tutorial</a></li>
+                  <li><a href="#" class="resource-link"><i class="fas fa-book"></i> Wireless Networking Best Practices</a></li>
+                  <li><a href="#" class="resource-link"><i class="fas fa-tools"></i> Network Troubleshooting Tools</a></li>
+                </ul>
+              </div>
+            `;
+            document.querySelector('.learning-sidebar').appendChild(resourcesContent);
+          } else {
+            resourcesContent.style.display = 'block';
+          }
+        } else {
+          // Show modules and hide resources
+          document.querySelector('.module-list').style.display = 'block';
+          const resourcesContent = document.querySelector('.resources-content');
+          if (resourcesContent) {
+            resourcesContent.style.display = 'none';
+          }
+        }
+      });
+    });
+    
+    // Load initial lesson content
+    const activeLesson = document.querySelector('.lesson-item.active');
+    if (activeLesson) {
+      const lessonId = activeLesson.getAttribute('data-lesson-id');
+      if (lessonId) {
+        loadLesson(lessonId);
+      } else {
+        const firstLesson = document.querySelector('.lesson-item');
+        if (firstLesson) {
+          firstLesson.click();
+        }
+      }
+    } else {
+      const firstLesson = document.querySelector('.lesson-item');
+      if (firstLesson) {
+        firstLesson.click();
+      }
+    }
+  });
+</script>
+{% endblock %}

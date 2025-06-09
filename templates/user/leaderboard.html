@@ -2,36 +2,88 @@
 {% block head %}
 <title>Leaderboard | RiddleNet</title>
 <style>
+  @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+  
+  :root {
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --glass-bg: rgba(139, 92, 246, 0.08);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+  }
+
   .leaderboard-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    max-width: 1100px;
     width: 100%;
+    margin: 0 auto;
+    padding: 24px;
   }
   
   .leaderboard-wrapper {
-    background-color: #1E1E1E;
-    border: 2px solid var(--cyber-glow);
-    border-radius: 10px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
     padding: 0;
-    box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
     overflow: hidden;
     width: 100%;
-    max-width: 800px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .leaderboard-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .leaderboard-wrapper:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow);
   }
   
-  /* Large heading at the top */
+  /* Enhanced section header */
   .leaderboard-heading {
     font-family: 'Orbitron', sans-serif;
     font-size: 2.5rem;
     text-align: center;
     margin: 0;
-    padding: 12px 0;
-    color: var(--cyber-glow);
-    background-color: transparent;
-    border-bottom: 2px solid var(--cyber-glow);
+    padding: 32px 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    position: relative;
   }
 
+  .leaderboard-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: var(--gradient-primary);
+  }
+
+  /* Modern card and list styling */
   .modern-card {
     background: transparent;
     padding: 0;
@@ -43,55 +95,92 @@
   .leaderboard-list {
     display: flex;
     flex-direction: column;
-    padding: 5px;
+    padding: 20px;
+    gap: 12px;
   }
 
+  /* Enhanced leaderboard entries with admin dashboard styling */
   .leaderboard-entry {
     display: flex;
     align-items: center;
-    background: #00a090;
-    padding: 12px 20px;
+    background: var(--dark-bg);
+    padding: 20px 24px;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    margin: 5px;
-    border-radius: 5px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 12px rgba(26, 35, 126, 0.3);
+  }
+
+  .leaderboard-entry::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--gradient-primary);
   }
 
   .leaderboard-entry:hover {
-    background: #00b8a9;
+    transform: translateY(-2px) scale(1.01);
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
   }
   
-  /* All entries have the same background */
-  .leaderboard-entry[data-rank="1"],
-  .leaderboard-entry[data-rank="2"],
-  .leaderboard-entry[data-rank="3"],
-  .leaderboard-entry[data-rank="4"],
-  .leaderboard-entry[data-rank="5"] {
-    background: #00a090;
+  /* Special styling for top 3 positions */
+  .leaderboard-entry[data-rank="1"]::before {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
   }
   
-  .leaderboard-entry[data-rank="1"]:hover,
-  .leaderboard-entry[data-rank="2"]:hover,
-  .leaderboard-entry[data-rank="3"]:hover,
-  .leaderboard-entry[data-rank="4"]:hover,
-  .leaderboard-entry[data-rank="5"]:hover {
-    background: #00b8a9;
+  .leaderboard-entry[data-rank="2"]::before {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+  }
+  
+  .leaderboard-entry[data-rank="3"]::before {
+    background: linear-gradient(135deg, #cd7f32, #ffb366);
   }
 
   .rank-badge {
     flex-shrink: 0;
-    width: 30px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 15px;
+    margin-right: 20px;
     font-weight: 700;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-family: 'Orbitron', sans-serif;
     color: #ffffff;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    position: relative;
   }
 
+  /* Special rank badges for top 3 */
+  .leaderboard-entry[data-rank="1"] .rank-badge {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+
+  .leaderboard-entry[data-rank="2"] .rank-badge {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    color: #000;
+    box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+  }
+
+  .leaderboard-entry[data-rank="3"] .rank-badge {
+    background: linear-gradient(135deg, #cd7f32, #ffb366);
+    color: #000;
+    box-shadow: 0 0 20px rgba(205, 127, 50, 0.5);
+  }
+
+  /* Enhanced user info styling */
   .user-info {
     display: flex;
     align-items: center;
@@ -99,12 +188,13 @@
   }
 
   .user-avatar {
-    width: 45px;
-    height: 45px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
-    border: 2px solid #ffffff;
+    border: 2px solid var(--cyber-glow);
     overflow: hidden;
-    margin-right: 16px;
+    margin-right: 20px;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
   }
   
   .user-avatar img {
@@ -120,9 +210,10 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     color: #ffffff;
-    background-color: #008080;
+    background: var(--gradient-primary);
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
   }
 
   .user-details {
@@ -131,24 +222,30 @@
 
   .user-name {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: #ffffff;
-    font-family: 'Poppins', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
   }
 
   .user-score {
     display: none; /* Hide the score as it's not shown in the reference image */
   }
 
+  /* Enhanced empty state styling */
   .empty-leaderboard {
     text-align: center;
-    padding: 40px 20px 80px;
+    padding: 60px 20px;
     color: rgba(255, 255, 255, 0.6);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background: var(--dark-bg);
+    border-radius: 16px;
+    margin: 20px;
+    border: 1px solid var(--glass-border);
   }
 
   .empty-leaderboard i {
@@ -156,13 +253,16 @@
     color: var(--cyber-glow);
     margin-bottom: 24px;
     filter: drop-shadow(0 0 20px var(--cyber-glow));
+    animation: pulse 2s ease-in-out infinite;
   }
 
   .empty-leaderboard h3 {
     font-size: 1.8rem;
     font-family: 'Orbitron', sans-serif;
-    background: rgba(0, 150, 136, 0.8);
-    color: white;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 20px;
     padding: 10px 25px;
     border-radius: 5px;
@@ -174,30 +274,48 @@
     max-width: 80%;
   }
 
-  /* Responsive design for smaller screens */
+  /* Pulse animation for icons */
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Enhanced responsive design */
   @media (max-width: 768px) {
+    .leaderboard-container {
+      padding: 16px;
+    }
+
     .leaderboard-heading {
       font-size: 2rem;
-      padding: 10px 0;
+      padding: 24px 0;
     }
 
     .leaderboard-entry {
-      padding: 15px;
+      padding: 16px 20px;
     }
 
     .rank-badge {
-      margin-right: 10px;
-      font-size: 1.2rem;
+      width: 45px;
+      height: 45px;
+      margin-right: 16px;
+      font-size: 1.3rem;
     }
 
     .user-avatar {
-      width: 40px;
-      height: 40px;
-      margin-right: 12px;
+      width: 50px;
+      height: 50px;
+      margin-right: 16px;
     }
     
     .avatar-text {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
     }
 
     .user-name {
@@ -207,37 +325,52 @@
 
   @media (max-width: 480px) {
     .leaderboard-wrapper {
-      border-radius: 8px;
+      border-radius: 16px;
     }
     
     .leaderboard-heading {
       font-size: 1.8rem;
-      padding: 8px 0;
+      padding: 20px 0;
     }
     
     .leaderboard-entry {
-      padding: 12px 10px;
+      padding: 14px 16px;
     }
 
     .rank-badge {
-      width: 25px;
-      font-size: 1rem;
-      margin-right: 8px;
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+      margin-right: 12px;
     }
 
     .user-avatar {
-      width: 35px;
-      height: 35px;
-      margin-right: 10px;
+      width: 45px;
+      height: 45px;
+      margin-right: 12px;
     }
     
     .avatar-text {
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
 
     .user-name {
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
+  }
+
+  /* Network-themed decorative elements */
+  .network-node {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--cyber-glow);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--cyber-glow);
+    animation: pulse 2s ease-in-out infinite;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 </style>
 {% endblock %}
@@ -246,7 +379,10 @@
 <div class="page-container">
   <div class="leaderboard-container">
     <div class="leaderboard-wrapper">
-      <h1 class="leaderboard-heading">Leaderboard</h1>
+      <h1 class="leaderboard-heading">
+        <i class="fas fa-trophy" style="margin-right: 16px; color: var(--cyber-glow); filter: drop-shadow(0 0 10px var(--cyber-glow));"></i>
+        Leaderboard
+      </h1>
     
     <div class="modern-card">
       <!-- Leaderboard List -->
@@ -254,7 +390,15 @@
         {% for item in leaderboard %}
         <div class="leaderboard-entry" data-rank="{{ loop.index }}">
           <div class="rank-badge">
-            <span class="rank-number">{{ loop.index }}</span>
+            {% if loop.index == 1 %}
+              <i class="fas fa-crown" style="color: #ffd700; filter: drop-shadow(0 0 10px #ffd700);"></i>
+            {% elif loop.index == 2 %}
+              <i class="fas fa-medal" style="color: #c0c0c0; filter: drop-shadow(0 0 10px #c0c0c0);"></i>
+            {% elif loop.index == 3 %}
+              <i class="fas fa-medal" style="color: #cd7f32; filter: drop-shadow(0 0 10px #cd7f32);"></i>
+            {% else %}
+              <span class="rank-number">{{ loop.index }}</span>
+            {% endif %}
           </div>
           <div class="user-info">
             <div class="user-avatar">
@@ -264,12 +408,13 @@
               <h4 class="user-name">{{ item[0] }}</h4>
             </div>
           </div>
+          <div class="network-node"></div>
         </div>
         {% else %}
         <div class="empty-leaderboard">
           <i class="fas fa-trophy"></i>
-          <h3>No leaderboard data yet</h3>
-          <p>Complete challenges to appear on the leaderboard!</p>
+          <h3>No Champions Yet</h3>
+          <p>Complete network challenges to claim your place on the leaderboard and become a networking legend!</p>
         </div>
         {% endfor %}
       </div>
