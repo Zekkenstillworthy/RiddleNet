@@ -873,8 +873,18 @@
   
   // Update module progress indicator
   function updateModuleProgressIndicator(moduleId) {
-    // Fetch all lessons in this module
-    const moduleEl = document.querySelector(`.module-header:has(.module-title:contains("Module ${moduleId}:"))`).closest('.module-item');
+    // Find the module using a more compatible approach
+    const moduleHeaders = document.querySelectorAll('.module-header');
+    let moduleEl = null;
+    
+    for (const header of moduleHeaders) {
+      const titleElement = header.querySelector('.module-title');
+      if (titleElement && titleElement.textContent.includes(`Module ${moduleId}:`)) {
+        moduleEl = header.closest('.module-item');
+        break;
+      }
+    }
+    
     if (!moduleEl) return;
     
     const lessons = moduleEl.querySelectorAll('.lesson-item');

@@ -257,9 +257,7 @@ class SocketClient {
         const statusDiv = document.createElement('div');
         statusDiv.id = 'socket-connection-status';
         statusDiv.className = connected ? 'socket-connected' : 'socket-disconnected';
-        statusDiv.innerHTML = connected ? 
-            '<i class="bx bx-wifi"></i> <span>Connected</span>' : 
-            '<i class="bx bx-wifi-off"></i> <span>Reconnecting...</span>';
+            
         
         // Add to page
         document.body.appendChild(statusDiv);

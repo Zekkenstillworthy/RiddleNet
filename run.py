@@ -134,21 +134,40 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Try to load from Admin model first (since admin login is being used)
+    # Import models
     from admin.models.user import Admin, AdminUser
-      # Check if the ID starts with 'admin-' which would indicate it's an admin
+    from user.models import User
+    
+    # Check if the ID starts with 'admin-' which would indicate it's an admin
     if isinstance(user_id, str) and user_id.startswith('admin-'):
         admin_id = int(user_id.replace('admin-', ''))
         return db.session.get(Admin, admin_id)
     
-    # Try Admin table first
-    admin = db.session.get(Admin, int(user_id))
-    if admin:
-        return admin
-              # If not found in Admin, try User table from user.models
-    from user.models import User
-    user = db.session.get(User, int(user_id))
-    return user
+    # Try to convert to int for database lookup
+    try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        return None
+    
+    # Check session context to determine user type
+    # If we're in an admin route context, try Admin first
+    if request and request.path.startswith('/admin'):
+        admin = db.session.get(Admin, user_id_int)
+        if admin:
+            return admin
+    
+    # For non-admin routes or if not found in Admin, try User table
+    user = db.session.get(User, user_id_int)
+    if user:
+        return user
+        
+    # If not found in User table and we haven't tried Admin yet, try Admin as fallback
+    if not (request and request.path.startswith('/admin')):
+        admin = db.session.get(Admin, user_id_int)
+        if admin:
+            return admin
+    
+    return None
 
 # Set up admin route protection
 @app.before_request
@@ -168,10 +187,17 @@ def check_admin_auth():
         if any(request.path.startswith(route) for route in exempt_routes):
             return None
         
-        # Check if user is authenticated
+        # Check if user is authenticated AND is an admin user
         if not current_user.is_authenticated:
             flash('Please log in to access the admin area', 'warning')
             # Since the auth blueprint is registered with a prefix, we need to construct the login URL directly
+            return redirect('/admin/login')
+        
+        # Check if the authenticated user is actually an admin (not a regular user)
+        from admin.models.user import Admin
+        if not isinstance(current_user, Admin):
+            # If it's a regular user trying to access admin area, redirect them to user login
+            flash('Access denied. Admin credentials required.', 'error')
             return redirect('/admin/login')
 
 # Now register the API blueprint AFTER the QuizController to avoid conflicts
