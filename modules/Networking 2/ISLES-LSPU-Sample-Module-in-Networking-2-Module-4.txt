@@ -1,0 +1,307 @@
+
+LSPU Self-Paced Learning Module (SLM)
+Course	ITEP 309 Networking 2
+Sem/AY	First Semester/2020-2021
+Module No. 	4
+Lesson Title	EIGRP
+Week Duration	6-7
+Date	November 09-20, 2020
+Description of the Lesson	This lesson will discuss on EIGRP (Enhanced Interior Gateway Routing Protocol) an Advanced Distance Vector routing protocol with multiple scenarios, applicable in the real world network solution.
+
+Learning Outcomes 
+
+Intended Learning Outcomes	Students should be able to meet the following intended learning outcomes:
+•	Learn and understand the Enhanced Interior Gateway Routing Protocol
+•	To demonstrate the configuration of Enhanced Interior Gateway Routing Protocol
+•	To identify the usage and importance of Enhanced Interior Gateway Routing Protocol on a corporate network
+•	To simulate different scenarios in implementing Enhanced Interior Gateway Routing Protocol
+Targets/ Objectives	At the end of the lesson, students should be able to:
+•	Explain what is the difference between EIGRP and RIP
+•	Explain how EIGRP supports large networks
+•	Elaborate the feature EIGRP has as it covers fast convergence time
+•	Explain how messages are being sent in a multicast manner
+	
+
+Student Learning Strategies
+
+
+Online Activities (Synchronous/
+Asynchronous)	A.	Lecture presentation uploaded in Google Classroom
+Students will be instructed to download lecture presentations with narrations / pre-recorded lecture presentation uploaded in Google Classroom.
+
+For further instructions, refer to your Google Classroom and see the schedule of activities for this module.
+
+B.	Learning Guide Questions:
+1.	What is Enhanced Interior Gateway Routing Protocol?
+2.	What is Fast Convergence time?
+3.	How network traffic travels on multicast?
+Note: The insight that you will post on online discussion forum using Learning Management System (LMS) will receive additional scores in class participation.
+
+Offline Activities
+(e-Learning/Self-Paced)	Lecture Guide
+
+•	EIGRP (Enhanced Interior Gateway Routing Protocol) is an
+Advanced Distance Vector routing protocol
+•	It supports large networks
+•	It has very fast convergence time
+•	It supports bounded updates where network topology change
+•	updates are only sent to routers affected by the change
+•	Messages are sent using multicast
+•	EIGRP will automatically perform equal cost load balancing on
+up to 4 paths by default
+•	This can be increased up to 16 paths
+•	EIGRP can also be configured to perform unequal cost load
+balancing
+
+EIGRP Configuration – AS number
+
+•	‘100’ in this example is the Autonomous System (AS), meaning an independent administrative domain. EIGRP routers need to have the same Autonomous System number to peer with each other.
+ 
+
+EIGRP Configuration – network
+ 
+
+•	The network command uses a wildcard mask which is the inverse of a
+subnet mask.
+•	Subtract each octet in the subnet mask from 255 to calculate the
+wildcard mask
+•	A subnet mask of 255.255.0.0 equals a wildcard mask of 0.0.255.255
+•	A subnet mask of 255.255.255.252 equals a wildcard mask of 0.0.0.3
+
+ 
+•	If you do not enter a wildcard mask, the command defaults to
+using the classful boundary
+•	0.255.255.255 for a Class A address
+•	0.0.255.255 for a Class B address
+•	0.0.0.255 for a Class C address
+
+ 
+
+The network command means:
+•	Look for interfaces with an IP address which falls within this
+range.
+•	Enable EIGRP on those interfaces – send out and listen for
+EIGRP hello messages, and peer with adjacent EIGRP routers.
+•	Advertise the network and mask which is configured on
+those interfaces.
+
+ 
+
+•	A default Class A wildcard of 0.255.255.255 will be used
+•	All interfaces fall within this range in our example
+•	EIGRP will be enabled on all interfaces and the router will peer with
+•	adjacent EIGRP routers
+•	Networks advertised:
+- 10.1.0.0/24
+- 10.0.1.0/24
+- 10.0.2.0/24
+- 10.0.0.0/8 is NOT advertised
+
+ 
+•	Interface FE1/0 and FE2/0 fall within this range, FE0/0 does not
+•	EIGRP will be enabled on FE1/0 and FE2/0 and the router will peer with
+adjacent EIGRP routers
+•	Networks advertised:
+- 10.0.1.0/24
+- 10.0.2.0/24
+- 10.1.0.0/24 is NOT advertised
+- 10.0.0.0/16 is NOT advertised
+
+
+
+
+Two different configurations, same result:
+ 
+
+EIGRP Router ID
+•	EIGRP routers identify themselves using an EIGRP Router ID which is in
+the form of an IP address.
+•	This will default to being the highest IP address of any loopback
+•	interfaces configured on the router, or the highest other IP address if a
+loopback does not exist.
+•	Loopback interfaces never go down so the Router ID will not change.
+•	You can also manually specify the Router ID.
+•	Best practice is to use a Loopback or manually set the Router ID.
+
+EIGRP Router ID – Loopback
+•	If a loopback or higher IP address is configured after EIGRP has been set up, the Router ID will change on EIGRP process restart.
+
+EIGRP Configuration – Auto-Summary
+•	EIGRP can automatically summarise routes to the classful boundary
+•	For example, 192.168.10.1/30 can be advertised as 192.168.10.0/24
+•	This is almost never desirable
+•	Auto-summary is disabled by default (it was enabled in some old IOS
+•	versions)
+•	No need to run this command:
+ 
+Manual Summarization
+•	The individual summarised routes are not advertised - only their summary route
+
+ 
+
+Passive Interface Configuration
+ 
+
+ 
+
+ 
+
+EIGRP Metric Calculation
+•	As EIGRP is a Distance Vector routing protocol, it will receive
+routes from its neighbours with their metric to the destination networks
+•	It will then add its metric to reach the neighbour to get the
+total metric to the destination network
+•	If multiple routes are available, the route (or equal cost
+routes) with the best metric will make it into the routing table
+
+
+
+Reported Distance (aka Advertised Distance)
+ 
+
+
+Reported Distance (aka Advertised Distance)
+ 
+
+Feasible Distance
+ 
+
+
+
+
+
+
+
+
+
+
+
+Reported Distance (aka Advertised Distance)
+ 
+
+Successors and Feasible Successors
+•	EIGRP’s best (lowest metric) path to a destination is known as the Successor
+route
+•	When a successor route goes down, the router will query EIGRP peers in an
+attempt to find a different route to that destination.
+•	Queries take time and use resources, so it is preferable to avoid them.
+•	EIGRP routers can do this by storing backup routes, known as Feasible
+Successors, when certain requirements are met.
+•	If a feasible successor is available when a successor route goes down, the
+router will immediately fail over to it with no need to send a query.
+•	A route qualifies as a Feasible Successor if its Reported Distance is
+lower than the Feasible Distance of the current Successor Route.
+•	In our example, R2 sees that the path via R3 to 10.0.1.0/24 has a
+Reported Distance of 200.
+•	This is lower than the Feasible Distance of the Successor Route via R1
+(250), so it qualifies as a Feasible Successor.
+
+ 
+
+
+
+
+EIGRP Metric Calculation
+•	As EIGRP is a Distance Vector routing protocol, it will receive
+routes from its neighbours with their metric to the
+destination networks
+•	It will then add its metric to reach the neighbour to get the
+total metric to the destination network
+•	If multiple routes are available, the route (or equal cost
+routes) with the best metric will make it into the routing table
+•	EIGRP can consider various link characteristics to calculate its metric: Bandwidth, Delay, Reliability and Load
+
+EIGRP Metric Calculation
+•	EIGRP Metric = 256*((K1*Bandwidth) + (K2*Bandwidth)/(256-
+Load) + K3*Delay)*(K5/(Reliability + K4)))
+•	By default, the values of K1 and K3 are set to 1, and K2, K4
+and K5 are set to 0
+•	The formula can be shortened to 256*(bandwidth + delay)
+
+	Engaging Activities
+
+A.	How do you define Enhanced Interior Gateway Routing Protocol?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+B.	How do you explain fast convergence time?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+C.	How do you check for messages being sent using multicast?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+D.	 How load balancing works on EIGRP?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+
+E.	What is the purpose of a number in EIGRP command?
+             __________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+
+
+            Performance Tasks
+
+
+Performance Task 2
+Direction: Provide a one-liner explanation for the terminologies listed below.
+
+Terminologies / sources 	Idea or personal explanation 
+Router eigrp 100	
+Addressed not advertised	
+EIGRP on large scale network	
+No Auto-summary	
+Network <network-address> <Subnet>	
+
+
+
+
+Understanding Directed Assess
+
+ 
+
+ 
+
+   Learning Resources 
+•	https://www.flackbox.com/cisco-ccna-lab-options
+•	https://www.flackbox.com/#elementor-action%3Aaction%3Dpopup%3Aopen%26settings%3DeyJpZCI6IjEwMzk4IiwidG9nZ2xlIjpmYWxzZX0%3D
+•	https://www.youtube.com/channel/UCK4ji45I-zxeWXAFKmu3p6Q
+•	https://study-ccna.com/
+•	https://www.cybrary.it/course/cisco-ccna/
+•	https://www.udemy.com/course/ccna-complete/
+•	https://www.udemy.com/course/networkplus/
+

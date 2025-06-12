@@ -1,0 +1,1073 @@
+{% extends "user/base.html" %}
+{% block title %}Network Management Simulation{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+    --management-blue: #0066cc;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .simulation-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    height: calc(100vh - 40px);
+  }
+
+  .control-panel {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    overflow-y: auto;
+  }
+
+  .panel-title {
+    color: var(--cyber-glow);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--cyber-glow);
+    padding-bottom: 8px;
+  }
+
+  .monitoring-tool-selector {
+    margin-bottom: 20px;
+  }
+
+  .tool-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    text-align: center;
+  }
+
+  .tool-option.selected {
+    border-color: var(--cyber-glow);
+    background: rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+  }
+
+  .tool-option:hover {
+    border-color: var(--cyber-glow);
+    transform: translateY(-2px);
+  }
+
+  .scenario-selector {
+    margin-bottom: 20px;
+  }
+
+  .scenario-option {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(139, 95, 191, 0.3);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .scenario-option.selected {
+    border-color: var(--network-purple);
+    background: rgba(139, 95, 191, 0.2);
+    color: var(--text-primary);
+  }
+
+  .snmp-config {
+    margin-bottom: 20px;
+  }
+
+  .config-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+  }
+
+  .config-input:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+
+  .control-button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+    font-size: 0.9rem;
+  }
+
+  .control-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+  }
+
+  .control-button:disabled {
+    background: rgba(255, 255, 255, 0.2);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .stats-panel {
+    margin-top: 20px;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .stat-value {
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .simulation-area {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .monitoring-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    height: 100%;
+  }
+
+  .dashboard-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    color: var(--cyber-glow);
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    padding-bottom: 8px;
+    text-align: center;
+  }
+
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+  }
+
+  .metric-value {
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .metric-value.warning {
+    color: var(--warning-orange);
+  }
+
+  .metric-value.error {
+    color: var(--error-red);
+  }
+
+  .metric-value.success {
+    color: var(--success-green);
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-green), var(--warning-orange), var(--error-red));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .network-topology {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    height: 300px;
+    position: relative;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    margin-bottom: 15px;
+    overflow: hidden;
+  }
+
+  .network-device {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--management-blue), var(--cyber-glow));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 300ms ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .network-device:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--cyber-glow);
+  }
+
+  .network-device.monitored {
+    animation: monitoring-pulse 2s infinite;
+  }
+
+  .network-device.alert {
+    border-color: var(--error-red);
+    box-shadow: 0 0 15px var(--error-red);
+  }
+
+  .connection-line {
+    position: absolute;
+    background: rgba(0, 212, 255, 0.5);
+    height: 2px;
+    z-index: 1;
+  }
+
+  .snmp-data {
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    color: var(--success-green);
+    margin-bottom: 10px;
+  }
+
+  .alert-item {
+    background: rgba(255, 71, 87, 0.1);
+    border-left: 3px solid var(--error-red);
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+  }
+
+  .alert-item.warning {
+    background: rgba(255, 149, 0, 0.1);
+    border-left-color: var(--warning-orange);
+  }
+
+  .alert-item.info {
+    background: rgba(0, 212, 255, 0.1);
+    border-left-color: var(--cyber-glow);
+  }
+
+  .performance-chart {
+    height: 120px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    position: relative;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .chart-line {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--cyber-glow);
+    animation: chart-update 3s infinite;
+  }
+
+  @keyframes monitoring-pulse {
+    0%, 100% {
+      box-shadow: 0 0 15px var(--cyber-glow);
+    }
+    50% {
+      box-shadow: 0 0 25px var(--cyber-glow);
+    }
+  }
+
+  @keyframes chart-update {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .log-entry {
+    padding: 5px 8px;
+    margin-bottom: 3px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    border-left: 3px solid var(--cyber-glow);
+  }
+
+  .log-entry.success {
+    background: rgba(20, 191, 94, 0.1);
+    border-left-color: var(--success-green);
+  }
+
+  .log-entry.warning {
+    background: rgba(255, 149, 0, 0.1);
+    border-left-color: var(--warning-orange);
+  }
+
+  .log-entry.error {
+    background: rgba(255, 71, 87, 0.1);
+    border-left-color: var(--error-red);
+  }
+
+  @media (max-width: 1200px) {
+    .simulation-container {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .control-panel {
+      position: static;
+    }
+
+    .monitoring-dashboard {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+  <div class="control-panel">
+    <h2 class="panel-title">Network Management</h2>
+    
+    <div class="monitoring-tool-selector">
+      <h3 class="section-title">Monitoring Tool</h3>
+      <div class="tool-option selected" onclick="selectTool('snmp')" id="tool-snmp">
+        <strong>SNMP</strong><br>
+        <small>Simple Network Management Protocol</small>
+      </div>
+      <div class="tool-option" onclick="selectTool('netflow')" id="tool-netflow">
+        <strong>NetFlow</strong><br>
+        <small>Traffic Analysis & Monitoring</small>
+      </div>
+      <div class="tool-option" onclick="selectTool('syslog')" id="tool-syslog">
+        <strong>Syslog</strong><br>
+        <small>System Logging & Events</small>
+      </div>
+    </div>
+
+    <div class="scenario-selector">
+      <h3 class="section-title">Management Scenarios</h3>
+      <div class="scenario-option selected" onclick="selectScenario('discovery')" id="scenario-discovery">
+        Network Discovery
+      </div>
+      <div class="scenario-option" onclick="selectScenario('monitoring')" id="scenario-monitoring">
+        Performance Monitoring
+      </div>
+      <div class="scenario-option" onclick="selectScenario('alerting')" id="scenario-alerting">
+        Fault Detection & Alerting
+      </div>
+      <div class="scenario-option" onclick="selectScenario('reporting')" id="scenario-reporting">
+        Capacity Planning
+      </div>
+    </div>
+
+    <div class="snmp-config">
+      <h3 class="section-title">SNMP Configuration</h3>
+      <input type="text" class="config-input" id="community" placeholder="Community String" value="public">
+      <input type="text" class="config-input" id="version" placeholder="SNMP Version" value="v2c">
+      <input type="text" class="config-input" id="port" placeholder="SNMP Port" value="161">
+      <input type="text" class="config-input" id="polling-interval" placeholder="Polling Interval (sec)" value="30">
+    </div>
+
+    <div class="simulation-controls">
+      <h3 class="section-title">Controls</h3>
+      <button class="control-button" onclick="startMonitoring()">Start Monitoring</button>
+      <button class="control-button" onclick="pauseMonitoring()">Pause</button>
+      <button class="control-button" onclick="resetMonitoring()">Reset</button>
+      <button class="control-button" onclick="generateReport()">Generate Report</button>
+      <button class="control-button" onclick="showTutorial()">Tutorial</button>
+    </div>
+
+    <div class="stats-panel">
+      <h3 class="section-title">Management Statistics</h3>
+      <div class="stat-item">
+        <span>Monitored Devices:</span>
+        <span class="stat-value" id="monitored-count">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Active Alerts:</span>
+        <span class="stat-value" id="alert-count">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Avg Response Time:</span>
+        <span class="stat-value" id="response-time">0ms</span>
+      </div>
+      <div class="stat-item">
+        <span>Network Health:</span>
+        <span class="stat-value" id="network-health">Excellent</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="simulation-area">
+    <!-- Network Topology -->
+    <div class="network-topology" id="network-topology">
+      <!-- Routers -->
+      <div class="network-device" id="router-1" style="top: 20px; left: 100px;" onclick="selectDevice('Router-1')">
+        R1
+      </div>
+      <div class="network-device" id="router-2" style="top: 20px; right: 100px;" onclick="selectDevice('Router-2')">
+        R2
+      </div>
+      
+      <!-- Switches -->
+      <div class="network-device" id="switch-1" style="top: 120px; left: 50px;" onclick="selectDevice('Switch-1')">
+        SW1
+      </div>
+      <div class="network-device" id="switch-2" style="top: 120px; left: 200px;" onclick="selectDevice('Switch-2')">
+        SW2
+      </div>
+      <div class="network-device" id="switch-3" style="top: 120px; right: 50px;" onclick="selectDevice('Switch-3')">
+        SW3
+      </div>
+      
+      <!-- Servers -->
+      <div class="network-device" id="server-1" style="bottom: 20px; left: 80px;" onclick="selectDevice('Server-1')">
+        SRV1
+      </div>
+      <div class="network-device" id="server-2" style="bottom: 20px; right: 80px;" onclick="selectDevice('Server-2')">
+        SRV2
+      </div>
+      
+      <!-- Connection Lines -->
+      <div class="connection-line" style="top: 45px; left: 150px; width: 200px;"></div>
+      <div class="connection-line" style="top: 70px; left: 125px; width: 2px; height: 50px;"></div>
+      <div class="connection-line" style="top: 70px; right: 125px; width: 2px; height: 50px;"></div>
+      <div class="connection-line" style="top: 145px; left: 100px; width: 100px;"></div>
+      <div class="connection-line" style="top: 145px; right: 100px; width: 100px;"></div>
+      <div class="connection-line" style="top: 170px; left: 105px; width: 2px; height: 100px;"></div>
+      <div class="connection-line" style="top: 170px; right: 105px; width: 2px; height: 100px;"></div>
+    </div>
+
+    <!-- Management Dashboard -->
+    <div class="monitoring-dashboard">
+      <!-- Performance Metrics Panel -->
+      <div class="dashboard-panel">
+        <div class="panel-header">Performance Metrics</div>
+        <div class="panel-content">
+          <div class="metric-item">
+            <span>CPU Utilization</span>
+            <span class="metric-value" id="cpu-util">25%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="cpu-progress" style="width: 25%;"></div>
+          </div>
+          
+          <div class="metric-item">
+            <span>Memory Usage</span>
+            <span class="metric-value" id="memory-usage">45%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="memory-progress" style="width: 45%;"></div>
+          </div>
+          
+          <div class="metric-item">
+            <span>Interface Utilization</span>
+            <span class="metric-value" id="interface-util">12%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="interface-progress" style="width: 12%;"></div>
+          </div>
+          
+          <div class="metric-item">
+            <span>Bandwidth Usage</span>
+            <span class="metric-value" id="bandwidth-usage">180 Mbps</span>
+          </div>
+          
+          <div class="performance-chart">
+            <div class="chart-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SNMP Data Panel -->
+      <div class="dashboard-panel">
+        <div class="panel-header">SNMP Data</div>
+        <div class="panel-content" id="snmp-data">
+          <div class="snmp-data">
+            .1.3.6.1.2.1.1.1.0 = Cisco IOS Router<br>
+            .1.3.6.1.2.1.1.3.0 = 142:23:45:67<br>
+            .1.3.6.1.2.1.2.2.1.10.1 = 45729384<br>
+            .1.3.6.1.2.1.2.2.1.16.1 = 23845672
+          </div>
+          
+          <div class="metric-item">
+            <span>System Uptime</span>
+            <span class="metric-value success" id="uptime">142 days</span>
+          </div>
+          
+          <div class="metric-item">
+            <span>Interface Status</span>
+            <span class="metric-value success" id="interface-status">Up</span>
+          </div>
+          
+          <div class="metric-item">
+            <span>Error Count</span>
+            <span class="metric-value" id="error-count">0</span>
+          </div>
+          
+          <div class="metric-item">
+            <span>Last Poll</span>
+            <span class="metric-value" id="last-poll">2 sec ago</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts Panel -->
+      <div class="dashboard-panel">
+        <div class="panel-header">Active Alerts</div>
+        <div class="panel-content" id="alerts-panel">
+          <div class="alert-item info">
+            Network monitoring started
+          </div>
+          <div class="alert-item info">
+            All devices discovered successfully
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Log Panel -->
+      <div class="dashboard-panel">
+        <div class="panel-header">Event Log</div>
+        <div class="panel-content" id="event-log" style="height: 200px; overflow-y: auto;">
+          <div class="log-entry">Network management simulation initialized</div>
+          <div class="log-entry">Click 'Start Monitoring' to begin</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTool = 'snmp';
+let currentScenario = 'discovery';
+let selectedDevice = null;
+let monitoringActive = false;
+let monitoringInterval = null;
+let discoveredDevices = [];
+let alertCount = 0;
+
+// Device information
+const deviceInfo = {
+  'Router-1': { type: 'Router', ip: '192.168.1.1', status: 'Up', cpu: 25, memory: 45 },
+  'Router-2': { type: 'Router', ip: '192.168.1.2', status: 'Up', cpu: 30, memory: 50 },
+  'Switch-1': { type: 'Switch', ip: '192.168.1.10', status: 'Up', cpu: 15, memory: 35 },
+  'Switch-2': { type: 'Switch', ip: '192.168.1.11', status: 'Up', cpu: 20, memory: 40 },
+  'Switch-3': { type: 'Switch', ip: '192.168.1.12', status: 'Up', cpu: 18, memory: 38 },
+  'Server-1': { type: 'Server', ip: '192.168.1.100', status: 'Up', cpu: 65, memory: 75 },
+  'Server-2': { type: 'Server', ip: '192.168.1.101', status: 'Up', cpu: 45, memory: 60 }
+};
+
+function selectTool(tool) {
+  currentTool = tool;
+  
+  // Update UI
+  document.querySelectorAll('.tool-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`tool-${tool}`).classList.add('selected');
+  
+  logEvent(`Selected monitoring tool: ${tool.toUpperCase()}`, 'success');
+  updateToolInterface(tool);
+}
+
+function selectScenario(scenario) {
+  currentScenario = scenario;
+  
+  // Update UI
+  document.querySelectorAll('.scenario-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`scenario-${scenario}`).classList.add('selected');
+  
+  logEvent(`Scenario changed to: ${scenario}`, 'success');
+}
+
+function selectDevice(deviceId) {
+  selectedDevice = deviceId;
+  
+  // Clear previous selections
+  document.querySelectorAll('.network-device').forEach(device => {
+    device.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+  });
+  
+  // Highlight selected device
+  const deviceElement = document.getElementById(deviceId.toLowerCase());
+  deviceElement.style.border = '2px solid var(--cyber-glow)';
+  
+  logEvent(`Selected device: ${deviceId}`, 'success');
+  updateDeviceMetrics(deviceId);
+}
+
+function updateDeviceMetrics(deviceId) {
+  const device = deviceInfo[deviceId];
+  if (!device) return;
+  
+  // Update performance metrics based on selected device
+  document.getElementById('cpu-util').textContent = device.cpu + '%';
+  document.getElementById('cpu-progress').style.width = device.cpu + '%';
+  
+  document.getElementById('memory-usage').textContent = device.memory + '%';
+  document.getElementById('memory-progress').style.width = device.memory + '%';
+  
+  // Update SNMP data
+  updateSNMPData(device);
+}
+
+function updateSNMPData(device) {
+  const snmpPanel = document.getElementById('snmp-data');
+  const snmpData = `
+    <div class="snmp-data">
+      .1.3.6.1.2.1.1.1.0 = ${device.type}<br>
+      .1.3.6.1.2.1.1.3.0 = ${Math.floor(Math.random() * 999999)}<br>
+      .1.3.6.1.2.1.2.2.1.10.1 = ${Math.floor(Math.random() * 90000000) + 10000000}<br>
+      .1.3.6.1.2.1.2.2.1.16.1 = ${Math.floor(Math.random() * 50000000) + 10000000}
+    </div>
+  `;
+  
+  snmpPanel.innerHTML = snmpData + snmpPanel.innerHTML.substring(snmpPanel.innerHTML.indexOf('<div class="metric-item">'));
+}
+
+function updateToolInterface(tool) {
+  switch(tool) {
+    case 'snmp':
+      document.querySelector('.snmp-config h3').textContent = 'SNMP Configuration';
+      break;
+    case 'netflow':
+      document.querySelector('.snmp-config h3').textContent = 'NetFlow Configuration';
+      break;
+    case 'syslog':
+      document.querySelector('.snmp-config h3').textContent = 'Syslog Configuration';
+      break;
+  }
+}
+
+function startMonitoring() {
+  if (monitoringActive) return;
+  
+  monitoringActive = true;
+  logEvent('Starting network monitoring...', 'success');
+  
+  // Run scenario-specific monitoring
+  const scenarios = {
+    'discovery': simulateDiscovery,
+    'monitoring': simulatePerformanceMonitoring,
+    'alerting': simulateFaultDetection,
+    'reporting': simulateCapacityPlanning
+  };
+  
+  scenarios[currentScenario]();
+  
+  // Start periodic updates
+  monitoringInterval = setInterval(updateMetrics, 3000);
+}
+
+function simulateDiscovery() {
+  logEvent('Initiating network discovery...', 'success');
+  
+  const devices = Object.keys(deviceInfo);
+  let discoveryIndex = 0;
+  
+  const discoverDevice = () => {
+    if (discoveryIndex < devices.length) {
+      const device = devices[discoveryIndex];
+      
+      logEvent(`Discovering ${device}...`, 'success');
+      
+      setTimeout(() => {
+        const deviceElement = document.getElementById(device.toLowerCase());
+        deviceElement.classList.add('monitored');
+        
+        discoveredDevices.push(device);
+        updateStats();
+        
+        logEvent(`${device} discovered - IP: ${deviceInfo[device].ip}`, 'success');
+        
+        discoveryIndex++;
+        if (discoveryIndex < devices.length) {
+          setTimeout(discoverDevice, 1500);
+        } else {
+          logEvent('Network discovery complete', 'success');
+        }
+      }, 1000);
+    }
+  };
+  
+  discoverDevice();
+}
+
+function simulatePerformanceMonitoring() {
+  logEvent('Starting performance monitoring...', 'success');
+  
+  // Mark all devices as monitored
+  document.querySelectorAll('.network-device').forEach(device => {
+    device.classList.add('monitored');
+  });
+  
+  discoveredDevices = Object.keys(deviceInfo);
+  updateStats();
+  
+  setTimeout(() => {
+    logEvent('Performance baseline established', 'success');
+    
+    setTimeout(() => {
+      logEvent('Detecting performance anomaly on Server-1...', 'warning');
+      addAlert('Server-1 CPU utilization above threshold (85%)', 'warning');
+      
+      // Update Server-1 metrics
+      deviceInfo['Server-1'].cpu = 85;
+      if (selectedDevice === 'Server-1') {
+        updateDeviceMetrics('Server-1');
+      }
+      
+    }, 3000);
+  }, 2000);
+}
+
+function simulateFaultDetection() {
+  logEvent('Initializing fault detection system...', 'success');
+  
+  // Start with all devices monitored
+  document.querySelectorAll('.network-device').forEach(device => {
+    device.classList.add('monitored');
+  });
+  
+  discoveredDevices = Object.keys(deviceInfo);
+  updateStats();
+  
+  setTimeout(() => {
+    logEvent('Simulating interface failure on Switch-2...', 'error');
+    
+    const switch2 = document.getElementById('switch-2');
+    switch2.classList.add('alert');
+    
+    addAlert('Switch-2 interface Gi0/1 down', 'error');
+    addAlert('Link failure detected between Switch-2 and Router-2', 'error');
+    
+    setTimeout(() => {
+      logEvent('Automatic failover to backup path initiated', 'warning');
+      addAlert('Traffic rerouted via Switch-1', 'info');
+      
+      setTimeout(() => {
+        logEvent('Failover complete - Network connectivity restored', 'success');
+        switch2.classList.remove('alert');
+      }, 3000);
+    }, 2000);
+  }, 2000);
+}
+
+function simulateCapacityPlanning() {
+  logEvent('Initiating capacity planning analysis...', 'success');
+  
+  // Mark all devices as monitored
+  document.querySelectorAll('.network-device').forEach(device => {
+    device.classList.add('monitored');
+  });
+  
+  discoveredDevices = Object.keys(deviceInfo);
+  updateStats();
+  
+  setTimeout(() => {
+    logEvent('Analyzing historical traffic patterns...', 'success');
+    
+    setTimeout(() => {
+      logEvent('Bandwidth utilization trending upward', 'warning');
+      document.getElementById('bandwidth-usage').textContent = '750 Mbps';
+      
+      setTimeout(() => {
+        addAlert('Projected capacity exhaustion in 6 months', 'warning');
+        addAlert('Recommend 1Gbps link upgrade', 'info');
+        logEvent('Capacity planning report generated', 'success');
+      }, 2000);
+    }, 3000);
+  }, 1500);
+}
+
+function updateMetrics() {
+  if (!monitoringActive) return;
+  
+  // Simulate metric fluctuations
+  const cpuFluctuation = Math.floor(Math.random() * 10) - 5;
+  const memoryFluctuation = Math.floor(Math.random() * 8) - 4;
+  const interfaceFluctuation = Math.floor(Math.random() * 15) - 7;
+  
+  let currentCpu = parseInt(document.getElementById('cpu-util').textContent);
+  let currentMemory = parseInt(document.getElementById('memory-usage').textContent);
+  let currentInterface = parseInt(document.getElementById('interface-util').textContent);
+  
+  currentCpu = Math.max(5, Math.min(95, currentCpu + cpuFluctuation));
+  currentMemory = Math.max(10, Math.min(90, currentMemory + memoryFluctuation));
+  currentInterface = Math.max(1, Math.min(80, currentInterface + interfaceFluctuation));
+  
+  document.getElementById('cpu-util').textContent = currentCpu + '%';
+  document.getElementById('cpu-progress').style.width = currentCpu + '%';
+  
+  document.getElementById('memory-usage').textContent = currentMemory + '%';
+  document.getElementById('memory-progress').style.width = currentMemory + '%';
+  
+  document.getElementById('interface-util').textContent = currentInterface + '%';
+  document.getElementById('interface-progress').style.width = currentInterface + '%';
+  
+  // Update response time
+  const responseTime = Math.floor(Math.random() * 20) + 5;
+  document.getElementById('response-time').textContent = responseTime + 'ms';
+  
+  // Update last poll time
+  document.getElementById('last-poll').textContent = '0 sec ago';
+}
+
+function addAlert(message, type) {
+  const alertsPanel = document.getElementById('alerts-panel');
+  const alert = document.createElement('div');
+  alert.className = `alert-item ${type}`;
+  alert.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  
+  alertsPanel.appendChild(alert);
+  
+  alertCount++;
+  updateStats();
+  
+  // Remove old alerts if too many
+  while (alertsPanel.children.length > 8) {
+    alertsPanel.removeChild(alertsPanel.firstChild);
+  }
+}
+
+function updateStats() {
+  document.getElementById('monitored-count').textContent = discoveredDevices.length;
+  document.getElementById('alert-count').textContent = alertCount;
+  
+  // Calculate network health
+  const healthScore = Math.max(0, 100 - (alertCount * 20));
+  let healthText = 'Excellent';
+  if (healthScore < 80) healthText = 'Good';
+  if (healthScore < 60) healthText = 'Fair';
+  if (healthScore < 40) healthText = 'Poor';
+  
+  document.getElementById('network-health').textContent = healthText;
+}
+
+function pauseMonitoring() {
+  monitoringActive = false;
+  if (monitoringInterval) {
+    clearInterval(monitoringInterval);
+  }
+  logEvent('Monitoring paused', 'warning');
+}
+
+function resetMonitoring() {
+  monitoringActive = false;
+  discoveredDevices = [];
+  alertCount = 0;
+  selectedDevice = null;
+  
+  if (monitoringInterval) {
+    clearInterval(monitoringInterval);
+  }
+  
+  // Reset device appearances
+  document.querySelectorAll('.network-device').forEach(device => {
+    device.classList.remove('monitored', 'alert');
+    device.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+  });
+  
+  // Reset device info
+  Object.keys(deviceInfo).forEach(deviceId => {
+    if (deviceInfo[deviceId].type === 'Server') {
+      deviceInfo[deviceId].cpu = Math.floor(Math.random() * 30) + 45;
+      deviceInfo[deviceId].memory = Math.floor(Math.random() * 25) + 60;
+    } else {
+      deviceInfo[deviceId].cpu = Math.floor(Math.random() * 20) + 15;
+      deviceInfo[deviceId].memory = Math.floor(Math.random() * 20) + 35;
+    }
+  });
+  
+  // Reset metrics
+  document.getElementById('cpu-util').textContent = '25%';
+  document.getElementById('cpu-progress').style.width = '25%';
+  document.getElementById('memory-usage').textContent = '45%';
+  document.getElementById('memory-progress').style.width = '45%';
+  document.getElementById('interface-util').textContent = '12%';
+  document.getElementById('interface-progress').style.width = '12%';
+  document.getElementById('bandwidth-usage').textContent = '180 Mbps';
+  document.getElementById('response-time').textContent = '0ms';
+  
+  // Clear alerts
+  const alertsPanel = document.getElementById('alerts-panel');
+  alertsPanel.innerHTML = `
+    <div class="alert-item info">Network monitoring reset</div>
+    <div class="alert-item info">Ready to start monitoring</div>
+  `;
+  
+  // Clear event log
+  document.getElementById('event-log').innerHTML = `
+    <div class="log-entry">Network management simulation reset</div>
+    <div class="log-entry">Click 'Start Monitoring' to begin</div>
+  `;
+  
+  updateStats();
+  logEvent('Monitoring system reset complete', 'success');
+}
+
+function generateReport() {
+  logEvent('Generating network management report...', 'success');
+  
+  setTimeout(() => {
+    const report = `
+      Network Management Report
+      ========================
+      Monitored Devices: ${discoveredDevices.length}
+      Active Alerts: ${alertCount}
+      Average Response Time: ${document.getElementById('response-time').textContent}
+      Network Health: ${document.getElementById('network-health').textContent}
+      
+      Recommendations:
+      - Monitor bandwidth utilization trends
+      - Implement proactive alerting thresholds
+      - Schedule regular capacity planning reviews
+    `;
+    
+    logEvent('Report generated successfully', 'success');
+    addAlert('Network management report ready', 'info');
+  }, 1500);
+}
+
+function logEvent(message, type = 'info') {
+  const log = document.getElementById('event-log');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  
+  // Limit log entries
+  while (log.children.length > 15) {
+    log.removeChild(log.firstChild);
+  }
+}
+
+function showTutorial() {
+  alert(`Network Management Simulation Tutorial
+
+1. MONITORING TOOLS:
+   • SNMP: Device monitoring and management
+   • NetFlow: Traffic analysis and reporting
+   • Syslog: System event logging
+
+2. MANAGEMENT SCENARIOS:
+   • Discovery: Automatic device detection
+   • Monitoring: Performance metrics collection
+   • Alerting: Fault detection and notification
+   • Reporting: Capacity planning analysis
+
+3. CONFIGURATION OPTIONS:
+   • Community String: SNMP access control
+   • Polling Interval: Data collection frequency
+   • Version: SNMP protocol version
+   • Port: SNMP communication port
+
+4. HOW TO USE:
+   • Select monitoring tool and scenario
+   • Configure SNMP parameters
+   • Click devices to view detailed metrics
+   • Start monitoring to begin simulation
+
+5. OBSERVATIONS:
+   • Real-time performance metrics
+   • Automated fault detection
+   • Alert generation and management
+   • Capacity planning insights`);
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', () => {
+  selectTool('snmp');
+  selectScenario('discovery');
+  logEvent('Network Management simulation initialized', 'success');
+});
+</script>
+{% endblock %}

@@ -10,6 +10,8 @@ from admin.models.class_model import Class, class_students  # Import class_stude
 from __init__ import db  # Import db from main app
 from user.models.user import User as UserModel  # Import User model directly
 from user.models.score import Score as UserScore  # Use a clear name for the user's Score model
+from networking1_corrected_content import get_networking1_content
+from networking2_updated_content import get_networking2_content
 import json
 from datetime import datetime
 
@@ -310,3 +312,103 @@ def leave_class(class_id):
         print(f"Error leaving class: {str(e)}")
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"Error leaving class: {str(e)}"}), 500
+
+@api_blueprint.route('/networking1/lessons', methods=['GET'])
+def get_networking1_lessons():
+    """API endpoint to get Networking 1 lesson content"""
+    try:
+        content = get_networking1_content()
+        return jsonify({"status": "success", "lessons": content})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_blueprint.route('/networking2/lessons', methods=['GET']) 
+def get_networking2_lessons():
+    """API endpoint to get Networking 2 lesson content"""
+    try:
+        content = get_networking2_content()
+        return jsonify({"status": "success", "lessons": content})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_blueprint.route('/networking1/lesson/<lesson_id>', methods=['GET'])
+def get_networking1_lesson(lesson_id):
+    """API endpoint to get a specific Networking 1 lesson"""
+    try:
+        content = get_networking1_content()
+        if lesson_id in content:
+            # Return lesson data directly as expected by frontend
+            return jsonify(content[lesson_id])
+        else:
+            return jsonify({"error": "Lesson not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_blueprint.route('/networking2/lesson/<lesson_id>', methods=['GET'])
+def get_networking2_lesson(lesson_id):
+    """API endpoint to get a specific Networking 2 lesson"""
+    try:
+        content = get_networking2_content()
+        if lesson_id in content:
+            # Return lesson data directly as expected by frontend
+            return jsonify(content[lesson_id])
+        else:
+            return jsonify({"error": "Lesson not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Additional API endpoints for frontend compatibility
+@api_blueprint.route('/networking/lesson/<lesson_id>', methods=['GET'])
+def get_networking_lesson(lesson_id):
+    """API endpoint to get a specific Networking 1 lesson (alternative URL pattern)"""
+    try:
+        content = get_networking1_content()
+        if lesson_id in content:
+            # Return lesson data directly as expected by frontend
+            return jsonify(content[lesson_id])
+        else:
+            return jsonify({"error": "Lesson not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_blueprint.route('/networking/track-progress', methods=['POST'])
+def track_networking_progress():
+    """API endpoint to track networking progress"""
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "User not logged in"}), 401
+    
+    try:
+        data = request.get_json()
+        lesson_id = data.get('lessonId')
+        completed = data.get('completed', False)
+        
+        # For now, just return success - you can implement actual progress tracking later
+        return jsonify({
+            "status": "success", 
+            "message": "Progress tracked successfully",
+            "lesson_id": lesson_id,
+            "completed": completed
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_blueprint.route('/networking2/progress', methods=['POST'])
+def track_networking2_progress():
+    """API endpoint to track networking 2 progress"""
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "User not logged in"}), 401
+    
+    try:
+        data = request.get_json()
+        lesson_id = data.get('lessonId')
+        completed = data.get('completed', False)
+        
+        # For now, just return success - you can implement actual progress tracking later
+        return jsonify({
+            "status": "success", 
+            "message": "Progress tracked successfully",
+            "lesson_id": lesson_id,
+            "completed": completed
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500

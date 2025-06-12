@@ -1,0 +1,667 @@
+{% extends "user/base.html" %}
+{% block title %}TCP/IP Protocol Simulation{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+    --application-layer: #00d4ff;
+    --transport-layer: #14bf5e;
+    --internet-layer: #ff9500;
+    --network-layer: #ff4757;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .simulation-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    height: calc(100vh - 40px);
+  }
+
+  .control-panel {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    overflow-y: auto;
+  }
+
+  .simulation-area {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    color: var(--cyber-glow);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .tcp-stack {
+    margin-bottom: 30px;
+  }
+
+  .stack-layer {
+    background: linear-gradient(135deg, var(--card-bg), rgba(255, 255, 255, 0.1));
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    position: relative;
+  }
+
+  .stack-layer:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .stack-layer.active {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px var(--cyber-glow);
+  }
+
+  .layer-application { border-color: var(--application-layer); }
+  .layer-transport { border-color: var(--transport-layer); }
+  .layer-internet { border-color: var(--internet-layer); }
+  .layer-network { border-color: var(--network-layer); }
+
+  .layer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .layer-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .layer-protocols {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .layer-status {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .scenario-section {
+    margin-bottom: 25px;
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    padding-bottom: 5px;
+  }
+
+  .scenario-option {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .scenario-option:hover {
+    background: rgba(0, 212, 255, 0.2);
+    transform: translateX(5px);
+  }
+
+  .scenario-option.selected {
+    border-color: var(--cyber-glow);
+    background: rgba(0, 212, 255, 0.3);
+  }
+
+  .scenario-icon {
+    width: 30px;
+    height: 30px;
+    background: var(--cyber-glow);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+
+  .scenario-info {
+    flex: 1;
+  }
+
+  .scenario-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .scenario-desc {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+
+  .control-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+  }
+
+  .control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+  }
+
+  .control-btn.secondary {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+  }
+
+  .control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .packet-visualization {
+    position: relative;
+    height: 400px;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(139, 95, 191, 0.1) 0%, transparent 50%);
+    border: 2px dashed rgba(0, 212, 255, 0.3);
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  .packet {
+    position: absolute;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+    opacity: 0;
+    transform: translateX(-100px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .packet.moving {
+    animation: packetFlow 4s ease-in-out;
+  }
+
+  @keyframes packetFlow {
+    0% { opacity: 1; transform: translateX(-100px); }
+    25% { opacity: 1; transform: translateX(25%); }
+    50% { opacity: 1; transform: translateX(50%); }
+    75% { opacity: 1; transform: translateX(75%); }
+    100% { opacity: 1; transform: translateX(calc(100% + 100px)); }
+  }
+
+  .handshake-visualization {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    height: 300px;
+    align-items: center;
+    margin: 20px 0;
+  }
+
+  .endpoint {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--cyber-glow);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .endpoint-title {
+    color: var(--cyber-glow);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .endpoint-ip {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .connection-flow {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .flow-arrow {
+    width: 80%;
+    height: 3px;
+    background: var(--cyber-glow);
+    position: relative;
+    margin: 5px 0;
+    opacity: 0;
+    border-radius: 2px;
+  }
+
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: -3px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid var(--cyber-glow);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+
+  .flow-arrow.active {
+    animation: flowGlow 1s ease-in-out;
+  }
+
+  @keyframes flowGlow {
+    0% { opacity: 0; transform: scaleX(0); }
+    50% { opacity: 1; transform: scaleX(0.5); }
+    100% { opacity: 1; transform: scaleX(1); }
+  }
+
+  .packet-details {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .log-entry {
+    margin-bottom: 5px;
+    padding: 3px 0;
+  }
+
+  .log-entry.success { color: var(--success-green); }
+  .log-entry.info { color: var(--cyber-glow); }
+  .log-entry.warning { color: var(--warning-orange); }
+  .log-entry.error { color: var(--error-red); }
+
+  .port-config {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .port-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .ip-config {
+    margin-bottom: 15px;
+  }
+
+  .ip-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <h2 class="panel-title">TCP/IP Configuration</h2>
+    
+    <!-- TCP/IP Stack -->
+    <div class="tcp-stack">
+      <div class="stack-layer layer-application" onclick="showLayerInfo('application')">
+        <div class="layer-header">
+          <div>
+            <div class="layer-name">Application Layer</div>
+            <div class="layer-protocols">HTTP, FTP, SMTP, DNS</div>
+          </div>
+          <div class="layer-status" id="app-status"></div>
+        </div>
+      </div>
+      
+      <div class="stack-layer layer-transport" onclick="showLayerInfo('transport')">
+        <div class="layer-header">
+          <div>
+            <div class="layer-name">Transport Layer</div>
+            <div class="layer-protocols">TCP, UDP</div>
+          </div>
+          <div class="layer-status" id="transport-status"></div>
+        </div>
+      </div>
+      
+      <div class="stack-layer layer-internet" onclick="showLayerInfo('internet')">
+        <div class="layer-header">
+          <div>
+            <div class="layer-name">Internet Layer</div>
+            <div class="layer-protocols">IP, ICMP, ARP</div>
+          </div>
+          <div class="layer-status" id="internet-status"></div>
+        </div>
+      </div>
+      
+      <div class="stack-layer layer-network" onclick="showLayerInfo('network')">
+        <div class="layer-header">
+          <div>
+            <div class="layer-name">Network Access</div>
+            <div class="layer-protocols">Ethernet, Wi-Fi</div>
+          </div>
+          <div class="layer-status" id="network-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Scenarios -->
+    <div class="scenario-section">
+      <h3 class="section-title">Simulation Scenarios</h3>
+      
+      <div class="scenario-option" onclick="selectScenario('web')" id="scenario-web">
+        <div class="scenario-icon">🌐</div>
+        <div class="scenario-info">
+          <div class="scenario-name">Web Request (HTTP)</div>
+          <div class="scenario-desc">Simulate HTTP GET request</div>
+        </div>
+      </div>
+      
+      <div class="scenario-option" onclick="selectScenario('email')" id="scenario-email">
+        <div class="scenario-icon">📧</div>
+        <div class="scenario-info">
+          <div class="scenario-name">Email Transfer (SMTP)</div>
+          <div class="scenario-desc">Send email via SMTP protocol</div>
+        </div>
+      </div>
+      
+      <div class="scenario-option" onclick="selectScenario('file')" id="scenario-file">
+        <div class="scenario-icon">📁</div>
+        <div class="scenario-info">
+          <div class="scenario-name">File Transfer (FTP)</div>
+          <div class="scenario-desc">Upload file using FTP</div>
+        </div>
+      </div>
+      
+      <div class="scenario-option" onclick="selectScenario('handshake')" id="scenario-handshake">
+        <div class="scenario-icon">🤝</div>
+        <div class="scenario-info">
+          <div class="scenario-name">TCP Handshake</div>
+          <div class="scenario-desc">Three-way handshake demo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Configuration -->
+    <div class="scenario-section">
+      <h3 class="section-title">Network Configuration</h3>
+      
+      <div class="ip-config">
+        <input type="text" class="ip-input" id="source-ip" placeholder="Source IP (192.168.1.100)" value="192.168.1.100">
+        <input type="text" class="ip-input" id="dest-ip" placeholder="Destination IP (192.168.1.200)" value="192.168.1.200">
+      </div>
+      
+      <div class="port-config">
+        <input type="number" class="port-input" id="source-port" placeholder="Source Port" value="12345">
+        <input type="number" class="port-input" id="dest-port" placeholder="Dest Port" value="80">
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="control-btn" onclick="startSimulation()" id="start-btn">
+        <i class="fas fa-play"></i> Start Simulation
+      </button>
+      <button class="control-btn secondary" onclick="resetSimulation()">
+        <i class="fas fa-redo"></i> Reset
+      </button>
+      <button class="control-btn secondary" onclick="showTutorial()">
+        <i class="fas fa-question"></i> Tutorial
+      </button>
+    </div>
+  </div>
+
+  <!-- Simulation Area -->
+  <div class="simulation-area">
+    <h2 class="panel-title">TCP/IP Packet Flow</h2>
+    
+    <!-- Handshake Visualization (hidden by default) -->
+    <div class="handshake-visualization" id="handshake-viz" style="display: none;">
+      <div class="endpoint">
+        <div class="endpoint-title">Client</div>
+        <div class="endpoint-ip" id="client-ip">192.168.1.100</div>
+      </div>
+      
+      <div class="connection-flow">
+        <div class="flow-arrow" id="syn-arrow"></div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">SYN</div>
+        <div class="flow-arrow" id="synack-arrow" style="transform: scaleX(-1);"></div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">SYN-ACK</div>
+        <div class="flow-arrow" id="ack-arrow"></div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; text-align: center;">ACK</div>
+      </div>
+      
+      <div class="endpoint">
+        <div class="endpoint-title">Server</div>
+        <div class="endpoint-ip" id="server-ip">192.168.1.200</div>
+      </div>
+    </div>
+
+    <!-- Packet Visualization -->
+    <div class="packet-visualization" id="packet-viz">
+      <!-- Packets will be generated here dynamically -->
+    </div>
+
+    <!-- Packet Details Log -->
+    <div class="packet-details" id="packet-log">
+      <div class="log-entry info">TCP/IP Simulation Ready</div>
+      <div class="log-entry">Select a scenario and click Start Simulation</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showLayerInfo(layer) {
+  const layers = {
+    application: {
+      name: "Application Layer",
+      protocols: "HTTP, FTP, SMTP, DNS",
+      description: "The application layer is the topmost layer of the TCP/IP model. It provides network services to the end-users and enables applications to communicate over the network.",
+      example: "Web browsers (HTTP), Email clients (SMTP), File transfer applications (FTP)."
+    },
+    transport: {
+      name: "Transport Layer",
+      protocols: "TCP, UDP",
+      description: "The transport layer is responsible for end-to-end communication and data flow control. It provides reliable or unreliable delivery, depending on the protocol used.",
+      example: "TCP ensures reliable delivery of packets, while UDP is used for faster, connectionless communication."
+    },
+    internet: {
+      name: "Internet Layer",
+      protocols: "IP, ICMP, ARP",
+      description: "The internet layer handles the routing of packets across the network. It determines the best path for data to travel from the source to the destination.",
+      example: "IP (Internet Protocol) is used to route packets, ICMP is used for network diagnostics (ping), and ARP is used to map IP addresses to MAC addresses."
+    },
+    network: {
+      name: "Network Access Layer",
+      protocols: "Ethernet, Wi-Fi",
+      description: "The network access layer defines how data is physically transmitted over the network medium. It includes protocols for wired and wireless communication.",
+      example: "Ethernet is used for wired connections, while Wi-Fi is used for wireless connections."
+    }
+  };
+
+  const selectedLayer = layers[layer];
+
+  if (selectedLayer) {
+    alert(`Layer: ${selectedLayer.name}\nProtocols: ${selectedLayer.protocols}\n\nDescription: ${selectedLayer.description}\n\nExample: ${selectedLayer.example}`);
+  }
+}
+
+function selectScenario(scenario) {
+  const scenarios = {
+    web: {
+      description: "Simulate a basic HTTP GET request to fetch a webpage.",
+      packetFlow: [
+        { from: "Client", to: "Server", content: "GET / HTTP/1.1" },
+        { from: "Server", to: "Client", content: "HTTP/1.1 200 OK" }
+      ]
+    },
+    email: {
+      description: "Simulate sending an email using the SMTP protocol.",
+      packetFlow: [
+        { from: "Client", to: "Server", content: "EHLO client.example.com" },
+        { from: "Server", to: "Client", content: "250 Hello client.example.com" },
+        { from: "Client", to: "Server", content: "MAIL FROM:<user@example.com>" },
+        { from: "Server", to: "Client", content: "250 OK" },
+        { from: "Client", to: "Server", content: "RCPT TO:<recipient@example.com>" },
+        { from: "Server", to: "Client", content: "250 OK" },
+        { from: "Client", to: "Server", content: "DATA" },
+        { from: "Server", to: "Client", content: "354 End data with <CR><LF>.<CR><LF>" },
+        { from: "Client", to: "Server", content: "Subject: Test Email<CR><LF>From: User <user@example.com><CR><LF>To: Recipient <recipient@example.com><CR><LF><CR><LF>This is a test email.<CR><LF>." },
+        { from: "Server", to: "Client", content: "250 OK: queued as 12345" }
+      ]
+    },
+    file: {
+      description: "Simulate uploading a file using the FTP protocol.",
+      packetFlow: [
+        { from: "Client", to: "Server", content: "USER anonymous" },
+        { from: "Server", to: "Client", content: "331 Guest login ok, send your complete email address as password" },
+        { from: "Client", to: "Server", content: "PASS guest@example.com" },
+        { from: "Server", to: "Client", content: "230 Guest login successful" },
+        { from: "Client", to: "Server", content: "PUSH /path/to/file.txt" },
+        { from: "Server", to: "Client", content: "150 Opening binary mode data connection for file transfer" },
+        { from: "Server", to: "Client", content: "226 Transfer complete" }
+      ]
+    },
+    handshake: {
+      description: "Demonstrate the TCP three-way handshake process.",
+      packetFlow: [
+        { from: "Client", to: "Server", content: "SYN" },
+        { from: "Server", to: "Client", content: "SYN-ACK" },
+        { from: "Client", to: "Server", content: "ACK" }
+      ]
+    }
+  };
+
+  const selectedScenario = scenarios[scenario];
+
+  if (selectedScenario) {
+    document.getElementById('packet-log').innerHTML = `<div class="log-entry info">Scenario: ${selectedScenario.description}</div>`;
+    
+    selectedScenario.packetFlow.forEach((packet, index) => {
+      setTimeout(() => {
+        const packetElement = document.createElement('div');
+        packetElement.className = 'packet moving';
+        packetElement.innerText = `${packet.from} ➔ ${packet.to}: ${packet.content}`;
+        document.getElementById('packet-viz').appendChild(packetElement);
+        
+        // Scroll to the bottom of the packet log
+        const packetLog = document.getElementById('packet-log');
+        packetLog.scrollTop = packetLog.scrollHeight;
+      }, index * 2000);
+    });
+  }
+}
+
+function startSimulation() {
+  const selectedScenario = document.querySelector('.scenario-option.selected');
+  
+  if (selectedScenario) {
+    const scenarioId = selectedScenario.id.replace('scenario-', '');
+    selectScenario(scenarioId);
+  } else {
+    alert('Please select a simulation scenario.');
+  }
+}
+
+function resetSimulation() {
+  document.getElementById('packet-viz').innerHTML = '';
+  document.getElementById('packet-log').innerHTML = '<div class="log-entry info">TCP/IP Simulation Ready</div><div class="log-entry">Select a scenario and click Start Simulation</div>';
+}
+
+function showTutorial() {
+  alert('TCP/IP Protocol Simulation Tutorial\n\n1. Configure the TCP/IP settings in the "TCP/IP Configuration" panel.\n2. Select a simulation scenario from the "Simulation Scenarios" section.\n3. Click "Start Simulation" to begin the packet flow demonstration.\n4. Observe the packet visualization and details in the "TCP/IP Packet Flow" area.\n5. Use the "Reset" button to clear the simulation and start over.\n\nNote: This simulation provides a basic demonstration of TCP/IP packet flow and may not represent real-world network behavior.');
+}
+
+// Initial setup
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default IPs and ports
+  document.getElementById('source-ip').value = '192.168.1.100';
+  document.getElementById('dest-ip').value = '192.168.1.200';
+  document.getElementById('source-port').value = '12345';
+  document.getElementById('dest-port').value = '80';
+});
+</script>
+{% endblock %}

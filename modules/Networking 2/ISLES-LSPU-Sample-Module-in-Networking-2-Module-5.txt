@@ -1,0 +1,268 @@
+
+LSPU Self-Paced Learning Module (SLM)
+Course	ITEP 309 Networking 2
+Sem/AY	First Semester/2020-2021
+Module No. 	4
+Lesson Title	OSPF
+Week Duration	8-9
+Date	November 23 – December 04, 2020
+Description of the Lesson	This lesson will discuss on OSPF (Open Shortest Path First) focusing on how routing can be fully utilized using one of the most used protocols on a wide-scale of network topologies.
+
+Learning Outcomes 
+
+Intended Learning Outcomes	Students should be able to meet the following intended learning outcomes:
+•	Understand the fundamental usage of OSPF
+•	Elaborate how OSPF should be implemented on top of the other protocols
+Targets/ Objectives	At the end of the lesson, students should be able to:
+•	Learn and understand the open shortest path first
+•	To demonstrate the configuration of open shortest path first
+•	To identify the usage and importance of open shortest path first on a corporate network
+•	To simulate different scenarios in implementing open shortest path first
+	
+
+Student Learning Strategies
+
+
+Online Activities (Synchronous/
+Asynchronous)	A.	Lecture presentation uploaded in Google Classroom
+Students will be instructed to download lecture presentations with narrations / pre-recorded lecture presentation uploaded in Google Classroom.
+
+For further instructions, refer to your Google Classroom and see the schedule of activities for this module.
+
+B.	Learning Guide Questions:
+1.	What is Open Shortest Path First?
+2.	What is Dijskstra’s algorithm>?
+3.	Is OSPF one of the open standard protocol?
+Note: The insight that you will post on online discussion forum using Learning Management System (LMS) will receive additional scores in class participation.
+
+Offline Activities
+(e-Learning/Self-Paced)	Lecture Guide
+
+•	OSPF is a Link State routing protocol
+•	It supports large networks
+•	It has very fast convergence time
+•	Messages are sent using multicast
+•	OSPF is an open standard protocol
+•	It uses Dijkstra’s Shortest Path First algorithm to determine the best path
+to learned networks
+
+OSPF vs EIGRP vs RIP
+
+•	RIP has scalability limitations so it is not typically used in production networks
+•	It is suitable for small networks or lab/test environments
+•	The choice for most companies for their IGP comes down to EIGRP or OSPF
+•	OSPF is the most commonly used
+•	It supports large networks and has always been an open standard.
+•	It is supported on all vendors equipment EIGRP can be simpler to implement and troubleshoot It was historically a Cisco proprietary protocol
+•	It is now an open standard but there is still limited support on other vendor’s equipment
+
+Link State Routing Protocols
+
+•	In Link State routing protocols, each router describes itself and its interfaces to its directly connected neighbours
+•	This information is passed unchanged from one router to another
+•	Every router learns the full picture of the network including every router, its interfaces and what they connect to
+•	OSPF routers use LSA Link State Advertisements to pass on routing updates
+
+OSPF Operations
+
+1. Discover neighbours 
+2. Form adjacencies 
+3. Flood Link State Database (LSDB) 
+4. Compute Shortest Path 
+5. Install best routes in routing table 
+6. Respond to network changes
+
+
+OSPF Packet Types
+
+•	Hello: A router will send out and listen for Hello packets when OSPF is enabled on an interface, and form adjacencies with other OSPF routers on the link
+•	DBD DataBase Description: Adjacent routers will tell each other the networks they know about with the DBD packet
+•	LSR Link State Request: If a router is missing information about any of the networks in the received DBD, it will send the neighbour an LSR
+•	LSA Link State Advertisement: A routing update
+•	LSU Link State Update: Contains a list of LSA’s which should be updated, used during flooding
+•	LSAck: Receiving routers acknowledge LSAs
+
+OSPF Configuration – Process ID
+
+ 
+
+•	Different interfaces on a router can run in different instances of OSPF.
+•	Different instances have different Link State Databases
+•	Only one instance is typically configured on OSPF routers – multiple Process IDs are very rarely used
+•	The Process ID is locally significant. It does not have to match on the neighbour router to form an adjacency
+•	In the example below, R2 will form adjacencies with both R1 and R3 (even though the Router ID does not match on both sides)
+•	R1 and R3 will not learn each others routes because they are in different Process IDs on R2
+ 
+
+•	This is a normal configuration. All routers will learn all routes
+ 
+
+ 
+
+
+OSPF Configuration – network
+ 
+
+•	The network command uses a wildcard mask which is the inverse of a subnet mask. 
+•	Subtract each octet in the subnet mask from 255 to calculate the wildcard mask
+•	A subnet mask of 255.255.0.0 equals a wildcard mask of 0.0.255.255
+•	A subnet mask of 255.255.255.252 equals a wildcard mask of 0.0.0.3
+
+ 
+
+•	The command does not default to using the classful boundary
+•	You must enter a wildcard mask
+
+ 
+
+The network command means: 
+•	Look for interfaces with an IP address which falls within this range. 
+•	Enable OSPF on those interfaces – send out and listen for OSPF hello messages, and peer with adjacent OSPF routers.
+•	Advertise the network and mask which is configured on those interfaces.
+
+OSPF Configuration Example – network
+
+ 
+
+•	Interface FE1/0 and FE2/0 fall within this range, FE0/0 does not
+•	OSPF will be enabled on FE1/0 and FE2/0 and the router will peer with adjacent OSPF routers
+•	Networks advertised: 10.0.1.0/24 10.0.2.0/24 10.1.0.0/24 is NOT advertised 10.0.0.0/16 is NOT advertised
+
+ 
+                                                                
+
+
+
+OSPF Verification – show run | section ospf
+
+ 
+
+
+OSPF Verification – show ip ospf interface brief
+ 
+
+OSPF Operations
+
+1. Discover neighbours 
+2. Form adjacencies 
+3. Flood Link State Database (LSDB) 
+4. Compute Shortest Path
+5. Install best routes in routing table
+6. Respond to network changes
+
+OSPF Verification -show ip ospf neighbor
+
+ 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+OSPF Verification -show ip ospf database
+
+ 
+
+OSPF Verification -show ip route
+
+ 
+
+ 
+
+
+	Engaging Activities
+
+A.	How do you define Open Shortest Path First?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+B.	Why OSPF is suitable for small network lab/test environments?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+C.	 Which among the following protocols are most commonly used (RIP, EIGRP and OSPF) and why ?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+D.	 How do you explain link state routing protocol?
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+
+E.	What Flood Link State Database can provide for its operation?
+             __________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+__________________________________________________________________________________
+
+	
+
+
+            Performance Tasks
+
+
+Performance Task 2
+Direction: Provide a one-liner explanation for the terminologies listed below.
+
+Terminologies / sources 	Idea or personal explanation 
+Router ospf 1	
+Area 0	
+Sh run | section ospf	
+Show ip ospf interface brief	
+Show ip ospf neighbor	
+
+
+
+
+Understanding Directed Assess
+
+ 
+
+ 
+
+   Learning Resources 
+•	https://www.flackbox.com/cisco-ccna-lab-options
+•	https://www.flackbox.com/#elementor-action%3Aaction%3Dpopup%3Aopen%26settings%3DeyJpZCI6IjEwMzk4IiwidG9nZ2xlIjpmYWxzZX0%3D
+•	https://www.youtube.com/channel/UCK4ji45I-zxeWXAFKmu3p6Q
+•	https://study-ccna.com/
+•	https://www.cybrary.it/course/cisco-ccna/
+•	https://www.udemy.com/course/ccna-complete/
+•	https://www.udemy.com/course/networkplus/
+

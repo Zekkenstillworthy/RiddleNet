@@ -1,0 +1,953 @@
+{% extends "user/base.html" %}
+{% block title %}Network Security Simulation{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+    --security-red: #dc3545;
+    --firewall-orange: #fd7e14;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .simulation-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 32px;
+    min-height: calc(100vh - 48px);
+  }
+
+  .control-panel {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 32px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 24px;
+  }
+
+  .panel-title {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 32px 0;
+    text-align: center;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .security-type-selector {
+    margin-bottom: 32px;
+  }
+
+  .security-option {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+  }
+
+  .security-option.selected {
+    border-color: var(--security-red);
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--text-primary);
+  }
+
+  .security-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .threat-simulator {
+    margin-bottom: 32px;
+  }
+
+  .threat-option {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .threat-option.selected {
+    background: linear-gradient(135deg, var(--error-red), var(--security-red));
+    color: white;
+    border-color: var(--error-red);
+  }
+
+  .simulation-controls {
+    margin-bottom: 32px;
+  }
+
+  .control-button {
+    width: 100%;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+
+  .control-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 212, 255, 0.3);
+  }
+
+  .control-button.danger {
+    background: linear-gradient(135deg, var(--error-red), var(--security-red));
+  }
+
+  .stats-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .stat-value {
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .stat-value.danger {
+    color: var(--error-red);
+  }
+
+  .stat-value.warning {
+    color: var(--warning-orange);
+  }
+
+  .event-log {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    height: 120px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    margin-top: 16px;
+  }
+
+  .log-entry {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+  }
+
+  .log-entry.success { color: var(--success-green); }
+  .log-entry.warning { color: var(--warning-orange); }
+  .log-entry.error { color: var(--error-red); }
+  .log-entry.blocked { color: var(--firewall-orange); }
+
+  .simulation-area {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 32px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .network-diagram {
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 32px;
+    height: 400px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .security-device {
+    position: absolute;
+    width: 100px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+
+  .firewall {
+    background: linear-gradient(135deg, var(--firewall-orange), var(--warning-orange));
+  }
+
+  .router {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+  }
+
+  .server {
+    background: linear-gradient(135deg, var(--success-green), #28a745);
+  }
+
+  .attacker {
+    background: linear-gradient(135deg, var(--error-red), var(--security-red));
+  }
+
+  .user {
+    background: linear-gradient(135deg, #6c757d, #495057);
+  }
+
+  .security-device:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(0, 212, 255, 0.4);
+  }
+
+  .security-device.active {
+    border-color: var(--success-green);
+    box-shadow: 0 0 20px rgba(20, 191, 94, 0.5);
+  }
+
+  .security-device.blocked {
+    border-color: var(--error-red);
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+  }
+
+  .connection-line {
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+    border-radius: 2px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+  }
+
+  .connection-line.secure {
+    background: linear-gradient(90deg, var(--success-green), #28a745);
+    box-shadow: 0 0 10px var(--success-green);
+  }
+
+  .connection-line.blocked {
+    background: linear-gradient(90deg, var(--error-red), var(--security-red));
+    box-shadow: 0 0 10px var(--error-red);
+  }
+
+  .attack-packet {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: var(--error-red);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--error-red);
+    transition: all 1.5s ease;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.7rem;
+  }
+
+  .security-rules-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .visualization-title {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    text-align: center;
+  }
+
+  .security-rules {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+  }
+
+  .security-rules th,
+  .security-rules td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+  }
+
+  .security-rules th {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .rule-allow {
+    color: var(--success-green);
+  }
+
+  .rule-deny {
+    color: var(--error-red);
+  }
+
+  .firewall-config {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .config-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+  }
+
+  .config-input:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+  }
+
+  .threat-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--error-red);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+    display: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .vpn-tunnel {
+    position: absolute;
+    border: 3px dashed var(--success-green);
+    border-radius: 8px;
+    background: rgba(20, 191, 94, 0.1);
+    display: none;
+  }
+
+  @media (max-width: 1200px) {
+    .simulation-container {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    
+    .control-panel {
+      position: static;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+  <div class="control-panel">
+    <h2 class="panel-title">Security Configuration</h2>
+    
+    <div class="security-type-selector">
+      <h3 class="section-title">Security Type</h3>
+      <div class="security-option selected" onclick="selectSecurityType('firewall')" id="type-firewall">
+        <strong>Firewall Protection</strong><br>
+        <small>Packet filtering and access control</small>
+      </div>
+      <div class="security-option" onclick="selectSecurityType('vpn')" id="type-vpn">
+        <strong>VPN Tunneling</strong><br>
+        <small>Encrypted secure connections</small>
+      </div>
+      <div class="security-option" onclick="selectSecurityType('ids')" id="type-ids">
+        <strong>Intrusion Detection</strong><br>
+        <small>Threat monitoring and alerts</small>
+      </div>
+    </div>
+
+    <div class="threat-simulator">
+      <h3 class="section-title">Threat Scenarios</h3>
+      <div class="threat-option selected" onclick="selectThreat('port-scan')" id="threat-port-scan">
+        Port Scanning Attack
+      </div>
+      <div class="threat-option" onclick="selectThreat('ddos')" id="threat-ddos">
+        DDoS Attack
+      </div>
+      <div class="threat-option" onclick="selectThreat('malware')" id="threat-malware">
+        Malware Injection
+      </div>
+      <div class="threat-option" onclick="selectThreat('mitm')" id="threat-mitm">
+        Man-in-the-Middle
+      </div>
+    </div>
+
+    <div class="firewall-config">
+      <h3 class="section-title">Firewall Rules</h3>
+      <input type="text" class="config-input" id="rule-source" placeholder="Source IP (e.g., 192.168.1.0/24)">
+      <input type="text" class="config-input" id="rule-port" placeholder="Port (e.g., 80, 443)">
+      <select class="config-input" id="rule-action">
+        <option value="allow">ALLOW</option>
+        <option value="deny">DENY</option>
+      </select>
+      <button class="control-button" onclick="addFirewallRule()">Add Rule</button>
+    </div>
+
+    <div class="simulation-controls">
+      <h3 class="section-title">Controls</h3>
+      <button class="control-button" onclick="startSimulation()">Start Security Test</button>
+      <button class="control-button danger" onclick="launchAttack()">Launch Attack</button>
+      <button class="control-button" onclick="resetSimulation()">Reset</button>
+      <button class="control-button" onclick="showTutorial()">Tutorial</button>
+    </div>
+
+    <div class="stats-panel">
+      <h3 class="section-title">Security Metrics</h3>
+      <div class="stat-item">
+        <span>Blocked Attacks:</span>
+        <span class="stat-value" id="blocked-attacks">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Allowed Connections:</span>
+        <span class="stat-value" id="allowed-connections">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Security Level:</span>
+        <span class="stat-value" id="security-level">High</span>
+      </div>
+      <div class="stat-item">
+        <span>Threat Level:</span>
+        <span class="stat-value danger" id="threat-level">Low</span>
+      </div>
+      
+      <div class="event-log" id="event-log">
+        <div class="log-entry">Security simulation ready</div>
+        <div class="log-entry">Configure rules and start testing</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="simulation-area">
+    <div class="network-diagram" id="network-area">
+      <h3 class="visualization-title" id="security-title">Network Security Architecture - Firewall Protection</h3>
+      
+      <!-- Threat Indicator -->
+      <div class="threat-indicator" id="threat-indicator">⚠️ ATTACK DETECTED</div>
+      
+      <!-- VPN Tunnel (hidden by default) -->
+      <div class="vpn-tunnel" id="vpn-tunnel" style="top: 100px; left: 50px; width: 300px; height: 200px;"></div>
+      
+      <!-- Network Devices -->
+      <div class="security-device attacker" id="attacker" style="top: 50px; left: 20px;" onclick="selectDevice('attacker')">
+        <i class="fas fa-user-ninja"></i>
+        <span>Attacker</span>
+      </div>
+      
+      <div class="security-device firewall" id="firewall" style="top: 150px; left: 150px;" onclick="selectDevice('firewall')">
+        <i class="fas fa-shield-alt"></i>
+        <span>Firewall</span>
+      </div>
+      
+      <div class="security-device router" id="router" style="top: 250px; left: 280px;" onclick="selectDevice('router')">
+        <i class="fas fa-wifi"></i>
+        <span>Router</span>
+      </div>
+      
+      <div class="security-device server" id="server" style="top: 50px; right: 50px;" onclick="selectDevice('server')">
+        <i class="fas fa-server"></i>
+        <span>Web Server</span>
+      </div>
+      
+      <div class="security-device user" id="user" style="bottom: 50px; right: 100px;" onclick="selectDevice('user')">
+        <i class="fas fa-user"></i>
+        <span>Client</span>
+      </div>
+      
+      <!-- Connection Lines -->
+      <div class="connection-line" id="conn-attack" style="top: 88px; left: 120px; width: 80px;"></div>
+      <div class="connection-line" id="conn-firewall" style="top: 200px; left: 250px; width: 80px;"></div>
+      <div class="connection-line" id="conn-server" style="top: 88px; right: 150px; width: 100px;"></div>
+      <div class="connection-line" id="conn-user" style="bottom: 100px; right: 200px; width: 130px;"></div>
+      
+      <!-- Attack packets (created dynamically) -->
+    </div>
+
+    <div class="security-rules-container">
+      <h3 class="visualization-title">Active Security Rules</h3>
+      <table class="security-rules" id="security-rules">
+        <thead>
+          <tr>
+            <th>Rule #</th>
+            <th>Source</th>
+            <th>Destination</th>
+            <th>Port</th>
+            <th>Action</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="rule-entries">
+          <tr>
+            <td>1</td>
+            <td>Any</td>
+            <td>192.168.1.0/24</td>
+            <td>22</td>
+            <td class="rule-deny">DENY</td>
+            <td>Active</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>192.168.1.0/24</td>
+            <td>Any</td>
+            <td>80,443</td>
+            <td class="rule-allow">ALLOW</td>
+            <td>Active</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Any</td>
+            <td>Any</td>
+            <td>Any</td>
+            <td class="rule-deny">DENY</td>
+            <td>Default</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentSecurityType = 'firewall';
+let currentThreat = 'port-scan';
+let simulationRunning = false;
+let attacksBlocked = 0;
+let connectionsAllowed = 0;
+let ruleCount = 3;
+
+const securityConfigs = {
+  firewall: {
+    name: 'Firewall Protection',
+    description: 'Packet filtering and access control lists'
+  },
+  vpn: {
+    name: 'VPN Tunneling',
+    description: 'Encrypted secure communication channels'
+  },
+  ids: {
+    name: 'Intrusion Detection System',
+    description: 'Real-time threat monitoring and alerting'
+  }
+};
+
+const threatTypes = {
+  'port-scan': {
+    name: 'Port Scanning',
+    description: 'Reconnaissance attack scanning for open ports'
+  },
+  'ddos': {
+    name: 'DDoS Attack',
+    description: 'Distributed denial of service attack'
+  },
+  'malware': {
+    name: 'Malware Injection',
+    description: 'Malicious software delivery attempt'
+  },
+  'mitm': {
+    name: 'Man-in-the-Middle',
+    description: 'Interception and manipulation of communications'
+  }
+};
+
+function selectSecurityType(type) {
+  currentSecurityType = type;
+  
+  // Update UI
+  document.querySelectorAll('.security-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`type-${type}`).classList.add('selected');
+  
+  // Update title
+  const config = securityConfigs[type];
+  document.getElementById('security-title').textContent = `Network Security Architecture - ${config.name}`;
+  
+  // Show/hide VPN tunnel
+  if (type === 'vpn') {
+    document.getElementById('vpn-tunnel').style.display = 'block';
+  } else {
+    document.getElementById('vpn-tunnel').style.display = 'none';
+  }
+  
+  resetSimulation();
+}
+
+function selectThreat(threat) {
+  currentThreat = threat;
+  
+  // Update UI
+  document.querySelectorAll('.threat-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`threat-${threat}`).classList.add('selected');
+  
+  // Update threat level
+  const threatLevels = {
+    'port-scan': 'Medium',
+    'ddos': 'Critical',
+    'malware': 'High',
+    'mitm': 'High'
+  };
+  
+  document.getElementById('threat-level').textContent = threatLevels[threat];
+}
+
+function selectDevice(device) {
+  // Remove previous selections
+  document.querySelectorAll('.security-device').forEach(dev => {
+    dev.classList.remove('active');
+  });
+  
+  // Highlight selected device
+  document.getElementById(device).classList.add('active');
+  
+  logEvent(`Selected ${device} for configuration`, 'success');
+}
+
+function addFirewallRule() {
+  const source = document.getElementById('rule-source').value;
+  const port = document.getElementById('rule-port').value;
+  const action = document.getElementById('rule-action').value;
+  
+  if (!source || !port) {
+    logEvent('Please enter source IP and port', 'error');
+    return;
+  }
+  
+  // Add rule to table
+  const tableBody = document.getElementById('rule-entries');
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = `
+    <td>${++ruleCount}</td>
+    <td>${source}</td>
+    <td>Any</td>
+    <td>${port}</td>
+    <td class="rule-${action}">${action.toUpperCase()}</td>
+    <td>Active</td>
+  `;
+  
+  // Insert before the default deny rule
+  tableBody.insertBefore(newRow, tableBody.lastElementChild);
+  
+  logEvent(`Added firewall rule: ${action.toUpperCase()} ${source}:${port}`, 'success');
+  
+  // Clear inputs
+  document.getElementById('rule-source').value = '';
+  document.getElementById('rule-port').value = '';
+}
+
+function startSimulation() {
+  if (simulationRunning) return;
+  
+  simulationRunning = true;
+  logEvent('Starting security simulation...', 'success');
+  
+  // Simulate legitimate traffic
+  setTimeout(() => {
+    createLegitimateTraffic();
+  }, 1000);
+  
+  setTimeout(() => {
+    simulationRunning = false;
+    logEvent('Security test completed', 'success');
+  }, 5000);
+}
+
+function launchAttack() {
+  logEvent(`Launching ${threatTypes[currentThreat].name}...`, 'error');
+  document.getElementById('threat-indicator').style.display = 'block';
+  
+  // Run threat-specific simulation
+  const attacks = {
+    'port-scan': simulatePortScan,
+    'ddos': simulateDDoS,
+    'malware': simulateMalware,
+    'mitm': simulateMITM
+  };
+  
+  attacks[currentThreat]();
+  
+  setTimeout(() => {
+    document.getElementById('threat-indicator').style.display = 'none';
+  }, 5000);
+}
+
+function simulatePortScan() {
+  logEvent('Port scan detected on ports 22, 80, 443, 3389', 'error');
+  
+  // Animate attack packets
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => {
+      createAttackPacket('attacker', 'firewall', 'SCAN', () => {
+        if (currentSecurityType === 'firewall') {
+          logEvent(`Port scan blocked by firewall rule`, 'blocked');
+          attacksBlocked++;
+          document.getElementById('blocked-attacks').textContent = attacksBlocked;
+        } else {
+          logEvent('Port scan succeeded - no firewall protection', 'error');
+        }
+      });
+    }, i * 500);
+  }
+}
+
+function simulateDDoS() {
+  logEvent('DDoS attack: 1000+ requests per second', 'error');
+  
+  // Animate multiple attack packets
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      createAttackPacket('attacker', 'server', 'DDoS', () => {
+        if (currentSecurityType === 'firewall') {
+          if (Math.random() > 0.3) {
+            logEvent('DDoS packet blocked by rate limiting', 'blocked');
+            attacksBlocked++;
+          } else {
+            logEvent('Some DDoS packets reached server', 'error');
+          }
+        } else {
+          logEvent('Server overwhelmed by DDoS attack', 'error');
+        }
+      });
+    }, i * 200);
+  }
+  
+  document.getElementById('blocked-attacks').textContent = attacksBlocked;
+}
+
+function simulateMalware() {
+  logEvent('Malware delivery attempt via HTTP', 'error');
+  
+  createAttackPacket('attacker', 'user', 'MAL', () => {
+    if (currentSecurityType === 'ids') {
+      logEvent('Malware signature detected and blocked', 'blocked');
+      attacksBlocked++;
+      document.getElementById('blocked-attacks').textContent = attacksBlocked;
+    } else {
+      logEvent('Malware successfully installed on client', 'error');
+    }
+  });
+}
+
+function simulateMITM() {
+  logEvent('Man-in-the-middle attack on communication', 'error');
+  
+  if (currentSecurityType === 'vpn') {
+    logEvent('VPN encryption prevents MITM attack', 'blocked');
+    document.getElementById('conn-user').classList.add('secure');
+    attacksBlocked++;
+    document.getElementById('blocked-attacks').textContent = attacksBlocked;
+  } else {
+    logEvent('Communication intercepted - no encryption', 'error');
+    document.getElementById('conn-user').classList.add('blocked');
+  }
+}
+
+function createLegitimateTraffic() {
+  logEvent('Simulating legitimate user traffic...', 'success');
+  
+  createTrafficPacket('user', 'server', 'HTTP', () => {
+    logEvent('HTTP request allowed through firewall', 'success');
+    connectionsAllowed++;
+    document.getElementById('allowed-connections').textContent = connectionsAllowed;
+  });
+  
+  setTimeout(() => {
+    createTrafficPacket('server', 'user', 'RESP', () => {
+      logEvent('HTTP response delivered successfully', 'success');
+    });
+  }, 1000);
+}
+
+function createAttackPacket(from, to, label, callback) {
+  const packet = document.createElement('div');
+  packet.className = 'attack-packet';
+  packet.textContent = label;
+  packet.title = `Attack packet: ${threatTypes[currentThreat].name}`;
+  
+  animatePacket(packet, from, to, callback);
+}
+
+function createTrafficPacket(from, to, label, callback) {
+  const packet = document.createElement('div');
+  packet.className = 'attack-packet';
+  packet.style.background = 'var(--success-green)';
+  packet.style.boxShadow = '0 0 15px var(--success-green)';
+  packet.textContent = label;
+  packet.title = 'Legitimate traffic';
+  
+  animatePacket(packet, from, to, callback);
+}
+
+function animatePacket(packet, from, to, callback) {
+  const fromElement = document.getElementById(from);
+  const toElement = document.getElementById(to);
+  
+  const fromRect = fromElement.getBoundingClientRect();
+  const toRect = toElement.getBoundingClientRect();
+  const containerRect = document.getElementById('network-area').getBoundingClientRect();
+  
+  // Position packet at source
+  packet.style.left = (fromRect.left - containerRect.left + 40) + 'px';
+  packet.style.top = (fromRect.top - containerRect.top + 30) + 'px';
+  
+  document.getElementById('network-area').appendChild(packet);
+  
+  // Animate to destination
+  setTimeout(() => {
+    packet.style.left = (toRect.left - containerRect.left + 40) + 'px';
+    packet.style.top = (toRect.top - containerRect.top + 30) + 'px';
+  }, 100);
+  
+  // Execute callback and remove packet
+  setTimeout(() => {
+    if (callback) callback();
+    packet.remove();
+  }, 1600);
+}
+
+function resetSimulation() {
+  simulationRunning = false;
+  attacksBlocked = 0;
+  connectionsAllowed = 0;
+  
+  // Reset stats
+  document.getElementById('blocked-attacks').textContent = '0';
+  document.getElementById('allowed-connections').textContent = '0';
+  document.getElementById('security-level').textContent = 'High';
+  document.getElementById('threat-level').textContent = 'Low';
+  
+  // Reset visual elements
+  document.querySelectorAll('.security-device').forEach(device => {
+    device.classList.remove('active', 'blocked');
+  });
+  
+  document.querySelectorAll('.connection-line').forEach(line => {
+    line.classList.remove('secure', 'blocked');
+  });
+  
+  // Clear packets
+  document.querySelectorAll('.attack-packet').forEach(packet => {
+    packet.remove();
+  });
+  
+  // Hide threat indicator
+  document.getElementById('threat-indicator').style.display = 'none';
+  
+  logEvent('Security simulation reset', 'success');
+}
+
+function logEvent(message, type = 'info') {
+  const log = document.getElementById('event-log');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  
+  // Limit log entries
+  while (log.children.length > 12) {
+    log.removeChild(log.firstChild);
+  }
+}
+
+function showTutorial() {
+  alert(`Network Security Simulation Tutorial
+
+1. SECURITY TYPES:
+   • Firewall: Packet filtering and access control
+   • VPN: Encrypted tunneling for secure communications
+   • IDS: Intrusion detection and threat monitoring
+
+2. THREAT SCENARIOS:
+   • Port Scan: Reconnaissance attack
+   • DDoS: Distributed denial of service
+   • Malware: Malicious software delivery
+   • MITM: Man-in-the-middle interception
+
+3. HOW TO USE:
+   • Select security type and threat scenario
+   • Configure firewall rules as needed
+   • Click "Start Security Test" for legitimate traffic
+   • Click "Launch Attack" to test security measures
+
+4. OBSERVATIONS:
+   • Watch packet animations show attack/defense
+   • Monitor security metrics and event logs
+   • See how different security measures respond
+   • Learn about layered security approaches`);
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', () => {
+  selectSecurityType('firewall');
+  selectThreat('port-scan');
+  logEvent('Network security simulation initialized', 'success');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1045 @@
+{% extends "user/base.html" %}
+{% block title %}VPN & Advanced Security Simulation{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+    --vpn-blue: #2e86de;
+    --security-gold: #f39c12;
+    --encrypted-green: #27ae60;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    color: var(--text-primary);
+  }
+
+  .simulation-container {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .simulation-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .simulation-title {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 16px 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }
+
+  .simulation-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    margin: 0;
+  }
+
+  .main-content {
+    display: grid;
+    grid-template-columns: 320px 1fr 380px;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .control-panel {
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .panel-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    margin: 0 0 20px 0;
+    text-align: center;
+  }
+
+  .vpn-type-selector {
+    margin-bottom: 24px;
+  }
+
+  .vpn-type-selector label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .vpn-type-selector select {
+    width: 100%;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .config-section {
+    margin-bottom: 24px;
+  }
+
+  .config-title {
+    font-size: 1.1rem;
+    color: var(--security-gold);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .config-item {
+    margin-bottom: 16px;
+  }
+
+  .config-item label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+
+  .config-item input, .config-item select {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .encryption-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(39, 174, 96, 0.1);
+    border: 1px solid var(--encrypted-green);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+
+  .encryption-indicator i {
+    color: var(--encrypted-green);
+  }
+
+  .action-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+  }
+
+  .action-btn.vpn-btn {
+    background: linear-gradient(135deg, var(--vpn-blue), #1e6091);
+  }
+
+  .action-btn.security-btn {
+    background: linear-gradient(135deg, var(--security-gold), #e67e22);
+  }
+
+  .action-btn.danger-btn {
+    background: linear-gradient(135deg, var(--error-red), #ff3742);
+  }
+
+  .topology-area {
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    min-height: 600px;
+  }
+
+  .network-topology {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 95, 191, 0.1) 0%, transparent 50%);
+  }
+
+  .network-zone {
+    position: absolute;
+    border: 2px solid var(--cyber-glow);
+    border-radius: 12px;
+    background: rgba(0, 212, 255, 0.05);
+    padding: 16px;
+  }
+
+  .zone-label {
+    position: absolute;
+    top: -12px;
+    left: 16px;
+    background: var(--card-bg);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .device {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid;
+  }
+
+  .device:hover {
+    transform: scale(1.1);
+  }
+
+  .device.client {
+    background: linear-gradient(135deg, var(--success-green), #0fa54f);
+    border-color: var(--success-green);
+  }
+
+  .device.server {
+    background: linear-gradient(135deg, var(--warning-orange), #ff6b35);
+    border-color: var(--warning-orange);
+  }
+
+  .device.gateway {
+    background: linear-gradient(135deg, var(--vpn-blue), #1e6091);
+    border-color: var(--vpn-blue);
+  }
+
+  .device.firewall {
+    background: linear-gradient(135deg, var(--error-red), #ff3742);
+    border-color: var(--error-red);
+  }
+
+  .device i {
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 4px;
+  }
+
+  .device-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .connection {
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+    transform-origin: left center;
+    z-index: 1;
+  }
+
+  .connection.vpn-tunnel {
+    background: linear-gradient(90deg, var(--encrypted-green), #1dd1a1);
+    height: 4px;
+    border: 1px solid var(--encrypted-green);
+    border-radius: 2px;
+  }
+
+  .connection.encrypted {
+    background: linear-gradient(90deg, var(--security-gold), #e67e22);
+    animation: encrypt-flow 2s infinite;
+  }
+
+  @keyframes encrypt-flow {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  .connection-label {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .packet-flow {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--cyber-glow);
+    border-radius: 50%;
+    animation: packet-travel 3s infinite;
+  }
+
+  @keyframes packet-travel {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(300px); opacity: 0; }
+  }
+
+  .security-panel {
+    background: var(--card-bg);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+  }
+
+  .security-metrics {
+    margin-bottom: 24px;
+  }
+
+  .metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .metric-item:last-child {
+    border-bottom: none;
+  }
+
+  .metric-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .metric-value {
+    color: var(--cyber-glow);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 8px;
+  }
+
+  .status-connected { background: var(--success-green); }
+  .status-disconnected { background: var(--error-red); }
+  .status-connecting { background: var(--warning-orange); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .certificates-section {
+    margin-top: 20px;
+  }
+
+  .cert-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  .cert-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--security-gold), #e67e22);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+
+  .cert-info {
+    flex: 1;
+  }
+
+  .cert-name {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .cert-status {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .threat-alerts {
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid var(--error-red);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+  }
+
+  .alert-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .alert-icon {
+    color: var(--error-red);
+  }
+
+  .log-area {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 8px;
+    height: 200px;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    margin-top: 16px;
+  }
+
+  .log-entry {
+    margin: 4px 0;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .log-vpn { color: var(--vpn-blue); }
+  .log-security { color: var(--security-gold); }
+  .log-success { color: var(--success-green); }
+  .log-error { color: var(--error-red); }
+  .log-warning { color: var(--warning-orange); }
+
+  @media (max-width: 1200px) {
+    .main-content {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+  <div class="simulation-header">
+    <h1 class="simulation-title">VPN & Advanced Security Simulation</h1>
+    <p class="simulation-subtitle">Enterprise VPN and Network Security Learning Environment</p>
+  </div>
+
+  <div class="main-content">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <h3 class="panel-title">VPN Configuration</h3>
+      
+      <div class="vpn-type-selector">
+        <label for="vpnType">VPN Type:</label>
+        <select id="vpnType" onchange="changeVPNType()">
+          <option value="site-to-site">Site-to-Site IPSec</option>
+          <option value="remote-access">Remote Access VPN</option>
+          <option value="ssl-vpn">SSL/TLS VPN</option>
+          <option value="wireguard">WireGuard VPN</option>
+          <option value="l2tp">L2TP/IPSec</option>
+        </select>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">
+          <i class="fas fa-shield-alt"></i>
+          Encryption Settings
+        </div>
+        <div class="config-item">
+          <label for="encryptionAlgorithm">Encryption:</label>
+          <select id="encryptionAlgorithm">
+            <option value="aes256">AES-256-GCM</option>
+            <option value="aes128">AES-128-CBC</option>
+            <option value="chacha20">ChaCha20-Poly1305</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="hashAlgorithm">Hash:</label>
+          <select id="hashAlgorithm">
+            <option value="sha256">SHA-256</option>
+            <option value="sha384">SHA-384</option>
+            <option value="sha512">SHA-512</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="dhGroup">DH Group:</label>
+          <select id="dhGroup">
+            <option value="14">Group 14 (2048-bit)</option>
+            <option value="15">Group 15 (3072-bit)</option>
+            <option value="16">Group 16 (4096-bit)</option>
+          </select>
+        </div>
+        <div class="encryption-indicator">
+          <i class="fas fa-lock"></i>
+          <span>Strong Encryption Active</span>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">
+          <i class="fas fa-network-wired"></i>
+          Network Settings
+        </div>
+        <div class="config-item">
+          <label for="localNetwork">Local Network:</label>
+          <input type="text" id="localNetwork" value="192.168.1.0/24" placeholder="Network CIDR">
+        </div>
+        <div class="config-item">
+          <label for="remoteNetwork">Remote Network:</label>
+          <input type="text" id="remoteNetwork" value="10.0.0.0/24" placeholder="Network CIDR">
+        </div>
+        <div class="config-item">
+          <label for="gatewayIP">Gateway IP:</label>
+          <input type="text" id="gatewayIP" value="203.0.113.1" placeholder="Gateway IP">
+        </div>
+      </div>
+
+      <button class="action-btn vpn-btn" onclick="establishVPN()">
+        <i class="fas fa-link"></i>
+        Establish VPN
+      </button>
+      <button class="action-btn security-btn" onclick="runSecurityScan()">
+        <i class="fas fa-search"></i>
+        Security Scan
+      </button>
+      <button class="action-btn" onclick="generateCertificate()">
+        <i class="fas fa-certificate"></i>
+        Generate Certificate
+      </button>
+      <button class="action-btn danger-btn" onclick="disconnectVPN()">
+        <i class="fas fa-unlink"></i>
+        Disconnect VPN
+      </button>
+    </div>
+
+    <!-- Network Topology -->
+    <div class="topology-area">
+      <div class="network-topology" id="networkTopology">
+        <!-- Local Network Zone -->
+        <div class="network-zone" style="top: 80px; left: 50px; width: 250px; height: 200px;">
+          <div class="zone-label">Corporate Network</div>
+          
+          <div class="device client" id="client1" style="top: 40px; left: 40px;" onclick="selectDevice('client1')">
+            <i class="fas fa-laptop"></i>
+            <div class="device-label">Client 1</div>
+          </div>
+          
+          <div class="device server" id="server1" style="top: 40px; left: 140px;" onclick="selectDevice('server1')">
+            <i class="fas fa-server"></i>
+            <div class="device-label">File Server</div>
+          </div>
+          
+          <div class="device gateway" id="vpn-gateway1" style="top: 120px; left: 90px;" onclick="selectDevice('vpn-gateway1')">
+            <i class="fas fa-shield-alt"></i>
+            <div class="device-label">VPN Gateway</div>
+          </div>
+        </div>
+
+        <!-- Internet/WAN -->
+        <div class="device firewall" id="internet" style="top: 250px; left: 400px;" onclick="selectDevice('internet')">
+          <i class="fas fa-globe"></i>
+          <div class="device-label">Internet</div>
+        </div>
+
+        <!-- Remote Network Zone -->
+        <div class="network-zone" style="top: 80px; right: 50px; width: 250px; height: 200px;">
+          <div class="zone-label">Remote Office</div>
+          
+          <div class="device client" id="remote-client" style="top: 40px; left: 40px;" onclick="selectDevice('remote-client')">
+            <i class="fas fa-laptop"></i>
+            <div class="device-label">Remote Client</div>
+          </div>
+          
+          <div class="device server" id="remote-server" style="top: 40px; left: 140px;" onclick="selectDevice('remote-server')">
+            <i class="fas fa-database"></i>
+            <div class="device-label">Database</div>
+          </div>
+          
+          <div class="device gateway" id="vpn-gateway2" style="top: 120px; left: 90px;" onclick="selectDevice('vpn-gateway2')">
+            <i class="fas fa-shield-alt"></i>
+            <div class="device-label">Remote Gateway</div>
+          </div>
+        </div>
+
+        <!-- Network Connections -->
+        <div class="connection" id="conn1" style="top: 200px; left: 200px; width: 120px;"></div>
+        <div class="connection" id="conn2" style="top: 200px; right: 200px; width: 120px;"></div>
+        <div class="connection vpn-tunnel" id="vpn-tunnel" style="top: 285px; left: 350px; width: 200px; display: none;">
+          <div class="connection-label">IPSec Tunnel</div>
+        </div>
+
+        <!-- Packet Flow Animation -->
+        <div class="packet-flow" id="packet1" style="top: 195px; left: 200px; display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Security Status Panel -->
+    <div class="security-panel">
+      <h3 class="panel-title">Security Status</h3>
+      
+      <div class="security-metrics">
+        <div class="metric-item">
+          <span class="metric-label">VPN Status:</span>
+          <span class="metric-value" id="vpnStatus">Disconnected<span class="status-indicator status-disconnected"></span></span>
+        </div>
+        
+        <div class="metric-item">
+          <span class="metric-label">Tunnel State:</span>
+          <span class="metric-value" id="tunnelState">Down</span>
+        </div>
+        
+        <div class="metric-item">
+          <span class="metric-label">Encryption:</span>
+          <span class="metric-value" id="encryptionStatus">None</span>
+        </div>
+        
+        <div class="metric-item">
+          <span class="metric-label">Data Transfer:</span>
+          <span class="metric-value" id="dataTransfer">0 MB</span>
+        </div>
+        
+        <div class="metric-item">
+          <span class="metric-label">Connected Users:</span>
+          <span class="metric-value" id="connectedUsers">0</span>
+        </div>
+        
+        <div class="metric-item">
+          <span class="metric-label">Security Score:</span>
+          <span class="metric-value" id="securityScore">85/100</span>
+        </div>
+      </div>
+
+      <div class="certificates-section">
+        <div class="config-title">
+          <i class="fas fa-certificate"></i>
+          Certificates
+        </div>
+        <div id="certificateList">
+          <div class="cert-item">
+            <div class="cert-icon">
+              <i class="fas fa-certificate"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">Root CA Certificate</div>
+              <div class="cert-status">Valid until 2025-12-31</div>
+            </div>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon">
+              <i class="fas fa-key"></i>
+            </div>
+            <div class="cert-info">
+              <div class="cert-name">VPN Server Certificate</div>
+              <div class="cert-status">Valid until 2024-06-30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="threat-alerts" id="threatAlerts" style="display: none;">
+        <div class="config-title">
+          <i class="fas fa-exclamation-triangle"></i>
+          Security Alerts
+        </div>
+        <div class="alert-item">
+          <i class="fas fa-shield-virus alert-icon"></i>
+          <span>Suspicious connection attempt detected</span>
+        </div>
+        <div class="alert-item">
+          <i class="fas fa-user-shield alert-icon"></i>
+          <span>Failed authentication from 203.0.113.50</span>
+        </div>
+      </div>
+
+      <div class="log-area" id="securityLog">
+        <div class="log-entry log-vpn">[14:30:01] VPN service initialized</div>
+        <div class="log-entry log-security">[14:30:02] Certificate validation successful</div>
+        <div class="log-entry log-security">[14:30:05] IKE daemon started</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let vpnConnected = false;
+let selectedDevice = null;
+let encryptionActive = false;
+let transferredData = 0;
+let connectedUsers = 0;
+
+// VPN types configuration
+const vpnConfigs = {
+  'site-to-site': {
+    name: 'Site-to-Site IPSec',
+    protocol: 'IPSec/IKEv2',
+    port: 500,
+    encryption: 'AES-256-GCM',
+    authentication: 'Pre-shared Key'
+  },
+  'remote-access': {
+    name: 'Remote Access VPN',
+    protocol: 'IPSec/L2TP',
+    port: 1701,
+    encryption: 'AES-128-CBC',
+    authentication: 'Certificate'
+  },
+  'ssl-vpn': {
+    name: 'SSL/TLS VPN',
+    protocol: 'OpenVPN',
+    port: 443,
+    encryption: 'AES-256-GCM',
+    authentication: 'Username/Password'
+  },
+  'wireguard': {
+    name: 'WireGuard VPN',
+    protocol: 'WireGuard',
+    port: 51820,
+    encryption: 'ChaCha20-Poly1305',
+    authentication: 'Public Key'
+  }
+};
+
+function changeVPNType() {
+  const vpnType = document.getElementById('vpnType').value;
+  const config = vpnConfigs[vpnType];
+  
+  if (config) {
+    logMessage(`VPN type changed to: ${config.name}`, 'vpn');
+    logMessage(`Protocol: ${config.protocol}, Port: ${config.port}`, 'vpn');
+    
+    // Update encryption algorithm based on VPN type
+    const encAlgo = document.getElementById('encryptionAlgorithm');
+    if (vpnType === 'wireguard') {
+      encAlgo.value = 'chacha20';
+    } else {
+      encAlgo.value = 'aes256';
+    }
+  }
+}
+
+function selectDevice(deviceId) {
+  selectedDevice = deviceId;
+  
+  // Visual feedback
+  document.querySelectorAll('.device').forEach(device => {
+    device.style.transform = 'scale(1)';
+    device.style.boxShadow = '';
+  });
+  
+  const device = document.getElementById(deviceId);
+  if (device) {
+    device.style.transform = 'scale(1.2)';
+    device.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+  }
+  
+  logMessage(`Selected device: ${deviceId}`, 'vpn');
+}
+
+function establishVPN() {
+  if (vpnConnected) {
+    logMessage('VPN connection already established', 'warning');
+    return;
+  }
+  
+  const vpnType = document.getElementById('vpnType').value;
+  const config = vpnConfigs[vpnType];
+  
+  logMessage(`Initiating ${config.name} connection...`, 'vpn');
+  
+  // Update UI to show connecting state
+  document.getElementById('vpnStatus').innerHTML = 
+    'Connecting<span class="status-indicator status-connecting"></span>';
+  document.getElementById('tunnelState').textContent = 'Negotiating';
+  
+  // Simulate connection process
+  setTimeout(() => {
+    logMessage('Phase 1: IKE negotiation started', 'security');
+    logMessage(`Using ${document.getElementById('encryptionAlgorithm').value.toUpperCase()} encryption`, 'security');
+  }, 1000);
+  
+  setTimeout(() => {
+    logMessage('Phase 2: IPSec tunnel establishment', 'security');
+    logMessage('Authentication successful', 'success');
+  }, 2000);
+  
+  setTimeout(() => {
+    vpnConnected = true;
+    encryptionActive = true;
+    connectedUsers = 1;
+    
+    // Update UI
+    document.getElementById('vpnStatus').innerHTML = 
+      'Connected<span class="status-indicator status-connected"></span>';
+    document.getElementById('tunnelState').textContent = 'Up';
+    document.getElementById('encryptionStatus').textContent = 
+      document.getElementById('encryptionAlgorithm').value.toUpperCase();
+    document.getElementById('connectedUsers').textContent = connectedUsers;
+    
+    // Show VPN tunnel visually
+    const tunnel = document.getElementById('vpn-tunnel');
+    tunnel.style.display = 'block';
+    
+    // Start packet animation
+    startPacketAnimation();
+    
+    logMessage('VPN tunnel established successfully', 'success');
+    logMessage(`Local: ${document.getElementById('localNetwork').value}`, 'vpn');
+    logMessage(`Remote: ${document.getElementById('remoteNetwork').value}`, 'vpn');
+    
+    // Start data transfer simulation
+    setInterval(updateDataTransfer, 3000);
+    
+  }, 3000);
+}
+
+function startPacketAnimation() {
+  const packet = document.getElementById('packet1');
+  packet.style.display = 'block';
+  
+  setInterval(() => {
+    if (vpnConnected) {
+      packet.style.animation = 'none';
+      packet.offsetHeight; // Trigger reflow
+      packet.style.animation = 'packet-travel 3s infinite';
+    }
+  }, 3000);
+}
+
+function updateDataTransfer() {
+  if (vpnConnected) {
+    transferredData += Math.random() * 5 + 1; // Random data transfer
+    document.getElementById('dataTransfer').textContent = 
+      `${transferredData.toFixed(1)} MB`;
+  }
+}
+
+function runSecurityScan() {
+  logMessage('Starting comprehensive security scan...', 'security');
+  
+  setTimeout(() => {
+    logMessage('Scanning for vulnerabilities...', 'security');
+    logMessage('Checking certificate validity...', 'security');
+  }, 1000);
+  
+  setTimeout(() => {
+    logMessage('Analyzing traffic patterns...', 'security');
+    logMessage('Checking for intrusion attempts...', 'security');
+  }, 2000);
+  
+  setTimeout(() => {
+    const threats = Math.random() > 0.7;
+    if (threats) {
+      document.getElementById('threatAlerts').style.display = 'block';
+      logMessage('Security threats detected!', 'error');
+      logMessage('Blocking suspicious IP addresses', 'warning');
+      updateSecurityScore(75);
+    } else {
+      logMessage('No security threats detected', 'success');
+      logMessage('All systems secure', 'success');
+      updateSecurityScore(95);
+    }
+    
+    logMessage('Security scan completed', 'security');
+  }, 3000);
+}
+
+function updateSecurityScore(score) {
+  document.getElementById('securityScore').textContent = `${score}/100`;
+  
+  const scoreElement = document.getElementById('securityScore');
+  if (score >= 90) {
+    scoreElement.style.color = 'var(--success-green)';
+  } else if (score >= 70) {
+    scoreElement.style.color = 'var(--warning-orange)';
+  } else {
+    scoreElement.style.color = 'var(--error-red)';
+  }
+}
+
+function generateCertificate() {
+  const certName = `VPN-${Date.now()}`;
+  logMessage(`Generating new certificate: ${certName}`, 'security');
+  
+  setTimeout(() => {
+    logMessage('Creating RSA 2048-bit key pair...', 'security');
+  }, 500);
+  
+  setTimeout(() => {
+    logMessage('Signing certificate with Root CA...', 'security');
+  }, 1000);
+  
+  setTimeout(() => {
+    logMessage('Certificate generated successfully', 'success');
+    
+    // Add new certificate to list
+    const certList = document.getElementById('certificateList');
+    const newCert = document.createElement('div');
+    newCert.className = 'cert-item';
+    newCert.innerHTML = `
+      <div class="cert-icon">
+        <i class="fas fa-key"></i>
+      </div>
+      <div class="cert-info">
+        <div class="cert-name">${certName}</div>
+        <div class="cert-status">Valid until ${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}</div>
+      </div>
+    `;
+    certList.appendChild(newCert);
+    
+    updateSecurityScore(90);
+  }, 1500);
+}
+
+function disconnectVPN() {
+  if (!vpnConnected) {
+    logMessage('VPN not connected', 'warning');
+    return;
+  }
+  
+  logMessage('Disconnecting VPN...', 'vpn');
+  
+  setTimeout(() => {
+    vpnConnected = false;
+    encryptionActive = false;
+    connectedUsers = 0;
+    
+    // Update UI
+    document.getElementById('vpnStatus').innerHTML = 
+      'Disconnected<span class="status-indicator status-disconnected"></span>';
+    document.getElementById('tunnelState').textContent = 'Down';
+    document.getElementById('encryptionStatus').textContent = 'None';
+    document.getElementById('connectedUsers').textContent = '0';
+    
+    // Hide VPN tunnel
+    document.getElementById('vpn-tunnel').style.display = 'none';
+    document.getElementById('packet1').style.display = 'none';
+    
+    // Hide threat alerts
+    document.getElementById('threatAlerts').style.display = 'none';
+    
+    logMessage('VPN disconnected successfully', 'success');
+    logMessage('All tunnels terminated', 'vpn');
+    
+  }, 1000);
+}
+
+function logMessage(message, type = 'vpn') {
+  const logArea = document.getElementById('securityLog');
+  const timestamp = new Date().toLocaleTimeString();
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  entry.textContent = `[${timestamp}] ${message}`;
+  
+  logArea.appendChild(entry);
+  logArea.scrollTop = logArea.scrollHeight;
+  
+  // Keep only last 50 entries
+  while (logArea.children.length > 50) {
+    logArea.removeChild(logArea.firstChild);
+  }
+}
+
+// Simulate periodic security events
+function simulateSecurityEvents() {
+  setInterval(() => {
+    if (vpnConnected) {
+      const events = [
+        'Heartbeat packet received',
+        'Key rotation completed',
+        'Tunnel keepalive sent',
+        'Security association refreshed'
+      ];
+      const randomEvent = events[Math.floor(Math.random() * events.length)];
+      logMessage(randomEvent, 'security');
+    }
+  }, 15000);
+  
+  // Occasional security warnings
+  setInterval(() => {
+    if (Math.random() < 0.1) {
+      const warnings = [
+        'Login attempt from unknown IP',
+        'Certificate will expire in 30 days',
+        'Unusual traffic pattern detected',
+        'Failed authentication attempt'
+      ];
+      const randomWarning = warnings[Math.floor(Math.random() * warnings.length)];
+      logMessage(randomWarning, 'warning');
+    }
+  }, 30000);
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', function() {
+  logMessage('VPN & Security Simulation initialized', 'success');
+  logMessage('Configure VPN settings and establish connection', 'vpn');
+  
+  // Start background security monitoring
+  simulateSecurityEvents();
+  
+  // Initialize with first device selected
+  selectDevice('vpn-gateway1');
+});
+</script>
+{% endblock %}

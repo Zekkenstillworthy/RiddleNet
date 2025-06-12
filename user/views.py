@@ -1,6 +1,7 @@
 from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
 from sqlalchemy import func
 import os
+import sys
 import datetime
 import traceback
 import random
@@ -16,7 +17,9 @@ from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
 # Import media utilities
 from utils.media_utils import serve_optimized_video, serve_optimized_audio
-
+# Import networking content
+from networking1_corrected_content import get_networking1_content
+from networking2_updated_content import get_networking2_content
 # Create blueprint as expected by main __init__.py
 user_bp = Blueprint('user', __name__)
 
@@ -1523,8 +1526,7 @@ def get_networking_lesson(lesson_id):
     """Get content for a specific networking lesson"""
     if 'user_id' not in session:
         return jsonify({"error": "Not authenticated"}), 401
-    
-    # Load lesson content from extracted module files
+      # Load lesson content from unified networking 1 module system
     try:
         import sys
         import os
@@ -1532,17 +1534,18 @@ def get_networking_lesson(lesson_id):
         root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if root_dir not in sys.path:
             sys.path.insert(0, root_dir)
-        from module_loader import get_module_lesson_content
+        from networking1_corrected_content import get_networking1_content
     except ImportError as e:
         print(f"Import error: {e}")
         print(f"Current working directory: {os.getcwd()}")
         print(f"Python path: {sys.path}")
-        return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
-    
-    lesson_content = get_module_lesson_content()
+        return jsonify({"error": f"Networking 1 unified loader import failed: {str(e)}"}), 500
+      # Get specific lesson content
+    content = get_networking1_content()
+    lesson_data = content.get(lesson_id)
     
     # Check if the requested lesson exists
-    if lesson_id in lesson_content:
+    if lesson_data:
         # Update user's progress for this lesson (assuming module is first digit)
         from user.models.networking_progress import NetworkingProgress
         
@@ -1573,8 +1576,8 @@ def get_networking_lesson(lesson_id):
                 print(f"Error updating progress: {str(e)}")
         
         return jsonify({
-            "title": lesson_content[lesson_id]["title"],
-            "content": lesson_content[lesson_id]["content"]
+            "title": lesson_data["title"],
+            "content": lesson_data["content"]
         })
     else:
         return jsonify({"error": "Lesson not found"}), 404
@@ -1585,23 +1588,12 @@ def get_networking2_lessons():
     if 'user_id' not in session:
         return jsonify({"error": "Not authenticated"}), 401
     
-    # Load lesson content from extracted module files
     try:
-        import sys
-        import os
-        # Add the root directory to Python path
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
-        from networking2_module_loader import get_networking2_lesson_content
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
-    
-    lesson_content = get_networking2_lesson_content()
-    return jsonify(lesson_content)
+        lesson_content = get_networking2_content()
+        return jsonify(lesson_content)
+    except Exception as e:
+        print(f"Error loading networking2 content: {e}")
+        return jsonify({"error": f"Failed to load lessons: {str(e)}"}), 500
 
 @user_bp.route('/api/networking2/lesson/<lesson_id>')
 def get_networking2_lesson(lesson_id):
@@ -1617,14 +1609,14 @@ def get_networking2_lesson(lesson_id):
         root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if root_dir not in sys.path:
             sys.path.insert(0, root_dir)
-        from networking2_module_loader import get_networking2_lesson_content
+        from networking2_updated_content import get_networking2_content
     except ImportError as e:
         print(f"Import error: {e}")
         print(f"Current working directory: {os.getcwd()}")
         print(f"Python path: {sys.path}")
         return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
     
-    lesson_content = get_networking2_lesson_content()
+    lesson_content = get_networking2_content()
     
     # Check if the requested lesson exists
     if lesson_id in lesson_content:
@@ -1722,3 +1714,202 @@ def track_networking2_progress():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@user_bp.route('/api/networking1/structure')
+def get_networking1_structure():
+    """Get the complete structure of Networking 1 course with all 5 modules"""
+    if 'user_id' not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    try:
+        import sys
+        import os
+        # Add the root directory to Python path
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root_dir not in sys.path:
+            sys.path.insert(0, root_dir)
+        from networking1_corrected_content import get_networking1_content
+    except ImportError as e:
+        return jsonify({"error": f"Networking content import failed: {str(e)}"}), 500
+    
+    try:
+        # Get content directly from the function
+        content = get_networking1_content()
+        
+        # Build modules structure from content
+        modules_structure = {}
+        module_lessons = {}
+        
+        # Group lessons by module
+        for lesson_id, lesson_data in content.items():
+            module_id = lesson_id.split('.')[0]  # "1.1" -> "1"
+            module_key = f"module{module_id}"
+            
+            if module_key not in module_lessons:
+                module_lessons[module_key] = []
+            
+            module_lessons[module_key].append({
+                "id": lesson_id,
+                "title": lesson_data["title"]
+            })
+        
+        # Define module names
+        module_names = {
+            "module1": "Introduction to Computer Networks",
+            "module2": "Ethernet Technology", 
+            "module3": "Transport Layer and Network Services",
+            "module4": "Application Layer and Advanced Concepts"
+        }
+        
+        # Build structure
+        for module_key, lessons in module_lessons.items():
+            modules_structure[module_key] = {
+                "name": module_names.get(module_key, f"Module {module_key[6:]}"),
+                "lesson_count": len(lessons),
+                "lessons": lessons
+            }
+        
+        course_summary = {
+            "title": "Networking 1",
+            "total_modules": len(modules_structure),
+            "total_lessons": len(content)
+        }
+        
+        # Get user's progress for each module
+        from user.models.networking_progress import NetworkingProgress
+        user_id = session['user_id']
+        
+        user_progress = NetworkingProgress.query.filter_by(user_id=user_id).all()
+        progress_by_module = {}
+        
+        for progress in user_progress:
+            module_id = f"module{progress.module_id}"
+            if module_id not in progress_by_module:
+                progress_by_module[module_id] = {
+                    "completed_lessons": 0,
+                    "total_progress": 0,
+                    "lessons": {}
+                }
+            
+            progress_by_module[module_id]["lessons"][progress.lesson_id] = {
+                "completed": progress.completed,
+                "progress_percent": progress.progress_percent,
+                "last_accessed": progress.last_accessed.isoformat() if progress.last_accessed else None
+            }
+            
+            if progress.completed:
+                progress_by_module[module_id]["completed_lessons"] += 1
+        
+        # Calculate module completion percentages
+        for module_id, module_info in modules_structure.items():
+            if module_id in progress_by_module:
+                total_lessons = module_info["lesson_count"]
+                completed = progress_by_module[module_id]["completed_lessons"]
+                progress_by_module[module_id]["completion_percentage"] = round((completed / total_lessons) * 100, 1)
+            else:
+                progress_by_module[module_id] = {
+                    "completed_lessons": 0,
+                    "completion_percentage": 0.0,
+                    "lessons": {}
+                }
+        
+        return jsonify({
+            "status": "success",
+            "course_summary": course_summary,
+            "modules": modules_structure,
+            "user_progress": progress_by_module
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to get course structure: {str(e)}"}), 500
+
+# NETWORKING 1 SIMULATION ROUTES
+@user_bp.route('/networking1-simulations')
+@user_login_required
+def networking1_simulations():
+    """Main Networking 1 simulations hub"""
+    return render_template('user/networking1_simulations.html')
+
+@user_bp.route('/networking1-components-simulation')
+@user_login_required
+def networking1_components_simulation():
+    """Network Components Builder Simulation"""
+    return render_template('user/networking1-components-simulation.html')
+
+@user_bp.route('/networking1-osi-simulation')
+@user_login_required
+def networking1_osi_simulation():
+    """OSI Model Interactive Simulation"""
+    return render_template('user/networking1-osi-simulation.html')
+
+@user_bp.route('/networking1-tcpip-simulation')
+@user_login_required
+def networking1_tcpip_simulation():
+    """TCP/IP Protocol Stack Simulation"""
+    return render_template('user/networking1-tcpip-simulation.html')
+
+@user_bp.route('/networking1-ethernet-simulation')
+@user_login_required
+def networking1_ethernet_simulation():
+    """Ethernet Technology Simulation"""
+    return render_template('user/networking1-ethernet-simulation.html')
+
+@user_bp.route('/networking1-application-simulation')
+@user_login_required
+def networking1_application_simulation():
+    """Application Layer Protocols Simulation"""
+    return render_template('user/networking1-application-simulation.html')
+
+@user_bp.route('/networking1-datalink-simulation')
+@user_login_required
+def networking1_datalink_simulation():
+    """Data Link Layer Simulation"""
+    return render_template('user/networking1-datalink-simulation.html')
+
+# NETWORKING 2 SIMULATION ROUTES
+@user_bp.route('/networking2-simulations')
+@user_login_required
+def networking2_simulations():
+    """Main Networking 2 simulations hub"""
+    return render_template('user/networking2_simulations.html')
+
+@user_bp.route('/networking2-routing-simulation')
+@user_login_required
+def networking2_routing_simulation():
+    """Routing Fundamentals Simulation"""
+    return render_template('user/networking2-routing-simulation.html')
+
+@user_bp.route('/networking2-security-simulation')
+@user_login_required
+def networking2_security_simulation():
+    """Network Security Simulation"""
+    return render_template('user/networking2-security-simulation.html')
+
+@user_bp.route('/networking2-wireless-simulation')
+@user_login_required
+def networking2_wireless_simulation():
+    """Wireless Networks Simulation"""
+    return render_template('user/networking2-wireless-simulation.html')
+
+@user_bp.route('/networking2-management-simulation')
+@user_login_required
+def networking2_management_simulation():
+    """Network Management Simulation"""
+    return render_template('user/networking2-management-simulation.html')
+
+@user_bp.route('/networking2-ospf-simulation')
+@user_login_required
+def networking2_ospf_simulation():
+    """OSPF Advanced Routing Simulation"""
+    return render_template('user/networking2-ospf-simulation.html')
+
+@user_bp.route('/networking2-vpn-simulation')
+@user_login_required
+def networking2_vpn_simulation():
+    """VPN & Advanced Security Simulation"""
+    return render_template('user/networking2-vpn-simulation.html')
+
+@user_bp.route('/networking2-troubleshooting-simulation')
+@user_login_required
+def networking2_troubleshooting_simulation():
+    """Network Troubleshooting Simulation"""
+    return render_template('user/networking2-troubleshooting-simulation.html')

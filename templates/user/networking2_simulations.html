@@ -1,0 +1,521 @@
+{% extends "user/base.html" %}
+{% block title %}Networking 2 Simulations{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .page-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .simulations-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .page-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 16px 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }
+
+  .page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  .simulations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+
+  .simulation-card {
+    background: var(--card-bg);
+    border: 2px solid transparent;
+    border-radius: 24px;
+    padding: 32px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+  }
+
+  .simulation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border-radius: 24px;
+    padding: 2px;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .simulation-card:hover::before {
+    opacity: 1;
+  }
+
+  .simulation-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+  }
+
+  .simulation-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .simulation-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    margin-right: 20px;
+    box-shadow: 0 8px 16px rgba(0, 212, 255, 0.3);
+  }
+
+  .simulation-info h3 {
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+  }
+
+  .simulation-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .simulation-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+
+  .simulation-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px 0;
+  }
+
+  .simulation-features li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .simulation-features li i {
+    color: var(--success-green);
+    margin-right: 12px;
+    font-size: 0.8rem;
+  }
+
+  .simulation-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    border-radius: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .simulation-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 212, 255, 0.4);
+  }
+
+  .simulation-btn:active {
+    transform: translateY(0);
+  }
+
+  .simulation-btn i {
+    font-size: 0.9rem;
+  }
+
+  .back-navigation {
+    text-align: center;
+    margin-top: 48px;
+  }
+
+  .back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 16px 32px;
+    border-radius: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .module-label {
+    background: linear-gradient(135deg, var(--warning-orange), #ff6b35);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  @media (max-width: 768px) {
+    .simulations-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+    }
+
+    .simulation-card {
+      padding: 24px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <!-- Header Section -->
+  <div class="simulations-header">
+    <h1 class="page-title">Networking 2 Simulations</h1>
+    <p class="page-subtitle">Advanced network management, security, and troubleshooting simulations</p>
+  </div>
+
+  <!-- Simulations Grid -->
+  <div class="simulations-grid">
+    
+    <!-- Module 1: Routing Fundamentals Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 1</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-route"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>Routing Fundamentals Lab</h3>
+          <p>Advanced Routing Concepts & Configuration</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Master advanced routing concepts including static routing, dynamic protocols, load balancing, and route table management through interactive simulations.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> Static route configuration practice</li>
+        <li><i class="fas fa-check"></i> Load balancing scenarios</li>
+        <li><i class="fas fa-check"></i> Route table analysis</li>
+        <li><i class="fas fa-check"></i> Network path determination</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('routing')">
+        <i class="fas fa-play"></i>
+        Launch Routing Simulation
+      </button>
+    </div>
+
+    <!-- Module 2: Network Security Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 2</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>Network Security Lab</h3>
+          <p>Security Fundamentals & Implementation</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Explore network security principles, firewall configurations, VPN setup, and intrusion detection through hands-on security simulations.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> Firewall rule configuration</li>
+        <li><i class="fas fa-check"></i> VPN tunnel setup</li>
+        <li><i class="fas fa-check"></i> Security policy implementation</li>
+        <li><i class="fas fa-check"></i> Threat detection scenarios</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('security')">
+        <i class="fas fa-play"></i>
+        Launch Security Simulation
+      </button>
+    </div>
+
+    <!-- Module 3: Wireless Networks Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 3</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-wifi"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>Wireless Networks Lab</h3>
+          <p>WLAN Configuration & Management</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Configure and manage wireless networks including access point setup, security protocols, and wireless troubleshooting scenarios.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> Access point configuration</li>
+        <li><i class="fas fa-check"></i> Wireless security protocols</li>
+        <li><i class="fas fa-check"></i> Signal strength analysis</li>
+        <li><i class="fas fa-check"></i> Roaming and handoff simulation</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('wireless')">
+        <i class="fas fa-play"></i>
+        Launch Wireless Simulation
+      </button>
+    </div>
+
+    <!-- Module 4: Network Management Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 4</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>Network Management Lab</h3>
+          <p>Monitoring & Performance Analysis</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Learn network monitoring techniques, SNMP configuration, performance analysis, and network documentation through comprehensive management simulations.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> SNMP monitoring setup</li>
+        <li><i class="fas fa-check"></i> Performance metrics analysis</li>
+        <li><i class="fas fa-check"></i> Network documentation tools</li>
+        <li><i class="fas fa-check"></i> Capacity planning scenarios</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('management')">
+        <i class="fas fa-play"></i>
+        Launch Management Simulation
+      </button>
+    </div>
+
+    <!-- Module 5: OSPF Advanced Routing Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 5</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-project-diagram"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>OSPF Protocol Lab</h3>
+          <p>Advanced OSPF Configuration & Areas</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Master OSPF protocol configuration, area design, neighbor relationships, and advanced OSPF troubleshooting through interactive scenarios.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> OSPF area configuration</li>
+        <li><i class="fas fa-check"></i> Neighbor relationship setup</li>
+        <li><i class="fas fa-check"></i> Link state database analysis</li>
+        <li><i class="fas fa-check"></i> OSPF troubleshooting tools</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('ospf')">
+        <i class="fas fa-play"></i>
+        Launch OSPF Simulation
+      </button>
+    </div>
+
+    <!-- Module 6: VPN & Security Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 6</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-lock"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>VPN & Advanced Security</h3>
+          <p>Virtual Private Networks & Encryption</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Configure VPN tunnels, implement encryption protocols, and explore advanced security concepts through comprehensive VPN simulation scenarios.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> VPN tunnel configuration</li>
+        <li><i class="fas fa-check"></i> IPSec protocol setup</li>
+        <li><i class="fas fa-check"></i> Encryption key management</li>
+        <li><i class="fas fa-check"></i> Remote access scenarios</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('vpn')">
+        <i class="fas fa-play"></i>
+        Launch VPN Simulation
+      </button>
+    </div>
+
+    <!-- Module 7: Network Troubleshooting Simulation -->
+    <div class="simulation-card">
+      <div class="module-label">Module 7</div>
+      <div class="simulation-header">
+        <div class="simulation-icon">
+          <i class="fas fa-tools"></i>
+        </div>
+        <div class="simulation-info">
+          <h3>Troubleshooting Lab</h3>
+          <p>Network Diagnostics & Problem Resolution</p>
+        </div>
+      </div>
+      <div class="simulation-description">
+        Master network troubleshooting methodologies, diagnostic tools, and systematic problem-solving approaches through realistic failure scenarios.
+      </div>
+      <ul class="simulation-features">
+        <li><i class="fas fa-check"></i> Systematic troubleshooting methodology</li>
+        <li><i class="fas fa-check"></i> Network diagnostic tools</li>
+        <li><i class="fas fa-check"></i> Common problem scenarios</li>
+        <li><i class="fas fa-check"></i> Advanced debugging techniques</li>
+      </ul>
+      <button class="simulation-btn" onclick="launchSimulation('troubleshooting')">
+        <i class="fas fa-play"></i>
+        Launch Troubleshooting Simulation
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Back Navigation -->
+  <div class="back-navigation">
+    <a href="{{ url_for('user.networking_2') }}" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Back to Networking 2
+    </a>
+  </div>
+</div>
+
+<script>
+  function launchSimulation(type) {
+    // Add loading animation to button
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    button.disabled = true;
+    
+    // Simulate loading and redirect
+    setTimeout(() => {
+      switch(type) {
+        case 'routing':
+          window.open("{{ url_for('user.networking2_routing_simulation') }}", '_blank');
+          break;
+        case 'security':
+          window.open("{{ url_for('user.networking2_security_simulation') }}", '_blank');
+          break;
+        case 'wireless':
+          window.open("{{ url_for('user.networking2_wireless_simulation') }}", '_blank');
+          break;
+        case 'management':
+          window.open("{{ url_for('user.networking2_management_simulation') }}", '_blank');
+          break;
+        case 'ospf':
+          window.open("{{ url_for('user.networking2_ospf_simulation') }}", '_blank');
+          break;
+        case 'vpn':
+          window.open("{{ url_for('user.networking2_vpn_simulation') }}", '_blank');
+          break;
+        case 'troubleshooting':
+          window.open("{{ url_for('user.networking2_troubleshooting_simulation') }}", '_blank');
+          break;
+        default:
+          alert('Simulation not yet implemented');
+      }
+      
+      // Reset button state
+      button.innerHTML = originalText;
+      button.disabled = false;
+    }, 1500);
+  }
+
+  // Add entrance animations on scroll
+  function animateOnScroll() {
+    const cards = document.querySelectorAll('.simulation-card');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    });
+
+    cards.forEach((card) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      observer.observe(card);
+    });
+  }
+
+  // Initialize animations when page loads
+  document.addEventListener('DOMContentLoaded', animateOnScroll);
+</script>
+{% endblock %}

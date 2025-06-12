@@ -1,0 +1,880 @@
+{% extends "user/base.html" %}
+{% block title %}Application Layer Protocols Simulation{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --cyber-glow: #00d4ff;
+    --network-purple: #8b5fbf;
+    --card-bg: rgba(10, 12, 20, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+    --success-green: #14bf5e;
+    --warning-orange: #ff9500;
+    --error-red: #ff4757;
+    --http-blue: #0066cc;
+    --ftp-green: #14bf5e;
+    --smtp-orange: #ff9500;
+    --dns-purple: #8b5fbf;
+  }
+
+  body {
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .simulation-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    height: calc(100vh - 40px);
+  }
+
+  .control-panel {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    overflow-y: auto;
+  }
+
+  .simulation-area {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 20px;
+  }
+
+  .panel-title {
+    color: var(--cyber-glow);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .section-title {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    padding-bottom: 5px;
+  }
+
+  .protocol-selector {
+    margin-bottom: 20px;
+  }
+
+  .protocol-option {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .protocol-option:hover {
+    background: rgba(0, 212, 255, 0.2);
+    transform: translateX(5px);
+  }
+
+  .protocol-option.selected {
+    background: rgba(0, 212, 255, 0.3);
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+
+  .protocol-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+
+  .http-icon { background: var(--http-blue); }
+  .ftp-icon { background: var(--ftp-green); }
+  .smtp-icon { background: var(--smtp-orange); }
+  .dns-icon { background: var(--dns-purple); }
+
+  .scenario-selector {
+    margin-bottom: 20px;
+  }
+
+  .scenario-option {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 300ms ease;
+    font-size: 0.9rem;
+  }
+
+  .scenario-option:hover {
+    background: rgba(0, 212, 255, 0.2);
+  }
+
+  .scenario-option.selected {
+    background: rgba(0, 212, 255, 0.3);
+    border-color: var(--cyber-glow);
+  }
+
+  .simulation-controls {
+    margin-bottom: 20px;
+  }
+
+  .control-button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--cyber-glow), #0099cc);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+  }
+
+  .control-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+  }
+
+  .control-button:disabled {
+    background: rgba(255, 255, 255, 0.2);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .protocol-visualization {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .visualization-title {
+    color: var(--cyber-glow);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .client-server-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    position: relative;
+  }
+
+  .client-box, .server-box {
+    width: 120px;
+    height: 100px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    border: 2px solid;
+    position: relative;
+  }
+
+  .client-box {
+    background: linear-gradient(135deg, #333, #666);
+    border-color: var(--text-secondary);
+  }
+
+  .server-box {
+    background: linear-gradient(135deg, var(--success-green), #0f9b4a);
+    border-color: var(--success-green);
+  }
+
+  .communication-line {
+    position: absolute;
+    top: 50%;
+    left: 140px;
+    right: 140px;
+    height: 3px;
+    background: var(--text-secondary);
+    transform: translateY(-50%);
+  }
+
+  .message-flow {
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    background: var(--cyber-glow);
+    border-radius: 50%;
+    transform: translateY(-50%);
+    transition: all 1s ease;
+    opacity: 0;
+  }
+
+  .message-flow.request {
+    left: 160px;
+    animation: moveRight 2s ease-in-out;
+  }
+
+  .message-flow.response {
+    right: 160px;
+    animation: moveLeft 2s ease-in-out;
+  }
+
+  .protocol-details {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    height: 200px;
+    overflow-y: auto;
+  }
+
+  .message-log {
+    max-height: 150px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+  }
+
+  .log-entry {
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    background: rgba(0, 212, 255, 0.1);
+    border-left: 3px solid var(--cyber-glow);
+  }
+
+  .log-entry.request {
+    border-left-color: var(--warning-orange);
+    background: rgba(255, 149, 0, 0.1);
+  }
+
+  .log-entry.response {
+    border-left-color: var(--success-green);
+    background: rgba(20, 191, 94, 0.1);
+  }
+
+  .log-entry.error {
+    border-left-color: var(--error-red);
+    background: rgba(255, 71, 87, 0.1);
+  }
+
+  @keyframes moveRight {
+    0% { left: 160px; opacity: 1; }
+    100% { left: calc(100% - 180px); opacity: 0; }
+  }
+
+  @keyframes moveLeft {
+    0% { right: 160px; opacity: 1; }
+    100% { right: calc(100% - 180px); opacity: 0; }
+  }
+
+  .protocol-info {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+  }
+
+  .info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .status-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    display: none;
+  }
+
+  .status-indicator.success {
+    background: var(--success-green);
+    color: white;
+  }
+
+  .status-indicator.error {
+    background: var(--error-red);
+    color: white;
+  }
+
+  .status-indicator.info {
+    background: var(--cyber-glow);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-container">
+  <div class="control-panel">
+    <h2 class="panel-title">Application Protocols</h2>
+    
+    <div class="protocol-selector">
+      <h3 class="section-title">Select Protocol</h3>
+      <div class="protocol-option selected" onclick="selectProtocol('http')" id="protocol-http">
+        <div class="protocol-icon http-icon">HTTP</div>
+        <div>
+          <strong>HTTP/HTTPS</strong><br>
+          <small>Web Communication</small>
+        </div>
+      </div>
+      <div class="protocol-option" onclick="selectProtocol('ftp')" id="protocol-ftp">
+        <div class="protocol-icon ftp-icon">FTP</div>
+        <div>
+          <strong>FTP</strong><br>
+          <small>File Transfer</small>
+        </div>
+      </div>
+      <div class="protocol-option" onclick="selectProtocol('smtp')" id="protocol-smtp">
+        <div class="protocol-icon smtp-icon">SMTP</div>
+        <div>
+          <strong>SMTP</strong><br>
+          <small>Email Sending</small>
+        </div>
+      </div>
+      <div class="protocol-option" onclick="selectProtocol('dns')" id="protocol-dns">
+        <div class="protocol-icon dns-icon">DNS</div>
+        <div>
+          <strong>DNS</strong><br>
+          <small>Name Resolution</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario-selector">
+      <h3 class="section-title">Simulation Scenarios</h3>
+      <div id="scenario-options">
+        <!-- Dynamic scenarios based on selected protocol -->
+      </div>
+    </div>
+
+    <div class="simulation-controls">
+      <h3 class="section-title">Controls</h3>
+      <button class="control-button" onclick="startSimulation()">Start Simulation</button>
+      <button class="control-button" onclick="stopSimulation()">Stop Simulation</button>
+      <button class="control-button" onclick="resetSimulation()">Reset</button>
+      <button class="control-button" onclick="showTutorial()">Tutorial</button>
+    </div>
+
+    <div class="protocol-info" id="protocol-info">
+      <h3 class="section-title">Protocol Information</h3>
+      <div class="info-item">
+        <span>Port:</span>
+        <span class="info-value" id="protocol-port">80</span>
+      </div>
+      <div class="info-item">
+        <span>Transport:</span>
+        <span class="info-value" id="protocol-transport">TCP</span>
+      </div>
+      <div class="info-item">
+        <span>Type:</span>
+        <span class="info-value" id="protocol-type">Request-Response</span>
+      </div>
+      <div class="info-item">
+        <span>Stateless:</span>
+        <span class="info-value" id="protocol-stateless">Yes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="simulation-area">
+    <div class="protocol-visualization" id="visualization-area">
+      <h3 class="visualization-title" id="visualization-title">HTTP Web Communication</h3>
+      
+      <div class="client-server-layout">
+        <div class="client-box">
+          <div style="font-size: 0.8rem;">CLIENT</div>
+          <div id="client-label">Web Browser</div>
+        </div>
+        
+        <div class="communication-line"></div>
+        <div class="message-flow request" id="request-flow"></div>
+        <div class="message-flow response" id="response-flow"></div>
+        
+        <div class="server-box">
+          <div style="font-size: 0.8rem;">SERVER</div>
+          <div id="server-label">Web Server</div>
+        </div>
+      </div>
+      
+      <!-- Status indicators -->
+      <div class="status-indicator" id="status-indicator"></div>
+    </div>
+
+    <div class="protocol-details">
+      <h3 class="visualization-title">Message Exchange Log</h3>
+      <div class="message-log" id="message-log">
+        <div class="log-entry">Ready to simulate protocol communication</div>
+        <div class="log-entry">Select a protocol and scenario to begin</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProtocol = 'http';
+let currentScenario = 'get-request';
+let simulationRunning = false;
+let messageId = 0;
+
+// Protocol configurations
+const protocols = {
+  http: {
+    port: 80,
+    transport: 'TCP',
+    type: 'Request-Response',
+    stateless: 'Yes',
+    clientLabel: 'Web Browser',
+    serverLabel: 'Web Server',
+    title: 'HTTP Web Communication',
+    scenarios: [
+      { id: 'get-request', name: 'GET Request', description: 'Retrieve a web page' },
+      { id: 'post-request', name: 'POST Request', description: 'Submit form data' },
+      { id: 'https-secure', name: 'HTTPS Secure', description: 'Encrypted communication' },
+      { id: 'error-404', name: '404 Error', description: 'Page not found' }
+    ]
+  },
+  ftp: {
+    port: 21,
+    transport: 'TCP',
+    type: 'Command-Data',
+    stateless: 'No',
+    clientLabel: 'FTP Client',
+    serverLabel: 'FTP Server',
+    title: 'FTP File Transfer',
+    scenarios: [
+      { id: 'login', name: 'Login', description: 'Authenticate with server' },
+      { id: 'upload', name: 'Upload File', description: 'Transfer file to server' },
+      { id: 'download', name: 'Download File', description: 'Retrieve file from server' },
+      { id: 'directory', name: 'List Directory', description: 'Browse server contents' }
+    ]
+  },
+  smtp: {
+    port: 25,
+    transport: 'TCP',
+    type: 'Command-Response',
+    stateless: 'No',
+    clientLabel: 'Email Client',
+    serverLabel: 'SMTP Server',
+    title: 'SMTP Email Sending',
+    scenarios: [
+      { id: 'send-email', name: 'Send Email', description: 'Deliver email message' },
+      { id: 'authentication', name: 'Authentication', description: 'Login to mail server' },
+      { id: 'relay', name: 'Email Relay', description: 'Forward to destination' },
+      { id: 'rejection', name: 'Spam Rejection', description: 'Message blocked' }
+    ]
+  },
+  dns: {
+    port: 53,
+    transport: 'UDP',
+    type: 'Query-Response',
+    stateless: 'Yes',
+    clientLabel: 'DNS Client',
+    serverLabel: 'DNS Server',
+    title: 'DNS Name Resolution',
+    scenarios: [
+      { id: 'a-record', name: 'A Record Query', description: 'Get IP address' },
+      { id: 'mx-record', name: 'MX Record Query', description: 'Mail server lookup' },
+      { id: 'recursive', name: 'Recursive Query', description: 'Multi-server lookup' },
+      { id: 'nxdomain', name: 'NXDOMAIN', description: 'Domain not found' }
+    ]
+  }
+};
+
+function selectProtocol(protocol) {
+  currentProtocol = protocol;
+  const config = protocols[protocol];
+  
+  // Update UI
+  document.querySelectorAll('.protocol-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`protocol-${protocol}`).classList.add('selected');
+  
+  // Update protocol info
+  document.getElementById('protocol-port').textContent = config.port;
+  document.getElementById('protocol-transport').textContent = config.transport;
+  document.getElementById('protocol-type').textContent = config.type;
+  document.getElementById('protocol-stateless').textContent = config.stateless;
+  
+  // Update visualization
+  document.getElementById('visualization-title').textContent = config.title;
+  document.getElementById('client-label').textContent = config.clientLabel;
+  document.getElementById('server-label').textContent = config.serverLabel;
+  
+  // Update scenarios
+  updateScenarios(config.scenarios);
+  
+  // Reset simulation
+  resetSimulation();
+}
+
+function updateScenarios(scenarios) {
+  const container = document.getElementById('scenario-options');
+  container.innerHTML = '';
+  
+  scenarios.forEach((scenario, index) => {
+    const option = document.createElement('div');
+    option.className = `scenario-option ${index === 0 ? 'selected' : ''}`;
+    option.id = `scenario-${scenario.id}`;
+    option.onclick = () => selectScenario(scenario.id);
+    option.innerHTML = `
+      <strong>${scenario.name}</strong><br>
+      <small>${scenario.description}</small>
+    `;
+    container.appendChild(option);
+  });
+  
+  currentScenario = scenarios[0].id;
+}
+
+function selectScenario(scenario) {
+  currentScenario = scenario;
+  
+  // Update UI
+  document.querySelectorAll('.scenario-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  document.getElementById(`scenario-${scenario}`).classList.add('selected');
+}
+
+function startSimulation() {
+  if (simulationRunning) return;
+  
+  simulationRunning = true;
+  resetVisualElements();
+  
+  // Run protocol-specific simulation
+  const protocolMethods = {
+    http: simulateHTTP,
+    ftp: simulateFTP,
+    smtp: simulateSMTP,
+    dns: simulateDNS
+  };
+  
+  protocolMethods[currentProtocol]();
+}
+
+function simulateHTTP() {
+  const scenarios = {
+    'get-request': () => {
+      logMessage('request', `GET /index.html HTTP/1.1\nHost: example.com\nUser-Agent: Mozilla/5.0`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 1234\n\n<html>...</html>`);
+        showMessageFlow('response');
+        showStatus('success', 'Page Retrieved Successfully');
+        setTimeout(() => stopSimulation(), 2000);
+      }, 2000);
+    },
+    'post-request': () => {
+      logMessage('request', `POST /submit HTTP/1.1\nHost: example.com\nContent-Type: application/x-www-form-urlencoded\n\nname=John&email=john@example.com`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `HTTP/1.1 201 Created\nLocation: /success\nContent-Type: text/html\n\n<html>Form submitted!</html>`);
+        showMessageFlow('response');
+        showStatus('success', 'Form Submitted Successfully');
+        setTimeout(() => stopSimulation(), 2000);
+      }, 2000);
+    },
+    'https-secure': () => {
+      logMessage('request', `TLS Handshake: Client Hello`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `TLS Handshake: Server Hello, Certificate`);
+        showMessageFlow('response');
+        
+        setTimeout(() => {
+          logMessage('request', `Encrypted HTTP Request (TLS)`);
+          showMessageFlow('request');
+          
+          setTimeout(() => {
+            logMessage('response', `Encrypted HTTP Response (TLS)`);
+            showMessageFlow('response');
+            showStatus('success', 'Secure Communication Established');
+            setTimeout(() => stopSimulation(), 2000);
+          }, 1500);
+        }, 1500);
+      }, 2000);
+    },
+    'error-404': () => {
+      logMessage('request', `GET /nonexistent.html HTTP/1.1\nHost: example.com`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<html><h1>404 - Page Not Found</h1></html>`);
+        showMessageFlow('response');
+        showStatus('error', '404 - Page Not Found');
+        setTimeout(() => stopSimulation(), 2000);
+      }, 2000);
+    }
+  };
+  
+  scenarios[currentScenario]();
+}
+
+function simulateFTP() {
+  const scenarios = {
+    'login': () => {
+      logMessage('response', `220 Welcome to FTP Server`);
+      setTimeout(() => {
+        logMessage('request', `USER john`);
+        showMessageFlow('request');
+        setTimeout(() => {
+          logMessage('response', `331 Password required`);
+          showMessageFlow('response');
+          setTimeout(() => {
+            logMessage('request', `PASS ********`);
+            showMessageFlow('request');
+            setTimeout(() => {
+              logMessage('response', `230 Login successful`);
+              showMessageFlow('response');
+              showStatus('success', 'FTP Login Successful');
+              setTimeout(() => stopSimulation(), 2000);
+            }, 1500);
+          }, 1500);
+        }, 1500);
+      }, 1000);
+    },
+    'upload': () => {
+      logMessage('request', `STOR document.pdf`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `150 Opening data connection`);
+        showMessageFlow('response');
+        
+        setTimeout(() => {
+          logMessage('request', `[File Data Transfer...]`);
+          showMessageFlow('request');
+          
+          setTimeout(() => {
+            logMessage('response', `226 Transfer complete`);
+            showMessageFlow('response');
+            showStatus('success', 'File Uploaded Successfully');
+            setTimeout(() => stopSimulation(), 2000);
+          }, 2000);
+        }, 1500);
+      }, 1500);
+    }
+  };
+  
+  scenarios[currentScenario] && scenarios[currentScenario]();
+}
+
+function simulateSMTP() {
+  const scenarios = {
+    'send-email': () => {
+      logMessage('response', `220 mail.example.com SMTP Ready`);
+      setTimeout(() => {
+        logMessage('request', `HELO client.example.com`);
+        showMessageFlow('request');
+        setTimeout(() => {
+          logMessage('response', `250 Hello client.example.com`);
+          showMessageFlow('response');
+          setTimeout(() => {
+            logMessage('request', `MAIL FROM:<sender@example.com>`);
+            showMessageFlow('request');
+            setTimeout(() => {
+              logMessage('response', `250 OK`);
+              showMessageFlow('response');
+              setTimeout(() => {
+                logMessage('request', `RCPT TO:<recipient@example.com>`);
+                showMessageFlow('request');
+                setTimeout(() => {
+                  logMessage('response', `250 OK`);
+                  showMessageFlow('response');
+                  setTimeout(() => {
+                    logMessage('request', `DATA\nSubject: Hello\n\nHello World!`);
+                    showMessageFlow('request');
+                    setTimeout(() => {
+                      logMessage('response', `250 Message accepted`);
+                      showMessageFlow('response');
+                      showStatus('success', 'Email Sent Successfully');
+                      setTimeout(() => stopSimulation(), 2000);
+                    }, 1500);
+                  }, 1500);
+                }, 1000);
+              }, 1000);
+            }, 1000);
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    }
+  };
+  
+  scenarios[currentScenario] && scenarios[currentScenario]();
+}
+
+function simulateDNS() {
+  const scenarios = {
+    'a-record': () => {
+      logMessage('request', `DNS Query: A record for example.com`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `DNS Response: example.com A 93.184.216.34`);
+        showMessageFlow('response');
+        showStatus('success', 'Domain Resolved Successfully');
+        setTimeout(() => stopSimulation(), 2000);
+      }, 1500);
+    },
+    'nxdomain': () => {
+      logMessage('request', `DNS Query: A record for nonexistent.domain`);
+      showMessageFlow('request');
+      
+      setTimeout(() => {
+        logMessage('response', `DNS Response: NXDOMAIN - Domain not found`);
+        showMessageFlow('response');
+        showStatus('error', 'Domain Not Found');
+        setTimeout(() => stopSimulation(), 2000);
+      }, 1500);
+    }
+  };
+  
+  scenarios[currentScenario] && scenarios[currentScenario]();
+}
+
+function showMessageFlow(direction) {
+  const flow = document.getElementById(`${direction}-flow`);
+  flow.style.opacity = '1';
+  flow.style.display = 'block';
+}
+
+function logMessage(type, message) {
+  const log = document.getElementById('message-log');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${++messageId}] ${message}`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showStatus(type, message) {
+  const indicator = document.getElementById('status-indicator');
+  indicator.className = `status-indicator ${type}`;
+  indicator.textContent = message;
+  indicator.style.display = 'block';
+}
+
+function stopSimulation() {
+  simulationRunning = false;
+  
+  // Hide message flows
+  document.getElementById('request-flow').style.opacity = '0';
+  document.getElementById('response-flow').style.opacity = '0';
+  
+  // Hide status indicator after delay
+  setTimeout(() => {
+    document.getElementById('status-indicator').style.display = 'none';
+  }, 2000);
+}
+
+function resetSimulation() {
+  stopSimulation();
+  resetVisualElements();
+  
+  // Clear message log
+  const log = document.getElementById('message-log');
+  log.innerHTML = `
+    <div class="log-entry">Ready to simulate ${currentProtocol.toUpperCase()} protocol</div>
+    <div class="log-entry">Click "Start Simulation" to begin</div>
+  `;
+  
+  messageId = 0;
+}
+
+function resetVisualElements() {
+  document.getElementById('request-flow').style.opacity = '0';
+  document.getElementById('response-flow').style.opacity = '0';
+  document.getElementById('status-indicator').style.display = 'none';
+}
+
+function showTutorial() {
+  const protocolName = currentProtocol.toUpperCase();
+  alert(`Application Layer Protocols Simulation Tutorial
+
+CURRENT PROTOCOL: ${protocolName}
+
+1. PROTOCOL SELECTION:
+   • HTTP: Web communication (browsers, web servers)
+   • FTP: File transfer between client and server
+   • SMTP: Email sending and delivery
+   • DNS: Domain name to IP address resolution
+
+2. SIMULATION SCENARIOS:
+   Each protocol has specific scenarios showing real-world usage patterns and message exchanges.
+
+3. HOW TO USE:
+   • Select a protocol from the left panel
+   • Choose a specific scenario to simulate
+   • Click "Start Simulation" to see the message exchange
+   • Observe the communication flow and message details
+   • View protocol information and message logs
+
+4. OBSERVATIONS:
+   • Request-response patterns vary by protocol
+   • Different protocols use different ports and transports
+   • Error conditions show how protocols handle failures
+   • Message formats demonstrate protocol specifications
+
+5. LEARNING OUTCOMES:
+   • Understand application layer protocol operations
+   • See real protocol message formats
+   • Learn about client-server communication patterns
+   • Observe error handling mechanisms`);
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', () => {
+  selectProtocol('http');
+});
+</script>
+{% endblock %}

@@ -19,12 +19,11 @@ def serve_optimized_video(filename, cache_timeout=43200):
     
     if not os.path.exists(video_path):
         return None
-        
+    
     return send_file(
         video_path,
         mimetype='video/mp4',
         conditional=True,  # Support for range requests
-        add_etags=True,
         max_age=cache_timeout
     )
 
@@ -43,11 +42,10 @@ def serve_optimized_audio(filename, cache_timeout=43200):
     
     if not os.path.exists(audio_path):
         return None
-        
+    
     return send_file(
         audio_path,
         mimetype='audio/mpeg',
         conditional=True,
-        add_etags=True,
         max_age=cache_timeout
     )
