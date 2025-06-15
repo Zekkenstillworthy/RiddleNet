@@ -1,482 +1,218 @@
 {% extends "user/base.html" %}
-{% block title %}Wireless Networks Simulation{% endblock %}
 
-{% block head %}
-<style>
-  :root {
-    --cyber-glow: #00d4ff;
-    --network-purple: #8b5fbf;
-    --card-bg: rgba(10, 12, 20, 0.8);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.8);
-    --success-green: #14bf5e;
-    --warning-orange: #ff9500;
-    --error-red: #ff4757;
-    --wireless-blue: #0099ff;
-  }
+{% block title %}Wireless Networks Simulation - Networking 2{% endblock %}
 
-  body {
-    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
-    font-family: 'Inter', sans-serif;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-  }
-
-  .simulation-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-    height: calc(100vh - 40px);
-  }
-
-  .control-panel {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 20px;
-    border: 2px solid rgba(0, 212, 255, 0.3);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-    overflow-y: auto;
-  }
-
-  .panel-title {
-    color: var(--cyber-glow);
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-
-  .section-title {
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 15px;
-    border-bottom: 2px solid var(--cyber-glow);
-    padding-bottom: 8px;
-  }
-
-  .wireless-standard-selector {
-    margin-bottom: 20px;
-  }
-
-  .standard-option {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(0, 212, 255, 0.3);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 300ms ease;
-    text-align: center;
-  }
-
-  .standard-option.selected {
-    border-color: var(--cyber-glow);
-    background: rgba(0, 212, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
-  }
-
-  .standard-option:hover {
-    border-color: var(--cyber-glow);
-    transform: translateY(-2px);
-  }
-
-  .scenario-selector {
-    margin-bottom: 20px;
-  }
-
-  .scenario-option {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(139, 95, 191, 0.3);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 300ms ease;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-
-  .scenario-option.selected {
-    border-color: var(--network-purple);
-    background: rgba(139, 95, 191, 0.2);
-    color: var(--text-primary);
-  }
-
-  .ap-config {
-    margin-bottom: 20px;
-  }
-
-  .config-input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-  }
-
-  .config-input:focus {
-    outline: none;
-    border-color: var(--cyber-glow);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-  }
-
-  .control-button {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 300ms ease;
-  }
-
-  .control-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
-  }
-
-  .control-button:disabled {
-    background: rgba(255, 255, 255, 0.2);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .stats-panel {
-    margin-top: 20px;
-  }
-
-  .stat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-  }
-
-  .stat-value {
-    color: var(--cyber-glow);
-    font-weight: 600;
-  }
-
-  .simulation-area {
-    background: var(--card-bg);
-    border-radius: 20px;
-    padding: 20px;
-    border: 2px solid rgba(0, 212, 255, 0.3);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .network-map {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 15px;
-    height: 400px;
-    position: relative;
-    border: 2px solid rgba(0, 212, 255, 0.2);
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-
-  .access-point {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, var(--wireless-blue), var(--cyber-glow));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 300ms ease;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-  }
-
-  .access-point:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 20px var(--cyber-glow);
-  }
-
-  .access-point.active {
-    animation: pulse 2s infinite;
-  }
-
-  .wireless-device {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, var(--success-green), #20bf6b);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 300ms ease;
-  }
-
-  .wireless-device:hover {
-    transform: scale(1.1);
-  }
-
-  .wireless-device.connected {
-    box-shadow: 0 0 15px var(--success-green);
-  }
-
-  .signal-strength {
-    position: absolute;
-    border-radius: 50%;
-    border: 2px solid var(--cyber-glow);
-    opacity: 0.3;
-    animation: signal-wave 2s infinite;
-  }
-
-  .signal-strength.weak {
-    border-color: var(--error-red);
-  }
-
-  .signal-strength.medium {
-    border-color: var(--warning-orange);
-  }
-
-  .signal-strength.strong {
-    border-color: var(--success-green);
-  }
-
-  @keyframes signal-wave {
-    0% {
-      transform: scale(1);
-      opacity: 0.7;
-    }
-    100% {
-      transform: scale(2);
-      opacity: 0;
-    }
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      box-shadow: 0 0 20px var(--cyber-glow);
-    }
-    50% {
-      box-shadow: 0 0 40px var(--cyber-glow);
-    }
-  }
-
-  .info-panels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    height: 200px;
-  }
-
-  .info-panel {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-    padding: 15px;
-    border: 1px solid rgba(0, 212, 255, 0.3);
-  }
-
-  .panel-header {
-    color: var(--cyber-glow);
-    font-weight: 600;
-    margin-bottom: 10px;
-    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
-    padding-bottom: 5px;
-  }
-
-  .info-content {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-
-  .log-entry {
-    padding: 5px 10px;
-    margin-bottom: 5px;
-    border-radius: 5px;
-    font-size: 0.8rem;
-    border-left: 3px solid var(--cyber-glow);
-  }
-
-  .log-entry.success {
-    background: rgba(20, 191, 94, 0.1);
-    border-left-color: var(--success-green);
-  }
-
-  .log-entry.warning {
-    background: rgba(255, 149, 0, 0.1);
-    border-left-color: var(--warning-orange);
-  }
-
-  .log-entry.error {
-    background: rgba(255, 71, 87, 0.1);
-    border-left-color: var(--error-red);
-  }
-
-  @media (max-width: 1200px) {
-    .simulation-container {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    
-    .control-panel {
-      position: static;
-    }
-
-    .info-panels {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/networking2-simulations.css') }}">
 {% endblock %}
 
 {% block content %}
+<a href="{{ url_for('user.networking2_simulations') }}" class="sim-back-btn">
+  <i class="fas fa-arrow-left"></i> Back to Networking 2
+</a>
+
 <div class="simulation-container">
-  <div class="control-panel">
-    <h2 class="panel-title">Wireless Configuration</h2>
-    
-    <div class="wireless-standard-selector">
-      <h3 class="section-title">Wireless Standard</h3>
-      <div class="standard-option selected" onclick="selectStandard('802.11ac')" id="standard-ac">
-        <strong>802.11ac (Wi-Fi 5)</strong><br>
-        <small>5GHz, up to 1.3 Gbps</small>
-      </div>
-      <div class="standard-option" onclick="selectStandard('802.11ax')" id="standard-ax">
-        <strong>802.11ax (Wi-Fi 6)</strong><br>
-        <small>2.4/5GHz, up to 9.6 Gbps</small>
-      </div>
-      <div class="standard-option" onclick="selectStandard('802.11n')" id="standard-n">
-        <strong>802.11n (Wi-Fi 4)</strong><br>
-        <small>2.4/5GHz, up to 600 Mbps</small>
-      </div>
-    </div>
-
-    <div class="scenario-selector">
-      <h3 class="section-title">Simulation Scenarios</h3>
-      <div class="scenario-option selected" onclick="selectScenario('association')" id="scenario-association">
-        Device Association
-      </div>
-      <div class="scenario-option" onclick="selectScenario('roaming')" id="scenario-roaming">
-        Seamless Roaming
-      </div>
-      <div class="scenario-option" onclick="selectScenario('interference')" id="scenario-interference">
-        Interference Analysis
-      </div>
-      <div class="scenario-option" onclick="selectScenario('security')" id="scenario-security">
-        Security Implementation
-      </div>
-    </div>
-
-    <div class="ap-config">
-      <h3 class="section-title">Access Point Config</h3>
-      <input type="text" class="config-input" id="ssid" placeholder="SSID Name" value="CorporateWiFi">
-      <input type="text" class="config-input" id="channel" placeholder="Channel (1-11, 36-165)" value="6">
-      <input type="text" class="config-input" id="power" placeholder="Transmit Power (1-100)" value="75">
-      <select class="config-input" id="security">
-        <option value="wpa3">WPA3 Personal</option>
-        <option value="wpa2">WPA2 Personal</option>
-        <option value="wep">WEP (Legacy)</option>
-        <option value="open">Open Network</option>
-      </select>
-    </div>
-
-    <div class="simulation-controls">
-      <h3 class="section-title">Controls</h3>
-      <button class="control-button" onclick="startSimulation()">Start Simulation</button>
-      <button class="control-button" onclick="pauseSimulation()">Pause</button>
-      <button class="control-button" onclick="resetSimulation()">Reset</button>
-      <button class="control-button" onclick="showTutorial()">Tutorial</button>
-    </div>
-
-    <div class="stats-panel">
-      <h3 class="section-title">Network Statistics</h3>
-      <div class="stat-item">
-        <span>Connected Devices:</span>
-        <span class="stat-value" id="connected-count">0</span>
-      </div>
-      <div class="stat-item">
-        <span>Signal Quality:</span>
-        <span class="stat-value" id="signal-quality">Excellent</span>
-      </div>
-      <div class="stat-item">
-        <span>Throughput:</span>
-        <span class="stat-value" id="throughput">0 Mbps</span>
-      </div>
-      <div class="stat-item">
-        <span>Channel Utilization:</span>
-        <span class="stat-value" id="channel-util">0%</span>
-      </div>
-    </div>
+  <div class="simulation-header">
+    <h1 class="simulation-title">📶 Wireless Networks Simulation</h1>
+    <p class="simulation-subtitle">Interactive WiFi Configuration and Wireless Protocol Demonstration</p>
   </div>
 
-  <div class="simulation-area">
-    <!-- Network Map -->
-    <div class="network-map" id="network-map">
-      <!-- Access Points -->
-      <div class="access-point" id="ap-1" style="top: 50px; left: 150px;" onclick="selectAP('AP1')">
-        AP1
-      </div>
-      <div class="access-point" id="ap-2" style="top: 200px; right: 100px;" onclick="selectAP('AP2')">
-        AP2
-      </div>
-      <div class="access-point" id="ap-3" style="bottom: 80px; left: 100px;" onclick="selectAP('AP3')">
-        AP3
-      </div>
-      
-      <!-- Wireless Devices -->
-      <div class="wireless-device" id="device-1" style="top: 100px; left: 50px;" onclick="selectDevice('DEV1')">
-        📱
-      </div>
-      <div class="wireless-device" id="device-2" style="top: 150px; left: 300px;" onclick="selectDevice('DEV2')">
-        💻
-      </div>
-      <div class="wireless-device" id="device-3" style="bottom: 150px; right: 200px;" onclick="selectDevice('DEV3')">
-        📱
-      </div>
-      <div class="wireless-device" id="device-4" style="bottom: 100px; left: 250px;" onclick="selectDevice('DEV4')">
-        🖥️
-      </div>
-      
-      <!-- Signal Strength Indicators will be added dynamically -->
-    </div>
-
-    <!-- Information Panels -->
-    <div class="info-panels">
-      <div class="info-panel">
-        <div class="panel-header">Selected Device Info</div>
-        <div class="info-content" id="device-info">
-          <div>Device: None Selected</div>
-          <div>Status: Disconnected</div>
-          <div>Signal Strength: N/A</div>
-          <div>Data Rate: N/A</div>
-          <div>Associated AP: None</div>
+  <div class="simulation-grid">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-wifi"></i>
+          Access Point Configuration
+        </h3>
+        
+        <div class="ap-config">
+          <input type="text" id="ssid-name" placeholder="Network Name (SSID)" class="form-input">
+          
+          <select id="security-type" class="form-input">
+            <option value="open">Open (No Security)</option>
+            <option value="wep">WEP</option>
+            <option value="wpa">WPA/WPA2-PSK</option>
+            <option value="wpa3">WPA3</option>
+            <option value="enterprise">WPA2-Enterprise</option>
+          </select>
+          
+          <input type="password" id="network-password" placeholder="Network Password" class="form-input">
+          
+          <select id="wifi-channel" class="form-input">
+            <option value="1">Channel 1 (2.412 GHz)</option>
+            <option value="6">Channel 6 (2.437 GHz)</option>
+            <option value="11">Channel 11 (2.462 GHz)</option>
+            <option value="36">Channel 36 (5.180 GHz)</option>
+            <option value="40">Channel 40 (5.200 GHz)</option>
+            <option value="44">Channel 44 (5.220 GHz)</option>
+          </select>
+          
+          <button class="sim-btn primary" onclick="configureAP()">
+            <i class="fas fa-broadcast-tower"></i> Configure AP
+          </button>
         </div>
       </div>
-      
-      <div class="info-panel">
-        <div class="panel-header">Event Log</div>
-        <div class="info-content" id="event-log" style="height: 140px; overflow-y: auto;">
-          <div class="log-entry">Wireless simulation initialized</div>
-          <div class="log-entry">Click 'Start Simulation' to begin</div>
+
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-signal"></i>
+          Wireless Standards
+        </h3>
+        
+        <div class="wifi-standards">
+          <div class="standard-option" data-standard="802.11n" onclick="selectStandard('802.11n')">
+            <div class="standard-name">802.11n</div>
+            <div class="standard-specs">2.4/5 GHz, 600 Mbps</div>
+          </div>
+          <div class="standard-option" data-standard="802.11ac" onclick="selectStandard('802.11ac')">
+            <div class="standard-name">802.11ac</div>
+            <div class="standard-specs">5 GHz, 3.5 Gbps</div>
+          </div>
+          <div class="standard-option selected" data-standard="802.11ax" onclick="selectStandard('802.11ax')">
+            <div class="standard-name">802.11ax (WiFi 6)</div>
+            <div class="standard-specs">2.4/5/6 GHz, 9.6 Gbps</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-users"></i>
+          Client Management
+        </h3>
+        
+        <div class="client-controls">
+          <button class="sim-btn success" onclick="addClient()">
+            <i class="fas fa-plus"></i> Add Client
+          </button>
+          
+          <button class="sim-btn warning" onclick="simulateInterference()">
+            <i class="fas fa-exclamation-triangle"></i> Simulate Interference
+          </button>
+          
+          <button class="sim-btn danger" onclick="simulateAttack()">
+            <i class="fas fa-skull-crossbones"></i> WiFi Attack
+          </button>
+          
+          <button class="sim-btn secondary" onclick="resetNetwork()">
+            <i class="fas fa-redo"></i> Reset Network
+          </button>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-chart-bar"></i>
+          Network Stats
+        </h3>
+        
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Connected Clients:</span>
+            <span class="stat-value" id="client-count">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Channel Utilization:</span>
+            <span class="stat-value" id="channel-usage">0%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Signal Strength:</span>
+            <span class="stat-value" id="signal-strength">-30 dBm</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Data Rate:</span>
+            <span class="stat-value" id="data-rate">0 Mbps</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Area -->
+    <div class="simulation-area">
+      <!-- Wireless Network Topology -->
+      <div class="wireless-topology" id="wireless-topology">
+        <!-- Access Point -->
+        <div class="wireless-ap" id="main-ap" style="top: 30%; left: 50%;">
+          <div class="ap-icon">
+            <i class="fas fa-broadcast-tower"></i>
+          </div>
+          <div class="ap-label">Access Point</div>
+          <div class="ap-ssid" id="ap-ssid">DefaultAP</div>
+          <div class="signal-coverage" id="signal-coverage"></div>
+        </div>
+
+        <!-- Internet Connection -->
+        <div class="internet-connection" style="top: 10%; left: 50%;">
+          <i class="fas fa-globe"></i>
+          <span>Internet</span>
+        </div>
+
+        <!-- Router -->
+        <div class="network-router" style="top: 20%; left: 50%;">
+          <i class="fas fa-router"></i>
+          <span>Router</span>
+        </div>
+
+        <!-- Wireless Clients -->
+        <div class="client-area" id="client-area">
+          <!-- Clients will be added dynamically -->
+        </div>
+
+        <!-- Interference Sources -->
+        <div class="interference-source" id="microwave" style="top: 70%; left: 20%; display: none;">
+          <i class="fas fa-microchip"></i>
+          <span>Microwave</span>
+        </div>
+        
+        <div class="interference-source" id="bluetooth" style="top: 70%; right: 20%; display: none;">
+          <i class="fas fa-bluetooth"></i>
+          <span>Bluetooth Device</span>
+        </div>
+
+        <!-- Signal Visualization -->
+        <svg class="signal-waves" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+          <circle class="signal-ring" cx="50%" cy="30%" r="50" opacity="0.3"/>
+          <circle class="signal-ring" cx="50%" cy="30%" r="100" opacity="0.2"/>
+          <circle class="signal-ring" cx="50%" cy="30%" r="150" opacity="0.1"/>
+        </svg>
+      </div>
+
+      <!-- Channel Analysis -->
+      <div class="channel-analysis">
+        <h4 class="panel-title">Channel Analysis</h4>
+        <div class="channel-chart" id="channel-chart">
+          <div class="channel-bar" data-channel="1" style="height: 30%;">
+            <span class="channel-label">Ch 1</span>
+            <span class="channel-usage">30%</span>
+          </div>
+          <div class="channel-bar" data-channel="6" style="height: 60%;">
+            <span class="channel-label">Ch 6</span>
+            <span class="channel-usage">60%</span>
+          </div>
+          <div class="channel-bar" data-channel="11" style="height: 20%;">
+            <span class="channel-label">Ch 11</span>
+            <span class="channel-usage">20%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Status -->
+      <div class="security-status">
+        <h4 class="panel-title">Security Status</h4>
+        <div class="security-info" id="security-info">
+          <div class="security-item">
+            <span class="security-label">Encryption:</span>
+            <span class="security-value" id="encryption-type">None</span>
+          </div>
+          <div class="security-item">
+            <span class="security-label">Authentication:</span>
+            <span class="security-value" id="auth-type">Open</span>
+          </div>
+          <div class="security-item">
+            <span class="security-label">WPS Status:</span>
+            <span class="security-value error" id="wps-status">Enabled</span>
+          </div>
         </div>
       </div>
     </div>
@@ -484,405 +220,311 @@
 </div>
 
 <script>
-let currentStandard = '802.11ac';
-let currentScenario = 'association';
-let selectedAP = null;
-let selectedDevice = null;
-let simulationRunning = false;
-let connectedDevices = [];
-let simulationInterval = null;
-
-// Standard configurations
-const standardConfigs = {
-  '802.11ac': { maxSpeed: 1300, frequency: '5GHz', channels: [36, 40, 44, 48, 149, 153, 157, 161, 165] },
-  '802.11ax': { maxSpeed: 9600, frequency: '2.4/5GHz', channels: [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, 165] },
-  '802.11n': { maxSpeed: 600, frequency: '2.4/5GHz', channels: [1, 6, 11, 36, 40, 44, 48] }
+let wirelessConfig = {
+  ssid: 'DefaultAP',
+  security: 'open',
+  password: '',
+  channel: 6,
+  standard: '802.11ax'
 };
 
-function selectStandard(standard) {
-  currentStandard = standard;
-  
-  // Update UI
-  document.querySelectorAll('.standard-option').forEach(option => {
-    option.classList.remove('selected');
-  });
-  document.getElementById(`standard-${standard.split('.')[2]}`).classList.add('selected');
-  
-  logEvent(`Selected wireless standard: ${standard}`, 'success');
-  updateNetworkPerformance();
-}
+let connectedClients = [];
+let interferenceActive = false;
+let clientCounter = 0;
 
-function selectScenario(scenario) {
-  currentScenario = scenario;
-  
-  // Update UI
-  document.querySelectorAll('.scenario-option').forEach(option => {
-    option.classList.remove('selected');
-  });
-  document.getElementById(`scenario-${scenario}`).classList.add('selected');
-  
-  logEvent(`Scenario changed to: ${scenario}`, 'success');
-}
+function configureAP() {
+  const ssid = document.getElementById('ssid-name').value || 'DefaultAP';
+  const security = document.getElementById('security-type').value;
+  const password = document.getElementById('network-password').value;
+  const channel = parseInt(document.getElementById('wifi-channel').value);
 
-function selectAP(apId) {
-  selectedAP = apId;
-  
-  // Clear previous selections
-  document.querySelectorAll('.access-point').forEach(ap => {
-    ap.classList.remove('active');
-  });
-  
-  // Highlight selected AP
-  const apElement = document.getElementById(`ap-${apId.slice(-1)}`);
-  apElement.classList.add('active');
-  
-  logEvent(`Selected Access Point: ${apId}`, 'success');
-  updateAPInfo(apId);
-}
+  wirelessConfig.ssid = ssid;
+  wirelessConfig.security = security;
+  wirelessConfig.password = password;
+  wirelessConfig.channel = channel;
 
-function selectDevice(deviceId) {
-  selectedDevice = deviceId;
+  // Update AP display
+  document.getElementById('ap-ssid').textContent = ssid;
   
-  // Clear previous selections
-  document.querySelectorAll('.wireless-device').forEach(device => {
-    device.style.border = 'none';
-  });
+  // Update security status
+  updateSecurityStatus();
   
-  // Highlight selected device
-  const deviceElement = document.getElementById(`device-${deviceId.slice(-1)}`);
-  deviceElement.style.border = '2px solid var(--cyber-glow)';
+  // Update channel visualization
+  updateChannelChart();
   
-  updateDeviceInfo(deviceId);
-  logEvent(`Selected device: ${deviceId}`, 'success');
-}
-
-function updateDeviceInfo(deviceId) {
-  const isConnected = connectedDevices.includes(deviceId);
-  const signalStrength = calculateSignalStrength(deviceId);
-  const associatedAP = getAssociatedAP(deviceId);
+  addWirelessLog(`Access Point configured: SSID=${ssid}, Security=${security}, Channel=${channel}`, 'success');
   
-  const deviceInfo = document.getElementById('device-info');
-  deviceInfo.innerHTML = `
-    <div>Device: ${deviceId}</div>
-    <div>Status: ${isConnected ? 'Connected' : 'Disconnected'}</div>
-    <div>Signal Strength: ${signalStrength}%</div>
-    <div>Data Rate: ${isConnected ? calculateDataRate(signalStrength) : 'N/A'} Mbps</div>
-    <div>Associated AP: ${associatedAP || 'None'}</div>
-  `;
-}
-
-function updateAPInfo(apId) {
-  const config = standardConfigs[currentStandard];
-  logEvent(`AP ${apId} - Standard: ${currentStandard}, Max Speed: ${config.maxSpeed} Mbps`, 'success');
-}
-
-function calculateSignalStrength(deviceId) {
-  // Simulate signal strength based on device position and selected AP
-  if (!selectedAP) return 0;
-  
-  // Simplified calculation - in reality would consider distance, obstacles, etc.
-  const baseStrength = Math.floor(Math.random() * 40) + 60; // 60-100%
-  return Math.min(100, baseStrength);
-}
-
-function calculateDataRate(signalStrength) {
-  const config = standardConfigs[currentStandard];
-  const efficiency = signalStrength / 100;
-  return Math.floor(config.maxSpeed * efficiency * 0.7); // 70% efficiency factor
-}
-
-function getAssociatedAP(deviceId) {
-  if (connectedDevices.includes(deviceId)) {
-    // Simple assignment - device connects to nearest AP
-    const deviceNum = parseInt(deviceId.slice(-1));
-    if (deviceNum <= 2) return 'AP1';
-    if (deviceNum === 3) return 'AP2';
-    return 'AP3';
-  }
-  return null;
-}
-
-function startSimulation() {
-  if (simulationRunning) return;
-  
-  simulationRunning = true;
-  logEvent('Starting wireless simulation...', 'success');
-  
-  // Run scenario-specific simulation
-  const scenarios = {
-    'association': simulateAssociation,
-    'roaming': simulateRoaming,
-    'interference': simulateInterference,
-    'security': simulateSecurity
-  };
-  
-  scenarios[currentScenario]();
-}
-
-function simulateAssociation() {
-  logEvent('Simulating device association process...', 'success');
-  
-  const devices = ['DEV1', 'DEV2', 'DEV3', 'DEV4'];
-  let currentIndex = 0;
-  
-  const associateDevice = () => {
-    if (currentIndex < devices.length) {
-      const device = devices[currentIndex];
-      
-      logEvent(`${device} sending authentication request...`, 'success');
-      
-      setTimeout(() => {
-        logEvent(`${device} authentication successful`, 'success');
-        
-        setTimeout(() => {
-          logEvent(`${device} association complete`, 'success');
-          connectedDevices.push(device);
-          
-          // Update device appearance
-          const deviceElement = document.getElementById(`device-${device.slice(-1)}`);
-          deviceElement.classList.add('connected');
-          
-          // Add signal strength indicator
-          addSignalIndicator(device);
-          
-          updateStats();
-          currentIndex++;
-          
-          if (currentIndex < devices.length) {
-            setTimeout(associateDevice, 2000);
-          } else {
-            logEvent('All devices successfully associated', 'success');
-          }
-        }, 1500);
-      }, 1000);
-    }
-  };
-  
-  associateDevice();
-}
-
-function simulateRoaming() {
-  // First connect all devices
-  connectedDevices = ['DEV1', 'DEV2', 'DEV3', 'DEV4'];
-  updateAllDevicesConnected();
-  
-  logEvent('Simulating seamless roaming scenario...', 'success');
-  
+  // Simulate configuration propagation
   setTimeout(() => {
-    logEvent('DEV2 moving away from AP1, signal weakening...', 'warning');
+    addWirelessLog('Access Point broadcasting beacon frames', 'info');
+  }, 1000);
+}
+
+function selectStandard(standard) {
+  wirelessConfig.standard = standard;
+  
+  // Update visual selection
+  document.querySelectorAll('.standard-option').forEach(opt => opt.classList.remove('selected'));
+  document.querySelector(`[data-standard="${standard}"]`).classList.add('selected');
+  
+  // Update signal visualization based on standard
+  updateSignalVisualization(standard);
+  
+  addWirelessLog(`WiFi standard changed to ${standard}`, 'info');
+}
+
+function addClient() {
+  clientCounter++;
+  const clientId = `client-${clientCounter}`;
+  
+  // Random position within signal range
+  const angle = Math.random() * 2 * Math.PI;
+  const distance = 50 + Math.random() * 100;
+  const x = 50 + Math.cos(angle) * distance/4;
+  const y = 30 + Math.sin(angle) * distance/4;
+  
+  const client = {
+    id: clientId,
+    name: `Device-${clientCounter}`,
+    x: x,
+    y: y,
+    signalStrength: Math.random() * 50 + 30, // -30 to -80 dBm
+    connected: false
+  };
+  
+  connectedClients.push(client);
+  
+  // Create client element
+  const clientElement = document.createElement('div');
+  clientElement.className = 'wireless-client';
+  clientElement.id = clientId;
+  clientElement.style.top = `${y}%`;
+  clientElement.style.left = `${x}%`;
+  
+  clientElement.innerHTML = `
+    <i class="fas fa-mobile-alt"></i>
+    <span>${client.name}</span>
+    <div class="signal-bars">
+      <div class="bar ${client.signalStrength > 20 ? 'active' : ''}"></div>
+      <div class="bar ${client.signalStrength > 40 ? 'active' : ''}"></div>
+      <div class="bar ${client.signalStrength > 60 ? 'active' : ''}"></div>
+      <div class="bar ${client.signalStrength > 80 ? 'active' : ''}"></div>
+    </div>
+  `;
+  
+  document.getElementById('client-area').appendChild(clientElement);
+  
+  // Simulate connection process
+  setTimeout(() => {
+    clientElement.classList.add('connecting');
+    addWirelessLog(`${client.name} attempting to connect...`, 'info');
     
     setTimeout(() => {
-      logEvent('DEV2 scanning for better AP...', 'success');
-      
-      setTimeout(() => {
-        logEvent('DEV2 initiating handoff to AP2...', 'success');
-        
-        setTimeout(() => {
-          logEvent('DEV2 successfully roamed to AP2', 'success');
-          updateStats();
-        }, 1500);
-      }, 1000);
+      if (wirelessConfig.security === 'open' || wirelessConfig.password) {
+        client.connected = true;
+        clientElement.classList.remove('connecting');
+        clientElement.classList.add('connected');
+        addWirelessLog(`${client.name} connected successfully`, 'success');
+      } else {
+        clientElement.classList.remove('connecting');
+        addWirelessLog(`${client.name} authentication failed`, 'error');
+      }
+      updateStats();
     }, 2000);
-  }, 1000);
+  }, 500);
 }
 
 function simulateInterference() {
-  logEvent('Analyzing wireless interference...', 'warning');
+  interferenceActive = !interferenceActive;
   
-  setTimeout(() => {
-    logEvent('Microwave oven detected on 2.4GHz band', 'error');
-    document.getElementById('signal-quality').textContent = 'Poor';
+  const microwaveSource = document.getElementById('microwave');
+  const bluetoothSource = document.getElementById('bluetooth');
+  
+  if (interferenceActive) {
+    microwaveSource.style.display = 'block';
+    bluetoothSource.style.display = 'block';
     
-    setTimeout(() => {
-      logEvent('Switching to 5GHz band to avoid interference...', 'success');
-      
-      setTimeout(() => {
-        logEvent('Channel optimization complete', 'success');
-        document.getElementById('signal-quality').textContent = 'Excellent';
-        updateStats();
-      }, 2000);
-    }, 3000);
-  }, 1500);
-}
-
-function simulateSecurity() {
-  logEvent('Implementing wireless security measures...', 'success');
-  
-  const securityLevel = document.getElementById('security').value;
-  
-  setTimeout(() => {
-    logEvent(`Configuring ${securityLevel.toUpperCase()} security...`, 'success');
+    // Degrade signal quality
+    document.querySelectorAll('.wireless-client').forEach(client => {
+      client.classList.add('poor-signal');
+    });
     
-    setTimeout(() => {
-      if (securityLevel === 'wpa3') {
-        logEvent('WPA3 encryption active - Enhanced security enabled', 'success');
-      } else if (securityLevel === 'wpa2') {
-        logEvent('WPA2 encryption active - Standard security enabled', 'success');
-      } else if (securityLevel === 'wep') {
-        logEvent('WEP encryption active - Legacy security (not recommended)', 'warning');
-      } else {
-        logEvent('Open network - No encryption (security risk)', 'error');
-      }
-      
-      setTimeout(() => {
-        logEvent('Security configuration complete', 'success');
-        updateStats();
-      }, 1500);
-    }, 2000);
-  }, 1000);
-}
-
-function addSignalIndicator(deviceId) {
-  const deviceElement = document.getElementById(`device-${deviceId.slice(-1)}`);
-  const rect = deviceElement.getBoundingClientRect();
-  const mapRect = document.getElementById('network-map').getBoundingClientRect();
+    addWirelessLog('Interference detected on 2.4 GHz band', 'warning');
+    addWirelessLog('Signal quality degraded for connected clients', 'warning');
+    
+    // Update channel utilization
+    updateChannelChart(true);
+  } else {
+    microwaveSource.style.display = 'none';
+    bluetoothSource.style.display = 'none';
+    
+    document.querySelectorAll('.wireless-client').forEach(client => {
+      client.classList.remove('poor-signal');
+    });
+    
+    addWirelessLog('Interference sources removed', 'success');
+    updateChannelChart(false);
+  }
   
-  const indicator = document.createElement('div');
-  indicator.className = 'signal-strength strong';
-  indicator.style.left = (rect.left - mapRect.left + 20) + 'px';
-  indicator.style.top = (rect.top - mapRect.top + 20) + 'px';
-  indicator.style.width = '80px';
-  indicator.style.height = '80px';
-  
-  document.getElementById('network-map').appendChild(indicator);
-}
-
-function updateAllDevicesConnected() {
-  document.querySelectorAll('.wireless-device').forEach(device => {
-    device.classList.add('connected');
-  });
   updateStats();
+}
+
+function simulateAttack() {
+  addWirelessLog('WiFi security assessment initiated...', 'warning');
+  
+  setTimeout(() => {
+    if (wirelessConfig.security === 'open') {
+      addWirelessLog('CRITICAL: Open network detected - No encryption!', 'error');
+    } else if (wirelessConfig.security === 'wep') {
+      addWirelessLog('WARNING: WEP encryption is vulnerable to attacks', 'error');
+    } else {
+      addWirelessLog('Network security appears adequate', 'success');
+    }
+  }, 1000);
+  
+  setTimeout(() => {
+    addWirelessLog('Scanning for WPS vulnerabilities...', 'warning');
+    setTimeout(() => {
+      addWirelessLog('WPS PIN attack vector identified', 'error');
+    }, 1500);
+  }, 2000);
+}
+
+function resetNetwork() {
+  // Clear all clients
+  connectedClients = [];
+  document.getElementById('client-area').innerHTML = '';
+  
+  // Reset interference
+  interferenceActive = false;
+  document.getElementById('microwave').style.display = 'none';
+  document.getElementById('bluetooth').style.display = 'none';
+  
+  // Reset configuration
+  wirelessConfig = {
+    ssid: 'DefaultAP',
+    security: 'open',
+    password: '',
+    channel: 6,
+    standard: '802.11ax'
+  };
+  
+  // Reset UI
+  document.getElementById('ap-ssid').textContent = 'DefaultAP';
+  updateSecurityStatus();
+  updateChannelChart(false);
+  updateStats();
+  
+  addWirelessLog('Wireless network reset to default configuration', 'info');
+}
+
+function updateSecurityStatus() {
+  const securityMap = {
+    'open': { encryption: 'None', auth: 'Open' },
+    'wep': { encryption: 'WEP', auth: 'Shared Key' },
+    'wpa': { encryption: 'TKIP/AES', auth: 'PSK' },
+    'wpa3': { encryption: 'AES-256', auth: 'SAE' },
+    'enterprise': { encryption: 'AES', auth: '802.1X/EAP' }
+  };
+  
+  const security = securityMap[wirelessConfig.security];
+  document.getElementById('encryption-type').textContent = security.encryption;
+  document.getElementById('auth-type').textContent = security.auth;
+  
+  // Update encryption status color
+  const encElement = document.getElementById('encryption-type');
+  if (wirelessConfig.security === 'open') {
+    encElement.className = 'security-value error';
+  } else if (wirelessConfig.security === 'wep') {
+    encElement.className = 'security-value warning';
+  } else {
+    encElement.className = 'security-value success';
+  }
+}
+
+function updateChannelChart(interference = false) {
+  const currentChannel = wirelessConfig.channel;
+  
+  document.querySelectorAll('.channel-bar').forEach(bar => {
+    const channel = parseInt(bar.getAttribute('data-channel'));
+    let usage = Math.random() * 40 + 10; // Base usage 10-50%
+    
+    if (channel === currentChannel) {
+      usage += 30; // Our AP adds usage
+    }
+    
+    if (interference && [1, 6, 11].includes(channel)) {
+      usage += 25; // Interference adds usage
+    }
+    
+    usage = Math.min(usage, 100);
+    
+    bar.style.height = `${usage}%`;
+    bar.querySelector('.channel-usage').textContent = `${Math.round(usage)}%`;
+    
+    // Color coding
+    if (usage > 80) {
+      bar.classList.add('high-usage');
+    } else {
+      bar.classList.remove('high-usage');
+    }
+  });
+  
+  document.getElementById('channel-usage').textContent = `${Math.round(document.querySelector(`[data-channel="${currentChannel}"]`).style.height.replace('%', ''))}%`;
+}
+
+function updateSignalVisualization(standard) {
+  const signalRings = document.querySelectorAll('.signal-ring');
+  
+  // Different coverage based on standard
+  const coverageMap = {
+    '802.11n': { range: 70, strength: 0.6 },
+    '802.11ac': { range: 50, strength: 0.8 },
+    '802.11ax': { range: 60, strength: 0.9 }
+  };
+  
+  const coverage = coverageMap[standard];
+  
+  signalRings.forEach((ring, index) => {
+    const radius = (index + 1) * coverage.range / 3;
+    const opacity = coverage.strength * (0.4 - index * 0.1);
+    
+    ring.setAttribute('r', radius);
+    ring.style.opacity = opacity;
+  });
 }
 
 function updateStats() {
-  document.getElementById('connected-count').textContent = connectedDevices.length;
+  const connectedCount = connectedClients.filter(c => c.connected).length;
+  document.getElementById('client-count').textContent = connectedCount;
   
-  const config = standardConfigs[currentStandard];
-  const avgThroughput = connectedDevices.length > 0 ? 
-    Math.floor(config.maxSpeed * 0.8 / connectedDevices.length) : 0;
-  document.getElementById('throughput').textContent = avgThroughput;
+  // Simulate data rate based on clients and interference
+  let dataRate = 100; // Base rate
+  if (interferenceActive) dataRate *= 0.6;
+  if (connectedCount > 0) dataRate = dataRate / Math.sqrt(connectedCount);
   
-  const utilization = Math.min(95, connectedDevices.length * 20 + Math.floor(Math.random() * 10));
-  document.getElementById('channel-util').textContent = utilization + '%';
+  document.getElementById('data-rate').textContent = `${Math.round(dataRate)} Mbps`;
+  
+  // Signal strength varies with interference
+  const baseSignal = -30;
+  const signalDegradation = interferenceActive ? 15 : 0;
+  document.getElementById('signal-strength').textContent = `${baseSignal - signalDegradation} dBm`;
 }
 
-function updateNetworkPerformance() {
-  const config = standardConfigs[currentStandard];
-  logEvent(`Network performance updated - Max speed: ${config.maxSpeed} Mbps`, 'success');
-  updateStats();
-}
-
-function pauseSimulation() {
-  simulationRunning = false;
-  if (simulationInterval) {
-    clearInterval(simulationInterval);
-  }
-  logEvent('Simulation paused', 'warning');
-}
-
-function resetSimulation() {
-  simulationRunning = false;
-  connectedDevices = [];
-  selectedAP = null;
-  selectedDevice = null;
-  
-  if (simulationInterval) {
-    clearInterval(simulationInterval);
-  }
-  
-  // Reset device appearances
-  document.querySelectorAll('.wireless-device').forEach(device => {
-    device.classList.remove('connected');
-    device.style.border = 'none';
-  });
-  
-  // Reset AP appearances
-  document.querySelectorAll('.access-point').forEach(ap => {
-    ap.classList.remove('active');
-  });
-  
-  // Remove signal indicators
-  document.querySelectorAll('.signal-strength').forEach(indicator => {
-    indicator.remove();
-  });
-  
-  // Reset stats
-  document.getElementById('connected-count').textContent = '0';
-  document.getElementById('signal-quality').textContent = 'Excellent';
-  document.getElementById('throughput').textContent = '0';
-  document.getElementById('channel-util').textContent = '0%';
-  
-  // Reset device info
-  document.getElementById('device-info').innerHTML = `
-    <div>Device: None Selected</div>
-    <div>Status: Disconnected</div>
-    <div>Signal Strength: N/A</div>
-    <div>Data Rate: N/A</div>
-    <div>Associated AP: None</div>
-  `;
-  
-  // Clear event log
-  document.getElementById('event-log').innerHTML = `
-    <div class="log-entry">Wireless simulation reset</div>
-    <div class="log-entry">Click 'Start Simulation' to begin</div>
-  `;
-  
-  logEvent('Simulation reset complete', 'success');
-}
-
-function logEvent(message, type = 'info') {
-  const log = document.getElementById('event-log');
-  const entry = document.createElement('div');
-  entry.className = `log-entry ${type}`;
-  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-  
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-  
-  // Limit log entries
-  while (log.children.length > 12) {
-    log.removeChild(log.firstChild);
-  }
-}
-
-function showTutorial() {
-  alert(`Wireless Networks Simulation Tutorial
-
-1. WIRELESS STANDARDS:
-   • 802.11ac (Wi-Fi 5): 5GHz, up to 1.3 Gbps
-   • 802.11ax (Wi-Fi 6): 2.4/5GHz, up to 9.6 Gbps
-   • 802.11n (Wi-Fi 4): 2.4/5GHz, up to 600 Mbps
-
-2. SIMULATION SCENARIOS:
-   • Association: Device connection process
-   • Roaming: Seamless handoff between APs
-   • Interference: 2.4GHz interference analysis
-   • Security: WPA2/WPA3 implementation
-
-3. CONFIGURATION OPTIONS:
-   • SSID: Network name configuration
-   • Channel: Frequency channel selection
-   • Power: Transmit power adjustment
-   • Security: Encryption method selection
-
-4. HOW TO USE:
-   • Select wireless standard and scenario
-   • Configure access point settings
-   • Click devices/APs to view details
-   • Start simulation to see wireless operations
-
-5. OBSERVATIONS:
-   • Signal strength affects data rates
-   • Channel utilization impacts performance
-   • Security settings affect connection process
-   • Roaming maintains connectivity seamlessly`);
+function addWirelessLog(message, type = 'info') {
+  console.log(`[WiFi] ${message}`);
+  // Could add to a visible log panel if needed
 }
 
 // Initialize simulation
 document.addEventListener('DOMContentLoaded', () => {
-  selectStandard('802.11ac');
-  selectScenario('association');
-  logEvent('Wireless Networks simulation initialized', 'success');
+  updateSecurityStatus();
+  updateChannelChart();
+  updateSignalVisualization('802.11ax');
+  updateStats();
+  
+  addWirelessLog('Wireless simulation initialized', 'success');
+  addWirelessLog('Configure access point to begin simulation', 'info');
 });
 </script>
 {% endblock %}

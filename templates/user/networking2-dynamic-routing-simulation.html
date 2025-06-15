@@ -1,0 +1,443 @@
+{% extends "user/base.html" %}
+
+{% block title %}Dynamic Routing Protocols - Networking 2{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/networking2-simulations.css') }}">
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('user.networking2_simulations') }}" class="sim-back-btn">
+  <i class="fas fa-arrow-left"></i> Back to Networking 2
+</a>
+
+<div class="simulation-container">
+  <div class="simulation-header">
+    <h1 class="simulation-title">🔄 Dynamic Routing Protocols Lab</h1>
+    <p class="simulation-subtitle">Module 2: Compare RIP, OSPF, and EIGRP Protocol Behaviors</p>
+  </div>
+
+  <div class="simulation-grid">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-exchange-alt"></i>
+          Protocol Selection
+        </h3>
+        
+        <div class="protocol-selector">
+          <div class="protocol-option selected" onclick="selectProtocol('RIP')" id="protocol-RIP">
+            <div class="protocol-name">RIP</div>
+            <div class="protocol-desc">Distance Vector</div>
+          </div>
+          <div class="protocol-option" onclick="selectProtocol('OSPF')" id="protocol-OSPF">
+            <div class="protocol-name">OSPF</div>
+            <div class="protocol-desc">Link State</div>
+          </div>
+          <div class="protocol-option" onclick="selectProtocol('EIGRP')" id="protocol-EIGRP">
+            <div class="protocol-name">EIGRP</div>
+            <div class="protocol-desc">Hybrid</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="protocol-info-panel" id="protocol-info">
+        <h4>RIP (Routing Information Protocol)</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Algorithm:</span>
+            <span class="info-value">Distance Vector</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Metric:</span>
+            <span class="info-value">Hop Count</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Max Hops:</span>
+            <span class="info-value">15</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Update Timer:</span>
+            <span class="info-value">30 seconds</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-play"></i>
+          Simulation Controls
+        </h3>
+        
+        <div class="control-buttons">
+          <button class="sim-btn primary" onclick="startConvergence()">
+            <i class="fas fa-sync"></i> Start Convergence
+          </button>
+          
+          <button class="sim-btn warning" onclick="simulateFailure()">
+            <i class="fas fa-exclamation-triangle"></i> Simulate Link Failure
+          </button>
+          
+          <button class="sim-btn success" onclick="addNetwork()">
+            <i class="fas fa-plus"></i> Add New Network
+          </button>
+          
+          <button class="sim-btn secondary" onclick="resetSimulation()">
+            <i class="fas fa-redo"></i> Reset Topology
+          </button>
+        </div>
+      </div>
+
+      <div class="convergence-timer" id="convergence-timer" style="display: none;">
+        <h4>Convergence Time</h4>
+        <div class="timer-value" id="timer-value">0</div>
+        <div class="timer-unit">seconds</div>
+      </div>
+    </div>
+
+    <!-- Simulation Area -->
+    <div class="simulation-area">
+      <!-- Network Topology -->
+      <div class="network-topology" id="topology">
+        <!-- Router A -->
+        <div class="network-router" id="router-A" style="top: 20%; left: 15%;">
+          <div class="router-label">A</div>
+          <div class="router-protocol">RIP</div>
+        </div>
+
+        <!-- Router B -->
+        <div class="network-router" id="router-B" style="top: 20%; right: 15%;">
+          <div class="router-label">B</div>
+          <div class="router-protocol">RIP</div>
+        </div>
+
+        <!-- Router C -->
+        <div class="network-router" id="router-C" style="bottom: 30%; left: 50%;">
+          <div class="router-label">C</div>
+          <div class="router-protocol">RIP</div>
+        </div>
+
+        <!-- Router D -->
+        <div class="network-router" id="router-D" style="top: 60%; left: 15%;">
+          <div class="router-label">D</div>
+          <div class="router-protocol">RIP</div>
+        </div>
+
+        <!-- Network Connections -->
+        <div class="network-connection" id="conn-A-B"></div>
+        <div class="network-connection" id="conn-A-C"></div>
+        <div class="network-connection" id="conn-B-C"></div>
+        <div class="network-connection" id="conn-A-D"></div>
+        <div class="network-connection" id="conn-C-D"></div>
+
+        <!-- Connection Metrics -->
+        <div class="connection-metric" id="metric-A-B">1</div>
+        <div class="connection-metric" id="metric-A-C">2</div>
+        <div class="connection-metric" id="metric-B-C">1</div>
+        <div class="connection-metric" id="metric-A-D">1</div>
+        <div class="connection-metric" id="metric-C-D">1</div>
+      </div>
+    </div>
+
+    <!-- Analysis Panel -->
+    <div class="analysis-panel">
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-table"></i>
+          Routing Table
+        </h3>
+        <div class="data-table">
+          <div class="table-header">
+            <div>Network</div>
+            <div>Next Hop</div>
+            <div>Metric</div>
+            <div>Timer</div>
+            <div>Status</div>
+          </div>
+          <div class="table-body" id="route-entries">
+            <div class="table-row">
+              <div>192.168.1.0/24</div>
+              <div>Connected</div>
+              <div>0</div>
+              <div>-</div>
+              <div class="status-indicator connected">Connected</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <h3 class="section-title">
+          <i class="fas fa-list"></i>
+          Activity Log
+        </h3>
+        <div class="log-panel">
+          <div class="log-container" id="log-panel">
+            <div class="log-entry info">Dynamic Routing Protocol Simulation Ready</div>
+            <div class="log-entry">Select a protocol and start convergence simulation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProtocol = 'RIP';
+let convergenceTimer = 0;
+let convergenceInterval = null;
+let routingTable = [];
+let networkState = 'normal';
+
+const protocolData = {
+  RIP: {
+    name: 'RIP (Routing Information Protocol)',
+    algorithm: 'Distance Vector',
+    metric: 'Hop Count',
+    maxHops: 15,
+    updateTimer: '30 seconds',
+    adminDistance: 120,
+    convergenceTime: 30
+  },
+  OSPF: {
+    name: 'OSPF (Open Shortest Path First)',
+    algorithm: 'Link State',
+    metric: 'Cost (Bandwidth)',
+    maxHops: 'Unlimited',
+    updateTimer: 'Event-driven',
+    adminDistance: 110,
+    convergenceTime: 10
+  },
+  EIGRP: {
+    name: 'EIGRP (Enhanced Interior Gateway Routing Protocol)',
+    algorithm: 'Hybrid (Advanced Distance Vector)',
+    metric: 'Composite (Bandwidth, Delay)',
+    maxHops: 255,
+    updateTimer: 'Event-driven',
+    adminDistance: 90,
+    convergenceTime: 5
+  }
+};
+
+function selectProtocol(protocol) {
+  currentProtocol = protocol;
+  
+  // Update visual selection
+  document.querySelectorAll('.protocol-option').forEach(opt => opt.classList.remove('selected'));
+  document.getElementById(`protocol-${protocol}`).classList.add('selected');
+  
+  // Update router labels
+  document.querySelectorAll('.router-protocol').forEach(label => {
+    label.textContent = protocol;
+  });
+  
+  // Update protocol info panel
+  updateProtocolInfo(protocol);
+  
+  // Reset routing table for new protocol
+  initializeRoutingTable();
+  
+  addLogEntry(`Switched to ${protocol} protocol`, 'info');
+}
+
+function updateProtocolInfo(protocol) {
+  const data = protocolData[protocol];
+  const infoPanel = document.getElementById('protocol-info');
+  
+  infoPanel.innerHTML = `
+    <h4>${data.name}</h4>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Algorithm:</span>
+        <span class="info-value">${data.algorithm}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Metric:</span>
+        <span class="info-value">${data.metric}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Max Hops:</span>
+        <span class="info-value">${data.maxHops}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Update Timer:</span>
+        <span class="info-value">${data.updateTimer}</span>
+      </div>
+    </div>
+  `;
+}
+
+function startConvergence() {
+  if (convergenceInterval) {
+    clearInterval(convergenceInterval);
+  }
+  
+  convergenceTimer = 0;
+  document.getElementById('convergence-timer').style.display = 'block';
+  
+  // Start advertising process
+  document.querySelectorAll('.network-router').forEach(router => {
+    router.classList.add('advertising');
+  });
+  
+  // Activate connections
+  document.querySelectorAll('.network-connection').forEach(conn => {
+    conn.classList.add('convergence');
+  });
+  
+  // Start timer
+  convergenceInterval = setInterval(() => {
+    convergenceTimer++;
+    document.getElementById('timer-value').textContent = convergenceTimer;
+    
+    // Simulate route updates
+    if (convergenceTimer % 5 === 0) {
+      updateRoutingTable();
+    }
+    
+    // Check convergence completion
+    const expectedTime = protocolData[currentProtocol].convergenceTime;
+    if (convergenceTimer >= expectedTime) {
+      completeConvergence();
+    }
+  }, 1000);
+  
+  addLogEntry(`Starting ${currentProtocol} convergence process`, 'info');
+}
+
+function completeConvergence() {
+  clearInterval(convergenceInterval);
+  
+  document.querySelectorAll('.network-router').forEach(router => {
+    router.classList.remove('advertising');
+  });
+  
+  document.querySelectorAll('.network-connection').forEach(conn => {
+    conn.classList.remove('convergence');
+    conn.classList.add('active');
+  });
+  
+  addLogEntry(`${currentProtocol} convergence completed in ${convergenceTimer} seconds`, 'success');
+  setTimeout(() => {
+    document.getElementById('convergence-timer').style.display = 'none';
+  }, 3000);
+}
+
+function simulateFailure() {
+  // Simulate link failure between A and B
+  const linkAB = document.getElementById('conn-A-B');
+  const metricAB = document.getElementById('metric-A-B');
+  
+  linkAB.classList.add('failed');
+  metricAB.textContent = '∞';
+  metricAB.classList.add('failed');
+  
+  addLogEntry('Link failure detected: Router A ↔ Router B', 'error');
+  addLogEntry(`${currentProtocol} recalculating routes...`, 'warning');
+  
+  // Start reconvergence
+  setTimeout(() => {
+    startConvergence();
+  }, 2000);
+}
+
+function addNetwork() {
+  addLogEntry('New network 192.168.5.0/24 advertised by Router D', 'success');
+  
+  // Add new route to table
+  const newRoute = {
+    network: '192.168.5.0/24',
+    nextHop: 'Router D',
+    metric: currentProtocol === 'RIP' ? 1 : (currentProtocol === 'OSPF' ? 10 : 2560),
+    timer: 30,
+    status: 'Active'
+  };
+  
+  routingTable.push(newRoute);
+  updateRoutingTableDisplay();
+}
+
+function resetSimulation() {
+  if (convergenceInterval) {
+    clearInterval(convergenceInterval);
+  }
+  
+  convergenceTimer = 0;
+  networkState = 'normal';
+  
+  // Reset visual elements
+  document.querySelectorAll('.network-router').forEach(router => {
+    router.classList.remove('advertising');
+  });
+  
+  document.querySelectorAll('.network-connection').forEach(conn => {
+    conn.classList.remove('active', 'convergence', 'failed');
+  });
+  
+  // Reset metrics
+  document.querySelectorAll('.connection-metric').forEach(metric => {
+    metric.textContent = '1';
+    metric.classList.remove('failed');
+  });
+  
+  document.getElementById('convergence-timer').style.display = 'none';
+  
+  initializeRoutingTable();
+  addLogEntry('Network topology reset to initial state', 'info');
+}
+
+function initializeRoutingTable() {
+  routingTable = [
+    { network: '192.168.1.0/24', nextHop: 'Connected', metric: 0, timer: '-', status: 'Connected' },
+    { network: '192.168.2.0/24', nextHop: 'Router B', metric: currentProtocol === 'RIP' ? 1 : (currentProtocol === 'OSPF' ? 10 : 2560), timer: 30, status: 'Active' },
+    { network: '192.168.3.0/24', nextHop: 'Router C', metric: currentProtocol === 'RIP' ? 2 : (currentProtocol === 'OSPF' ? 20 : 5120), timer: 30, status: 'Active' },
+    { network: '192.168.4.0/24', nextHop: 'Router D', metric: currentProtocol === 'RIP' ? 1 : (currentProtocol === 'OSPF' ? 10 : 2560), timer: 30, status: 'Active' }
+  ];
+  updateRoutingTableDisplay();
+}
+
+function updateRoutingTable() {
+  // Simulate route updates
+  routingTable.forEach(route => {
+    if (route.timer !== '-' && route.timer > 0) {
+      route.timer = Math.max(0, route.timer - 5);
+    }
+  });
+  updateRoutingTableDisplay();
+}
+
+function updateRoutingTableDisplay() {
+  const entriesDiv = document.getElementById('route-entries');
+  entriesDiv.innerHTML = '';
+  
+  routingTable.forEach((route, index) => {
+    const entry = document.createElement('div');
+    entry.className = 'table-row';
+    entry.innerHTML = `
+      <div>${route.network}</div>
+      <div>${route.nextHop}</div>
+      <div>${route.metric}</div>
+      <div>${route.timer}</div>
+      <div class="status-indicator ${route.status.toLowerCase()}">${route.status}</div>
+    `;
+    entriesDiv.appendChild(entry);
+  });
+}
+
+function addLogEntry(message, type = 'info') {
+  const logPanel = document.getElementById('log-panel');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  logPanel.appendChild(entry);
+  logPanel.scrollTop = logPanel.scrollHeight;
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', () => {
+  selectProtocol('RIP');
+  initializeRoutingTable();
+});
+</script>
+{% endblock %}

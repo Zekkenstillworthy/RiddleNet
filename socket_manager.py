@@ -32,6 +32,62 @@ def authenticated_only(f):
             return f(*args, **kwargs)
     return wrapped
 
+def admin_only(f):
+    """Decorator to ensure WebSocket connections are authenticated AND admin"""
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if not current_user.is_authenticated:
+            emit('error', {'message': 'Authentication required'})
+            disconnect()
+            return
+        
+        # Enhanced admin check with multiple validation methods
+        is_admin = False
+        
+        # Method 1: Check if user is instance of Admin model
+        try:
+            from admin.models.user import Admin
+            if isinstance(current_user, Admin):
+                is_admin = True
+                print(f"✅ Admin validation successful: {current_user.username} (Admin model instance)")
+        except ImportError as e:
+            print(f"⚠️ Admin model import failed: {e}")
+        
+        # Method 2: Check for is_admin attribute
+        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
+            is_admin = True
+            print(f"✅ Admin validation successful: {current_user.username} (is_admin=True)")
+        
+        # Method 3: Check for role attribute
+        if not is_admin and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
+            is_admin = True
+            print(f"✅ Admin validation successful: {current_user.username} (role={current_user.role})")
+        
+        # Method 4: Check if user ID is in admin table
+        if not is_admin:
+            try:
+                from admin.models.user import Admin
+                admin_user = Admin.query.filter_by(username=current_user.username).first()
+                if admin_user:
+                    is_admin = True
+                    print(f"✅ Admin validation successful: {current_user.username} (found in admin table)")
+            except Exception as e:
+                print(f"⚠️ Admin table lookup failed: {e}")
+        
+        # Final validation
+        if not is_admin:
+            print(f"❌ Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
+            print(f"   - User type: {type(current_user)}")
+            print(f"   - Has is_admin: {hasattr(current_user, 'is_admin')}")
+            print(f"   - is_admin value: {getattr(current_user, 'is_admin', 'N/A')}")
+            print(f"   - Has role: {hasattr(current_user, 'role')}")
+            print(f"   - Role value: {getattr(current_user, 'role', 'N/A')}")
+            emit('error', {'message': 'Unauthorized: Admin access required'})
+            return
+        
+        return f(*args, **kwargs)
+    return wrapped
+
 def init_socketio(app):
     """Initialize SocketIO with the Flask app"""
     socketio.init_app(app)
@@ -66,8 +122,21 @@ def register_handlers():
                 join_room('all_users')
                 
                 # Check if user is admin and join admin room
+                is_admin = False
                 if hasattr(current_user, 'is_admin') and current_user.is_admin:
+                    is_admin = True
+                else:
+                    # Alternative check for Admin model
+                    try:
+                        from admin.models.user import Admin
+                        if isinstance(current_user, Admin):
+                            is_admin = True
+                    except ImportError:
+                        pass
+                
+                if is_admin:
                     join_room('admin_room')
+                    print(f"✅ Admin {username} joined admin room")
                 
                 print(f"✅ User {username} (ID: {user_id}) connected via WebSocket")
                 

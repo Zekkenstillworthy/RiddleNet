@@ -1,4 +1,4 @@
-from . import db
+from __init__ import db
 from datetime import datetime
 
 class Score(db.Model):
@@ -14,6 +14,9 @@ class Score(db.Model):
     category = db.Column(db.String(50), nullable=False)
     # Removed topic_id column as it doesn't exist in the actual database
     date_attempted = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # The relationship is defined in the User model with backref
+    # This will create a 'user' attribute on Score instances
     
     def __repr__(self):
         return f'<Score {self.score} by User {self.user_id} in {self.category}>'

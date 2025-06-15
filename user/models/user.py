@@ -28,8 +28,8 @@ class User(db.Model, UserMixin):
     otp = db.Column(db.String(6))  # For storing the email OTP
     otp_generated_at = db.Column(db.DateTime)  # Timestamp when OTP was generated
     
-    # Define relationship with scores using string reference
-    scores = db.relationship('Score', backref='user', lazy=True)
+    # Define relationship with scores - let SQLAlchemy figure out the join automatically
+    scores = db.relationship('Score', backref='user', lazy=True, cascade='all, delete-orphan')
     
     # The relationship with classes is defined in the Class model
     # It will be available as 'enrolled_classes' attribute due to the backref

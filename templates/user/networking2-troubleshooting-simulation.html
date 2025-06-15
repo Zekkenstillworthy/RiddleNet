@@ -1,653 +1,134 @@
 {% extends "user/base.html" %}
-{% block title %}Network Troubleshooting Simulation{% endblock %}
 
-{% block head %}
-<style>
-  :root {
-    --cyber-glow: #00d4ff;
-    --network-purple: #8b5fbf;
-    --card-bg: rgba(10, 12, 20, 0.8);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.8);
-    --success-green: #14bf5e;
-    --warning-orange: #ff9500;
-    --error-red: #ff4757;
-    --diagnostic-blue: #3742fa;
-    --ping-green: #2ed573;
-    --trace-yellow: #ffa502;
-  }
+{% block title %}Network Troubleshooting Simulation - Networking 2{% endblock %}
 
-  body {
-    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
-    font-family: 'Inter', sans-serif;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    color: var(--text-primary);
-  }
-
-  .simulation-container {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-
-  .simulation-header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-
-  .simulation-title {
-    font-size: 3rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0 0 16px 0;
-    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-  }
-
-  .simulation-subtitle {
-    color: var(--text-secondary);
-    font-size: 1.2rem;
-    margin: 0;
-  }
-
-  .main-content {
-    display: grid;
-    grid-template-columns: 320px 1fr 400px;
-    gap: 24px;
-    margin-bottom: 32px;
-  }
-
-  .tools-panel {
-    background: var(--card-bg);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  .panel-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--cyber-glow);
-    margin: 0 0 20px 0;
-    text-align: center;
-  }
-
-  .problem-selector {
-    margin-bottom: 24px;
-  }
-
-  .problem-selector label {
-    display: block;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-  }
-
-  .problem-selector select {
-    width: 100%;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 1rem;
-    cursor: pointer;
-  }
-
-  .tool-section {
-    margin-bottom: 24px;
-  }
-
-  .tool-title {
-    font-size: 1.1rem;
-    color: var(--diagnostic-blue);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .tool-input {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .tool-input input {
-    flex: 1;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-  }
-
-  .tool-btn {
-    padding: 8px 16px;
-    background: linear-gradient(135deg, var(--diagnostic-blue), #2f3542);
-    border: none;
-    border-radius: 6px;
-    color: white;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-  }
-
-  .tool-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(55, 66, 250, 0.4);
-  }
-
-  .tool-btn.ping-btn {
-    background: linear-gradient(135deg, var(--ping-green), #20bf6b);
-  }
-
-  .tool-btn.trace-btn {
-    background: linear-gradient(135deg, var(--trace-yellow), #ff6348);
-  }
-
-  .action-btn {
-    width: 100%;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 12px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
-  }
-
-  .action-btn.diagnostic-btn {
-    background: linear-gradient(135deg, var(--diagnostic-blue), #2f3542);
-  }
-
-  .action-btn.fix-btn {
-    background: linear-gradient(135deg, var(--success-green), #0fa54f);
-  }
-
-  .action-btn.reset-btn {
-    background: linear-gradient(135deg, var(--error-red), #ff3742);
-  }
-
-  .network-diagram {
-    background: var(--card-bg);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(10px);
-    position: relative;
-    min-height: 600px;
-  }
-
-  .network-topology {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: 
-      radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(139, 95, 191, 0.1) 0%, transparent 50%);
-  }
-
-  .network-device {
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 3px solid;
-  }
-
-  .network-device:hover {
-    transform: scale(1.1);
-  }
-
-  .network-device.healthy {
-    background: linear-gradient(135deg, var(--success-green), #0fa54f);
-    border-color: var(--success-green);
-  }
-
-  .network-device.warning {
-    background: linear-gradient(135deg, var(--warning-orange), #ff6b35);
-    border-color: var(--warning-orange);
-  }
-
-  .network-device.error {
-    background: linear-gradient(135deg, var(--error-red), #ff3742);
-    border-color: var(--error-red);
-  }
-
-  .network-device.offline {
-    background: linear-gradient(135deg, #57606f, #2f3542);
-    border-color: #57606f;
-    opacity: 0.6;
-  }
-
-  .network-device i {
-    font-size: 1.8rem;
-    color: white;
-    margin-bottom: 4px;
-  }
-
-  .device-label {
-    position: absolute;
-    bottom: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-align: center;
-    white-space: nowrap;
-  }
-
-  .device-ip {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    text-align: center;
-    background: var(--card-bg);
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .connection-line {
-    position: absolute;
-    height: 3px;
-    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
-    transform-origin: left center;
-    z-index: 1;
-  }
-
-  .connection-line.broken {
-    background: linear-gradient(90deg, var(--error-red), #ff3742);
-    animation: broken-link 1s infinite alternate;
-  }
-
-  .connection-line.slow {
-    background: linear-gradient(90deg, var(--warning-orange), #ff6b35);
-    animation: slow-link 2s infinite;
-  }
-
-  @keyframes broken-link {
-    0% { opacity: 0.3; }
-    100% { opacity: 1; }
-  }
-
-  @keyframes slow-link {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
-  }
-
-  .ping-indicator {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: var(--ping-green);
-    border-radius: 50%;
-    animation: ping-travel 2s infinite;
-    z-index: 10;
-  }
-
-  @keyframes ping-travel {
-    0% { transform: translateX(0) scale(1); opacity: 1; }
-    50% { transform: translateX(150px) scale(1.2); opacity: 0.8; }
-    100% { transform: translateX(300px) scale(1); opacity: 0; }
-  }
-
-  .diagnostics-panel {
-    background: var(--card-bg);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(10px);
-  }
-
-  .diagnostic-result {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .ping-result {
-    color: var(--ping-green);
-  }
-
-  .traceroute-result {
-    color: var(--trace-yellow);
-  }
-
-  .nslookup-result {
-    color: var(--cyber-glow);
-  }
-
-  .netstat-result {
-    color: var(--network-purple);
-  }
-
-  .problem-analysis {
-    background: rgba(255, 71, 87, 0.1);
-    border: 1px solid var(--error-red);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-
-  .problem-title {
-    color: var(--error-red);
-    font-weight: 600;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .problem-description {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  .solution-steps {
-    background: rgba(20, 191, 94, 0.1);
-    border: 1px solid var(--success-green);
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 16px;
-  }
-
-  .solution-title {
-    color: var(--success-green);
-    font-weight: 600;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .solution-step {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-  }
-
-  .step-number {
-    background: var(--success-green);
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .metric-card {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-  }
-
-  .metric-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--cyber-glow);
-    margin-bottom: 4px;
-  }
-
-  .metric-label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-  }
-
-  @media (max-width: 1200px) {
-    .main-content {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-  }
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/networking2-simulations.css') }}">
 {% endblock %}
 
 {% block content %}
+<a href="{{ url_for('user.networking2_simulations') }}" class="sim-back-btn">
+  <i class="fas fa-arrow-left"></i> Back to Networking 2
+</a>
+
 <div class="simulation-container">
   <div class="simulation-header">
-    <h1 class="simulation-title">Network Troubleshooting Simulation</h1>
-    <p class="simulation-subtitle">Advanced Network Diagnostic and Problem Resolution Environment</p>
+    <h1 class="simulation-title">🔧 Network Troubleshooting Lab</h1>
+    <p class="simulation-subtitle">Module 8: Systematic Network Problem Resolution</p>
   </div>
 
-  <div class="main-content">
-    <!-- Troubleshooting Tools Panel -->
-    <div class="tools-panel">
-      <h3 class="panel-title">Diagnostic Tools</h3>
-      
-      <div class="problem-selector">
-        <label for="problemType">Problem Scenario:</label>
-        <select id="problemType" onchange="loadProblemScenario()">
-          <option value="connectivity">Connectivity Issues</option>
-          <option value="slow-network">Slow Network Performance</option>
-          <option value="dns-resolution">DNS Resolution Problems</option>
-          <option value="routing-loops">Routing Loop Detection</option>
-          <option value="bandwidth-saturation">Bandwidth Saturation</option>
-          <option value="hardware-failure">Hardware Failure</option>
-        </select>
-      </div>
-
-      <div class="tool-section">
-        <div class="tool-title">
-          <i class="fas fa-satellite-dish"></i>
-          Ping Test
-        </div>
-        <div class="tool-input">
-          <input type="text" id="pingTarget" value="192.168.1.1" placeholder="Target IP/Hostname">
-          <button class="tool-btn ping-btn" onclick="runPing()">Ping</button>
+  <div class="simulation-grid">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="panel-section">
+        <h3 class="section-title">🎯 Troubleshooting Control</h3>
+        <div class="button-group">
+          <button class="sim-btn sim-btn-primary" onclick="loadScenario(1)">
+            <i class="fas fa-play"></i> Scenario 1: Connectivity
+          </button>
+          <button class="sim-btn sim-btn-primary" onclick="loadScenario(2)">
+            <i class="fas fa-play"></i> Scenario 2: DHCP Issues
+          </button>
+          <button class="sim-btn sim-btn-primary" onclick="loadScenario(3)">
+            <i class="fas fa-play"></i> Scenario 3: DNS Problems
+          </button>
+          <button class="sim-btn sim-btn-warning" onclick="resetTroubleshooting()">
+            <i class="fas fa-refresh"></i> Reset Lab
+          </button>
         </div>
       </div>
 
-      <div class="tool-section">
-        <div class="tool-title">
-          <i class="fas fa-route"></i>
-          Traceroute
-        </div>
-        <div class="tool-input">
-          <input type="text" id="traceTarget" value="8.8.8.8" placeholder="Target IP/Hostname">
-          <button class="tool-btn trace-btn" onclick="runTraceroute()">Trace</button>
-        </div>
-      </div>
-
-      <div class="tool-section">
-        <div class="tool-title">
-          <i class="fas fa-search"></i>
-          DNS Lookup
-        </div>
-        <div class="tool-input">
-          <input type="text" id="dnsTarget" value="example.com" placeholder="Domain name">
-          <button class="tool-btn" onclick="runNSLookup()">Lookup</button>
-        </div>
-      </div>
-
-      <div class="tool-section">
-        <div class="tool-title">
-          <i class="fas fa-network-wired"></i>
-          Port Scan
-        </div>
-        <div class="tool-input">
-          <input type="text" id="portTarget" value="192.168.1.100" placeholder="Target IP">
-          <button class="tool-btn" onclick="runPortScan()">Scan</button>
+      <div class="panel-section">
+        <h3 class="section-title">🔍 Diagnostic Tools</h3>
+        <div class="diagnostic-tools">
+          <button class="tool-btn" onclick="runPing()" title="Ping Test">
+            <i class="fas fa-wifi"></i> Ping
+          </button>
+          <button class="tool-btn" onclick="runTraceroute()" title="Traceroute">
+            <i class="fas fa-route"></i> Tracert
+          </button>
+          <button class="tool-btn" onclick="checkDNS()" title="DNS Lookup">
+            <i class="fas fa-search"></i> NSLookup
+          </button>
+          <button class="tool-btn" onclick="runIPConfig()" title="IP Configuration">
+            <i class="fas fa-network-wired"></i> IPConfig
+          </button>
+          <button class="tool-btn" onclick="runNetstat()" title="Network Statistics">
+            <i class="fas fa-chart-bar"></i> Netstat
+          </button>
+          <button class="tool-btn" onclick="runArp()" title="ARP Table">
+            <i class="fas fa-table"></i> ARP
+          </button>
         </div>
       </div>
 
-      <button class="action-btn diagnostic-btn" onclick="runFullDiagnostic()">
-        <i class="fas fa-stethoscope"></i>
-        Full Network Diagnostic
-      </button>
-      <button class="action-btn fix-btn" onclick="autoFix()">
-        <i class="fas fa-wrench"></i>
-        Auto-Fix Issues
-      </button>
-      <button class="action-btn reset-btn" onclick="resetNetwork()">
-        <i class="fas fa-redo"></i>
-        Reset Network
-      </button>
+      <div class="panel-section">
+        <h3 class="section-title">📊 Network Status</h3>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-label">Physical Layer</div>
+            <div class="status-indicator status-up" id="physicalStatus"></div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Data Link</div>
+            <div class="status-indicator status-up" id="datalinkStatus"></div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Network Layer</div>
+            <div class="status-indicator status-warning" id="networkStatus"></div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Transport</div>
+            <div class="status-indicator status-down" id="transportStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">📋 Troubleshooting Steps</h3>
+        <div class="troubleshooting-checklist" id="checklistContainer">
+          <div class="checklist-item" data-step="1">
+            <input type="checkbox" id="step1"> 
+            <label for="step1">Verify physical connectivity</label>
+          </div>
+          <div class="checklist-item" data-step="2">
+            <input type="checkbox" id="step2"> 
+            <label for="step2">Check IP configuration</label>
+          </div>
+          <div class="checklist-item" data-step="3">
+            <input type="checkbox" id="step3"> 
+            <label for="step3">Test local connectivity</label>
+          </div>
+          <div class="checklist-item" data-step="4">
+            <input type="checkbox" id="step4"> 
+            <label for="step4">Verify gateway connectivity</label>
+          </div>
+          <div class="checklist-item" data-step="5">
+            <input type="checkbox" id="step5"> 
+            <label for="step5">Test DNS resolution</label>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Network Diagram -->
-    <div class="network-diagram">
+    <!-- Main Simulation Area -->
+    <div class="simulation-main">
       <div class="network-topology" id="networkTopology">
-        <!-- User Computer -->
-        <div class="network-device healthy" id="device-user" style="top: 50px; left: 50px;" onclick="selectDevice('user')">
-          <i class="fas fa-laptop"></i>
-          <div class="device-label">User PC</div>
-          <div class="device-ip">192.168.1.10</div>
-        </div>
-
-        <!-- Switch -->
-        <div class="network-device warning" id="device-switch" style="top: 50px; left: 250px;" onclick="selectDevice('switch')">
-          <i class="fas fa-network-wired"></i>
-          <div class="device-label">Switch</div>
-          <div class="device-ip">192.168.1.2</div>
-        </div>
-
-        <!-- Router -->
-        <div class="network-device healthy" id="device-router" style="top: 50px; left: 450px;" onclick="selectDevice('router')">
-          <i class="fas fa-router"></i>
-          <div class="device-label">Router</div>
-          <div class="device-ip">192.168.1.1</div>
-        </div>
-
-        <!-- Firewall -->
-        <div class="network-device healthy" id="device-firewall" style="top: 200px; left: 450px;" onclick="selectDevice('firewall')">
-          <i class="fas fa-shield-alt"></i>
-          <div class="device-label">Firewall</div>
-          <div class="device-ip">203.0.113.1</div>
-        </div>
-
-        <!-- DNS Server -->
-        <div class="network-device error" id="device-dns" style="top: 200px; left: 250px;" onclick="selectDevice('dns')">
-          <i class="fas fa-server"></i>
-          <div class="device-label">DNS Server</div>
-          <div class="device-ip">192.168.1.100</div>
-        </div>
-
-        <!-- Web Server -->
-        <div class="network-device healthy" id="device-web" style="top: 350px; left: 450px;" onclick="selectDevice('web')">
-          <i class="fas fa-globe"></i>
-          <div class="device-label">Web Server</div>
-          <div class="device-ip">203.0.113.10</div>
-        </div>
-
-        <!-- Database Server -->
-        <div class="network-device offline" id="device-database" style="top: 350px; left: 250px;" onclick="selectDevice('database')">
-          <i class="fas fa-database"></i>
-          <div class="device-label">Database</div>
-          <div class="device-ip">192.168.1.200</div>
-        </div>
-
-        <!-- Network Connections -->
-        <div class="connection-line" id="conn-user-switch" style="top: 90px; left: 130px; width: 120px;"></div>
-        <div class="connection-line slow" id="conn-switch-router" style="top: 90px; left: 330px; width: 120px;"></div>
-        <div class="connection-line" id="conn-router-firewall" style="top: 130px; left: 485px; width: 70px; transform: rotate(90deg);"></div>
-        <div class="connection-line broken" id="conn-switch-dns" style="top: 130px; left: 285px; width: 70px; transform: rotate(90deg);"></div>
-        <div class="connection-line" id="conn-firewall-web" style="top: 280px; left: 485px; width: 70px; transform: rotate(90deg);"></div>
-        <div class="connection-line broken" id="conn-dns-database" style="top: 280px; left: 250px; width: 70px; transform: rotate(90deg);"></div>
-
-        <!-- Ping indicators -->
-        <div class="ping-indicator" id="ping-indicator" style="top: 85px; left: 130px; display: none;"></div>
-      </div>
-    </div>
-
-    <!-- Diagnostics Results Panel -->
-    <div class="diagnostics-panel">
-      <h3 class="panel-title">Diagnostic Results</h3>
-      
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-value" id="latencyMetric">45ms</div>
-          <div class="metric-label">Average Latency</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value" id="packetLossMetric">12%</div>
-          <div class="metric-label">Packet Loss</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value" id="bandwidthMetric">8.5Mbps</div>
-          <div class="metric-label">Bandwidth</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value" id="devicesUpMetric">5/7</div>
-          <div class="metric-label">Devices Online</div>
+        <div class="scenario-display" id="scenarioDisplay">
+          <h3>Select a troubleshooting scenario to begin</h3>
+          <p>Use the control panel to load different network problem scenarios and practice systematic troubleshooting.</p>
         </div>
       </div>
 
-      <div id="diagnosticResults">
-        <div class="diagnostic-result ping-result" id="pingResults">
-          Ready to run ping test...
+      <div class="command-terminal">
+        <div class="terminal-header">
+          <h4><i class="fas fa-terminal"></i> Command Terminal</h4>
+          <button class="terminal-clear" onclick="clearTerminal()">Clear</button>
         </div>
-      </div>
-
-      <div class="problem-analysis" id="problemAnalysis">
-        <div class="problem-title">
-          <i class="fas fa-exclamation-triangle"></i>
-          Current Network Issues
-        </div>
-        <div class="problem-description" id="problemDescription">
-          Multiple connectivity issues detected. DNS server is unreachable and database server is offline.
-        </div>
-      </div>
-
-      <div class="solution-steps" id="solutionSteps" style="display: none;">
-        <div class="solution-title">
-          <i class="fas fa-tools"></i>
-          Recommended Solutions
-        </div>
-        <div id="solutionList">
-          <!-- Solutions will be dynamically added here -->
+        <div class="terminal-output" id="terminalOutput">
+          <div class="terminal-line">RiddleNet Troubleshooting Lab v2.0</div>
+          <div class="terminal-line">Type commands using the diagnostic tools above</div>
+          <div class="terminal-prompt">C:\> <span class="cursor">_</span></div>
         </div>
       </div>
     </div>
@@ -655,466 +136,274 @@
 </div>
 
 <script>
-let selectedDevice = null;
-let networkProblems = {};
-let diagnosticRunning = false;
+let currentScenario = null;
+let completedSteps = [];
 
-// Problem scenarios
-const problemScenarios = {
-  'connectivity': {
-    name: 'Connectivity Issues',
-    description: 'Multiple devices are unreachable or experiencing connection problems',
-    issues: ['dns-down', 'database-offline', 'slow-switch'],
-    symptoms: 'Users cannot access websites, database connections failing'
+// Scenario data
+const scenarios = {
+  1: {
+    title: "Connectivity Issues",
+    description: "A user reports they cannot access the internet",
+    network: {
+      userPC: "192.168.1.100/24",
+      gateway: "192.168.1.1",
+      dns: "8.8.8.8",
+      issue: "Gateway misconfiguration"
+    },
+    solution: ["Check IP config", "Verify gateway", "Test connectivity"]
   },
-  'slow-network': {
-    name: 'Slow Network Performance',
-    description: 'Network performance is degraded across multiple segments',
-    issues: ['slow-switch', 'bandwidth-saturation'],
-    symptoms: 'Slow file transfers, high latency, timeout errors'
+  2: {
+    title: "DHCP Problems", 
+    description: "Devices cannot obtain IP addresses automatically",
+    network: {
+      dhcpServer: "192.168.1.1",
+      scope: "192.168.1.100-200",
+      lease: "24 hours",
+      issue: "DHCP scope exhausted"
+    },
+    solution: ["Check DHCP server", "Verify scope", "Release/renew IP"]
   },
-  'dns-resolution': {
-    name: 'DNS Resolution Problems',
-    description: 'DNS server is not responding to queries',
-    issues: ['dns-down'],
-    symptoms: 'Cannot resolve domain names, web browsing fails'
-  },
-  'routing-loops': {
-    name: 'Routing Loop Detection',
-    description: 'Packets are circulating in routing loops',
-    issues: ['routing-loop'],
-    symptoms: 'High latency, packet loss, network congestion'
-  },
-  'bandwidth-saturation': {
-    name: 'Bandwidth Saturation',
-    description: 'Network links are at capacity',
-    issues: ['bandwidth-saturation', 'slow-switch'],
-    symptoms: 'Slow performance, dropped connections, timeouts'
-  },
-  'hardware-failure': {
-    name: 'Hardware Failure',
-    description: 'Network hardware has failed or is malfunctioning',
-    issues: ['database-offline', 'switch-failure'],
-    symptoms: 'Device unreachable, interface down, hardware errors'
+  3: {
+    title: "DNS Resolution Failure",
+    description: "Websites cannot be accessed by name, only by IP",
+    network: {
+      primaryDNS: "8.8.8.8",
+      secondaryDNS: "8.8.4.4", 
+      localDNS: "192.168.1.1",
+      issue: "DNS server unreachable"
+    },
+    solution: ["Test DNS servers", "Check DNS config", "Verify connectivity"]
   }
 };
 
-// Network issues simulation
-const networkIssues = {
-  'dns-down': {
-    affected: ['device-dns'],
-    connections: ['conn-switch-dns'],
-    status: 'error',
-    description: 'DNS server is unresponsive'
-  },
-  'database-offline': {
-    affected: ['device-database'],
-    connections: ['conn-dns-database'],
-    status: 'offline',
-    description: 'Database server is offline'
-  },
-  'slow-switch': {
-    affected: ['device-switch'],
-    connections: ['conn-switch-router'],
-    status: 'warning',
-    description: 'Switch experiencing performance issues'
-  },
-  'bandwidth-saturation': {
-    affected: [],
-    connections: ['conn-switch-router', 'conn-router-firewall'],
-    status: 'warning',
-    description: 'Bandwidth utilization at 95%'
-  }
-};
-
-function loadProblemScenario() {
-  const problemType = document.getElementById('problemType').value;
-  const scenario = problemScenarios[problemType];
+function loadScenario(scenarioNum) {
+  currentScenario = scenarioNum;
+  const scenario = scenarios[scenarioNum];
   
-  if (scenario) {
-    // Reset network state
-    resetNetworkVisual();
-    
-    // Apply scenario issues
-    networkProblems = {};
-    scenario.issues.forEach(issueKey => {
-      const issue = networkIssues[issueKey];
-      if (issue) {
-        networkProblems[issueKey] = issue;
-        applyNetworkIssue(issueKey, issue);
-      }
-    });
-    
-    // Update problem description
-    document.getElementById('problemDescription').textContent = 
-      `${scenario.description}. Symptoms: ${scenario.symptoms}`;
-    
-    // Update metrics based on issues
-    updateNetworkMetrics();
-    
-    console.log(`Loaded scenario: ${scenario.name}`);
-  }
-}
-
-function applyNetworkIssue(issueKey, issue) {
-  // Apply visual changes to affected devices
-  issue.affected.forEach(deviceId => {
-    const device = document.getElementById(deviceId);
-    if (device) {
-      device.className = `network-device ${issue.status}`;
-    }
-  });
+  // Update scenario display
+  const display = document.getElementById('scenarioDisplay');
+  display.innerHTML = `
+    <h3>${scenario.title}</h3>
+    <p><strong>Problem:</strong> ${scenario.description}</p>
+    <div class="network-details">
+      <h4>Network Information:</h4>
+      ${Object.entries(scenario.network).map(([key, value]) => 
+        `<div><strong>${key.charAt(0).toUpperCase() + key.slice(1)}:</strong> ${value}</div>`
+      ).join('')}
+    </div>
+    <div class="troubleshooting-hint">
+      <i class="fas fa-lightbulb"></i> Use the diagnostic tools to identify and resolve the issue
+    </div>
+  `;
   
-  // Apply visual changes to affected connections
-  issue.connections.forEach(connId => {
-    const connection = document.getElementById(connId);
-    if (connection) {
-      if (issue.status === 'error' || issue.status === 'offline') {
-        connection.className = 'connection-line broken';
-      } else if (issue.status === 'warning') {
-        connection.className = 'connection-line slow';
-      }
-    }
-  });
-}
-
-function resetNetworkVisual() {
-  // Reset all devices to healthy state
-  document.querySelectorAll('.network-device').forEach(device => {
-    device.className = 'network-device healthy';
-  });
-  
-  // Reset all connections to normal state
-  document.querySelectorAll('.connection-line').forEach(connection => {
-    connection.className = 'connection-line';
-  });
-}
-
-function updateNetworkMetrics() {
-  const issueCount = Object.keys(networkProblems).length;
-  
-  // Update metrics based on network issues
-  let latency = 15 + (issueCount * 10);
-  let packetLoss = issueCount * 3;
-  let bandwidth = Math.max(1, 10 - (issueCount * 1.5));
-  let devicesUp = 7 - Math.min(issueCount, 2);
-  
-  document.getElementById('latencyMetric').textContent = `${latency}ms`;
-  document.getElementById('packetLossMetric').textContent = `${packetLoss}%`;
-  document.getElementById('bandwidthMetric').textContent = `${bandwidth.toFixed(1)}Mbps`;
-  document.getElementById('devicesUpMetric').textContent = `${devicesUp}/7`;
-}
-
-function selectDevice(deviceType) {
-  selectedDevice = deviceType;
-  
-  // Visual feedback
-  document.querySelectorAll('.network-device').forEach(device => {
-    device.style.transform = 'scale(1)';
-    device.style.boxShadow = '';
-  });
-  
-  const device = document.getElementById(`device-${deviceType}`);
-  if (device) {
-    device.style.transform = 'scale(1.2)';
-    device.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
-  }
-  
-  console.log(`Selected device: ${deviceType}`);
+  // Reset checklist
+  resetChecklist();
+  addToTerminal(`Loaded: ${scenario.title}`);
+  addToTerminal("Begin systematic troubleshooting...");
 }
 
 function runPing() {
-  const target = document.getElementById('pingTarget').value;
-  const results = document.getElementById('pingResults');
-  
-  results.innerHTML = `Running ping to ${target}...\n`;
-  
-  // Show ping animation
-  const pingIndicator = document.getElementById('ping-indicator');
-  pingIndicator.style.display = 'block';
-  
-  setTimeout(() => {
-    // Simulate ping results based on network state
-    let pingResults = '';
-    const hasConnectivityIssues = Object.keys(networkProblems).length > 0;
-    
-    if (target === '192.168.1.100' && networkProblems['dns-down']) {
-      pingResults = `PING 192.168.1.100: Destination host unreachable\n`;
-      pingResults += `Request timeout for icmp_seq 1\n`;
-      pingResults += `Request timeout for icmp_seq 2\n`;
-      pingResults += `Request timeout for icmp_seq 3\n`;
-      pingResults += `\n--- ping statistics ---\n`;
-      pingResults += `3 packets transmitted, 0 received, 100% packet loss\n`;
-    } else if (hasConnectivityIssues) {
-      pingResults = `PING ${target}: 56 data bytes\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=0 time=89.5 ms\n`;
-      pingResults += `Request timeout for icmp_seq 1\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=2 time=156.2 ms\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=3 time=203.8 ms\n`;
-      pingResults += `\n--- ping statistics ---\n`;
-      pingResults += `4 packets transmitted, 3 received, 25% packet loss\n`;
-      pingResults += `round-trip min/avg/max/stddev = 89.5/149.8/203.8/47.2 ms\n`;
-    } else {
-      pingResults = `PING ${target}: 56 data bytes\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=0 time=12.3 ms\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=1 time=15.1 ms\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=2 time=11.8 ms\n`;
-      pingResults += `64 bytes from ${target}: icmp_seq=3 time=13.7 ms\n`;
-      pingResults += `\n--- ping statistics ---\n`;
-      pingResults += `4 packets transmitted, 4 received, 0% packet loss\n`;
-      pingResults += `round-trip min/avg/max/stddev = 11.8/13.2/15.1/1.4 ms\n`;
-    }
-    
-    results.innerHTML = pingResults;
-    pingIndicator.style.display = 'none';
-  }, 2000);
-}
-
-function runTraceroute() {
-  const target = document.getElementById('traceTarget').value;
-  const results = document.getElementById('diagnosticResults');
-  
-  const traceDiv = document.createElement('div');
-  traceDiv.className = 'diagnostic-result traceroute-result';
-  traceDiv.innerHTML = `Running traceroute to ${target}...\n`;
-  results.appendChild(traceDiv);
-  
-  setTimeout(() => {
-    let traceResults = `traceroute to ${target}, 64 hops max\n`;
-    traceResults += `1  192.168.1.1 (192.168.1.1)  2.156 ms  1.892 ms  1.756 ms\n`;
-    
-    if (networkProblems['slow-switch']) {
-      traceResults += `2  203.0.113.1 (203.0.113.1)  89.234 ms  145.678 ms  201.345 ms\n`;
-      traceResults += `3  * * *\n`;
-      traceResults += `4  10.0.0.1 (10.0.0.1)  234.567 ms  289.123 ms  345.678 ms\n`;
-    } else {
-      traceResults += `2  203.0.113.1 (203.0.113.1)  12.234 ms  11.678 ms  10.345 ms\n`;
-      traceResults += `3  10.0.0.1 (10.0.0.1)  15.567 ms  14.123 ms  16.789 ms\n`;
-    }
-    
-    traceResults += `4  ${target} (${target})  18.234 ms  17.456 ms  19.123 ms\n`;
-    
-    traceDiv.innerHTML = traceResults;
-  }, 3000);
-}
-
-function runNSLookup() {
-  const target = document.getElementById('dnsTarget').value;
-  const results = document.getElementById('diagnosticResults');
-  
-  const dnsDiv = document.createElement('div');
-  dnsDiv.className = 'diagnostic-result nslookup-result';
-  dnsDiv.innerHTML = `Running nslookup for ${target}...\n`;
-  results.appendChild(dnsDiv);
-  
-  setTimeout(() => {
-    let dnsResults = '';
-    
-    if (networkProblems['dns-down']) {
-      dnsResults = `nslookup: can't resolve '${target}': Server failure\n`;
-      dnsResults += `DNS resolution failed - check DNS server connectivity\n`;
-    } else {
-      dnsResults = `Server:    192.168.1.100\n`;
-      dnsResults += `Address:   192.168.1.100#53\n\n`;
-      dnsResults += `Name:      ${target}\n`;
-      dnsResults += `Address:   93.184.216.34\n`;
-    }
-    
-    dnsDiv.innerHTML = dnsResults;
-  }, 1500);
-}
-
-function runPortScan() {
-  const target = document.getElementById('portTarget').value;
-  const results = document.getElementById('diagnosticResults');
-  
-  const portDiv = document.createElement('div');
-  portDiv.className = 'diagnostic-result netstat-result';
-  portDiv.innerHTML = `Scanning ports on ${target}...\n`;
-  results.appendChild(portDiv);
-  
-  setTimeout(() => {
-    let portResults = `Port scan results for ${target}:\n\n`;
-    
-    if (target === '192.168.1.200' && networkProblems['database-offline']) {
-      portResults += `Host is down or not responding\n`;
-      portResults += `No open ports detected\n`;
-    } else {
-      portResults += `PORT     STATE    SERVICE\n`;
-      portResults += `22/tcp   open     ssh\n`;
-      portResults += `80/tcp   open     http\n`;
-      portResults += `443/tcp  open     https\n`;
-      portResults += `3306/tcp closed   mysql\n`;
-      portResults += `8080/tcp filtered http-proxy\n`;
-    }
-    
-    portDiv.innerHTML = portResults;
-  }, 2500);
-}
-
-function runFullDiagnostic() {
-  if (diagnosticRunning) return;
-  
-  diagnosticRunning = true;
-  const results = document.getElementById('diagnosticResults');
-  results.innerHTML = '';
-  
-  const diagDiv = document.createElement('div');
-  diagDiv.className = 'diagnostic-result';
-  diagDiv.innerHTML = `Running comprehensive network diagnostic...\n`;
-  results.appendChild(diagDiv);
-  
-  let step = 0;
-  const steps = [
-    'Checking network interfaces...',
-    'Testing connectivity to gateway...',
-    'Verifying DNS resolution...',
-    'Analyzing routing table...',
-    'Checking for packet loss...',
-    'Testing bandwidth utilization...',
-    'Scanning for network errors...',
-    'Generating diagnostic report...'
-  ];
-  
-  const stepInterval = setInterval(() => {
-    if (step < steps.length) {
-      diagDiv.innerHTML += `${steps[step]}\n`;
-      step++;
-    } else {
-      clearInterval(stepInterval);
-      
-      // Generate final diagnostic report
-      setTimeout(() => {
-        generateDiagnosticReport();
-        diagnosticRunning = false;
-      }, 1000);
-    }
-  }, 800);
-}
-
-function generateDiagnosticReport() {
-  const results = document.getElementById('diagnosticResults');
-  
-  const reportDiv = document.createElement('div');
-  reportDiv.className = 'diagnostic-result';
-  
-  let report = `\n=== NETWORK DIAGNOSTIC REPORT ===\n\n`;
-  report += `Issues Found: ${Object.keys(networkProblems).length}\n\n`;
-  
-  Object.keys(networkProblems).forEach(issueKey => {
-    const issue = networkProblems[issueKey];
-    report += `• ${issue.description}\n`;
-  });
-  
-  report += `\nNetwork Status: ${Object.keys(networkProblems).length > 0 ? 'DEGRADED' : 'HEALTHY'}\n`;
-  report += `Recommended Action: ${Object.keys(networkProblems).length > 0 ? 'Immediate attention required' : 'Monitor'}\n`;
-  
-  reportDiv.innerHTML = report;
-  results.appendChild(reportDiv);
-  
-  // Show solution steps
-  if (Object.keys(networkProblems).length > 0) {
-    showSolutionSteps();
-  }
-}
-
-function showSolutionSteps() {
-  const solutionSteps = document.getElementById('solutionSteps');
-  const solutionList = document.getElementById('solutionList');
-  
-  solutionList.innerHTML = '';
-  
-  const solutions = [
-    'Check physical connections to DNS server',
-    'Restart DNS service or replace DNS server',
-    'Verify database server power and connectivity',
-    'Check switch port statistics and replace if necessary',
-    'Implement Quality of Service (QoS) policies',
-    'Monitor bandwidth usage and upgrade if needed'
-  ];
-  
-  solutions.forEach((solution, index) => {
-    const stepDiv = document.createElement('div');
-    stepDiv.className = 'solution-step';
-    stepDiv.innerHTML = `
-      <div class="step-number">${index + 1}</div>
-      <div>${solution}</div>
-    `;
-    solutionList.appendChild(stepDiv);
-  });
-  
-  solutionSteps.style.display = 'block';
-}
-
-function autoFix() {
-  if (Object.keys(networkProblems).length === 0) {
-    console.log('No issues to fix');
+  if (!currentScenario) {
+    addToTerminal("Please load a scenario first");
     return;
   }
   
-  console.log('Attempting to auto-fix network issues...');
+  addToTerminal("C:\\> ping 8.8.8.8");
   
-  // Simulate fixing issues
-  let fixed = 0;
-  const totalIssues = Object.keys(networkProblems).length;
-  
-  Object.keys(networkProblems).forEach((issueKey, index) => {
-    setTimeout(() => {
-      delete networkProblems[issueKey];
-      fixed++;
-      
-      if (fixed === totalIssues) {
-        // Reset network to healthy state
-        resetNetworkVisual();
-        updateNetworkMetrics();
-        
-        // Hide solution steps
-        document.getElementById('solutionSteps').style.display = 'none';
-        
-        // Update problem description
-        document.getElementById('problemDescription').textContent = 
-          'All network issues have been resolved. Network operating normally.';
-        
-        console.log('Auto-fix completed successfully');
-      }
-    }, (index + 1) * 1000);
-  });
+  setTimeout(() => {
+    if (currentScenario === 1) {
+      addToTerminal("Request timed out.");
+      addToTerminal("Request timed out.");
+      addToTerminal("Ping statistics: 0% success");
+    } else {
+      addToTerminal("Reply from 8.8.8.8: bytes=32 time=15ms TTL=118");
+      addToTerminal("Reply from 8.8.8.8: bytes=32 time=12ms TTL=118");
+      addToTerminal("Ping statistics: 100% success");
+    }
+    markStepComplete(4);
+  }, 1000);
 }
 
-function resetNetwork() {
-  // Reset everything to initial state
-  networkProblems = {};
-  resetNetworkVisual();
-  updateNetworkMetrics();
+function runTraceroute() {
+  if (!currentScenario) {
+    addToTerminal("Please load a scenario first");
+    return;
+  }
   
-  // Clear diagnostic results
-  document.getElementById('diagnosticResults').innerHTML = 
-    '<div class="diagnostic-result ping-result">Ready to run ping test...</div>';
+  addToTerminal("C:\\> tracert google.com");
   
-  // Hide solution steps
-  document.getElementById('solutionSteps').style.display = 'none';
+  setTimeout(() => {
+    addToTerminal("Tracing route to google.com [142.250.80.14]");
+    addToTerminal("1    192.168.1.1    1ms    1ms    1ms");
+    
+    if (currentScenario === 1) {
+      addToTerminal("2    * * * Request timed out");
+    } else {
+      addToTerminal("2    10.0.0.1       5ms    4ms    6ms");
+      addToTerminal("3    172.16.1.1     12ms   11ms   13ms");
+    }
+  }, 1500);
+}
+
+function checkDNS() {
+  if (!currentScenario) {
+    addToTerminal("Please load a scenario first");
+    return;
+  }
   
-  // Reset problem description
-  document.getElementById('problemDescription').textContent = 
-    'Network reset completed. Select a problem scenario to begin troubleshooting.';
+  addToTerminal("C:\\> nslookup google.com");
   
-  // Reset dropdowns
-  document.getElementById('problemType').value = 'connectivity';
+  setTimeout(() => {
+    if (currentScenario === 3) {
+      addToTerminal("DNS request timed out");
+      addToTerminal("Server: UnKnown");
+    } else {
+      addToTerminal("Server: 8.8.8.8");
+      addToTerminal("Address: 8.8.8.8#53");
+      addToTerminal("Name: google.com");
+      addToTerminal("Address: 142.250.80.14");
+    }
+    markStepComplete(5);
+  }, 800);
+}
+
+function runIPConfig() {
+  addToTerminal("C:\\> ipconfig /all");
   
-  diagnosticRunning = false;
+  setTimeout(() => {
+    addToTerminal("Windows IP Configuration");
+    addToTerminal("Ethernet adapter Local Area Connection:");
+    
+    if (currentScenario === 2) {
+      addToTerminal("   DHCP Enabled: Yes");
+      addToTerminal("   IP Address: 169.254.1.100 (Autoconfiguration)");
+      addToTerminal("   Subnet Mask: 255.255.0.0");
+      addToTerminal("   Default Gateway: (none)");
+    } else {
+      addToTerminal("   DHCP Enabled: Yes");
+      addToTerminal("   IP Address: 192.168.1.100");
+      addToTerminal("   Subnet Mask: 255.255.255.0");
+      addToTerminal("   Default Gateway: 192.168.1.1");
+      addToTerminal("   DNS Servers: 8.8.8.8, 8.8.4.4");
+    }
+    markStepComplete(2);
+  }, 1000);
+}
+
+function runNetstat() {
+  addToTerminal("C:\\> netstat -an");
   
-  console.log('Network reset completed');
+  setTimeout(() => {
+    addToTerminal("Active Connections");
+    addToTerminal("Proto  Local Address    Foreign Address   State");
+    addToTerminal("TCP    192.168.1.100:80  0.0.0.0:0        LISTENING");
+    addToTerminal("TCP    192.168.1.100:443 0.0.0.0:0        LISTENING");
+  }, 800);
+}
+
+function runArp() {
+  addToTerminal("C:\\> arp -a");
+  
+  setTimeout(() => {
+    addToTerminal("Interface: 192.168.1.100");
+    addToTerminal("Internet Address    Physical Address    Type");
+    addToTerminal("192.168.1.1         00-1B-44-11-3A-B7   dynamic");
+    addToTerminal("192.168.1.255       ff-ff-ff-ff-ff-ff   static");
+  }, 600);
+}
+
+function addToTerminal(text) {
+  const output = document.getElementById('terminalOutput');
+  const line = document.createElement('div');
+  line.className = 'terminal-line';
+  line.textContent = text;
+  
+  // Remove cursor from last line
+  const cursor = output.querySelector('.cursor');
+  if (cursor) cursor.remove();
+  
+  output.appendChild(line);
+  
+  // Add new cursor
+  const prompt = document.createElement('div');
+  prompt.className = 'terminal-prompt';
+  prompt.innerHTML = 'C:\\> <span class="cursor">_</span>';
+  output.appendChild(prompt);
+  
+  output.scrollTop = output.scrollHeight;
+}
+
+function clearTerminal() {
+  const output = document.getElementById('terminalOutput');
+  output.innerHTML = `
+    <div class="terminal-line">RiddleNet Troubleshooting Lab v2.0</div>
+    <div class="terminal-line">Terminal cleared</div>
+    <div class="terminal-prompt">C:\\> <span class="cursor">_</span></div>
+  `;
+}
+
+function markStepComplete(stepNum) {
+  const checkbox = document.getElementById(`step${stepNum}`);
+  if (checkbox && !checkbox.checked) {
+    checkbox.checked = true;
+    completedSteps.push(stepNum);
+    
+    // Update status indicators
+    updateStatusIndicators();
+  }
+}
+
+function updateStatusIndicators() {
+  const indicators = {
+    physical: document.getElementById('physicalStatus'),
+    datalink: document.getElementById('datalinkStatus'), 
+    network: document.getElementById('networkStatus'),
+    transport: document.getElementById('transportStatus')
+  };
+  
+  // Update based on completed steps
+  if (completedSteps.includes(1)) {
+    indicators.physical.className = 'status-indicator status-up';
+  }
+  if (completedSteps.includes(2)) {
+    indicators.datalink.className = 'status-indicator status-up';
+  }
+  if (completedSteps.includes(3) || completedSteps.includes(4)) {
+    indicators.network.className = 'status-indicator status-up';
+  }
+  if (completedSteps.includes(5)) {
+    indicators.transport.className = 'status-indicator status-up';
+  }
+}
+
+function resetChecklist() {
+  completedSteps = [];
+  document.querySelectorAll('.checklist-item input').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Reset status indicators
+  document.getElementById('physicalStatus').className = 'status-indicator status-warning';
+  document.getElementById('datalinkStatus').className = 'status-indicator status-warning';
+  document.getElementById('networkStatus').className = 'status-indicator status-warning';
+  document.getElementById('transportStatus').className = 'status-indicator status-warning';
+}
+
+function resetTroubleshooting() {
+  currentScenario = null;
+  resetChecklist();
+  clearTerminal();
+  
+  document.getElementById('scenarioDisplay').innerHTML = `
+    <h3>Select a troubleshooting scenario to begin</h3>
+    <p>Use the control panel to load different network problem scenarios and practice systematic troubleshooting.</p>
+  `;
 }
 
 // Initialize simulation
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('Network Troubleshooting Simulation loaded');
-  
-  // Load initial problem scenario
-  loadProblemScenario();
-  
-  // Select first device
-  selectDevice('user');
+  addToTerminal("Network Troubleshooting Lab initialized");
+  addToTerminal("Select a scenario to begin troubleshooting");
 });
 </script>
 {% endblock %}

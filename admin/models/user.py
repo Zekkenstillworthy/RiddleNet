@@ -2,15 +2,14 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from __init__ import db
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 from flask_login import UserMixin
 
 class AdminUser(db.Model, UserMixin):
     """
-    Admin User model
+    Admin User model - Separate model for admin operations to avoid conflicts
+    This model now uses the 'admin_users' table to avoid conflicts with the regular 'user' table
     """
-    __tablename__ = 'user'
-    __table_args__ = {'extend_existing': True}  # Allow table to be redefined
+    __tablename__ = 'admin_users'
     
     id = Column(Integer, primary_key=True)
     username = Column(String(150), unique=True, nullable=False)
@@ -23,15 +22,13 @@ class AdminUser(db.Model, UserMixin):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active = Column(DateTime, nullable=True)
     
-    # Define the scores relationship from the User side
-    # Use a method to query scores to avoid circular imports
+    # NO RELATIONSHIPS - avoid conflicts with the User model
+    # Use explicit queries when needed
+    
     def get_scores(self):
-        """Get scores for this user"""
+        """Get scores for this user via explicit query"""
         from admin.models.score import AdminScore
         return AdminScore.query.filter_by(user_id=self.id).all()
-    
-    # Note: The enrolled_classes relationship is defined in the Class model via backref
-    # We don't need to define it explicitly here
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

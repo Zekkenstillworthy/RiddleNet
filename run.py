@@ -7,14 +7,12 @@ from __init__ import create_app, db, login_manager
 from socket_manager import socketio  # Import socketio directly from socket_manager
 import os
 from user.quiz import QuizController
-from admin.controllers.question_controller import QuestionController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
 from flask_cors import CORS
 import socket_events  # Import the socket events module
 
 # Create the Flask application with template folder explicitly set
-# This ensures the admin templates can be found
 template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 app = create_app({
     'TEMPLATE_FOLDER': template_dir
@@ -24,88 +22,7 @@ app = create_app({
 ctx = app.app_context()
 ctx.push()
 
-# Debug template path
-print(f"Looking for templates in: {app.template_folder}")
-
-# Check if the admin templates directory exists
-admin_templates_path = os.path.join(template_dir, 'admin')
-if os.path.exists(admin_templates_path):
-    print(f"Admin templates found in: {admin_templates_path}")
-    # List all admin templates
-    print("Available admin templates:")
-    for template in os.listdir(admin_templates_path):
-        print(f"  - {template}")
-else:
-    print(f"WARNING: Admin templates directory not found at {admin_templates_path}")
-
-# Add additional template folders for admin templates if they exist
-admin_template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'admin', 'templates')
-if os.path.exists(admin_template_dir):
-    print(f"Adding additional admin template directory: {admin_template_dir}")
-    # Add it to the existing template loader
-    app.jinja_loader.searchpath.append(admin_template_dir)
-
-# Debug information for template paths
-print("\n=== Template Search Paths ===")
-print(f"Default template folder: {app.template_folder}")
-for path in app.jinja_loader.searchpath:
-    print(f"- {path}")
-print("============================\n")
-
-# Create a function to modify templates path for all blueprints
-def update_blueprint_template_paths(blueprint, template_folders):
-    """Update a blueprint's template folders to include additional paths"""
-    if not hasattr(blueprint, 'jinja_loader'):
-        print(f"Blueprint {blueprint.name} has no jinja_loader")
-        return
-        
-    for folder in template_folders:
-        if folder not in blueprint.jinja_loader.searchpath:
-            blueprint.jinja_loader.searchpath.append(folder)
-            print(f"Added {folder} to blueprint {blueprint.name}'s template search path")
-            
-# Set a unified template folder for all blueprints
-def register_template_folder_for_blueprints():
-    """Register the main template folder in all registered blueprints"""
-    main_template_folder = app.template_folder
-    print(f"Registering main template folder for all blueprints: {main_template_folder}")
-    
-    # Get all registered blueprints
-    for name, blueprint in app.blueprints.items():
-        # Use the enhanced utility from template_utils
-        from utils.template_utils import ensure_blueprint_can_find_templates
-        ensure_blueprint_can_find_templates(blueprint, [
-            main_template_folder,
-            os.path.join(main_template_folder, 'admin')
-        ])
-        
-# Register the template folder for all currently registered blueprints
-register_template_folder_for_blueprints()
-
-# Debug information for template paths
-print("\n=== Template Search Paths ===")
-print(f"Default template folder: {app.template_folder}")
-for path in app.jinja_loader.searchpath:
-    print(f"- {path}")
-print("============================\n")
-
-# Add a context processor to support admin templates
-@app.context_processor
-def inject_admin_helpers():
-    def admin_url_for(endpoint, **kwargs):
-        """Helper to generate URLs for admin routes"""
-        # If the endpoint already has a blueprint prefix, use it directly
-        if '.' in endpoint:
-            return url_for(endpoint, **kwargs)
-        # Otherwise, assume it's an admin endpoint
-        return url_for(f"admin.{endpoint}", **kwargs)
-    
-    return {
-        'admin_url_for': admin_url_for,
-        'is_admin_route': lambda: request.path.startswith('/admin')
-    }
-
-# Initialize SocketIO with the app (moved here to avoid circular imports)
+# Initialize SocketIO with the app
 from socket_manager import init_socketio
 init_socketio(app)
 
@@ -114,7 +31,6 @@ cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
     r"/admin/troubleshooting/*": {"origins": "*"}
 })
-print("CORS enabled for topology and troubleshooting API endpoints")
 
 # Ensure the instance folder exists
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -217,15 +133,14 @@ try:
         app.register_blueprint(topology_progress_bp)
         print("Topology Progress API Blueprint registered successfully")
     except Exception as e:
-        print(f"Error registering Topology Progress API blueprint: {e}")
-
-    # Register user troubleshooting routes
+        print(f"Error registering Topology Progress API blueprint: {e}")    # Register user troubleshooting routes
     try:
         from user.routes.troubleshooting_routes import troubleshooting_bp
         app.register_blueprint(troubleshooting_bp)
         print("User Troubleshooting Blueprint registered successfully")
     except Exception as e:
-        print(f"Error registering User Troubleshooting blueprint: {e}")
+        print(f"Error registering User Troubleshooting blueprint: {e}")    # Simulation routes are now included in the main user_bp blueprint
+    # No separate simulation blueprint registration needed
         
 except Exception as e:
     print(f"Error registering API blueprint: {e}")

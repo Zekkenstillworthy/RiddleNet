@@ -1,0 +1,390 @@
+{% extends "user/base.html" %}
+
+{% block title %}RIP Protocol Simulation - Networking 2{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/networking2-simulations.css') }}">
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('user.networking2_simulations') }}" class="sim-back-btn">
+  <i class="fas fa-arrow-left"></i> Back to Networking 2
+</a>
+
+<div class="simulation-container">
+  <div class="simulation-header">
+    <h1 class="simulation-title">🔄 RIP Protocol Lab</h1>
+    <p class="simulation-subtitle">Module 3: Routing Information Protocol - Distance Vector Routing</p>
+  </div>
+
+  <div class="simulation-grid">
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="panel-section">
+        <h3 class="section-title">🎯 RIP Configuration</h3>
+        <div class="button-group">
+          <button class="sim-btn sim-btn-primary" onclick="enableRIP()">
+            <i class="fas fa-power-off"></i> Enable RIP
+          </button>
+          <button class="sim-btn sim-btn-warning" onclick="disableRIP()">
+            <i class="fas fa-stop"></i> Disable RIP
+          </button>
+          <button class="sim-btn sim-btn-success" onclick="showRIPTable()">
+            <i class="fas fa-table"></i> View RIP Table
+          </button>
+          <button class="sim-btn sim-btn-danger" onclick="resetRIP()">
+            <i class="fas fa-refresh"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">⚙️ RIP Settings</h3>
+        <div class="form-group">
+          <label for="ripVersion">RIP Version:</label>
+          <select id="ripVersion" class="config-select">
+            <option value="1">RIP v1</option>
+            <option value="2" selected>RIP v2</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="updateTimer">Update Timer (seconds):</label>
+          <input type="number" id="updateTimer" class="config-input" value="30" min="10" max="120">
+        </div>
+        
+        <div class="form-group">
+          <label for="holddownTimer">Holddown Timer (seconds):</label>
+          <input type="number" id="holddownTimer" class="config-input" value="180" min="60" max="300">
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">📊 RIP Metrics</h3>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Active Routes</div>
+            <div class="metric-value" id="activeRoutes">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Update Count</div>
+            <div class="metric-value" id="updateCount">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Convergence Time</div>
+            <div class="metric-value" id="convergenceTime">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">RIP Status</div>
+            <div class="metric-value" id="ripStatus">Disabled</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">📋 Activity Log</h3>
+        <div class="activity-log" id="activityLog">
+          <div class="log-entry">RIP Protocol Lab initialized</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Simulation Area -->
+    <div class="simulation-main">
+      <div class="network-topology" id="networkTopology">
+        <!-- Router A -->
+        <div class="network-device router" id="RouterA" style="top: 100px; left: 100px;">
+          <div class="device-icon">🔄</div>
+          <div class="device-label">Router A</div>
+          <div class="device-ip">192.168.1.1</div>
+          <div class="device-status status-up"></div>
+          <div class="rip-metrics">
+            <div class="metric">Routes: <span id="routesA">2</span></div>
+            <div class="metric">Hops: <span id="hopsA">1</span></div>
+          </div>
+        </div>
+
+        <!-- Router B -->
+        <div class="network-device router" id="RouterB" style="top: 100px; right: 100px;">
+          <div class="device-icon">🔄</div>
+          <div class="device-label">Router B</div>
+          <div class="device-ip">192.168.2.1</div>
+          <div class="device-status status-up"></div>
+          <div class="rip-metrics">
+            <div class="metric">Routes: <span id="routesB">2</span></div>
+            <div class="metric">Hops: <span id="hopsB">1</span></div>
+          </div>
+        </div>
+
+        <!-- Router C -->
+        <div class="network-device router" id="RouterC" style="bottom: 100px; left: 50%; transform: translateX(-50%);">
+          <div class="device-icon">🔄</div>
+          <div class="device-label">Router C</div>
+          <div class="device-ip">192.168.3.1</div>
+          <div class="device-status status-up"></div>
+          <div class="rip-metrics">
+            <div class="metric">Routes: <span id="routesC">3</span></div>
+            <div class="metric">Hops: <span id="hopsC">2</span></div>
+          </div>
+        </div>
+
+        <!-- Networks -->
+        <div class="network-segment" style="top: 50px; left: 50px;">
+          <div class="segment-label">Network 10.1.0.0/24</div>
+          <div class="segment-metric">Metric: 1</div>
+        </div>
+
+        <div class="network-segment" style="top: 50px; right: 50px;">
+          <div class="segment-label">Network 10.2.0.0/24</div>
+          <div class="segment-metric">Metric: 1</div>
+        </div>
+
+        <div class="network-segment" style="bottom: 50px; left: 50%; transform: translateX(-50%);">
+          <div class="segment-label">Network 10.3.0.0/24</div>
+          <div class="segment-metric">Metric: 2</div>
+        </div>
+      </div>
+
+      <div class="rip-table-display">
+        <div class="table-header">
+          <h4><i class="fas fa-table"></i> RIP Routing Table - <span id="currentRouter">Router A</span></h4>
+          <div class="table-controls">
+            <select id="routerSelect" class="router-selector">
+              <option value="RouterA">Router A</option>
+              <option value="RouterB">Router B</option>
+              <option value="RouterC">Router C</option>
+            </select>
+            <button class="refresh-btn" onclick="refreshRIPTable()">
+              <i class="fas fa-refresh"></i>
+            </button>
+          </div>
+        </div>
+        <div class="table-content" id="ripTableContent">
+          <table class="rip-table">
+            <thead>
+              <tr>
+                <th>Network</th>
+                <th>Next Hop</th>
+                <th>Metric</th>
+                <th>Timer</th>
+                <th>Interface</th>
+              </tr>
+            </thead>
+            <tbody id="ripTableBody">
+              <tr>
+                <td>10.1.0.0/24</td>
+                <td>Direct</td>
+                <td>1</td>
+                <td>--</td>
+                <td>Gi0/0</td>
+              </tr>
+              <tr>
+                <td>10.2.0.0/24</td>
+                <td>192.168.2.1</td>
+                <td>2</td>
+                <td>25s</td>
+                <td>Gi0/1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ripEnabled = false;
+let updateTimer = null;
+let convergenceStartTime = null;
+let currentSelectedRouter = 'RouterA';
+let updateCount = 0;
+
+// RIP routing tables for each router
+const ripTables = {
+  RouterA: [
+    { network: '10.1.0.0/24', nextHop: 'Direct', metric: 1, timer: '--', interface: 'Gi0/0' },
+    { network: '10.2.0.0/24', nextHop: '192.168.2.1', metric: 2, timer: '25s', interface: 'Gi0/1' },
+    { network: '10.3.0.0/24', nextHop: '192.168.3.1', metric: 3, timer: '18s', interface: 'Gi0/2' }
+  ],
+  RouterB: [
+    { network: '10.2.0.0/24', nextHop: 'Direct', metric: 1, timer: '--', interface: 'Gi0/0' },
+    { network: '10.1.0.0/24', nextHop: '192.168.1.1', metric: 2, timer: '22s', interface: 'Gi0/1' },
+    { network: '10.3.0.0/24', nextHop: '192.168.3.1', metric: 2, timer: '15s', interface: 'Gi0/2' }
+  ],
+  RouterC: [
+    { network: '10.3.0.0/24', nextHop: 'Direct', metric: 1, timer: '--', interface: 'Gi0/0' },
+    { network: '10.1.0.0/24', nextHop: '192.168.1.1', metric: 3, timer: '12s', interface: 'Gi0/1' },
+    { network: '10.2.0.0/24', nextHop: '192.168.2.1', metric: 2, timer: '28s', interface: 'Gi0/2' }
+  ]
+};
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', function() {
+  setupRouterSelection();
+  updateMetrics();
+  refreshRIPTable();
+  addToLog('RIP Protocol Lab ready for configuration');
+});
+
+function setupRouterSelection() {
+  document.getElementById('routerSelect').addEventListener('change', function() {
+    currentSelectedRouter = this.value;
+    document.getElementById('currentRouter').textContent = this.value.replace('Router', 'Router ');
+    refreshRIPTable();
+    
+    // Visual selection
+    document.querySelectorAll('.router').forEach(r => r.classList.remove('selected'));
+    document.getElementById(this.value).classList.add('selected');
+  });
+
+  // Router click handlers
+  document.querySelectorAll('.router').forEach(router => {
+    router.addEventListener('click', function() {
+      const routerId = this.id;
+      currentSelectedRouter = routerId;
+      document.getElementById('routerSelect').value = routerId;
+      document.getElementById('currentRouter').textContent = routerId.replace('Router', 'Router ');
+      refreshRIPTable();
+      
+      // Visual selection
+      document.querySelectorAll('.router').forEach(r => r.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+}
+
+function enableRIP() {
+  if (ripEnabled) {
+    addToLog('RIP is already enabled');
+    return;
+  }
+  
+  ripEnabled = true;
+  convergenceStartTime = Date.now();
+  updateCount = 0;
+  
+  // Update status
+  document.getElementById('ripStatus').textContent = 'Enabled';
+  document.querySelectorAll('.device-status').forEach(status => {
+    status.className = 'device-status status-up';
+  });
+  
+  addToLog('RIP protocol enabled on all routers');
+  addToLog('Beginning route advertisement and convergence...');
+  
+  // Start periodic updates
+  updateTimer = setInterval(sendRIPUpdates, 3000);
+  
+  // Simulate initial convergence
+  setTimeout(() => {
+    addToLog('Initial RIP convergence completed');
+    updateMetrics();
+  }, 2000);
+}
+
+function disableRIP() {
+  if (!ripEnabled) {
+    addToLog('RIP is already disabled');
+    return;
+  }
+  
+  ripEnabled = false;
+  
+  if (updateTimer) {
+    clearInterval(updateTimer);
+    updateTimer = null;
+  }
+  
+  // Update status
+  document.getElementById('ripStatus').textContent = 'Disabled';
+  document.querySelectorAll('.device-status').forEach(status => {
+    status.className = 'device-status status-warning';
+  });
+  
+  addToLog('RIP protocol disabled on all routers');
+  updateMetrics();
+}
+
+function sendRIPUpdates() {
+  if (!ripEnabled) return;
+  
+  updateCount++;
+  addToLog(`RIP update #${updateCount} sent between routers`);
+  updateMetrics();
+}
+
+function showRIPTable() {
+  refreshRIPTable();
+  addToLog(`Displaying RIP table for ${currentSelectedRouter.replace('Router', 'Router ')}`);
+}
+
+function resetRIP() {
+  disableRIP();
+  updateCount = 0;
+  convergenceStartTime = null;
+  
+  // Reset timers
+  document.getElementById('updateTimer').value = 30;
+  document.getElementById('holddownTimer').value = 180;
+  
+  updateMetrics();
+  refreshRIPTable();
+  addToLog('RIP simulation reset to initial state');
+}
+
+function refreshRIPTable() {
+  const tbody = document.getElementById('ripTableBody');
+  const routes = ripTables[currentSelectedRouter] || [];
+  
+  tbody.innerHTML = routes.map(route => `
+    <tr class="route-rip">
+      <td>${route.network}</td>
+      <td>${route.nextHop}</td>
+      <td><span class="metric-value">${route.metric}</span></td>
+      <td>${route.timer}</td>
+      <td>${route.interface}</td>
+    </tr>
+  `).join('');
+}
+
+function updateMetrics() {
+  const activeRoutes = ripTables[currentSelectedRouter] ? ripTables[currentSelectedRouter].length : 0;
+  document.getElementById('activeRoutes').textContent = activeRoutes;
+  document.getElementById('updateCount').textContent = updateCount;
+  
+  // Calculate convergence time
+  if (ripEnabled && convergenceStartTime) {
+    const convergenceTime = Math.floor((Date.now() - convergenceStartTime) / 1000);
+    document.getElementById('convergenceTime').textContent = convergenceTime + 's';
+  } else {
+    document.getElementById('convergenceTime').textContent = '--';
+  }
+}
+
+function addToLog(message) {
+  const log = document.getElementById('activityLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  
+  const timestamp = new Date().toLocaleTimeString();
+  entry.textContent = `[${timestamp}] ${message}`;
+  
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  
+  // Keep only last 20 entries
+  while (log.children.length > 20) {
+    log.removeChild(log.firstChild);
+  }
+}
+
+// Auto-update timers
+setInterval(() => {
+  if (ripEnabled) {
+    // Decrement timers in RIP table
+    refreshRIPTable();
+  }
+}, 1000);
+</script>
+{% endblock %}

@@ -379,7 +379,7 @@
                         <h3 style="color: #ff6b6b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-chart-pie"></i> Question Difficulty
                         </h3>
-                        <div style="height: 300px; position: relative;">
+                        <div style="height: 300px, position: relative;">
                             <canvas id="questionDifficultyChart"></canvas>
                         </div>
                     </div>
@@ -509,528 +509,892 @@
                 </div>
                 
     <script>
-        // Add audio feedback for better user experience
+        // Audio feedback system
         function playClickSound() {
             const clickSound = document.getElementById('clickSound');
             if (clickSound) {
                 clickSound.currentTime = 0;
                 clickSound.play().catch(error => {
-                    // Handle autoplay restrictions: 
-                    // Modern browsers require user interaction before playing audio
                     console.log('Could not play sound. User interaction may be required first.');
                 });
             }
         }
         
+        // Add click sounds to interactive elements
         try {
-            document.querySelectorAll('a, button').forEach(element => {
+            document.querySelectorAll('button, .btn, a[href]').forEach(element => {
                 element.addEventListener('click', playClickSound);
             });
         } catch (error) {
             console.warn('Error adding click sound to elements:', error);
         }
-        
-        // Initialize and render charts
-        document.addEventListener('DOMContentLoaded', function() {
-            // Score Distribution Chart
-            const scoreCtx = document.getElementById('scoreDistChart').getContext('2d');
-            const scoreDistChart = new Chart(scoreCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
-                    datasets: [{
-                        label: 'Number of Scores',
-                        data: [
-                            {{ score_dist.very_low|default(0) }}, 
-                            {{ score_dist.low|default(0) }}, 
-                            {{ score_dist.medium|default(0) }}, 
-                            {{ score_dist.high|default(0) }}, 
-                            {{ score_dist.very_high|default(0) }}
-                        ],
-                        backgroundColor: 'rgba(0, 195, 181, 0.7)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#fff'
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#fff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: '#fff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // User Activity Chart
-            const userCtx = document.getElementById('userActivityChart').getContext('2d');
-            console.log('Activity Chart');
-            const userActivityChart = new Chart(userCtx, {
-                type: 'line',
-                data: {
-                    labels: {{ activity_dates|tojson }},
-                    datasets: [{
-                        label: 'Active Users',
-                        data: {{ active_users|tojson }},
-                        borderColor: 'rgba(0, 195, 181, 1)',
-                        backgroundColor: 'rgba(0, 195, 181, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#fff'
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#fff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: '#fff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Category Scores Chart
-            const catCtx = document.getElementById('categoryScoresChart').getContext('2d');
-            const categoryScoresChart = new Chart(catCtx, {
-                type: 'radar',
-                data: {
-                    labels: ['Riddle', 'Topology', 'Troubleshooting', 'Cable Crimping'],
-                    datasets: [{
-                        label: 'Average Score',
-                        data: [
-                            {{ category_avg.riddle|default(0) }},
-                            {{ category_avg.topology|default(0) }}, 
-                            {{ category_avg.troubleshoot|default(0) }}, 
-                            {{ category_avg.crimping|default(0) }}
-                        ],
-                        backgroundColor: 'rgba(0, 195, 181, 0.3)',
-                        borderColor: 'rgba(0, 195, 181, 1)',
-                        pointBackgroundColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            angleLines: {
-                                color: 'rgba(255, 255, 255, 0.2)'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.2)'
-                            },
-                            pointLabels: {
-                                color: '#fff'
-                            },
-                            ticks: {
-                                color: '#fff',
-                                backdropColor: 'transparent'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#fff'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Question Difficulty Chart
-            const diffCtx = document.getElementById('questionDifficultyChart').getContext('2d');
-            const questionDifficultyChart = new Chart(diffCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Easy', 'Medium', 'Hard'],
-                    datasets: [{
-                        data: [
-                            {{ question_difficulty.easy|default(0) }}, 
-                            {{ question_difficulty.medium|default(0) }}, 
-                            {{ question_difficulty.hard|default(0) }}
-                        ],
-                        backgroundColor: [
-                            'rgba(0, 200, 100, 0.7)',
-                            'rgba(255, 193, 7, 0.7)',
-                            'rgba(255, 87, 51, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(0, 200, 100, 1)',
-                            'rgba(255, 193, 7, 1)',
-                            'rgba(255, 87, 51, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#fff'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Score filtering functionality
-            // Use a helper function to safely add event listeners
-            function addSafeEventListener(id, event, handler) {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener(event, handler);
-                } else {
-                    console.warn(`Element with ID '${id}' not found`);
-                }
-            }
-            
-            // Safely add event listeners
-            addSafeEventListener('score-filter', 'change', filterScores);
-            addSafeEventListener('score-category', 'change', filterScores);
-            
-            function filterScores() {
-                const scoreFilter = document.getElementById('score-filter');
-                const categoryFilter = document.getElementById('score-category');
-                const scoresTable = document.getElementById('scores-table');
-                
-                // Check if elements exist before proceeding
-                if (!scoreFilter || !categoryFilter || !scoresTable) {
-                    console.warn('One or more required elements not found for filtering scores');
-                    return;
-                }
-                
-                const rows = scoresTable.querySelectorAll('tbody tr');
-                
-                rows.forEach(row => {
-                    const score = parseFloat(row.cells[1].textContent);
-                    const category = row.cells[2].textContent.toLowerCase();
-                    
-                    let showByScore = true;
-                    let showByCategory = true;
-                    
-                    // Score filtering
-                    if (scoreFilter.value === 'high' && score <= 0.8) showByScore = false;
-                    if (scoreFilter.value === 'medium' && (score < 0.5 || score > 0.8)) showByScore = false;
-                    if (scoreFilter.value === 'low' && score >= 0.5) showByScore = false;
-                    
-                    // Category filtering
-                    if (categoryFilter.value !== 'all' && category !== categoryFilter.value) showByCategory = false;
-                    
-                    row.style.display = (showByScore && showByCategory) ? '' : 'none';
+
+        // WebSocket connection monitoring and health checks
+        function performHealthCheck() {
+            if (socketClient && adminSocketConnected) {
+                socketClient.emit('ping', {
+                    timestamp: new Date().toISOString(),
+                    admin_health_check: true
                 });
             }
-        });
-        
-        // Function to update charts based on filters
-        function updateCharts() {
-            const dateRangeElement = document.getElementById('date-range');
-            const categoryElement = document.getElementById('category-filter');
-            
-            // Default values if elements are not found
-            const dateRange = dateRangeElement ? dateRangeElement.value : '7';
-            const category = categoryElement ? categoryElement.value : 'all';
-            
-            console.log(`Updating charts with date range: ${dateRange}, category: ${category}`);
-            
-            // Fetch new data based on filters
-            fetch(`/admin/api/chart-data?date_range=${dateRange}&category=${category}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Update each chart with new data
-                    // This would be implemented in the backend
-                    console.log('Chart data updated with filters:', dateRange, category);
-                })
-                .catch(error => console.error('Error fetching chart data:', error));
         }
 
-        // Admin WebSocket functionality
-        let adminSocketConnected = false;
-        let activityLogMessages = [];
-        let maxActivityMessages = 50;
+        // Perform health check every 2 minutes
+        setInterval(performHealthCheck, 120000);        // Global variables for admin dashboard
+        let socketClient = null;
+        let activityFeed = [];
+        let connectedUsers = new Map();
+        let charts = {};
 
-        // Initialize admin WebSocket functionality when document loads
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeAdminWebSocket();
-        });
-
-        function initializeAdminWebSocket() {
-            const connectBtn = document.getElementById('connect-websocket');
-            const statusIndicator = document.getElementById('admin-socket-status');
-            const broadcastForm = document.getElementById('broadcast-form');
-
-            // Connect button handler
-            connectBtn.addEventListener('click', function() {
-                if (!adminSocketConnected && window.SocketClient) {
-                    window.SocketClient.connect();
-                }
-            });
-
-            // Broadcast form handler
-            broadcastForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                sendBroadcastMessage();
-            });
-
-            // Check if SocketClient is available and set up admin-specific handlers
-            if (window.SocketClient) {
-                setupAdminSocketHandlers();
-                
-                // Try to connect automatically if not connected
-                if (!window.SocketClient.isConnected()) {
-                    window.SocketClient.connect();
-                }
-            } else {
-                console.warn('SocketClient not available for admin dashboard');
+        // Audio feedback functions
+        function playClickSound() {
+            const audio = document.getElementById('clickSound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
             }
         }
 
-        function setupAdminSocketHandlers() {
-            const socket = window.SocketClient.socket;
-            
-            // Override connection status updates for admin interface
-            const originalOnConnect = window.SocketClient.onConnect;
-            window.SocketClient.onConnect = function() {
-                originalOnConnect.call(this);
-                updateAdminConnectionStatus(true);
-                adminSocketConnected = true;
-                requestActiveUsers();
-                logActivity('Admin connected to WebSocket', 'info');
-            };
-
-            const originalOnDisconnect = window.SocketClient.onDisconnect;
-            window.SocketClient.onDisconnect = function() {
-                originalOnDisconnect.call(this);
-                updateAdminConnectionStatus(false);
-                adminSocketConnected = false;
-                logActivity('Admin disconnected from WebSocket', 'warning');
-            };
-
-            // Admin-specific event handlers
-            socket.on('user_connected', function(data) {
-                logActivity(`User ${data.username || data.user_id} connected`, 'info');
-                updateActiveUsers();
-            });
-
-            socket.on('user_disconnected', function(data) {
-                logActivity(`User ${data.username || data.user_id} disconnected`, 'info');
-                updateActiveUsers();
-            });
-
-            socket.on('topology_completed', function(data) {
-                logActivity(`User ${data.username || data.user_id} completed topology: ${data.score}% score`, 'success');
-            });
-
-            socket.on('troubleshoot_step_completed', function(data) {
-                logActivity(`User ${data.username || data.user_id} completed troubleshooting step ${data.step}`, 'success');
-            });
-
-            socket.on('troubleshoot_completed', function(data) {
-                logActivity(`User ${data.username || data.user_id} completed troubleshooting scenario: ${data.score}% score`, 'success');
-            });
-
-            socket.on('active_users_update', function(data) {
-                displayActiveUsers(data.users);
-            });
-
-            socket.on('broadcast_status', function(data) {
-                if (data.success) {
-                    logActivity(`Broadcast sent successfully to ${data.recipients || 'all'} users`, 'success');
-                    document.getElementById('broadcast-form').reset();
-                } else {
-                    logActivity(`Broadcast failed: ${data.error}`, 'error');
-                }
-            });
-        }
-
-        function updateAdminConnectionStatus(connected) {
-            const statusIndicator = document.getElementById('admin-socket-status');
-            const statusDot = statusIndicator.querySelector('.status-dot');
-            const statusText = statusIndicator.querySelector('.status-text');
-            const connectBtn = document.getElementById('connect-websocket');
-
-            if (connected) {
-                statusDot.className = 'status-dot connected';
-                statusText.textContent = 'Connected';
-                connectBtn.textContent = 'Connected';
-                connectBtn.disabled = true;
-                connectBtn.classList.add('btn-success');
-                connectBtn.classList.remove('btn-primary');
-            } else {
-                statusDot.className = 'status-dot disconnected';
-                statusText.textContent = 'Disconnected';
-                connectBtn.textContent = 'Connect to WebSocket';
-                connectBtn.disabled = false;
-                connectBtn.classList.add('btn-primary');
-                connectBtn.classList.remove('btn-success');
+        function playNotificationSound() {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Audio play failed:', e));
             }
-        }
-
-        function sendBroadcastMessage() {
-            if (!adminSocketConnected || !window.SocketClient) {
-                logActivity('Cannot send broadcast: WebSocket not connected', 'error');
-                return;
-            }
-
-            const title = document.getElementById('broadcast-title').value.trim();
-            const message = document.getElementById('broadcast-message').value.trim();
-            const type = document.getElementById('broadcast-type').value;
-
-            if (!title || !message) {
-                logActivity('Cannot send broadcast: Title and message are required', 'error');
-                return;
-            }
-
-            window.SocketClient.socket.emit('admin_broadcast', {
-                title: title,
-                message: message,
-                type: type,
-                timestamp: new Date().toISOString()
-            });
-
-            logActivity(`Sending broadcast: "${title}"`, 'info');
-        }
-
+        }        // Function to request active users from server
         function requestActiveUsers() {
-            if (adminSocketConnected && window.SocketClient) {
-                window.SocketClient.socket.emit('get_active_users');
+            if (socketClient && socketClient.connected) {
+                console.log('📊 Requesting active users...');
+                
+                // First, debug admin status
+                socketClient.emit('debug_admin_status', {});
+                
+                // Then try to get active users
+                socketClient.emit('get_active_users', {});
+                socketClient.emit('admin_get_users', {});
+            } else {
+                console.warn('⚠️ Cannot request users - socket not connected');
+            }
+        }// Initialize WebSocket connection and event handlers
+        function initializeWebSocket() {
+            try {
+                console.log('🔌 Initializing WebSocket connection...');
+                
+                // Use the global socketClient instance from socket-client.js
+                if (typeof window.socketClient === 'undefined') {
+                    console.error('❌ SocketClient not available');
+                    showStatus('SocketClient not available', 'error');
+                    return;
+                }
+
+                // Use the existing global socketClient instance
+                socketClient = window.socketClient;
+
+                // Connect event handlers using the correct API
+                socketClient.on('connected', function() {
+                    console.log('🔗 Admin dashboard connected to WebSocket');
+                    showStatus('Connected to WebSocket server', 'success');
+                    updateConnectionStatus(true);
+                    requestActiveUsers();
+                });
+
+                socketClient.on('user_connected', function(data) {
+                    console.log('👤 User connected:', data);
+                    connectedUsers.set(data.user_id, data);
+                    updateUsersList();
+                    updateConnectionStats(1);
+                    logActivity(`User ${data.username || data.user_id} connected`, 'success');
+                    playNotificationSound();
+                });
+
+                socketClient.on('user_disconnected', function(data) {
+                    console.log('👋 User disconnected:', data);
+                    connectedUsers.delete(data.user_id);
+                    updateUsersList();
+                    updateConnectionStats(-1);
+                    logActivity(`User ${data.username || data.user_id} disconnected`, 'info');
+                });
+
+                socketClient.on('debug_admin_response', function(data) {
+                    console.log('🔍 Debug admin response:', data);
+                    logActivity(`Admin debug: ${JSON.stringify(data)}`, 'info');
+                });
+
+                socketClient.on('active_users', function(data) {
+                    console.log('📊 Active users received:', data);
+                    if (data.users) {
+                        connectedUsers.clear();
+                        data.users.forEach(user => {
+                            connectedUsers.set(user.user_id, user);
+                        });
+                        updateUsersList();
+                    }
+                });
+
+                socketClient.on('quiz_started', function(data) {
+                    console.log('🎯 Quiz started:', data);
+                    logActivity(`Quiz started by ${data.username || data.user_id}: ${data.quiz_type}`, 'info');
+                    updateQuizStats();
+                });
+
+                socketClient.on('quiz_completed', function(data) {
+                    console.log('✅ Quiz completed:', data);
+                    const score = data.score || 0;
+                    const username = data.username || data.user_id;
+                    logActivity(`Quiz completed by ${username} - Score: ${score}%`, score >= 70 ? 'success' : 'warning');
+                    updateQuizStats();
+                    updateScoreCharts();
+                });
+
+                socketClient.on('broadcast_delivered', function(data) {
+                    console.log('📢 Broadcast delivered:', data);
+                    showBroadcastSuccess(data);
+                });
+
+                socketClient.on('broadcast_error', function(data) {
+                    console.log('❌ Broadcast error:', data);
+                    showBroadcastError(data.error || 'Unknown error');
+                });                socketClient.on('system_status', function(data) {
+                    console.log('⚙️ System status:', data);
+                    updateSystemMetrics(data);
+                });
+
+                socketClient.on('socket_error', function(data) {
+                    console.error('❌ Socket error:', data);
+                    logActivity(`WebSocket error: ${data.message || 'Unknown error'}`, 'error');
+                });
+
+                // The socket client will connect automatically when ready
+                showStatus('WebSocket client initialized', 'info');
+                logActivity('WebSocket client initialized and ready', 'info');
+
+            } catch (error) {
+                console.error('❌ Error initializing WebSocket:', error);
+                showStatus('Failed to initialize WebSocket', 'error');
+                logActivity('WebSocket initialization failed', 'error');
             }
         }
 
-        function displayActiveUsers(users) {
-            const usersList = document.getElementById('active-users-list');
+        // Initialize Charts function
+        function initializeCharts() {
+            console.log('📊 Initializing analytics charts...');
             
-            if (!users || users.length === 0) {
-                usersList.innerHTML = '<p>No active users</p>';
+            // Score Distribution Chart
+            const scoreDistCtx = document.getElementById('scoreDistChart');
+            if (scoreDistCtx) {
+                new Chart(scoreDistCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+                        datasets: [{
+                            label: 'Number of Scores',
+                            data: [5, 10, 15, 25, 20],
+                            backgroundColor: [
+                                'rgba(255, 107, 107, 0.7)',
+                                'rgba(255, 165, 0, 0.7)',
+                                'rgba(255, 206, 84, 0.7)',
+                                'rgba(57, 255, 20, 0.7)',
+                                'rgba(0, 217, 255, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 107, 107, 1)',
+                                'rgba(255, 165, 0, 1)',
+                                'rgba(255, 206, 84, 1)',
+                                'rgba(57, 255, 20, 1)',
+                                'rgba(0, 217, 255, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#fff'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#fff'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // User Activity Chart
+            const userActivityCtx = document.getElementById('userActivityChart');
+            if (userActivityCtx) {
+                new Chart(userActivityCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Active Users',
+                            data: [12, 19, 15, 25, 22, 18, 20],
+                            borderColor: 'rgba(57, 255, 20, 1)',
+                            backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#fff'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#fff'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Category Performance Chart (Radar)
+            const categoryScoresCtx = document.getElementById('categoryScoresChart');
+            if (categoryScoresCtx) {
+                new Chart(categoryScoresCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Riddle', 'Topology', 'Troubleshooting', 'Crimping'],
+                        datasets: [{
+                            label: 'Average Performance',
+                            data: [85, 75, 80, 70],
+                            borderColor: 'rgba(139, 92, 246, 1)',
+                            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                            pointBackgroundColor: 'rgba(139, 92, 246, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(139, 92, 246, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                pointLabels: {
+                                    color: '#fff'
+                                },
+                                ticks: {
+                                    color: '#fff',
+                                    backdropColor: 'transparent'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Question Difficulty Chart (Pie)
+            const questionDifficultyCtx = document.getElementById('questionDifficultyChart');
+            if (questionDifficultyCtx) {
+                new Chart(questionDifficultyCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Easy', 'Medium', 'Hard'],
+                        datasets: [{
+                            data: [30, 50, 20],
+                            backgroundColor: [
+                                'rgba(57, 255, 20, 0.7)',
+                                'rgba(255, 206, 84, 0.7)',
+                                'rgba(255, 107, 107, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(57, 255, 20, 1)',
+                                'rgba(255, 206, 84, 1)',
+                                'rgba(255, 107, 107, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#fff',
+                                    padding: 20
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            console.log('✅ Analytics charts initialized successfully');
+        }
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Admin Dashboard Loading...');
+            
+            // Log initial dashboard load
+            setTimeout(() => {
+                logActivity('Admin Dashboard loaded successfully', 'success');
+            }, 2000);
+        });
+
+        // Initialize Chart.js charts for analytics dashboard
+        function initializeCharts() {
+            console.log('📊 Initializing Chart.js charts...');
+            
+            try {
+                // Score Distribution Chart
+                const scoreDistCtx = document.getElementById('scoreDistChart');
+                if (scoreDistCtx) {
+                    new Chart(scoreDistCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+                            datasets: [{
+                                label: 'Score Distribution',
+                                data: [
+                                    {{ score_dist.very_low|default(0) }},
+                                    {{ score_dist.low|default(0) }},
+                                    {{ score_dist.medium|default(0) }},
+                                    {{ score_dist.high|default(0) }},
+                                    {{ score_dist.very_high|default(0) }}
+                                ],
+                                backgroundColor: [
+                                    'rgba(255, 107, 107, 0.8)',
+                                    'rgba(255, 193, 7, 0.8)',
+                                    'rgba(0, 217, 255, 0.8)',
+                                    'rgba(57, 255, 20, 0.8)',
+                                    'rgba(139, 92, 246, 0.8)'
+                                ],
+                                borderColor: [
+                                    '#ff6b6b',
+                                    '#ffc107',
+                                    '#00D9FF',
+                                    '#39FF14',
+                                    '#8B5CF6'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: '#CBD5E1'
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#CBD5E1'
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // User Activity Chart
+                const userActivityCtx = document.getElementById('userActivityChart');
+                if (userActivityCtx) {
+                    new Chart(userActivityCtx, {
+                        type: 'line',
+                        data: {
+                            labels: {{ activity_dates|safe }},
+                            datasets: [{
+                                label: 'Active Users',
+                                data: {{ active_users|safe }},
+                                backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                                borderColor: '#00D9FF',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                fill: true,
+                                pointBackgroundColor: '#00D9FF',
+                                pointBorderColor: '#3B82F6',
+                                pointRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: '#CBD5E1'
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#CBD5E1'
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Category Performance Chart
+                const categoryCtx = document.getElementById('categoryScoresChart');
+                if (categoryCtx) {
+                    new Chart(categoryCtx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['Riddle', 'Topology', 'Troubleshoot', 'Crimping'],
+                            datasets: [{
+                                label: 'Average Score',
+                                data: [
+                                    {{ category_avg.riddle|default(0) }},
+                                    {{ category_avg.topology|default(0) }},
+                                    {{ category_avg.troubleshoot|default(0) }},
+                                    {{ category_avg.crimping|default(0) }}
+                                ],
+                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                borderColor: '#8B5CF6',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#8B5CF6'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                r: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        color: '#CBD5E1'
+                                    },
+                                    grid: {
+                                        color: 'rgba(203, 213, 225, 0.2)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Question Difficulty Chart
+                const difficultyCtx = document.getElementById('questionDifficultyChart');
+                if (difficultyCtx) {
+                    new Chart(difficultyCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Easy', 'Medium', 'Hard'],
+                            datasets: [{
+                                data: [
+                                    {{ question_difficulty.easy|default(30) }},
+                                    {{ question_difficulty.medium|default(50) }},
+                                    {{ question_difficulty.hard|default(20) }}
+                                ],
+                                backgroundColor: [
+                                    'rgba(57, 255, 20, 0.8)',
+                                    'rgba(255, 193, 7, 0.8)',
+                                    'rgba(255, 107, 107, 0.8)'
+                                ],
+                                borderColor: [
+                                    '#39FF14',
+                                    '#ffc107',
+                                    '#ff6b6b'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: '#CBD5E1'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                console.log('✅ Charts initialized successfully');
+                logActivity('Analytics charts loaded and ready', 'success');
+            } catch (error) {
+                console.error('❌ Error initializing charts:', error);
+                logActivity('Failed to initialize analytics charts', 'error');
+            }
+        }
+
+        // Helper functions for UI updates
+        function updateUsersList() {
+            const usersList = document.getElementById('usersList');
+            if (!usersList) return;
+
+            if (connectedUsers.size === 0) {
+                usersList.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400">No users currently connected</td></tr>';
                 return;
             }
 
-            let usersHtml = '<div class="users-grid">';
-            users.forEach(user => {
-                const connectionTime = user.connected_at ? 
-                    new Date(user.connected_at).toLocaleTimeString() : 'Unknown';
-                
-                usersHtml += `
-                    <div class="user-card">
-                        <div class="user-info">
-                            <strong>${user.username || user.user_id}</strong>
-                            <small>Connected: ${connectionTime}</small>
-                        </div>
-                        <div class="user-status">
-                            ${user.current_activity ? `<span class="activity">${user.current_activity}</span>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-            usersHtml += '</div>';
-            
-            usersList.innerHTML = usersHtml;
+            const usersArray = Array.from(connectedUsers.values());
+            usersList.innerHTML = usersArray.map(user => `
+                <tr class="border-b border-gray-700">
+                    <td class="px-4 py-2 text-white">${user.username || user.user_id}</td>
+                    <td class="px-4 py-2 text-green-400">${user.status || 'Active'}</td>
+                    <td class="px-4 py-2 text-blue-400">${user.current_activity || 'Dashboard'}</td>
+                    <td class="px-4 py-2 text-gray-400">${new Date(user.connected_at || Date.now()).toLocaleTimeString()}</td>
+                </tr>
+            `).join('');
         }
 
         function logActivity(message, type = 'info') {
             const timestamp = new Date().toLocaleTimeString();
-            const activityItem = {
-                message: message,
-                type: type,
-                timestamp: timestamp
-            };
-
-            // Add to beginning of array
-            activityLogMessages.unshift(activityItem);
+            const activity = { message, type, timestamp };
             
-            // Keep only last N messages
-            if (activityLogMessages.length > maxActivityMessages) {
-                activityLogMessages = activityLogMessages.slice(0, maxActivityMessages);
+            activityFeed.unshift(activity);
+            if (activityFeed.length > 50) {
+                activityFeed = activityFeed.slice(0, 50);
             }
-
-            updateActivityDisplay();
+            
+            updateActivityFeed();
         }
 
-        function updateActivityDisplay() {
-            const activityLog = document.getElementById('activity-log');
+        function updateActivityFeed() {
+            const feed = document.getElementById('activityFeed');
+            if (!feed) return;
+
+            const typeColors = {
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                info: 'text-blue-400'
+            };
+
+            const typeIcons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            feed.innerHTML = activityFeed.map(activity => `
+                <div class="flex items-start space-x-3 p-3 border-b border-gray-700 last:border-b-0">
+                    <span class="text-lg">${typeIcons[activity.type] || 'ℹ️'}</span>
+                    <div class="flex-1">
+                        <p class="${typeColors[activity.type] || 'text-gray-300'} text-sm">${activity.message}</p>
+                        <p class="text-gray-500 text-xs mt-1">${activity.timestamp}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showStatus(message, type = 'info') {
+            console.log(`📊 Status [${type}]: ${message}`);
+            logActivity(message, type);
+        }
+
+        function updateConnectionStatus(isConnected) {
+            const statusElements = document.querySelectorAll('.connection-status');
+            statusElements.forEach(element => {
+                element.className = `connection-status ${isConnected ? 'text-green-400' : 'text-red-400'}`;
+                element.textContent = isConnected ? 'Connected' : 'Disconnected';
+            });
+
+            const statusText = document.querySelector('.status-text');
+            if (statusText) {
+                statusText.textContent = isConnected ? 'WebSocket Connected' : 'Connection Error';
+            }
+        }
+
+        function initializeBroadcastForm() {
+            const broadcastForm = document.getElementById('broadcastForm');
+            const broadcastBtn = document.getElementById('broadcastBtn');
             
-            if (activityLogMessages.length === 0) {
-                activityLog.innerHTML = '<p>Waiting for activity...</p>';
+            if (broadcastForm) {
+                broadcastForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    sendBroadcast();
+                });
+            }
+
+            if (broadcastBtn) {
+                broadcastBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    sendBroadcast();
+                });
+            }
+        }
+
+        function sendBroadcast() {
+            const messageInput = document.getElementById('broadcastMessage');
+            const prioritySelect = document.getElementById('broadcastPriority');
+            
+            if (!messageInput || !messageInput.value.trim()) {
+                showStatus('Please enter a broadcast message', 'warning');
                 return;
             }
 
-            let activityHtml = '<div class="activity-list">';
-            activityLogMessages.forEach(item => {
-                const iconClass = getActivityIcon(item.type);
-                activityHtml += `
-                    <div class="activity-item ${item.type}">
-                        <span class="activity-icon"><i class="${iconClass}"></i></span>
-                        <span class="activity-message">${item.message}</span>
-                        <span class="activity-time">${item.timestamp}</span>
-                    </div>
-                `;
-            });
-            activityHtml += '</div>';
+            if (!socketClient || !socketClient.isConnected()) {
+                showStatus('Cannot send broadcast - not connected to server', 'error');
+                return;
+            }
+
+            const broadcastData = {
+                message: messageInput.value.trim(),
+                priority: prioritySelect ? prioritySelect.value : 'normal',
+                timestamp: new Date().toISOString(),
+                admin_user: 'Admin'
+            };
+
+            console.log('📢 Sending broadcast:', broadcastData);
+            socketClient.emit('admin_broadcast', broadcastData);
             
-            activityLog.innerHTML = activityHtml;
+            // Clear the form
+            messageInput.value = '';
+            
+            // Show sending status
+            logActivity(`Broadcasting message: "${broadcastData.message}"`, 'info');
+            playClickSound();
         }
 
-        function getActivityIcon(type) {
-            switch(type) {
-                case 'success': return 'bx bx-check-circle';
-                case 'warning': return 'bx bx-warning';
-                case 'error': return 'bx bx-error-circle';
-                case 'info':
-                default: return 'bx bx-info-circle';
+        function initializeKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+B for broadcast
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    document.getElementById('broadcastMessage')?.focus();
+                }
+                
+                // Ctrl+R for refresh users
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    requestActiveUsers();
+                    logActivity('Refreshing user list...', 'info');
+                }
+                
+                // Escape to clear broadcast message
+                if (e.key === 'Escape') {
+                    const messageInput = document.getElementById('broadcastMessage');
+                    if (messageInput && document.activeElement === messageInput) {
+                        messageInput.value = '';
+                        messageInput.blur();
+                    }
+                }
+            });
+        }
+
+        function updateQuizStats() {
+            // This would typically fetch fresh data from the server
+            console.log('📊 Updating quiz statistics...');
+        }
+
+        function updateScoreCharts() {
+            // Update chart data with new scores
+            console.log('📈 Updating score charts...');
+        }
+
+        function updateSystemMetrics(data) {
+            // Update system performance metrics
+            console.log('⚙️ Updating system metrics:', data);
+        }
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Admin Dashboard Loading...');
+            
+            // Initialize all components
+            initializeWebSocket();
+            initializeCharts();
+            initializeBroadcastForm();
+            initializeKeyboardShortcuts();
+            
+            // Log initial dashboard load
+            setTimeout(() => {
+                logActivity('Admin Dashboard loaded successfully', 'success');
+            }, 2000);
+        });
+
+        // Missing helper functions
+        function updateConnectionStats(change) {
+            // Update connection statistics in UI
+            const statElements = document.querySelectorAll('.stat-value');
+            statElements.forEach(element => {
+                if (element.parentElement.querySelector('.stat-label')?.textContent.includes('Network Users')) {
+                    const currentValue = parseInt(element.textContent) || 0;
+                    const newValue = Math.max(0, currentValue + change);
+                    element.textContent = newValue;
+                }
+            });
+        }
+
+        function updateScoreStats(scoreData) {
+            // Update score statistics
+            console.log('📊 Updating score statistics:', scoreData);
+            logActivity(`Score update: ${scoreData.username} - ${scoreData.score}% in ${scoreData.category}`, 'info');
+        }
+
+        function showReconnecting() {
+            // Show reconnecting status
+            const statusText = document.querySelector('#admin-socket-status .status-text');
+            if (statusText) {
+                statusText.textContent = 'Reconnecting...';
             }
         }
 
-        // Auto-refresh active users every 30 seconds
-        setInterval(function() {
-            if (adminSocketConnected) {
-                requestActiveUsers();
+        function showConnectionError() {
+            // Show connection error
+            const statusText = document.querySelector('#admin-socket-status .status-text');
+            if (statusText) {
+                statusText.textContent = 'Connection Error';
             }
-        }, 30000);
+            logActivity('WebSocket connection unavailable', 'error');
+        }
+
+        function showBroadcastSuccess(data) {
+            // Show broadcast success notification
+            logActivity(`✅ Broadcast delivered successfully to ${data.recipients || 'all'} users`, 'success');
+            playNotificationSound();
+        }
+
+        function showBroadcastError(error) {
+            // Show broadcast error notification
+            logActivity(`❌ Broadcast failed: ${error}`, 'error');
+            playNotificationSound();
+        }
+
+        // Helper function to update the active users list in the UI
+        function updateActiveUsersList(users) {
+            const usersList = document.getElementById('active-users-list');
+            if (!usersList) return;
+
+            if (!users || users.length === 0) {
+                usersList.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6);">No active users</p>';
+                return;
+            }
+
+            const usersHtml = users.map(user => `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="width: 8px; height: 8px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 10px var(--neon-green);"></div>
+                    <div>
+                        <div style="font-weight: 500; color: #fff;">${user.username || user.user_id}</div>
+                        <div style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6);">${user.status || 'Active'}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            usersList.innerHTML = usersHtml;
+            logActivity(`Updated users list: ${users.length} active users`, 'info');
+        }
+
+        // Helper function to update connection status indicator
+        function updateConnectionStatus(isConnected) {
+            const statusDot = document.querySelector('#admin-socket-status .status-dot');
+            const statusText = document.querySelector('#admin-socket-status .status-text');
+            
+            if (statusDot && statusText) {
+                if (isConnected) {
+                    statusDot.className = 'status-dot connected';
+                    statusDot.style.background = 'var(--neon-green)';
+                    statusDot.style.boxShadow = '0 0 20px var(--neon-green)';
+                    statusText.textContent = 'Connected';
+                } else {
+                    statusDot.className = 'status-dot disconnected';
+                    statusDot.style.background = '#ff6b6b';
+                    statusDot.style.boxShadow = '0 0 20px #ff6b6b';
+                    statusText.textContent = 'Disconnected';
+                }
+            }
+        }
     </script>
-    <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
-</body>
+
+    <!-- Load SocketClient first -->
+    <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
+    
+    <!-- Audio elements -->
+    <audio id="clickSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Start.mp3') }}" type="audio/mpeg">    </audio>
+    
+    <audio id="notificationSound" preload="auto">
+        <source src="{{ url_for('static', filename='audio/Select.mp3') }}" type="audio/mpeg">
+    </audio>
+    
+            </div>
+        </main>
+    </body>
 {% endblock %}

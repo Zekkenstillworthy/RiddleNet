@@ -6,8 +6,8 @@ from flask_login import login_required, current_user
 
 # Import models
 from __init__ import db  # Use the main app db instance
-from admin.models.user import AdminUser
-from admin.models.score import AdminScore  # Updated to use renamed model
+from user.models.user import User  # Import the regular User model
+from user.models.score import Score  # Import the regular Score model
 from admin.models.question import Question
 from admin.models.essay_response import EssayResponse
 from admin.models.activity_log import ActivityLog
@@ -18,26 +18,25 @@ dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/admin')
 
 @dashboard_bp.route('/')
 @login_required
-def index():
-    # Get basic stats - ensure we're using the correct tables
-    total_users = AdminUser.query.count()
-    total_scores = AdminScore.query.count()
+def index():    # Get basic stats - ensure we're using the correct tables
+    total_users = User.query.count()
+    total_scores = Score.query.count()
     
     # Handle case where questions might be in either question or questions table
     # We'll detect which one has data and use it
     question_count_main = Question.query.count()
     
     # Get recent scores for dashboard table
-    recent_scores = AdminScore.query.order_by(desc(AdminScore.date_attempted)).limit(10).all()
+    recent_scores = Score.query.order_by(desc(Score.date_attempted)).limit(10).all()
     
     # Score distribution data for chart - adjusted based on actual score data
     # Your score data has scores like 1.5, 2, 0.75, 2.5 which seem to be out of 3
     score_dist = {
-        'very_low': AdminScore.query.filter(AdminScore.score < 0.6).count(),  # Less than 20%
-        'low': AdminScore.query.filter(and_(AdminScore.score >= 0.6, AdminScore.score < 1.2)).count(),  # 20-40%
-        'medium': AdminScore.query.filter(and_(AdminScore.score >= 1.2, AdminScore.score < 1.8)).count(),  # 40-60%
-        'high': AdminScore.query.filter(and_(AdminScore.score >= 1.8, AdminScore.score < 2.4)).count(),  # 60-80%
-        'very_high': AdminScore.query.filter(AdminScore.score >= 2.4).count()  # 80%+
+        'very_low': Score.query.filter(Score.score < 0.6).count(),  # Less than 20%
+        'low': Score.query.filter(and_(Score.score >= 0.6, Score.score < 1.2)).count(),  # 20-40%
+        'medium': Score.query.filter(and_(Score.score >= 1.2, Score.score < 1.8)).count(),  # 40-60%
+        'high': Score.query.filter(and_(Score.score >= 1.8, Score.score < 2.4)).count(),  # 60-80%
+        'very_high': Score.query.filter(Score.score >= 2.4).count()  # 80%+
     }
     
     # User activity data - last 7 days
@@ -48,9 +47,9 @@ def index():
     active_users = []
     for date_str in activity_dates:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-        count = AdminScore.query.filter(
-            func.date(AdminScore.date_attempted) == date_obj
-        ).with_entities(AdminScore.user_id).distinct().count()
+        count = Score.query.filter(
+            func.date(Score.date_attempted) == date_obj
+        ).with_entities(Score.user_id).distinct().count()
         active_users.append(count)
     
     # Average scores by category
@@ -59,7 +58,7 @@ def index():
     
     for cat in categories:
         # Calculate average as percentage of 3 (max score based on your data)
-        avg = AdminScore.query.filter(AdminScore.category == cat).with_entities(func.avg(AdminScore.score)).scalar() or 0
+        avg = Score.query.filter(Score.category == cat).with_entities(func.avg(Score.score)).scalar() or 0
         category_avg[cat] = round(float(avg) * 100 / 3, 1)  # Convert to percentage based on max score of 3
     
     # Question difficulty distribution

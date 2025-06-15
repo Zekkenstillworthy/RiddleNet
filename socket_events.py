@@ -1,7 +1,8 @@
-from socket_manager import socketio, authenticated_only
+from socket_manager import socketio, authenticated_only, admin_only
 from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
 from __init__ import db
+import datetime
 import datetime
 import json
 
@@ -153,38 +154,83 @@ def handle_essay_submission(data):
 
 # Admin specific events
 @socketio.on('admin_broadcast')
-@authenticated_only
+@admin_only
 def handle_admin_broadcast(data):
     """Allow admins to broadcast messages to all users"""
-    # Check for admin role
-    is_admin = hasattr(current_user, 'is_admin') and current_user.is_admin
-    
-    if not is_admin:
-        emit('error', {'message': 'Unauthorized'})
-        return
-    
+    title = data.get('title', 'Admin Message')
     message = data.get('message')
-    target = data.get('target', 'all')  # 'all', 'user_{id}', 'topology_{id}', etc.
+    msg_type = data.get('type', 'info')
+    target = data.get('target', 'all_users')
     
     if not message:
+        emit('broadcast_status', {'success': False, 'error': 'Message content required'})
         return
     
-    emit('admin_message', {
+    # Prepare broadcast data
+    broadcast_data = {
+        'title': title,
         'message': message,
+        'type': msg_type,
         'admin_id': current_user.id,
-        'admin_name': current_user.username,
+        'admin_name': getattr(current_user, 'username', 'Admin'),
         'timestamp': datetime.datetime.utcnow().isoformat()
-    }, room=target)
+    }
+    
+    # Determine target room and send broadcast
+    recipients_count = 0
+    try:
+        from socket_manager import user_connections
+        
+        if target == 'all_users':
+            emit('admin_message', broadcast_data, room='all_users')
+            recipients_count = len(user_connections)
+        elif target.startswith('user_'):
+            emit('admin_message', broadcast_data, room=target)
+            recipients_count = 1
+        elif target.startswith('topology_'):
+            emit('admin_message', broadcast_data, room=target)
+            recipients_count = len([conn for conn in user_connections.values() 
+                                  if conn.get('current_activity', '').startswith('topology')])
+        elif target.startswith('troubleshooting_'):
+            emit('admin_message', broadcast_data, room=target)
+            recipients_count = len([conn for conn in user_connections.values() 
+                                  if conn.get('current_activity', '').startswith('troubleshooting')])
+        else:
+            emit('admin_message', broadcast_data, room='all_users')
+            recipients_count = len(user_connections)
+        
+        # Send success confirmation to admin
+        emit('broadcast_status', {
+            'success': True,
+            'recipients': recipients_count,
+            'target': target,
+            'message': f'Broadcast sent to {recipients_count} users'
+        })
+        
+        print(f"Admin {current_user.username} broadcast '{title}' to {recipients_count} users")
+        
+    except Exception as e:
+        print(f"Error in admin broadcast: {str(e)}")
+        emit('broadcast_status', {'success': False, 'error': str(e)})
 
 @socketio.on('get_active_users')
-@authenticated_only
-def handle_get_active_users():
+@admin_only
+def handle_get_active_users(data=None):
     """Get list of currently active users - admin only"""
-    if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
+    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
+    is_admin = False
+    
+    # Check if it's an Admin model instance (from 'admins' table)
+    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
+        is_admin = True
+    # Check if it's an AdminUser with is_admin=True (from 'user' table)
+    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
+        is_admin = True
+    
+    if not is_admin:
         emit('error', {'message': 'Unauthorized: Admin access required'})
         return
-    
-    # Get active users from socket manager
+      # Get active users from socket manager
     active_users = []
     try:
         from socket_manager import get_active_users_list
@@ -202,13 +248,28 @@ def handle_get_active_users():
     
     emit('active_users_update', {'users': active_users})
 
+@socketio.on('admin_get_users')
+@admin_only
+def handle_admin_get_users(data=None):
+    """Alternative endpoint for getting users - admin only"""
+    handle_get_active_users(data)
+
 # Real-time notifications
 @socketio.on('send_notification')
-@authenticated_only
+@admin_only
 def handle_send_notification(data):
     """Send real-time notifications to users"""
-    # Check if user is admin
-    if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
+    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
+    is_admin = False
+    
+    # Check if it's an Admin model instance (from 'admins' table)
+    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
+        is_admin = True
+    # Check if it's an AdminUser with is_admin=True (from 'user' table)
+    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
+        is_admin = True
+    
+    if not is_admin:
         emit('error', {'message': 'Unauthorized: Admin access required'})
         return
     
@@ -230,6 +291,42 @@ def handle_send_notification(data):
         emit('notification', notification_data, room=f'user_{target_user}')
     else:
         emit('notification', notification_data, room='all_users')
+
+# Debug WebSocket event handler
+@socketio.on('debug_admin_status')
+@authenticated_only
+def handle_debug_admin_status(data=None):
+    """Debug endpoint to check admin status"""
+    try:
+        user_info = {
+            'user_id': current_user.id,
+            'username': getattr(current_user, 'username', 'Unknown'),
+            'user_type': str(type(current_user)),
+            'is_authenticated': current_user.is_authenticated,
+            'has_is_admin': hasattr(current_user, 'is_admin'),
+            'is_admin_value': getattr(current_user, 'is_admin', None),
+            'has_role': hasattr(current_user, 'role'),
+            'role_value': getattr(current_user, 'role', None),
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }
+        
+        # Check if user exists in admin table
+        try:
+            from admin.models.user import Admin
+            admin_user = Admin.query.filter_by(username=current_user.username).first()
+            user_info['exists_in_admin_table'] = admin_user is not None
+            if admin_user:
+                user_info['admin_table_id'] = admin_user.id
+                user_info['admin_table_role'] = getattr(admin_user, 'role', 'admin')
+        except Exception as e:
+            user_info['admin_table_error'] = str(e)
+        
+        print(f"🔍 Debug admin status for {user_info['username']}: {user_info}")
+        emit('debug_admin_response', user_info)
+        
+    except Exception as e:
+        print(f"❌ Error in debug_admin_status: {str(e)}")
+        emit('debug_admin_response', {'error': str(e)})
 
 # Error handling
 @socketio.on_error_default

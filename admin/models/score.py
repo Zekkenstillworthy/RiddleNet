@@ -5,15 +5,14 @@ from sqlalchemy.orm import relationship
 
 class AdminScore(db.Model):
     """
-    Score model for the admin section
+    Score model for the admin section - references admin_users table
     """
-    __tablename__ = 'score'
-    __table_args__ = {'extend_existing': True}
+    __tablename__ = 'admin_scores'
     
     id = Column(Integer, primary_key=True)
     score = Column(Float, nullable=False)  # Changed to float based on your data
     date_attempted = Column(DateTime, default=datetime.utcnow)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('admin_users.id'), nullable=False)
     category = Column(String(50), nullable=True, default='riddle')
     
     # Define user relationship explicitly with a string
