@@ -55,14 +55,22 @@
   }
   
   .profile-card {
-    background: rgba(18, 18, 36, 0.8);
+    background: linear-gradient(145deg, rgba(18, 18, 36, 0.95), rgba(25, 25, 50, 0.9));
     border: 1px solid var(--cyber-glow);
-    border-radius: 16px;
-    box-shadow: 0 0 30px rgba(0, 217, 255, 0.25);
+    border-radius: 20px;
+    box-shadow: 
+      0 0 40px rgba(0, 217, 255, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     overflow: hidden;
-    backdrop-filter: blur(12px);
-    padding: 32px;
+    backdrop-filter: blur(15px);
+    padding: 40px;
     position: relative;
+    animation: profileCardGlow 3s ease-in-out infinite alternate;
+  }
+  
+  @keyframes profileCardGlow {
+    0% { box-shadow: 0 0 40px rgba(0, 217, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    100% { box-shadow: 0 0 60px rgba(0, 217, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
   }
   
   .profile-card:before {
@@ -71,9 +79,18 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: var(--gradient-primary);
+    height: 4px;
+    background: linear-gradient(90deg, 
+      var(--cyber-glow), 
+      #00ff88, 
+      var(--cyber-glow));
     z-index: 1;
+    animation: profileBorderShimmer 2s linear infinite;
+  }
+  
+  @keyframes profileBorderShimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
   
   .profile-content {
@@ -306,21 +323,25 @@
   
   .form-input {
     width: 100%;
-    padding: 14px 16px;
+    padding: 16px 20px;
     font-size: 1rem;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(0, 217, 255, 0.25);
-    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.3), rgba(20, 20, 40, 0.4));
+    border: 2px solid rgba(0, 217, 255, 0.3);
+    border-radius: 12px;
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
     font-family: inherit;
+    position: relative;
   }
   
   .form-input:focus {
     outline: none;
     border-color: var(--cyber-glow);
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.25);
-    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 
+      0 0 25px rgba(0, 217, 255, 0.4),
+      inset 0 2px 10px rgba(0, 217, 255, 0.1);
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.4), rgba(20, 20, 40, 0.5));
+    transform: translateY(-2px);
   }
   
   .form-input::placeholder {
@@ -375,16 +396,18 @@
   }
   
   .update-btn {
-    background: var(--cyber-glow);
+    background: linear-gradient(135deg, var(--cyber-glow), #00b8d4);
     color: #111;
     flex: 2;
     position: relative;
     z-index: 1;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
   }
   
   .update-btn:hover {
-    box-shadow: 0 0 20px var(--cyber-glow);
-    transform: translateY(-2px);
+    background: linear-gradient(135deg, #00b8d4, var(--cyber-glow));
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+    transform: translateY(-3px);
   }
   
   .update-btn:active {
@@ -481,69 +504,73 @@
     letter-spacing: 0.5px;
   }
 
-  /* Profile image styles */
-  .profile-image-wrapper {
+  /* Enhanced Profile image styles */
+  .profile-image-container {
     position: relative;
+    text-align: center;
+    margin: 0 auto 32px;
     display: inline-block;
-    margin: 0 auto 24px;
-    padding: 6px;
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(139, 92, 246, 0.2));
-    border-radius: 50%;
   }
 
   .profile-image {
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    border: 3px solid transparent;
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-    background-image: 
-      linear-gradient(rgba(18, 18, 36, 1), rgba(18, 18, 36, 1)), 
-      var(--gradient-primary);
-    box-shadow: 0 0 25px rgba(0, 217, 255, 0.4);
-    object-fit: cover;
     transition: all 0.3s ease;
+    box-shadow: 0 0 25px rgba(0, 217, 255, 0.4);
   }
 
-  .image-upload-overlay {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: all 0.3s ease;
+  .profile-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 35px rgba(0, 217, 255, 0.6);
+    border-color: var(--neon-green) !important;
+  }
+
+  .profile-image.loading {
+    opacity: 0.6;
+    filter: blur(2px);
+  }
+
+  .profile-image.updated {
+    animation: profilePulse 0.6s ease-in-out;
+    border-color: #00ff88 !important;
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.8) !important;
+  }
+
+  @keyframes profilePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .upload-button-container {
+    margin-top: 20px;
+  }
+
+  .upload-btn {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--cyber-glow), #00b8d4);
+    color: #000;
+    border: none;
+    border-radius: 25px;
     cursor: pointer;
-  }
-  
-  .image-upload-overlay i {
-    font-size: 2rem;
-    color: var(--cyber-glow);
-    margin-bottom: 8px;
-  }
-  
-  .image-upload-overlay::after {
-    content: 'Change Photo';
-    color: var(--text-primary);
-    font-size: 0.85rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
   }
 
-  .profile-image-wrapper:hover .image-upload-overlay {
-    opacity: 1;
+  .upload-btn:hover {
+    background: linear-gradient(135deg, #00b8d4, var(--cyber-glow));
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5);
+    transform: translateY(-2px);
   }
 
-  .profile-image-wrapper:hover .profile-image {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+  .upload-btn:active {
+    transform: translateY(1px);
+  }
+
+  .upload-btn i {
+    margin-right: 8px;
   }
 
   /* Profile user info */
@@ -738,22 +765,38 @@
         <div class="profile-content">
           <!-- Left side - Profile Image -->
           <div class="profile-image-section">
-            <div class="profile-image-wrapper">
-              <label for="profile_img" class="profile-image-label">
-                <img id="profile-img-preview" 
-                    src="{{ url_for('static', filename='img/' + user.profile_img) if user.profile_img else url_for('static', filename='img/Logo.png') }}" 
-                    alt="Profile Image" 
-                    class="profile-image">
-                <div class="image-upload-overlay">
-                  <i class="fas fa-camera"></i>
-                </div>
-              </label>
+            <div class="profile-image-container">
+              {% if user.profile_img %}
+              <img id="profile-img-preview" 
+                   src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}" 
+                   alt="Profile Image" 
+                   style="height: 200px; width: 200px; border-radius: 50%; border: 4px solid var(--cyber-glow); background-color: #fff; object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
+                   class="profile-image"
+                   onclick="document.getElementById('profile_img').click()">
+              {% else %}
+              <img id="profile-img-preview"
+                   style="height: 200px; width: 200px; border-radius: 50%; border: 4px solid var(--cyber-glow); object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
+                   draggable="false"
+                   src="{{ url_for('static', filename='img/Logo.png') }}"
+                   alt="Profile Image"
+                   class="profile-image"
+                   onclick="document.getElementById('profile_img').click()">
+              {% endif %}
+              
               <input type="file" id="profile_img" name="profile_img" accept="image/*" onchange="previewImage(event)" style="display: none;">
+              
+              <div class="upload-button-container">
+                <button type="button" 
+                        onclick="document.getElementById('profile_img').click()" 
+                        class="upload-btn">
+                    <i class="fas fa-camera"></i> Change Photo
+                </button>
+              </div>
             </div>
             
             <div class="profile-user-info">
               <h2>{{ user.username }}</h2>
-              <p>{{ user.email }}</p>
+              <p>{{ user.email if user.email else 'No email provided' }}</p>
             </div>
           </div>
           
@@ -823,9 +866,7 @@
                 <span><i class="fas fa-save"></i> Update Profile</span>
               </button>
               
-              <button type="button" class="cyber-btn join-class-btn">
-                <span>Join Class</span>
-              </button>
+              
             </div>
           </div>
         </div>
@@ -836,41 +877,181 @@
 
 <script>
 function previewImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('profile-img-preview');
+    
+    if (!file) {
+        return;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid image file (PNG, JPG, JPEG, or GIF)');
+        event.target.value = '';
+        return;
+    }
+    
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert('File size must be less than 5MB');
+        event.target.value = '';
+        return;
+    }
+    
+    // Add loading state
+    preview.classList.add('loading');
+    
+    // Create FileReader to read the selected image
     const reader = new FileReader();
-    reader.onload = function(){
-        const output = document.getElementById('profile-img-preview');
-        output.src = reader.result;
+    reader.onload = function(e) {
+        // Update preview image with selected file (base64 URL)
+        preview.src = e.target.result;
+        
+        // Update styling to match reference
+        preview.style.height = '200px';
+        preview.style.width = '200px';
+        preview.style.borderRadius = '50%';
+        preview.style.border = '4px solid var(--cyber-glow)';
+        preview.style.backgroundColor = '#fff';
+        preview.style.objectFit = 'cover';
+        preview.style.cursor = 'pointer';
+        preview.style.transition = 'all 0.3s ease';
+        
+        // Remove loading and add updated animation
+        preview.classList.remove('loading');
+        preview.classList.add('updated');
+        
+        // Show success notification
+        showImagePreviewNotification('📷 Image Selected!', 'Your new profile image is ready to save.');
+        
+        // Remove animation class after it completes
+        setTimeout(() => {
+            preview.classList.remove('updated');
+        }, 600);
     };
-    reader.readAsDataURL(event.target.files[0]);
+    
+    reader.onerror = function() {
+        alert('Error reading file. Please try again.');
+        event.target.value = '';
+        preview.classList.remove('loading');
+    };
+    
+    // Read the file as data URL (base64)
+    reader.readAsDataURL(file);
+}
+
+// Enhanced notification function for image preview
+function showImagePreviewNotification(title, message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, var(--cyber-glow), #00b8d4);
+        color: #000;
+        padding: 15px 25px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.4s ease;
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    `;
+    notification.innerHTML = `<strong>${title}</strong><br><small>${message}</small>`;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 400);
+    }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Add fade-in animation for profile elements
+    // Enhanced fade-in animation for profile elements
     const profileCard = document.querySelector('.profile-card');
     if (profileCard) {
         profileCard.style.opacity = '0';
-        profileCard.style.transform = 'translateY(20px)';
+        profileCard.style.transform = 'translateY(30px) scale(0.95)';
         
         setTimeout(() => {
-            profileCard.style.transition = 'all 0.6s ease';
+            profileCard.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
             profileCard.style.opacity = '1';
-            profileCard.style.transform = 'translateY(0)';
-        }, 100);
+            profileCard.style.transform = 'translateY(0) scale(1)';
+        }, 150);
     }
 
-    // Add interactive effects to form inputs
+    // Enhanced interactive effects for form inputs
     const inputs = document.querySelectorAll('.form-input');
     inputs.forEach(input => {
+        // Create floating label effect
+        const formGroup = input.parentElement;
+        
         input.addEventListener('focus', function() {
             this.parentElement.style.transform = 'scale(1.02)';
-            this.style.boxShadow = '0 0 15px rgba(0, 217, 255, 0.4)';
+            this.style.boxShadow = '0 0 20px rgba(0, 217, 255, 0.5)';
+            
+            // Add glow effect to label
+            const label = formGroup.querySelector('.form-label');
+            if (label) {
+                label.style.color = 'var(--cyber-glow)';
+                label.style.textShadow = '0 0 10px var(--cyber-glow)';
+            }
         });
         
         input.addEventListener('blur', function() {
             this.parentElement.style.transform = 'scale(1)';
             this.style.boxShadow = 'none';
+            
+            // Remove glow effect from label
+            const label = formGroup.querySelector('.form-label');
+            if (label) {
+                label.style.color = 'var(--text-primary)';
+                label.style.textShadow = 'none';
+            }
+        });
+        
+        // Add typing effect
+        input.addEventListener('input', function() {
+            this.style.borderColor = 'var(--cyber-glow)';
+            setTimeout(() => {
+                if (!this.matches(':focus')) {
+                    this.style.borderColor = 'rgba(0, 217, 255, 0.3)';
+                }
+            }, 500);
         });
     });
+    
+    // Enhanced profile image hover effects
+    const profileImage = document.getElementById('profile-img-preview');
+    if (profileImage) {
+        profileImage.addEventListener('mouseenter', function() {
+            this.style.filter = 'brightness(1.1) contrast(1.1)';
+            this.style.boxShadow = '0 0 40px rgba(0, 217, 255, 0.7)';
+        });
+        
+        profileImage.addEventListener('mouseleave', function() {
+            this.style.filter = 'brightness(1) contrast(1)';
+            this.style.boxShadow = '0 0 25px rgba(0, 217, 255, 0.4)';
+        });
+    }
     
     // Password validation
     const newPassword = document.getElementById('password');

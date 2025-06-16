@@ -373,20 +373,102 @@ def update_profile():
         return render_template('user/index.html', message='You need to log in first!')
 
     user = UserModel.query.get(session['user_id'])
-    username = request.form['username']
-    password = request.form['password']
+    if not user:
+        flash('User not found', 'error')
+        return redirect(url_for('user.index'))
+
+    # Get form data
+    username = request.form.get('username', '').strip()
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
     profile_img = request.files.get('profile_img')
 
-    user.username = username
-    if password:
-        user.set_password(password)
-    if profile_img and profile_img.filename:
-        img_filename = secure_filename(profile_img.filename)
-        profile_img.save(os.path.join('static/img', img_filename))
-        user.profile_img = f'img/{img_filename}'
+    try:
+        # Validate username
+        if not username:
+            flash('Username is required', 'error')
+            return redirect(url_for('user.profile'))
 
-    db.session.commit()
-    return redirect(url_for('user.dashboard'))
+        # Check if username is already taken by another user
+        existing_user = UserModel.query.filter(UserModel.username == username, UserModel.id != user.id).first()
+        if existing_user:
+            flash('Username is already taken', 'error')
+            return redirect(url_for('user.profile'))
+
+        # Handle password update
+        if new_password:
+            # Validate current password if changing password
+            if not current_password:
+                flash('Current password is required to change password', 'error')
+                return redirect(url_for('user.profile'))
+            
+            if not user.check_password(current_password):
+                flash('Current password is incorrect', 'error')
+                return redirect(url_for('user.profile'))
+            
+            # Check if new passwords match
+            if new_password != confirm_password:
+                flash('New passwords do not match', 'error')
+                return redirect(url_for('user.profile'))
+            
+            # Validate password strength (optional)
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters long', 'error')
+                return redirect(url_for('user.profile'))
+            
+            user.set_password(new_password)
+
+        # Handle profile image upload
+        if profile_img and profile_img.filename:
+            # Validate file type
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+            file_extension = profile_img.filename.rsplit('.', 1)[1].lower() if '.' in profile_img.filename else ''
+            
+            if file_extension not in allowed_extensions:
+                flash('Invalid file type. Please upload PNG, JPG, JPEG, or GIF files only.', 'error')
+                return redirect(url_for('user.profile'))
+              # Create filename with user ID to avoid conflicts
+            img_filename = f"user_{user.id}_{secure_filename(profile_img.filename)}"
+            
+            # Ensure the static/img/profiles directory exists
+            profiles_dir = os.path.join('static', 'img', 'profiles')
+            if not os.path.exists(profiles_dir):
+                os.makedirs(profiles_dir)
+            
+            # Save the file
+            img_path = os.path.join(profiles_dir, img_filename)
+            profile_img.save(img_path)
+            
+            # Update user profile image (store just the filename, not the full path)
+            user.profile_img = img_filename
+
+        # Update username
+        user.username = username
+
+        # Commit changes
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        
+        # Send WebSocket notification if available
+        try:
+            socketio = get_socketio()
+            if socketio:
+                socketio.emit('profile_updated', {
+                    'user_id': user.id,
+                    'username': user.username,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                }, room=f'user_{user.id}')
+        except Exception as e:
+            print(f"WebSocket notification failed: {e}")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while updating your profile: {str(e)}', 'error')
+        print(f"Profile update error: {e}")
+        traceback.print_exc()
+
+    return redirect(url_for('user.profile'))
 
 @user_bp.route('/delete_score/<int:score_id>', methods=['POST'])
 def delete_score(score_id):
@@ -409,13 +491,67 @@ def troubleshoot():
     return render_template('user/troubleshoot.html', title="troubleshoot", user=user)
 
 @user_bp.route('/crimp')
-def crimp():
-    # Pass user context if available
-    user = None
-    if 'user_id' in session:
-        user = UserModel.query.get(session['user_id'])
-    
-    return render_template('user/crimping-simulation.html', title="crimp", user=user)
+@user_bp.route('/crimping-simulation')
+@user_login_required
+def crimping_simulation():
+    """UTP Cable Crimping Simulation - Interactive learning tool for cable crimping"""
+    user = UserModel.query.get(session['user_id'])
+    return render_template('user/crimping-simulation.html', 
+                         title="UTP Cable Crimping Simulation", 
+                         user=user)
+
+@user_bp.route('/save_crimping_score', methods=['POST'])
+@user_login_required
+def save_crimping_score():
+    """Save crimping simulation score"""
+    try:
+        data = request.get_json()
+        user_id = session['user_id']
+        
+        score = data.get('score', 0)
+        wiring_type = data.get('wiring_type', 'unknown')
+        completion_time = data.get('completion_time', 0)
+        
+        # Create a new score entry
+        new_score = UserScore(
+            user_id=user_id,
+            score=score,
+            category=f'Crimping - {wiring_type}',
+            lesson_name=f'Cable Crimping ({wiring_type})',
+            completion_time=completion_time
+        )
+        
+        db.session.add(new_score)
+        db.session.commit()
+        
+        # Send WebSocket notification if available
+        try:
+            socketio = get_socketio()
+            if socketio:
+                user = UserModel.query.get(user_id)
+                socketio.emit('crimping_score_saved', {
+                    'user_id': user_id,
+                    'username': user.username if user else 'Unknown',
+                    'score': score,
+                    'wiring_type': wiring_type,
+                    'timestamp': datetime.datetime.utcnow().isoformat()
+                }, room=f'user_{user_id}')
+        except Exception as e:
+            print(f"WebSocket notification failed: {e}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Crimping score saved successfully!',
+            'score': score
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving crimping score: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to save score'
+        }), 500
 
 @user_bp.route('/logout')
 def logout():
@@ -1895,7 +2031,7 @@ def networking2_rip_simulation():
 @user_login_required
 def networking2_eigrp_simulation():
     """Module 4: Enhanced Interior Gateway Routing Protocol (EIGRP) Simulation"""
-    return render_template('user/networking2-eigrp-simulation.html')
+    return render_template('user/networking2-eigrp_simulation.html')
 
 @user_bp.route('/networking2-ospf-simulation')
 @user_login_required

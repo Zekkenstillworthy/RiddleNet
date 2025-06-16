@@ -6,437 +6,1166 @@
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: "Poppins", sans-serif;
-    /* Change font-family to Poppins */
+<style> 
+    html {
+    overflow: hidden;
+    max-width: 100vw;
+    max-height: 100vh;
   }
-
+  
   body {
-    overflow-x: hidden;
+    overflow: hidden;
+    max-width: 100vw;
+    max-height: 100vh;
     position: relative;
-  }
-    .video-background {
-    display: none;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    font-family: "Inter", "Poppins", sans-serif;
   }
 
-  .container {
-    width: 1000px; /* Increased width to fit all content */
-    height: 700px; /* Auto height to adjust to content */
-    background: #00C3B5;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(120, 75, 162, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(102, 126, 234, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .video-background {
+    display: none;
+  }  .container {
+    width: calc(100vw - 20px);
+    max-width: 100%;
+    height: 95vh;
+    max-height: 95vh;
+    background: rgba(15, 15, 35, 0.9);
+    backdrop-filter: blur(20px);
+    padding: 8px;
+    border-radius: 0;
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(0, 212, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     text-align: center;
-    border: 2px solid #fff;
-    margin: 20px auto; /* Center horizontally with top/bottom margin */
-    position: relative; /* Establish positioning context */
-    max-width: 95%; /* Ensure responsiveness */
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    margin: 10px auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
   }
 
-  .modal {
-    display: none;
+  .container::before {
+    content: '';
     position: absolute;
-    background-color: #00C3B5;
-    border: 2px solid #fff;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #00d4ff, #090979);
+    border-radius: 24px 24px 0 0;
+  }  .modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     justify-content: center;
     align-items: center;
     z-index: 2000;
-    color: #fff;
+    color: #2d3748;
     padding: 20px;
-    border-radius: 10px;
-    max-width: 400px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    max-width: 90vw;
+    width: 400px;
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 
   .modal-content {
     position: relative;
     padding: 20px;
-    border-radius: 10px;
-    background-color: #00C3B5;
-    border: 2px solid #fff;
+    border-radius: 16px;
+    background: transparent;
     text-align: center;
     max-height: 80vh;
+    overflow-y: auto;
   }
 
   @keyframes float {
     0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
     100% { transform: translateY(0px); }
   }
 
-  .modal-content h2 {
-    font-size: 24px;
-    color: #fff;
-    margin-bottom: 15px;
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
-
-  .modal-content::after {
-    content: '';
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-    border-top: 20px solid #00C3B5;
+  .modal-content h2 {
+    font-size: 33px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
   }
 
   .close-modal button {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
     color: white;
     border: none;
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 5px;
+    padding: 12px 24px;
+    margin-top: 20px;
+    border-radius: 12px;
     cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(238, 90, 36, 0.3);
   }
 
+  .close-modal button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(238, 90, 36, 0.4);
+  }
   .highlight {
-    border: 3px solid #FFD700;
-    box-shadow: 0 0 35px #FFD700;
+    border: 3px solid #ffd700;
+    box-shadow: 
+      0 0 30px rgba(255, 215, 0, 0.6),
+      inset 0 0 20px rgba(255, 215, 0, 0.1);
     z-index: 1001;
     position: relative;
+    animation: pulse 2s infinite;
   }
 
   @keyframes pulse {
-    0% { box-shadow: 0 0 15px #FFD700; }
-    50% { box-shadow: 0 0 30px #FFD700; }
-    100% { box-shadow: 0 0 15px #FFD700; }
+    0% { 
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+      transform: scale(1);
+    }
+    50% { 
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+      transform: scale(1.02);
+    }
+    100% { 
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+      transform: scale(1);
+    }
   }
 
   .tutorial-buttons {
-    margin-top: 20px;
+    margin-top: 30px;
     text-align: center;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
   }
 
   .tutorial-buttons button {
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin: 5px;
-    border-radius: 5px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
     cursor: pointer;
-    background-color: #00C3B5;
-    font-size: 16px;
-    border: 2px solid #fff;
+    font-size: 21px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
+    height: 50px;
   }
 
   .tutorial-buttons button:disabled {
-    background-color: #555;
+    background: linear-gradient(135deg, #a0aec0, #718096);
     cursor: not-allowed;
+    opacity: 0.5;
+    box-shadow: none;
   }
 
   .tutorial-buttons button:hover:not(:disabled) {
-    background-color: #fff;
-    color: #00C3B5;
-  }
-
-  #nextStep, #prevStep {
-    color: #fff;
-  }
-
-  #nextStep:hover, #prevStep:hover {
-    background: #fff;
-    color: #09001d;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
   }
 
   .profile-exit-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 50px; /* Changed from 25px to 50px */
-    width: 50px; /* Changed from 25px to 50px */
+    height: 44px;
+    width: 44px;
     position: absolute;
-    top: 5px; /* Adjusted from 1px for better positioning */
-    right: 5px; /* Adjusted from 1px for better positioning */
-    background-color: #f00;
-    border: 2px solid #fff;
-    font-size: 24px; /* Increased for better proportions */
+    top: 16px;
+    right: 16px;    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border: none;
+    font-size: 25px;
     color: #fff;
     cursor: pointer;
     padding: 0;
-    line-height: 1; /* Adjusted for better vertical alignment */
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    border-radius: 2%;
+    line-height: 1;
+    transition: all 0.3s ease;
+    border-radius: 12px;
     z-index: 10;
+    box-shadow: 0 4px 12px rgba(238, 90, 36, 0.3);
   }
 
-  .profile-exit-btn i {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
+  .profile-exit-btn:hover {
+    transform: translateY(-2px) rotate(90deg);
+    box-shadow: 0 8px 20px rgba(238, 90, 36, 0.4);
   }
-
   #tutorialStep {
-    padding: 5px 0;
+    padding: 20px 0;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 12px;
+    margin: 20px 0;
   }
-
   #tutorialStep p {
-    font-size: 18px;
-    line-height: 1.6;
+    font-size: 21px;    line-height: 1.7;
     margin: 0;
-    color: #fff;
-    text-shadow: none;
+    color: #4a5568;
+    font-weight: 500;
+  }  h1 {
+    margin-bottom: 8px;
+    font-size: 27px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+    position: relative;
+    animation: glow 2s ease-in-out infinite alternate;
   }
 
-  h1 {
-    margin-bottom: 20px;
-    font-size: 32px;
-    /* Slightly larger for better visibility */
-    background: linear-gradient(45deg, transparent, #00C3B5, transparent);
-    color: #fff;
+  @keyframes glow {
+    from { text-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+    to { text-shadow: 0 0 30px rgba(0, 212, 255, 0.8); }
+  }
+
+  h1::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 2px;
+    background: linear-gradient(90deg, #00d4ff, #090979);
+    border-radius: 2px;
   }
 
   h2 {
-    margin-bottom: 20px;
-    font-size: 32px;
-    /* Slightly larger for better visibility */
-    color: #fff;
-  }
-
-  .wiring-type {
-    margin-bottom: 20px;
-    justify-content: center;
-    /* Center the select box */
-    align-items: center;
-    gap: 10px;
-    /* Adds spacing between label and select */
+    margin-bottom: 8px;    font-size: 19px;
+    font-weight: 700;
+    color: #ffffff;
+    position: relative;
+  }  .wiring-type {
+    margin-bottom: 8px;
+    padding: 10px;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    flex-shrink: 0;
   }
 
   .wiring-type label {
-    font-size: 18px;
-    margin-right: 10px;
-    background: linear-gradient(45deg, transparent, #00C3B5, transparent);
-    /* Added gradient background */
-    color: #fff;
-    /* Changed label text color to white */
-    padding: 5px 10px;
-    /* Added padding to match select box style */
-    border: 2px solid #fff;
-    /* Added border to match select */
-    border-radius: 5px;
-    /* Add slight rounding */
+    font-size: 19px;
+    font-weight: 600;
+    margin-right: 8px;
+    color: #ffffff;
+    display: inline-block;
+    margin-bottom: 6px;
+  }  .wiring-type select {
+    padding: 6px 8px;
+    font-size: 16px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    background: rgba(15, 15, 35, 0.8);
+    color: #ffffff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    max-width: 200px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
-  .wiring-type select {
-    padding: 5px;
-    font-size: 16px;
-    border: 2px solid #fff;
-    /* Added border to match h1 */
-    background: linear-gradient(45deg, transparent, #00C3B5, transparent);
-    /* Added gradient background */
-    color: #fff;
-    /* Changed text color to white */
-    align-items: center;
+  .wiring-type select:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
   }
 
   .wiring-type select option {
-    background-color: #09001d;
-    /* Dark background for the options */
-    color: #fff;
-    /* White text color for better contrast */
-    padding: 10px;
-    /* Add padding for spacing */
+    background-color: rgba(15, 15, 35, 0.95);
+    color: #ffffff;
+    padding: 12px;
     border: none;
-    /* Remove borders */
-  }
-
-  .cable,
+  }.cable,
   .rj45-connector {
-    margin: 20px 0;
+    margin: 8px 0;
+    padding: 10px;
+    background: rgba(15, 15, 35, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(0, 212, 255, 0.2);
   }
-
   .wires {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    /* Adjust width to 100% for centering */
-    gap: 5px;
-    /* Reduced gap to fit the wires neatly */
-    margin-bottom: 20px;
-  }
-
-  .wire {
-    width: 60px;
-    /* Reduced width to make all wires fit */
+    gap: 2px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }  .wire {
+    width: 70px;
     height: 30px;
-    /* Same height as the slots for uniformity */
-    background-color: #ddd;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border-radius: 6px;
+    display: flex;    justify-content: center;
     align-items: center;
     text-align: center;
     cursor: grab;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
-    border: 2px solid #fff;
-    /* Added solid teal border */
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 
+      0 1px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    color: white;
+  }
 
+  .wire::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+    transition: left 0.5s ease;
   }
 
   .wire:hover {
-    background-color: #ccc;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 
+      0 8px 25px rgba(0, 212, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: #00d4ff;
   }
 
-  .rj45-connector {
-    text-align: center;
+  .wire:hover::before {
+    left: 100%;
   }
 
-  .wire-slots {
+  .wire:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }  .wire-slots {
     display: flex;
     justify-content: center;
-    gap: 5px;
-    /* Reduced gap to match the wires */
-    margin-bottom: 20px;
-  }
-
-  .wire-slot {
-    width: 60px;
-    /* Matches the wire width */
+    gap: 2px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }  .wire-slot {
+    width: 70px;
     height: 30px;
-    background-color: #e6e6e6;
-    border: 2px dashed #fff;
-    /* Changed to dashed teal border */
-    border-radius: 5px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 2px dashed rgba(0, 212, 255, 0.3);
+    border-radius: 6px;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wire-slot::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    border-radius: 50%;
+    transition: all 0.3s ease;
   }
 
   .wire-slot:hover {
-    background-color: #d9d9d9;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(9, 9, 121, 0.1));
+    border-color: #00d4ff;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .wire-slot:hover::before {
+    border-color: #00d4ff;
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+
+  @keyframes wireSlotPulse {
+    0% { 
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.7);
+    }
+    50% { 
+      transform: scale(1.1);
+      box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+    }
+    100% { 
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+    }
   }
 
   .action-buttons {
-    margin-top: 20px;
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
   }
 
-  button {
-    width: 100px;
-    height: 47px;
-    background: #00C3B5;
-    border: 2px solid #fff;
+  .lowered-button {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;  }  button {
+    min-width: 155px;
+    height: 38px;
+    background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);border: none;
     outline: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 16px;
-    color: #fff;
+    color: white;
     font-weight: 600;
-    margin: 0 20px 20px;
+    margin: 0;
     cursor: pointer;
-    transition: 0.5s;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 
+      0 2px 6px rgba(0, 212, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0, 212, 255, 0.3);
   }
 
-  button i {
+  button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
     width: 100%;
     height: 100%;
-    top: 50%;
-    height: 50%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
   }
 
-  /* Hover effect for the first button (Crimp the Cable) */
-  button:nth-child(1):hover {
-    background: #fff;
-    border-color: #00C3B5;
-    color: #00C3B5;
+  button:hover::before {
+    left: 100%;
+  }
+  button i {
+    font-size: 23px;
+    transition: transform 0.3s ease;
   }
 
-  /* Transparent background and text color for the second button (Try Again) */
-  button:nth-child(2) {
-    background: transparent;
-    color: #fff;
+  button:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+      0 8px 20px rgba(0, 212, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
-  /* Hover effect for the third button */
-  button:nth-child(2):hover {
-    background: #fff;
-    color: #00C3B5;
+  button:hover i {
+    transform: scale(1.1);
   }
 
-  button:nth-child(3) {
-    background: transparent;
-    color: #fff;
+  button:active {
+    transform: translateY(-1px);
+    box-shadow: 
+      0 4px 12px rgba(0, 212, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  /* Hover effect for the third button */
-  button:nth-child(3):hover {
-    background: #fff;
-    border-color: #00C3B5;
-    color: #00C3B5;
+  /* Specific button styles */
+  .action-buttons button {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 
+      0 4px 12px rgba(16, 185, 129, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
   }
 
-  .result {
-    margin-top: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #007BFF;
+  .action-buttons button:hover {
+    box-shadow: 
+      0 8px 20px rgba(16, 185, 129, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
-  /* Color for each wire */
+  .lowered-button button:nth-child(1) {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 
+      0 4px 12px rgba(245, 158, 11, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .lowered-button button:nth-child(1):hover {
+    box-shadow: 
+      0 8px 20px rgba(245, 158, 11, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .lowered-button button:nth-child(2) {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 
+      0 4px 12px rgba(99, 102, 241, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .lowered-button button:nth-child(2):hover {
+    box-shadow: 
+      0 8px 20px rgba(99, 102, 241, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .lowered-button button:nth-child(3) {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 
+      0 4px 12px rgba(139, 92, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+  }
+
+  .lowered-button button:nth-child(3):hover {
+    box-shadow: 
+      0 8px 20px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .result {    margin-top: 32px;
+    padding: 20px;
+    font-size: 23px;
+    font-weight: 600;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #1e40af;
+  }
+  /* Modern wire color schemes with gradients and shadows */
   #orange-A,
   #orange-B {
-    background-color: orange;
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    border-color: #ea580c;
   }
 
   #white-orange-A,
   #white-orange-B {
-    background: linear-gradient(90deg, white 50%, orange 50%);
-    /* Light orange for white-orange */
+    background: linear-gradient(135deg, #fff 0%, #fff 45%, #fb923c 55%, #fb923c 100%);
+    color: #1f2937;
+    border-color: #fb923c;
+    font-weight: 700;
   }
 
   #green-A,
   #green-B {
-    background-color: green;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    border-color: #16a34a;
   }
 
   #white-green-A,
   #white-green-B {
-    background: linear-gradient(90deg, white 50%, green 50%);
-    /* Light green for white-green */
+    background: linear-gradient(135deg, #fff 0%, #fff 45%, #22c55e 55%, #22c55e 100%);
+    color: #1f2937;
+    border-color: #22c55e;
+    font-weight: 700;
   }
 
   #blue-A,
   #blue-B {
-    background-color: blue;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    border-color: #2563eb;
   }
 
   #white-blue-A,
   #white-blue-B {
-    background: linear-gradient(90deg, white 50%, blue 50%);
-    /* Light blue for white-blue */
+    background: linear-gradient(135deg, #fff 0%, #fff 45%, #3b82f6 55%, #3b82f6 100%);
+    color: #1f2937;
+    border-color: #3b82f6;
+    font-weight: 700;
   }
 
   #brown-A,
   #brown-B {
-    background-color: brown;
+    background: linear-gradient(135deg, #a16207, #92400e);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    border-color: #92400e;
   }
 
   #white-brown-A,
   #white-brown-B {
-    background: linear-gradient(90deg, white 50%, brown 50%);
-    /* Light brown for white-brown */
+    background: linear-gradient(135deg, #fff 0%, #fff 45%, #a16207 55%, #a16207 100%);
+    color: #1f2937;
+    border-color: #a16207;
+    font-weight: 700;
   }
 
+  /* Tutorial step text styling */
+  #tutorialStep p {
+    color: #4a5568;
+  }
 
-  #tutorialStep p{
-    color: #09001d;
+  /* Add subtle animations and micro-interactions */
+  @keyframes wireGlow {
+    0% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+    50% { box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2); }
+    100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+  }
+
+  .wire:focus {
+    animation: wireGlow 1.5s ease-in-out infinite;
+  }  /* Responsive design improvements */
+  @media (max-width: 1366px) {    .cable-sections {
+      gap: 6px;
+    }
+      .wire, .wire-slot {
+      width: 50px;
+      height: 28px;
+      font-size: 12px;
+    }
+    
+    .score-item {
+      padding: 3px 5px;
+      min-width: 40px;
+    }
+      .score-value {
+      font-size: 16px;
+    }
+    
+    .wires, .wire-slots {
+      gap: 1px;
+    }    button {
+      min-width: 145px;
+      height: 34px;
+      font-size: 15px;
+    }
+  }
+  @media (max-width: 1024px) {
+    .cable-sections {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    
+    .container {
+      height: auto;
+      max-height: none;
+      overflow-y: visible;
+      padding: 5px;    }    .wire, .wire-slot {
+      width: 48px;
+      height: 26px;
+      font-size: 12px;
+    }
+    
+    .wires, .wire-slots {
+      gap: 1px;
+    }    button {
+      min-width: 140px;
+      height: 32px;
+      font-size: 14px;
+    }
+  }
+  @media (max-width: 768px) {
+    .container {
+      padding: 5px;
+      margin: 0;
+      height: auto;
+    }    h1 {
+      font-size: 21px;
+      margin-bottom: 4px;
+    }
+
+    .game-header {
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px;
+      margin-bottom: 6px;
+    }
+
+    .score-display {
+      gap: 4px;    }    .wire, .wire-slot {
+      width: 46px;
+      height: 24px;
+      font-size: 12px;
+    }    b    button {
+      min-width: 135px;
+      height: 30px;
+      font-size: 14px;
+    }wires, .wire-slots {
+      gap: 1px;
+    }
+
+    .cable-sections {
+      gap: 5px;
+    }
+  }
+  @media (max-width: 480px) {
+    .wire, .wire-slot {
+      width: 53px;
+      height: 31px;
+      font-size: 12px;
+    }
+
+    .lowered-button {
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button {
+      width: 100%;
+      max-width: 140px;
+    }    h2 {
+      font-size: 17px;
+    }
+
+    .wires, .wire-slots {
+      gap: 1px;
+    }
+  }/* Gamified UI Elements */
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .score-display {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .score-item {
+    text-align: center;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(9, 9, 121, 0.2));
+    border-radius: 6px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    min-width: 50px;
+  }
+
+  .score-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #00d4ff;
+    display: block;
+  }
+  .score-label {
+    font-size: 13px;
+    color: #8892b0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .level-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    border-radius: 6px;
+    color: #000;
+    font-weight: 700;    font-size: 17px;
+  }  .level-icon {
+    font-size: 17px;
+  }
+
+  .progress-container {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .progress-label {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .progress-percentage {
+    color: #00d4ff;
+    font-weight: 700;
+    font-size: 17px;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #090979);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: progressShimmer 2s infinite;
+  }
+
+  @keyframes progressShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .achievement-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    transform: translateX(300px);
+    transition: transform 0.5s ease;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+  }
+
+  .achievement-notification.show {
+    transform: translateX(0);
+  }
+
+  .achievement-icon {
+    font-size: 24px;
+    animation: bounce 1s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+  }  .timer-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(238, 90, 36, 0.2));
+    border-radius: 6px;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+    font-weight: 700;    font-size: 17px;
+  }
+
+  .combo-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #00d4ff, #090979);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 16px;
+    font-size: 25px;
+    font-weight: 800;
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+    z-index: 2000;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+    transition: all 0.5s ease;
+  }
+
+  .combo-display.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .wire-placement-feedback {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 1500;
+  }
+
+  .wire-placement-feedback.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .wire-placement-feedback.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+  /* Main Game Area Layout */  .game-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0 2px;
+    overflow-x: hidden;
+  }
+  .cable-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 8px 0;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .cable-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cable-section .cable,
+  .cable-section .rj45-connector {
+    margin: 5px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .buttons-container {
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .action-buttons {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .lowered-button {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
   }
 </style>
 {% endblock %} 
 
 {% block content %}
   <div class="container">
-  <h1>UTP Cable Crimping Simulation</h1>
+    <!-- Game Header with Score and Level -->
+    <div class="game-header">
+      <div class="score-display">
+        <div class="score-item">
+          <span class="score-value" id="currentScore">0</span>
+          <span class="score-label">Score</span>
+        </div>
+        <div class="score-item">
+          <span class="score-value" id="accuracy">100%</span>
+          <span class="score-label">Accuracy</span>
+        </div>
+        <div class="score-item">
+          <span class="score-value" id="wireCount">0/16</span>
+          <span class="score-label">Wires</span>
+        </div>
+      </div>
+      <div class="level-display">
+        <i class="level-icon">🏆</i>
+        <span>Level <span id="currentLevel">1</span></span>
+      </div>
+      <div class="timer-display">
+        <i class="fas fa-clock"></i>
+        <span id="timer">05:00</span>
+      </div>
+    </div>
 
+    <!-- Progress Tracking -->
+    <div class="progress-container">
+      <div class="progress-header">
+        <span class="progress-label">Simulation Progress</span>
+        <span class="progress-percentage" id="progressPercentage">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <h1>UTP Cable Crimping Simulation</h1>
+
+    <div class="game-content">
+      <!-- Wiring Type Selection -->
+      <div class="wiring-type">
+        <label for="wiring-select">Select Wiring Type:</label>
+        <select id="wiring-select">
+          <option value="straightthrough">Straight-Through (T568B)</option>
+          <option value="crossover">Crossover (T568A to T568B)</option>
+        </select>
+      </div>
+
+      <!-- Cable Sections in Grid Layout -->
+      <div class="cable-sections">
+        <!-- End A Section -->
+        <div class="cable-section">
+          <div class="cable">
+            <h2>Arrange Wires for End A</h2>
+            <div class="wires" id="endA-wires">
+              <div class="wire" id="orange-A" draggable="true" ondragstart="drag(event)">Orange</div>
+              <div class="wire" id="white-orange-A" draggable="true" ondragstart="drag(event)">W-Orange</div>
+              <div class="wire" id="green-A" draggable="true" ondragstart="drag(event)">Green</div>
+              <div class="wire" id="white-blue-A" draggable="true" ondragstart="drag(event)">W-Blue</div>
+              <div class="wire" id="blue-A" draggable="true" ondragstart="drag(event)">Blue</div>
+              <div class="wire" id="white-green-A" draggable="true" ondragstart="drag(event)">W-Green</div>
+              <div class="wire" id="brown-A" draggable="true" ondragstart="drag(event)">Brown</div>
+              <div class="wire" id="white-brown-A" draggable="true" ondragstart="drag(event)">W-Brown</div>
+            </div>
+          </div>
+          
+          <div class="rj45-connector">
+            <h2>RJ45 End A</h2>
+            <div class="wire-slots" id="endA">
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="0"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="1"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="2"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="3"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="4"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="5"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="6"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="7"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- End B Section -->
+        <div class="cable-section">
+          <div class="cable">
+            <h2>Arrange Wires for End B</h2>
+            <div class="wires" id="endB-wires">
+              <div class="wire" id="orange-B" draggable="true" ondragstart="drag(event)">Orange</div>
+              <div class="wire" id="white-orange-B" draggable="true" ondragstart="drag(event)">W-Orange</div>
+              <div class="wire" id="green-B" draggable="true" ondragstart="drag(event)">Green</div>
+              <div class="wire" id="white-blue-B" draggable="true" ondragstart="drag(event)">W-Blue</div>
+              <div class="wire" id="blue-B" draggable="true" ondragstart="drag(event)">Blue</div>
+              <div class="wire" id="white-green-B" draggable="true" ondragstart="drag(event)">W-Green</div>
+              <div class="wire" id="brown-B" draggable="true" ondragstart="drag(event)">Brown</div>
+              <div class="wire" id="white-brown-B" draggable="true" ondragstart="drag(event)">W-Brown</div>
+            </div>
+          </div>
+          
+          <div class="rj45-connector">
+            <h2>RJ45 End B</h2>
+            <div class="wire-slots" id="endB">
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="0"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="1"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="2"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="3"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="4"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="5"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="6"></div>
+              <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="7"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="buttons-container">
+        
+
+        <div class="lowered-button">
+          <button onclick="resetSimulation()"><i class="fa-solid fa-arrow-rotate-right"></i> Reset</button>
+          <button onclick="checkWiring()"><i class="fa-solid fa-ethernet"></i> Check Wiring</button>
+          <button onclick="showTutorial()"><i class='bx bx-question-mark'></i> Tutorial</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Notification -->
+    <div class="achievement-notification" id="achievementNotification">
+      <i class="achievement-icon">🎯</i>
+      <span id="achievementText">Achievement Unlocked!</span>
+    </div>
+
+    <!-- Combo Display -->
+    <div class="combo-display" id="comboDisplay">
+      <span id="comboText">Perfect Combo!</span>
+    </div>
   <div id="tutorialModal" class="modal">
     <div class="modal-content">
       <i id="closeTutorial" onclick="closeTutorial()" class="bx bx-x profile-exit-btn"></i>
@@ -448,130 +1177,9 @@
       <div class="tutorial-buttons">
         <button id="prevStep" onclick="prevTutorialStep()" disabled><i class='bx bxs-left-arrow'></i></button>
         <button id="nextStep" onclick="nextTutorialStep()"><i class='bx bxs-right-arrow'></i></button>
-
       </div>
     </div>
   </div>
-
-
-  <!-- Wiring Type Selection -->
-  <div class="wiring-type">
-    <label for="wiring-select">Select Wiring Type:</label>
-    <select id="wiring-select">
-      <option value="straightthrough">Straight-Through (T568B)</option>
-      <option value="crossover">Crossover (T568A to T568B)</option>
-    </select>
-
-
-
-
-    <!-- UTP Cable (End A) -->
-    <div class="cable">
-      <h2>Arrange Wires for End A</h2>
-      <div class="wires" id="endA-wires">
-        <div class="wire" id="orange-A" draggable="true" ondragstart="drag(event)">
-          Orange
-        </div>
-        <div class="wire" id="white-orange-A" draggable="true" ondragstart="drag(event)">
-          White-Orange
-        </div>
-        <div class="wire" id="green-A" draggable="true" ondragstart="drag(event)">
-          Green
-        </div>
-        <div class="wire" id="white-blue-A" draggable="true" ondragstart="drag(event)">
-          White-Blue
-        </div>
-        <div class="wire" id="blue-A" draggable="true" ondragstart="drag(event)">
-          Blue
-        </div>
-        <div class="wire" id="white-green-A" draggable="true" ondragstart="drag(event)">
-          White-Green
-        </div>
-        <div class="wire" id="brown-A" draggable="true" ondragstart="drag(event)">
-          Brown
-        </div>
-        <div class="wire" id="white-brown-A" draggable="true" ondragstart="drag(event)">
-          White-Brown
-        </div>
-      </div>
-    </div>
-
-    <!-- RJ-45 Connector (End A) -->
-    <div class="rj45-connector">
-      <h2>Drop the Wires for End A Here</h2>
-      <div class="wire-slots" id="endA">
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="0"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="1"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="2"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="3"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="4"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="5"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="6"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="7"></div>
-      </div>
-    </div>
-
-    <!-- UTP Cable (End B) -->
-    <div class="cable">
-      <h2>Arrange Wires for End B</h2>
-      <div class="wires" id="endB-wires">
-        <div class="wire" id="orange-B" draggable="true" ondragstart="drag(event)">
-          Orange
-        </div>
-        <div class="wire" id="white-orange-B" draggable="true" ondragstart="drag(event)">
-          White-Orange
-        </div>
-        <div class="wire" id="green-B" draggable="true" ondragstart="drag(event)">
-          Green
-        </div>
-        <div class="wire" id="white-blue-B" draggable="true" ondragstart="drag(event)">
-          White-Blue
-        </div>
-        <div class="wire" id="blue-B" draggable="true" ondragstart="drag(event)">
-          Blue
-        </div>
-        <div class="wire" id="white-green-B" draggable="true" ondragstart="drag(event)">
-          White-Green
-        </div>
-        <div class="wire" id="brown-B" draggable="true" ondragstart="drag(event)">
-          Brown
-        </div>
-        <div class="wire" id="white-brown-B" draggable="true" ondragstart="drag(event)">
-          White-Brown
-        </div>
-      </div>
-    </div>
-
-    <!-- RJ-45 Connector (End B) -->
-    <div class="rj45-connector">
-      <h2>Drop the Wires for End B Here</h2>
-      <div class="wire-slots" id="endB">
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="0"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="1"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="2"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="3"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="4"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="5"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="6"></div>
-        <div class="wire-slot" ondrop="drop(event)" ondragover="allowDrop(event)" data-slot="7"></div>
-      </div>
-    </div>
-
-    <!-- Crimping Button -->
-    <div class="action-buttons">
-      <button onclick="checkWiring()"><i class="fa-solid fa-ethernet"></i></i>
-      </button>
-    </div>
-
-    <div class="lowered-button">
-      <button onclick="resetSimulation()"><i class="fa-solid fa-arrow-rotate-right"></i></button>
-      <button onclick="goToHome()"><i class='bx bxs-home'></i></button>
-      <button onclick="showTutorial()"><i class='bx bx-question-mark'></i></button>
-
-    </div>
-
-  </div>
-
 
   <script>
 
@@ -628,9 +1236,7 @@
     // Allow drop
     function allowDrop(ev) {
       ev.preventDefault();
-    }
-
-    function resetSimulation() {
+    }    function resetSimulation() {
       // Clear wire slots for End A
       const slotsEndA = document.querySelectorAll("#endA .wire-slot");
       slotsEndA.forEach(slot => {
@@ -649,11 +1255,36 @@
         }
       });
 
+      // Reset game stats
+      gameStats.score = 0;
+      gameStats.wiresPlaced = 0;
+      gameStats.combo = 0;
+      gameStats.accuracy = 100;
+      
+      // Update UI
+      document.getElementById('currentScore').textContent = '0';
+      document.getElementById('accuracy').textContent = '100%';
+      document.getElementById('wireCount').textContent = '0/16';
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('progressPercentage').textContent = '0%';
+
       // Clear result message
-      document.getElementById("result").innerText = "";
+      const resultElement = document.getElementById("result");
+      if (resultElement) {
+        resultElement.innerText = "";
+      }
+
+      // Restart timer
+      if (gameStats.timerInterval) {
+        clearInterval(gameStats.timerInterval);
+      }
+      initGameTimer();
 
       // Enable interactions
       enableInteractions();
+      
+      // Show reset notification
+      showAchievement('Simulation Reset!', '🔄');
     }
 
     function goToHome() {
@@ -664,9 +1295,7 @@
     function drag(ev) {
       ev.dataTransfer.setData("text", ev.target.id);
       ev.target.classList.add("dragging");
-    }
-
-    // Handle drop
+    }    // Handle drop
     function drop(ev) {
       ev.preventDefault();
       const data = ev.dataTransfer.getData("text");
@@ -678,11 +1307,29 @@
         targetSlot.children.length === 0
       ) {
         targetSlot.appendChild(document.getElementById(data));
+        
+        // Gamification: Update progress and show feedback
+        updateWireProgress();
+        showWireFeedback(targetSlot, true);
+        updateAccuracy(true);
+        
+        // Add placement effect
+        targetSlot.style.animation = 'wireSlotPulse 0.5s ease';
+        setTimeout(() => {
+          targetSlot.style.animation = '';
+        }, 500);
+        
       } else {
         // Return wire to its original position if not dropped in a valid slot
         const wire = document.getElementById(data);
         const wireId = wire.id.includes("-A") ? "endA-wires" : "endB-wires";
         document.getElementById(wireId).appendChild(wire);
+        
+        // Show error feedback
+        if (targetSlot.classList.contains("wire-slot")) {
+          showWireFeedback(targetSlot, false);
+          updateAccuracy(false);
+        }
       }
     }
 
@@ -888,6 +1535,148 @@
                 }
             }, 100);
         });
+    });
+
+    // Gamification System
+    let gameStats = {
+      score: 0,
+      accuracy: 100,
+      level: 1,
+      wiresPlaced: 0,
+      totalWires: 16,
+      startTime: Date.now(),
+      timerInterval: null,
+      combo: 0,
+      achievements: []
+    };
+
+    // Initialize game timer
+    function initGameTimer() {
+      const timerDuration = 5 * 60 * 1000; // 5 minutes
+      const endTime = Date.now() + timerDuration;
+      
+      gameStats.timerInterval = setInterval(() => {
+        const timeLeft = endTime - Date.now();
+        if (timeLeft <= 0) {
+          clearInterval(gameStats.timerInterval);
+          document.getElementById('timer').textContent = '00:00';
+          endGame();
+          return;
+        }
+        
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        document.getElementById('timer').textContent = 
+          `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    // Update score display
+    function updateScore(points) {
+      gameStats.score += points;
+      document.getElementById('currentScore').textContent = gameStats.score;
+      
+      // Level up every 1000 points
+      const newLevel = Math.floor(gameStats.score / 1000) + 1;
+      if (newLevel > gameStats.level) {
+        gameStats.level = newLevel;
+        document.getElementById('currentLevel').textContent = gameStats.level;
+        showAchievement(`Level Up! Reached Level ${gameStats.level}`, '⭐');
+      }
+    }
+
+    // Update accuracy
+    function updateAccuracy(correct) {
+      if (correct) {
+        gameStats.combo++;
+        updateScore(100 + (gameStats.combo * 10)); // Bonus for combo
+        if (gameStats.combo >= 3) {
+          showCombo(`${gameStats.combo}x Combo!`);
+        }
+      } else {
+        gameStats.combo = 0;
+        updateScore(-50);
+      }
+      
+      // Recalculate accuracy
+      const totalAttempts = gameStats.wiresPlaced;
+      gameStats.accuracy = totalAttempts > 0 ? Math.round((gameStats.score / (totalAttempts * 100)) * 100) : 100;
+      gameStats.accuracy = Math.max(0, Math.min(100, gameStats.accuracy));
+      document.getElementById('accuracy').textContent = `${gameStats.accuracy}%`;
+    }
+
+    // Update wire count and progress
+    function updateWireProgress() {
+      gameStats.wiresPlaced++;
+      document.getElementById('wireCount').textContent = `${gameStats.wiresPlaced}/${gameStats.totalWires}`;
+      
+      const progress = (gameStats.wiresPlaced / gameStats.totalWires) * 100;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+      document.getElementById('progressPercentage').textContent = `${Math.round(progress)}%`;
+      
+      // Check for completion
+      if (gameStats.wiresPlaced === gameStats.totalWires) {
+        showAchievement('All Wires Placed!', '🎯');
+      }
+    }
+
+    // Show achievement notification
+    function showAchievement(text, icon = '🎯') {
+      const notification = document.getElementById('achievementNotification');
+      const textElement = document.getElementById('achievementText');
+      const iconElement = notification.querySelector('.achievement-icon');
+      
+      textElement.textContent = text;
+      iconElement.textContent = icon;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+
+    // Show combo display
+    function showCombo(text) {
+      const comboDisplay = document.getElementById('comboDisplay');
+      const textElement = document.getElementById('comboText');
+      
+      textElement.textContent = text;
+      comboDisplay.classList.add('show');
+      
+      setTimeout(() => {
+        comboDisplay.classList.remove('show');
+      }, 2000);
+    }
+
+    // Show wire placement feedback
+    function showWireFeedback(element, correct) {
+      const feedback = document.createElement('div');
+      feedback.className = `wire-placement-feedback ${correct ? '' : 'error'}`;
+      feedback.textContent = correct ? 'Perfect!' : 'Try Again!';
+      
+      element.style.position = 'relative';
+      element.appendChild(feedback);
+      
+      setTimeout(() => {
+        feedback.classList.add('show');
+      }, 100);
+      
+      setTimeout(() => {
+        if (feedback.parentNode) {
+          feedback.parentNode.removeChild(feedback);
+        }
+      }, 2000);
+    }
+
+    // End game
+    function endGame() {
+      showAchievement(`Game Complete! Final Score: ${gameStats.score}`, '🏆');
+      disableInteractions();
+    }
+
+    // Initialize game when page loads
+    window.addEventListener('load', function() {
+      initGameTimer();
     });
 
     // ...existing code...

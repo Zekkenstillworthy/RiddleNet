@@ -129,3 +129,5 @@ def networking2_vpn_simulation():
 def networking2_troubleshooting_simulation():
     """Network Troubleshooting Simulation"""
     return render_template('user/networking2-troubleshooting-simulation.html')
+
+# Additional Simulations
