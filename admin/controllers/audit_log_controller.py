@@ -8,8 +8,9 @@ import csv
 
 # Import models
 from admin import db
-from admin.models.user import AdminUser, Admin
+from admin.models.user import Admin
 from admin.models.activity_log import ActivityLog
+from user.models.user import User  # Import the main User model
 
 # Create audit log blueprint
 audit_log_bp = Blueprint('audit_log', __name__)
@@ -70,7 +71,7 @@ def index():
     entity_types = [e[0] for e in entity_types]
     
     # Get all users for filter dropdown
-    users = AdminUser.query.all()
+    users = User.query.all()
     admins = Admin.query.all()
     
     # Get stats for summary cards

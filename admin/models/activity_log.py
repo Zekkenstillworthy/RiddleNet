@@ -8,30 +8,29 @@ class ActivityLog(db.Model):
     __tablename__ = 'activity_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    admin_user_id = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=True)  # Changed to reference admin_users table
+    user_id = db.Column(db.Integer, nullable=True)  # Match actual database column name
     action_type = db.Column(db.String(50), nullable=False)  # e.g., 'review', 'delete', 'grade'
     message = db.Column(db.String(255), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     related_entity_type = db.Column(db.String(50), nullable=True)  # e.g., 'essay', 'question'
     related_entity_id = db.Column(db.Integer, nullable=True)
     
-    # Relationship
-    admin_user = db.relationship('admin.models.user.AdminUser', backref=db.backref('activity_logs', lazy=True), foreign_keys=[admin_user_id])
+    # No relationship defined to avoid conflicts with different user models
     
     @classmethod
-    def log_activity(cls, admin_user_id, action_type, message, related_entity_type=None, related_entity_id=None):
+    def log_activity(cls, user_id, action_type, message, related_entity_type=None, related_entity_id=None):
         """
         Create and save a new activity log entry
         
         Args:
-            admin_user_id: The ID of the admin user performing the action
+            user_id: The ID of the user performing the action (could be admin or regular user)
             action_type: Type of action (review, delete, etc.)
             message: Description of the activity
             related_entity_type: Type of entity being acted upon (essay, question, etc.)
             related_entity_id: ID of the entity being acted upon
         """
         log = cls(
-            admin_user_id=admin_user_id,
+            user_id=user_id,
             action_type=action_type,
             message=message,
             related_entity_type=related_entity_type,
@@ -45,4 +44,4 @@ class ActivityLog(db.Model):
             print(f"Error logging activity: {e}")
     
     def __repr__(self):
-        return f"<ActivityLog {self.id}: {self.action_type} by Admin {self.admin_user_id}>"
+        return f"<ActivityLog {self.id}: {self.action_type} by User {self.user_id}>"

@@ -50,6 +50,41 @@ def migrate_existing_tables():
         connection = db.engine.raw_connection()
         cursor = connection.cursor()
         
+        # Fix activity_logs table column naming issue
+        try:
+            cursor.execute("PRAGMA table_info(activity_logs)")
+            activity_columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'admin_user_id' in activity_columns and 'user_id' not in activity_columns:
+                print("Migrating activity_logs table: renaming admin_user_id to user_id...")
+                # Create new table with correct schema
+                cursor.execute('''
+                CREATE TABLE activity_logs_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    action_type VARCHAR(50) NOT NULL,
+                    message VARCHAR(255) NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    related_entity_type VARCHAR(50),
+                    related_entity_id INTEGER
+                )
+                ''')
+                
+                # Copy data from old table to new table
+                cursor.execute('''
+                INSERT INTO activity_logs_new (id, user_id, action_type, message, timestamp, related_entity_type, related_entity_id)
+                SELECT id, admin_user_id, action_type, message, timestamp, related_entity_type, related_entity_id
+                FROM activity_logs
+                ''')
+                
+                # Drop old table and rename new table
+                cursor.execute('DROP TABLE activity_logs')
+                cursor.execute('ALTER TABLE activity_logs_new RENAME TO activity_logs')
+                connection.commit()
+                print("Successfully migrated activity_logs table")
+        except Exception as e:
+            print(f"Activity logs table migration: {e}")
+        
         # Check and add updated_at column to classes table
         cursor.execute("PRAGMA table_info(classes)")
         columns = [column[1] for column in cursor.fetchall()]

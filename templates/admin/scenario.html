@@ -36,23 +36,24 @@
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
                     </select>
-                </div>
-            </div>
+                </div>            </div>
             
-            <table id="troubleshooting-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Difficulty</th>
-                        <th>Created</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- troubleshooting will be loaded here dynamically -->
-                </tbody>
-            </table>
+            <div class="scenario-table-container">
+                <table id="troubleshooting-table" class="scenario-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Difficulty</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- troubleshooting will be loaded here dynamically -->
+                    </tbody>
+                </table>
+            </div>
             <div id="troubleshooting-empty-state" class="empty-state" style="display: none;">
                 <i class='bx bx-landscape'></i>
                 <p>No Troubleshooting found. Create your first troubleshooting to get started!</p>
@@ -90,25 +91,26 @@
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
                     </select>
-                </div>
-            </div>
+                </div>            </div>
             
-            <table id="topologies-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Topology Type</th>
-                        <th>Difficulty</th>
-                        <th>Base Score</th>
-                        <th>Scoring Metrics</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Topologies will be loaded here dynamically -->
-                </tbody>
-            </table>
+            <div class="scenario-table-container">
+                <table id="topologies-table" class="scenario-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Topology Type</th>
+                            <th>Difficulty</th>
+                            <th>Base Score</th>
+                            <th>Scoring Metrics</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Topologies will be loaded here dynamically -->
+                    </tbody>
+                </table>
+            </div>
             <div id="topology-empty-state" class="empty-state" style="display: none;">
                 <i class='bx bx-network-chart'></i>
                 <p>No topologies found. Create your first topology to get started!</p>
@@ -1014,20 +1016,20 @@ function loadTroubleshooting() {
         .then(data => {
             // Handle different response structures - the API might return {troubleshooting: [...]} or directly [...]
             const troubleshootingItems = Array.isArray(data) ? data : (data.troubleshooting || data.items || data.data || []);
-            
-            // Log the structure for debugging
+              // Log the structure for debugging
             console.log('Troubleshooting data structure:', data);
             
+            // Clear only the tbody content, not the entire table
             troubleshootingTable.innerHTML = '';
             
             if (!troubleshootingItems || troubleshootingItems.length === 0) {
                 document.getElementById('troubleshooting-empty-state').style.display = 'block';
-                troubleshootingTable.style.display = 'none';
+                document.getElementById('troubleshooting-table').parentElement.style.display = 'none';
                 return;
             }
             
             document.getElementById('troubleshooting-empty-state').style.display = 'none';
-            troubleshootingTable.style.display = 'table';
+            document.getElementById('troubleshooting-table').parentElement.style.display = 'block';
             
             troubleshootingItems.forEach(item => {
                 const row = troubleshootingTable.insertRow();
