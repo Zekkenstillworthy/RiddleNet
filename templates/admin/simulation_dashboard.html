@@ -1,0 +1,475 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Simulation Dashboard - RiddleNet Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<style>
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #667eea;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 1rem;
+    }
+    
+    .dashboard-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .action-card {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        color: white;
+        text-decoration: none;
+        transition: transform 0.3s ease;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-3px);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .action-card.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .action-card.success {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .action-card.warning {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    
+    .recent-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .recent-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+        transition: background 0.3s ease;
+    }
+    
+    .recent-item:hover {
+        background: #e9ecef;
+    }
+    
+    .recent-info h6 {
+        margin: 0;
+        color: #333;
+    }
+    
+    .recent-info p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .badge-beginner { background: #d4edda; color: #155724; }
+    .badge-intermediate { background: #fff3cd; color: #856404; }
+    .badge-advanced { background: #f8d7da; color: #721c24; }
+    .badge-expert { background: #d1ecf1; color: #0c5460; }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 20px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1><i class="fas fa-tachometer-alt"></i> Simulation Management Dashboard</h1>
+        <p>Manage computer networking simulations and learning paths</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{{ url_for('admin_simulation.simulation_builder') }}" class="action-card primary">
+            <i class="fas fa-plus-circle fa-2x"></i>
+            <h4>Create Simulation</h4>
+            <p>Build new interactive simulations</p>
+        </a>
+        <a href="{{ url_for('learning_path.learning_path_builder') }}" class="action-card success">
+            <i class="fas fa-route fa-2x"></i>
+            <h4>Create Learning Path</h4>
+            <p>Design structured learning experiences</p>
+        </a>
+        <a href="{{ url_for('admin_simulation.simulation_list') }}" class="action-card warning">
+            <i class="fas fa-list fa-2x"></i>
+            <h4>Manage Simulations</h4>
+            <p>View and edit existing simulations</p>
+        </a>
+        <a href="{{ url_for('learning_path.learning_paths_list') }}" class="action-card primary">
+            <i class="fas fa-book-open fa-2x"></i>
+            <h4>Manage Paths</h4>
+            <p>Organize learning paths and modules</p>
+        </a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-play-circle"></i>
+            </div>
+            <div class="stat-number">{{ simulation_data.simulations.total_simulations or 0 }}</div>
+            <div class="stat-label">Total Simulations</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <div class="stat-number">{{ simulation_data.simulations.published_simulations or 0 }}</div>
+            <div class="stat-label">Published Simulations</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-route"></i>
+            </div>
+            <div class="stat-number">{{ learning_data.statistics.total_paths or 0 }}</div>
+            <div class="stat-label">Learning Paths</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number">{{ learning_data.statistics.total_enrollments or 0 }}</div>
+            <div class="stat-label">Total Enrollments</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-number">{{ learning_data.statistics.total_completions or 0 }}</div>
+            <div class="stat-label">Completions</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="stat-number">{{ "%.1f"|format(simulation_data.metrics.average_completion_rate or 0) }}%</div>
+            <div class="stat-label">Avg Completion Rate</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Simulations -->
+        <div class="col-md-6">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-clock"></i>
+                        Recent Simulations
+                    </h3>
+                    <a href="{{ url_for('admin_simulation.simulation_list') }}" class="btn btn-outline-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                
+                <div class="recent-list">
+                    {% if simulation_data.simulations.recent_simulations %}
+                        {% for simulation in simulation_data.simulations.recent_simulations %}
+                        <div class="recent-item">
+                            <div class="recent-info">
+                                <h6>{{ simulation.title }}</h6>
+                                <p>{{ simulation.simulation_type }} • Created {{ simulation.created_at }}</p>
+                            </div>
+                            <div class="recent-actions">
+                                <span class="badge badge-{{ simulation.difficulty.lower() }}">{{ simulation.difficulty }}</span>
+                                <div class="btn-group btn-group-sm ms-2">
+                                    <a href="{{ url_for('admin_simulation.edit_simulation', simulation_id=simulation.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_simulation.simulation_analytics', simulation_id=simulation.id) }}" 
+                                       class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h5>No simulations yet</h5>
+                            <p>Create your first simulation to get started</p>
+                            <a href="{{ url_for('admin_simulation.simulation_builder') }}" class="btn btn-primary">
+                                Create Simulation
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Popular Simulations -->
+        <div class="col-md-6">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-fire"></i>
+                        Popular Simulations
+                    </h3>
+                    <a href="{{ url_for('admin_simulation.simulation_analytics', simulation_id=1) }}" class="btn btn-outline-primary btn-sm">
+                        View Analytics
+                    </a>
+                </div>
+                
+                <div class="recent-list">
+                    {% if simulation_data.simulations.popular_simulations %}
+                        {% for simulation in simulation_data.simulations.popular_simulations %}
+                        <div class="recent-item">
+                            <div class="recent-info">
+                                <h6>{{ simulation.title }}</h6>
+                                <p>{{ simulation.total_attempts or 0 }} attempts • {{ simulation.completion_rate or 0 }}% completion</p>
+                            </div>
+                            <div class="recent-actions">
+                                <span class="badge badge-{{ simulation.difficulty.lower() }}">{{ simulation.difficulty }}</span>
+                                <div class="btn-group btn-group-sm ms-2">
+                                    <a href="{{ url_for('admin_simulation.edit_simulation', simulation_id=simulation.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_simulation.simulation_analytics', simulation_id=simulation.id) }}" 
+                                       class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-chart-line"></i>
+                            <h5>No usage data yet</h5>
+                            <p>Popular simulations will appear here once students start using them</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Learning Paths -->
+        <div class="col-md-6">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-route"></i>
+                        Recent Learning Paths
+                    </h3>
+                    <a href="{{ url_for('learning_path.learning_paths_list') }}" class="btn btn-outline-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                
+                <div class="recent-list">
+                    {% if learning_data.recent_paths %}
+                        {% for path in learning_data.recent_paths %}
+                        <div class="recent-item">
+                            <div class="recent-info">
+                                <h6>{{ path.title }}</h6>
+                                <p>{{ path.course_level }} • {{ path.simulation_count or 0 }} simulations</p>
+                            </div>
+                            <div class="recent-actions">
+                                <span class="badge badge-{{ path.difficulty_level.lower() }}">{{ path.difficulty_level }}</span>
+                                <div class="btn-group btn-group-sm ms-2">
+                                    <a href="{{ url_for('learning_path.edit_learning_path', path_id=path.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('learning_path.learning_path_analytics', path_id=path.id) }}" 
+                                       class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-map"></i>
+                            <h5>No learning paths yet</h5>
+                            <p>Create your first learning path to organize simulations</p>
+                            <a href="{{ url_for('learning_path.learning_path_builder') }}" class="btn btn-success">
+                                Create Learning Path
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-6">
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i>
+                        Recent Activity
+                    </h3>
+                </div>
+                
+                <div class="recent-list">
+                    {% if simulation_data.recent_attempts %}
+                        {% for attempt in simulation_data.recent_attempts %}
+                        <div class="recent-item">
+                            <div class="recent-info">
+                                <h6>Student Attempt</h6>
+                                <p>User {{ attempt.user_id }} • {{ attempt.started_at }}</p>
+                            </div>
+                            <div class="recent-actions">
+                                {% if attempt.is_completed %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-warning">In Progress</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-clock"></i>
+                            <h5>No recent activity</h5>
+                            <p>Student activity will appear here</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Simulation Dashboard loaded');
+        
+        // Add any real-time updates or interactive features here
+        
+        // Auto-refresh statistics every 30 seconds
+        setInterval(function() {
+            // Optionally refresh key statistics via AJAX
+            console.log('Dashboard auto-refresh check');
+        }, 30000);
+    });
+</script>
+{% endblock %}

@@ -1,119 +1,192 @@
-from flask import current_app, jsonify, request
-from admin.models.simulation import Simulation
-from admin.models import db
+from flask import current_app, request, jsonify
+from admin import db
+from admin.models.simulation import Simulation, SimulationAttempt
+from admin.models.learning_path import LearningPath, UserLearningProgress
 from datetime import datetime
+import json
 
 class SimulationController:
-    """Controller for managing simulations"""
+    """
+    Enhanced Simulation Controller for Admin Simulation Management
+    Supports step-by-step simulation creation, validation, and analytics
+    """
     
-    def get_all_simulations(self):
-        """Get all simulations"""
+    def get_dashboard_data(self):
+        """Get comprehensive dashboard data for admin"""
         try:
-            simulations = Simulation.query.all()
-            return [simulation.to_dict() for simulation in simulations]
-        except Exception as e:
-            current_app.logger.error(f"Error getting simulations: {str(e)}")
-            return {'error': 'Failed to get simulations'}
-    
-    def get_simulation_by_id(self, simulation_id):
-        """Get simulation by ID"""
-        try:
-            simulation = Simulation.query.get(simulation_id)
-            if not simulation:
-                return {'error': 'Simulation not found'}
+            # Basic statistics
+            stats = Simulation.get_dashboard_stats()
             
-            return simulation.to_dict()
+            # Learning paths statistics
+            total_paths = LearningPath.query.filter_by(is_active=True).count()
+            published_paths = LearningPath.query.filter_by(is_active=True, is_published=True).count()
+            
+            # Recent activity
+            recent_attempts = SimulationAttempt.query.order_by(
+                SimulationAttempt.started_at.desc()
+            ).limit(10).all()
+            
+            # Performance metrics
+            avg_completion_rate = db.session.query(
+                db.func.avg(Simulation.completion_rate)
+            ).filter(Simulation.is_published == True).scalar() or 0
+            
+            return {
+                'simulations': stats,
+                'learning_paths': {
+                    'total_paths': total_paths,
+                    'published_paths': published_paths
+                },
+                'recent_attempts': [attempt.to_dict() for attempt in recent_attempts],
+                'metrics': {
+                    'average_completion_rate': round(avg_completion_rate, 2),
+                    'total_user_attempts': SimulationAttempt.query.count()
+                }
+            }
         except Exception as e:
-            current_app.logger.error(f"Error getting simulation: {str(e)}")
-            return {'error': 'Failed to get simulation'}
+            current_app.logger.error(f"Error getting dashboard data: {str(e)}")
+            return {'error': 'Failed to load dashboard data'}
     
-    def create_simulation(self, simulation_data, admin_user_id):
-        """Create a new simulation"""
+    def create_simulation_from_builder(self, builder_data, admin_user_id):
+        """Create simulation from the enhanced builder interface"""
         try:
+            # Validate required fields
+            required_fields = ['title', 'simulation_type', 'difficulty', 'description']
+            for field in required_fields:
+                if not builder_data.get('basic', {}).get(field):
+                    return {'error': f'Missing required field: {field}'}
+            
+            basic_data = builder_data.get('basic', {})
+            objectives = builder_data.get('objectives', [])
+            steps = builder_data.get('steps', [])
+            scoring = builder_data.get('scoring', {})
+            template_data = builder_data.get('template', {})
+            
+            # Process step definitions with enhanced validation
+            step_definitions = []
+            validation_rules = {}
+            total_score = 0
+            
+            for i, step in enumerate(steps):
+                step_def = {
+                    'title': step.get('title', ''),
+                    'type': step.get('type', 'instruction'),
+                    'description': step.get('description', ''),
+                    'order': i + 1,
+                    'content': self._process_step_content(step)
+                }
+                
+                # Add step-specific properties
+                if step['type'] == 'question':
+                    step_def.update({
+                        'question_text': step.get('questionText', ''),
+                        'question_type': step.get('questionType', 'text'),
+                        'options': step.get('options', [])
+                    })
+                elif step['type'] == 'configuration':
+                    step_def.update({
+                        'device_type': step.get('deviceType', ''),
+                        'configuration_task': step.get('configTask', ''),
+                        'expected_commands': step.get('expectedCommands', '')
+                    })
+                elif step['type'] == 'troubleshooting':
+                    step_def.update({
+                        'problem_scenario': step.get('problemScenario', ''),
+                        'troubleshooting_steps': step.get('troubleshootingSteps', '')
+                    })
+                
+                step_definitions.append(step_def)
+                
+                # Create validation rules
+                validation_rules[str(i)] = {
+                    'type': step['type'],
+                    'expected_answer': step.get('validation', {}).get('expectedAnswer', ''),
+                    'score': step.get('validation', {}).get('score', 10),
+                    'validation_type': self._determine_validation_type(step['type']),
+                    'success_message': 'Correct! Well done.',
+                    'error_message': 'Incorrect. Please review and try again.',
+                    'hint': step.get('hint', '')
+                }
+                
+                total_score += step.get('validation', {}).get('score', 10)
+            
+            # Create simulation configuration
+            simulation_config = {
+                'template_used': template_data.get('selectedTemplate'),
+                'network_topology': template_data.get('networkTopology', {}),
+                'devices': template_data.get('devices', []),
+                'protocols': template_data.get('protocols', [])
+            }
+            
+            # Create the simulation
             simulation = Simulation(
-                title=simulation_data['title'],
-                description=simulation_data['description'],
-                simulation_type=simulation_data['simulation_type'],
-                category=simulation_data.get('category'),
-                difficulty=simulation_data.get('difficulty'),
-                learning_objectives=simulation_data.get('learning_objectives', []),
-                estimated_duration=simulation_data.get('estimated_duration'),
-                prerequisite_knowledge=simulation_data.get('prerequisite_knowledge', []),
-                step_definitions=simulation_data.get('step_definitions', []),
-                validation_rules=simulation_data.get('validation_rules', {}),
-                simulation_config=simulation_data.get('simulation_config', {}),
-                base_score=simulation_data.get('base_score', 100),
-                time_bonus=simulation_data.get('time_bonus', 20),
-                perfect_completion_bonus=simulation_data.get('perfect_completion_bonus', 10),
-                initial_state=simulation_data.get('initial_state', {}),
-                expected_outcomes=simulation_data.get('expected_outcomes', {}),
+                title=basic_data['title'],
+                description=basic_data['description'],
+                simulation_type=basic_data['type'],
+                category=basic_data.get('category', 'General'),
+                difficulty=basic_data['difficulty'],
+                learning_objectives=objectives,
+                estimated_duration=int(basic_data.get('duration', 30)),
+                step_definitions=step_definitions,
+                validation_rules=validation_rules,
+                simulation_config=simulation_config,
+                base_score=total_score,
+                time_bonus=int(scoring.get('timeBonus', 20)),
+                perfect_completion_bonus=int(scoring.get('perfectBonus', 30)),
+                tags=scoring.get('tags', '').split(',') if scoring.get('tags') else [],
+                is_active=scoring.get('isActive', True),
+                is_published=scoring.get('isPublished', False),
                 created_by=admin_user_id,
-                is_active=simulation_data.get('is_active', True),
-                is_published=simulation_data.get('is_published', False),
-                tags=simulation_data.get('tags', '')
+                initial_state={},
+                expected_outcomes={}
             )
             
             db.session.add(simulation)
             db.session.commit()
             
-            return {'success': True, 'simulation': simulation.to_dict()}
+            current_app.logger.info(f"Simulation created successfully: {simulation.id}")
+            
+            return {
+                'success': True,
+                'simulation': simulation.to_dict(include_steps=True),
+                'message': 'Simulation created successfully!'
+            }
+            
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating simulation: {str(e)}")
-            return {'error': 'Failed to create simulation'}
+            return {'error': f'Failed to create simulation: {str(e)}'}
     
-    def update_simulation(self, simulation_id, simulation_data, admin_user_id):
-        """Update an existing simulation"""
-        try:
-            simulation = Simulation.query.get(simulation_id)
-            if not simulation:
-                return {'error': 'Simulation not found'}
-            
-            # Update fields
-            simulation.title = simulation_data.get('title', simulation.title)
-            simulation.description = simulation_data.get('description', simulation.description)
-            simulation.simulation_type = simulation_data.get('simulation_type', simulation.simulation_type)
-            simulation.category = simulation_data.get('category', simulation.category)
-            simulation.difficulty = simulation_data.get('difficulty', simulation.difficulty)
-            simulation.learning_objectives = simulation_data.get('learning_objectives', simulation.learning_objectives)
-            simulation.estimated_duration = simulation_data.get('estimated_duration', simulation.estimated_duration)
-            simulation.prerequisite_knowledge = simulation_data.get('prerequisite_knowledge', simulation.prerequisite_knowledge)
-            simulation.step_definitions = simulation_data.get('step_definitions', simulation.step_definitions)
-            simulation.validation_rules = simulation_data.get('validation_rules', simulation.validation_rules)
-            simulation.simulation_config = simulation_data.get('simulation_config', simulation.simulation_config)
-            simulation.base_score = simulation_data.get('base_score', simulation.base_score)
-            simulation.time_bonus = simulation_data.get('time_bonus', simulation.time_bonus)
-            simulation.perfect_completion_bonus = simulation_data.get('perfect_completion_bonus', simulation.perfect_completion_bonus)
-            simulation.initial_state = simulation_data.get('initial_state', simulation.initial_state)
-            simulation.expected_outcomes = simulation_data.get('expected_outcomes', simulation.expected_outcomes)
-            simulation.is_active = simulation_data.get('is_active', simulation.is_active)
-            simulation.is_published = simulation_data.get('is_published', simulation.is_published)
-            simulation.tags = simulation_data.get('tags', simulation.tags)
-            simulation.updated_at = datetime.utcnow()
-            
-            db.session.commit()
-            
-            return {'success': True, 'simulation': simulation.to_dict()}
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Error updating simulation: {str(e)}")
-            return {'error': 'Failed to update simulation'}
+    def _process_step_content(self, step):
+        """Process step content based on type"""
+        content = {}
+        
+        if step['type'] == 'network_diagram':
+            content['show_diagram'] = step.get('showDiagram', True)
+            content['network_task'] = step.get('networkTask', '')
+        elif step['type'] == 'configuration':
+            content['device_configuration'] = {
+                'device_type': step.get('deviceType', ''),
+                'commands': step.get('expectedCommands', '').split('\n') if step.get('expectedCommands') else []
+            }
+        elif step['type'] == 'troubleshooting':
+            content['troubleshooting_scenario'] = {
+                'problem_description': step.get('problemScenario', ''),
+                'expected_steps': step.get('troubleshootingSteps', '').split('\n') if step.get('troubleshootingSteps') else []
+            }
+        
+        return content
     
-    def delete_simulation(self, simulation_id):
-        """Delete a simulation"""
-        try:
-            simulation = Simulation.query.get(simulation_id)
-            if not simulation:
-                return {'error': 'Simulation not found'}
-            
-            db.session.delete(simulation)
-            db.session.commit()
-            
-            return {'success': True, 'message': 'Simulation deleted successfully'}
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Error deleting simulation: {str(e)}")
-            return {'error': 'Failed to delete simulation'}
+    def _determine_validation_type(self, step_type):
+        """Determine validation type based on step type"""
+        validation_types = {
+            'question': 'exact_match',
+            'configuration': 'contains',
+            'troubleshooting': 'contains',
+            'network_diagram': 'contains',
+            'instruction': 'manual'
+        }
+        return validation_types.get(step_type, 'exact_match')
     
     def validate_simulation_step(self, simulation_id, step_index, user_response):
         """Validate a user's response to a specific simulation step"""
@@ -122,113 +195,299 @@ class SimulationController:
             if not simulation:
                 return {'valid': False, 'message': 'Simulation not found'}
             
-            validation_rules = simulation.validation_rules
-            if str(step_index) not in validation_rules:
-                return {'valid': False, 'message': 'Step validation rules not found'}
+            # Use the simulation's built-in validation method
+            result = simulation.validate_step_response(step_index, user_response)
             
-            step_rule = validation_rules[str(step_index)]
-            step_type = step_rule.get('type', 'text')
-            expected_answer = step_rule.get('expected_answer', '')
-            score = step_rule.get('score', 0)
-            validation_type = step_rule.get('validation_type', 'exact_match')
+            # Log validation attempt
+            current_app.logger.info(f"Step validation - Simulation: {simulation_id}, Step: {step_index}, Valid: {result['valid']}")
             
-            is_valid = False
-            message = ''
-            
-            if validation_type == 'exact_match':
-                is_valid = user_response.lower().strip() == expected_answer.lower().strip()
-            elif validation_type == 'contains':
-                is_valid = expected_answer.lower() in user_response.lower()
-            elif validation_type == 'regex':
-                import re
-                is_valid = bool(re.match(expected_answer, user_response, re.IGNORECASE))
-            elif validation_type == 'multiple_choice':
-                is_valid = user_response == expected_answer
-            
-            if is_valid:
-                message = step_rule.get('success_message', 'Correct! Well done.')
-            else:
-                message = step_rule.get('error_message', 'Incorrect. Please try again.')
-                
-            return {
-                'valid': is_valid,
-                'message': message,
-                'score': score if is_valid else 0,
-                'hint': step_rule.get('hint', '') if not is_valid else ''
-            }
+            return result
             
         except Exception as e:
             current_app.logger.error(f"Error validating step: {str(e)}")
             return {'valid': False, 'message': 'Validation error occurred'}
-
-    def create_simulation_from_builder(self, builder_data, admin_user_id):
-        """Create simulation from the builder interface"""
+    
+    def get_simulation_templates(self, simulation_type):
+        """Get templates for specific simulation type"""
+        templates = {
+            'Networking 1': {
+                'basic_subnetting': {
+                    'name': 'Basic IPv4 Subnetting',
+                    'description': 'Learn fundamental subnetting concepts and calculations',
+                    'default_config': {
+                        'protocols': ['IPv4', 'CIDR'],
+                        'scenarios': ['Calculate subnet masks', 'Determine network ranges', 'Assign IP addresses'],
+                        'difficulty': 'Beginner',
+                        'estimated_duration': 45
+                    },
+                    'step_templates': [
+                        {
+                            'title': 'Understanding CIDR Notation',
+                            'type': 'instruction',
+                            'description': 'Learn about CIDR notation and subnet masks'
+                        },
+                        {
+                            'title': 'Calculate Subnet Mask',
+                            'type': 'question',
+                            'description': 'Calculate the subnet mask for a given CIDR notation'
+                        }
+                    ]
+                },
+                'vlan_configuration': {
+                    'name': 'VLAN Configuration',
+                    'description': 'Configure VLANs on Cisco switches',
+                    'default_config': {
+                        'protocols': ['802.1Q', 'VTP'],
+                        'scenarios': ['Create VLANs', 'Assign switch ports', 'Configure trunk ports'],
+                        'difficulty': 'Intermediate',
+                        'estimated_duration': 60
+                    },
+                    'step_templates': [
+                        {
+                            'title': 'Create VLAN',
+                            'type': 'configuration',
+                            'description': 'Create a new VLAN with specified ID and name'
+                        },
+                        {
+                            'title': 'Assign Port to VLAN',
+                            'type': 'configuration',
+                            'description': 'Assign switch port to the created VLAN'
+                        }
+                    ]
+                }
+            },
+            'Networking 2': {
+                'ospf_routing': {
+                    'name': 'OSPF Dynamic Routing',
+                    'description': 'Configure OSPF routing protocol',
+                    'default_config': {
+                        'protocols': ['OSPF', 'IPv4'],
+                        'scenarios': ['Configure OSPF areas', 'Set router IDs', 'Verify adjacencies'],
+                        'difficulty': 'Advanced',
+                        'estimated_duration': 90
+                    },
+                    'step_templates': [
+                        {
+                            'title': 'Enable OSPF Process',
+                            'type': 'configuration',
+                            'description': 'Enable OSPF routing process on the router'
+                        },
+                        {
+                            'title': 'Configure Network Statements',
+                            'type': 'configuration',
+                            'description': 'Add network statements to advertise connected networks'
+                        }
+                    ]
+                },
+                'bgp_routing': {
+                    'name': 'BGP Routing Configuration',
+                    'description': 'Configure BGP for inter-AS routing',
+                    'default_config': {
+                        'protocols': ['BGP', 'AS Numbers'],
+                        'scenarios': ['eBGP configuration', 'Route filtering', 'Path selection'],
+                        'difficulty': 'Expert',
+                        'estimated_duration': 120
+                    },
+                    'step_templates': [
+                        {
+                            'title': 'Configure BGP Process',
+                            'type': 'configuration',
+                            'description': 'Configure BGP process with AS number'
+                        },
+                        {
+                            'title': 'Add BGP Neighbor',
+                            'type': 'configuration',
+                            'description': 'Add eBGP neighbor configuration'
+                        }
+                    ]
+                }
+            },
+            'Troubleshooting': {
+                'network_connectivity': {
+                    'name': 'Network Connectivity Issues',
+                    'description': 'Troubleshoot common network connectivity problems',
+                    'default_config': {
+                        'protocols': ['ICMP', 'ARP', 'DNS'],
+                        'scenarios': ['Ping failures', 'DNS resolution issues', 'Default gateway problems'],
+                        'difficulty': 'Intermediate',
+                        'estimated_duration': 45
+                    },
+                    'step_templates': [
+                        {
+                            'title': 'Identify the Problem',
+                            'type': 'troubleshooting',
+                            'description': 'Analyze the network connectivity issue'
+                        },
+                        {
+                            'title': 'Test Connectivity',
+                            'type': 'troubleshooting',
+                            'description': 'Use ping and traceroute to test connectivity'
+                        }
+                    ]
+                }
+            }
+        }
+        
+        return templates.get(simulation_type, {})
+    
+    def get_all_simulations(self, include_inactive=False):
+        """Get all simulations with optional filtering"""
         try:
-            # Process step definitions
-            step_definitions = []
-            for step in builder_data.get('step_definitions', []):
-                step_def = {
-                    'title': step['title'],
-                    'type': step['type'],
-                    'description': step['description'],
-                    'order': step['order']
-                }
-                
-                # Add type-specific properties
-                if step['type'] == 'question':
-                    step_def.update({
-                        'question': step.get('questionText', ''),
-                        'inputType': step.get('questionType', 'text'),
-                        'options': step.get('options', []) if step.get('questionType') == 'multiple_choice' else None
-                    })
-                elif step['type'] == 'configuration':
-                    step_def.update({
-                        'deviceType': step.get('deviceType', ''),
-                        'task': step.get('configTask', ''),
-                        'expectedCommands': step.get('expectedCommands', '')
-                    })
-                elif step['type'] == 'network_diagram':
-                    step_def.update({
-                        'task': step.get('networkTask', ''),
-                        'showDiagram': step.get('showDiagram', True)
-                    })
-                
-                step_definitions.append(step_def)
+            query = Simulation.query
             
-            # Create validation rules
-            validation_rules = {}
-            for i, step in enumerate(builder_data.get('step_definitions', [])):
-                validation_rules[str(i)] = {
-                    'type': step['type'],
-                    'expected_answer': step['validation']['expectedAnswer'],
-                    'score': step['validation']['score'],
-                    'validation_type': 'exact_match' if step['type'] == 'question' else 'contains'
-                }
+            if not include_inactive:
+                query = query.filter_by(is_active=True)
             
-            # Create the simulation
-            simulation_data = {
-                'title': builder_data['title'],
-                'description': builder_data['description'],
-                'simulation_type': builder_data['simulation_type'],
-                'category': builder_data['category'],
-                'difficulty': builder_data['difficulty'],
-                'learning_objectives': builder_data['learning_objectives'],
-                'estimated_duration': builder_data['estimated_duration'],
-                'step_definitions': step_definitions,
-                'validation_rules': validation_rules,
-                'base_score': builder_data['base_score'],
-                'time_bonus': builder_data['time_bonus'],
-                'perfect_completion_bonus': builder_data['perfect_completion_bonus'],
-                'tags': builder_data['tags'],
-                'is_active': builder_data['is_active'],
-                'is_published': builder_data['is_published'],
-                'simulation_config': builder_data.get('simulation_config', {}),
-                'initial_state': builder_data.get('initial_state', {}),
-                'expected_outcomes': builder_data.get('expected_outcomes', {})
+            simulations = query.order_by(Simulation.created_at.desc()).all()
+            
+            return {
+                'simulations': [sim.to_dict(include_analytics=True) for sim in simulations],
+                'total_count': len(simulations)
             }
             
-            return self.create_simulation(simulation_data, admin_user_id)
+        except Exception as e:
+            current_app.logger.error(f"Error getting simulations: {str(e)}")
+            return {'error': 'Failed to retrieve simulations'}
+    
+    def get_simulation_by_id(self, simulation_id, include_steps=True):
+        """Get simulation by ID with optional step details"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            return {
+                'simulation': simulation.to_dict(include_steps=include_steps, include_analytics=True)
+            }
             
         except Exception as e:
-            current_app.logger.error(f"Error creating simulation from builder: {str(e)}")
-            return {'error': 'Failed to create simulation from builder data'}
+            current_app.logger.error(f"Error getting simulation {simulation_id}: {str(e)}")
+            return {'error': 'Failed to retrieve simulation'}
+    
+    def update_simulation(self, simulation_id, update_data):
+        """Update existing simulation"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            # Update allowed fields
+            allowed_fields = [
+                'title', 'description', 'difficulty', 'learning_objectives',
+                'estimated_duration', 'tags', 'is_active', 'is_published'
+            ]
+            
+            for field in allowed_fields:
+                if field in update_data:
+                    setattr(simulation, field, update_data[field])
+            
+            simulation.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'simulation': simulation.to_dict(),
+                'message': 'Simulation updated successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating simulation {simulation_id}: {str(e)}")
+            return {'error': 'Failed to update simulation'}
+    
+    def delete_simulation(self, simulation_id):
+        """Soft delete simulation (mark as inactive)"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            simulation.is_active = False
+            simulation.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'message': 'Simulation deleted successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error deleting simulation {simulation_id}: {str(e)}")
+            return {'error': 'Failed to delete simulation'}
+    
+    def search_simulations(self, query_params):
+        """Search simulations with advanced filters"""
+        try:
+            query = query_params.get('query', '')
+            simulation_type = query_params.get('type')
+            difficulty = query_params.get('difficulty')
+            category = query_params.get('category')
+            
+            simulations = Simulation.search_simulations(
+                query=query,
+                simulation_type=simulation_type,
+                difficulty=difficulty,
+                category=category
+            )
+            
+            return {
+                'simulations': [sim.to_dict() for sim in simulations],
+                'total_count': len(simulations),
+                'search_params': query_params
+            }
+            
+        except Exception as e:
+            current_app.logger.error(f"Error searching simulations: {str(e)}")
+            return {'error': 'Failed to search simulations'}
+    
+    def get_simulation_analytics(self, simulation_id):
+        """Get detailed analytics for a specific simulation"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            # Get attempt data
+            attempts = SimulationAttempt.query.filter_by(simulation_id=simulation_id).all()
+            
+            # Calculate analytics
+            total_attempts = len(attempts)
+            completed_attempts = [a for a in attempts if a.is_completed]
+            
+            analytics = {
+                'basic_stats': simulation.to_dict(include_analytics=True),
+                'attempt_details': {
+                    'total_attempts': total_attempts,
+                    'completed_attempts': len(completed_attempts),
+                    'completion_rate': (len(completed_attempts) / total_attempts * 100) if total_attempts > 0 else 0,
+                    'average_score': sum(a.total_score for a in completed_attempts) / len(completed_attempts) if completed_attempts else 0,
+                    'average_duration': sum(a.time_spent_seconds for a in completed_attempts) / len(completed_attempts) if completed_attempts else 0
+                },
+                'step_analytics': self._calculate_step_analytics(attempts, simulation),
+                'user_performance': [a.to_dict() for a in attempts[-10:]]  # Last 10 attempts
+            }
+            
+            return analytics
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting analytics for simulation {simulation_id}: {str(e)}")
+            return {'error': 'Failed to get simulation analytics'}
+    
+    def _calculate_step_analytics(self, attempts, simulation):
+        """Calculate analytics for each step"""
+        step_analytics = {}
+        
+        for i, step in enumerate(simulation.step_definitions):
+            step_attempts = [a for a in attempts if str(i) in a.step_responses]
+            step_scores = [a.step_scores.get(str(i), 0) for a in step_attempts]
+            
+            step_analytics[i] = {
+                'step_title': step.get('title', f'Step {i+1}'),
+                'attempt_count': len(step_attempts),
+                'success_count': len([s for s in step_scores if s > 0]),
+                'success_rate': (len([s for s in step_scores if s > 0]) / len(step_attempts) * 100) if step_attempts else 0,
+                'average_score': sum(step_scores) / len(step_scores) if step_scores else 0
+            }
+        
+        return step_analytics

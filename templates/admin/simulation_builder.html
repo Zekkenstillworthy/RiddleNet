@@ -1,1128 +1,1126 @@
 {% extends "admin/base.html" %}
-{% block title %}Simulation Builder - Admin Dashboard{% endblock %}
 
-{% block head %}
+{% block title %}Advanced Simulation Builder - RiddleNet Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulation-builder.css') }}">
 <style>
-  :root {
-    --cyber-glow: #00d4ff;
-    --network-purple: #8b5fbf;
-    --card-bg: rgba(10, 12, 20, 0.8);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.8);
-    --success-green: #14bf5e;
-    --warning-orange: #ff9500;
-    --error-red: #ff4757;
-  }
-
-  .simulation-builder-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
-  .builder-header {
-    margin-bottom: 30px;
-  }
-
-  .progress-indicator {
-    display: flex;
-    justify-content: space-between;
-    margin: 30px 0;
-    position: relative;
-  }
-
-  .progress-indicator::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: rgba(255,255,255,0.2);
-    transform: translateY(-50%);
-    z-index: 1;
-  }
-
-  .step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-    font-size: 14px;
-    color: var(--text-secondary);
-    width: 20%;
-    text-align: center;
-  }
-
-  .step span {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 8px;
-    border: 2px solid rgba(255,255,255,0.2);
-    transition: all 0.3s ease;
-  }
-
-  .step.active span {
-    background: var(--cyber-glow);
-    border-color: var(--cyber-glow);
-    color: #000;
-    box-shadow: 0 0 15px var(--cyber-glow);
-  }
-
-  .step.completed span {
-    background: var(--success-green);
-    border-color: var(--success-green);
-    color: #fff;
-  }
-
-  .builder-step {
-    background: var(--card-bg);
-    border-radius: 10px;
-    padding: 30px;
-    margin-bottom: 20px;
-    animation: fadeIn 0.5s ease-out;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-
-  .template-options {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-
-  .template-option {
-    flex: 1;
-  }
-
-  .template-option label {
-    display: block;
-    padding: 20px;
-    background: rgba(255,255,255,0.05);
-    border: 2px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .template-option label:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: var(--cyber-glow);
-  }
-
-  .template-option input[type="radio"] {
-    display: none;
-  }
-
-  .template-option input[type="radio"]:checked + label {
-    border-color: var(--cyber-glow);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-  }
-
-  .scratch-option {
-    border-style: dashed !important;
-  }
-
-  .template-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-  }
-
-  .template-card {
-    background: rgba(255,255,255,0.05);
-    border: 2px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .template-card:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: var(--cyber-glow);
-  }
-
-  .template-card.selected {
-    border-color: var(--cyber-glow);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-  }
-
-  .template-features {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
-  }
-
-  .feature-tag {
-    background: rgba(0, 212, 255, 0.2);
-    color: var(--cyber-glow);
-    border-radius: 15px;
-    padding: 4px 12px;
-    font-size: 12px;
-  }
-
-  .step-builder {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-
-  .step-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-
-  .step-actions {
-    display: flex;
-    gap: 10px;
-  }
-
-  .validation-rules {
-    background: rgba(255,255,255,0.03);
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 20px;
-  }
-
-  .simulation-preview {
-    background: rgba(255,255,255,0.03);
-    border-radius: 10px;
-    padding: 20px;
-    margin-top: 20px;
-  }
-
-  .preview-section {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .preview-step {
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-  }
-
-  .builder-navigation {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-  }
-
-  .validation-errors {
-    margin-bottom: 20px;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @media (max-width: 768px) {
-    .form-grid {
-      grid-template-columns: 1fr;
+    .builder-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
     }
-  }
+    
+    .builder-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .progress-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .step.active {
+        background: rgba(255, 255, 255, 0.9);
+        color: #667eea;
+        transform: scale(1.05);
+    }
+    
+    .step.completed {
+        background: rgba(76, 175, 80, 0.8);
+        color: white;
+    }
+    
+    .step span {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .step.active span {
+        background: #667eea;
+        color: white;
+    }
+    
+    .step.completed span {
+        background: #4caf50;
+        color: white;
+    }
+    
+    .builder-content {
+        background: white;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        min-height: 600px;
+    }
+    
+    .builder-step {
+        display: none;
+    }
+    
+    .builder-step.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .template-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .template-option {
+        position: relative;
+    }
+    
+    .template-option input[type="radio"] {
+        display: none;
+    }
+    
+    .template-option label {
+        display: block;
+        padding: 25px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .template-option input[type="radio"]:checked + label {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .template-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .template-card:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .template-card.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .template-card h4 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .template-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 15px;
+    }
+    
+    .feature-tag {
+        background: #f0f0f0;
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .objectives-container {
+        margin-bottom: 20px;
+    }
+    
+    .objective-item {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        align-items: center;
+    }
+    
+    .objective-input {
+        flex: 1;
+    }
+    
+    .btn-remove {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+    
+    .step-builder {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .step-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .step-title {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.1rem;
+    }
+    
+    .step-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .step-specific-content {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 15px 0;
+    }
+    
+    .validation-rules {
+        background: #e8f5e8;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .validation-rule {
+        margin-bottom: 15px;
+    }
+    
+    .builder-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid #f0f0f0;
+    }
+    
+    .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a6fd8;
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-outline-primary {
+        background: transparent;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    
+    .btn-outline-primary:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .validation-errors {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .validation-errors ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-danger {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="simulation-builder-container">
-    <div class="builder-header">
-        <h2><i class="fas fa-network-wired"></i> Advanced Simulation Builder</h2>
-        <div class="progress-indicator">
-            <div class="step" data-step="1"><span>1</span> Basic Info</div>
-            <div class="step" data-step="2"><span>2</span> Template</div>
-            <div class="step" data-step="3"><span>3</span> Objectives</div>
-            <div class="step" data-step="4"><span>4</span> Steps & Validation</div>
-            <div class="step" data-step="5"><span>5</span> Scoring & Preview</div>
-        </div>
+<style>
+    .main-content {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        background: var(--background);
+        transition: all var(--transition-speed) ease;
+        padding: 24px;
+    }
+
+    .page-header {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        padding: 32px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, var(--text-primary), var(--cyber-glow));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .builder-container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 24px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .simulation-panel {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+    }
+
+    .panel-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05));
+    }
+
+    .panel-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .panel-content {
+        padding: 20px;
+        height: calc(100vh - 300px);
+        overflow-y: auto;
+    }
+
+    .section {
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .component-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .component-item {
+        padding: 12px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .component-item:hover {
+        border-color: var(--accent-color);
+        background: rgba(59, 130, 246, 0.05);
+        transform: translateX(4px);
+    }
+
+    .component-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+    }
+
+    .network-component { background: var(--accent-color); }
+    .device-component { background: var(--success-color); }
+    .protocol-component { background: var(--warning-color); }
+    .scenario-component { background: var(--network-purple); }
+
+    .component-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    .component-info p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .builder-canvas {
+        background: var(--background);
+        border: 2px dashed var(--border-color);
+        border-radius: var(--border-radius);
+        min-height: 600px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+
+    .builder-canvas.drag-over {
+        border-color: var(--accent-color);
+        background: rgba(59, 130, 246, 0.05);
+        color: var(--accent-color);
+    }
+
+    .canvas-placeholder {
+        text-align: center;
+        padding: 40px;
+    }
+
+    .canvas-placeholder i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+        background: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        background: var(--surface-hover);
+    }
+
+    .simulation-preview {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        margin-top: 24px;
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-draft {
+        background: rgba(156, 163, 175, 0.2);
+        color: var(--text-muted);
+    }
+
+    .status-testing {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning-color);
+    }
+
+    .status-published {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success-color);
+    }
+</style>
+
+<div class="main-content">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-code-branch"></i>
+            Simulation Builder
+        </h1>
+        <p class="page-subtitle">Create interactive network simulations with drag-and-drop components</p>
     </div>
 
-    <!-- Step 1: Basic Information -->
-    <div class="builder-step" id="step-1" data-step="1">
-        <h3>Basic Simulation Information</h3>
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="sim-title">Simulation Title *</label>
-                <input type="text" id="sim-title" class="form-control" placeholder="e.g., IPv4 Subnetting Challenge">
+    <div class="builder-container">
+        <!-- Component Library Panel -->
+        <div class="simulation-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-puzzle-piece"></i>
+                    Component Library
+                </h2>
             </div>
-            <div class="form-group">
-                <label for="sim-type">Simulation Type *</label>
-                <select id="sim-type" class="form-control" onchange="loadTemplates()">
-                    <option value="">Select Type</option>
-                    <option value="networking1">Networking 1</option>
-                    <option value="networking2">Networking 2</option>
-                    <option value="troubleshooting">Network Troubleshooting</option>
-                    <option value="configuration">Device Configuration</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="sim-category">Category</label>
-                <input type="text" id="sim-category" class="form-control" placeholder="e.g., Routing, Switching, Security">
-            </div>
-            <div class="form-group">
-                <label for="sim-difficulty">Difficulty Level *</label>
-                <select id="sim-difficulty" class="form-control">
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                    <option value="expert">Expert</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="form-group mt-4">
-            <label for="sim-description">Description *</label>
-            <textarea id="sim-description" class="form-control" rows="4" placeholder="Describe what students will learn and accomplish in this simulation..."></textarea>
-        </div>
-    </div>
-
-    <!-- Step 2: Template Selection -->
-    <div class="builder-step" id="step-2" data-step="2" style="display: none;">
-        <h3>Choose Starting Template</h3>
-        <div class="template-options">
-            <div class="template-option">
-                <input type="radio" id="start-from-scratch" name="template" value="scratch">
-                <label for="start-from-scratch" class="scratch-option">
-                    <i class="fas fa-plus-circle fa-3x mb-3"></i>
-                    <h4>Start from Scratch</h4>
-                    <p>Build a completely custom simulation</p>
-                </label>
-            </div>
-        </div>
-        <div id="template-grid" class="template-grid">
-            <!-- Templates will be loaded here based on simulation type -->
-            <div class="template-card">
-                <h4>Basic Subnetting</h4>
-                <p>Learn IPv4 subnetting fundamentals</p>
-                <div class="template-features">
-                    <span class="feature-tag">IPv4</span>
-                    <span class="feature-tag">CIDR</span>
-                    <span class="feature-tag">Beginner</span>
-                </div>
-            </div>
-
-            <div class="template-card">
-                <h4>VLAN Configuration</h4>
-                <p>Configure VLANs on switches</p>
-                <div class="template-features">
-                    <span class="feature-tag">802.1Q</span>
-                    <span class="feature-tag">VTP</span>
-                    <span class="feature-tag">Intermediate</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 3: Learning Objectives -->
-    <div class="builder-step" id="step-3" data-step="3" style="display: none;">
-        <h3>Learning Objectives</h3>
-        <p>Define what students should achieve by completing this simulation.</p>
-        
-        <div class="form-group">
-            <label for="estimated-duration">Estimated Duration (minutes) *</label>
-            <input type="number" id="estimated-duration" class="form-control" value="30" min="5" max="240">
-        </div>
-        
-        <div class="form-group">
-            <label for="prerequisite-knowledge">Prerequisite Knowledge (comma separated)</label>
-            <input type="text" id="prerequisite-knowledge" class="form-control" placeholder="e.g., IP addressing, Subnet mask calculation">
-        </div>
-        
-        <div id="objectives-container">
-            <!-- Objectives will be added here -->
-        </div>
-        <button type="button" class="btn btn-outline-primary mt-3" onclick="addObjective()">
-            <i class="fas fa-plus"></i> Add Objective
-        </button>
-    </div>
-
-    <!-- Step 4: Simulation Steps -->
-    <div class="builder-step" id="step-4" data-step="4" style="display: none;">
-        <h3>Simulation Steps & Validation</h3>
-        <p>Create the step-by-step process students will follow.</p>
-        <div id="steps-container">
-            <!-- Steps will be added here -->
-        </div>
-        <button type="button" class="btn btn-outline-primary mt-3" onclick="addSimulationStep()">
-            <i class="fas fa-plus"></i> Add Step
-        </button>
-    </div>
-
-    <!-- Step 5: Scoring & Preview -->
-    <div class="builder-step" id="step-5" data-step="5" style="display: none;">
-        <h3>Scoring Configuration & Preview</h3>
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="base-score">Base Score</label>
-                <input type="number" id="base-score" class="form-control" value="100" min="0">
-            </div>
-            <div class="form-group">
-                <label for="time-bonus">Time Bonus</label>
-                <input type="number" id="time-bonus" class="form-control" value="20" min="0">
-            </div>
-            <div class="form-group">
-                <label for="perfect-bonus">Perfect Completion Bonus</label>
-                <input type="number" id="perfect-bonus" class="form-control" value="10" min="0">
-            </div>
-            <div class="form-group">
-                <label for="sim-tags">Tags (comma separated)</label>
-                <input type="text" id="sim-tags" class="form-control" placeholder="e.g., routing, ospf, dynamic-routing">
-            </div>
-        </div>
-        
-        <div class="form-check mt-3">
-            <input type="checkbox" id="is-active" class="form-check-input" checked>
-            <label for="is-active" class="form-check-label">Active (available for use)</label>
-        </div>
-        
-        <div class="form-check mt-2">
-            <input type="checkbox" id="is-published" class="form-check-input">
-            <label for="is-published" class="form-check-label">Published (visible to students)</label>
-        </div>
-        
-        <div class="simulation-preview mt-4">
-            <h4>Simulation Preview</h4>
-            <div id="preview-content">
-                <!-- Preview will be rendered here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Navigation -->
-    <div class="builder-navigation">
-        <button type="button" id="prev-btn" class="btn btn-secondary" onclick="previousStep()" disabled>
-            <i class="fas fa-chevron-left"></i> Previous
-        </button>
-        <button type="button" id="next-btn" class="btn btn-primary" onclick="nextStep()">
-            Next <i class="fas fa-chevron-right"></i>
-        </button>
-        <button type="button" id="save-btn" class="btn btn-success" onclick="saveSimulation()" style="display: none;">
-            <i class="fas fa-save"></i> Save Simulation
-        </button>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-class SimulationBuilder {
-    constructor() {
-        this.currentStep = 1;
-        this.maxSteps = 5;
-        this.simulationData = {
-            basic: {},
-            template: {},
-            objectives: [],
-            steps: [],
-            scoring: {}
-        };
-        this.templates = {};
-        this.selectedTemplate = null;
-        
-        this.init();
-    }
-    
-    init() {
-        this.loadTemplates();
-        this.bindEvents();
-        this.updateStepIndicator();
-        this.addObjective(); // Add first objective by default
-    }
-    
-    bindEvents() {
-        // Add event listeners for navigation
-        document.getElementById('next-btn').addEventListener('click', () => this.nextStep());
-        document.getElementById('prev-btn').addEventListener('click', () => this.previousStep());
-        document.getElementById('save-btn').addEventListener('click', () => this.saveSimulation());
-        
-        // Template selection
-        document.getElementById('start-from-scratch').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                this.clearTemplateSelection();
-            }
-        });
-    }
-    
-    async loadTemplates() {
-        try {
-            const simType = document.getElementById('sim-type').value;
-            if (!simType) return;
-            
-            // In a real implementation, this would fetch from the server
-            this.templates = {
-                "networking1": {
-                    "basic_subnetting": {
-                        "name": "Basic Subnetting",
-                        "description": "Learn IPv4 subnetting fundamentals",
-                        "default_config": {
-                            "protocols": ["IPv4", "CIDR"],
-                            "scenarios": ["Calculate subnets", "Assign IP ranges"],
-                            "difficulty": "Beginner"
-                        }
-                    },
-                    "vlan_configuration": {
-                        "name": "VLAN Configuration",
-                        "description": "Configure VLANs on switches",
-                        "default_config": {
-                            "protocols": ["802.1Q", "VTP"],
-                            "scenarios": ["Create VLANs", "Assign ports", "Configure trunk"],
-                            "difficulty": "Intermediate"
-                        }
-                    }
-                },
-                "networking2": {
-                    "ospf_routing": {
-                        "name": "OSPF Routing",
-                        "description": "Configure OSPF dynamic routing",
-                        "default_config": {
-                            "protocols": ["OSPF", "IPv4"],
-                            "scenarios": ["Configure areas", "Set router IDs", "Verify adjacencies"],
-                            "difficulty": "Advanced"
-                        }
-                    },
-                    "bgp_routing": {
-                        "name": "BGP Routing",
-                        "description": "Configure BGP for WAN connections",
-                        "default_config": {
-                            "protocols": ["BGP", "AS Numbers"],
-                            "scenarios": ["eBGP configuration", "Route filtering", "Path selection"],
-                            "difficulty": "Expert"
-                        }
-                    }
-                }
-            };
-            this.renderTemplates();
-        } catch (error) {
-            console.error('Error loading templates:', error);
-        }
-    }
-    
-    renderTemplates() {
-        const container = document.getElementById('template-grid');
-        const simType = document.getElementById('sim-type').value;
-        
-        if (!simType || !this.templates[simType]) {
-            container.innerHTML = '<p>Please select a simulation type first or choose to start from scratch.</p>';
-            return;
-        }
-        
-        const templates = this.templates[simType];
-        let html = '';
-        
-        Object.keys(templates).forEach(key => {
-            const template = templates[key];
-            html += `
-                <div class="template-card" onclick="simulationBuilder.selectTemplate('${key}')">
-                    <h4>${template.name}</h4>
-                    <p>${template.description}</p>
-                    <div class="template-features">
-                        ${template.default_config.protocols ? 
-                            template.default_config.protocols.map(p => `<span class="feature-tag">${p}</span>`).join('') : ''}
-                        ${template.default_config.difficulty ? 
-                            `<span class="feature-tag">${template.default_config.difficulty}</span>` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-    }
-    
-    selectTemplate(templateKey) {
-        // Clear previous selection
-        document.querySelectorAll('.template-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        
-        // Find and select new template
-        const selectedCard = document.querySelector(`.template-card:nth-child(${Array.from(document.querySelectorAll('.template-card')).findIndex(card => card.textContent.includes(this.templates[document.getElementById('sim-type').value][templateKey].name)) + 1})`);
-        if (selectedCard) {
-            selectedCard.classList.add('selected');
-        }
-        
-        this.selectedTemplate = templateKey;
-        
-        // Uncheck start from scratch
-        document.getElementById('start-from-scratch').checked = false;
-    }
-    
-    clearTemplateSelection() {
-        document.querySelectorAll('.template-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        this.selectedTemplate = null;
-    }
-    
-    addObjective() {
-        const container = document.getElementById('objectives-container');
-        const count = container.children.length + 1;
-        
-        const objectiveDiv = document.createElement('div');
-        objectiveDiv.className = 'form-group';
-        objectiveDiv.innerHTML = `
-            <label>Objective ${count} ${count === 1 ? '*' : ''}</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" class="form-control objective-input" placeholder="Enter learning objective...">
-                ${count > 1 ? '<button type="button" class="btn btn-secondary" onclick="simulationBuilder.removeObjective(this)"><i class="fas fa-trash"></i></button>' : ''}
-            </div>
-        `;
-        
-        container.appendChild(objectiveDiv);
-    }
-    
-    removeObjective(button) {
-        button.closest('.form-group').remove();
-        this.updateObjectiveLabels();
-    }
-    
-    updateObjectiveLabels() {
-        const objectives = document.querySelectorAll('#objectives-container .form-group label');
-        objectives.forEach((label, index) => {
-            label.textContent = `Objective ${index + 1} ${index === 0 ? '*' : ''}`;
-        });
-    }
-    
-    addSimulationStep() {
-        const container = document.getElementById('steps-container');
-        const stepCount = container.children.length + 1;
-        
-        const stepDiv = document.createElement('div');
-        stepDiv.className = 'step-builder';
-        stepDiv.innerHTML = `
-            <div class="step-header">
-                <span class="step-title">Step ${stepCount}</span>
-                <div class="step-actions">
-                    <button type="button" class="btn btn-secondary" onclick="simulationBuilder.moveStepUp(this)"><i class="fas fa-arrow-up"></i></button>
-                    <button type="button" class="btn btn-secondary" onclick="simulationBuilder.moveStepDown(this)"><i class="fas fa-arrow-down"></i></button>
-                    <button type="button" class="btn btn-secondary" onclick="simulationBuilder.removeStep(this)"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Step Title *</label>
-                    <input type="text" class="form-control step-title-input" placeholder="e.g., Configure Router Interface">
-                </div>
-                <div class="form-group">
-                    <label>Step Type *</label>
-                    <select class="form-control step-type-select" onchange="simulationBuilder.updateStepContent(this)">
-                        <option value="">Select Type</option>
-                        <option value="instruction">Instruction</option>
-                        <option value="question">Question</option>
-                        <option value="configuration">Configuration Task</option>
-                        <option value="network_diagram">Network Diagram</option>
-                        <option value="troubleshooting">Troubleshooting</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Description/Instructions *</label>
-                <textarea class="form-control step-description" rows="3" placeholder="Describe what the student should do in this step..."></textarea>
-            </div>
-            
-            <div class="step-specific-content">
-                <!-- Step-specific content will be added here -->
-            </div>
-            
-            <div class="validation-rules">
-                <h5>Validation Rules</h5>
-                <div class="validation-rule">
-                    <label>Correct Answer/Expected Result:</label>
-                    <input type="text" class="form-control validation-answer" placeholder="Define the correct answer or expected outcome...">
-                </div>
-                <div class="validation-rule">
-                    <label>Score for this step:</label>
-                    <input type="number" class="form-control validation-score" value="10" min="0">
-                </div>
-            </div>
-        `;
-        
-        container.appendChild(stepDiv);
-    }
-    
-    updateStepContent(select) {
-        const stepType = select.value;
-        const stepContainer = select.closest('.step-builder');
-        const contentContainer = stepContainer.querySelector('.step-specific-content');
-        
-        let html = '';
-        
-        switch (stepType) {
-            case 'question':
-                html = `
+            <div class="panel-content">
+                <!-- Simulation Settings -->
+                <div class="section">
+                    <h3 class="section-title">
+                        <i class="fas fa-cog"></i>
+                        Simulation Settings
+                    </h3>
                     <div class="form-group">
-                        <label>Question Type</label>
-                        <select class="form-control question-type">
-                            <option value="multiple_choice">Multiple Choice</option>
-                            <option value="text">Text Input</option>
-                            <option value="textarea">Long Text</option>
+                        <label class="form-label">Simulation Name</label>
+                        <input type="text" class="form-input" placeholder="Enter simulation name" id="simName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="simCategory">
+                            <option value="networking1">Networking 1</option>
+                            <option value="networking2">Networking 2</option>
+                            <option value="security">Security</option>
+                            <option value="troubleshooting">Troubleshooting</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Question Text *</label>
-                        <textarea class="form-control question-text" rows="2" placeholder="Enter your question..."></textarea>
+                        <label class="form-label">Difficulty Level</label>
+                        <select class="form-select" id="simDifficulty">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label>Answer Options (for multiple choice)</label>
-                        <div class="options-container">
-                            <div class="option-item">
-                                <input type="text" class="form-control" placeholder="Option A">
-                                <input type="checkbox" title="Correct answer">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" placeholder="Describe the simulation objectives and learning goals" id="simDescription"></textarea>
+                    </div>
+                </div>
+
+                <!-- Network Components -->
+                <div class="section">
+                    <h3 class="section-title">
+                        <i class="fas fa-network-wired"></i>
+                        Network Components
+                    </h3>
+                    <div class="component-list">
+                        <div class="component-item" draggable="true" data-component="router">
+                            <div class="component-icon network-component">
+                                <i class="fas fa-route"></i>
                             </div>
-                            <button type="button" class="btn btn-secondary mt-2" onclick="simulationBuilder.addQuestionOption(this)">Add Option</button>
+                            <div class="component-info">
+                                <h4>Router</h4>
+                                <p>Layer 3 routing device</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="switch">
+                            <div class="component-icon network-component">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>Switch</h4>
+                                <p>Layer 2 switching device</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="hub">
+                            <div class="component-icon network-component">
+                                <i class="fas fa-circle-nodes"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>Hub</h4>
+                                <p>Legacy collision domain</p>
+                            </div>
                         </div>
                     </div>
-                `;
-                break;
-                
-            case 'configuration':
-                html = `
-                    <div class="form-group">
-                        <label>Device Type</label>
-                        <select class="form-control device-type">
-                            <option value="router">Router</option>
-                            <option value="switch">Switch</option>
-                            <option value="firewall">Firewall</option>
-                            <option value="server">Server</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Configuration Task *</label>
-                        <textarea class="form-control config-task" rows="3" placeholder="Describe the configuration task..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Expected Configuration Commands</label>
-                        <textarea class="form-control config-commands" rows="4" placeholder="interface GigabitEthernet0/1\nip address 192.168.1.1 255.255.255.0\nno shutdown"></textarea>
-                    </div>
-                `;
-                break;
-                
-            case 'network_diagram':
-                html = `
-                    <div class="form-group">
-                        <label>Network Task *</label>
-                        <textarea class="form-control network-task" rows="2" placeholder="e.g., Identify the path packets take from PC1 to Server1"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Show Diagram</label>
-                        <input type="checkbox" class="show-diagram" checked>
-                        <small class="form-text">Check to display the network diagram for this step</small>
-                    </div>
-                `;
-                break;
-                
-            case 'troubleshooting':
-                html = `
-                    <div class="form-group">
-                        <label>Problem Scenario *</label>
-                        <textarea class="form-control problem-scenario" rows="3" placeholder="Describe the network problem students need to solve..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Troubleshooting Steps</label>
-                        <textarea class="form-control troubleshooting-steps" rows="4" placeholder="List the expected troubleshooting steps..."></textarea>
-                    </div>
-                `;
-                break;
-        }
-        
-        contentContainer.innerHTML = html;
-    }
-    
-    addQuestionOption(button) {
-        const optionsContainer = button.parentElement;
-        const optionCount = optionsContainer.querySelectorAll('.option-item').length + 1;
-        
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'option-item';
-        optionDiv.innerHTML = `
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" class="form-control" placeholder="Option ${String.fromCharCode(65 + optionCount - 1)}">
-                <input type="checkbox" title="Correct answer">
-                <button type="button" class="btn btn-secondary" onclick="simulationBuilder.removeOption(this)"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        
-        optionsContainer.insertBefore(optionDiv, button);
-    }
-    
-    removeOption(button) {
-        button.closest('.option-item').remove();
-    }
-    
-    moveStepUp(button) {
-        const stepDiv = button.closest('.step-builder');
-        const prevStepDiv = stepDiv.previousElementSibling;
-        
-        if (prevStepDiv) {
-            stepDiv.parentNode.insertBefore(stepDiv, prevStepDiv);
-            this.updateStepNumbers();
-        }
-    }
-    
-    moveStepDown(button) {
-        const stepDiv = button.closest('.step-builder');
-        const nextStepDiv = stepDiv.nextElementSibling;
-        
-        if (nextStepDiv) {
-            stepDiv.parentNode.insertBefore(nextStepDiv, stepDiv);
-            this.updateStepNumbers();
-        }
-    }
-    
-    removeStep(button) {
-        const stepDiv = button.closest('.step-builder');
-        stepDiv.remove();
-        this.updateStepNumbers();
-    }
-    
-    updateStepNumbers() {
-        const steps = document.querySelectorAll('.step-builder');
-        steps.forEach((step, index) => {
-            step.querySelector('.step-title').textContent = `Step ${index + 1}`;
-        });
-    }
-    
-    nextStep() {
-        if (this.validateCurrentStep()) {
-            this.saveCurrentStepData();
-            
-            if (this.currentStep < this.maxSteps) {
-                document.getElementById(`step-${this.currentStep}`).style.display = 'none';
-                this.currentStep++;
-                document.getElementById(`step-${this.currentStep}`).style.display = 'block';
-                this.updateStepIndicator();
-                this.updateNavigationButtons();
-                
-                // Special handling for final step
-                if (this.currentStep === this.maxSteps) {
-                    this.updatePreview();
-                }
-            }
-        }
-    }
-    
-    previousStep() {
-        if (this.currentStep > 1) {
-            this.saveCurrentStepData();
-            document.getElementById(`step-${this.currentStep}`).style.display = 'none';
-            this.currentStep--;
-            document.getElementById(`step-${this.currentStep}`).style.display = 'block';
-            this.updateStepIndicator();
-            this.updateNavigationButtons();
-        }
-    }
-    
-    updateStepIndicator() {
-        document.querySelectorAll('.step').forEach((step, index) => {
-            step.classList.remove('active', 'completed');
-            
-            if (index + 1 === this.currentStep) {
-                step.classList.add('active');
-            } else if (index + 1 < this.currentStep) {
-                step.classList.add('completed');
-            }
-        });
-    }
-    
-    updateNavigationButtons() {
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const saveBtn = document.getElementById('save-btn');
-        
-        prevBtn.disabled = this.currentStep === 1;
-        
-        if (this.currentStep === this.maxSteps) {
-            nextBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-block';
-        } else {
-            nextBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-        }
-    }
-    
-    validateCurrentStep() {
-        // Basic validation - in a real app this would be more comprehensive
-        switch (this.currentStep) {
-            case 1:
-                if (!document.getElementById('sim-title').value.trim()) {
-                    alert('Please enter a simulation title.');
-                    return false;
-                }
-                if (!document.getElementById('sim-type').value) {
-                    alert('Please select a simulation type.');
-                    return false;
-                }
-                if (!document.getElementById('sim-description').value.trim()) {
-                    alert('Please enter a simulation description.');
-                    return false;
-                }
-                break;
-                
-            case 3:
-                const objectives = document.querySelectorAll('.objective-input');
-                if (objectives.length > 0 && !objectives[0].value.trim()) {
-                    alert('Please enter at least one learning objective.');
-                    return false;
-                }
-                break;
-                
-            case 4:
-                const steps = document.querySelectorAll('.step-builder');
-                if (steps.length === 0) {
-                    alert('Please add at least one simulation step.');
-                    return false;
-                }
-                break;
-        }
-        
-        return true;
-    }
-    
-    saveCurrentStepData() {
-        switch (this.currentStep) {
-            case 1:
-                this.simulationData.basic = {
-                    title: document.getElementById('sim-title').value,
-                    type: document.getElementById('sim-type').value,
-                    category: document.getElementById('sim-category').value,
-                    difficulty: document.getElementById('sim-difficulty').value,
-                    description: document.getElementById('sim-description').value
-                };
-                break;
-                
-            case 2:
-                this.simulationData.template = {
-                    selectedTemplate: this.selectedTemplate,
-                    startFromScratch: document.getElementById('start-from-scratch').checked
-                };
-                break;
-                
-            case 3:
-                const objectives = Array.from(document.querySelectorAll('.objective-input'))
-                    .map(input => input.value.trim())
-                    .filter(value => value !== '');
-                
-                this.simulationData.objectives = objectives;
-                this.simulationData.settings = {
-                    estimatedDuration: document.getElementById('estimated-duration').value,
-                    prerequisiteKnowledge: document.getElementById('prerequisite-knowledge').value
-                };
-                break;
-                
-            case 4:
-                this.simulationData.steps = this.collectStepsData();
-                break;
-                
-            case 5:
-                this.simulationData.scoring = {
-                    baseScore: document.getElementById('base-score').value,
-                    timeBonus: document.getElementById('time-bonus').value,
-                    perfectBonus: document.getElementById('perfect-bonus').value,
-                    tags: document.getElementById('sim-tags').value,
-                    isActive: document.getElementById('is-active').checked,
-                    isPublished: document.getElementById('is-published').checked
-                };
-                break;
-        }
-    }
-    
-    collectStepsData() {
-        const stepBuilders = document.querySelectorAll('.step-builder');
-        const steps = [];
-        
-        stepBuilders.forEach((stepBuilder, index) => {
-            const stepData = {
-                order: index + 1,
-                title: stepBuilder.querySelector('.step-title-input').value,
-                type: stepBuilder.querySelector('.step-type-select').value,
-                description: stepBuilder.querySelector('.step-description').value,
-                validation: {
-                    expectedAnswer: stepBuilder.querySelector('.validation-answer').value,
-                    score: parseInt(stepBuilder.querySelector('.validation-score').value)
-                }
-            };
-            
-            // Add step-specific data based on type
-            const stepType = stepData.type;
-            const specificContent = stepBuilder.querySelector('.step-specific-content');
-            
-            if (stepType === 'question') {
-                const questionType = specificContent.querySelector('.question-type');
-                const questionText = specificContent.querySelector('.question-text');
-                
-                if (questionType && questionText) {
-                    stepData.questionType = questionType.value;
-                    stepData.questionText = questionText.value;
-                    
-                    // Add options if multiple choice
-                    if (questionType.value === 'multiple_choice') {
-                        const options = Array.from(specificContent.querySelectorAll('.option-item'))
-                            .map(item => {
-                                const text = item.querySelector('input[type="text"]').value;
-                                const isCorrect = item.querySelector('input[type="checkbox"]').checked;
-                                return { text, isCorrect };
-                            });
-                        stepData.options = options;
-                    }
-                }
-            } else if (stepType === 'configuration') {
-                const deviceType = specificContent.querySelector('.device-type');
-                const configTask = specificContent.querySelector('.config-task');
-                const expectedCommands = specificContent.querySelector('.config-commands');
-                
-                if (deviceType && configTask && expectedCommands) {
-                    stepData.deviceType = deviceType.value;
-                    stepData.configTask = configTask.value;
-                    stepData.expectedCommands = expectedCommands.value;
-                }
-            } else if (stepType === 'network_diagram') {
-                const networkTask = specificContent.querySelector('.network-task');
-                const showDiagram = specificContent.querySelector('.show-diagram');
-                
-                if (networkTask && showDiagram) {
-                    stepData.networkTask = networkTask.value;
-                    stepData.showDiagram = showDiagram.checked;
-                }
-            } else if (stepType === 'troubleshooting') {
-                const problemScenario = specificContent.querySelector('.problem-scenario');
-                const troubleshootingSteps = specificContent.querySelector('.troubleshooting-steps');
-                
-                if (problemScenario && troubleshootingSteps) {
-                    stepData.problemScenario = problemScenario.value;
-                    stepData.troubleshootingSteps = troubleshootingSteps.value;
-                }
-            }
-            
-            steps.push(stepData);
-        });
-        
-        return steps;
-    }
-    
-    updatePreview() {
-        const previewContent = document.getElementById('preview-content');
-        this.saveCurrentStepData(); // Make sure we have the latest data
-        
-        let html = `
-            <div class="preview-section">
-                <h5>Basic Information</h5>
-                <p><strong>Title:</strong> ${this.simulationData.basic.title}</p>
-                <p><strong>Type:</strong> ${this.simulationData.basic.type}</p>
-                <p><strong>Category:</strong> ${this.simulationData.basic.category || 'N/A'}</p>
-                <p><strong>Difficulty:</strong> ${this.simulationData.basic.difficulty}</p>
-                <p><strong>Description:</strong> ${this.simulationData.basic.description}</p>
-            </div>
-            
-            <div class="preview-section">
-                <h5>Learning Objectives (${this.simulationData.objectives.length})</h5>
-                <ol>
-                    ${this.simulationData.objectives.map(obj => `<li>${obj}</li>`).join('')}
-                </ol>
-                <p><strong>Estimated Duration:</strong> ${this.simulationData.settings?.estimatedDuration || 'N/A'} minutes</p>
-                <p><strong>Prerequisite Knowledge:</strong> ${this.simulationData.settings?.prerequisiteKnowledge || 'None'}</p>
-            </div>
-            
-            <div class="preview-section">
-                <h5>Simulation Steps (${this.simulationData.steps.length})</h5>
-                ${this.simulationData.steps.map((step, index) => `
-                    <div class="preview-step">
-                        <h6>Step ${index + 1}: ${step.title}</h6>
-                        <p><strong>Type:</strong> ${step.type}</p>
-                        <p><strong>Description:</strong> ${step.description.substring(0, 100)}${step.description.length > 100 ? '...' : ''}</p>
-                        <p><strong>Score:</strong> ${step.validation.score} points</p>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="preview-section">
-                <h5>Scoring</h5>
-                <p><strong>Base Score:</strong> ${this.simulationData.scoring?.baseScore || 100} points</p>
-                <p><strong>Time Bonus:</strong> ${this.simulationData.scoring?.timeBonus || 20} points</p>
-                <p><strong>Perfect Completion Bonus:</strong> ${this.simulationData.scoring?.perfectBonus || 10} points</p>
-                <p><strong>Status:</strong> ${this.simulationData.scoring?.isActive ? 'Active' : 'Inactive'}, ${this.simulationData.scoring?.isPublished ? 'Published' : 'Unpublished'}</p>
-            </div>
-        `;
-        
-        previewContent.innerHTML = html;
-    }
-    
-    async saveSimulation() {
-        this.saveCurrentStepData();
-        
-        // Prepare final simulation data
-        const finalData = {
-            title: this.simulationData.basic.title,
-            description: this.simulationData.basic.description,
-            simulation_type: this.simulationData.basic.type,
-            category: this.simulationData.basic.category,
-            difficulty: this.simulationData.basic.difficulty,
-            learning_objectives: this.simulationData.objectives,
-            estimated_duration: parseInt(this.simulationData.settings.estimatedDuration),
-            prerequisite_knowledge: this.simulationData.settings.prerequisiteKnowledge.split(',').map(s => s.trim()),
-            step_definitions: this.simulationData.steps,
-            base_score: parseInt(this.simulationData.scoring.baseScore),
-            time_bonus: parseInt(this.simulationData.scoring.timeBonus),
-            perfect_completion_bonus: parseInt(this.simulationData.scoring.perfectBonus),
-            tags: this.simulationData.scoring.tags,
-            is_active: this.simulationData.scoring.isActive,
-            is_published: this.simulationData.scoring.isPublished,
-            
-            // Add template configuration if selected
-            simulation_config: this.selectedTemplate ? 
-                this.templates[this.simulationData.basic.type][this.selectedTemplate].default_config : 
-                {}
-        };
-        
-        try {
-            const response = await fetch('/admin/simulation/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(finalData)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                alert('Simulation created successfully!');
-                window.location.href = '/admin/simulation/dashboard';
-            } else {
-                alert('Error creating simulation: ' + (result.error || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('Error saving simulation:', error);
-            alert('Error saving simulation. Please try again.');
-        }
-    }
-}
+                </div>
 
-// Initialize when page loads
-let simulationBuilder;
-document.addEventListener('DOMContentLoaded', function() {
-    simulationBuilder = new SimulationBuilder();
-});
+                <!-- End Devices -->
+                <div class="section">
+                    <h3 class="section-title">
+                        <i class="fas fa-desktop"></i>
+                        End Devices
+                    </h3>
+                    <div class="component-list">
+                        <div class="component-item" draggable="true" data-component="computer">
+                            <div class="component-icon device-component">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>Computer</h4>
+                                <p>Desktop workstation</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="server">
+                            <div class="component-icon device-component">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>Server</h4>
+                                <p>Network server</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="printer">
+                            <div class="component-icon device-component">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>Printer</h4>
+                                <p>Network printer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Protocol Scenarios -->
+                <div class="section">
+                    <h3 class="section-title">
+                        <i class="fas fa-exchange-alt"></i>
+                        Protocol Scenarios
+                    </h3>
+                    <div class="component-list">
+                        <div class="component-item" draggable="true" data-component="http">
+                            <div class="component-icon protocol-component">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>HTTP/HTTPS</h4>
+                                <p>Web traffic simulation</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="ftp">
+                            <div class="component-icon protocol-component">
+                                <i class="fas fa-file-transfer"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>FTP</h4>
+                                <p>File transfer protocol</p>
+                            </div>
+                        </div>
+                        <div class="component-item" draggable="true" data-component="dns">
+                            <div class="component-icon protocol-component">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="component-info">
+                                <h4>DNS</h4>
+                                <p>Domain name resolution</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Builder Canvas -->
+        <div class="simulation-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-drafting-compass"></i>
+                    Simulation Canvas
+                </h2>
+            </div>
+            <div class="panel-content">
+                <div class="builder-canvas" id="builderCanvas">
+                    <div class="canvas-placeholder">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <div>Drag components here to build your simulation</div>
+                        <small>Start by dragging network devices and end devices to create your topology</small>
+                    </div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="previewSimulation()">
+                    <i class="fas fa-play"></i>
+                    Preview Simulation
+                </button>
+                <button class="btn btn-success" onclick="saveSimulation()">
+                    <i class="fas fa-save"></i>
+                    Save Simulation
+                </button>
+                <button class="btn btn-secondary" onclick="clearCanvas()">
+                    <i class="fas fa-trash"></i>
+                    Clear Canvas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Preview -->
+    <div class="simulation-preview" id="simulationPreview" style="display: none;">
+        <div class="preview-header">
+            <h3>Simulation Preview</h3>
+            <span class="status-badge status-draft">Draft</span>
+        </div>
+        <div id="previewContent">
+            <p>Preview will appear here when you build a simulation.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentComponents = [];
+    let canvasComponents = [];
+
+    // Drag and Drop functionality
+    function initializeDragAndDrop() {
+        const componentItems = document.querySelectorAll('.component-item');
+        const canvas = document.getElementById('builderCanvas');
+
+        componentItems.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.dataset.component);
+                item.style.opacity = '0.5';
+            });
+
+            item.addEventListener('dragend', (e) => {
+                item.style.opacity = '1';
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            canvas.classList.add('drag-over');
+        });
+
+        canvas.addEventListener('dragleave', (e) => {
+            canvas.classList.remove('drag-over');
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            canvas.classList.remove('drag-over');
+            
+            const componentType = e.dataTransfer.getData('text/plain');
+            addComponentToCanvas(componentType, e.offsetX, e.offsetY);
+        });
+    }
+
+    function addComponentToCanvas(componentType, x, y) {
+        const canvas = document.getElementById('builderCanvas');
+        
+        // Remove placeholder if this is the first component
+        if (canvasComponents.length === 0) {
+            canvas.innerHTML = '';
+            canvas.style.justifyContent = 'flex-start';
+            canvas.style.alignItems = 'flex-start';
+        }
+
+        const component = document.createElement('div');
+        component.className = 'canvas-component';
+        component.style.cssText = `
+            position: absolute;
+            left: ${x}px;
+            top: ${y}px;
+            width: 80px;
+            height: 80px;
+            background: var(--surface);
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            transition: all 0.3s ease;
+        `;
+
+        const icon = getComponentIcon(componentType);
+        const name = getComponentName(componentType);
+
+        component.innerHTML = `
+            <i class="${icon}" style="font-size: 24px; color: var(--accent-color); margin-bottom: 4px;"></i>
+            <span style="font-size: 10px; color: var(--text-secondary);">${name}</span>
+        `;
+
+        component.addEventListener('click', () => selectComponent(component));
+        makeDraggable(component);
+
+        canvas.appendChild(component);
+        canvasComponents.push({
+            id: Date.now(),
+            type: componentType,
+            element: component,
+            x: x,
+            y: y
+        });
+
+        updateCanvasInfo();
+    }
+
+    function getComponentIcon(type) {
+        const icons = {
+            router: 'fas fa-route',
+            switch: 'fas fa-project-diagram',
+            hub: 'fas fa-circle-nodes',
+            computer: 'fas fa-desktop',
+            server: 'fas fa-server',
+            printer: 'fas fa-print',
+            http: 'fas fa-globe',
+            ftp: 'fas fa-file-transfer',
+            dns: 'fas fa-search'
+        };
+        return icons[type] || 'fas fa-question';
+    }
+
+    function getComponentName(type) {
+        const names = {
+            router: 'Router',
+            switch: 'Switch',
+            hub: 'Hub',
+            computer: 'PC',
+            server: 'Server',
+            printer: 'Printer',
+            http: 'HTTP',
+            ftp: 'FTP',
+            dns: 'DNS'
+        };
+        return names[type] || 'Unknown';
+    }
+
+    function makeDraggable(element) {
+        let isDragging = false;
+        let startX, startY, offsetX, offsetY;
+
+        element.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            offsetX = e.offsetX;
+            offsetY = e.offsetY;
+            element.style.zIndex = '1000';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const canvas = document.getElementById('builderCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left - offsetX;
+            const y = e.clientY - rect.top - offsetY;
+
+            element.style.left = Math.max(0, Math.min(x, canvas.clientWidth - 80)) + 'px';
+            element.style.top = Math.max(0, Math.min(y, canvas.clientHeight - 80)) + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                element.style.zIndex = 'auto';
+            }
+        });
+    }
+
+    function selectComponent(component) {
+        // Remove previous selection
+        document.querySelectorAll('.canvas-component').forEach(c => {
+            c.style.borderColor = 'var(--accent-color)';
+        });
+        
+        // Highlight selected component
+        component.style.borderColor = 'var(--cyber-glow)';
+        component.style.boxShadow = '0 0 20px rgba(0, 217, 255, 0.5)';
+    }
+
+    function updateCanvasInfo() {
+        const canvas = document.getElementById('builderCanvas');
+        if (canvasComponents.length === 0) {
+            canvas.innerHTML = `
+                <div class="canvas-placeholder">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <div>Drag components here to build your simulation</div>
+                    <small>Start by dragging network devices and end devices to create your topology</small>
+                </div>
+            `;
+            canvas.style.justifyContent = 'center';
+            canvas.style.alignItems = 'center';
+        }
+    }
+
+    function previewSimulation() {
+        const preview = document.getElementById('simulationPreview');
+        const previewContent = document.getElementById('previewContent');
+        
+        if (canvasComponents.length === 0) {
+            alert('Please add components to the canvas before previewing.');
+            return;
+        }
+
+        let previewHTML = '<h4>Simulation Components:</h4><ul>';
+        canvasComponents.forEach(comp => {
+            previewHTML += `<li>${getComponentName(comp.type)} at position (${Math.round(comp.x)}, ${Math.round(comp.y)})</li>`;
+        });
+        previewHTML += '</ul>';
+
+        previewContent.innerHTML = previewHTML;
+        preview.style.display = 'block';
+        preview.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function saveSimulation() {
+        const simName = document.getElementById('simName').value;
+        const simCategory = document.getElementById('simCategory').value;
+        const simDifficulty = document.getElementById('simDifficulty').value;
+        const simDescription = document.getElementById('simDescription').value;
+
+        if (!simName || canvasComponents.length === 0) {
+            alert('Please provide a simulation name and add components to the canvas.');
+            return;
+        }
+
+        const simulationData = {
+            name: simName,
+            category: simCategory,
+            difficulty: simDifficulty,
+            description: simDescription,
+            components: canvasComponents.map(comp => ({
+                type: comp.type,
+                x: comp.x,
+                y: comp.y
+            })),
+            created: new Date().toISOString()
+        };
+
+        // Here you would typically send this data to your backend
+        console.log('Saving simulation:', simulationData);
+        alert('Simulation saved successfully!');
+    }
+
+    function clearCanvas() {
+        if (canvasComponents.length === 0) return;
+        
+        if (confirm('Are you sure you want to clear the canvas? This action cannot be undone.')) {
+            canvasComponents = [];
+            updateCanvasInfo();
+        }
+    }
+
+    // Initialize the builder
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDragAndDrop();
+    });
 </script>
 {% endblock %}

@@ -1,0 +1,976 @@
+{% extends "admin/base.html" %}
+
+{% block head %}
+<title>Module Builder - RiddleNet Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<style>
+    .main-content {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        background: var(--background);
+        transition: all var(--transition-speed) ease;
+        padding: 24px;
+    }
+
+    .page-header {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        padding: 32px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--network-purple), var(--cyber-glow));
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, var(--text-primary), var(--network-purple));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .builder-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr 300px;
+        gap: 24px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .panel {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05));
+    }
+
+    .panel-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .panel-content {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .module-info {
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--network-purple);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .content-types {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .content-type {
+        padding: 16px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .content-type:hover {
+        border-color: var(--network-purple);
+        background: rgba(139, 92, 246, 0.05);
+        transform: translateX(4px);
+    }
+
+    .content-type.selected {
+        border-color: var(--network-purple);
+        background: rgba(139, 92, 246, 0.1);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .content-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+    }
+
+    .text-icon { background: var(--accent-color); }
+    .video-icon { background: var(--danger-color); }
+    .image-icon { background: var(--success-color); }
+    .simulation-icon { background: var(--network-purple); }
+    .quiz-icon { background: var(--warning-color); }
+    .interactive-icon { background: var(--cyber-glow); color: var(--background); }
+
+    .content-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+        color: var(--text-primary);
+    }
+
+    .content-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .module-canvas {
+        background: var(--background);
+        border: 2px dashed var(--border-color);
+        border-radius: var(--border-radius);
+        min-height: 500px;
+        position: relative;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .canvas-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .canvas-empty i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .lesson-item {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .lesson-item:hover {
+        border-color: var(--network-purple);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+    }
+
+    .lesson-header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), transparent);
+    }
+
+    .lesson-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lesson-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .lesson-content {
+        padding: 16px;
+        border-top: 1px solid var(--border-color);
+        background: var(--background);
+    }
+
+    .property-panel {
+        background: var(--surface);
+    }
+
+    .property-section {
+        margin-bottom: 24px;
+    }
+
+    .property-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--network-purple);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--network-purple);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #7c3aed;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-warning {
+        background: var(--warning-color);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+        background: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .action-bar {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        background: var(--surface-hover);
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: var(--background);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--border-color);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--network-purple), var(--cyber-glow));
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .lesson-type-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: white;
+    }
+
+    .type-text { background: var(--accent-color); }
+    .type-video { background: var(--danger-color); }
+    .type-image { background: var(--success-color); }
+    .type-simulation { background: var(--network-purple); }
+    .type-quiz { background: var(--warning-color); }
+    .type-interactive { background: var(--cyber-glow); color: var(--background); }
+
+    .sortable-list {
+        min-height: 200px;
+    }
+
+    .drag-placeholder {
+        height: 4px;
+        background: var(--network-purple);
+        border-radius: 2px;
+        margin: 8px 0;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .drag-placeholder.active {
+        opacity: 1;
+    }
+</style>
+
+<div class="main-content">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-layer-group"></i>
+            Module Builder
+        </h1>
+        <p class="page-subtitle">Create structured learning modules with lessons, assessments, and interactive content</p>
+    </div>
+
+    <div class="builder-layout">
+        <!-- Content Library Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-puzzle-piece"></i>
+                    Content Library
+                </h2>
+            </div>
+            <div class="panel-content">
+                <!-- Module Settings -->
+                <div class="module-info">
+                    <div class="form-group">
+                        <label class="form-label">Module Name</label>
+                        <input type="text" class="form-input" placeholder="Enter module name" id="moduleName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <select class="form-select" id="moduleSubject">
+                            <option value="networking1">Networking Fundamentals</option>
+                            <option value="networking2">Advanced Networking</option>
+                            <option value="security">Network Security</option>
+                            <option value="troubleshooting">Troubleshooting</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" placeholder="Module description and learning objectives" id="moduleDescription"></textarea>
+                    </div>
+                </div>
+
+                <!-- Content Types -->
+                <div class="property-section">
+                    <h3 class="property-title">
+                        <i class="fas fa-plus"></i>
+                        Add Content
+                    </h3>
+                    <div class="content-types">
+                        <div class="content-type" onclick="addContentItem('text')">
+                            <div class="content-icon text-icon">
+                                <i class="fas fa-file-text"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Text Lesson</h4>
+                                <p>Written content with formatting</p>
+                            </div>
+                        </div>
+                        <div class="content-type" onclick="addContentItem('video')">
+                            <div class="content-icon video-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Video Lesson</h4>
+                                <p>Video content with transcripts</p>
+                            </div>
+                        </div>
+                        <div class="content-type" onclick="addContentItem('image')">
+                            <div class="content-icon image-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Image Gallery</h4>
+                                <p>Diagrams and visual content</p>
+                            </div>
+                        </div>
+                        <div class="content-type" onclick="addContentItem('simulation')">
+                            <div class="content-icon simulation-icon">
+                                <i class="fas fa-play-circle"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Simulation</h4>
+                                <p>Interactive network simulation</p>
+                            </div>
+                        </div>
+                        <div class="content-type" onclick="addContentItem('quiz')">
+                            <div class="content-icon quiz-icon">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Quiz/Assessment</h4>
+                                <p>Knowledge check questions</p>
+                            </div>
+                        </div>
+                        <div class="content-type" onclick="addContentItem('interactive')">
+                            <div class="content-icon interactive-icon">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4>Interactive Lab</h4>
+                                <p>Hands-on practice exercises</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Canvas -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-sitemap"></i>
+                    Module Structure
+                </h2>
+            </div>
+            <div class="panel-content">
+                <div class="progress-indicator">
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); min-width: 80px;">Progress:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="moduleProgress"></div>
+                    </div>
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); min-width: 40px;" id="progressText">0%</span>
+                </div>
+
+                <div class="module-canvas sortable-list" id="moduleCanvas">
+                    <div class="canvas-empty">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>Start Building Your Module</h3>
+                        <p>Add content items from the library to create your learning module</p>
+                        <small>Drag items to reorder them within the module</small>
+                    </div>
+                </div>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-secondary" onclick="previewModule()">
+                    <i class="fas fa-eye"></i>
+                    Preview
+                </button>
+                <button class="btn btn-success" onclick="saveModule()">
+                    <i class="fas fa-save"></i>
+                    Save Module
+                </button>
+                <button class="btn btn-primary" onclick="publishModule()">
+                    <i class="fas fa-rocket"></i>
+                    Publish
+                </button>
+            </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <div class="panel property-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-cog"></i>
+                    Item Properties
+                </h2>
+            </div>
+            <div class="panel-content" id="propertiesPanel">
+                <div class="canvas-empty">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <h4>Select an Item</h4>
+                    <p>Click on a lesson item to edit its properties</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let moduleItems = [];
+    let selectedItem = null;
+    let itemCounter = 0;
+
+    function addContentItem(type) {
+        const canvas = document.getElementById('moduleCanvas');
+        
+        // Remove empty state if this is the first item
+        if (moduleItems.length === 0) {
+            canvas.innerHTML = '';
+        }
+
+        const itemId = `item_${++itemCounter}`;
+        const item = {
+            id: itemId,
+            type: type,
+            title: getDefaultTitle(type),
+            content: '',
+            order: moduleItems.length,
+            properties: getDefaultProperties(type)
+        };
+
+        moduleItems.push(item);
+        renderModuleItem(item);
+        updateProgress();
+        selectItem(item);
+    }
+
+    function getDefaultTitle(type) {
+        const titles = {
+            text: 'Text Lesson',
+            video: 'Video Lesson',
+            image: 'Image Gallery',
+            simulation: 'Network Simulation',
+            quiz: 'Knowledge Check',
+            interactive: 'Interactive Lab'
+        };
+        return titles[type] || 'New Item';
+    }
+
+    function getDefaultProperties(type) {
+        const properties = {
+            text: { estimatedTime: 10, difficulty: 'beginner' },
+            video: { duration: 0, autoplay: false, captions: true },
+            image: { allowZoom: true, showCaptions: true },
+            simulation: { maxAttempts: 3, showHints: true },
+            quiz: { passingScore: 70, randomize: false, showAnswers: true },
+            interactive: { timeLimit: 0, saveProgress: true }
+        };
+        return properties[type] || {};
+    }
+
+    function renderModuleItem(item) {
+        const canvas = document.getElementById('moduleCanvas');
+        const itemElement = document.createElement('div');
+        itemElement.className = 'lesson-item';
+        itemElement.dataset.itemId = item.id;
+        itemElement.draggable = true;
+
+        const iconClass = getContentIcon(item.type);
+        const typeClass = `type-${item.type}`;
+
+        itemElement.innerHTML = `
+            <div class="lesson-header">
+                <div class="lesson-title">
+                    <i class="${iconClass}"></i>
+                    <span>${item.title}</span>
+                    <span class="lesson-type-badge ${typeClass}">${item.type.toUpperCase()}</span>
+                </div>
+                <div class="lesson-actions">
+                    <button class="btn btn-secondary btn-small" onclick="editItem('${item.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-small" onclick="deleteItem('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add click handler for selection
+        itemElement.addEventListener('click', () => selectItem(item));
+        
+        // Add drag and drop handlers
+        setupDragAndDrop(itemElement);
+
+        canvas.appendChild(itemElement);
+    }
+
+    function getContentIcon(type) {
+        const icons = {
+            text: 'fas fa-file-text',
+            video: 'fas fa-video',
+            image: 'fas fa-image',
+            simulation: 'fas fa-play-circle',
+            quiz: 'fas fa-question-circle',
+            interactive: 'fas fa-mouse-pointer'
+        };
+        return icons[type] || 'fas fa-file';
+    }
+
+    function selectItem(item) {
+        selectedItem = item;
+        
+        // Update visual selection
+        document.querySelectorAll('.lesson-item').forEach(el => {
+            el.style.borderColor = 'var(--border-color)';
+        });
+        
+        const itemElement = document.querySelector(`[data-item-id="${item.id}"]`);
+        if (itemElement) {
+            itemElement.style.borderColor = 'var(--network-purple)';
+        }
+
+        renderProperties(item);
+    }
+
+    function renderProperties(item) {
+        const panel = document.getElementById('propertiesPanel');
+        
+        panel.innerHTML = `
+            <div class="property-section">
+                <h3 class="property-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Properties
+                </h3>
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" class="form-input" value="${item.title}" 
+                           onchange="updateItemProperty('${item.id}', 'title', this.value)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" placeholder="Enter content description" 
+                              onchange="updateItemProperty('${item.id}', 'content', this.value)">${item.content}</textarea>
+                </div>
+            </div>
+            
+            <div class="property-section">
+                <h3 class="property-title">
+                    <i class="fas fa-sliders-h"></i>
+                    ${item.type.toUpperCase()} Settings
+                </h3>
+                ${renderTypeSpecificProperties(item)}
+            </div>
+            
+            <div class="property-section">
+                <button class="btn btn-primary" onclick="saveItemProperties('${item.id}')">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+                <button class="btn btn-secondary" onclick="previewItem('${item.id}')">
+                    <i class="fas fa-eye"></i>
+                    Preview Item
+                </button>
+            </div>
+        `;
+    }
+
+    function renderTypeSpecificProperties(item) {
+        switch (item.type) {
+            case 'text':
+                return `
+                    <div class="form-group">
+                        <label class="form-label">Estimated Reading Time (minutes)</label>
+                        <input type="number" class="form-input" value="${item.properties.estimatedTime}" min="1" max="60">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Difficulty Level</label>
+                        <select class="form-select">
+                            <option value="beginner" ${item.properties.difficulty === 'beginner' ? 'selected' : ''}>Beginner</option>
+                            <option value="intermediate" ${item.properties.difficulty === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                            <option value="advanced" ${item.properties.difficulty === 'advanced' ? 'selected' : ''}>Advanced</option>
+                        </select>
+                    </div>
+                `;
+            case 'video':
+                return `
+                    <div class="form-group">
+                        <label class="form-label">Video URL</label>
+                        <input type="url" class="form-input" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-input" value="${item.properties.duration}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" ${item.properties.autoplay ? 'checked' : ''}>
+                            <span>Autoplay video</span>
+                        </label>
+                    </div>
+                `;
+            case 'simulation':
+                return `
+                    <div class="form-group">
+                        <label class="form-label">Simulation Type</label>
+                        <select class="form-select">
+                            <option value="osi-model">OSI Model</option>
+                            <option value="ethernet">Ethernet</option>
+                            <option value="routing">Routing</option>
+                            <option value="switching">Switching</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Maximum Attempts</label>
+                        <input type="number" class="form-input" value="${item.properties.maxAttempts}" min="1" max="10">
+                    </div>
+                `;
+            case 'quiz':
+                return `
+                    <div class="form-group">
+                        <label class="form-label">Passing Score (%)</label>
+                        <input type="number" class="form-input" value="${item.properties.passingScore}" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" ${item.properties.randomize ? 'checked' : ''}>
+                            <span>Randomize question order</span>
+                        </label>
+                    </div>
+                `;
+            default:
+                return '<p style="color: var(--text-muted);">No specific settings for this content type.</p>';
+        }
+    }
+
+    function updateItemProperty(itemId, property, value) {
+        const item = moduleItems.find(i => i.id === itemId);
+        if (item) {
+            item[property] = value;
+            
+            // Update the display if it's the title
+            if (property === 'title') {
+                const itemElement = document.querySelector(`[data-item-id="${itemId}"] .lesson-title span`);
+                if (itemElement) {
+                    itemElement.textContent = value;
+                }
+            }
+        }
+    }
+
+    function editItem(itemId) {
+        const item = moduleItems.find(i => i.id === itemId);
+        if (item) {
+            selectItem(item);
+        }
+    }
+
+    function deleteItem(itemId) {
+        if (confirm('Are you sure you want to delete this item?')) {
+            moduleItems = moduleItems.filter(i => i.id !== itemId);
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.remove();
+            }
+            
+            updateProgress();
+            
+            // Clear properties panel if this was the selected item
+            if (selectedItem && selectedItem.id === itemId) {
+                selectedItem = null;
+                document.getElementById('propertiesPanel').innerHTML = `
+                    <div class="canvas-empty">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <h4>Select an Item</h4>
+                        <p>Click on a lesson item to edit its properties</p>
+                    </div>
+                `;
+            }
+            
+            // Show empty state if no items remain
+            if (moduleItems.length === 0) {
+                document.getElementById('moduleCanvas').innerHTML = `
+                    <div class="canvas-empty">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>Start Building Your Module</h3>
+                        <p>Add content items from the library to create your learning module</p>
+                        <small>Drag items to reorder them within the module</small>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function setupDragAndDrop(element) {
+        element.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', element.dataset.itemId);
+            element.style.opacity = '0.5';
+        });
+
+        element.addEventListener('dragend', (e) => {
+            element.style.opacity = '1';
+        });
+
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const targetId = element.dataset.itemId;
+            
+            if (draggedId !== targetId) {
+                reorderItems(draggedId, targetId);
+            }
+        });
+    }
+
+    function reorderItems(draggedId, targetId) {
+        const draggedIndex = moduleItems.findIndex(i => i.id === draggedId);
+        const targetIndex = moduleItems.findIndex(i => i.id === targetId);
+        
+        if (draggedIndex !== -1 && targetIndex !== -1) {
+            const draggedItem = moduleItems[draggedIndex];
+            moduleItems.splice(draggedIndex, 1);
+            moduleItems.splice(targetIndex, 0, draggedItem);
+            
+            // Re-render the canvas
+            const canvas = document.getElementById('moduleCanvas');
+            canvas.innerHTML = '';
+            moduleItems.forEach(item => renderModuleItem(item));
+        }
+    }
+
+    function updateProgress() {
+        const progress = moduleItems.length > 0 ? Math.min((moduleItems.length / 5) * 100, 100) : 0;
+        document.getElementById('moduleProgress').style.width = `${progress}%`;
+        document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
+    }
+
+    function saveItemProperties(itemId) {
+        alert(`Properties saved for item: ${itemId}`);
+    }
+
+    function previewItem(itemId) {
+        const item = moduleItems.find(i => i.id === itemId);
+        if (item) {
+            alert(`Previewing ${item.type}: ${item.title}`);
+        }
+    }
+
+    function previewModule() {
+        if (moduleItems.length === 0) {
+            alert('Please add some content items before previewing.');
+            return;
+        }
+        alert('Opening module preview...');
+    }
+
+    function saveModule() {
+        const moduleName = document.getElementById('moduleName').value;
+        const moduleSubject = document.getElementById('moduleSubject').value;
+        const moduleDescription = document.getElementById('moduleDescription').value;
+
+        if (!moduleName || moduleItems.length === 0) {
+            alert('Please provide a module name and add content items.');
+            return;
+        }
+
+        const moduleData = {
+            name: moduleName,
+            subject: moduleSubject,
+            description: moduleDescription,
+            items: moduleItems,
+            created: new Date().toISOString()
+        };
+
+        console.log('Saving module:', moduleData);
+        alert('Module saved successfully!');
+    }
+
+    function publishModule() {
+        if (moduleItems.length === 0) {
+            alert('Please add content items before publishing.');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to publish this module? It will become available to students.')) {
+            alert('Module published successfully!');
+        }
+    }
+
+    // Initialize the builder
+    document.addEventListener('DOMContentLoaded', function() {
+        updateProgress();
+    });
+</script>
+{% endblock %}

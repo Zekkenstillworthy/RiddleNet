@@ -174,9 +174,10 @@ try:
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
-        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes
-        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-        ('admin.routes.scenario_routes', 'scenario_routes', '/admin', None)
+        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
+        ('admin.routes.scenario_routes', 'scenario_routes', '/admin', None),
+        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
+        ('admin.routes.learning_routes', 'learning_path_bp', None, 'learning_path_bp')  # Learning path routes
     ]
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
