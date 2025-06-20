@@ -856,7 +856,9 @@
 
                 // Category Performance Chart
                 const categoryCtx = document.getElementById('categoryScoresChart');
-                if (categoryCtx) {
+                if (categoryCtx) {                    // Parse the category_avg data
+                    const categoryData = JSON.parse('{{ category_avg|safe }}');
+                    
                     new Chart(categoryCtx, {
                         type: 'radar',
                         data: {
@@ -864,10 +866,10 @@
                             datasets: [{
                                 label: 'Average Score',
                                 data: [
-                                    {{ category_avg.riddle|default(0) }},
-                                    {{ category_avg.topology|default(0) }},
-                                    {{ category_avg.troubleshoot|default(0) }},
-                                    {{ category_avg.crimping|default(0) }}
+                                    categoryData.riddle || 0,
+                                    categoryData.topology || 0,
+                                    categoryData.troubleshoot || 0,
+                                    categoryData.crimping || 0
                                 ],
                                 backgroundColor: 'rgba(139, 92, 246, 0.2)',
                                 borderColor: '#8B5CF6',

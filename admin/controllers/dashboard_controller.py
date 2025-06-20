@@ -66,10 +66,10 @@ def index():    # Get basic stats - ensure we're using the correct tables
             func.date(Score.date_attempted) == date_obj
         ).with_entities(Score.user_id).distinct().count()
         active_users.append(count)
-    
-    # 4. Enhanced category analytics
+      # 4. Enhanced category analytics
     categories = ['riddle', 'topology', 'troubleshoot', 'crimping']
     category_analytics = {}
+    category_avg = {}  # Initialize category_avg for the chart
     
     for cat in categories:
         scores = Score.query.filter(Score.category == cat).all()
@@ -83,11 +83,14 @@ def index():    # Get basic stats - ensure we're using the correct tables
                 'highest_score': round(max(score_values) * 100 / 3, 1),
                 'improvement_trend': 'up' if len(scores) > 5 else 'stable'  # Simplified trend
             }
+            # Set category average for the chart
+            category_avg[cat] = round(avg_score * 100 / 3, 1)
         else:
             category_analytics[cat] = {
                 'avg_score': 0, 'total_attempts': 0, 'unique_users': 0, 
                 'highest_score': 0, 'improvement_trend': 'no_data'
             }
+            category_avg[cat] = 0  # Set default value for the chart
     
     # 5. Top performing users (for dashboard overview)
     top_performers = (
@@ -163,8 +166,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
         ]
-    
-    # System alerts
+      # System alerts
     system_alerts = []
     unreviewed_essays = EssayResponse.query.filter_by(is_graded=False).count()
     if unreviewed_essays > 0:
@@ -182,6 +184,11 @@ def index():    # Get basic stats - ensure we're using the correct tables
             'message': f'{recent_low_scores} low scores this week - consider reviewing content difficulty',
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
+      # Make sure category_avg is properly initialized with all required keys
+    required_categories = ['riddle', 'topology', 'troubleshoot', 'crimping']
+    for cat in required_categories:
+        if cat not in category_avg:
+            category_avg[cat] = 0
 
     return render_safe_template('admin/dashboard.html', 
                            total_users=total_users,
@@ -192,6 +199,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
                            activity_dates=json.dumps(activity_dates),
                            active_users=json.dumps(active_users),
                            category_analytics=category_analytics,
+                           category_avg=json.dumps(category_avg),  # Convert to JSON string
                            daily_performance=json.dumps(daily_performance),
                            top_performers=top_performers,
                            score_insights=score_insights,

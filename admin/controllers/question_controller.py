@@ -19,11 +19,12 @@ class QuestionController:
             'admin/questions.html',
             groups=groups,
             active_page='questions'
-        )
-    @staticmethod
+        )    @staticmethod
     @question_bp.route('/ungrouped', methods=['GET'])
     @login_required
     def get_ungrouped_questions():
+        # Get all question groups first
+        groups = QuestionGroup.query.all()
         grouped_question_ids = []
         for group in groups:
             for question in group.questions:
