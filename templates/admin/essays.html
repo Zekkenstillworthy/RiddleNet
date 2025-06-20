@@ -133,10 +133,9 @@
                                 <td class="username-cell">
                                     <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="User profile" class="user-profile-pic">
                                     <span>{{ essay.username if essay.username else essay.user_id }}</span>
-                                </td>
-                                <td>
+                                </td>                                <td>
                                     <span class="essay-excerpt" title="{{ essay.question }}">
-                                        {{ essay.question }}
+                                        {{ essay.question[:30] }}{% if essay.question|length > 30 %}...{% endif %}
                                     </span>
                                 </td>
                                 <td>
@@ -151,12 +150,12 @@
                                 </td>
                                 <td>
                                     <time datetime="{{ essay.submission_date.isoformat() }}">
-                                        {{ essay.submission_date.strftime('%Y-%m-%d %H:%M') }}
+                                        {{ essay.submission_date.strftime('%m/%d %H:%M') }}
                                     </time>
                                 </td>
                                 <td>
                                     <span class="status {% if essay.is_graded %}reviewed{% else %}pending{% endif %}">
-                                        {{ 'Reviewed' if essay.is_graded else 'Pending Review' }}
+                                        {{ 'Reviewed' if essay.is_graded else 'Pending' }}
                                     </span>
                                 </td>
                                 <td>
@@ -204,10 +203,11 @@
                             </tr>
                             {% endfor %}
                         </tbody>
-                    </table>
-                </div>                <div class="pagination">
+                    </table>                </div><div class="pagination">
                     <a href="#">&laquo;</a>
-                    <a href="#" class="active">1</a>
+                    <a href="#">1</a>
+                    <a href="#" class="active">2</a>
+                    <a href="#">3</a>
                     <a href="#">&raquo;</a>
                 </div>
             

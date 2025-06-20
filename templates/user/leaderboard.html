@@ -2,9 +2,18 @@
 {% block head %}
 <title>Leaderboard | RiddleNet</title>
 <style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
   @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
   
   :root {
+    /* Modern Gaming Network Theme - Exact Admin Dashboard Match */
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
     --cyber-glow: #00D9FF;
     --neon-green: #39FF14;
     --network-purple: #8B5CF6;
@@ -16,29 +25,85 @@
     --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
     --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
     --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+    
+    /* Background & Surface Colors - Admin Dashboard Match */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --border-color: rgba(59, 130, 246, 0.2);
+    
+    /* Text Colors - Admin Dashboard Match */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    --text-inverse: #ffffff;
+    
+    /* Effects - Exact Admin Dashboard Match */
+    --shadow-lg: 0 8px 32px rgba(26, 35, 126, 0.4);
+    --shadow-glow: 0 12px 40px rgba(0, 217, 255, 0.2);
+    --shadow-cyber: 0 16px 48px rgba(0, 217, 255, 0.25);
+    --border-radius: 16px;
+    --transition-speed: 0.3s;
+    --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .leaderboard-container {
-    max-width: 1100px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 24px;
+
+
+  body {
+    background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+    background-size: cover;
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+    position: relative;
+    overflow-x: hidden;
   }
-  
-  .leaderboard-wrapper {
+
+  /* Network Grid Background Animation - Exact Admin Dashboard Match */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: calc(100% + 50px);
+    height: calc(100% + 50px);
+    background-image: 
+      linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes gridMove {
+    100% { transform: translate(50px, 50px); }
+  }
+
+  .page-container {
+    padding: 32px;
+    min-height: 100vh;
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Page Header - Exact Admin Dashboard Style */
+  .page-header {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    padding: 0;
-    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-    overflow: hidden;
-    width: 100%;
-    transition: all 0.3s ease;
+    border-radius: var(--border-radius);
+    padding: 24px 32px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     position: relative;
+    overflow: hidden;
   }
 
-  .leaderboard-wrapper::before {
+  .page-header::before {
     content: '';
     position: absolute;
     top: 0;
@@ -49,138 +114,365 @@
     opacity: 0.8;
   }
 
-  .leaderboard-wrapper:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
-    border-color: var(--cyber-glow);
-  }
-  
-  /* Enhanced section header */
-  .leaderboard-heading {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2.5rem;
-    text-align: center;
-    margin: 0;
-    padding: 32px 0;
+  .page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .page-header .header-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+  }
+
+  .page-header .header-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .leaderboard-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+  }
+  
+  /* Modern Glassmorphism Card Design - Exact Admin Dashboard Match */
+  .leaderboard-wrapper {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 0;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    width: 100%;
+    transition: all var(--transition-speed) ease;
     position: relative;
+    margin-bottom: 30px;
+  }
+
+  .leaderboard-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 1;
+    z-index: 2;
+  }
+
+  .leaderboard-wrapper:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-cyber);
+    border-color: var(--cyber-glow);
+  }
+  
+  /* Enhanced section header - Exact Admin Dashboard Style */
+  .leaderboard-heading {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    padding: 32px 0 24px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .leaderboard-heading::before {
+    content: '🏆';
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  .leaderboard-heading i {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-right: 20px;
+    font-size: 1.8rem;
+    animation: trophyGlow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes trophyGlow {
+    from {
+      filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+    to {
+      filter: drop-shadow(0 0 20px var(--cyber-glow)) drop-shadow(0 0 30px rgba(0, 217, 255, 0.5));
+    }
   }
 
   .leaderboard-heading::after {
     content: '';
     position: absolute;
-    bottom: 16px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 2px;
+    width: 120px;
+    height: 3px;
     background: var(--gradient-primary);
+    border-radius: 2px;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
   }
 
-  /* Modern card and list styling */
-  .modern-card {
+  /* Category Filter Tabs - Exact Admin Dashboard Style */
+  .category-filters {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--dark-bg);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 12px 24px;
     background: transparent;
-    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    transition: var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .filter-btn:not(.active):hover {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    border-color: var(--glass-border);
+  }
+
+  .filter-btn.active {
+    background: var(--gradient-primary);
+    color: white;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Modern card and list styling - Exact Admin Dashboard Match */
+  .modern-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
     width: 100%;
+    transition: all var(--transition-speed) ease;
+  }
+
+  .modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+  }
+
+  .modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-cyber);
+    border-color: var(--cyber-glow);
   }
   
   .leaderboard-list {
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    gap: 12px;
+    padding: 0;
+    gap: 16px;
   }
 
-  /* Enhanced leaderboard entries with admin dashboard styling */
+  /* Enhanced leaderboard entries - Exact Admin Dashboard Table Style */
   .leaderboard-entry {
     display: flex;
     align-items: center;
-    background: var(--dark-bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
     padding: 20px 24px;
-    transition: all 0.3s ease;
+    transition: var(--transition-normal);
     position: relative;
     overflow: hidden;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
-    box-shadow: 0 4px 12px rgba(26, 35, 126, 0.3);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 8px;
   }
 
   .leaderboard-entry::before {
     content: '';
     position: absolute;
-    left: 0;
     top: 0;
-    bottom: 0;
-    width: 4px;
+    left: 0;
+    right: 0;
+    height: 1px;
     background: var(--gradient-primary);
+    opacity: 0.6;
   }
 
   .leaderboard-entry:hover {
-    transform: translateY(-2px) scale(1.01);
-    background: rgba(0, 217, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-cyber);
     border-color: var(--cyber-glow);
-    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    background: var(--surface-hover);
   }
-  
-  /* Special styling for top 3 positions */
+
+  /* Special styling for top 3 positions - Admin Dashboard Style */
+  .leaderboard-entry[data-rank="1"] {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), var(--glass-bg));
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+  }
+
   .leaderboard-entry[data-rank="1"]::before {
     background: linear-gradient(135deg, #ffd700, #ffed4e);
+    height: 3px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  }
+
+  .leaderboard-entry[data-rank="1"]:hover {
+    box-shadow: 0 16px 48px rgba(255, 215, 0, 0.4);
+    transform: translateY(-6px) scale(1.02);
   }
   
+  .leaderboard-entry[data-rank="2"] {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), var(--glass-bg));
+    border: 2px solid rgba(192, 192, 192, 0.4);
+    box-shadow: 0 8px 32px rgba(192, 192, 192, 0.3);
+  }
+
   .leaderboard-entry[data-rank="2"]::before {
     background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    height: 3px;
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.6);
+  }
+
+  .leaderboard-entry[data-rank="2"]:hover {
+    box-shadow: 0 15px 50px rgba(192, 192, 192, 0.5);
+    transform: translateY(-8px) scale(1.03);
   }
   
+  .leaderboard-entry[data-rank="3"] {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(255, 179, 102, 0.1));
+    border: 2px solid rgba(205, 127, 50, 0.4);
+    box-shadow: 0 8px 30px rgba(205, 127, 50, 0.3);
+  }
+
   .leaderboard-entry[data-rank="3"]::before {
     background: linear-gradient(135deg, #cd7f32, #ffb366);
+    width: 8px;
+    box-shadow: 0 0 15px rgba(205, 127, 50, 0.6);
+  }
+
+  .leaderboard-entry[data-rank="3"]:hover {
+    box-shadow: 0 15px 50px rgba(205, 127, 50, 0.5);
+    transform: translateY(-8px) scale(1.03);
   }
 
   .rank-badge {
     flex-shrink: 0;
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 20px;
     font-weight: 700;
-    font-size: 1.5rem;
-    font-family: 'Orbitron', sans-serif;
-    color: #ffffff;
+    font-size: 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: 2px solid var(--border-color);
     border-radius: 50%;
     position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .rank-badge:hover {
+    transform: scale(1.1);
   }
 
   /* Special rank badges for top 3 */
   .leaderboard-entry[data-rank="1"] .rank-badge {
     background: linear-gradient(135deg, #ffd700, #ffed4e);
     color: #000;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+    border: 2px solid #ffd700;
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
   }
 
   .leaderboard-entry[data-rank="2"] .rank-badge {
     background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
     color: #000;
-    box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+    box-shadow: 0 0 25px rgba(192, 192, 192, 0.6);
+    border: 2px solid #c0c0c0;
+    width: 65px;
+    height: 65px;
+    font-size: 1.7rem;
   }
 
   .leaderboard-entry[data-rank="3"] .rank-badge {
     background: linear-gradient(135deg, #cd7f32, #ffb366);
     color: #000;
-    box-shadow: 0 0 20px rgba(205, 127, 50, 0.5);
+    box-shadow: 0 0 25px rgba(205, 127, 50, 0.6);
+    border: 2px solid #cd7f32;
+    width: 65px;
+    height: 65px;
+    font-size: 1.7rem;
   }
 
-  /* Enhanced user info styling */
+  /* Enhanced user info styling - Admin Dashboard Typography */
   .user-info {
     display: flex;
     align-items: center;
@@ -188,12 +480,12 @@
   }
 
   .user-avatar {
-    width: 55px;
-    height: 55px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     border: 2px solid var(--cyber-glow);
     overflow: hidden;
-    margin-right: 20px;
+    margin-right: 16px;
     box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
   }
   
@@ -210,7 +502,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     color: #ffffff;
     background: var(--gradient-primary);
     text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
@@ -222,34 +514,138 @@
 
   .user-name {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    color: var(--cyber-glow);
-    font-family: 'Orbitron', sans-serif;
-    text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    margin-bottom: 4px;
   }
 
   .user-score {
-    display: none; /* Hide the score as it's not shown in the reference image */
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  /* Enhanced empty state styling */
+  .category-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+    background: rgba(59, 130, 246, 0.15);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .category-badge:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: var(--cyber-glow);
+    transform: scale(1.05);
+  }
+
+  .attempt-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Score Display Section - Admin Dashboard Style */
+  .score-display {
+    margin-left: auto;
+    text-align: right;
+    padding: 12px 16px;
+    background: var(--glass-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    min-width: 100px;
+  }
+
+  .score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* Top 3 special score styling */
+  .leaderboard-entry[data-rank="1"] .score-display {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 237, 78, 0.1));
+    border-color: #ffd700;
+  }
+
+  .leaderboard-entry[data-rank="1"] .score-value {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .leaderboard-entry[data-rank="2"] .score-display {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(232, 232, 232, 0.1));
+    border-color: #c0c0c0;
+  }
+
+  .leaderboard-entry[data-rank="2"] .score-value {
+    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .leaderboard-entry[data-rank="3"] .score-display {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(255, 179, 102, 0.1));
+    border-color: #cd7f32;
+  }
+
+  .leaderboard-entry[data-rank="3"] .score-value {
+    background: linear-gradient(135deg, #cd7f32, #ffb366);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Enhanced empty state styling - Admin Dashboard Match */
   .empty-leaderboard {
     text-align: center;
-    padding: 60px 20px;
-    color: rgba(255, 255, 255, 0.6);
+    padding: 80px 40px;
+    color: var(--text-secondary);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--dark-bg);
-    border-radius: 16px;
-    margin: 20px;
-    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border-radius: var(--border-radius);
+    margin: 20px 0;
+    border: 2px dashed var(--border-color);
+    box-shadow: var(--shadow-lg);
   }
 
   .empty-leaderboard i {
-    font-size: 5rem;
+    font-size: 4rem;
     color: var(--cyber-glow);
     margin-bottom: 24px;
     filter: drop-shadow(0 0 20px var(--cyber-glow));
@@ -257,21 +653,21 @@
   }
 
   .empty-leaderboard h3 {
-    font-size: 1.8rem;
-    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 20px;
-    padding: 10px 25px;
-    border-radius: 5px;
+    margin-bottom: 16px;
   }
 
   .empty-leaderboard p {
-    font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    color: var(--text-muted);
     max-width: 80%;
+    line-height: 1.6;
   }
 
   /* Pulse animation for icons */
@@ -286,67 +682,50 @@
     }
   }
 
-  /* Enhanced responsive design */
-  @media (max-width: 768px) {
-    .leaderboard-container {
-      padding: 16px;
-    }
-
-    .leaderboard-heading {
-      font-size: 2rem;
-      padding: 24px 0;
-    }
-
-    .leaderboard-entry {
-      padding: 16px 20px;
-    }
-
-    .rank-badge {
-      width: 45px;
-      height: 45px;
-      margin-right: 16px;
-      font-size: 1.3rem;
-    }
-
-    .user-avatar {
-      width: 50px;
-      height: 50px;
-      margin-right: 16px;
+  /* Enhanced responsive design - Matching Admin Dashboard */
+  /* Responsive design - Admin Dashboard Match */
+  @media (max-width: 1024px) {
+    .page-container {
+      padding: 24px;
     }
     
-    .avatar-text {
-      font-size: 1.2rem;
-    }
-
-    .user-name {
-      font-size: 1.1rem;
+    .leaderboard-wrapper {
+      margin-bottom: 24px;
     }
   }
 
-  @media (max-width: 480px) {
-    .leaderboard-wrapper {
-      border-radius: 16px;
+  @media (max-width: 768px) {
+    .page-container {
+      padding: 16px;
     }
-    
-    .leaderboard-heading {
-      font-size: 1.8rem;
-      padding: 20px 0;
+
+    .category-filters {
+      padding: 6px;
+      gap: 6px;
     }
-    
+
+    .filter-btn {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      gap: 4px;
+    }
+
     .leaderboard-entry {
-      padding: 14px 16px;
+      padding: 16px;
+      flex-direction: row;
+      gap: 12px;
     }
 
     .rank-badge {
       width: 40px;
       height: 40px;
-      font-size: 1.1rem;
       margin-right: 12px;
+      font-size: 1rem;
     }
 
     .user-avatar {
-      width: 45px;
-      height: 45px;
+      width: 40px;
+      height: 40px;
       margin-right: 12px;
     }
     
@@ -357,64 +736,154 @@
     .user-name {
       font-size: 1rem;
     }
+
+    .score-display {
+      min-width: 80px;
+      padding: 8px 12px;
+    }
+
+    .score-value {
+      font-size: 1.2rem;
+    }
+  }
+  /* Pulse animation for icons */
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 1;
+      transform: scale(1.1);
+    }
   }
 
-  /* Network-themed decorative elements */
-  .network-node {
-    position: absolute;
+  /* Scrollbar Styling - Admin Dashboard Match */
+  ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--surface);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--gradient-primary);
+    border-radius: 4px;
+    transition: background var(--transition-speed) ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
     background: var(--cyber-glow);
-    border-radius: 50%;
-    box-shadow: 0 0 15px var(--cyber-glow);
-    animation: pulse 2s ease-in-out infinite;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+  }
+
+  /* Enhanced focus indicators for accessibility */
+  .filter-btn:focus,
+  .leaderboard-entry:focus {
+    outline: 2px solid var(--cyber-glow);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-container">
+  <!-- Page Header - Admin Dashboard Style -->
+  <div class="page-header">
+    <h1>
+      <i class="fas fa-trophy header-icon"></i>
+      Network Champions Leaderboard
+    </h1>
+    <span class="header-subtitle">Track your progress and compete with peers</span>
+  </div>
+
   <div class="leaderboard-container">
-    <div class="leaderboard-wrapper">
-      <h1 class="leaderboard-heading">
-        <i class="fas fa-trophy" style="margin-right: 16px; color: var(--cyber-glow); filter: drop-shadow(0 0 10px var(--cyber-glow));"></i>
-        Leaderboard
-      </h1>
-    
+    <!-- Category Filter Tabs -->
+    <div class="category-filters">
+      <button class="filter-btn active" data-category="all" onclick="showCategory('all')">
+        <i class="fas fa-trophy"></i> Overall
+      </button>
+      <button class="filter-btn" data-category="crimping" onclick="showCategory('crimping')">
+        <i class="fas fa-plug"></i> Crimping
+      </button>
+      <button class="filter-btn" data-category="topology" onclick="showCategory('topology')">
+        <i class="fas fa-network-wired"></i> Topology
+      </button>
+      <button class="filter-btn" data-category="troubleshoot" onclick="showCategory('troubleshoot')">
+        <i class="fas fa-tools"></i> Troubleshooting
+      </button>
+      <button class="filter-btn" data-category="riddle" onclick="showCategory('riddle')">
+        <i class="fas fa-puzzle-piece"></i> Riddles
+      </button>
+    </div>
+
+    <!-- Main Leaderboard Card -->
     <div class="modern-card">
-      <!-- Leaderboard List -->
       <div class="leaderboard-list">
         {% for item in leaderboard %}
         <div class="leaderboard-entry" data-rank="{{ loop.index }}">
           <div class="rank-badge">
             {% if loop.index == 1 %}
-              <i class="fas fa-crown" style="color: #ffd700; filter: drop-shadow(0 0 10px #ffd700);"></i>
+              <i class="fas fa-crown" style="color: #ffd700;"></i>
             {% elif loop.index == 2 %}
-              <i class="fas fa-medal" style="color: #c0c0c0; filter: drop-shadow(0 0 10px #c0c0c0);"></i>
+              <i class="fas fa-medal" style="color: #c0c0c0;"></i>
             {% elif loop.index == 3 %}
-              <i class="fas fa-medal" style="color: #cd7f32; filter: drop-shadow(0 0 10px #cd7f32);"></i>
+              <i class="fas fa-medal" style="color: #cd7f32;"></i>
             {% else %}
               <span class="rank-number">{{ loop.index }}</span>
             {% endif %}
           </div>
           <div class="user-info">
             <div class="user-avatar">
-              <span class="avatar-text">{{ item[0][0].upper() }}</span>
+              {% if item.profile_image %}
+                <img src="{{ url_for('static', filename='img/profiles/' + item.profile_image) }}" alt="{{ item.username }}'s avatar" onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/' + item.profile_image) }}'; this.onerror=function(){ this.style.display='none'; this.nextElementSibling.style.display='flex'; };">
+                <span class="avatar-text" style="display: none;">{{ item.username[0].upper() }}</span>
+              {% else %}
+                <span class="avatar-text">{{ item.username[0].upper() }}</span>
+              {% endif %}
             </div>
             <div class="user-details">
-              <h4 class="user-name">{{ item[0] }}</h4>
+              <h4 class="user-name">{{ item.username }}</h4>
+              <div class="user-score">
+                <span class="category-badge">
+                  {% if item.category == 'crimping' %}
+                    Cable Crimping
+                  {% elif item.category == 'topology' %}
+                    Network Topology
+                  {% elif item.category == 'troubleshoot' %}
+                    Troubleshooting
+                  {% elif item.category == 'riddle' %}
+                    Network Riddles
+                  {% else %}
+                    Overall Best
+                  {% endif %}
+                </span>
+                <span class="attempt-date">{{ item.date_attempted.strftime('%b %d, %Y') if item.date_attempted else 'Recent' }}</span>
+              </div>
             </div>
           </div>
-          <div class="network-node"></div>
+          <div class="score-display">
+            <div class="score-value">{{ item.score }}%</div>
+            <div class="score-label">Best Score</div>
+          </div>
         </div>
         {% else %}
         <div class="empty-leaderboard">
           <i class="fas fa-trophy"></i>
-          <h3>No Champions Yet</h3>
-          <p>Complete network challenges to claim your place on the leaderboard and become a networking legend!</p>
+          <h3>Become a Network Legend!</h3>
+          <p>Complete networking challenges to earn your spot on the leaderboard. Show off your skills in cable crimping, network topology, troubleshooting, and network riddles.</p>
         </div>
         {% endfor %}
       </div>
@@ -424,89 +893,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Add fade-in animation to the leaderboard wrapper
-    const leaderboardWrapper = document.querySelector('.leaderboard-wrapper');
-    if (leaderboardWrapper) {
-        leaderboardWrapper.style.opacity = '0';
-        
-        setTimeout(() => {
-            leaderboardWrapper.style.transition = 'opacity 0.5s ease';
-            leaderboardWrapper.style.opacity = '1';
-        }, 300);
-    }
-    
-    // Add fade-in animation to main leaderboard header
-    const leaderboardHeading = document.querySelector('.leaderboard-heading');
-    if (leaderboardHeading) {
-        leaderboardHeading.style.opacity = '0';
-        
-        setTimeout(() => {
-            leaderboardHeading.style.transition = 'opacity 0.5s ease';
-            leaderboardHeading.style.opacity = '1';
-        }, 400);
-    }
-    
-    // Add fade-in animation to leaderboard entries or empty state with staggered delay
+    // Simple fade-in animation for entries
     const entries = document.querySelectorAll('.leaderboard-entry');
     if (entries.length > 0) {
         entries.forEach((entry, index) => {
             entry.style.opacity = '0';
-            entry.style.transform = 'translateY(10px)';
+            entry.style.transform = 'translateY(20px)';
             setTimeout(() => {
-                entry.style.transition = 'all 0.3s ease';
+                entry.style.transition = 'all 0.5s ease';
                 entry.style.opacity = '1';
                 entry.style.transform = 'translateY(0)';
-            }, 500 + (index * 100)); // Start after the header animation with staggered timing
+            }, index * 100);
         });
-        
-        // Add hover effects for leaderboard entries
-        entries.forEach(entry => {
-            entry.addEventListener('mouseenter', function() {
-                this.style.background = '#00b8a9';
-            });
-            
-            entry.addEventListener('mouseleave', function() {
-                this.style.background = '#00a090';
-            });
-        });
-    } else {
-        // Add animation for empty leaderboard state
-        const emptyLB = document.querySelector('.empty-leaderboard');
-        if (emptyLB) {
-            const icon = emptyLB.querySelector('i');
-            const heading = emptyLB.querySelector('h3');
-            const text = emptyLB.querySelector('p');
-            
-            if (icon) icon.style.opacity = '0';
-            if (heading) heading.style.opacity = '0';
-            if (text) text.style.opacity = '0';
-            
-            setTimeout(() => {
-                if (icon) {
-                    icon.style.transition = 'opacity 0.8s ease, transform 0.5s ease';
-                    icon.style.opacity = '1';
-                    icon.style.transform = 'scale(1.1)';
-                    
-                    setTimeout(() => {
-                        icon.style.transform = 'scale(1)';
-                    }, 300);
-                }
-            }, 500);
-            
-            setTimeout(() => {
-                if (heading) {
-                    heading.style.transition = 'opacity 0.5s ease';
-                    heading.style.opacity = '1';
-                }
-            }, 800);
-            
-            setTimeout(() => {
-                if (text) {
-                    text.style.transition = 'opacity 0.5s ease';
-                    text.style.opacity = '1';
-                }
-            }, 1000);
-        }
     }
 });
 
@@ -715,5 +1113,94 @@ document.addEventListener('DOMContentLoaded', function () {
         .rank-icon.bronze { color: #cd7f32; }
     `;
     document.head.appendChild(pulseStyles);
+
+// Category filtering functionality - Admin Dashboard Style
+function showCategory(category) {
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-category="${category}"]`).classList.add('active');
+    
+    // Show/hide leaderboard entries based on category
+    const entries = document.querySelectorAll('.leaderboard-entry');
+    let visibleCount = 0;
+    
+    entries.forEach((entry, index) => {
+        const categoryBadge = entry.querySelector('.category-badge');
+        if (!categoryBadge) return;
+        
+        const entryCategory = getCategoryFromText(categoryBadge.textContent);
+        
+        if (category === 'all' || entryCategory === category) {
+            entry.style.display = 'flex';
+            entry.style.opacity = '0';
+            entry.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                entry.style.transition = 'all 0.3s ease';
+                entry.style.opacity = '1';
+                entry.style.transform = 'translateY(0)';
+            }, visibleCount * 50);
+            
+            // Update rank badge for filtered view
+            const rankBadge = entry.querySelector('.rank-badge');
+            const rankNumber = visibleCount + 1;
+            
+            if (rankNumber === 1) {
+                rankBadge.innerHTML = '<i class="fas fa-crown" style="color: #ffd700;"></i>';
+            } else if (rankNumber === 2) {
+                rankBadge.innerHTML = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>';
+            } else if (rankNumber === 3) {
+                rankBadge.innerHTML = '<i class="fas fa-medal" style="color: #cd7f32;"></i>';
+            } else {
+                rankBadge.innerHTML = `<span class="rank-number">${rankNumber}</span>`;
+            }
+            
+            entry.setAttribute('data-rank', rankNumber);
+            visibleCount++;
+        } else {
+            entry.style.display = 'none';
+        }
+    });
+    
+    // Show empty state if no entries in this category
+    const leaderboardList = document.querySelector('.leaderboard-list');
+    const categoryNames = {
+        'all': 'Overall Leaderboard',
+        'crimping': 'Cable Crimping Champions',
+        'topology': 'Network Topology Masters',
+        'troubleshoot': 'Troubleshooting Experts',
+        'riddle': 'Network Riddle Solvers'
+    };
+    
+    if (visibleCount === 0 && category !== 'all') {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-leaderboard category-empty';
+        emptyState.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <h3>No scores yet in ${categoryNames[category]}!</h3>
+            <p>Be the first to complete challenges in this category and claim the top spot!</p>
+        `;
+        
+        // Remove any existing empty states
+        const existingEmpty = document.querySelector('.category-empty');
+        if (existingEmpty) existingEmpty.remove();
+        
+        leaderboardList.appendChild(emptyState);
+    } else {
+        // Remove category empty state when switching back
+        const existingEmpty = document.querySelector('.category-empty');
+        if (existingEmpty) existingEmpty.remove();
+    }
+}
+
+function getCategoryFromText(text) {
+    if (text.includes('Crimping')) return 'crimping';
+    if (text.includes('Topology')) return 'topology';
+    if (text.includes('Troubleshooting')) return 'troubleshoot';
+    if (text.includes('Riddles')) return 'riddle';
+    return 'all';
+}
 </script>
 {% endblock %}

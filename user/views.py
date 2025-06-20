@@ -279,18 +279,54 @@ def leaderboard():
     user = UserModel.query.get(session['user_id'])
     
     try:
-        # Overall leaderboard data
-        leaderboard_data = (
-            db.session.query(
-                UserModel.username, 
-                func.max(UserScore.score).label('highest_score'), 
-                func.max(UserScore.date_attempted).label('latest_attempt')
-            )
+        print("DEBUG: Starting leaderboard query...")
+        # Get each user's highest score across all categories with proper attribute names
+        user_best_scores = []
+          # Get all users with scores including profile image
+        users_with_scores = (
+            db.session.query(UserModel.id, UserModel.username, UserModel.profile_img)
             .join(UserScore)
-            .group_by(UserModel.id)
-            .order_by(func.max(UserScore.score).desc())
+            .distinct()
             .all()
         )
+        print(f"DEBUG: Found {len(users_with_scores)} users with scores")
+        
+        # For each user, get their highest score entry
+        for user_id, username, profile_img in users_with_scores:
+            highest_score_entry = (
+                db.session.query(UserScore)
+                .filter(UserScore.user_id == user_id)
+                .order_by(UserScore.score.desc(), UserScore.date_attempted.desc())
+                .first()
+            )
+            
+            if highest_score_entry:
+                # Create a simple object-like structure for the template
+                class LeaderboardEntry:
+                    def __init__(self, username, score, category, date_attempted, profile_image):
+                        self.username = username
+                        self.score = score
+                        self.category = category
+                        self.date_attempted = date_attempted
+                        self.profile_image = profile_image
+                
+                entry = LeaderboardEntry(
+                    username=username,
+                    score=highest_score_entry.score,
+                    category=highest_score_entry.category,
+                    date_attempted=highest_score_entry.date_attempted,
+                    profile_image=profile_img
+                )
+                user_best_scores.append(entry)
+                print(f"DEBUG: Created entry for {username}: score={entry.score}, category={entry.category}, profile_img={profile_img}")
+        
+        # Sort by score (highest first)
+        leaderboard_data = sorted(user_best_scores, key=lambda x: x.score, reverse=True)
+        print(f"DEBUG: Final leaderboard has {len(leaderboard_data)} entries")
+        
+        # Verify the data structure
+        for i, item in enumerate(leaderboard_data[:3]):
+            print(f"DEBUG: Entry {i+1}: {type(item)}, username={item.username}, score={item.score}")
         
         # Category-specific leaderboards
         categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
@@ -304,14 +340,20 @@ def leaderboard():
                 )
                 .join(UserScore)
                 .filter(UserScore.category == category)
-                .group_by(UserModel.id)
+                .group_by(UserModel.id, UserModel.username)
                 .order_by(func.max(UserScore.score).desc())
                 .all()
             )
     except Exception as e:
-        print(f"Error fetching leaderboard: {e}")
+        print(f"ERROR in leaderboard: {e}")
+        import traceback
+        traceback.print_exc()
         leaderboard_data = []
         category_leaderboards = {}
+    
+    print(f"DEBUG: About to render template with {len(leaderboard_data)} leaderboard entries")
+    if leaderboard_data:
+        print(f"DEBUG: First entry type: {type(leaderboard_data[0])}, has score: {hasattr(leaderboard_data[0], 'score')}")
     
     return render_template('user/leaderboard.html', 
                          user=user,
@@ -353,7 +395,8 @@ def scores():
     
     return render_template('user/scores.html', 
                          user=user, 
-                         scores=user_scores,
+                         score=user_scores,  # Use 'score' to match template expectation
+                         scores=user_scores,  # Keep 'scores' for compatibility
                          total_attempts=total_attempts,
                          average_score=average_score,
                          highest_score=highest_score,
@@ -512,13 +555,11 @@ def save_crimping_score():
         wiring_type = data.get('wiring_type', 'unknown')
         completion_time = data.get('completion_time', 0)
         
-        # Create a new score entry
+        # Create a new score entry - only use fields that exist in the Score model
         new_score = UserScore(
             user_id=user_id,
             score=score,
-            category=f'Crimping - {wiring_type}',
-            lesson_name=f'Cable Crimping ({wiring_type})',
-            completion_time=completion_time
+            category='crimping'  # Simple category name that matches the database
         )
         
         db.session.add(new_score)
@@ -526,6 +567,7 @@ def save_crimping_score():
         
         # Send WebSocket notification if available
         try:
+            from utils.socket_monitor import get_socketio
             socketio = get_socketio()
             if socketio:
                 user = UserModel.query.get(user_id)

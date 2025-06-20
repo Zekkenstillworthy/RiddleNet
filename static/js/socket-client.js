@@ -105,13 +105,14 @@ class SocketClient {
         if (this.socket) {
             console.log('Connection in progress...');
             return;
-        }
-
-        // Check if we're in an environment where WebSocket should be available
+        }        // Check if we're in an environment where WebSocket should be available
         if (typeof window === 'undefined') {
             console.warn('Not in browser environment, skipping WebSocket connection');
             return;
         }
+
+        // Show connecting status
+        this.showConnectionStatus(null); // null indicates connecting state
 
         // Load socket.io client from CDN if not already loaded
         if (!window.io) {
@@ -228,8 +229,7 @@ class SocketClient {
         // Set up handlers for application-specific events
         this.setupEventHandlers();
     }
-    
-    /**
+      /**
      * Display a connection status indicator
      */
     showConnectionStatus(connected, failed = false) {
@@ -245,30 +245,56 @@ class SocketClient {
             errorDiv.id = 'socket-connection-status';
             errorDiv.className = 'socket-error';
             errorDiv.innerHTML = `
-                <i class="bx bx-error-circle"></i>
-                <span>Real-time updates unavailable</span>
-                <button onclick="socketClient.connect()">Retry</button>
+                <div class="status-dot"></div>
+                <span class="status-text">Real-time updates unavailable</span>
+                <button onclick="socketClient.connect()">Retry Connection</button>
             `;
             document.body.appendChild(errorDiv);
             return;
-        }
-        
+        }        
         // Create status indicator
         const statusDiv = document.createElement('div');
         statusDiv.id = 'socket-connection-status';
-        statusDiv.className = connected ? 'socket-connected' : 'socket-disconnected';
-            
+        
+        // Add appropriate content and class based on connection status
+        if (connected === true) {
+            statusDiv.className = 'socket-connected';
+            statusDiv.innerHTML = `
+                <div class="status-dot"></div>
+                <span class="status-text">Connected to server</span>
+            `;
+        } else if (connected === false) {
+            statusDiv.className = 'socket-disconnected';
+            statusDiv.innerHTML = `
+                <div class="status-dot"></div>
+                <span class="status-text">Disconnected from server</span>
+            `;
+        } else {
+            // Connecting state
+            statusDiv.className = 'socket-connecting';
+            statusDiv.innerHTML = `
+                <div class="status-dot"></div>
+                <span class="status-text">Connecting to server...</span>
+            `;
+        }
         
         // Add to page
         document.body.appendChild(statusDiv);
         
-        // Hide after a delay if connected
-        if (connected) {
+        // Hide after a delay for connected and disconnected states
+        if (connected === true || connected === false) {
             setTimeout(() => {
-                statusDiv.className += ' fade-out';
-                setTimeout(() => statusDiv.remove(), 1000);
-            }, 3000);
+                if (statusDiv.parentNode) {
+                    statusDiv.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (statusDiv.parentNode) {
+                            statusDiv.remove();
+                        }
+                    }, 600); // Match the CSS transition duration
+                }
+            }, connected === true ? 3000 : 5000); // Show disconnected longer
         }
+        // For connecting state (connected === undefined/null), keep showing until resolved
     }
 
     /**

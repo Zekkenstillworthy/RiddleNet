@@ -29,8 +29,9 @@ def index():    # Get basic stats - ensure we're using the correct tables
     # Get recent scores for dashboard table
     recent_scores = Score.query.order_by(desc(Score.date_attempted)).limit(10).all()
     
-    # Score distribution data for chart - adjusted based on actual score data
-    # Your score data has scores like 1.5, 2, 0.75, 2.5 which seem to be out of 3
+    # Enhanced Score Analytics for Dashboard Overview
+    
+    # 1. Score distribution data for chart - adjusted based on actual score data
     score_dist = {
         'very_low': Score.query.filter(Score.score < 0.6).count(),  # Less than 20%
         'low': Score.query.filter(and_(Score.score >= 0.6, Score.score < 1.2)).count(),  # 20-40%
@@ -39,8 +40,22 @@ def index():    # Get basic stats - ensure we're using the correct tables
         'very_high': Score.query.filter(Score.score >= 2.4).count()  # 80%+
     }
     
-    # User activity data - last 7 days
+    # 2. Performance trends - last 30 days
     today = datetime.now().date()
+    last_30_days = [(today - timedelta(days=i)) for i in range(29, -1, -1)]
+    
+    # Daily score averages for trend analysis
+    daily_performance = []
+    for date_obj in last_30_days:
+        daily_avg = Score.query.filter(
+            func.date(Score.date_attempted) == date_obj
+        ).with_entities(func.avg(Score.score)).scalar() or 0
+        daily_performance.append({
+            'date': date_obj.strftime('%Y-%m-%d'),
+            'avg_score': round(float(daily_avg) * 100 / 3, 1) if daily_avg else 0
+        })
+    
+    # 3. User activity data - last 7 days for dashboard
     activity_dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
     
     # Count active users per day (users who attempted a quiz)
@@ -52,17 +67,64 @@ def index():    # Get basic stats - ensure we're using the correct tables
         ).with_entities(Score.user_id).distinct().count()
         active_users.append(count)
     
-    # Average scores by category
-    category_avg = {}
+    # 4. Enhanced category analytics
     categories = ['riddle', 'topology', 'troubleshoot', 'crimping']
+    category_analytics = {}
     
     for cat in categories:
-        # Calculate average as percentage of 3 (max score based on your data)
-        avg = Score.query.filter(Score.category == cat).with_entities(func.avg(Score.score)).scalar() or 0
-        category_avg[cat] = round(float(avg) * 100 / 3, 1)  # Convert to percentage based on max score of 3
+        scores = Score.query.filter(Score.category == cat).all()
+        if scores:
+            score_values = [s.score for s in scores]
+            avg_score = sum(score_values) / len(score_values)
+            category_analytics[cat] = {
+                'avg_score': round(avg_score * 100 / 3, 1),  # Convert to percentage
+                'total_attempts': len(scores),
+                'unique_users': len(set(s.user_id for s in scores)),
+                'highest_score': round(max(score_values) * 100 / 3, 1),
+                'improvement_trend': 'up' if len(scores) > 5 else 'stable'  # Simplified trend
+            }
+        else:
+            category_analytics[cat] = {
+                'avg_score': 0, 'total_attempts': 0, 'unique_users': 0, 
+                'highest_score': 0, 'improvement_trend': 'no_data'
+            }
+    
+    # 5. Top performing users (for dashboard overview)
+    top_performers = (
+        db.session.query(
+            User.username,
+            func.max(Score.score).label('highest_score'),
+            func.avg(Score.score).label('avg_score'),
+            func.count(Score.id).label('total_attempts')
+        )
+        .join(Score)
+        .group_by(User.id, User.username)
+        .order_by(desc(func.max(Score.score)))
+        .limit(5)
+        .all()
+    )
+    
+    # 6. Score insights and alerts
+    score_insights = {
+        'total_this_week': Score.query.filter(
+            Score.date_attempted >= (today - timedelta(days=7))
+        ).count(),
+        'avg_this_week': 0,
+        'trend_vs_last_week': 'stable'
+    }
+    
+    # Calculate weekly average
+    this_week_scores = Score.query.filter(
+        Score.date_attempted >= (today - timedelta(days=7))
+    ).all()
+    
+    if this_week_scores:
+        week_avg = sum(s.score for s in this_week_scores) / len(this_week_scores)
+        score_insights['avg_this_week'] = round(week_avg * 100 / 3, 1)
+    
+    # ...existing code for question difficulty, activity logs, etc...
     
     # Question difficulty distribution
-    # We'll use essay_response data since it has graded scores
     question_difficulty = {
         'easy': EssayResponse.query.filter(EssayResponse.graded_score >= 80).count(),
         'medium': EssayResponse.query.filter(and_(EssayResponse.graded_score >= 60, 
@@ -70,16 +132,10 @@ def index():    # Get basic stats - ensure we're using the correct tables
         'hard': EssayResponse.query.filter(EssayResponse.graded_score < 60).count()
     }
     
-    # If we don't have enough data in essay_responses, add placeholders
     if sum(question_difficulty.values()) == 0:
-        question_difficulty = {
-            'easy': 2,
-            'medium': 1, 
-            'hard': 1
-        }
+        question_difficulty = {'easy': 2, 'medium': 1, 'hard': 1}
     
-    # Recent system activity logs based on activity_logs table
-    # If activity_logs table is empty, create placeholders
+    # Recent system activity logs
     activity_logs = []
     try:
         db_activity_logs = ActivityLog.query.order_by(desc(ActivityLog.timestamp)).limit(4).all()
@@ -91,36 +147,25 @@ def index():    # Get basic stats - ensure we're using the correct tables
                     'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 })
         else:
-            # Use essay_response data to create some activity logs
             essays = EssayResponse.query.order_by(desc(EssayResponse.submission_date)).limit(4).all()
             for essay in essays:
-                action_type = 'essay'
-                if essay.is_graded:
-                    action_type = 'edit'
+                action_type = 'essay' if not essay.is_graded else 'edit'
                 activity_logs.append({
                     'action_type': action_type,
                     'message': f'Essay response {"graded" if essay.is_graded else "submitted"} by User ID {essay.user_id}',
                     'timestamp': essay.submission_date.strftime('%Y-%m-%d %H:%M:%S')
                 })
     except Exception as e:
-        # Fallback if there's an error
         activity_logs = [
             {
                 'action_type': 'login',
                 'message': 'Admin logged in',
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            },
-            {
-                'action_type': 'score',
-                'message': 'User ID 1 completed riddle quiz with score 2.5/3',
-                'timestamp': (datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d %H:%M:%S')
             }
         ]
     
-    # System alerts based on data in the database
+    # System alerts
     system_alerts = []
-    
-    # Check for unreviewed essays
     unreviewed_essays = EssayResponse.query.filter_by(is_graded=False).count()
     if unreviewed_essays > 0:
         system_alerts.append({
@@ -128,6 +173,16 @@ def index():    # Get basic stats - ensure we're using the correct tables
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
     
+    # Low performance alert
+    recent_low_scores = Score.query.filter(
+        and_(Score.date_attempted >= (today - timedelta(days=7)), Score.score < 1.0)
+    ).count()
+    if recent_low_scores > 5:
+        system_alerts.append({
+            'message': f'{recent_low_scores} low scores this week - consider reviewing content difficulty',
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
     return render_safe_template('admin/dashboard.html', 
                            total_users=total_users,
                            total_scores=total_scores,
@@ -136,7 +191,10 @@ def index():    # Get basic stats - ensure we're using the correct tables
                            score_dist=score_dist,
                            activity_dates=json.dumps(activity_dates),
                            active_users=json.dumps(active_users),
-                           category_avg=category_avg,
+                           category_analytics=category_analytics,
+                           daily_performance=json.dumps(daily_performance),
+                           top_performers=top_performers,
+                           score_insights=score_insights,
                            question_difficulty=question_difficulty,
                            activity_logs=activity_logs,
                            system_alerts=system_alerts,
@@ -277,5 +335,7 @@ def export_data():
 @dashboard_bp.route('/websocket-panel')
 @login_required
 def websocket_panel():
-    """Render the WebSocket control panel for admins"""
-    return render_template('admin/websocket_panel.html', active_page='websocket')
+    """WebSocket monitoring and real-time panel"""
+    return render_safe_template('admin/websocket_panel.html', 
+                               active_page='websocket')
+
