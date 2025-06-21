@@ -1,0 +1,1011 @@
+{% extends "admin/base.html" %}
+
+{% block head %}
+<title>Learning Path Builder - RiddleNet Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<style>
+    .main-content {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        background: var(--background);
+        transition: all var(--transition-speed) ease;
+        padding: 24px;
+    }
+
+    .page-header {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        padding: 32px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-color), var(--network-purple));
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, var(--text-primary), var(--accent-color));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .builder-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr 320px;
+        gap: 24px;
+        min-height: calc(100vh - 200px);
+    }
+
+    .panel {
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05));
+    }
+
+    .panel-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .panel-content {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .path-settings {
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .modules-library {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .module-item {
+        padding: 12px;
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: grab;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .module-item:hover {
+        border-color: var(--accent-color);
+        background: rgba(59, 130, 246, 0.05);
+        transform: translateX(4px);
+    }
+
+    .module-item:active {
+        cursor: grabbing;
+    }
+
+    .module-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .module-networking1 { background: var(--accent-color); }
+    .module-networking2 { background: var(--network-purple); }
+    .module-security { background: var(--danger-color); }
+    .module-troubleshooting { background: var(--warning-color); }
+
+    .module-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+
+    .module-info p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .path-canvas {
+        background: var(--background);
+        border: 2px dashed var(--border-color);
+        border-radius: var(--border-radius);
+        min-height: 600px;
+        position: relative;
+        overflow: hidden;
+        padding: 20px;
+    }
+
+    .canvas-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .canvas-empty i {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .path-flow {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+        padding: 20px 0;
+    }
+
+    .path-node {
+        background: var(--surface);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        min-width: 280px;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .path-node:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .path-node.selected {
+        border-color: var(--accent-color);
+        background: rgba(59, 130, 246, 0.05);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .node-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .node-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+    }
+
+    .node-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .node-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .node-description {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+
+    .node-stats {
+        display: flex;
+        justify-content: space-around;
+        gap: 12px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .path-arrow {
+        width: 2px;
+        height: 30px;
+        background: linear-gradient(180deg, var(--accent-color), var(--network-purple));
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .path-arrow::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: -4px;
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 10px solid var(--network-purple);
+    }
+
+    .node-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .path-node:hover .node-actions {
+        opacity: 1;
+    }
+
+    .action-btn {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 4px;
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+        background: var(--accent-color);
+        color: var(--background);
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+        background: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .action-bar {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        background: var(--surface-hover);
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .path-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .path-stat {
+        text-align: center;
+        padding: 16px;
+        background: var(--background);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    .path-stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        display: block;
+    }
+
+    .path-stat-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .drop-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 10px 0;
+        text-align: center;
+        color: var(--text-muted);
+        transition: all 0.3s ease;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .drop-zone.drag-over {
+        border-color: var(--accent-color);
+        background: rgba(59, 130, 246, 0.05);
+        color: var(--accent-color);
+    }
+
+    @media (max-width: 1200px) {
+        .builder-layout {
+            grid-template-columns: 280px 1fr 280px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .builder-layout {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 16px;
+        }
+    }
+</style>
+
+<div class="main-content">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-route"></i>
+            Learning Path Builder
+        </h1>
+        <p class="page-subtitle">Create structured learning paths with modules and prerequisites</p>
+    </div>
+
+    <div class="builder-layout">
+        <!-- Left Panel: Path Settings & Module Library -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="fas fa-cog"></i>
+                    Path Settings
+                </h3>
+            </div>
+            <div class="panel-content">
+                <div class="path-settings">
+                    <div class="form-group">
+                        <label class="form-label">Path Name</label>
+                        <input type="text" class="form-input" id="pathName" placeholder="Enter path name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="pathDescription" placeholder="Describe this learning path"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="pathCategory">
+                            <option value="">Select category</option>
+                            <option value="networking">Networking</option>
+                            <option value="security">Security</option>
+                            <option value="troubleshooting">Troubleshooting</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Difficulty Level</label>
+                        <select class="form-select" id="pathDifficulty">
+                            <option value="">Select difficulty</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <i class="fas fa-puzzle-piece"></i>
+                        Module Library
+                    </h3>
+                </div>
+                <div class="modules-library">
+                    <div class="module-item" draggable="true" data-module="networking1-basics">
+                        <div class="module-icon module-networking1">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Network Fundamentals</h4>
+                            <p>Basic networking concepts</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="networking1-protocols">
+                        <div class="module-icon module-networking1">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Network Protocols</h4>
+                            <p>TCP/IP, HTTP, DNS protocols</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="networking2-advanced">
+                        <div class="module-icon module-networking2">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Advanced Networking</h4>
+                            <p>Complex network topologies</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="security-basics">
+                        <div class="module-icon module-security">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Network Security</h4>
+                            <p>Security fundamentals</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="troubleshooting">
+                        <div class="module-icon module-troubleshooting">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Troubleshooting</h4>
+                            <p>Network problem solving</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Path Canvas -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="fas fa-sitemap"></i>
+                    Learning Path Flow
+                </h3>
+            </div>
+            <div class="panel-content">
+                <div class="path-canvas" id="pathCanvas">
+                    <div class="canvas-empty" id="canvasEmpty">
+                        <i class="fas fa-route"></i>
+                        <h3>Start Building Your Path</h3>
+                        <p>Drag modules from the left panel to create your learning path</p>
+                    </div>
+                    <div class="path-flow" id="pathFlow" style="display: none;">
+                        <!-- Path nodes will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-secondary" onclick="clearPath()">
+                    <i class="fas fa-trash"></i>
+                    Clear Path
+                </button>
+                <button class="btn btn-secondary" onclick="previewPath()">
+                    <i class="fas fa-eye"></i>
+                    Preview
+                </button>
+                <button class="btn btn-primary" onclick="savePath()">
+                    <i class="fas fa-save"></i>
+                    Save Path
+                </button>
+                <button class="btn btn-success" onclick="publishPath()">
+                    <i class="fas fa-paper-plane"></i>
+                    Publish
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Path Statistics & Properties -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Path Overview
+                </h3>
+            </div>
+            <div class="panel-content">
+                <div class="path-stats">
+                    <div class="path-stat">
+                        <span class="path-stat-value" id="moduleCount">0</span>
+                        <span class="path-stat-label">Modules</span>
+                    </div>
+                    <div class="path-stat">
+                        <span class="path-stat-value" id="estimatedTime">0h</span>
+                        <span class="path-stat-label">Duration</span>
+                    </div>
+                </div>
+
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <i class="fas fa-edit"></i>
+                        Selected Module
+                    </h3>
+                </div>
+                <div id="moduleProperties" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Module Title</label>
+                        <input type="text" class="form-input" id="selectedModuleTitle">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prerequisites</label>
+                        <div id="prerequisitesList">
+                            <!-- Prerequisites will be added here -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Completion Requirements</label>
+                        <select class="form-select" id="completionType">
+                            <option value="required">Required</option>
+                            <option value="optional">Optional</option>
+                            <option value="milestone">Milestone</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateSelectedModule()">
+                        <i class="fas fa-check"></i>
+                        Update Module
+                    </button>
+                </div>
+                <div id="noModuleSelected">
+                    <p style="text-align: center; color: var(--text-muted); margin-top: 40px;">
+                        <i class="fas fa-mouse-pointer" style="font-size: 2rem; margin-bottom: 16px; opacity: 0.5;"></i><br>
+                        Select a module to edit properties
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pathModules = [];
+    let selectedModule = null;
+    let moduleCounter = 0;
+
+    // Module data templates
+    const moduleTemplates = {
+        'networking1-basics': {
+            title: 'Network Fundamentals',
+            description: 'Learn basic networking concepts including OSI model, IP addressing, and network topologies',
+            duration: 120,
+            icon: 'fas fa-network-wired',
+            color: 'module-networking1'
+        },
+        'networking1-protocols': {
+            title: 'Network Protocols',
+            description: 'Understanding TCP/IP, HTTP, DNS, and other essential network protocols',
+            duration: 180,
+            icon: 'fas fa-layer-group',
+            color: 'module-networking1'
+        },
+        'networking2-advanced': {
+            title: 'Advanced Networking',
+            description: 'Complex network topologies, routing, and advanced configurations',
+            duration: 240,
+            icon: 'fas fa-project-diagram',
+            color: 'module-networking2'
+        },
+        'security-basics': {
+            title: 'Network Security',
+            description: 'Security fundamentals, firewalls, encryption, and threat prevention',
+            duration: 200,
+            icon: 'fas fa-shield-alt',
+            color: 'module-security'
+        },
+        'troubleshooting': {
+            title: 'Network Troubleshooting',
+            description: 'Problem-solving techniques and diagnostic tools for network issues',
+            duration: 150,
+            icon: 'fas fa-tools',
+            color: 'module-troubleshooting'
+        }
+    };
+
+    // Initialize drag and drop functionality
+    function initializeDragAndDrop() {
+        const moduleItems = document.querySelectorAll('.module-item');
+        const pathCanvas = document.getElementById('pathCanvas');
+
+        moduleItems.forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+        });
+
+        pathCanvas.addEventListener('dragover', handleDragOver);
+        pathCanvas.addEventListener('drop', handleDrop);
+    }
+
+    function handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.module);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        
+        const moduleId = e.dataTransfer.getData('text/plain');
+        addModuleToPath(moduleId);
+    }
+
+    function addModuleToPath(moduleId) {
+        if (!moduleTemplates[moduleId]) return;
+
+        const template = moduleTemplates[moduleId];
+        const module = {
+            id: ++moduleCounter,
+            moduleId: moduleId,
+            title: template.title,
+            description: template.description,
+            duration: template.duration,
+            icon: template.icon,
+            color: template.color,
+            prerequisites: [],
+            completionType: 'required'
+        };
+
+        pathModules.push(module);
+        renderPath();
+        updatePathStats();
+    }
+
+    function renderPath() {
+        const pathFlow = document.getElementById('pathFlow');
+        const canvasEmpty = document.getElementById('canvasEmpty');
+
+        if (pathModules.length === 0) {
+            pathFlow.style.display = 'none';
+            canvasEmpty.style.display = 'flex';
+            return;
+        }
+
+        canvasEmpty.style.display = 'none';
+        pathFlow.style.display = 'flex';
+        pathFlow.innerHTML = '';
+
+        pathModules.forEach((module, index) => {
+            // Add node
+            const nodeElement = createPathNode(module);
+            pathFlow.appendChild(nodeElement);
+
+            // Add arrow if not last item
+            if (index < pathModules.length - 1) {
+                const arrow = document.createElement('div');
+                arrow.className = 'path-arrow';
+                pathFlow.appendChild(arrow);
+            }
+        });
+    }
+
+    function createPathNode(module) {
+        const node = document.createElement('div');
+        node.className = 'path-node';
+        node.dataset.moduleId = module.id;
+        node.onclick = () => selectModule(module);
+
+        node.innerHTML = `
+            <div class="node-actions">
+                <button class="action-btn" onclick="editModule(${module.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-btn" onclick="removeModule(${module.id})" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="node-header">
+                <div class="node-icon ${module.color}">
+                    <i class="${module.icon}"></i>
+                </div>
+                <h4 class="node-title">${module.title}</h4>
+            </div>
+            <div class="node-meta">
+                <span>Module ${module.id}</span>
+                <span class="completion-badge completion-${module.completionType}">${module.completionType}</span>
+            </div>
+            <div class="node-description">${module.description}</div>
+            <div class="node-stats">
+                <div class="stat-item">
+                    <span class="stat-value">${module.duration}m</span>
+                    <span class="stat-label">Duration</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">${module.prerequisites.length}</span>
+                    <span class="stat-label">Prerequisites</span>
+                </div>
+            </div>
+        `;
+
+        return node;
+    }
+
+    function selectModule(module) {
+        selectedModule = module;
+        
+        // Update UI selection
+        document.querySelectorAll('.path-node').forEach(node => {
+            node.classList.remove('selected');
+        });
+        document.querySelector(`[data-module-id="${module.id}"]`).classList.add('selected');
+
+        // Show module properties panel
+        document.getElementById('moduleProperties').style.display = 'block';
+        document.getElementById('noModuleSelected').style.display = 'none';
+
+        // Populate form
+        document.getElementById('selectedModuleTitle').value = module.title;
+        document.getElementById('completionType').value = module.completionType;
+
+        renderPrerequisites();
+    }
+
+    function renderPrerequisites() {
+        const prerequisitesList = document.getElementById('prerequisitesList');
+        prerequisitesList.innerHTML = '';
+
+        pathModules.forEach(module => {
+            if (module.id !== selectedModule.id) {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'prerequisite-item';
+                checkbox.innerHTML = `
+                    <label>
+                        <input type="checkbox" ${selectedModule.prerequisites.includes(module.id) ? 'checked' : ''} 
+                               onchange="togglePrerequisite(${module.id}, this.checked)">
+                        ${module.title}
+                    </label>
+                `;
+                prerequisitesList.appendChild(checkbox);
+            }
+        });
+    }
+
+    function togglePrerequisite(moduleId, checked) {
+        if (checked) {
+            if (!selectedModule.prerequisites.includes(moduleId)) {
+                selectedModule.prerequisites.push(moduleId);
+            }
+        } else {
+            selectedModule.prerequisites = selectedModule.prerequisites.filter(id => id !== moduleId);
+        }
+        renderPath();
+    }
+
+    function updateSelectedModule() {
+        if (!selectedModule) return;
+
+        selectedModule.title = document.getElementById('selectedModuleTitle').value;
+        selectedModule.completionType = document.getElementById('completionType').value;
+
+        renderPath();
+        alert('Module updated successfully!');
+    }
+
+    function removeModule(moduleId) {
+        if (confirm('Are you sure you want to remove this module?')) {
+            pathModules = pathModules.filter(module => module.id !== moduleId);
+            
+            // Remove this module from prerequisites of other modules
+            pathModules.forEach(module => {
+                module.prerequisites = module.prerequisites.filter(id => id !== moduleId);
+            });
+
+            renderPath();
+            updatePathStats();
+            
+            if (selectedModule && selectedModule.id === moduleId) {
+                selectedModule = null;
+                document.getElementById('moduleProperties').style.display = 'none';
+                document.getElementById('noModuleSelected').style.display = 'block';
+            }
+        }
+    }
+
+    function updatePathStats() {
+        const moduleCount = pathModules.length;
+        const totalDuration = pathModules.reduce((sum, module) => sum + module.duration, 0);
+        
+        document.getElementById('moduleCount').textContent = moduleCount;
+        document.getElementById('estimatedTime').textContent = Math.round(totalDuration / 60) + 'h';
+    }
+
+    function clearPath() {
+        if (pathModules.length === 0) return;
+        
+        if (confirm('Are you sure you want to clear the entire path?')) {
+            pathModules = [];
+            selectedModule = null;
+            renderPath();
+            updatePathStats();
+            document.getElementById('moduleProperties').style.display = 'none';
+            document.getElementById('noModuleSelected').style.display = 'block';
+        }
+    }
+
+    function previewPath() {
+        if (pathModules.length === 0) {
+            alert('Please add some modules to preview the path.');
+            return;
+        }
+        alert('Preview functionality would open a modal showing the student view of this learning path.');
+    }
+
+    function savePath() {
+        const pathName = document.getElementById('pathName').value;
+        const pathDescription = document.getElementById('pathDescription').value;
+        
+        if (!pathName) {
+            alert('Please enter a path name.');
+            return;
+        }
+        
+        if (pathModules.length === 0) {
+            alert('Please add at least one module to the path.');
+            return;
+        }
+
+        // Here you would normally save to backend
+        console.log('Saving path:', {
+            name: pathName,
+            description: pathDescription,
+            category: document.getElementById('pathCategory').value,
+            difficulty: document.getElementById('pathDifficulty').value,
+            modules: pathModules
+        });
+        
+        alert('Learning path saved successfully!');
+    }
+
+    function publishPath() {
+        if (pathModules.length === 0) {
+            alert('Please add modules before publishing.');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to publish this learning path? It will be available to students.')) {
+            // Here you would normally publish to backend
+            alert('Learning path published successfully!');
+        }
+    }
+
+    // Initialize the builder
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDragAndDrop();
+        updatePathStats();
+    });
+</script>
+{% endblock %}

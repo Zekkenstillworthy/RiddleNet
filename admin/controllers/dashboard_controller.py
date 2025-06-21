@@ -57,8 +57,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
     
     # 3. User activity data - last 7 days for dashboard
     activity_dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
-    
-    # Count active users per day (users who attempted a quiz)
+      # Count active users per day (users who attempted a quiz)
     active_users = []
     for date_str in activity_dates:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -66,10 +65,10 @@ def index():    # Get basic stats - ensure we're using the correct tables
             func.date(Score.date_attempted) == date_obj
         ).with_entities(Score.user_id).distinct().count()
         active_users.append(count)
-    
-    # 4. Enhanced category analytics
+      # 4. Enhanced category analytics
     categories = ['riddle', 'topology', 'troubleshoot', 'crimping']
     category_analytics = {}
+    category_avg = {}
     
     for cat in categories:
         scores = Score.query.filter(Score.category == cat).all()
@@ -83,11 +82,13 @@ def index():    # Get basic stats - ensure we're using the correct tables
                 'highest_score': round(max(score_values) * 100 / 3, 1),
                 'improvement_trend': 'up' if len(scores) > 5 else 'stable'  # Simplified trend
             }
+            category_avg[cat] = round(avg_score * 100 / 3, 1)  # For template charts
         else:
             category_analytics[cat] = {
                 'avg_score': 0, 'total_attempts': 0, 'unique_users': 0, 
                 'highest_score': 0, 'improvement_trend': 'no_data'
             }
+            category_avg[cat] = 0
     
     # 5. Top performing users (for dashboard overview)
     top_performers = (
@@ -172,8 +173,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
             'message': f'{unreviewed_essays} unreviewed essay responses require attention',
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
-    
-    # Low performance alert
+      # Low performance alert
     recent_low_scores = Score.query.filter(
         and_(Score.date_attempted >= (today - timedelta(days=7)), Score.score < 1.0)
     ).count()
@@ -183,7 +183,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
 
-    return render_safe_template('admin/dashboard.html', 
+    return render_safe_template('admin/dashboard.html',
                            total_users=total_users,
                            total_scores=total_scores,
                            total_questions=question_count_main,
@@ -192,6 +192,7 @@ def index():    # Get basic stats - ensure we're using the correct tables
                            activity_dates=json.dumps(activity_dates),
                            active_users=json.dumps(active_users),
                            category_analytics=category_analytics,
+                           category_avg=category_avg,
                            daily_performance=json.dumps(daily_performance),
                            top_performers=top_performers,
                            score_insights=score_insights,
@@ -360,10 +361,11 @@ def module_builder():
     return render_safe_template('admin/module_builder.html', 
                                active_page='module_builder')
 
-@dashboard_bp.route('/path-designer')
-@login_required
-def path_designer():
-    """Learning Path Designer page for creating educational pathways"""
-    return render_safe_template('admin/path_designer.html', 
-                               active_page='path_designer')
+# Redundant route - use learning_path.learning_path_builder instead
+# @dashboard_bp.route('/path-designer')
+# @login_required
+# def path_designer():
+#     """Learning Path Designer page for creating educational pathways"""
+#     return render_safe_template('admin/path_designer.html', 
+#                                active_page='path_designer')
 

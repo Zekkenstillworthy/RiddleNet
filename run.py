@@ -161,21 +161,18 @@ print("\n=== Registering Admin Blueprints ===")
 try:
     import importlib
     # Import admin blueprints using a more robust approach
-    blueprints_to_register = [
-        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
+    blueprints_to_register = [        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
         ('admin.controllers.user_controller', 'user_bp', '/admin', 'admin_user_bp'),
         ('admin.controllers.question_controller', 'question_bp', '/admin/questions', None),
         ('admin.controllers.score_controller', 'score_bp', '/admin', None),
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
-        ('admin.controllers.scenario_controller', 'scenario_bp', '/admin', None),
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-        ('admin.routes.scenario_routes', 'scenario_routes', '/admin', None),
         ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
         ('admin.routes.learning_routes', 'learning_path_bp', None, 'learning_path_bp')  # Learning path routes
     ]
