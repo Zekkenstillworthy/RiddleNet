@@ -84,19 +84,15 @@
         
         <div class="client-controls">
           <button class="sim-btn success" onclick="addClient()">
-            <i class="fas fa-plus"></i> Add Client
+            <i class="fas fa-laptop"></i> Add Client
           </button>
           
           <button class="sim-btn warning" onclick="simulateInterference()">
-            <i class="fas fa-exclamation-triangle"></i> Simulate Interference
+            <i class="fas fa-wave-square"></i> Simulate Interference
           </button>
           
-          <button class="sim-btn danger" onclick="simulateAttack()">
-            <i class="fas fa-skull-crossbones"></i> WiFi Attack
-          </button>
-          
-          <button class="sim-btn secondary" onclick="resetNetwork()">
-            <i class="fas fa-redo"></i> Reset Network
+          <button class="sim-btn danger" onclick="disconnectClient()">
+            <i class="fas fa-unlink"></i> Disconnect Client
           </button>
         </div>
       </div>
@@ -104,17 +100,17 @@
       <div class="control-section">
         <h3 class="section-title">
           <i class="fas fa-chart-bar"></i>
-          Network Stats
+          Network Statistics
         </h3>
         
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-label">Connected Clients:</span>
-            <span class="stat-value" id="client-count">0</span>
+            <span class="stat-value" id="connected-clients">0</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Channel Utilization:</span>
-            <span class="stat-value" id="channel-usage">0%</span>
+            <span class="stat-value" id="channel-util">0%</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Signal Strength:</span>
@@ -148,70 +144,81 @@
           <span>Internet</span>
         </div>
 
-        <!-- Router -->
-        <div class="network-router" style="top: 20%; left: 50%;">
-          <i class="fas fa-router"></i>
-          <span>Router</span>
+        <!-- Wireless Clients -->
+        <div class="wireless-client laptop" id="client1" style="top: 60%; left: 20%;">
+          <i class="fas fa-laptop"></i>
+          <div class="client-label">Laptop 1</div>
+          <div class="signal-bars">
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+            <span class="bar"></span>
+          </div>
         </div>
 
-        <!-- Wireless Clients -->
-        <div class="client-area" id="client-area">
-          <!-- Clients will be added dynamically -->
+        <div class="wireless-client phone" id="client2" style="top: 70%; right: 25%;">
+          <i class="fas fa-mobile-alt"></i>
+          <div class="client-label">Phone</div>
+          <div class="signal-bars">
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </div>
+        </div>
+
+        <div class="wireless-client tablet" id="client3" style="bottom: 20%; left: 40%;">
+          <i class="fas fa-tablet-alt"></i>
+          <div class="client-label">Tablet</div>
+          <div class="signal-bars">
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+            <span class="bar active"></span>
+          </div>
         </div>
 
         <!-- Interference Sources -->
-        <div class="interference-source" id="microwave" style="top: 70%; left: 20%; display: none;">
+        <div class="interference-source" id="microwave" style="top: 50%; right: 15%;">
           <i class="fas fa-microchip"></i>
-          <span>Microwave</span>
-        </div>
-        
-        <div class="interference-source" id="bluetooth" style="top: 70%; right: 20%; display: none;">
-          <i class="fas fa-bluetooth"></i>
-          <span>Bluetooth Device</span>
+          <div class="interference-label">Microwave</div>
         </div>
 
-        <!-- Signal Visualization -->
-        <svg class="signal-waves" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-          <circle class="signal-ring" cx="50%" cy="30%" r="50" opacity="0.3"/>
-          <circle class="signal-ring" cx="50%" cy="30%" r="100" opacity="0.2"/>
-          <circle class="signal-ring" cx="50%" cy="30%" r="150" opacity="0.1"/>
-        </svg>
-      </div>
-
-      <!-- Channel Analysis -->
-      <div class="channel-analysis">
-        <h4 class="panel-title">Channel Analysis</h4>
-        <div class="channel-chart" id="channel-chart">
-          <div class="channel-bar" data-channel="1" style="height: 30%;">
-            <span class="channel-label">Ch 1</span>
-            <span class="channel-usage">30%</span>
-          </div>
-          <div class="channel-bar" data-channel="6" style="height: 60%;">
-            <span class="channel-label">Ch 6</span>
-            <span class="channel-usage">60%</span>
-          </div>
-          <div class="channel-bar" data-channel="11" style="height: 20%;">
-            <span class="channel-label">Ch 11</span>
-            <span class="channel-usage">20%</span>
+        <!-- Channel Analysis -->
+        <div class="channel-analysis" id="channel-analysis">
+          <h4>Channel Analysis</h4>
+          <div class="channel-graph">
+            <div class="channel" data-channel="1">
+              <div class="channel-bar" style="height: 60%"></div>
+              <span>Ch 1</span>
+            </div>
+            <div class="channel" data-channel="6">
+              <div class="channel-bar" style="height: 30%"></div>
+              <span>Ch 6</span>
+            </div>
+            <div class="channel" data-channel="11">
+              <div class="channel-bar" style="height: 80%"></div>
+              <span>Ch 11</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Security Status -->
-      <div class="security-status">
-        <h4 class="panel-title">Security Status</h4>
-        <div class="security-info" id="security-info">
-          <div class="security-item">
-            <span class="security-label">Encryption:</span>
-            <span class="security-value" id="encryption-type">None</span>
-          </div>
-          <div class="security-item">
-            <span class="security-label">Authentication:</span>
-            <span class="security-value" id="auth-type">Open</span>
-          </div>
-          <div class="security-item">
-            <span class="security-label">WPS Status:</span>
-            <span class="security-value error" id="wps-status">Enabled</span>
+        <!-- Security Status -->
+        <div class="security-status" id="security-status">
+          <h4>Security Status</h4>
+          <div class="security-info">
+            <div class="security-item">
+              <i class="fas fa-shield-alt"></i>
+              <span>WPA3 Enabled</span>
+            </div>
+            <div class="security-item">
+              <i class="fas fa-key"></i>
+              <span>Strong Password</span>
+            </div>
+            <div class="security-item">
+              <i class="fas fa-lock"></i>
+              <span>Encryption: AES</span>
+            </div>
           </div>
         </div>
       </div>
@@ -220,311 +227,161 @@
 </div>
 
 <script>
-let wirelessConfig = {
-  ssid: 'DefaultAP',
-  security: 'open',
-  password: '',
-  channel: 6,
-  standard: '802.11ax'
-};
-
-let connectedClients = [];
+let currentStandard = '802.11ax';
+let currentSSID = 'DefaultAP';
+let currentChannel = 6;
+let currentSecurity = 'wpa3';
+let connectedClients = 0;
 let interferenceActive = false;
-let clientCounter = 0;
 
 function configureAP() {
   const ssid = document.getElementById('ssid-name').value || 'DefaultAP';
   const security = document.getElementById('security-type').value;
-  const password = document.getElementById('network-password').value;
-  const channel = parseInt(document.getElementById('wifi-channel').value);
-
-  wirelessConfig.ssid = ssid;
-  wirelessConfig.security = security;
-  wirelessConfig.password = password;
-  wirelessConfig.channel = channel;
-
-  // Update AP display
+  const channel = document.getElementById('wifi-channel').value;
+  
+  currentSSID = ssid;
+  currentSecurity = security;
+  currentChannel = parseInt(channel);
+  
   document.getElementById('ap-ssid').textContent = ssid;
   
-  // Update security status
-  updateSecurityStatus();
-  
-  // Update channel visualization
-  updateChannelChart();
-  
-  addWirelessLog(`Access Point configured: SSID=${ssid}, Security=${security}, Channel=${channel}`, 'success');
-  
-  // Simulate configuration propagation
-  setTimeout(() => {
-    addWirelessLog('Access Point broadcasting beacon frames', 'info');
-  }, 1000);
+  addLogEntry(`Access Point configured: SSID=${ssid}, Security=${security}, Channel=${channel}`);
+  updateNetworkStatus();
 }
 
 function selectStandard(standard) {
-  wirelessConfig.standard = standard;
+  currentStandard = standard;
   
-  // Update visual selection
-  document.querySelectorAll('.standard-option').forEach(opt => opt.classList.remove('selected'));
+  // Update UI
+  document.querySelectorAll('.standard-option').forEach(option => {
+    option.classList.remove('selected');
+  });
   document.querySelector(`[data-standard="${standard}"]`).classList.add('selected');
   
-  // Update signal visualization based on standard
-  updateSignalVisualization(standard);
-  
-  addWirelessLog(`WiFi standard changed to ${standard}`, 'info');
+  addLogEntry(`WiFi standard changed to ${standard}`);
+  updatePerformance();
 }
 
 function addClient() {
-  clientCounter++;
-  const clientId = `client-${clientCounter}`;
+  if (connectedClients >= 10) {
+    addLogEntry('Maximum client limit reached');
+    return;
+  }
   
-  // Random position within signal range
-  const angle = Math.random() * 2 * Math.PI;
-  const distance = 50 + Math.random() * 100;
-  const x = 50 + Math.cos(angle) * distance/4;
-  const y = 30 + Math.sin(angle) * distance/4;
+  connectedClients++;
+  updateClientCount();
   
-  const client = {
-    id: clientId,
-    name: `Device-${clientCounter}`,
-    x: x,
-    y: y,
-    signalStrength: Math.random() * 50 + 30, // -30 to -80 dBm
-    connected: false
-  };
+  // Create new client element
+  const clientId = `client${connectedClients + 3}`;
+  const client = document.createElement('div');
+  client.className = 'wireless-client laptop';
+  client.id = clientId;
+  client.style.top = Math.random() * 60 + 20 + '%';
+  client.style.left = Math.random() * 60 + 20 + '%';
   
-  connectedClients.push(client);
-  
-  // Create client element
-  const clientElement = document.createElement('div');
-  clientElement.className = 'wireless-client';
-  clientElement.id = clientId;
-  clientElement.style.top = `${y}%`;
-  clientElement.style.left = `${x}%`;
-  
-  clientElement.innerHTML = `
-    <i class="fas fa-mobile-alt"></i>
-    <span>${client.name}</span>
+  client.innerHTML = `
+    <i class="fas fa-laptop"></i>
+    <div class="client-label">Device ${connectedClients + 3}</div>
     <div class="signal-bars">
-      <div class="bar ${client.signalStrength > 20 ? 'active' : ''}"></div>
-      <div class="bar ${client.signalStrength > 40 ? 'active' : ''}"></div>
-      <div class="bar ${client.signalStrength > 60 ? 'active' : ''}"></div>
-      <div class="bar ${client.signalStrength > 80 ? 'active' : ''}"></div>
+      <span class="bar active"></span>
+      <span class="bar active"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
     </div>
   `;
   
-  document.getElementById('client-area').appendChild(clientElement);
+  document.getElementById('wireless-topology').appendChild(client);
   
-  // Simulate connection process
-  setTimeout(() => {
-    clientElement.classList.add('connecting');
-    addWirelessLog(`${client.name} attempting to connect...`, 'info');
-    
-    setTimeout(() => {
-      if (wirelessConfig.security === 'open' || wirelessConfig.password) {
-        client.connected = true;
-        clientElement.classList.remove('connecting');
-        clientElement.classList.add('connected');
-        addWirelessLog(`${client.name} connected successfully`, 'success');
-      } else {
-        clientElement.classList.remove('connecting');
-        addWirelessLog(`${client.name} authentication failed`, 'error');
-      }
-      updateStats();
-    }, 2000);
-  }, 500);
+  addLogEntry(`New client connected: Device ${connectedClients + 3}`);
+  updateNetworkStats();
 }
 
 function simulateInterference() {
   interferenceActive = !interferenceActive;
   
-  const microwaveSource = document.getElementById('microwave');
-  const bluetoothSource = document.getElementById('bluetooth');
-  
   if (interferenceActive) {
-    microwaveSource.style.display = 'block';
-    bluetoothSource.style.display = 'block';
+    document.getElementById('microwave').style.display = 'block';
+    addLogEntry('Interference detected on 2.4GHz band');
     
-    // Degrade signal quality
-    document.querySelectorAll('.wireless-client').forEach(client => {
-      client.classList.add('poor-signal');
+    // Reduce signal quality
+    document.querySelectorAll('.signal-bars .bar').forEach((bar, index) => {
+      if (index > 1) bar.classList.remove('active');
     });
     
-    addWirelessLog('Interference detected on 2.4 GHz band', 'warning');
-    addWirelessLog('Signal quality degraded for connected clients', 'warning');
-    
-    // Update channel utilization
-    updateChannelChart(true);
+    updateNetworkStats(true);
   } else {
-    microwaveSource.style.display = 'none';
-    bluetoothSource.style.display = 'none';
+    document.getElementById('microwave').style.display = 'none';
+    addLogEntry('Interference cleared');
     
-    document.querySelectorAll('.wireless-client').forEach(client => {
-      client.classList.remove('poor-signal');
+    // Restore signal quality
+    document.querySelectorAll('.signal-bars .bar').forEach((bar, index) => {
+      if (index < 3) bar.classList.add('active');
     });
     
-    addWirelessLog('Interference sources removed', 'success');
-    updateChannelChart(false);
-  }
-  
-  updateStats();
-}
-
-function simulateAttack() {
-  addWirelessLog('WiFi security assessment initiated...', 'warning');
-  
-  setTimeout(() => {
-    if (wirelessConfig.security === 'open') {
-      addWirelessLog('CRITICAL: Open network detected - No encryption!', 'error');
-    } else if (wirelessConfig.security === 'wep') {
-      addWirelessLog('WARNING: WEP encryption is vulnerable to attacks', 'error');
-    } else {
-      addWirelessLog('Network security appears adequate', 'success');
-    }
-  }, 1000);
-  
-  setTimeout(() => {
-    addWirelessLog('Scanning for WPS vulnerabilities...', 'warning');
-    setTimeout(() => {
-      addWirelessLog('WPS PIN attack vector identified', 'error');
-    }, 1500);
-  }, 2000);
-}
-
-function resetNetwork() {
-  // Clear all clients
-  connectedClients = [];
-  document.getElementById('client-area').innerHTML = '';
-  
-  // Reset interference
-  interferenceActive = false;
-  document.getElementById('microwave').style.display = 'none';
-  document.getElementById('bluetooth').style.display = 'none';
-  
-  // Reset configuration
-  wirelessConfig = {
-    ssid: 'DefaultAP',
-    security: 'open',
-    password: '',
-    channel: 6,
-    standard: '802.11ax'
-  };
-  
-  // Reset UI
-  document.getElementById('ap-ssid').textContent = 'DefaultAP';
-  updateSecurityStatus();
-  updateChannelChart(false);
-  updateStats();
-  
-  addWirelessLog('Wireless network reset to default configuration', 'info');
-}
-
-function updateSecurityStatus() {
-  const securityMap = {
-    'open': { encryption: 'None', auth: 'Open' },
-    'wep': { encryption: 'WEP', auth: 'Shared Key' },
-    'wpa': { encryption: 'TKIP/AES', auth: 'PSK' },
-    'wpa3': { encryption: 'AES-256', auth: 'SAE' },
-    'enterprise': { encryption: 'AES', auth: '802.1X/EAP' }
-  };
-  
-  const security = securityMap[wirelessConfig.security];
-  document.getElementById('encryption-type').textContent = security.encryption;
-  document.getElementById('auth-type').textContent = security.auth;
-  
-  // Update encryption status color
-  const encElement = document.getElementById('encryption-type');
-  if (wirelessConfig.security === 'open') {
-    encElement.className = 'security-value error';
-  } else if (wirelessConfig.security === 'wep') {
-    encElement.className = 'security-value warning';
-  } else {
-    encElement.className = 'security-value success';
+    updateNetworkStats(false);
   }
 }
 
-function updateChannelChart(interference = false) {
-  const currentChannel = wirelessConfig.channel;
-  
-  document.querySelectorAll('.channel-bar').forEach(bar => {
-    const channel = parseInt(bar.getAttribute('data-channel'));
-    let usage = Math.random() * 40 + 10; // Base usage 10-50%
+function disconnectClient() {
+  if (connectedClients > 0) {
+    connectedClients--;
+    updateClientCount();
     
-    if (channel === currentChannel) {
-      usage += 30; // Our AP adds usage
+    // Remove last client
+    const lastClient = document.getElementById(`client${connectedClients + 4}`);
+    if (lastClient) {
+      lastClient.remove();
     }
     
-    if (interference && [1, 6, 11].includes(channel)) {
-      usage += 25; // Interference adds usage
-    }
-    
-    usage = Math.min(usage, 100);
-    
-    bar.style.height = `${usage}%`;
-    bar.querySelector('.channel-usage').textContent = `${Math.round(usage)}%`;
-    
-    // Color coding
-    if (usage > 80) {
-      bar.classList.add('high-usage');
-    } else {
-      bar.classList.remove('high-usage');
-    }
-  });
-  
-  document.getElementById('channel-usage').textContent = `${Math.round(document.querySelector(`[data-channel="${currentChannel}"]`).style.height.replace('%', ''))}%`;
+    addLogEntry(`Client disconnected`);
+    updateNetworkStats();
+  }
 }
 
-function updateSignalVisualization(standard) {
-  const signalRings = document.querySelectorAll('.signal-ring');
-  
-  // Different coverage based on standard
-  const coverageMap = {
-    '802.11n': { range: 70, strength: 0.6 },
-    '802.11ac': { range: 50, strength: 0.8 },
-    '802.11ax': { range: 60, strength: 0.9 }
-  };
-  
-  const coverage = coverageMap[standard];
-  
-  signalRings.forEach((ring, index) => {
-    const radius = (index + 1) * coverage.range / 3;
-    const opacity = coverage.strength * (0.4 - index * 0.1);
-    
-    ring.setAttribute('r', radius);
-    ring.style.opacity = opacity;
-  });
+function updateClientCount() {
+  document.getElementById('connected-clients').textContent = connectedClients;
 }
 
-function updateStats() {
-  const connectedCount = connectedClients.filter(c => c.connected).length;
-  document.getElementById('client-count').textContent = connectedCount;
+function updateNetworkStats(interference = false) {
+  const baseUtilization = Math.min(connectedClients * 8, 80);
+  const utilization = interference ? baseUtilization + 20 : baseUtilization;
   
-  // Simulate data rate based on clients and interference
-  let dataRate = 100; // Base rate
-  if (interferenceActive) dataRate *= 0.6;
-  if (connectedCount > 0) dataRate = dataRate / Math.sqrt(connectedCount);
-  
-  document.getElementById('data-rate').textContent = `${Math.round(dataRate)} Mbps`;
-  
-  // Signal strength varies with interference
   const baseSignal = -30;
-  const signalDegradation = interferenceActive ? 15 : 0;
-  document.getElementById('signal-strength').textContent = `${baseSignal - signalDegradation} dBm`;
-}
-
-function addWirelessLog(message, type = 'info') {
-  console.log(`[WiFi] ${message}`);
-  // Could add to a visible log panel if needed
-}
-
-// Initialize simulation
-document.addEventListener('DOMContentLoaded', () => {
-  updateSecurityStatus();
-  updateChannelChart();
-  updateSignalVisualization('802.11ax');
-  updateStats();
+  const signal = interference ? baseSignal - 10 : baseSignal;
   
-  addWirelessLog('Wireless simulation initialized', 'success');
-  addWirelessLog('Configure access point to begin simulation', 'info');
+  const baseRate = Math.min(connectedClients * 50, 500);
+  const rate = interference ? baseRate * 0.6 : baseRate;
+  
+  document.getElementById('channel-util').textContent = Math.min(utilization, 100) + '%';
+  document.getElementById('signal-strength').textContent = signal + ' dBm';
+  document.getElementById('data-rate').textContent = Math.floor(rate) + ' Mbps';
+}
+
+function updatePerformance() {
+  const standards = {
+    '802.11n': { maxRate: 600, bands: '2.4/5 GHz' },
+    '802.11ac': { maxRate: 3500, bands: '5 GHz' },
+    '802.11ax': { maxRate: 9600, bands: '2.4/5/6 GHz' }
+  };
+  
+  const standard = standards[currentStandard];
+  addLogEntry(`Performance updated for ${currentStandard}: Max ${standard.maxRate} Mbps, ${standard.bands}`);
+}
+
+function updateNetworkStatus() {
+  addLogEntry(`Network status: ${connectedClients} clients, Channel ${currentChannel}, Security: ${currentSecurity.toUpperCase()}`);
+}
+
+function addLogEntry(message) {
+  const timestamp = new Date().toLocaleTimeString();
+  console.log(`[${timestamp}] ${message}`);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  updateClientCount();
+  updateNetworkStats();
+  addLogEntry('Wireless network simulation initialized');
 });
 </script>
 {% endblock %}

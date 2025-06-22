@@ -1,0 +1,903 @@
+{% extends "user/base.html" %}
+
+{% block title %}QoS & Network Performance Simulation - Networking 2{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/networking2-simulations.css') }}">
+<style>
+  .qos-simulation {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    height: calc(100vh - 120px);
+    padding: 20px;
+  }
+
+  .qos-control-panel {
+    background: rgba(20, 25, 40, 0.95);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .qos-topology {
+    background: rgba(20, 25, 40, 0.95);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section-title {
+    color: var(--cyber-glow);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+    padding-bottom: 5px;
+  }
+
+  .qos-device {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border: 2px solid var(--cyber-glow);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+    z-index: 10;
+    font-size: 0.8rem;
+  }
+
+  .qos-device:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+  }
+
+  .qos-device.selected {
+    border-color: var(--success-green);
+    box-shadow: 0 0 15px rgba(46, 213, 115, 0.6);
+  }
+
+  .qos-device.router {
+    background: linear-gradient(135deg, #f39c12, #d35400);
+    border-radius: 50%;
+  }
+
+  .qos-device.server {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  }
+
+  .qos-device.client {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+  }
+
+  .traffic-flow {
+    position: absolute;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cyber-glow), rgba(0, 212, 255, 0.5));
+    transform-origin: left center;
+    z-index: 5;
+    border-radius: 2px;
+  }
+
+  .traffic-flow.high-priority {
+    background: var(--success-green);
+    height: 6px;
+    box-shadow: 0 0 10px rgba(46, 213, 115, 0.8);
+  }
+
+  .traffic-flow.medium-priority {
+    background: #f39c12;
+    height: 5px;
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.6);
+  }
+
+  .traffic-flow.low-priority {
+    background: var(--danger-red);
+    height: 3px;
+    box-shadow: 0 0 6px rgba(231, 76, 60, 0.4);
+  }
+
+  .traffic-flow.active {
+    animation: dataFlow 2s infinite;
+  }
+
+  @keyframes dataFlow {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; transform: scaleY(1.5); }
+    100% { opacity: 0.5; }
+  }
+
+  .qos-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .qos-btn {
+    background: linear-gradient(45deg, var(--cyber-glow), rgba(0, 212, 255, 0.8));
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qos-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+  }
+
+  .qos-btn.warning {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+  }
+
+  .qos-btn.danger {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+  }
+
+  .qos-btn.success {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+  }
+
+  .qos-table {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.85rem;
+  }
+
+  .qos-table th {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--cyber-glow);
+    padding: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+  }
+
+  .qos-table td {
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+  }
+
+  .priority-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .priority-high {
+    background: var(--success-green);
+    color: white;
+  }
+
+  .priority-medium {
+    background: #f39c12;
+    color: white;
+  }
+
+  .priority-low {
+    background: var(--danger-red);
+    color: white;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+
+  .bandwidth-meter {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .meter-title {
+    color: var(--cyber-glow);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .bandwidth-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+  }
+
+  .bandwidth-usage {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-green), #f39c12, var(--danger-red));
+    transition: width 300ms ease;
+    border-radius: 10px;
+  }
+
+  .bandwidth-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .performance-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .metric-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--cyber-glow);
+  }
+
+  .metric-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 5px;
+  }
+
+  .activity-log {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+  }
+
+  .log-entry {
+    margin-bottom: 5px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .log-entry.info {
+    color: var(--cyber-glow);
+  }
+
+  .log-entry.success {
+    color: var(--success-green);
+  }
+
+  .log-entry.warning {
+    color: #f39c12;
+  }
+
+  .log-entry.error {
+    color: var(--danger-red);
+  }
+
+  .topology-title {
+    color: var(--cyber-glow);
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .traffic-generator {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(20, 25, 40, 0.9);
+    border: 1px solid var(--cyber-glow);
+    border-radius: 8px;
+    padding: 15px;
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .qos-policy {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .policy-name {
+    color: var(--cyber-glow);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .policy-rule {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+  }
+
+  .congestion-indicator {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(20, 25, 40, 0.9);
+    border: 1px solid var(--cyber-glow);
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: var(--cyber-glow);
+    font-weight: 600;
+  }
+
+  .congestion-indicator.warning {
+    border-color: #f39c12;
+    color: #f39c12;
+  }
+
+  .congestion-indicator.critical {
+    border-color: var(--danger-red);
+    color: var(--danger-red);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('user.networking2_simulations') }}" class="sim-back-btn">
+  <i class="fas fa-arrow-left"></i> Back to Networking 2
+</a>
+
+<div class="simulation-container">
+  <div class="simulation-header">
+    <h1 class="simulation-title">📊 QoS & Performance Analysis Simulation</h1>
+    <p class="simulation-subtitle">Quality of Service Implementation and Network Performance Optimization</p>
+  </div>
+
+  <div class="qos-simulation">
+    <!-- Control Panel -->
+    <div class="qos-control-panel">
+      <div class="section-title">⚙️ QoS Configuration</div>
+      
+      <div class="qos-controls">
+        <button class="qos-btn" onclick="enableQoS()">
+          <i class="fas fa-power-off"></i> Enable QoS
+        </button>
+        <button class="qos-btn warning" onclick="createPolicy()">
+          <i class="fas fa-shield-alt"></i> Create QoS Policy
+        </button>
+        <button class="qos-btn success" onclick="generateTraffic()">
+          <i class="fas fa-tachometer-alt"></i> Generate Traffic
+        </button>
+        <button class="qos-btn success" onclick="showBandwidth()">
+          <i class="fas fa-chart-line"></i> Monitor Bandwidth
+        </button>
+        <button class="qos-btn danger" onclick="simulateCongestion()">
+          <i class="fas fa-exclamation-triangle"></i> Simulate Congestion
+        </button>
+        <button class="qos-btn" onclick="resetQoS()">
+          <i class="fas fa-refresh"></i> Reset
+        </button>
+      </div>
+
+      <div class="section-title">📈 Performance Metrics</div>
+      <div class="performance-metrics">
+        <div class="metric-card">
+          <div class="metric-value" id="latency-value">12ms</div>
+          <div class="metric-label">Latency</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="jitter-value">2ms</div>
+          <div class="metric-label">Jitter</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="packet-loss">0.1%</div>
+          <div class="metric-label">Packet Loss</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="throughput">95%</div>
+          <div class="metric-label">Utilization</div>
+        </div>
+      </div>
+
+      <div class="section-title">📊 Bandwidth Allocation</div>
+      <div class="bandwidth-meter">
+        <div class="meter-title">Total Bandwidth: 100 Mbps</div>
+        <div class="bandwidth-bar">
+          <div class="bandwidth-usage" id="bandwidth-usage" style="width: 65%;"></div>
+        </div>
+        <div class="bandwidth-label">
+          <span>Used: <span id="used-bandwidth">65 Mbps</span></span>
+          <span>Available: <span id="available-bandwidth">35 Mbps</span></span>
+        </div>
+      </div>
+
+      <div class="section-title">🎯 QoS Policies</div>
+      <div class="qos-policy">
+        <div class="policy-name">Enterprise Voice Policy</div>
+        <div class="policy-rule">
+          <span>Voice Traffic</span>
+          <span class="priority-badge priority-high">High Priority</span>
+        </div>
+        <div class="policy-rule">
+          <span>Guaranteed BW</span>
+          <span>30 Mbps</span>
+        </div>
+        <div class="policy-rule">
+          <span>Max Latency</span>
+          <span>150ms</span>
+        </div>
+      </div>
+
+      <div class="qos-policy">
+        <div class="policy-name">Business Data Policy</div>
+        <div class="policy-rule">
+          <span>Business Apps</span>
+          <span class="priority-badge priority-medium">Medium Priority</span>
+        </div>
+        <div class="policy-rule">
+          <span>Guaranteed BW</span>
+          <span>40 Mbps</span>
+        </div>
+        <div class="policy-rule">
+          <span>Burst Allowed</span>
+          <span>60 Mbps</span>
+        </div>
+      </div>
+
+      <div class="section-title">📋 Traffic Classification</div>
+      <table class="qos-table">
+        <thead>
+          <tr>
+            <th>Traffic Type</th>
+            <th>DSCP</th>
+            <th>Priority</th>
+            <th>BW %</th>
+          </tr>
+        </thead>
+        <tbody id="traffic-table">
+          <tr>
+            <td>Voice (VoIP)</td>
+            <td>EF (46)</td>
+            <td><span class="priority-badge priority-high">High</span></td>
+            <td>30%</td>
+          </tr>
+          <tr>
+            <td>Video Conference</td>
+            <td>AF41 (34)</td>
+            <td><span class="priority-badge priority-high">High</span></td>
+            <td>25%</td>
+          </tr>
+          <tr>
+            <td>Business Apps</td>
+            <td>AF21 (18)</td>
+            <td><span class="priority-badge priority-medium">Medium</span></td>
+            <td>25%</td>
+          </tr>
+          <tr>
+            <td>Web Browsing</td>
+            <td>AF11 (10)</td>
+            <td><span class="priority-badge priority-medium">Medium</span></td>
+            <td>15%</td>
+          </tr>
+          <tr>
+            <td>File Transfer</td>
+            <td>BE (0)</td>
+            <td><span class="priority-badge priority-low">Low</span></td>
+            <td>5%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">📈 Activity Log</div>
+      <div class="activity-log" id="activity-log">
+        <div class="log-entry info">QoS Performance Lab initialized</div>
+        <div class="log-entry">Configure QoS policies to optimize traffic</div>
+      </div>
+    </div>
+
+    <!-- Main Topology Area -->
+    <div class="qos-topology">
+      <div class="topology-title">Enterprise Network with QoS Implementation</div>
+      
+      <!-- Congestion Indicator -->
+      <div class="congestion-indicator" id="congestion-status">
+        <i class="fas fa-circle"></i> Network Status: <span id="network-state">Normal</span>
+      </div>
+
+      <!-- Traffic Generator Info -->
+      <div class="traffic-generator">
+        <div>Traffic Generator</div>
+        <div style="font-size: 0.8rem;">Active Flows: <span id="active-flows">0</span></div>
+      </div>
+
+      <!-- Core Router -->
+      <div class="qos-device router" id="core-router" onclick="selectDevice('core-router')" style="top: 45%; left: 45%;">
+        <div>Core</div>
+        <div style="font-size: 0.6rem;">Router</div>
+      </div>
+
+      <!-- Branch Router -->
+      <div class="qos-device router" id="branch-router" onclick="selectDevice('branch-router')" style="top: 20%; left: 20%;">
+        <div>Branch</div>
+        <div style="font-size: 0.6rem;">Router</div>
+      </div>
+
+      <!-- WAN Router -->
+      <div class="qos-device router" id="wan-router" onclick="selectDevice('wan-router')" style="top: 70%; left: 70%;">
+        <div>WAN</div>
+        <div style="font-size: 0.6rem;">Router</div>
+      </div>
+
+      <!-- Voice Server -->
+      <div class="qos-device server" id="voice-server" onclick="selectDevice('voice-server')" style="top: 10%; left: 50%;">
+        <div>Voice</div>
+        <div style="font-size: 0.6rem;">Server</div>
+      </div>
+
+      <!-- Video Server -->
+      <div class="qos-device server" id="video-server" onclick="selectDevice('video-server')" style="top: 80%; left: 50%;">
+        <div>Video</div>
+        <div style="font-size: 0.6rem;">Server</div>
+      </div>
+
+      <!-- Data Server -->
+      <div class="qos-device server" id="data-server" onclick="selectDevice('data-server')" style="top: 45%; left: 80%;">
+        <div>Data</div>
+        <div style="font-size: 0.6rem;">Server</div>
+      </div>
+
+      <!-- Client Workstations -->
+      <div class="qos-device client" id="client-1" onclick="selectDevice('client-1')" style="top: 20%; left: 5%;">
+        <div>PC-1</div>
+      </div>
+
+      <div class="qos-device client" id="client-2" onclick="selectDevice('client-2')" style="top: 60%; left: 5%;">
+        <div>PC-2</div>
+      </div>
+
+      <div class="qos-device client" id="client-3" onclick="selectDevice('client-3')" style="top: 40%; left: 5%;">
+        <div>PC-3</div>
+      </div>
+
+      <!-- Traffic Flows (Initially hidden) -->
+      <div class="traffic-flow high-priority" id="voice-flow" style="top: 25%; left: 30%; width: 150px; transform: rotate(15deg); display: none;"></div>
+      <div class="traffic-flow high-priority" id="video-flow" style="top: 65%; left: 55%; width: 130px; transform: rotate(-15deg); display: none;"></div>
+      <div class="traffic-flow medium-priority" id="data-flow-1" style="top: 45%; left: 50%; width: 120px; display: none;"></div>
+      <div class="traffic-flow medium-priority" id="web-flow" style="top: 35%; left: 25%; width: 180px; transform: rotate(25deg); display: none;"></div>
+      <div class="traffic-flow low-priority" id="file-flow" style="top: 55%; left: 20%; width: 200px; transform: rotate(35deg); display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let qosEnabled = false;
+let selectedDevice = null;
+let networkState = 'normal';
+let activeFlows = 0;
+let trafficGenerated = false;
+let congestionLevel = 0;
+
+// Network performance metrics
+let networkMetrics = {
+  latency: 12,
+  jitter: 2,
+  packetLoss: 0.1,
+  utilization: 65,
+  usedBandwidth: 65,
+  availableBandwidth: 35
+};
+
+// Traffic types and their characteristics
+const trafficTypes = {
+  voice: { priority: 'high', bandwidth: 30, dscp: 46, color: '#2ecc71' },
+  video: { priority: 'high', bandwidth: 25, dscp: 34, color: '#2ecc71' },
+  business: { priority: 'medium', bandwidth: 25, dscp: 18, color: '#f39c12' },
+  web: { priority: 'medium', bandwidth: 15, dscp: 10, color: '#f39c12' },
+  file: { priority: 'low', bandwidth: 5, dscp: 0, color: '#e74c3c' }
+};
+
+function selectDevice(deviceId) {
+  // Clear previous selection
+  document.querySelectorAll('.qos-device').forEach(device => {
+    device.classList.remove('selected');
+  });
+  
+  // Select new device
+  selectedDevice = deviceId;
+  document.getElementById(deviceId).classList.add('selected');
+  
+  addLogEntry(`Selected device: ${deviceId.replace('-', ' ').toUpperCase()}`, 'info');
+  
+  // Show device-specific information
+  showDeviceInfo(deviceId);
+}
+
+function enableQoS() {
+  if (qosEnabled) {
+    addLogEntry('QoS is already enabled', 'warning');
+    return;
+  }
+  
+  qosEnabled = true;
+  networkState = 'qos-active';
+  
+  addLogEntry('QoS enabled on all network devices', 'success');
+  addLogEntry('Traffic classification policies activated', 'info');
+  addLogEntry('DSCP marking enabled on all interfaces', 'info');
+  addLogEntry('Queuing and scheduling policies applied', 'success');
+  
+  // Update network status
+  document.getElementById('network-state').textContent = 'QoS Active';
+  
+  // Improve metrics with QoS
+  updateMetrics({
+    latency: 8,
+    jitter: 1,
+    packetLoss: 0.05,
+    utilization: 70
+  });
+}
+
+function createPolicy() {
+  if (!qosEnabled) {
+    addLogEntry('Please enable QoS first', 'warning');
+    return;
+  }
+  
+  addLogEntry('Creating custom QoS policy...', 'info');
+  addLogEntry('Policy: Priority queue for voice traffic', 'success');
+  addLogEntry('Policy: Guaranteed bandwidth for video', 'success');
+  addLogEntry('Policy: Fair queuing for business data', 'success');
+  addLogEntry('Policy: Traffic shaping for bulk transfers', 'info');
+  addLogEntry('Custom QoS policy applied successfully', 'success');
+}
+
+function generateTraffic() {
+  if (!qosEnabled) {
+    addLogEntry('Please enable QoS first', 'warning');
+    return;
+  }
+  
+  trafficGenerated = true;
+  activeFlows = 0;
+  
+  // Show traffic flows with different priorities
+  const flows = ['voice-flow', 'video-flow', 'data-flow-1', 'web-flow', 'file-flow'];
+  
+  flows.forEach((flowId, index) => {
+    setTimeout(() => {
+      const flow = document.getElementById(flowId);
+      flow.style.display = 'block';
+      flow.classList.add('active');
+      activeFlows++;
+      document.getElementById('active-flows').textContent = activeFlows;
+      
+      addLogEntry(`Traffic flow started: ${flowId.replace('-flow', '').replace('-', ' ')} traffic`, 'info');
+    }, index * 1000);
+  });
+  
+  addLogEntry('Traffic generation started', 'success');
+  addLogEntry('Monitoring QoS performance...', 'info');
+  
+  // Update metrics during traffic generation
+  setTimeout(() => {
+    updateMetrics({
+      latency: qosEnabled ? 10 : 25,
+      jitter: qosEnabled ? 1.5 : 8,
+      packetLoss: qosEnabled ? 0.08 : 0.5,
+      utilization: 85
+    });
+  }, 3000);
+}
+
+function showBandwidth() {
+  if (!trafficGenerated) {
+    addLogEntry('Please generate traffic first', 'warning');
+    return;
+  }
+  
+  addLogEntry('Analyzing bandwidth utilization...', 'info');
+  addLogEntry('Voice traffic: 30 Mbps (guaranteed)', 'success');
+  addLogEntry('Video traffic: 25 Mbps (guaranteed)', 'success');
+  addLogEntry('Business data: 20 Mbps (fair queue)', 'info');
+  addLogEntry('Web browsing: 8 Mbps (best effort)', 'info');
+  addLogEntry('File transfers: 2 Mbps (shaped)', 'warning');
+  
+  // Animate bandwidth meter
+  animateBandwidthMeter();
+}
+
+function simulateCongestion() {
+  if (!trafficGenerated) {
+    addLogEntry('Please generate traffic first', 'warning');
+    return;
+  }
+  
+  congestionLevel++;
+  networkState = congestionLevel > 2 ? 'critical' : 'warning';
+  
+  const statusElement = document.getElementById('congestion-status');
+  statusElement.classList.remove('warning', 'critical');
+  statusElement.classList.add(networkState);
+  
+  if (networkState === 'critical') {
+    document.getElementById('network-state').textContent = 'Critical Congestion';
+    addLogEntry('CRITICAL: Network congestion detected!', 'error');
+    addLogEntry('QoS policies prioritizing critical traffic', 'warning');
+    addLogEntry('Non-essential traffic being dropped', 'warning');
+    
+    updateMetrics({
+      latency: qosEnabled ? 15 : 150,
+      jitter: qosEnabled ? 3 : 50,
+      packetLoss: qosEnabled ? 0.2 : 5.0,
+      utilization: 98
+    });
+  } else {
+    document.getElementById('network-state').textContent = 'Mild Congestion';
+    addLogEntry('Network congestion increasing', 'warning');
+    addLogEntry('QoS policies managing traffic priorities', 'info');
+    
+    updateMetrics({
+      latency: qosEnabled ? 12 : 80,
+      jitter: qosEnabled ? 2.5 : 25,
+      packetLoss: qosEnabled ? 0.15 : 2.0,
+      utilization: 92
+    });
+  }
+}
+
+function resetQoS() {
+  qosEnabled = false;
+  trafficGenerated = false;
+  selectedDevice = null;
+  networkState = 'normal';
+  activeFlows = 0;
+  congestionLevel = 0;
+  
+  // Reset UI elements
+  document.querySelectorAll('.qos-device').forEach(device => {
+    device.classList.remove('selected');
+  });
+  
+  document.querySelectorAll('.traffic-flow').forEach(flow => {
+    flow.style.display = 'none';
+    flow.classList.remove('active');
+  });
+  
+  const statusElement = document.getElementById('congestion-status');
+  statusElement.classList.remove('warning', 'critical');
+  document.getElementById('network-state').textContent = 'Normal';
+  document.getElementById('active-flows').textContent = '0';
+  
+  // Reset metrics
+  updateMetrics({
+    latency: 12,
+    jitter: 2,
+    packetLoss: 0.1,
+    utilization: 65
+  });
+  
+  // Clear activity log
+  document.getElementById('activity-log').innerHTML = 
+    '<div class="log-entry info">QoS Performance Lab reset</div>' +
+    '<div class="log-entry">Configure QoS policies to optimize traffic</div>';
+  
+  addLogEntry('QoS configuration reset complete', 'success');
+}
+
+function updateMetrics(newMetrics) {
+  Object.keys(newMetrics).forEach(metric => {
+    if (metric in networkMetrics) {
+      networkMetrics[metric] = newMetrics[metric];
+    }
+  });
+  
+  // Update UI elements
+  document.getElementById('latency-value').textContent = networkMetrics.latency + 'ms';
+  document.getElementById('jitter-value').textContent = networkMetrics.jitter + 'ms';
+  document.getElementById('packet-loss').textContent = networkMetrics.packetLoss + '%';
+  document.getElementById('throughput').textContent = networkMetrics.utilization + '%';
+  
+  // Update bandwidth meter
+  const usedBW = Math.round(networkMetrics.utilization);
+  const availableBW = 100 - usedBW;
+  
+  document.getElementById('bandwidth-usage').style.width = usedBW + '%';
+  document.getElementById('used-bandwidth').textContent = usedBW + ' Mbps';
+  document.getElementById('available-bandwidth').textContent = availableBW + ' Mbps';
+}
+
+function animateBandwidthMeter() {
+  const meter = document.getElementById('bandwidth-usage');
+  let width = 65;
+  const targetWidth = 85;
+  
+  const interval = setInterval(() => {
+    width += 2;
+    meter.style.width = width + '%';
+    
+    if (width >= targetWidth) {
+      clearInterval(interval);
+    }
+  }, 100);
+}
+
+function showDeviceInfo(deviceId) {
+  const deviceTypes = {
+    'core-router': 'Core routing device with advanced QoS capabilities',
+    'branch-router': 'Branch office router with QoS enforcement',
+    'wan-router': 'WAN edge router with traffic shaping',
+    'voice-server': 'VoIP server requiring low latency',
+    'video-server': 'Video conferencing server requiring high bandwidth',
+    'data-server': 'Application server with business-critical data',
+    'client-1': 'Executive workstation with priority access',
+    'client-2': 'Standard user workstation',
+    'client-3': 'Guest workstation with limited access'
+  };
+  
+  if (deviceTypes[deviceId]) {
+    addLogEntry(`Device Info: ${deviceTypes[deviceId]}`, 'info');
+  }
+}
+
+function addLogEntry(message, type = '') {
+  const logContainer = document.getElementById('activity-log');
+  const logEntry = document.createElement('div');
+  logEntry.className = `log-entry ${type}`;
+  logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+  
+  logContainer.appendChild(logEntry);
+  logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', function() {
+  addLogEntry('QoS Performance Simulation initialized', 'info');
+  addLogEntry('Click on devices to view their QoS configuration', 'info');
+  addLogEntry('Enable QoS to start traffic management', 'info');
+  
+  // Set initial metrics
+  updateMetrics(networkMetrics);
+});
+
+// Periodic metric updates during simulation
+setInterval(() => {
+  if (trafficGenerated && qosEnabled) {
+    // Simulate minor fluctuations in metrics
+    const fluctuation = (Math.random() - 0.5) * 2;
+    updateMetrics({
+      latency: Math.max(1, networkMetrics.latency + fluctuation),
+      jitter: Math.max(0.1, networkMetrics.jitter + fluctuation * 0.5),
+      utilization: Math.min(100, Math.max(50, networkMetrics.utilization + fluctuation))
+    });
+  }
+}, 5000);
+</script>
+{% endblock %}

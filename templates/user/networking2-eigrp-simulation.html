@@ -123,184 +123,42 @@
     <!-- Main Simulation Area -->
     <div class="simulation-main">
       <div class="network-topology" id="networkTopology">
-        <!-- Router R1 -->
-        <div class="network-device router eigrp-router" id="R1" style="top: 80px; left: 80px;">
-          <div class="device-icon">⚡</div>
-          <div class="device-label">R1</div>
-          <div class="device-ip">10.1.1.1</div>
-          <div class="device-status status-up"></div>
-          <div class="eigrp-info">
-            <div class="metric">AS: 100</div>
-            <div class="metric">RID: 1.1.1.1</div>
-          </div>
+        <!-- EIGRP Network Topology -->
+        <h3 class="topology-title">EIGRP Network Topology</h3>
+        
+        <!-- Router A -->
+        <div class="network-device router eigrp-router" id="RouterA" style="top: 100px; left: 100px;" onclick="selectRouter('A')">
+          <i class="fas fa-server"></i>
+          <div class="device-label">Router A</div>
+          <div class="router-id">192.168.1.1</div>
+          <div class="eigrp-status">Enabled</div>
         </div>
 
-        <!-- Router R2 -->
-        <div class="network-device router eigrp-router" id="R2" style="top: 80px; right: 80px;">
-          <div class="device-icon">⚡</div>
-          <div class="device-label">R2</div>
-          <div class="device-ip">10.1.2.1</div>
-          <div class="device-status status-up"></div>
-          <div class="eigrp-info">
-            <div class="metric">AS: 100</div>
-            <div class="metric">RID: 2.2.2.2</div>
-          </div>
+        <!-- Router B -->
+        <div class="network-device router eigrp-router" id="RouterB" style="top: 100px; right: 100px;" onclick="selectRouter('B')">
+          <i class="fas fa-server"></i>
+          <div class="device-label">Router B</div>
+          <div class="router-id">192.168.2.1</div>
+          <div class="eigrp-status">Enabled</div>
         </div>
 
-        <!-- Router R3 -->
-        <div class="network-device router eigrp-router" id="R3" style="bottom: 80px; left: 80px;">
-          <div class="device-icon">⚡</div>
-          <div class="device-label">R3</div>
-          <div class="device-ip">10.1.3.1</div>
-          <div class="device-status status-up"></div>
-          <div class="eigrp-info">
-            <div class="metric">AS: 100</div>
-            <div class="metric">RID: 3.3.3.3</div>
-          </div>
+        <!-- Router C -->
+        <div class="network-device router eigrp-router" id="RouterC" style="top: 300px; left: 300px;" onclick="selectRouter('C')">
+          <i class="fas fa-server"></i>
+          <div class="device-label">Router C</div>
+          <div class="router-id">192.168.3.1</div>
+          <div class="eigrp-status">Enabled</div>
         </div>
 
-        <!-- Router R4 -->
-        <div class="network-device router eigrp-router" id="R4" style="bottom: 80px; right: 80px;">
-          <div class="device-icon">⚡</div>
-          <div class="device-label">R4</div>
-          <div class="device-ip">10.1.4.1</div>
-          <div class="device-status status-up"></div>
-          <div class="eigrp-info">
-            <div class="metric">AS: 100</div>
-            <div class="metric">RID: 4.4.4.4</div>
-          </div>
-        </div>
+        <!-- Network Links -->
+        <div class="network-link" id="linkAB" style="top: 120px; left: 200px; width: 200px;"></div>
+        <div class="network-link" id="linkAC" style="top: 200px; left: 150px; width: 200px; transform: rotate(45deg);"></div>
+        <div class="network-link" id="linkBC" style="top: 200px; right: 150px; width: 200px; transform: rotate(-45deg);"></div>
 
-        <!-- Networks -->
-        <div class="network-segment" style="top: 30px; left: 30px;">
-          <div class="segment-label">LAN A<br>192.168.1.0/24</div>
-          <div class="segment-metric">BW: 100Mbps, Delay: 100μs</div>
-        </div>
-
-        <div class="network-segment" style="top: 30px; right: 30px;">
-          <div class="segment-label">LAN B<br>192.168.2.0/24</div>
-          <div class="segment-metric">BW: 100Mbps, Delay: 100μs</div>
-        </div>
-
-        <div class="network-segment" style="bottom: 30px; left: 30px;">
-          <div class="segment-label">LAN C<br>192.168.3.0/24</div>
-          <div class="segment-metric">BW: 100Mbps, Delay: 100μs</div>
-        </div>
-
-        <div class="network-segment" style="bottom: 30px; right: 30px;">
-          <div class="segment-label">LAN D<br>192.168.4.0/24</div>
-          <div class="segment-metric">BW: 100Mbps, Delay: 100μs</div>
-        </div>
-
-        <!-- EIGRP Messages Animation -->
-        <div class="eigrp-message" id="hello-message" style="display: none;">
-          <div class="message-packet">Hello</div>
-        </div>
-        <div class="eigrp-message" id="update-message" style="display: none;">
-          <div class="message-packet">Update</div>
-        </div>
-        <div class="eigrp-message" id="query-message" style="display: none;">
-          <div class="message-packet">Query</div>
-        </div>
-      </div>
-
-      <div class="eigrp-tables">
-        <div class="table-tabs">
-          <button class="tab-btn active" onclick="showTable('routing')">Routing Table</button>
-          <button class="tab-btn" onclick="showTable('topology')">Topology Table</button>
-          <button class="tab-btn" onclick="showTable('neighbors')">Neighbor Table</button>
-        </div>
-
-        <div class="table-content" id="tableContent">
-          <div class="table-display" id="routingTable">
-            <div class="table-header">
-              <h4><i class="fas fa-route"></i> EIGRP Routing Table - <span id="currentRouter">R1</span></h4>
-              <select id="routerSelect" class="router-selector">
-                <option value="R1">Router R1</option>
-                <option value="R2">Router R2</option>
-                <option value="R3">Router R3</option>
-                <option value="R4">Router R4</option>
-              </select>
-            </div>
-            <table class="eigrp-table">
-              <thead>
-                <tr>
-                  <th>Network</th>
-                  <th>Next Hop</th>
-                  <th>FD</th>
-                  <th>AD</th>
-                  <th>Interface</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="routingTableBody">
-                <tr>
-                  <td>192.168.1.0/24</td>
-                  <td>Direct</td>
-                  <td>256000</td>
-                  <td>256000</td>
-                  <td>Gi0/0</td>
-                  <td><span class="status-badge status-up">Active</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="table-display" id="topologyTable" style="display: none;">
-            <div class="table-header">
-              <h4><i class="fas fa-project-diagram"></i> EIGRP Topology Table</h4>
-            </div>
-            <table class="eigrp-table">
-              <thead>
-                <tr>
-                  <th>Network</th>
-                  <th>Successor</th>
-                  <th>Feasible Distance</th>
-                  <th>Feasible Successor</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="topologyTableBody">
-                <tr>
-                  <td>192.168.1.0/24</td>
-                  <td>Direct</td>
-                  <td>256000</td>
-                  <td>-</td>
-                  <td><span class="status-badge status-up">Passive</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="table-display" id="neighborsTable" style="display: none;">
-            <div class="table-header">
-              <h4><i class="fas fa-users"></i> EIGRP Neighbor Table</h4>
-            </div>
-            <table class="eigrp-table">
-              <thead>
-                <tr>
-                  <th>Address</th>
-                  <th>Interface</th>
-                  <th>Hold Time</th>
-                  <th>Uptime</th>
-                  <th>SRTT</th>
-                  <th>RTO</th>
-                  <th>Queue</th>
-                </tr>
-              </thead>
-              <tbody id="neighborsTableBody">
-                <tr>
-                  <td>10.1.2.2</td>
-                  <td>Gi0/1</td>
-                  <td>14s</td>
-                  <td>00:05:23</td>
-                  <td>10ms</td>
-                  <td>200ms</td>
-                  <td>0</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <!-- Convergence Indicator -->
+        <div class="convergence-indicator" id="convergenceStatus">
+          <i class="fas fa-sync"></i>
+          <span>Converged</span>
         </div>
       </div>
     </div>
@@ -308,277 +166,106 @@
 </div>
 
 <script>
+let selectedRouter = 'A';
 let eigrpEnabled = false;
-let helloTimer = null;
-let currentSelectedRouter = 'R1';
-let neighborCount = 0;
-let queriesSent = 0;
-let dualState = 'Passive';
-
-// EIGRP tables data
-const eigrpData = {
-  R1: {
-    routing: [
-      { network: '192.168.1.0/24', nextHop: 'Direct', fd: 256000, ad: 256000, interface: 'Gi0/0', status: 'Active' },
-      { network: '192.168.2.0/24', nextHop: '10.1.2.2', fd: 281600, ad: 256000, interface: 'Gi0/1', status: 'Active' },
-      { network: '192.168.3.0/24', nextHop: '10.1.3.3', fd: 281600, ad: 256000, interface: 'Gi0/2', status: 'Active' }
-    ],
-    topology: [
-      { network: '192.168.1.0/24', successor: 'Direct', fd: 256000, fs: '-', status: 'Passive' },
-      { network: '192.168.2.0/24', successor: '10.1.2.2', fd: 281600, fs: '10.1.3.3', status: 'Passive' },
-      { network: '192.168.3.0/24', successor: '10.1.3.3', fd: 281600, fs: '10.1.2.2', status: 'Passive' }
-    ],
-    neighbors: [
-      { address: '10.1.2.2', interface: 'Gi0/1', holdTime: '14s', uptime: '00:05:23', srtt: '10ms', rto: '200ms', queue: '0' },
-      { address: '10.1.3.3', interface: 'Gi0/2', holdTime: '13s', uptime: '00:04:45', srtt: '8ms', rto: '200ms', queue: '0' }
-    ]
-  }
+let eigrpTopology = {
+  A: { neighbors: ['B', 'C'], routes: [] },
+  B: { neighbors: ['A', 'C'], routes: [] },
+  C: { neighbors: ['A', 'B'], routes: [] }
 };
 
-// Initialize simulation
-document.addEventListener('DOMContentLoaded', function() {
-  setupRouterSelection();
-  setupTableTabs();
-  updateMetrics();
-  showTable('routing');
-  addToLog('EIGRP Protocol Lab ready for configuration');
-});
-
-function setupRouterSelection() {
-  document.getElementById('routerSelect').addEventListener('change', function() {
-    currentSelectedRouter = this.value;
-    document.getElementById('currentRouter').textContent = this.value;
-    refreshCurrentTable();
-    
-    // Visual selection
-    document.querySelectorAll('.router').forEach(r => r.classList.remove('selected'));
-    document.getElementById(this.value).classList.add('selected');
-  });
-
-  // Router click handlers
-  document.querySelectorAll('.router').forEach(router => {
-    router.addEventListener('click', function() {
-      const routerId = this.id;
-      currentSelectedRouter = routerId;
-      document.getElementById('routerSelect').value = routerId;
-      document.getElementById('currentRouter').textContent = routerId;
-      refreshCurrentTable();
-      
-      // Visual selection
-      document.querySelectorAll('.router').forEach(r => r.classList.remove('selected'));
-      this.classList.add('selected');
-    });
-  });
-}
-
-function setupTableTabs() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-    });
-  });
-}
-
 function enableEIGRP() {
-  if (eigrpEnabled) {
-    addToLog('EIGRP is already enabled');
-    return;
-  }
-  
   eigrpEnabled = true;
-  neighborCount = 3;
-  
-  // Update router status
-  document.querySelectorAll('.device-status').forEach(status => {
-    status.className = 'device-status status-up';
-  });
-  
-  addToLog('EIGRP AS 100 enabled on all routers');
-  addToLog('Neighbor adjacencies forming...');
-  
-  // Start hello timer
-  helloTimer = setInterval(sendHelloPackets, 5000);
+  document.getElementById('ripStatus').textContent = 'Enabled';
+  addLogEntry('EIGRP protocol enabled on all routers', 'success');
   
   // Simulate neighbor discovery
   setTimeout(() => {
-    addToLog('EIGRP neighbors discovered and adjacencies established');
-    addToLog('Initial topology exchange completed');
+    addLogEntry('EIGRP neighbors discovered', 'info');
     updateMetrics();
-  }, 2000);
+  }, 1000);
 }
 
 function disableEIGRP() {
+  eigrpEnabled = false;
+  document.getElementById('ripStatus').textContent = 'Disabled';
+  addLogEntry('EIGRP protocol disabled', 'warning');
+  resetMetrics();
+}
+
+function showTopologyTable() {
   if (!eigrpEnabled) {
-    addToLog('EIGRP is already disabled');
+    addLogEntry('Enable EIGRP first to view topology table', 'warning');
     return;
   }
   
-  eigrpEnabled = false;
-  neighborCount = 0;
+  addLogEntry('Displaying EIGRP topology table', 'info');
+  // Simulate topology table display
+  const topologyData = [
+    'P 192.168.1.0/24, 1 successors, FD is 2560',
+    'P 192.168.2.0/24, 1 successors, FD is 3072',
+    'P 192.168.3.0/24, 1 successors, FD is 2816'
+  ];
   
-  if (helloTimer) {
-    clearInterval(helloTimer);
-    helloTimer = null;
-  }
-  
-  // Update router status
-  document.querySelectorAll('.device-status').forEach(status => {
-    status.className = 'device-status status-warning';
+  topologyData.forEach(entry => {
+    addLogEntry(entry, 'info');
   });
-  
-  addToLog('EIGRP protocol disabled on all routers');
-  updateMetrics();
-}
-
-function sendHelloPackets() {
-  if (!eigrpEnabled) return;
-  
-  // Animate hello packets
-  const helloMsg = document.getElementById('hello-message');
-  helloMsg.style.display = 'block';
-  helloMsg.style.animation = 'eigrpMessage 2s ease-in-out';
-  
-  setTimeout(() => {
-    helloMsg.style.display = 'none';
-  }, 2000);
-  
-  addToLog('EIGRP Hello packets exchanged between neighbors');
 }
 
 function calculateDualPaths() {
   if (!eigrpEnabled) {
-    addToLog('Enable EIGRP first to run DUAL algorithm');
+    addLogEntry('Enable EIGRP first to run DUAL algorithm', 'warning');
     return;
   }
   
-  dualState = 'Active';
-  queriesSent++;
-  
-  addToLog('Running DUAL algorithm - calculating optimal paths...');
-  addToLog('Sending EIGRP queries to neighbors');
-  
-  // Animate query messages
-  const queryMsg = document.getElementById('query-message');
-  queryMsg.style.display = 'block';
-  queryMsg.style.animation = 'eigrpMessage 3s ease-in-out';
+  addLogEntry('Running DUAL algorithm...', 'info');
   
   setTimeout(() => {
-    queryMsg.style.display = 'none';
-    dualState = 'Passive';
-    addToLog('DUAL algorithm completed - routes converged');
-    addToLog('All routes in passive state');
+    addLogEntry('DUAL computation completed', 'success');
+    addLogEntry('Feasible successors calculated', 'info');
     updateMetrics();
-    refreshCurrentTable();
-  }, 3000);
-  
-  updateMetrics();
-}
-
-function showTopologyTable() {
-  showTable('topology');
-  addToLog('Displaying EIGRP topology table');
+  }, 2000);
 }
 
 function resetEIGRP() {
-  disableEIGRP();
-  queriesSent = 0;
-  dualState = 'Passive';
-  
-  // Reset parameters
-  document.getElementById('autonomousSystem').value = 100;
-  document.getElementById('helloInterval').value = 5;
-  document.getElementById('holdTime').value = 15;
-  document.getElementById('variance').value = 1;
-  
-  updateMetrics();
-  addToLog('EIGRP simulation reset to initial state');
+  eigrpEnabled = false;
+  selectedRouter = 'A';
+  resetMetrics();
+  addLogEntry('EIGRP simulation reset', 'info');
 }
 
-function showTable(tableName) {
-  // Hide all tables
-  document.querySelectorAll('.table-display').forEach(table => {
-    table.style.display = 'none';
+function selectRouter(routerId) {
+  selectedRouter = routerId;
+  
+  // Update visual selection
+  document.querySelectorAll('.eigrp-router').forEach(router => {
+    router.classList.remove('selected');
   });
+  document.getElementById(`Router${routerId}`).classList.add('selected');
   
-  // Show selected table
-  document.getElementById(tableName + 'Table').style.display = 'block';
-  
-  refreshCurrentTable();
-}
-
-function refreshCurrentTable() {
-  const activeTab = document.querySelector('.tab-btn.active').textContent.toLowerCase().replace(' table', '');
-  
-  if (activeTab === 'routing') {
-    refreshRoutingTable();
-  } else if (activeTab === 'topology') {
-    refreshTopologyTable();
-  } else if (activeTab === 'neighbor') {
-    refreshNeighborsTable();
-  }
-}
-
-function refreshRoutingTable() {
-  const tbody = document.getElementById('routingTableBody');
-  const routes = eigrpData[currentSelectedRouter]?.routing || [];
-  
-  tbody.innerHTML = routes.map(route => `
-    <tr>
-      <td>${route.network}</td>
-      <td>${route.nextHop}</td>
-      <td>${route.fd}</td>
-      <td>${route.ad}</td>
-      <td>${route.interface}</td>
-      <td><span class="status-badge status-up">${route.status}</span></td>
-    </tr>
-  `).join('');
-}
-
-function refreshTopologyTable() {
-  const tbody = document.getElementById('topologyTableBody');
-  const routes = eigrpData[currentSelectedRouter]?.topology || [];
-  
-  tbody.innerHTML = routes.map(route => `
-    <tr>
-      <td>${route.network}</td>
-      <td>${route.successor}</td>
-      <td>${route.fd}</td>
-      <td>${route.fs}</td>
-      <td><span class="status-badge status-up">${route.status}</span></td>
-    </tr>
-  `).join('');
-}
-
-function refreshNeighborsTable() {
-  const tbody = document.getElementById('neighborsTableBody');
-  const neighbors = eigrpData[currentSelectedRouter]?.neighbors || [];
-  
-  tbody.innerHTML = neighbors.map(neighbor => `
-    <tr>
-      <td>${neighbor.address}</td>
-      <td>${neighbor.interface}</td>
-      <td>${neighbor.holdTime}</td>
-      <td>${neighbor.uptime}</td>
-      <td>${neighbor.srtt}</td>
-      <td>${neighbor.rto}</td>
-      <td>${neighbor.queue}</td>
-    </tr>
-  `).join('');
+  addLogEntry(`Selected Router ${routerId}`, 'info');
 }
 
 function updateMetrics() {
-  const activeRoutes = eigrpData[currentSelectedRouter]?.routing.length || 0;
-  document.getElementById('activeRoutes').textContent = activeRoutes;
-  document.getElementById('neighborCount').textContent = neighborCount;
-  document.getElementById('queriesSent').textContent = queriesSent;
-  document.getElementById('dualState').textContent = dualState;
+  if (eigrpEnabled) {
+    document.getElementById('activeRoutes').textContent = Math.floor(Math.random() * 10) + 5;
+    document.getElementById('neighborCount').textContent = '2';
+    document.getElementById('queriesSent').textContent = Math.floor(Math.random() * 20);
+    document.getElementById('dualState').textContent = 'Passive';
+  }
 }
 
-function addToLog(message) {
+function resetMetrics() {
+  document.getElementById('activeRoutes').textContent = '0';
+  document.getElementById('neighborCount').textContent = '0';
+  document.getElementById('queriesSent').textContent = '0';
+  document.getElementById('dualState').textContent = 'Passive';
+}
+
+function addLogEntry(message, type = 'info') {
   const log = document.getElementById('activityLog');
   const entry = document.createElement('div');
-  entry.className = 'log-entry';
+  entry.className = `log-entry ${type}`;
   
   const timestamp = new Date().toLocaleTimeString();
   entry.textContent = `[${timestamp}] ${message}`;

@@ -531,7 +531,26 @@ def troubleshoot():
     if 'user_id' in session:
         user = UserModel.query.get(session['user_id'])
     
-    return render_template('user/troubleshoot.html', title="troubleshoot", user=user)
+    # Check if a scenario ID is provided
+    scenario_id = request.args.get('scenario')
+    scenario_data = None
+    
+    if scenario_id:
+        # If scenario ID is provided, load the scenario for the troubleshooting interface
+        try:
+            from admin.models.troubleshooting import Troubleshooting
+            scenario = Troubleshooting.query.get(scenario_id)
+            if scenario and scenario.is_active:
+                scenario_data = scenario.to_dict()
+                # Don't expose sensitive data in the initial load
+                if 'solution' in scenario_data:
+                    del scenario_data['solution']
+                if 'expected_topology' in scenario_data:
+                    del scenario_data['expected_topology']
+        except Exception as e:
+            print(f"Error loading scenario {scenario_id}: {e}")
+    
+    return render_template('user/troubleshoot.html', title="troubleshoot", user=user, scenario=scenario_data)
 
 @user_bp.route('/crimp')
 @user_bp.route('/crimping-simulation')
@@ -2000,126 +2019,164 @@ def get_networking1_structure():
     except Exception as e:
         return jsonify({"error": f"Failed to get course structure: {str(e)}"}), 500
 
+# =============================================================================
+# Helper function for simulation routes
+# =============================================================================
+
+def get_user_from_session():
+    """Helper function to get user information from session"""
+    user = None
+    if 'user_id' in session:
+        user = UserModel.query.get(session['user_id'])
+    return user
+
 # NETWORKING 1 SIMULATION ROUTES
 @user_bp.route('/networking1-simulations')
 @user_login_required
 def networking1_simulations():
     """Main Networking 1 simulations hub"""
-    return render_template('user/networking1_simulations.html')
+    user = get_user_from_session()
+    return render_template('user/networking1_simulations.html', user=user)
 
 @user_bp.route('/networking1-components-simulation')
 @user_login_required
 def networking1_components_simulation():
     """Network Components Builder Simulation"""
-    return render_template('user/networking1-components-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-components-simulation.html', user=user)
 
 @user_bp.route('/networking1-osi-simulation')
 @user_login_required
 def networking1_osi_simulation():
     """OSI Model Interactive Simulation"""
-    return render_template('user/networking1-osi-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-osi-simulation.html', user=user)
 
 @user_bp.route('/networking1-tcpip-simulation')
 @user_login_required
 def networking1_tcpip_simulation():
     """TCP/IP Protocol Stack Simulation"""
-    return render_template('user/networking1-tcpip-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-tcpip-simulation.html', user=user)
 
 @user_bp.route('/networking1-ethernet-simulation')
 @user_login_required
 def networking1_ethernet_simulation():
     """Ethernet Technology Simulation"""
-    return render_template('user/networking1-ethernet-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-ethernet-simulation.html', user=user)
 
 @user_bp.route('/networking1-application-simulation')
 @user_login_required
 def networking1_application_simulation():
     """Application Layer Protocols Simulation"""
-    return render_template('user/networking1-application-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-application-simulation.html', user=user)
 
 @user_bp.route('/networking1-datalink-simulation')
 @user_login_required
 def networking1_datalink_simulation():
     """Data Link Layer Simulation"""
-    return render_template('user/networking1-datalink-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking1-datalink-simulation.html', user=user)
 
 # NETWORKING 2 SIMULATION ROUTES
 @user_bp.route('/networking2-simulations')
 @user_login_required
 def networking2_simulations():
     """Main Networking 2 simulations hub"""
-    return render_template('user/networking2_simulations.html')
+    user = get_user_from_session()
+    return render_template('user/networking2_simulations.html', user=user)
 
 # Core Module Simulations
 @user_bp.route('/networking2-routing-fundamentals-simulation')
 @user_login_required
 def networking2_routing_fundamentals_simulation():
     """Module 1: Routing Fundamentals Simulation"""
-    return render_template('user/networking2-routing-fundamentals-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-routing-fundamentals-simulation.html', user=user)
 
 @user_bp.route('/networking2-dynamic-routing-simulation')
 @user_login_required
 def networking2_dynamic_routing_simulation():
     """Module 2: Dynamic Routing Protocols Simulation"""
-    return render_template('user/networking2-dynamic-routing-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-dynamic-routing-simulation.html', user=user)
 
 @user_bp.route('/networking2-rip-simulation')
 @user_login_required
 def networking2_rip_simulation():
     """Module 3: Routing Information Protocol (RIP) Simulation"""
-    return render_template('user/networking2-rip-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-rip-simulation.html', user=user)
 
 @user_bp.route('/networking2-eigrp-simulation')
 @user_login_required
 def networking2_eigrp_simulation():
     """Module 4: Enhanced Interior Gateway Routing Protocol (EIGRP) Simulation"""
-    return render_template('user/networking2-eigrp_simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-eigrp-simulation.html', user=user)
 
 @user_bp.route('/networking2-ospf-simulation')
 @user_login_required
 def networking2_ospf_simulation():
     """Module 5: Open Shortest Path First (OSPF) Simulation"""
-    return render_template('user/networking2-ospf-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-ospf-simulation.html', user=user)
 
 @user_bp.route('/networking2-security-simulation')
 @user_login_required
 def networking2_security_simulation():
     """Module 6: Network Security and VPN Simulation"""
-    return render_template('user/networking2-security-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-security-simulation.html', user=user)
 
 @user_bp.route('/networking2-vlan-simulation')
 @user_login_required
 def networking2_vlan_simulation():
     """Module 7: VLAN Trunking Protocol Simulation"""
-    return render_template('user/networking2-vlan-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-vlan-simulation.html', user=user)
 
 # Additional Specialized Simulations
 @user_bp.route('/networking2-routing-simulation')
 @user_login_required
 def networking2_routing_simulation():
     """Advanced Routing Simulation"""
-    return render_template('user/networking2-routing-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-routing-simulation.html', user=user)
 
 @user_bp.route('/networking2-wireless-simulation')
 @user_login_required
 def networking2_wireless_simulation():
     """Wireless Networks Simulation"""
-    return render_template('user/networking2-wireless-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-wireless-simulation.html', user=user)
 
 @user_bp.route('/networking2-management-simulation')
 @user_login_required
 def networking2_management_simulation():
     """Network Management Simulation"""
-    return render_template('user/networking2-management-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-management-simulation.html', user=user)
 
 @user_bp.route('/networking2-vpn-simulation')
 @user_login_required
 def networking2_vpn_simulation():
     """VPN Technologies Simulation"""
-    return render_template('user/networking2-vpn-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-vpn-simulation.html', user=user)
 
 @user_bp.route('/networking2-troubleshooting-simulation')
 @user_login_required
 def networking2_troubleshooting_simulation():
     """Network Troubleshooting Simulation"""
-    return render_template('user/networking2-troubleshooting-simulation.html')
+    user = get_user_from_session()
+    return render_template('user/networking2-troubleshooting-simulation.html', user=user)
+
+@user_bp.route('/networking2-qos-simulation')
+@user_login_required
+def networking2_qos_simulation():
+    """QoS & Network Performance Analysis Simulation"""
+    user = get_user_from_session()
+    return render_template('user/networking2-qos-simulation.html', user=user)

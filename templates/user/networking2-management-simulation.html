@@ -149,79 +149,88 @@
         <div class="managed-device device-server" id="db-server" style="bottom: 10%; right: 30%;">
           <i class="fas fa-database"></i>
           <div class="device-label">DB Server</div>
-          <div class="device-status status-warning"></div>
+          <div class="device-status status-up"></div>
         </div>
 
-        <!-- SNMP Query Animation -->
-        <div class="snmp-query" id="snmp-query" style="display: none;">
-          <div class="query-packet">SNMP GET</div>
+        <!-- Network Connections -->
+        <svg class="network-connections" width="100%" height="100%">
+          <line x1="50%" y1="10%" x2="50%" y2="40%" stroke="#00D4FF" stroke-width="2" />
+          <line x1="50%" y1="40%" x2="20%" y2="70%" stroke="#00D4FF" stroke-width="2" />
+          <line x1="50%" y1="40%" x2="80%" y2="70%" stroke="#00D4FF" stroke-width="2" />
+          <line x1="20%" y1="70%" x2="30%" y2="90%" stroke="#00D4FF" stroke-width="2" />
+          <line x1="80%" y1="70%" x2="70%" y2="90%" stroke="#00D4FF" stroke-width="2" />
+        </svg>
+
+        <!-- SNMP Information Panel -->
+        <div class="snmp-info-panel" id="snmp-info" style="display: none;">
+          <h4>Device SNMP Information</h4>
+          <div class="snmp-details">
+            <div class="snmp-oid">
+              <strong>System Description:</strong>
+              <span id="system-desc">Cisco IOS Router</span>
+            </div>
+            <div class="snmp-oid">
+              <strong>Uptime:</strong>
+              <span id="system-uptime">72:15:30</span>
+            </div>
+            <div class="snmp-oid">
+              <strong>Interface Count:</strong>
+              <span id="interface-count">4</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Connection Lines -->
-        <div class="connection-line" id="conn-nms-router"></div>
-        <div class="connection-line" id="conn-router-switch1"></div>
-        <div class="connection-line" id="conn-router-switch2"></div>
-        <div class="connection-line" id="conn-switch1-web"></div>
-        <div class="connection-line" id="conn-switch2-db"></div>
-      </div>
-    </div>
-
-    <!-- Analysis Panel -->
-    <div class="analysis-panel">
-      <div class="control-section">
-        <h3 class="section-title">
-          <i class="fas fa-chart-area"></i>
-          Performance Monitor
-        </h3>
-        <div class="performance-chart" id="performance-chart">
-          <div class="chart-title">Network Bandwidth (Mbps)</div>
-          <div class="chart-container">
-            <div class="chart-line" style="height: 60%;"></div>
-            <div class="chart-line" style="height: 45%;"></div>
-            <div class="chart-line" style="height: 70%;"></div>
-            <div class="chart-line" style="height: 55%;"></div>
-            <div class="chart-line" style="height: 80%;"></div>
+        <!-- Alert Notifications -->
+        <div class="alert-notifications" id="alert-panel">
+          <div class="alert-item warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>High CPU usage on Core Router (85%)</span>
           </div>
-          <div class="chart-labels">
-            <span>10:00</span>
-            <span>10:15</span>
-            <span>10:30</span>
-            <span>10:45</span>
-            <span>11:00</span>
+          <div class="alert-item critical">
+            <i class="fas fa-times-circle"></i>
+            <span>Interface GigabitEthernet0/1 Down</span>
           </div>
-        </div>
-      </div>
-
-      <div class="control-section">
-        <h3 class="section-title">
-          <i class="fas fa-exclamation-triangle"></i>
-          Active Alarms
-        </h3>
-        <div class="alarm-panel" id="alarm-panel">
-          <div class="alarm-item severity-major">
-            <div class="alarm-time">10:45</div>
-            <div class="alarm-message">High CPU utilization on DB Server</div>
-          </div>
-          <div class="alarm-item severity-minor">
-            <div class="alarm-time">10:30</div>
-            <div class="alarm-message">Interface utilization threshold exceeded</div>
-          </div>
-          <div class="alarm-item severity-critical">
-            <div class="alarm-time">10:15</div>
-            <div class="alarm-message">Link down: Switch 2 - Port 24</div>
+          <div class="alert-item info">
+            <i class="fas fa-info-circle"></i>
+            <span>SNMP polling active on 12 devices</span>
           </div>
         </div>
       </div>
 
-      <div class="control-section">
-        <h3 class="section-title">
-          <i class="fas fa-list"></i>
-          Management Log
-        </h3>
-        <div class="monitoring-log" id="monitoring-log">
-          <div class="log-entry info">Network Management System initialized</div>
-          <div class="log-entry">SNMP polling enabled for all devices</div>
-          <div class="log-entry success">Device discovery completed</div>
+      <!-- Performance Charts -->
+      <div class="performance-charts" id="performance-charts">
+        <div class="chart-container">
+          <h4>Bandwidth Utilization</h4>
+          <canvas id="bandwidth-chart" width="300" height="150"></canvas>
+        </div>
+        
+        <div class="chart-container">
+          <h4>Device Availability</h4>
+          <div class="availability-chart">
+            <div class="availability-bar">
+              <div class="bar-fill" style="width: 99.8%"></div>
+              <span>99.8%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="activity-log-panel">
+        <h4>Management Activity Log</h4>
+        <div class="log-entries" id="management-log">
+          <div class="log-entry">
+            <span class="timestamp">[09:15:32]</span>
+            <span class="message">SNMP polling started</span>
+          </div>
+          <div class="log-entry">
+            <span class="timestamp">[09:16:45]</span>
+            <span class="message">Device discovery completed - 12 devices found</span>
+          </div>
+          <div class="log-entry">
+            <span class="timestamp">[09:17:12]</span>
+            <span class="message">SNMP trap received from Core Router</span>
+          </div>
         </div>
       </div>
     </div>
@@ -233,104 +242,41 @@ let managementActive = false;
 let snmpPolling = false;
 let trapsEnabled = false;
 let selectedDevice = null;
-let pollInterval = null;
-let deviceMetrics = {};
-
-// Initialize management simulation
-document.addEventListener('DOMContentLoaded', function() {
-  setupDeviceSelection();
-  initializeDeviceMetrics();
-  addManagementLog('Network Management Console ready');
-});
-
-function setupDeviceSelection() {
-  document.getElementById('deviceSelect').addEventListener('change', function() {
-    selectDevice(this.value);
-  });
-
-  // Device click handlers
-  document.querySelectorAll('.managed-device').forEach(device => {
-    device.addEventListener('click', function() {
-      const deviceId = this.id;
-      selectDevice(deviceId);
-    });
-  });
-}
-
-function selectDevice(deviceId) {
-  if (!deviceId) {
-    selectedDevice = null;
-    document.querySelectorAll('.managed-device').forEach(d => d.classList.remove('selected'));
-    return;
-  }
-
-  selectedDevice = deviceId;
-  
-  // Update visual selection
-  document.querySelectorAll('.managed-device').forEach(d => d.classList.remove('selected'));
-  document.getElementById(deviceId).classList.add('selected');
-  
-  document.getElementById('deviceSelect').value = deviceId;
-  
-  addManagementLog(`Selected device: ${deviceId.replace('-', ' ').toUpperCase()}`);
-  queryDeviceInfo(deviceId);
-}
 
 function startSNMPPolling() {
-  if (!snmpPolling) {
-    snmpPolling = true;
-    managementActive = true;
-    
-    addManagementLog('SNMP polling started');
-    addManagementLog('Querying device MIBs...');
-    
-    // Start polling animation
-    animateSNMPQueries();
-    
-    // Start periodic polling
-    const interval = parseInt(document.getElementById('pollInterval').value) || 30;
-    pollInterval = setInterval(() => {
-      performSNMPPoll();
-    }, interval * 1000);
-    
-  } else {
-    addManagementLog('SNMP polling is already active');
-  }
+  if (managementActive) return;
+  
+  managementActive = true;
+  snmpPolling = true;
+  
+  addLogEntry('SNMP polling started on all managed devices');
+  updateMetrics();
+  
+  // Simulate periodic polling
+  setInterval(() => {
+    if (snmpPolling) {
+      pollDevices();
+    }
+  }, 5000);
 }
 
 function enableTraps() {
-  trapsEnabled = !trapsEnabled;
+  trapsEnabled = true;
+  addLogEntry('SNMP traps enabled - monitoring for alerts');
   
-  if (trapsEnabled) {
-    addManagementLog('SNMP traps enabled on all devices', 'success');
-    
-    // Simulate trap generation
-    setTimeout(() => {
-      generateTrap('switch1', 'Interface up: Port 12');
-    }, 5000);
-    
-  } else {
-    addManagementLog('SNMP traps disabled', 'warning');
-  }
+  // Simulate occasional traps
+  setTimeout(() => {
+    addLogEntry('SNMP trap received: Interface state change on Switch 1');
+  }, 10000);
 }
 
 function runDiscovery() {
-  addManagementLog('Starting network discovery...');
-  
-  // Simulate discovery process
-  setTimeout(() => {
-    addManagementLog('Scanning subnet 192.168.1.0/24');
-  }, 1000);
+  addLogEntry('Network discovery initiated...');
   
   setTimeout(() => {
-    addManagementLog('Found 12 network devices');
-    addManagementLog('Querying device capabilities...');
-  }, 2500);
-  
-  setTimeout(() => {
-    addManagementLog('Discovery completed - All devices mapped', 'success');
-    updateDeviceCount(12);
-  }, 4000);
+    addLogEntry('Discovery completed - Found 12 managed devices');
+    document.getElementById('device-count').textContent = '12';
+  }, 3000);
 }
 
 function resetManagement() {
@@ -339,114 +285,128 @@ function resetManagement() {
   trapsEnabled = false;
   selectedDevice = null;
   
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
-  }
+  addLogEntry('Management system reset');
   
-  // Reset UI
-  document.querySelectorAll('.managed-device').forEach(d => d.classList.remove('selected'));
-  document.getElementById('deviceSelect').value = '';
-  
-  addManagementLog('Network management system reset');
+  // Reset metrics
+  document.getElementById('device-count').textContent = '0';
+  document.getElementById('alarm-count').textContent = '0';
+  document.getElementById('uptime').textContent = '0%';
+  document.getElementById('bandwidth').textContent = '0%';
 }
 
-function performSNMPPoll() {
-  if (!snmpPolling) return;
+function selectDevice(deviceId) {
+  selectedDevice = deviceId;
   
-  const devices = ['core-router', 'switch1', 'switch2', 'web-server', 'db-server'];
-  const randomDevice = devices[Math.floor(Math.random() * devices.length)];
+  // Update device selection
+  document.querySelectorAll('.managed-device').forEach(device => {
+    device.classList.remove('selected');
+  });
+  document.getElementById(deviceId).classList.add('selected');
   
-  addManagementLog(`SNMP GET: ${randomDevice.replace('-', ' ')} interface statistics`);
-  
-  // Update metrics
-  updateRandomMetrics();
+  // Show device info
+  showDeviceInfo(deviceId);
+  addLogEntry(`Selected device: ${deviceId}`);
 }
 
-function animateSNMPQueries() {
-  if (!managementActive) return;
+function showDeviceInfo(deviceId) {
+  const infoPanel = document.getElementById('snmp-info');
+  infoPanel.style.display = 'block';
   
-  const query = document.getElementById('snmp-query');
-  query.style.display = 'block';
-  query.classList.add('active');
-  
-  setTimeout(() => {
-    query.style.display = 'none';
-    query.classList.remove('active');
-    
-    // Repeat animation
-    if (managementActive) {
-      setTimeout(() => animateSNMPQueries(), 3000);
-    }
-  }, 2000);
-}
-
-function queryDeviceInfo(deviceId) {
-  addManagementLog(`Querying ${deviceId.replace('-', ' ')} MIB information`);
-  
-  setTimeout(() => {
-    const info = getDeviceInfo(deviceId);
-    addManagementLog(`Device info retrieved: ${info}`, 'success');
-  }, 1000);
-}
-
-function getDeviceInfo(deviceId) {
+  // Update info based on device
   const deviceInfo = {
-    'core-router': 'Cisco ISR 4331, IOS 15.6, Uptime: 45 days',
-    'switch1': 'Cisco Catalyst 2960, IOS 15.2, 24 ports active',
-    'switch2': 'Cisco Catalyst 2960, IOS 15.2, 22 ports active',
-    'web-server': 'Ubuntu 20.04, Apache 2.4, CPU: 15%',
-    'db-server': 'CentOS 8, MySQL 8.0, CPU: 85%'
+    'core-router': {
+      desc: 'Cisco IOS Router',
+      uptime: '72:15:30',
+      interfaces: '4'
+    },
+    'switch1': {
+      desc: 'Cisco Catalyst Switch',
+      uptime: '120:45:12',
+      interfaces: '24'
+    },
+    'web-server': {
+      desc: 'Ubuntu Web Server',
+      uptime: '240:30:45',
+      interfaces: '2'
+    }
   };
   
-  return deviceInfo[deviceId] || 'Device information not available';
+  const info = deviceInfo[deviceId] || deviceInfo['core-router'];
+  document.getElementById('system-desc').textContent = info.desc;
+  document.getElementById('system-uptime').textContent = info.uptime;
+  document.getElementById('interface-count').textContent = info.interfaces;
 }
 
-function generateTrap(deviceId, message) {
-  addManagementLog(`TRAP received from ${deviceId}: ${message}`, 'warning');
+function pollDevices() {
+  if (!snmpPolling) return;
   
-  // Update alarm count
-  const currentAlarms = parseInt(document.getElementById('alarm-count').textContent);
-  document.getElementById('alarm-count').textContent = currentAlarms + 1;
-}
-
-function updateDeviceCount(count) {
-  document.getElementById('device-count').textContent = count;
+  // Simulate random metric updates
+  updateRandomMetrics();
+  
+  // Occasionally generate alerts
+  if (Math.random() < 0.1) {
+    generateRandomAlert();
+  }
 }
 
 function updateRandomMetrics() {
-  // Simulate changing metrics
-  const bandwidth = Math.floor(Math.random() * 40) + 40; // 40-80%
-  const uptime = (99.5 + Math.random() * 0.4).toFixed(1); // 99.5-99.9%
+  const bandwidth = Math.floor(Math.random() * 40) + 30;
+  const uptime = (99.5 + Math.random() * 0.4).toFixed(1);
   
-  document.getElementById('bandwidth').textContent = `${bandwidth}%`;
-  document.getElementById('uptime').textContent = `${uptime}%`;
+  document.getElementById('bandwidth').textContent = bandwidth + '%';
+  document.getElementById('uptime').textContent = uptime + '%';
 }
 
-function initializeDeviceMetrics() {
-  deviceMetrics = {
-    'core-router': { cpu: 25, memory: 60, interfaces: 4 },
-    'switch1': { cpu: 15, memory: 40, interfaces: 24 },
-    'switch2': { cpu: 18, memory: 45, interfaces: 24 },
-    'web-server': { cpu: 15, memory: 70, interfaces: 1 },
-    'db-server': { cpu: 85, memory: 90, interfaces: 1 }
-  };
+function generateRandomAlert() {
+  const alerts = [
+    'High memory usage detected on Switch 2',
+    'Temperature warning on Core Router',
+    'Network congestion detected on VLAN 100',
+    'SNMP timeout on Web Server - retrying'
+  ];
+  
+  const alert = alerts[Math.floor(Math.random() * alerts.length)];
+  addLogEntry(alert);
+  
+  // Update alert count
+  const currentAlerts = parseInt(document.getElementById('alarm-count').textContent);
+  document.getElementById('alarm-count').textContent = currentAlerts + 1;
 }
 
-function addManagementLog(message, type = 'info') {
-  const logPanel = document.getElementById('monitoring-log');
+function updateMetrics() {
+  document.getElementById('device-count').textContent = '12';
+  document.getElementById('alarm-count').textContent = '3';
+  document.getElementById('uptime').textContent = '99.8%';
+  document.getElementById('bandwidth').textContent = '67%';
+}
+
+function addLogEntry(message) {
+  const logPanel = document.getElementById('management-log');
   const entry = document.createElement('div');
-  entry.className = `log-entry ${type}`;
-  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  entry.className = 'log-entry';
+  
+  const timestamp = document.createElement('span');
+  timestamp.className = 'timestamp';
+  timestamp.textContent = `[${new Date().toLocaleTimeString()}]`;
+  
+  const messageSpan = document.createElement('span');
+  messageSpan.className = 'message';
+  messageSpan.textContent = message;
+  
+  entry.appendChild(timestamp);
+  entry.appendChild(messageSpan);
+  
   logPanel.appendChild(entry);
   logPanel.scrollTop = logPanel.scrollHeight;
 }
 
-// Auto-update metrics every 60 seconds
-setInterval(() => {
-  if (managementActive) {
-    updateRandomMetrics();
-  }
-}, 60000);
+// Initialize with device click handlers
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.managed-device').forEach(device => {
+    device.addEventListener('click', () => selectDevice(device.id));
+  });
+  
+  addLogEntry('Network Management Console initialized');
+});
 </script>
 {% endblock %}

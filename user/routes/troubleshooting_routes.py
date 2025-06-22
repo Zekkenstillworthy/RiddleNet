@@ -18,9 +18,8 @@ controller = TroubleshootingController()
 @login_required
 def index():
     """Show troubleshooting scenarios page"""
-    # Get active scenarios from controller
-    scenarios = controller.get_active_scenarios()
-    return render_template('user/troubleshooting.html', scenarios=scenarios)
+    # Use the static troubleshoot.html template
+    return render_template('user/troubleshoot.html')
 
 @troubleshooting_bp.route('/api/<int:scenario_id>', methods=['GET'])
 @login_required
