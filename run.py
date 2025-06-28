@@ -1,83 +1,66 @@
-# Configure eventlet to work better with Windows - MUST BE FIRST
 import eventlet
 eventlet.monkey_patch()
 
-# Now import the rest of the modules
 from __init__ import create_app, db, login_manager
-from socket_manager import socketio  # Import socketio directly from socket_manager
+from socket_manager import socketio  
 import os
 from user.quiz import QuizController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
 from flask_cors import CORS
-import socket_events  # Import the socket events module
+import socket_events 
 
-# Create the Flask application with template folder explicitly set
 template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 app = create_app({
     'TEMPLATE_FOLDER': template_dir
 })
 
-# Create an application context for use outside of request handling
 ctx = app.app_context()
 ctx.push()
 
-# Initialize SocketIO with the app
 from socket_manager import init_socketio
 init_socketio(app)
 
-# Enable CORS for specific routes
 cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
     r"/admin/troubleshooting/*": {"origins": "*"}
 })
 
-# Ensure the instance folder exists
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 os.makedirs(instance_path, exist_ok=True)
 
-# Create database tables if they don't exist
 with app.app_context():
     db.create_all()
 
-# Initialize the QuizController with our Flask app to register all quiz routes
 quiz_controller = QuizController(app)
 
-# Set up Flask-Login
 login_manager.init_app(app)
-login_manager.login_view = 'user.login'  # Use user login view by default
+login_manager.login_view = 'user.login'  
 login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    # Import models
     from admin.models.user import Admin, AdminUser
     from user.models import User
     
-    # Check if the ID starts with 'admin-' which would indicate it's an admin
     if isinstance(user_id, str) and user_id.startswith('admin-'):
         admin_id = int(user_id.replace('admin-', ''))
         return db.session.get(Admin, admin_id)
     
-    # Try to convert to int for database lookup
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):
         return None
     
-    # Check session context to determine user type
-    # If we're in an admin route context, try Admin first
     if request and request.path.startswith('/admin'):
         admin = db.session.get(Admin, user_id_int)
         if admin:
             return admin
     
-    # For non-admin routes or if not found in Admin, try User table
     user = db.session.get(User, user_id_int)
     if user:
         return user
         
-    # If not found in User table and we haven't tried Admin yet, try Admin as fallback
     if not (request and request.path.startswith('/admin')):
         admin = db.session.get(Admin, user_id_int)
         if admin:
@@ -85,12 +68,9 @@ def load_user(user_id):
     
     return None
 
-# Set up admin route protection
 @app.before_request
 def check_admin_auth():
-    # Only protect admin routes
     if request.path.startswith('/admin'):
-        # List of paths that don't require authentication
         exempt_routes = [
             '/admin/login',
             '/admin/logout',
@@ -99,52 +79,41 @@ def check_admin_auth():
             '/admin/troubleshooting/'
         ]
         
-        # Skip check for exempt routes
         if any(request.path.startswith(route) for route in exempt_routes):
             return None
         
-        # Check if user is authenticated AND is an admin user
         if not current_user.is_authenticated:
             flash('Please log in to access the admin area', 'warning')
-            # Since the auth blueprint is registered with a prefix, we need to construct the login URL directly
             return redirect('/admin/login')
         
-        # Check if the authenticated user is actually an admin (not a regular user)
         from admin.models.user import Admin
         if not isinstance(current_user, Admin):
-            # If it's a regular user trying to access admin area, redirect them to user login
             flash('Access denied. Admin credentials required.', 'error')
             return redirect('/admin/login')
 
-# Now register the API blueprint AFTER the QuizController to avoid conflicts
-# Any conflicts will result in the QuizController routes taking precedence
 try:
-    # Import directly from the file, not the package
     import sys
     import os
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-    # Direct import from the api.py file
     from user.api import api_blueprint as user_api_blueprint
     app.register_blueprint(user_api_blueprint, url_prefix='/api')
     print("API Blueprint registered successfully")
-      # Register topology progress API blueprint
     try:
         from user.api.topology_progress_api import topology_progress_bp
         app.register_blueprint(topology_progress_bp)
         print("Topology Progress API Blueprint registered successfully")
     except Exception as e:
-        print(f"Error registering Topology Progress API blueprint: {e}")    # Register user troubleshooting routes
+        print(f"Error registering Topology Progress API blueprint: {e}")   
     try:
         from user.routes.troubleshooting_routes import troubleshooting_bp
         app.register_blueprint(troubleshooting_bp)
         print("User Troubleshooting Blueprint registered successfully")
     except Exception as e:
-        print(f"Error registering User Troubleshooting blueprint: {e}")    # Simulation routes are now included in the main user_bp blueprint
+        print(f"Error registering User Troubleshooting blueprint: {e}")
     # No separate simulation blueprint registration needed
         
 except Exception as e:
     print(f"Error registering API blueprint: {e}")
-    # If we can't import from the package, try to import from the file directly
     try:
         import importlib.util
         api_path = os.path.join(os.path.dirname(__file__), 'user', 'api.py')
@@ -156,11 +125,9 @@ except Exception as e:
     except Exception as e2:
         print(f"Second attempt also failed: {e2}")
         
-# Register Admin routes
 print("\n=== Registering Admin Blueprints ===")
 try:
     import importlib
-    # Import admin blueprints using a more robust approach
     blueprints_to_register = [        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
         ('admin.controllers.user_controller', 'user_bp', '/admin', 'admin_user_bp'),
