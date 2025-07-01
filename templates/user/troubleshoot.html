@@ -6,31 +6,93 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+
+<style>
+    :root {
+        /* Troubleshoot-specific theme overrides - Critical for preventing FOUC */
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+
+        /* Troubleshoot-specific darker background theme */
+        --background: #020617;
+        --surface: #0F172A;
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-bg-light: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+
+        /* Troubleshoot-specific text colors */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        
+        /* Troubleshoot-specific shadows and effects */
+        --border-radius: 16px;
+        --border-radius-lg: 20px;
+        --border-radius-xl: 24px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+        --transition-speed: 0.3s;
+        
+        /* Troubleshoot-specific gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+        --gradient-text: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+
+        /* Glass effects */
+        --glass-bg-hover: rgba(255, 255, 255, 0.08);
+    }
+    
+    /* Critical device palette positioning - Load immediately to prevent jitter */
+    #device-palette {
+        position: fixed !important;
+        left: 280px !important;
+        bottom: 0 !important;
+        width: calc(100vw - 280px) !important;
+        min-height: 110px !important;
+        background: rgba(30, 41, 71, 0.8) !important;
+        backdrop-filter: blur(20px) !important;
+        border-top: 2px solid rgba(255, 255, 255, 0.1) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        z-index: 1002 !important;
+        padding: 0 32px !important;
+        gap: 0 !important;
+        overflow-x: hidden !important;
+        overflow-y: hidden !important;
+        transition: none !important; /* Prevent any transitions initially */
+    }
+
+    /* Critical responsive rules - Load immediately */
+    @media (max-width: 1024px) {
+        #device-palette {
+            left: 80px !important;
+            width: calc(100vw - 80px) !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        #device-palette {
+            left: 0 !important;
+            width: 100vw !important;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
-    @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap");
-
-    :root {
-        /* Additional CSS variables for troubleshooting page only */
-        /* Note: Base variables are inherited from user/base.html */
-        --glass-bg-light: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.1);
-        --glass-bg-hover: rgba(255, 255, 255, 0.08);
-        --border-radius-lg: 20px;
-        --border-radius-xl: 24px;
-        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
-        --gradient-text: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-    }
-
-    /* Ensure sidebar styles are preserved from base template */
-    #sidebar {
-        background: var(--surface) !important;
-        border-right: 2px solid var(--border-color) !important;
-    }    * {
+    * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
@@ -48,20 +110,20 @@
         }
     }
 
-    /* Main app container - work with base template layout */
+    /* Main app container - adjusted for base template sidebar */
     #app {
-        margin-left: 0; /* Let base template handle sidebar margin */
-        padding: 24px;
-        min-height: calc(100vh - 140px);
+        margin-left: 0;
+        padding: 20px;
+        min-height: calc(100vh - 110px);
         box-sizing: border-box;
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 140px);
+        height: 100vh;
     }
 
-    /* Ensure canvas container respects sidebar and doesn't overlap */
+    /* Ensure canvas container respects sidebar */
     #canvas-container {
         flex: 1 1 auto;
         position: relative;
@@ -71,51 +133,29 @@
         justify-content: center;
         align-items: center;
         border: 1px solid var(--glass-border);
-        margin: 0;
-        margin-bottom: 20px;
+        margin: 16px;
+        margin-bottom: 120px;
         border-radius: var(--border-radius-lg);
         overflow: hidden;
-        min-height: 400px;
-        height: calc(100vh - 300px);
-        z-index: 1;
+        min-height: 0;
+        height: calc(100vh - 200px);
     }
 
-    /* Ensure modals appear above everything */
+    /* Ensure modals appear above sidebar */
     .scenario-popup,
     .easy-popup,
     .medium-popup,
     .hard-popup,
-    .problem-popup,
-    .tutorialModal,
-    .configModal {
-        z-index: 9999 !important;
-    }
-
-    /* Device palette - make sure it doesn't interfere with sidebar */
-    #device-palette {
-        z-index: 1002;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+    .problem-popup {
+        z-index: 3000;
     }
 
     /* Responsive adjustments for mobile */
     @media (max-width: 768px) {
         #app {
-            padding: 12px;
+            padding: 10px;
             margin-left: 0;
-            min-height: calc(100vh - 120px);
-            height: calc(100vh - 120px);
-        }
-        
-        #canvas-container {
-            height: calc(100vh - 240px);
-            min-height: 300px;
-        }
-        
-        #device-palette {
-            min-height: 120px;
+            min-height: calc(100vh - 90px);
         }
     }
 
@@ -166,178 +206,96 @@
         background: var(--glass-bg-light);
     }
 
-    #device-palette {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100vw;
-        min-height: 110px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border-top: 2px solid var(--glass-border);
-        color: var(--text-primary);
-        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
-        display: flex;
-        flex-direction: row;
-        align-items: stretch;
-        z-index: 1002;
-        padding: 8px 16px;
-        gap: 8px;
-        overflow-x: auto;
-        overflow-y: visible;
-    }
-
     .palette-section {
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 16px;
-        padding: 8px 12px;
-        flex-shrink: 0;
+        gap: 24px;
+        padding: 0 16px;
     }
 
     .left-section {
         justify-content: flex-start;
-        min-width: 200px;
+        min-width: 220px;
     }
 
     .center-section {
         flex: 1 1 auto;
         justify-content: center;
-        min-width: 280px;
+        min-width: 320px;
     }
 
     .right-section {
         justify-content: flex-end;
-        min-width: 280px;
+        min-width: 320px;
     }
 
     .palette-separator {
         width: 2px;
-        background: linear-gradient(180deg, var(--glass-border), var(--cyber-glow), var(--glass-border));
-        margin: 0 4px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), #00D9FF, rgba(255, 255, 255, 0.1));
+        margin: 0 8px;
         border-radius: 2px;
         align-self: stretch;
         opacity: 0.7;
-        flex-shrink: 0;
     }
 
     .action-btn {
-        margin: 0 3px;
-        padding: 8px 12px;
-        background: var(--glass-bg-light);
+        margin: 0 4px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.05);
         cursor: pointer;
-        border: 1px solid var(--glass-border);
-        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #F8FAFC;
         text-align: center;
-        border-radius: var(--border-radius);
+        border-radius: 16px;
         font-weight: 500;
-        font-size: 12px;
+        font-size: 14px;
         font-family: 'Orbitron', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        min-width: 80px;
-        min-height: 44px;
+        min-width: 90px;
+        min-height: 48px;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
-        flex-shrink: 0;
+        gap: 8px;
     }
 
     .action-btn .label {
         display: inline-block;
-        font-size: 10px;
+        font-size: 13px;
         font-family: 'Orbitron', sans-serif;
         font-weight: 600;
         letter-spacing: 0.5px;
-        white-space: nowrap;
     }
 
     .device {
-        padding: 8px 6px;
-        background: var(--glass-bg-light);
-        margin: 0 4px;
+        padding: 10px 8px;
+        background: rgba(255, 255, 255, 0.05);
+        margin: 0 8px;
         cursor: pointer;
         text-align: center;
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        min-width: 70px;
-        min-height: 70px;
+        min-width: 80px;
+        min-height: 80px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 4px;
-        flex-shrink: 0;
     }
 
     .device-icon {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         margin-bottom: 2px;
-        flex-shrink: 0;
-    }
-
-    .device span,
-    .action-btn i {
-        font-size: 14px;
-        color: var(--text-primary);
-    }
-
-    @media (max-width: 900px) {
-        #device-palette {
-            flex-direction: column;
-            align-items: stretch;
-            min-height: 140px;
-            padding: 8px 4px;
-        }
-
-        .palette-section {
-            flex-direction: row;
-            gap: 6px;
-            margin: 0 2px;
-            padding: 4px 2px;
-            justify-content: center;
-        }
-
-        .device,
-        .action-btn {
-            min-width: 55px;
-            min-height: 55px;
-            font-size: 10px;
-            margin: 0 2px;
-            padding: 4px 2px;
-        }
-
-        .device-icon {
-            width: 28px;
-            height: 28px;
-        }
-
-        .action-btn .label {
-            font-size: 9px;
-        }
-
-        .palette-separator {
-            width: 100%;
-            height: 1px;
-            margin: 4px 0;
-            background: linear-gradient(90deg, var(--glass-border), var(--cyber-glow), var(--glass-border));
-        }
-
-        .center-section,
-        .right-section,
-        .left-section {
-            min-width: 0;
-        }
     }
 
     .tutorialModal {
@@ -3274,17 +3232,6 @@
 
         // WebSocket Integration for Real-time Troubleshooting Updates
         document.addEventListener('DOMContentLoaded', function () {
-            // Debug: Check if user data is available
-            {% if user %}
-            console.log('User data in troubleshoot template:', {
-                username: '{{ user.username }}',
-                userId: '{{ user.id }}',
-                profileImg: '{{ user.profile_img or "No profile image" }}'
-            });
-            {% else %}
-            console.log('No user data available in troubleshoot template');
-            {% endif %}
-
             if (window.socketClient) {
                 console.log('Setting up troubleshooting WebSocket handlers...');
 
@@ -3356,7 +3303,7 @@
                         window.socketClient.emit('troubleshooting_progress', {
                             ...updateData,
                             timestamp: new Date().toISOString(),
-                            user_id: '{% if user %}{{ user.id }}{% else %}anonymous{% endif %}'
+                            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
                         });
                     }
                 };

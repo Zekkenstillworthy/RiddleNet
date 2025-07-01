@@ -42,8 +42,11 @@
         /* Layout */
         --sidebar-width: 280px;
         --sidebar-collapsed-width: 80px;
-        --transition-speed: 0.4s;
+        --transition-speed: 0.3s;
+        --transition-fast: 0.15s;
         --border-radius: 16px;
+        --border-radius-lg: 20px;
+        --border-radius-xl: 24px;
         --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
         --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
 
@@ -59,6 +62,20 @@
         box-sizing: border-box;
     }
 
+    /* Hide all scrollbars globally */
+    * {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+
+    *::-webkit-scrollbar {
+        display: none; /* Safari and Chrome */
+    }
+
+    html {
+        overflow: hidden;
+    }
+
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         background: var(--background);
@@ -68,7 +85,35 @@
         color: var(--text-primary);
         min-height: 100vh;
         overflow-x: hidden;
+        overflow-y: hidden;
         position: relative;
+        transition: none !important;
+    }
+
+    /* Prevent transitions on page load */
+    .preload * {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    /* Ensure device palette is immediately positioned correctly */
+    .preload #device-palette {
+        left: 280px !important;
+        width: calc(100vw - 280px) !important;
+    }
+
+    @media (max-width: 1024px) {
+        .preload #device-palette {
+            left: 80px !important;
+            width: calc(100vw - 80px) !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .preload #device-palette {
+            left: 0 !important;
+            width: 100vw !important;
+        }
     }
 
     /* Network Grid Background Animation */
@@ -752,7 +797,7 @@
     }
 </style>
 
-<body>
+<body class="preload">
     {% block body %}
     <!-- Mobile Toggle Button -->
     <div class="mobile-toggle" id="mobileToggle">
@@ -764,7 +809,7 @@
     <nav id="sidebar">
         <div class="logo-details">
             <div class="logo-icon">
-                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="" style="width: 60px; , height: 60px; " >
+                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="" style="width: 60px; height: 60px;" >
             </div>
             <div class="logo-name">
                 <span>RiddleNet</span>
@@ -870,6 +915,43 @@
     <script>
         // Sidebar functionality
         document.addEventListener('DOMContentLoaded', function () {
+            // Immediately set device palette position based on viewport
+            const devicePalette = document.getElementById('device-palette');
+            if (devicePalette) {
+                function setDevicePalettePosition() {
+                    const windowWidth = window.innerWidth;
+                    if (windowWidth <= 768) {
+                        devicePalette.style.left = '0px';
+                        devicePalette.style.width = '100vw';
+                    } else if (windowWidth <= 1024) {
+                        devicePalette.style.left = 'var(--sidebar-collapsed-width)';
+                        devicePalette.style.width = 'calc(100vw - var(--sidebar-collapsed-width))';
+                    } else {
+                        devicePalette.style.left = 'var(--sidebar-width)';
+                        devicePalette.style.width = 'calc(100vw - var(--sidebar-width))';
+                    }
+                }
+                
+                // Set position immediately
+                setDevicePalettePosition();
+                
+                // Update on resize
+                window.addEventListener('resize', setDevicePalettePosition);
+            }
+            
+            // Remove preload class to enable transitions after positioning is set
+            // Note: Body transitions remain disabled permanently
+            setTimeout(() => {
+                const preloadElements = document.querySelectorAll(':not(body)');
+                preloadElements.forEach(el => {
+                    if (el.classList.contains('preload')) {
+                        el.classList.remove('preload');
+                    }
+                });
+                // Keep body with disabled transitions
+                document.body.style.transition = 'none';
+            }, 150);
+            
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
             const mobileToggle = document.getElementById('mobileToggle');
