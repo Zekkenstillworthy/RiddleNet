@@ -4,7 +4,6 @@
 <title>Network Troubleshooting | RiddleNet</title>
 <!-- Include Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/troubleshoot.css') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
 {% endblock %}
@@ -16,46 +15,21 @@
     @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap");
 
     :root {
-        /* Modern Gaming Network Theme */
-        --primary-color: #0F172A;
-        --secondary-color: #1E293B;
-        --accent-color: #3B82F6;
-        --success-color: #10B981;
-        --warning-color: #F59E0B;
-        --danger-color: #EF4444;
-        --cyber-glow: #00D9FF;
-        --neon-green: #39FF14;
-        --network-purple: #8B5CF6;
-
-        /* Background & Surface Colors */
-        --background: #020617;
-        --surface: #0F172A;
-        --surface-hover: #1E293B;
-        --border-color: rgba(59, 130, 246, 0.2);
-        --glass-bg: rgba(15, 23, 42, 0.8);
+        /* Additional CSS variables for troubleshooting page only */
+        /* Note: Base variables are inherited from user/base.html */
         --glass-bg-light: rgba(255, 255, 255, 0.05);
         --glass-border: rgba(255, 255, 255, 0.1);
-
-        /* Text Colors */
-        --text-primary: #F8FAFC;
-        --text-secondary: #CBD5E1;
-        --text-muted: #64748B;
-        /* Gradients */
-        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
-        --gradient-text: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-
-        /* Glass effects */
         --glass-bg-hover: rgba(255, 255, 255, 0.08);
-
-        /* Layout */
-        --border-radius: 12px;
         --border-radius-lg: 20px;
         --border-radius-xl: 24px;
-        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-        --transition-speed: 0.4s;
+        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+        --gradient-text: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    }
+
+    /* Ensure sidebar styles are preserved from base template */
+    #sidebar {
+        background: var(--surface) !important;
+        border-right: 2px solid var(--border-color) !important;
     }    * {
         margin: 0;
         padding: 0;
@@ -74,20 +48,20 @@
         }
     }
 
-    /* Main app container - adjusted for base template sidebar */
+    /* Main app container - work with base template layout */
     #app {
-        margin-left: 0;
-        padding: 20px;
-        min-height: calc(100vh - 110px);
+        margin-left: 0; /* Let base template handle sidebar margin */
+        padding: 24px;
+        min-height: calc(100vh - 140px);
         box-sizing: border-box;
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        height: calc(100vh - 140px);
     }
 
-    /* Ensure canvas container respects sidebar */
+    /* Ensure canvas container respects sidebar and doesn't overlap */
     #canvas-container {
         flex: 1 1 auto;
         position: relative;
@@ -97,39 +71,53 @@
         justify-content: center;
         align-items: center;
         border: 1px solid var(--glass-border);
-        margin: 16px;
-        margin-bottom: 120px;
+        margin: 0;
+        margin-bottom: 20px;
         border-radius: var(--border-radius-lg);
         overflow: hidden;
-        min-height: 0;
-        height: calc(100vh - 200px);
+        min-height: 400px;
+        height: calc(100vh - 300px);
+        z-index: 1;
     }
 
-    /* Ensure modals appear above sidebar */
+    /* Ensure modals appear above everything */
     .scenario-popup,
     .easy-popup,
     .medium-popup,
     .hard-popup,
-    .problem-popup {
-        z-index: 3000;
+    .problem-popup,
+    .tutorialModal,
+    .configModal {
+        z-index: 9999 !important;
     }
 
-    /* Ensure device palette doesn't interfere with sidebar */
+    /* Device palette - make sure it doesn't interfere with sidebar */
     #device-palette {
-        z-index: 99;
+        z-index: 1002;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
     }
 
     /* Responsive adjustments for mobile */
     @media (max-width: 768px) {
         #app {
-            padding: 10px;
+            padding: 12px;
             margin-left: 0;
-            min-height: calc(100vh - 90px);
+            min-height: calc(100vh - 120px);
+            height: calc(100vh - 120px);
+        }
+        
+        #canvas-container {
+            height: calc(100vh - 240px);
+            min-height: 300px;
         }
         
         #device-palette {
-            min-height: 90px;
-        }    }
+            min-height: 120px;
+        }
+    }
 
     #Canvas {
         width: 100%;
@@ -193,8 +181,8 @@
         flex-direction: row;
         align-items: stretch;
         z-index: 1002;
-        padding: 0 32px;
-        gap: 0;
+        padding: 8px 16px;
+        gap: 8px;
         overflow-x: auto;
         overflow-y: visible;
     }
@@ -203,38 +191,40 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 24px;
-        padding: 0 16px;
+        gap: 16px;
+        padding: 8px 12px;
+        flex-shrink: 0;
     }
 
     .left-section {
         justify-content: flex-start;
-        min-width: 220px;
+        min-width: 200px;
     }
 
     .center-section {
         flex: 1 1 auto;
         justify-content: center;
-        min-width: 320px;
+        min-width: 280px;
     }
 
     .right-section {
         justify-content: flex-end;
-        min-width: 320px;
+        min-width: 280px;
     }
 
     .palette-separator {
         width: 2px;
         background: linear-gradient(180deg, var(--glass-border), var(--cyber-glow), var(--glass-border));
-        margin: 0 8px;
+        margin: 0 4px;
         border-radius: 2px;
         align-self: stretch;
         opacity: 0.7;
+        flex-shrink: 0;
     }
 
     .action-btn {
-        margin: 0 4px;
-        padding: 10px 14px;
+        margin: 0 3px;
+        padding: 8px 12px;
         background: var(--glass-bg-light);
         cursor: pointer;
         border: 1px solid var(--glass-border);
@@ -242,33 +232,36 @@
         text-align: center;
         border-radius: var(--border-radius);
         font-weight: 500;
-        font-size: 14px;
+        font-size: 12px;
         font-family: 'Orbitron', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        min-width: 90px;
-        min-height: 48px;
+        min-width: 80px;
+        min-height: 44px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 4px;
+        flex-shrink: 0;
     }
 
     .action-btn .label {
         display: inline-block;
-        font-size: 13px;
+        font-size: 10px;
         font-family: 'Orbitron', sans-serif;
         font-weight: 600;
         letter-spacing: 0.5px;
+        white-space: nowrap;
     }
 
     .device {
-        padding: 10px 8px;
+        padding: 8px 6px;
         background: var(--glass-bg-light);
-        margin: 0 8px;
+        margin: 0 4px;
         cursor: pointer;
         text-align: center;
         border: 1px solid var(--glass-border);
@@ -276,54 +269,71 @@
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        min-width: 80px;
-        min-height: 80px;
+        min-width: 70px;
+        min-height: 70px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 4px;
+        flex-shrink: 0;
     }
 
     .device-icon {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         margin-bottom: 2px;
+        flex-shrink: 0;
+    }
+
+    .device span,
+    .action-btn i {
+        font-size: 14px;
+        color: var(--text-primary);
     }
 
     @media (max-width: 900px) {
         #device-palette {
             flex-direction: column;
             align-items: stretch;
-            min-height: 170px;
-            padding: 0 4px;
+            min-height: 140px;
+            padding: 8px 4px;
         }
 
         .palette-section {
             flex-direction: row;
-            gap: 8px;
+            gap: 6px;
             margin: 0 2px;
-            padding: 0 4px;
+            padding: 4px 2px;
+            justify-content: center;
         }
 
         .device,
         .action-btn {
-            min-width: 60px;
-            min-height: 60px;
-            font-size: 11px;
+            min-width: 55px;
+            min-height: 55px;
+            font-size: 10px;
+            margin: 0 2px;
+            padding: 4px 2px;
+        }
+
+        .device-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .action-btn .label {
+            font-size: 9px;
         }
 
         .palette-separator {
             width: 100%;
-            height: 2px;
-            margin: 8px 0;
+            height: 1px;
+            margin: 4px 0;
             background: linear-gradient(90deg, var(--glass-border), var(--cyber-glow), var(--glass-border));
         }
 
-        .center-section {
-            min-width: 0;
-        }
-
+        .center-section,
         .right-section,
         .left-section {
             min-width: 0;
@@ -3264,6 +3274,17 @@
 
         // WebSocket Integration for Real-time Troubleshooting Updates
         document.addEventListener('DOMContentLoaded', function () {
+            // Debug: Check if user data is available
+            {% if user %}
+            console.log('User data in troubleshoot template:', {
+                username: '{{ user.username }}',
+                userId: '{{ user.id }}',
+                profileImg: '{{ user.profile_img or "No profile image" }}'
+            });
+            {% else %}
+            console.log('No user data available in troubleshoot template');
+            {% endif %}
+
             if (window.socketClient) {
                 console.log('Setting up troubleshooting WebSocket handlers...');
 
@@ -3335,7 +3356,7 @@
                         window.socketClient.emit('troubleshooting_progress', {
                             ...updateData,
                             timestamp: new Date().toISOString(),
-                            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
+                            user_id: '{% if user %}{{ user.id }}{% else %}anonymous{% endif %}'
                         });
                     }
                 };

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, g
+from flask import Blueprint, render_template, request, jsonify, g, session
 from flask_login import login_required, current_user
 from admin.models.troubleshooting import Troubleshooting
 from admin.models.troubleshooting_progress import TroubleshootingProgress
@@ -18,8 +18,32 @@ controller = TroubleshootingController()
 @login_required
 def index():
     """Show troubleshooting scenarios page"""
-    # Use the static troubleshoot.html template
-    return render_template('user/troubleshoot.html')
+    # Get user data from database like other routes to ensure consistent user data
+    user = None
+    
+    # Try to get user from session first
+    if 'user_id' in session:
+        try:
+            from user.models.user import User as UserModel
+            user = UserModel.query.get(session['user_id'])
+        except Exception as e:
+            print(f"Error getting user from session: {e}")
+    
+    # If no session user found, fallback to current_user
+    if not user and current_user.is_authenticated:
+        user = current_user
+    
+    # If still no user, try to get authenticated user info another way
+    if not user:
+        try:
+            from user.models.user import User as UserModel
+            if hasattr(current_user, 'id') and current_user.id:
+                user = UserModel.query.get(current_user.id)
+        except Exception as e:
+            print(f"Error getting current user: {e}")
+    
+    print(f"Troubleshooting route - User: {user.username if user else 'None'}")
+    return render_template('user/troubleshoot.html', user=user)
 
 @troubleshooting_bp.route('/api/<int:scenario_id>', methods=['GET'])
 @login_required
