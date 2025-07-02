@@ -4255,9 +4255,15 @@
         }
 
         function joinLobby(lobbyId, requiresPassword = false) {
+            console.log('🎯 Attempting to join lobby:', lobbyId);
+            
             // All lobbies are now public, no password needed
             if (window.socketClient) {
+                console.log('✅ SocketClient available, sending join request...');
                 window.socketClient.joinTroubleshootingLobby(lobbyId);
+            } else {
+                console.error('❌ SocketClient not available!');
+                alert('WebSocket connection not available. Please refresh the page and try again.');
             }
         }
 
@@ -4611,6 +4617,195 @@
                     }
                 });
 
+                // Handle lobby join success
+                window.socketClient.on('lobby_joined', function(data) {
+                    console.log('🚪 Successfully joined lobby:', data);
+                    console.log('📊 Lobby data structure:', JSON.stringify(data, null, 2));
+                    
+                    if (data.success) {
+                        currentLobby = data.lobby;
+                        
+                        // Close lobby browser modal
+                        const lobbyBrowserModal = document.getElementById('lobbyBrowserModal');
+                        if (lobbyBrowserModal) {
+                            lobbyBrowserModal.classList.remove('active');
+                            lobbyBrowserModal.style.display = 'none';
+                        }
+                        
+                        // Show collaboration panel
+                        const collaborationPanel = document.getElementById('collaborationPanel');
+                        if (collaborationPanel) {
+                            collaborationPanel.style.display = 'block';
+                        }
+                        
+                        // Update collaboration status
+                        const statusIndicator = document.getElementById('collaborationStatus');
+                        if (statusIndicator) {
+                            statusIndicator.className = 'collaboration-status connected';
+                            statusIndicator.innerHTML = '<i class="bx bx-group"></i><span>Connected to ' + data.lobby.name + '</span>';
+                        }
+                        
+                        // Update participants list
+                        if (data.lobby.participants) {
+                            updateParticipantsList(data.lobby.participants);
+                        }
+                        
+                        // ===== AUTOMATICALLY START THE COLLABORATIVE SCENARIO =====
+                        // Get scenario information from the lobby
+                        const scenarioType = data.lobby.scenario_type; // 'easy', 'medium', 'hard'
+                        const scenarioId = data.lobby.scenario_id;     // specific scenario like 'network', 'passive', etc.
+                        
+                        console.log(`🎯 Starting collaborative scenario: ${scenarioType} - ${scenarioId}`);
+                        console.log('🔍 Checking if startScenario function exists:', typeof startScenario);
+                        
+                        // Automatically select and start the scenario
+                        if (scenarioType && scenarioId) {
+                            // Update the scenario button to show selection
+                            const selectScenarioBtn = document.getElementById("select-scenario-btn");
+                            if (selectScenarioBtn) {
+                                selectScenarioBtn.textContent = `Collaborative: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
+                                selectScenarioBtn.classList.add('selected');
+                                console.log('✅ Updated scenario button text');
+                            } else {
+                                console.error('❌ Select scenario button not found');
+                            }
+                            
+                            // Start the scenario simulation
+                            if (typeof startScenario === 'function') {
+                                console.log('🚀 Calling startScenario function...');
+                                try {
+                                    startScenario(scenarioType, scenarioId);
+                                    console.log('✅ Collaborative scenario started successfully');
+                                } catch (error) {
+                                    console.error('❌ Error starting scenario:', error);
+                                }
+                            } else {
+                                console.error('❌ startScenario function not found or not a function');
+                                console.log('🔍 Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
+                            }
+                        } else {
+                            console.error('❌ Missing scenario information:', { scenarioType, scenarioId });
+                        }
+                        
+                        // Show success notification
+                        if (window.socketClient.showNotification) {
+                            window.socketClient.showNotification(
+                                'Session Joined!',
+                                `You've joined "${data.lobby.name}" - Starting ${scenarioType} scenario: ${scenarioId}`,
+                                'success'
+                            );
+                        }
+                        
+                        // Add system message to chat
+                        addChatMessage({
+                            type: 'system',
+                            message: `You joined the session "${data.lobby.name}" - ${scenarioType} scenario: ${scenarioId}`,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else {
+                        // Handle join failure
+                        console.error('❌ Failed to join lobby:', data.error);
+                        if (window.socketClient.showNotification) {
+                            window.socketClient.showNotification(
+                                'Join Failed',
+                                data.error || 'Could not join the session. It may be full or no longer available.',
+                                'error'
+                            );
+                        }
+                    }
+                });
+
+                // Handle participant joining the session
+                window.socketClient.on('participant_joined', function(data) {
+                    console.log('👤 Participant joined:', data);
+                    if (data.participant) {
+                        // Update participants list
+                        if (currentLobby && currentLobby.participants) {
+                            currentLobby.participants[data.participant.id] = data.participant;
+                            updateParticipantsList(currentLobby.participants);
+                        }
+                        
+                        // Add system message to chat
+                        addChatMessage({
+                            type: 'system',
+                            message: `${data.participant.username} joined the session`,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                });
+
+                // Handle participant leaving the session
+                window.socketClient.on('participant_left', function(data) {
+                    console.log('👤 Participant left:', data);
+                    if (data.participant_id) {
+                        // Update participants list
+                        if (currentLobby && currentLobby.participants) {
+                            const username = currentLobby.participants[data.participant_id]?.username || 'Someone';
+                            delete currentLobby.participants[data.participant_id];
+                            updateParticipantsList(currentLobby.participants);
+                            
+                            // Remove user cursor if it exists
+                            removeUserCursor(data.participant_id);
+                            
+                            // Add system message to chat
+                            addChatMessage({
+                                type: 'system',
+                                message: `${username} left the session`,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    }
+                });
+
+                // Handle chat messages in the lobby
+                window.socketClient.on('lobby_chat_message', function(data) {
+                    console.log('💬 Chat message received:', data);
+                    addChatMessage(data);
+                });
+
+                // Handle cursor movement from other participants
+                window.socketClient.on('cursor_moved', function(data) {
+                    if (data.user_id !== window.currentUserId) {
+                        updateUserCursor(data.user_id, data.username, data.position, data.color);
+                    }
+                });
+
+                // Handle leaving lobby
+                window.socketClient.on('lobby_left', function(data) {
+                    console.log('🚪 Left lobby:', data);
+                    currentLobby = null;
+                    
+                    // Hide collaboration panel
+                    const collaborationPanel = document.getElementById('collaborationPanel');
+                    if (collaborationPanel) {
+                        collaborationPanel.style.display = 'none';
+                    }
+                    
+                    // Update collaboration status
+                    const statusIndicator = document.getElementById('collaborationStatus');
+                    if (statusIndicator) {
+                        statusIndicator.className = 'collaboration-status disconnected';
+                        statusIndicator.innerHTML = '<i class="bx bx-group"></i><span>Not connected</span>';
+                    }
+                    
+                    // Clear participants list
+                    const participantsList = document.getElementById('participantsList');
+                    if (participantsList) {
+                        participantsList.innerHTML = '';
+                    }
+                    
+                    // Clear chat
+                    const chatContainer = document.getElementById('chatContainer');
+                    if (chatContainer) {
+                        chatContainer.innerHTML = '';
+                    }
+                    
+                    // Clear all user cursors
+                    userCursors.forEach((cursor, userId) => {
+                        removeUserCursor(userId);
+                    });
+                });
+
                 // === TROUBLESHOOTING EVENT HANDLERS ===
 
                 // Join troubleshooting-specific room when scenario is selected
@@ -4667,6 +4862,20 @@
                 });
             }
             
+            // Set up mouse tracking for collaborative cursor sync
+            let mouseMoveThrottle = null;
+            document.addEventListener('mousemove', function(event) {
+                if (currentLobby && window.socketClient) {
+                    // Throttle mouse movement updates to prevent spam
+                    if (mouseMoveThrottle) {
+                        clearTimeout(mouseMoveThrottle);
+                    }
+                    mouseMoveThrottle = setTimeout(() => {
+                        window.socketClient.updateCursorPosition(event.clientX, event.clientY);
+                    }, 50); // Update every 50ms max
+                }
+            });
+            
             // Test collaboration system readiness
             setTimeout(() => {
                 console.log('🔍 Testing collaboration system readiness...');
@@ -4687,6 +4896,20 @@
                     console.error('❌ Lobby browser modal not found');
                 }
                 
+                // Check if joinLobby function is accessible
+                if (typeof joinLobby === 'function') {
+                    console.log('✅ joinLobby function is accessible');
+                } else {
+                    console.error('❌ joinLobby function not accessible');
+                }
+                
+                // Check if startScenario function is accessible
+                if (typeof startScenario === 'function') {
+                    console.log('✅ startScenario function is accessible');
+                } else {
+                    console.error('❌ startScenario function not accessible');
+                }
+                
                 // Check if socket client is available
                 if (window.socketClient) {
                     console.log('✅ SocketClient is available');
@@ -4697,6 +4920,23 @@
                         collabBtn.style.borderColor = 'var(--success-color)';
                         collabBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
                     }
+                    
+                    // Add debug functions to window for manual testing
+                    window.debugCollaboration = {
+                        testJoinLobby: (lobbyId) => {
+                            console.log('🧪 Testing joinLobby with ID:', lobbyId);
+                            joinLobby(lobbyId);
+                        },
+                        testStartScenario: (type, id) => {
+                            console.log('🧪 Testing startScenario with:', type, id);
+                            startScenario(type, id);
+                        },
+                        showAvailableFunctions: () => {
+                            console.log('🔧 Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
+                        }
+                    };
+                    
+                    console.log('🧪 Debug functions added to window.debugCollaboration');
                 } else {
                     console.error('❌ SocketClient not available');
                     console.warn('🔄 Collaboration system not ready - WebSocket client missing');
