@@ -2534,15 +2534,7 @@
                     </select>
                 </div>
                 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="isPrivate" name="is_private">
-                    <label for="isPrivate">Private Session (requires password)</label>
-                </div>
-                
-                <div class="form-group" id="passwordGroup" style="display: none;">
-                    <label for="lobbyPassword">Session Password</label>
-                    <input type="password" id="lobbyPassword" name="password" placeholder="Enter password">
-                </div>
+                <!-- All sessions are now public - no private options needed -->
                 
                 <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px;">
                     <button type="button" class="action-btn" onclick="closeCreateLobby()">Cancel</button>
@@ -4263,15 +4255,9 @@
         }
 
         function joinLobby(lobbyId, requiresPassword = false) {
-            let password = null;
-            
-            if (requiresPassword) {
-                password = prompt('Enter session password:');
-                if (!password) return;
-            }
-            
+            // All lobbies are now public, no password needed
             if (window.socketClient) {
-                window.socketClient.joinTroubleshootingLobby(lobbyId, password);
+                window.socketClient.joinTroubleshootingLobby(lobbyId);
             }
         }
 
@@ -4385,7 +4371,7 @@
             }
             
             grid.innerHTML = lobbies.map(lobby => `
-                <div class="lobby-card" onclick="joinLobby('${lobby.id}', ${lobby.is_private})">
+                <div class="lobby-card" onclick="joinLobby('${lobby.id}', false)">
                     <div class="lobby-card-header">
                         <h3 class="lobby-name">${lobby.name}</h3>
                         <span class="lobby-participants">${lobby.participant_count}/${lobby.max_participants}</span>
@@ -4401,7 +4387,9 @@
                             </div>`
                         ).join('')}
                     </div>
-                    ${lobby.is_private ? '<div style="margin-top: 8px; color: var(--warning-color); font-size: 12px;"><i class="bx bx-lock"></i> Private Session</div>' : ''}
+                    <div style="margin-top: 8px; color: var(--success-color); font-size: 12px;">
+                        <i class="bx bx-group"></i> Public Session - Click to Join
+                    </div>
                 </div>
             `).join('');
             
@@ -4541,15 +4529,6 @@
                 scenarioTypeSelect.addEventListener('change', updateScenarioOptions);
             }
 
-            // Handle private session checkbox
-            const isPrivateCheckbox = document.getElementById('isPrivate');
-            if (isPrivateCheckbox) {
-                isPrivateCheckbox.addEventListener('change', function() {
-                    const passwordGroup = document.getElementById('passwordGroup');
-                    passwordGroup.style.display = this.checked ? 'block' : 'none';
-                });
-            }
-
             // Handle create lobby form submission
             const createLobbyForm = document.getElementById('createLobbyForm');
             if (createLobbyForm) {
@@ -4561,13 +4540,12 @@
                         name: formData.get('name'),
                         scenario_type: formData.get('scenario_type'),
                         scenario_id: formData.get('scenario_id'),
-                        max_participants: parseInt(formData.get('max_participants')),
-                        is_private: formData.has('is_private'),
-                        password: formData.get('password')
+                        max_participants: parseInt(formData.get('max_participants'))
+                        // Removed is_private and password - all lobbies are now public
                     };
                     
                     if (window.socketClient) {
-                        console.log('🏗️ Creating lobby with data:', lobbyData);
+                        console.log('🏗️ Creating public lobby with data:', lobbyData);
                         window.socketClient.createTroubleshootingLobby(lobbyData);
                     } else {
                         console.error('❌ SocketClient not available for lobby creation');

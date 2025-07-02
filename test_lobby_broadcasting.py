@@ -22,8 +22,7 @@ def test_lobby_broadcasting():
         'name': 'Broadcast Test Session',
         'scenario_type': 'easy',
         'scenario_id': 'network',
-        'max_participants': 4,
-        'is_private': False
+        'max_participants': 4
     }
     
     lobby = lobby_manager.create_lobby(
@@ -42,7 +41,6 @@ def test_lobby_broadcasting():
     for lobby_data in public_lobbies:
         print(f"   - {lobby_data['name']} ({lobby_data['id']})")
         print(f"     Participants: {lobby_data['participant_count']}/{lobby_data['max_participants']}")
-        print(f"     Private: {lobby_data['is_private']}")
     
     # Simulate another user checking lobbies
     print("\n3. Simulating lobby browser user...")
@@ -56,8 +54,7 @@ def test_lobby_broadcasting():
         'name': 'Second Test Session',
         'scenario_type': 'medium',
         'scenario_id': 'split',
-        'max_participants': 6,
-        'is_private': False
+        'max_participants': 6
     }
     
     lobby2 = lobby_manager.create_lobby(

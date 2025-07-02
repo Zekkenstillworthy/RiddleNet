@@ -84,9 +84,7 @@ def create_lobby():
             'name': data.get('name', f"{current_user.username}'s Session"),
             'scenario_type': data.get('scenario_type', 'easy'),
             'scenario_id': data.get('scenario_id', 'network'),
-            'max_participants': data.get('max_participants', 6),
-            'is_private': data.get('is_private', False),
-            'password': data.get('password')
+            'max_participants': data.get('max_participants', 6)
         }
         
         lobby = lobby_manager.create_lobby(
@@ -111,14 +109,10 @@ def create_lobby():
 def join_lobby(lobby_id):
     """Join an existing lobby"""
     try:
-        data = request.get_json() or {}
-        password = data.get('password')
-        
         result = lobby_manager.join_lobby(
             lobby_id=lobby_id,
             user_id=str(current_user.id),
-            user_info={'username': current_user.username},
-            password=password
+            user_info={'username': current_user.username}
         )
         
         if result['success']:

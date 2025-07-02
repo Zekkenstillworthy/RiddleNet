@@ -26,8 +26,6 @@ class TroubleshootingLobby:
     network_state: Dict = field(default_factory=dict)  # shared network topology
     created_at: datetime = field(default_factory=datetime.utcnow)
     is_active: bool = True
-    is_private: bool = False
-    password: Optional[str] = None
     progress: Dict[str, any] = field(default_factory=dict)  # shared progress tracking
     chat_history: List[dict] = field(default_factory=list)
     
@@ -188,7 +186,6 @@ class TroubleshootingLobby:
             'network_state': self.network_state,
             'created_at': self.created_at.isoformat(),
             'is_active': self.is_active,
-            'is_private': self.is_private,
             'progress': self.progress,
             'recent_chat': self.chat_history[-5:] if self.chat_history else [],
             'last_activity': max(
@@ -237,9 +234,7 @@ class LobbyManager:
                 scenario_id=lobby_config['scenario_id'],
                 max_participants=lobby_config.get('max_participants', 6),
                 creator_id=creator_id,
-                creator_name=creator_name,
-                is_private=lobby_config.get('is_private', False),
-                password=lobby_config.get('password')
+                creator_name=creator_name
             )
             
             # Add creator as first participant
@@ -257,7 +252,7 @@ class LobbyManager:
             current_app.logger.info(f"Created lobby {lobby_id} by user {creator_name}")
             return lobby
     
-    def join_lobby(self, lobby_id: str, user_id: str, user_info: dict, password: str = None) -> dict:
+    def join_lobby(self, lobby_id: str, user_id: str, user_info: dict) -> dict:
         """Join an existing lobby"""
         with self._lock:
             if lobby_id not in self.lobbies:
@@ -272,10 +267,6 @@ class LobbyManager:
             # Check if lobby is full
             if len(lobby.participants) >= lobby.max_participants:
                 return {'success': False, 'error': 'Session is full'}
-            
-            # Check password for private lobbies
-            if lobby.is_private and lobby.password != password:
-                return {'success': False, 'error': 'Invalid password'}
             
             # Check if user is already in this lobby
             if user_id in lobby.participants:
@@ -321,11 +312,11 @@ class LobbyManager:
             return True
     
     def get_public_lobbies(self) -> List[dict]:
-        """Get list of public lobbies"""
+        """Get list of all active lobbies (all lobbies are now public)"""
         with self._lock:
             public_lobbies = []
             for lobby in self.lobbies.values():
-                if (lobby.is_active and not lobby.is_private):
+                if lobby.is_active:
                     lobby_dict = lobby.to_dict()
                     lobby_dict['is_joinable'] = len(lobby.participants) < lobby.max_participants
                     public_lobbies.append(lobby_dict)

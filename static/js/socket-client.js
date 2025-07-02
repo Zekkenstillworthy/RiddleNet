@@ -727,10 +727,10 @@ class SocketClient {
     /**
      * Join an existing troubleshooting lobby
      */
-    joinTroubleshootingLobby(lobbyId, password = null) {
+    joinTroubleshootingLobby(lobbyId) {
         return this.emit('join_troubleshooting_lobby', {
-            lobby_id: lobbyId,
-            password: password
+            lobby_id: lobbyId
+            // Removed password parameter - all lobbies are now public
         });
     }
     

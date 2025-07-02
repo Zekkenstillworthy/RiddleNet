@@ -23,15 +23,15 @@ def test_lobby_creation():
         'name': 'Test Collaborative Session',
         'scenario_type': 'medium',
         'scenario_id': 'split',
-        'max_participants': 4,
-        'is_private': False
+        'max_participants': 4
+        # Removed is_private - all lobbies are now public
     }
     
     lobby = lobby_manager.create_lobby('test_user_1', 'Test User', lobby_config)
     print(f"✅ Created lobby: {lobby.name} (ID: {lobby.id})")
     print(f"   📊 Max participants: {lobby.max_participants}")
     print(f"   🏷️  Scenario: {lobby.scenario_type} - {lobby.scenario_id}")
-    print(f"   🔓 Public: {not lobby.is_private}")
+    print(f"   🔓 Public: All lobbies are now public")
     
     return lobby
 

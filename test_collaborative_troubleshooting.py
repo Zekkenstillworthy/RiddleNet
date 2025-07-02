@@ -23,9 +23,8 @@ def test_lobby_creation():
         'name': 'Test Collaborative Session',
         'scenario_type': 'easy',
         'scenario_id': 'network',
-        'max_participants': 4,
-        'is_private': False,
-        'password': None
+        'max_participants': 4
+        # Removed is_private and password - all lobbies are now public
     }
     
     lobby = lobby_manager.create_lobby(
@@ -191,7 +190,7 @@ def main():
                 print("❌ Data serialization test failed")
                 return
         
-        print("\n" + "=" * 70)            
+            print("\n" + "=" * 70)            
             print("🎉 All tests completed successfully!")
             print("\n📋 System Features Verified:")
             print("   ✅ Lobby creation and management")

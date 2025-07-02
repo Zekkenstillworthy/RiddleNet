@@ -106,9 +106,7 @@ function createLobby(formData) {
         name: formData.name,
         scenario_type: formData.scenario_type,
         scenario_id: formData.scenario_id,
-        max_participants: formData.max_participants,
-        is_private: formData.is_private,
-        password: formData.password
+        max_participants: formData.max_participants
     };
     
     socketClient.createLobby(lobby);
@@ -116,8 +114,7 @@ function createLobby(formData) {
 ```
 
 #### Joining Sessions
-- Automatic lobby discovery
-- Password validation for private sessions
+- Automatic lobby discovery (all lobbies are public)
 - Real-time participant updates
 - Session state synchronization
 
@@ -164,8 +161,6 @@ CREATE TABLE lobbies (
     scenario_type VARCHAR(50) NOT NULL,
     scenario_id INTEGER,
     max_participants INTEGER DEFAULT 6,
-    is_private BOOLEAN DEFAULT FALSE,
-    password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) DEFAULT 'active'
 );

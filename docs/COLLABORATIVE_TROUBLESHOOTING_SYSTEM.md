@@ -83,8 +83,7 @@ const lobbyConfig = {
     name: "Team Network Lab",
     scenario_type: "medium",
     scenario_id: "split",
-    max_participants: 6,
-    is_private: false
+    max_participants: 6
 };
 
 window.socketClient.createTroubleshootingLobby(lobbyConfig);
@@ -92,8 +91,8 @@ window.socketClient.createTroubleshootingLobby(lobbyConfig);
 
 ### 2. **Join an Existing Session**
 ```javascript
-// Join by lobby ID
-window.socketClient.joinTroubleshootingLobby(lobbyId, password);
+// Join by lobby ID (all lobbies are public)
+window.socketClient.joinTroubleshootingLobby(lobbyId);
 ```
 
 ### 3. **Share Network Changes**
@@ -158,14 +157,12 @@ window.socketClient.updateNetworkTopology(changes);
 
 ### **Lobby Settings**
 ```python
-# Lobby configuration options
+# Lobby configuration options (all lobbies are public)
 {
     'name': 'Session Name',              # Display name
     'scenario_type': 'easy|medium|hard', # Difficulty level
     'scenario_id': 'network|passive|...',# Specific scenario
-    'max_participants': 2-8,             # Team size limit
-    'is_private': True/False,            # Public or private
-    'password': 'optional_password'      # For private sessions
+    'max_participants': 2-8             # Team size limit
 }
 ```
 
