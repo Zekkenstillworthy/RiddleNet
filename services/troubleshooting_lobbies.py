@@ -24,6 +24,8 @@ class TroubleshootingLobby:
     creator_name: str = None
     participants: Dict[str, dict] = field(default_factory=dict)  # user_id -> user_info
     network_state: Dict = field(default_factory=dict)  # shared network topology
+    device_locks: Dict[str, dict] = field(default_factory=dict)  # device_id -> lock_info
+    cli_history: Dict[str, List[dict]] = field(default_factory=dict)  # device_id -> commands
     created_at: datetime = field(default_factory=datetime.utcnow)
     is_active: bool = True
     progress: Dict[str, any] = field(default_factory=dict)  # shared progress tracking
@@ -42,13 +44,16 @@ class TroubleshootingLobby:
             'selected_device': None,
             'is_active': True,
             'color': self._generate_user_color(user_id),
-            'role': 'creator' if user_id == self.creator_id else 'participant'
+            'role': 'creator' if user_id == self.creator_id else 'participant',
+            'score': {'individual': 0, 'team_contribution': 0}
         }
         return True
     
     def remove_participant(self, user_id: str):
         """Remove a participant from the lobby"""
         if user_id in self.participants:
+            # Release all device locks held by this user
+            self._release_user_device_locks(user_id)
             del self.participants[user_id]
     
     def update_participant_cursor(self, user_id: str, position: dict):
@@ -56,6 +61,112 @@ class TroubleshootingLobby:
         if user_id in self.participants:
             self.participants[user_id]['cursor_position'] = position
             self.participants[user_id]['last_activity'] = datetime.utcnow().isoformat()
+    
+    def lock_device(self, device_id: str, user_id: str) -> dict:
+        """Lock a device for exclusive editing"""
+        # Check if device is already locked
+        if device_id in self.device_locks:
+            existing_lock = self.device_locks[device_id]
+            if existing_lock['locked_by'] != user_id:
+                # Check if lock has expired (5 minute timeout)
+                lock_time = datetime.fromisoformat(existing_lock['locked_at'])
+                if datetime.utcnow() - lock_time < timedelta(minutes=5):
+                    return {
+                        'success': False,
+                        'error': f"Device is locked by {existing_lock['username']}",
+                        'locked_by': existing_lock['locked_by']
+                    }
+        
+        # Lock the device
+        self.device_locks[device_id] = {
+            'locked_by': user_id,
+            'username': self.participants[user_id]['username'],
+            'locked_at': datetime.utcnow().isoformat(),
+            'auto_unlock_at': (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+        }
+        
+        return {'success': True}
+    
+    def unlock_device(self, device_id: str, user_id: str) -> dict:
+        """Unlock a device"""
+        if device_id not in self.device_locks:
+            return {'success': True}  # Already unlocked
+        
+        lock_info = self.device_locks[device_id]
+        
+        # Only the lock owner or creator can unlock
+        if lock_info['locked_by'] != user_id and user_id != self.creator_id:
+            return {
+                'success': False,
+                'error': 'Only the lock owner or lobby creator can unlock this device'
+            }
+        
+        del self.device_locks[device_id]
+        return {'success': True}
+    
+    def user_has_device_lock(self, device_id: str, user_id: str) -> bool:
+        """Check if user has lock on specific device"""
+        if device_id not in self.device_locks:
+            return True  # Device is not locked
+        
+        lock_info = self.device_locks[device_id]
+        
+        # Check if lock has expired
+        lock_time = datetime.fromisoformat(lock_info['locked_at'])
+        if datetime.utcnow() - lock_time >= timedelta(minutes=5):
+            del self.device_locks[device_id]
+            return True
+        
+        return lock_info['locked_by'] == user_id
+    
+    def user_can_access_device(self, device_id: str, user_id: str) -> bool:
+        """Check if user can access device (for CLI commands)"""
+        # Users can always view/execute commands on devices they don't have locked
+        # But only lock owner can modify device settings
+        return True
+    
+    def _release_user_device_locks(self, user_id: str):
+        """Release all device locks held by a user"""
+        devices_to_unlock = [
+            device_id for device_id, lock_info in self.device_locks.items()
+            if lock_info['locked_by'] == user_id
+        ]
+        
+        for device_id in devices_to_unlock:
+            del self.device_locks[device_id]
+    
+    def update_device_position(self, device_id: str, position: dict, user_id: str):
+        """Update device position in network state"""
+        if 'devices' not in self.network_state:
+            self.network_state['devices'] = {}
+        
+        if device_id in self.network_state['devices']:
+            self.network_state['devices'][device_id]['x'] = position.get('x', 0)
+            self.network_state['devices'][device_id]['y'] = position.get('y', 0)
+            self.network_state['devices'][device_id]['last_moved_by'] = user_id
+            self.network_state['devices'][device_id]['last_moved_at'] = datetime.utcnow().isoformat()
+    
+    def add_cli_command(self, device_id: str, user_id: str, command: str, output: str = '') -> dict:
+        """Add CLI command to history"""
+        if device_id not in self.cli_history:
+            self.cli_history[device_id] = []
+        
+        command_entry = {
+            'id': str(uuid.uuid4()),
+            'command': command,
+            'output': output,
+            'executed_by': user_id,
+            'username': self.participants[user_id]['username'],
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        self.cli_history[device_id].append(command_entry)
+        
+        # Keep only last 50 commands per device
+        if len(self.cli_history[device_id]) > 50:
+            self.cli_history[device_id] = self.cli_history[device_id][-50:]
+        
+        return command_entry
     
     def update_network_state(self, user_id: str, changes: dict):
         """Update shared network topology state"""
@@ -72,23 +183,49 @@ class TroubleshootingLobby:
                 self.network_state['connections'] = []
             
             # Merge new connections with existing ones
-            existing_connections = {f"{c['from']}-{c['to']}": c for c in self.network_state['connections']}
+            existing_connections = {f"{c.get('device1_id', c.get('from'))}-{c.get('device2_id', c.get('to'))}": c 
+                                  for c in self.network_state['connections']}
             for new_conn in changes['connections']:
-                key = f"{new_conn['from']}-{new_conn['to']}"
-                existing_connections[key] = new_conn
+                device1_id = new_conn.get('device1_id', new_conn.get('from'))
+                device2_id = new_conn.get('device2_id', new_conn.get('to'))
+                key = f"{device1_id}-{device2_id}"
+                # Also check reverse direction
+                reverse_key = f"{device2_id}-{device1_id}"
+                if key not in existing_connections and reverse_key not in existing_connections:
+                    existing_connections[key] = new_conn
             self.network_state['connections'] = list(existing_connections.values())
         
         if 'removed_devices' in changes:
             for device_id in changes['removed_devices']:
                 if str(device_id) in self.network_state.get('devices', {}):
                     del self.network_state['devices'][str(device_id)]
+                # Also remove connections involving this device
+                if 'connections' in self.network_state:
+                    self.network_state['connections'] = [
+                        c for c in self.network_state['connections'] 
+                        if not (c.get('device1_id') == str(device_id) or 
+                              c.get('device2_id') == str(device_id) or
+                              c.get('from') == str(device_id) or 
+                              c.get('to') == str(device_id))
+                    ]
         
         if 'removed_connections' in changes:
             if 'connections' in self.network_state:
                 for conn_to_remove in changes['removed_connections']:
+                    device1_id = conn_to_remove.get('device1_id', conn_to_remove.get('from'))
+                    device2_id = conn_to_remove.get('device2_id', conn_to_remove.get('to'))
+                    connection_id = conn_to_remove.get('id', conn_to_remove.get('connection_id'))
+                    
                     self.network_state['connections'] = [
                         c for c in self.network_state['connections'] 
-                        if not (c['from'] == conn_to_remove['from'] and c['to'] == conn_to_remove['to'])
+                        if not (
+                            (connection_id and c.get('id') == connection_id) or
+                            (device1_id and device2_id and 
+                             ((c.get('device1_id') == device1_id and c.get('device2_id') == device2_id) or
+                              (c.get('device1_id') == device2_id and c.get('device2_id') == device1_id) or
+                              (c.get('from') == device1_id and c.get('to') == device2_id) or
+                              (c.get('from') == device2_id and c.get('to') == device1_id)))
+                        )
                     ]
         
         # Track who made the change
@@ -184,6 +321,8 @@ class TroubleshootingLobby:
             'participants': self.participants,
             'participant_count': len(self.participants),
             'network_state': self.network_state,
+            'device_locks': self.device_locks,
+            'cli_history': self.cli_history,
             'created_at': self.created_at.isoformat(),
             'is_active': self.is_active,
             'progress': self.progress,

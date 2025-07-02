@@ -2911,25 +2911,65 @@
             });
         });
 
-        // Handle dragging devices
+        // Handle dragging devices with collaborative sync
         canvas.addEventListener("mousedown", (e) => {
             if (isConnectionMode) return; // Prevent dragging in connection mode
             const clickedDevice = findDeviceByPosition(e.offsetX, e.offsetY);
             if (clickedDevice) {
+                // Check if device is locked by another user
+                if (currentDeviceLocks[clickedDevice.id] && 
+                    currentDeviceLocks[clickedDevice.id].locked_by !== window.currentUserId) {
+                    showCollaborativeNotification(
+                        `Device ${clickedDevice.label} is locked by ${currentDeviceLocks[clickedDevice.id].username}`, 
+                        'warning', 
+                        3000
+                    );
+                    return;
+                }
+                
                 isDragging = true;
                 draggedDevice = clickedDevice;
+                
+                // Lock device for editing if in collaborative mode
+                if (currentLobby && window.socketClient) {
+                    window.socketClient.emit('lock_device', { 
+                        device_id: clickedDevice.id || clickedDevice.label 
+                    });
+                }
             }
         });
 
         canvas.addEventListener("mousemove", (e) => {
             if (isDragging && draggedDevice) {
+                const oldX = draggedDevice.x;
+                const oldY = draggedDevice.y;
+                
                 draggedDevice.x = e.offsetX;
                 draggedDevice.y = e.offsetY;
                 redrawCanvas(); // Redraw the canvas to show the updated position
+                
+                // Throttled collaborative sync of device movement
+                if (currentLobby && window.socketClient) {
+                    clearTimeout(window.deviceMoveTimeout);
+                    window.deviceMoveTimeout = setTimeout(() => {
+                        window.socketClient.emit('move_device', {
+                            device_id: draggedDevice.id || draggedDevice.label,
+                            position: { x: draggedDevice.x, y: draggedDevice.y }
+                        });
+                    }, 100); // Throttle to every 100ms
+                }
             }
         });
 
         canvas.addEventListener("mouseup", () => {
+            if (isDragging && draggedDevice) {
+                // Unlock device after dragging if in collaborative mode
+                if (currentLobby && window.socketClient) {
+                    window.socketClient.emit('unlock_device', { 
+                        device_id: draggedDevice.id || draggedDevice.label 
+                    });
+                }
+            }
             isDragging = false;
             draggedDevice = null;
         });
@@ -4860,6 +4900,600 @@
                         );
                     }
                 });
+
+                // === ENHANCED REAL-TIME EVENT HANDLERS ===
+
+                // Handle device additions from other participants
+                window.socketClient.on('device_added', function(data) {
+                    console.log('➕ Device added by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Create device from data
+                    const newDevice = createDeviceFromData(data.device);
+                    if (newDevice) {
+                        devices.push(newDevice);
+                        redrawCanvas();
+                        showCollaborativeNotification(`${data.username} added ${newDevice.label}`, 'info', 2000);
+                    }
+                });
+
+                // Handle device removals from other participants
+                window.socketClient.on('device_removed', function(data) {
+                    console.log('➖ Device removed by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Remove device locally
+                    const deviceIndex = devices.findIndex(d => (d.id === data.device_id) || (d.label === data.device_id));
+                    if (deviceIndex !== -1) {
+                        const removedDevice = devices[deviceIndex];
+                        devices.splice(deviceIndex, 1);
+                        
+                        // Remove associated connections
+                        connections = connections.filter(connection =>
+                            connection.device1 !== removedDevice && connection.device2 !== removedDevice
+                        );
+                        
+                        redrawCanvas();
+                        showCollaborativeNotification(`${data.username} removed ${removedDevice.label}`, 'info', 2000);
+                    }
+                });
+
+                // Handle connection additions from other participants
+                window.socketClient.on('connection_added', function(data) {
+                    console.log('🔗 Connection added by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Find devices and create connection
+                    const device1 = findDeviceById(data.connection.device1_id) || 
+                                   devices.find(d => d.label === data.connection.device1_id);
+                    const device2 = findDeviceById(data.connection.device2_id) || 
+                                   devices.find(d => d.label === data.connection.device2_id);
+                    
+                    if (device1 && device2) {
+                        // Check if connection already exists
+                        const existingConnection = connections.find(conn =>
+                            (conn.device1 === device1 && conn.device2 === device2) ||
+                            (conn.device1 === device2 && conn.device2 === device1)
+                        );
+                        
+                        if (!existingConnection) {
+                            connections.push({ device1, device2, type: data.connection.type });
+                            redrawCanvas();
+                            showCollaborativeNotification(`${data.username} connected ${device1.label} to ${device2.label}`, 'info', 2000);
+                        }
+                    }
+                });
+
+                // Handle connection removals from other participants
+                window.socketClient.on('connection_removed', function(data) {
+                    console.log('🔗❌ Connection removed by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Find and remove connection
+                    const device1 = findDeviceById(data.device1_id) || 
+                                   devices.find(d => d.label === data.device1_id);
+                    const device2 = findDeviceById(data.device2_id) || 
+                                   devices.find(d => d.label === data.device2_id);
+                    
+                    if (device1 && device2) {
+                        const connectionIndex = connections.findIndex(conn =>
+                            (conn.device1 === device1 && conn.device2 === device2) ||
+                            (conn.device1 === device2 && conn.device2 === device1)
+                        );
+                        
+                        if (connectionIndex !== -1) {
+                            connections.splice(connectionIndex, 1);
+                            redrawCanvas();
+                            showCollaborativeNotification(`${data.username} disconnected ${device1.label} from ${device2.label}`, 'info', 2000);
+                        }
+                    }
+                });
+
+                // Handle device configuration updates from other participants
+                window.socketClient.on('device_config_updated', function(data) {
+                    console.log('⚙️ Device config updated by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Update device configuration locally
+                    const device = findDeviceById(data.device_id);
+                    if (device) {
+                        Object.assign(device, data.config);
+                        redrawCanvas();
+                        showCollaborativeNotification(`${data.username} updated configuration for ${device.label}`, 'info', 2000);
+                    }
+                });
+
+                // Handle scenario progress updates
+                window.socketClient.on('scenario_progress_updated', function(data) {
+                    console.log('📈 Progress updated by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Update progress displays
+                    updateProgressDisplay(data.progress, data.lobby_progress);
+                    showCollaborativeNotification(`${data.username} made progress on the scenario`, 'success', 2000);
+                });
+
+                // Handle full state synchronization
+                window.socketClient.on('full_state_sync', function(data) {
+                    console.log('🔄 Full state sync received:', data);
+                    
+                    // Apply complete lobby state
+                    if (data.lobby) {
+                        currentLobby = data.lobby;
+                        updateParticipantsList(data.lobby.participants);
+                    }
+                    
+                    if (data.network_state) {
+                        syncFullNetworkState(data.network_state);
+                    }
+                    
+                    if (data.device_locks) {
+                        currentDeviceLocks = data.device_locks;
+                        updateAllDeviceLockUI();
+                    }
+                });
+
+                // Handle CLI command success confirmations
+                window.socketClient.on('cli_command_success', function(data) {
+                    console.log('✅ CLI command executed successfully:', data);
+                });
+
+                // Handle CLI command errors
+                window.socketClient.on('cli_command_error', function(data) {
+                    console.log('❌ CLI command error:', data);
+                    showCollaborativeNotification(`CLI Error: ${data.error}`, 'error', 3000);
+                });
+
+                // Handle device configuration denial
+                window.socketClient.on('device_config_denied', function(data) {
+                    console.log('🚫 Device config denied:', data.error);
+                    showCollaborativeNotification(data.error, 'warning', 3000);
+                });
+
+                // Handle device removal denial
+                window.socketClient.on('device_removal_denied', function(data) {
+                    console.log('🚫 Device removal denied:', data.error);
+                    showCollaborativeNotification(data.error, 'warning', 3000);
+                });
+
+                // === COLLABORATIVE REAL-TIME EVENT HANDLERS ===
+
+                // Handle network topology updates from other participants
+                window.socketClient.on('network_topology_updated', function(data) {
+                    console.log('🔄 Network topology updated by:', data.username, data);
+                    
+                    // Don't apply our own changes back to avoid loops
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Apply changes to local simulation state
+                    if (data.changes && data.network_state) {
+                        syncNetworkStateFromCollaborator(data.changes, data.network_state, data.username);
+                    }
+                    
+                    // Show brief notification
+                    showCollaborativeNotification(`${data.username} updated the network`, 'info', 2000);
+                });
+
+                // Handle device lock changes
+                window.socketClient.on('device_lock_changed', function(data) {
+                    console.log('🔒 Device lock changed:', data);
+                    updateDeviceLockUI(data.device_id, data.action === 'locked', data.username);
+                });
+
+                // Handle device movement from other participants
+                window.socketClient.on('device_moved', function(data) {
+                    console.log('🎯 Device moved by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Update device position locally
+                    const device = findDeviceById(data.device_id);
+                    if (device) {
+                        device.x = data.position.x;
+                        device.y = data.position.y;
+                        redrawCanvas();
+                        
+                        showCollaborativeNotification(`${data.username} moved ${device.label}`, 'info', 1500);
+                    }
+                });
+
+                // Handle CLI command execution from other participants
+                window.socketClient.on('cli_command_executed', function(data) {
+                    console.log('💻 CLI command executed by:', data.username, data);
+                    
+                    if (data.user_id === window.currentUserId) {
+                        return;
+                    }
+                    
+                    // Add command to shared CLI history
+                    addSharedCLICommand(data.device_id, data.command, data.output, data.username, data.timestamp);
+                    
+                    showCollaborativeNotification(`${data.username} executed: ${data.command}`, 'info', 3000);
+                });
+
+                // Handle device lock responses
+                window.socketClient.on('device_locked', function(data) {
+                    if (data.success) {
+                        console.log('✅ Device locked successfully:', data.device_id);
+                        currentDeviceLocks[data.device_id] = {
+                            locked_by: data.locked_by,
+                            username: data.username
+                        };
+                    } else {
+                        console.log('❌ Device lock failed:', data.error);
+                        showCollaborativeNotification(data.error, 'warning', 3000);
+                    }
+                });
+
+                window.socketClient.on('device_unlocked', function(data) {
+                    if (data.success) {
+                        console.log('✅ Device unlocked successfully:', data.device_id);
+                        delete currentDeviceLocks[data.device_id];
+                    } else {
+                        console.log('❌ Device unlock failed:', data.error);
+                    }
+                });
+
+                // Handle movement denial (when device is locked)
+                window.socketClient.on('device_move_denied', function(data) {
+                    console.log('🚫 Device move denied:', data.error);
+                    showCollaborativeNotification(data.error, 'warning', 3000);
+                });
+
+                // Handle CLI command denial
+                window.socketClient.on('cli_command_denied', function(data) {
+                    console.log('🚫 CLI command denied:', data.error);
+                    showCollaborativeNotification(data.error, 'warning', 3000);
+                });
+
+                // Handle lobby state synchronization
+                window.socketClient.on('lobby_state_sync', function(data) {
+                    console.log('🔄 Lobby state sync received:', data);
+                    
+                    if (data.lobby) {
+                        currentLobby = data.lobby;
+                        updateParticipantsList(data.lobby.participants);
+                    }
+                    
+                    if (data.network_state) {
+                        syncFullNetworkState(data.network_state);
+                    }
+                    
+                    if (data.device_locks) {
+                        currentDeviceLocks = data.device_locks;
+                        updateAllDeviceLockUI();
+                    }
+                });
+            }
+
+            // === COLLABORATIVE STATE MANAGEMENT ===
+            let currentDeviceLocks = {};
+            let sharedCLIHistory = {}; // device_id -> commands array
+
+            // Sync network state from collaborator
+            function syncNetworkStateFromCollaborator(changes, networkState, username) {
+                try {
+                    // Handle device additions/updates
+                    if (changes.devices) {
+                        Object.entries(changes.devices).forEach(([deviceId, deviceData]) => {
+                            let existingDevice = findDeviceById(deviceId);
+                            
+                            if (!existingDevice) {
+                                // Add new device
+                                const newDevice = createDeviceFromData(deviceData);
+                                if (newDevice) {
+                                    devices.push(newDevice);
+                                }
+                            } else {
+                                // Update existing device
+                                updateDeviceFromData(existingDevice, deviceData);
+                            }
+                        });
+                    }
+                    
+                    // Handle device removal
+                    if (changes.removed_devices && changes.removed_devices.length > 0) {
+                        changes.removed_devices.forEach(deviceId => {
+                            const deviceIndex = devices.findIndex(d => d.id === deviceId);
+                            if (deviceIndex !== -1) {
+                                devices.splice(deviceIndex, 1);
+                            }
+                        });
+                    }
+                    
+                    // Handle connection changes
+                    if (changes.connections) {
+                        // For now, replace all connections - in future could be more granular
+                        connections = changes.connections.map(connData => {
+                            const device1 = findDeviceById(connData.device1_id);
+                            const device2 = findDeviceById(connData.device2_id);
+                            return { device1, device2 };
+                        }).filter(conn => conn.device1 && conn.device2);
+                    }
+                    
+                    // Redraw canvas with updates
+                    redrawCanvas();
+                    
+                } catch (error) {
+                    console.error('Error syncing network state:', error);
+                }
+            }
+
+            // Create device from network state data
+            function createDeviceFromData(deviceData) {
+                try {
+                    let device;
+                    switch (deviceData.type) {
+                        case 'pc':
+                            device = new PC(deviceData.x, deviceData.y, deviceData.label);
+                            break;
+                        case 'router':
+                            device = new Router(deviceData.x, deviceData.y, deviceData.label);
+                            break;
+                        case 'switch':
+                            device = new Switch(deviceData.x, deviceData.y, deviceData.label);
+                            break;
+                        default:
+                            return null;
+                    }
+                    
+                    // Set additional properties
+                    device.id = deviceData.id;
+                    device.ipv4 = deviceData.ipv4 || '';
+                    device.ipv6 = deviceData.ipv6 || '';
+                    device.subnet = deviceData.subnet || '';
+                    device.protocol = deviceData.protocol || 'none';
+                    device.configured = deviceData.configured || false;
+                    
+                    return device;
+                } catch (error) {
+                    console.error('Error creating device from data:', error);
+                    return null;
+                }
+            }
+
+            // Update device from network state data
+            function updateDeviceFromData(device, deviceData) {
+                try {
+                    device.x = deviceData.x;
+                    device.y = deviceData.y;
+                    device.ipv4 = deviceData.ipv4 || device.ipv4;
+                    device.ipv6 = deviceData.ipv6 || device.ipv6;
+                    device.subnet = deviceData.subnet || device.subnet;
+                    device.protocol = deviceData.protocol || device.protocol;
+                    device.configured = deviceData.configured || device.configured;
+                } catch (error) {
+                    console.error('Error updating device from data:', error);
+                }
+            }
+
+            // Find device by ID
+            function findDeviceById(deviceId) {
+                return devices.find(device => device.id === deviceId);
+            }
+
+            // Broadcast network changes to collaborators
+            function broadcastNetworkChange(action, changeData) {
+                if (currentLobby && window.socketClient) {
+                    const networkUpdate = {
+                        action: action,
+                        devices: {},
+                        connections: [],
+                        removed_devices: [],
+                        removed_connections: [],
+                        ...changeData
+                    };
+                    
+                    window.socketClient.emit('update_network_topology', networkUpdate);
+                }
+            }
+
+            // Show collaborative notification
+            function showCollaborativeNotification(message, type = 'info', duration = 3000) {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `collab-notification ${type}`;
+                notification.innerHTML = `
+                    <i class="bx bx-info-circle"></i>
+                    <span>${message}</span>
+                `;
+                
+                // Add to DOM
+                document.body.appendChild(notification);
+                
+                // Auto-remove after duration
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, duration);
+            }
+
+            // Update device lock UI
+            function updateDeviceLockUI(deviceId, isLocked, username) {
+                const device = findDeviceById(deviceId);
+                if (!device) return;
+                
+                if (isLocked) {
+                    currentDeviceLocks[deviceId] = { username };
+                    // Add visual indicator for locked device
+                    redrawCanvas(); // Redraw with lock indicator
+                } else {
+                    delete currentDeviceLocks[deviceId];
+                    redrawCanvas();
+                }
+            }
+
+            // Update all device lock UI
+            function updateAllDeviceLockUI() {
+                redrawCanvas(); // Redraw with all current locks
+            }
+
+            // Add shared CLI command to history
+            function addSharedCLICommand(deviceId, command, output, username, timestamp) {
+                if (!sharedCLIHistory[deviceId]) {
+                    sharedCLIHistory[deviceId] = [];
+                }
+                
+                sharedCLIHistory[deviceId].push({
+                    command,
+                    output,
+                    username,
+                    timestamp,
+                    shared: true
+                });
+                
+                // Keep only last 20 commands per device
+                if (sharedCLIHistory[deviceId].length > 20) {
+                    sharedCLIHistory[deviceId] = sharedCLIHistory[deviceId].slice(-20);
+                }
+                
+                // Update CLI display if relevant device is selected
+                if (selectedDevice && selectedDevice.id === deviceId) {
+                    updateCLIDisplay(deviceId);
+                }
+            }
+
+            // === ENHANCED CANVAS EVENT HANDLERS FOR COLLABORATION ===
+
+            // Override the original addDevice function to include collaboration
+            const originalAddDevice = window.addDevice || addDevice;
+            function addDevice(type, x, y) {
+                const device = originalAddDevice.call(this, type, x, y);
+                
+                // Add unique ID for collaboration
+                if (device && !device.id) {
+                    device.id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                }
+                
+                // Broadcast device addition via specific event
+                if (currentLobby && device && window.socketClient) {
+                    const deviceData = {
+                        id: device.id,
+                        type: device.type,
+                        x: device.x,
+                        y: device.y,
+                        label: device.label,
+                        ipv4: device.ipv4 || '',
+                        ipv6: device.ipv6 || '',
+                        subnet: device.subnet || '',
+                        protocol: device.protocol || 'none',
+                        configured: device.configured || false
+                    };
+                    
+                    window.socketClient.emit('add_device', { device: deviceData });
+                }
+                
+                return device;
+            }
+
+            // Override the original addConnection function to include collaboration
+            const originalAddConnection = window.addConnection || addConnection;
+            function addConnection(device1, device2, connectionType = 'ethernet') {
+                const connection = originalAddConnection.call(this, device1, device2);
+                
+                // Broadcast connection addition
+                if (currentLobby && connection && window.socketClient && device1 && device2) {
+                    window.socketClient.emit('add_connection', {
+                        device1_id: device1.id || device1.label,
+                        device2_id: device2.id || device2.label,
+                        type: connectionType
+                    });
+                }
+                
+                return connection;
+            }
+
+            // Enhanced device removal with collaboration
+            function removeDeviceCollaborative(deviceToRemove) {
+                if (!deviceToRemove) return;
+                
+                // Check if device is locked by another user
+                if (currentDeviceLocks[deviceToRemove.id] && 
+                    currentDeviceLocks[deviceToRemove.id].locked_by !== window.currentUserId) {
+                    showCollaborativeNotification(
+                        `Device ${deviceToRemove.label} is locked by ${currentDeviceLocks[deviceToRemove.id].username}`, 
+                        'warning', 
+                        3000
+                    );
+                    return;
+                }
+                
+                // Remove device locally
+                devices = devices.filter(device => device !== deviceToRemove);
+                
+                // Remove associated connections
+                connections = connections.filter(connection =>
+                    connection.device1 !== deviceToRemove && connection.device2 !== deviceToRemove
+                );
+                
+                // Broadcast device removal
+                if (currentLobby && window.socketClient) {
+                    window.socketClient.emit('remove_device', { 
+                        device_id: deviceToRemove.id || deviceToRemove.label 
+                    });
+                }
+                
+                redrawCanvas();
+            }
+
+            // Enhanced connection removal with collaboration
+            function removeConnectionCollaborative(connectionToRemove) {
+                if (!connectionToRemove) return;
+                
+                // Remove connection locally
+                connections = connections.filter(conn => conn !== connectionToRemove);
+                
+                // Broadcast connection removal
+                if (currentLobby && window.socketClient) {
+                    window.socketClient.emit('remove_connection', {
+                        device1_id: connectionToRemove.device1.id || connectionToRemove.device1.label,
+                        device2_id: connectionToRemove.device2.id || connectionToRemove.device2.label
+                    });
+                }
+                
+                redrawCanvas();
+            }
+
+            // Enhanced CLI command execution with collaboration
+            function executeCliCommandCollaborative(command, device) {
+                if (!device || !command) return;
+                
+                // Execute command locally first
+                const originalOutput = handleCliCommand(command, device);
+                
+                // Broadcast CLI command execution
+                if (currentLobby && window.socketClient) {
+                    window.socketClient.emit('execute_cli_command', {
+                        device_id: device.id || device.label,
+                        command: command,
+                        output: originalOutput || `Executed: ${command}`
+                    });
+                }
+                
+                return originalOutput;
             }
             
             // Set up mouse tracking for collaborative cursor sync
@@ -4872,9 +5506,134 @@
                     }
                     mouseMoveThrottle = setTimeout(() => {
                         window.socketClient.updateCursorPosition(event.clientX, event.clientY);
-                    }, 50); // Update every 50ms max
+                    }, 100); // Update every 100ms
                 }
             });
+
+            // === COLLABORATIVE UTILITY FUNCTIONS ===
+
+            // Update progress display for collaborative scenarios
+            function updateProgressDisplay(individualProgress, teamProgress) {
+                // Update individual progress indicators
+                if (individualProgress) {
+                    const progressElements = document.querySelectorAll('.individual-progress');
+                    progressElements.forEach(element => {
+                        if (individualProgress.percentage !== undefined) {
+                            element.textContent = `${individualProgress.percentage}%`;
+                        }
+                    });
+                }
+                
+                // Update team progress indicators
+                if (teamProgress) {
+                    const teamElements = document.querySelectorAll('.team-progress');
+                    teamElements.forEach(element => {
+                        if (teamProgress.percentage !== undefined) {
+                            element.textContent = `Team: ${teamProgress.percentage}%`;
+                        }
+                    });
+                }
+            }
+
+            // Enhanced CLI handling with collaboration
+            function enhanceCliForCollaboration() {
+                const originalHandleCliCommand = window.handleCliCommand;
+                if (originalHandleCliCommand) {
+                    window.handleCliCommand = function(command, device) {
+                        // Execute command locally
+                        const result = originalHandleCliCommand.call(this, command, device);
+                        
+                        // Share with collaborators
+                        if (currentLobby && window.socketClient && device) {
+                            executeCliCommandCollaborative(command, device);
+                        }
+                        
+                        return result;
+                    };
+                }
+            }
+
+            // Sync full network state from backend
+            function syncFullNetworkState(networkState) {
+                try {
+                    console.log('🔄 Syncing full network state:', networkState);
+                    
+                    // Clear current state
+                    devices = [];
+                    connections = [];
+                    
+                    // Rebuild devices from network state
+                    if (networkState.devices) {
+                        Object.entries(networkState.devices).forEach(([deviceId, deviceData]) => {
+                            const device = createDeviceFromData(deviceData);
+                            if (device) {
+                                devices.push(device);
+                            }
+                        });
+                    }
+                    
+                    // Rebuild connections from network state
+                    if (networkState.connections) {
+                        networkState.connections.forEach(connData => {
+                            const device1 = findDeviceById(connData.device1_id) || 
+                                          devices.find(d => d.label === connData.device1_id);
+                            const device2 = findDeviceById(connData.device2_id) || 
+                                          devices.find(d => d.label === connData.device2_id);
+                            
+                            if (device1 && device2) {
+                                connections.push({ 
+                                    device1, 
+                                    device2, 
+                                    type: connData.type || 'ethernet' 
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Redraw canvas with synced state
+                    redrawCanvas();
+                    
+                    console.log('✅ Network state synced successfully');
+                } catch (error) {
+                    console.error('❌ Error syncing network state:', error);
+                }
+            }
+
+            // Enhanced troubleshooting scenario checking with collaboration
+            function enhanceScenarioChecking() {
+                const troubleshootBtn = document.getElementById("troubleshoot-btn");
+                if (troubleshootBtn) {
+                    const originalHandler = troubleshootBtn.onclick;
+                    troubleshootBtn.onclick = function() {
+                        // Run original scenario check
+                        const result = originalHandler ? originalHandler.call(this) : false;
+                        
+                        // Share progress with collaborators
+                        if (currentLobby && window.socketClient) {
+                            const progressData = {
+                                scenario_completed: result,
+                                timestamp: new Date().toISOString(),
+                                devices_count: devices.length,
+                                connections_count: connections.length
+                            };
+                            
+                            window.socketClient.emit('update_scenario_progress', {
+                                progress: progressData
+                            });
+                        }
+                        
+                        return result;
+                    };
+                }
+            }
+
+            // Initialize collaborative enhancements
+            function initCollaborativeEnhancements() {
+                enhanceCliForCollaboration();
+                enhanceScenarioChecking();
+                
+                console.log('✅ Collaborative enhancements initialized');
+            }
             
             // Test collaboration system readiness
             setTimeout(() => {
@@ -4948,6 +5707,10 @@
                         collabBtn.title = 'WebSocket connection required. Please refresh the page.';
                     }
                 }
+                
+                // Initialize collaborative enhancements
+                initCollaborativeEnhancements();
+                
             }, 1000);
         });
 

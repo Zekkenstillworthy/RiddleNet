@@ -804,44 +804,98 @@ class SocketClient {
      * Request full lobby state synchronization
      */
     requestLobbySync() {
-        return this.emit('request_lobby_sync');
+        return this.emit('request_full_sync');
     }
 
+    // === DEVICE AND CONNECTION MANAGEMENT ===
+    
     /**
-     * Start a health check to ensure connection is maintained
+     * Add a device in collaborative session
      */
-    startHealthCheck() {
-        // Clear any existing interval
-        if (this.healthCheckInterval) {
-            clearInterval(this.healthCheckInterval);
-        }
-        
-        // Send a ping every 60 seconds (reduced frequency to minimize server load)
-        this.healthCheckInterval = setInterval(() => {
-            if (this.connected && this.socket) {
-                try {
-                    // Use a simple emit instead of relying on server timestamp functions
-                    this.socket.emit('ping', { 
-                        client_time: Date.now(),
-                        client_id: this.socket.id 
-                    });
-                } catch (error) {
-                    console.warn('Health check ping failed:', error);
-                    // Don't treat this as a fatal error, just log it
-                }
-            }
-        }, 60000); // Changed from 30000 to 60000 (60 seconds)
+    addDevice(deviceData) {
+        return this.emit('add_device', { device: deviceData });
     }
-
+    
     /**
-     * Disconnect from the WebSocket server
+     * Remove a device in collaborative session
      */
-    disconnect() {
-        if (this.socket) {
-            this.socket.disconnect();
-            this.socket = null;
-            this.connected = false;
-        }
+    removeDevice(deviceId) {
+        return this.emit('remove_device', { device_id: deviceId });
+    }
+    
+    /**
+     * Add a connection in collaborative session
+     */
+    addConnection(device1Id, device2Id, connectionType = 'ethernet') {
+        return this.emit('add_connection', {
+            device1_id: device1Id,
+            device2_id: device2Id,
+            type: connectionType
+        });
+    }
+    
+    /**
+     * Remove a connection in collaborative session
+     */
+    removeConnection(device1Id, device2Id, connectionId = null) {
+        return this.emit('remove_connection', {
+            connection_id: connectionId,
+            device1_id: device1Id,
+            device2_id: device2Id
+        });
+    }
+    
+    /**
+     * Update device configuration in collaborative session
+     */
+    updateDeviceConfig(deviceId, configUpdates) {
+        return this.emit('update_device_config', {
+            device_id: deviceId,
+            config: configUpdates
+        });
+    }
+    
+    /**
+     * Move a device in collaborative session
+     */
+    moveDevice(deviceId, position) {
+        return this.emit('move_device', {
+            device_id: deviceId,
+            position: position
+        });
+    }
+    
+    /**
+     * Lock a device for editing in collaborative session
+     */
+    lockDevice(deviceId) {
+        return this.emit('lock_device', { device_id: deviceId });
+    }
+    
+    /**
+     * Unlock a device in collaborative session
+     */
+    unlockDevice(deviceId) {
+        return this.emit('unlock_device', { device_id: deviceId });
+    }
+    
+    /**
+     * Execute CLI command in collaborative session
+     */
+    executeCliCommand(deviceId, command) {
+        return this.emit('execute_cli_command', {
+            device_id: deviceId,
+            command: command
+        });
+    }
+    
+    /**
+     * Update scenario progress in collaborative session
+     */
+    updateScenarioProgress(progressData) {
+        return this.emit('update_scenario_progress', {
+            progress: progressData
+        });
     }
 }
 

@@ -611,10 +611,11 @@ def handle_network_update(data):
     except Exception as e:
         print(f"❌ Error updating network topology: {str(e)}")
 
-@socketio.on('send_lobby_chat')
+# Device Locking Events
+@socketio.on('lock_device')
 @authenticated_only
-def handle_lobby_chat(data):
-    """Handle chat messages in lobby"""
+def handle_lock_device(data):
+    """Lock a device for exclusive editing"""
     if not lobby_manager:
         return
     
@@ -623,26 +624,133 @@ def handle_lobby_chat(data):
         if not lobby:
             return
         
-        message = data.get('message', '').strip()
-        message_type = data.get('type', 'text')
-        
-        if not message:
+        device_id = data.get('device_id')
+        if not device_id:
             return
         
-        chat_message = lobby.add_chat_message(str(current_user.id), message, message_type)
-        lobby_manager.update_participant_activity(str(current_user.id))
+        # Check if device is already locked by another user
+        lock_result = lobby.lock_device(device_id, str(current_user.id))
         
-        # Broadcast message to all participants
+        if lock_result['success']:
+            room_name = f"troubleshooting_lobby_{lobby.id}"
+            
+            # Notify user of successful lock
+            emit('device_locked', {
+                'device_id': device_id,
+                'locked_by': str(current_user.id),
+                'username': current_user.username,
+                'success': True
+            })
+            
+            # Notify other participants
+            emit('device_lock_changed', {
+                'device_id': device_id,
+                'locked_by': str(current_user.id),
+                'username': current_user.username,
+                'action': 'locked'
+            }, room=room_name, include_self=False)
+        else:
+            emit('device_locked', {
+                'device_id': device_id,
+                'success': False,
+                'error': lock_result['error'],
+                'locked_by': lock_result.get('locked_by')
+            })
+    
+    except Exception as e:
+        print(f"❌ Error locking device: {str(e)}")
+
+@socketio.on('unlock_device')
+@authenticated_only  
+def handle_unlock_device(data):
+    """Unlock a device"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device_id = data.get('device_id')
+        if not device_id:
+            return
+        
+        unlock_result = lobby.unlock_device(device_id, str(current_user.id))
+        
+        if unlock_result['success']:
+            room_name = f"troubleshooting_lobby_{lobby.id}"
+            
+            # Notify user of successful unlock
+            emit('device_unlocked', {
+                'device_id': device_id,
+                'success': True
+            })
+            
+            # Notify other participants
+            emit('device_lock_changed', {
+                'device_id': device_id,
+                'locked_by': None,
+                'action': 'unlocked'
+            }, room=room_name, include_self=False)
+        else:
+            emit('device_unlocked', {
+                'device_id': device_id,
+                'success': False,
+                'error': unlock_result['error']
+            })
+    
+    except Exception as e:
+        print(f"❌ Error unlocking device: {str(e)}")
+
+# Real-time Device Movement
+@socketio.on('move_device')
+@authenticated_only
+def handle_move_device(data):
+    """Handle real-time device movement"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device_id = data.get('device_id')
+        position = data.get('position', {})
+        
+        if not device_id or not position:
+            return
+        
+        # Check if user has lock on this device
+        if not lobby.user_has_device_lock(device_id, str(current_user.id)):
+            emit('device_move_denied', {
+                'device_id': device_id,
+                'error': 'Device is locked by another user'
+            })
+            return
+        
+        # Update device position in network state
+        lobby.update_device_position(device_id, position, str(current_user.id))
+        
         room_name = f"troubleshooting_lobby_{lobby.id}"
-        emit('lobby_chat_message', chat_message, room=room_name)
+        
+        # Broadcast movement to other participants
+        emit('device_moved', {
+            'device_id': device_id,
+            'position': position,
+            'moved_by': str(current_user.id),
+            'username': current_user.username
+        }, room=room_name, include_self=False)
         
     except Exception as e:
-        print(f"❌ Error sending chat message: {str(e)}")
+        print(f"❌ Error moving device: {str(e)}")
 
-@socketio.on('update_troubleshooting_progress')
+# CLI Command Execution Events
+@socketio.on('execute_cli_command')
 @authenticated_only
-def handle_troubleshooting_progress_update(data):
-    """Handle troubleshooting progress updates"""
+def handle_cli_command(data):
+    """Handle CLI command execution in collaborative session"""
     if not lobby_manager:
         return
     
@@ -651,60 +759,380 @@ def handle_troubleshooting_progress_update(data):
         if not lobby:
             return
         
-        progress_data = {
-            'step': data.get('step'),
-            'completed_steps': data.get('completed_steps', []),
-            'issues_found': data.get('issues_found', []),
-            'solutions_applied': data.get('solutions_applied', [])
-        }
+        device_id = data.get('device_id')
+        command = data.get('command', '').strip()
         
-        lobby.update_progress(str(current_user.id), progress_data)
-        lobby_manager.update_participant_activity(str(current_user.id))
+        if not device_id or not command:
+            return
         
-        # Broadcast progress to all participants
+        # Check if user can access this device
+        if not lobby.user_can_access_device(device_id, str(current_user.id)):
+            emit('cli_command_denied', {
+                'device_id': device_id,
+                'error': 'Device access denied'
+            })
+            return
+        
+        # Process CLI command (this would include the actual command processing)
+        output = f"Command executed: {command}"  # Placeholder for actual command processing
+        
+        # Add to lobby CLI history
+        command_entry = lobby.add_cli_command(
+            device_id=device_id,
+            user_id=str(current_user.id),
+            command=command,
+            output=output
+        )
+        
         room_name = f"troubleshooting_lobby_{lobby.id}"
-        emit('troubleshooting_progress_updated', {
-            'user_progress': lobby.progress['team_progress'][str(current_user.id)],
-            'overall_progress': lobby.progress['overall'],
-            'team_progress': lobby.progress['team_progress']
-        }, room=room_name)
         
-        # Add progress message to chat
-        step_name = progress_data.get('step', 'Unknown step')
-        lobby.add_chat_message('system', 
-            f"{current_user.username} completed step: {step_name}", 
-            'progress')
+        # Broadcast CLI command to other participants
+        emit('cli_command_executed', {
+            'device_id': device_id,
+            'command': command,
+            'output': output,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': command_entry['timestamp']
+        }, room=room_name, include_self=False)
         
-        emit('lobby_chat_message', lobby.chat_history[-1], room=room_name)
-        
-    except Exception as e:
-        print(f"❌ Error updating troubleshooting progress: {str(e)}")
-
-@socketio.on('request_lobby_sync')
-@authenticated_only
-def handle_request_lobby_sync(data=None):
-    """Request full lobby state synchronization"""
-    if not lobby_manager:
-        return
-    
-    try:
-        lobby = lobby_manager.get_user_lobby(str(current_user.id))
-        if not lobby:
-            return
-        
-        lobby_manager.update_participant_activity(str(current_user.id))
-        
-        # Send complete lobby state
-        emit('lobby_state_sync', {
-            'lobby': lobby.to_dict(),
-            'network_state': lobby.network_state,
-            'participants': lobby.participants,
-            'chat_history': lobby.chat_history[-20:],  # Last 20 messages
-            'progress': lobby.progress
+        # Confirm to sender
+        emit('cli_command_success', {
+            'device_id': device_id,
+            'command': command,
+            'output': output
         })
         
+        print(f"🖥️ CLI command executed by {current_user.username}: {command}")
+        
     except Exception as e:
-        print(f"❌ Error syncing lobby state: {str(e)}")
+        print(f"❌ Error executing CLI command: {str(e)}")
+        emit('cli_command_error', {
+            'error': str(e)
+        })
+
+# Device Management Events
+@socketio.on('add_device')
+@authenticated_only
+def handle_add_device(data):
+    """Handle real-time device addition"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device_data = data.get('device')
+        if not device_data:
+            return
+        
+        # Generate unique device ID if not provided
+        if 'id' not in device_data:
+            device_data['id'] = f"{device_data.get('type', 'device')}_{datetime.datetime.utcnow().timestamp()}_{str(current_user.id)}"
+        
+        # Update network state
+        changes = {
+            'action': 'add_device',
+            'devices': {device_data['id']: device_data}
+        }
+        
+        lobby.update_network_state(str(current_user.id), changes)
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast device addition to other participants
+        emit('device_added', {
+            'device': device_data,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"➕ Device added by {current_user.username}: {device_data.get('type', 'unknown')}")
+        
+    except Exception as e:
+        print(f"❌ Error adding device: {str(e)}")
+
+@socketio.on('remove_device')
+@authenticated_only
+def handle_remove_device(data):
+    """Handle real-time device removal"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device_id = data.get('device_id')
+        if not device_id:
+            return
+        
+        # Check if device is locked by another user
+        if not lobby.user_has_device_lock(device_id, str(current_user.id)):
+            emit('device_removal_denied', {
+                'device_id': device_id,
+                'error': 'Device is locked by another user'
+            })
+            return
+        
+        # Update network state
+        changes = {
+            'action': 'remove_device',
+            'removed_devices': [device_id]
+        }
+        
+        lobby.update_network_state(str(current_user.id), changes)
+        
+        # Release any locks on this device
+        if device_id in lobby.device_locks:
+            del lobby.device_locks[device_id]
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast device removal to other participants
+        emit('device_removed', {
+            'device_id': device_id,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"➖ Device removed by {current_user.username}: {device_id}")
+        
+    except Exception as e:
+        print(f"❌ Error removing device: {str(e)}")
+
+# Connection Management Events
+@socketio.on('add_connection')
+@authenticated_only
+def handle_add_connection(data):
+    """Handle real-time connection addition"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device1_id = data.get('device1_id')
+        device2_id = data.get('device2_id')
+        connection_type = data.get('type', 'ethernet')
+        
+        if not device1_id or not device2_id:
+            return
+        
+        # Create connection data
+        connection_data = {
+            'id': f"conn_{device1_id}_{device2_id}_{datetime.datetime.utcnow().timestamp()}",
+            'device1_id': device1_id,
+            'device2_id': device2_id,
+            'type': connection_type,
+            'created_by': str(current_user.id),
+            'created_at': datetime.datetime.utcnow().isoformat()
+        }
+        
+        # Update network state
+        changes = {
+            'action': 'add_connection',
+            'connections': [connection_data]
+        }
+        
+        lobby.update_network_state(str(current_user.id), changes)
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast connection addition to other participants
+        emit('connection_added', {
+            'connection': connection_data,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"🔗 Connection added by {current_user.username}: {device1_id} <-> {device2_id}")
+        
+    except Exception as e:
+        print(f"❌ Error adding connection: {str(e)}")
+
+@socketio.on('remove_connection')
+@authenticated_only
+def handle_remove_connection(data):
+    """Handle real-time connection removal"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        connection_id = data.get('connection_id')
+        device1_id = data.get('device1_id')
+        device2_id = data.get('device2_id')
+        
+        if not (connection_id or (device1_id and device2_id)):
+            return
+        
+        # Update network state
+        if connection_id:
+            changes = {
+                'action': 'remove_connection',
+                'removed_connections': [{'id': connection_id}]
+            }
+        else:
+            changes = {
+                'action': 'remove_connection',
+                'removed_connections': [{'device1_id': device1_id, 'device2_id': device2_id}]
+            }
+        
+        lobby.update_network_state(str(current_user.id), changes)
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast connection removal to other participants
+        emit('connection_removed', {
+            'connection_id': connection_id,
+            'device1_id': device1_id,
+            'device2_id': device2_id,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"🔗❌ Connection removed by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error removing connection: {str(e)}")
+
+# Device Configuration Events
+@socketio.on('update_device_config')
+@authenticated_only
+def handle_device_config_update(data):
+    """Handle real-time device configuration updates"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        device_id = data.get('device_id')
+        config_updates = data.get('config', {})
+        
+        if not device_id or not config_updates:
+            return
+        
+        # Check if user has lock on this device
+        if not lobby.user_has_device_lock(device_id, str(current_user.id)):
+            emit('device_config_denied', {
+                'device_id': device_id,
+                'error': 'Device is locked by another user'
+            })
+            return
+        
+        # Update device configuration in network state
+        if 'devices' not in lobby.network_state:
+            lobby.network_state['devices'] = {}
+        
+        if device_id in lobby.network_state['devices']:
+            lobby.network_state['devices'][device_id].update(config_updates)
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast configuration update to other participants
+        emit('device_config_updated', {
+            'device_id': device_id,
+            'config': config_updates,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"⚙️ Device config updated by {current_user.username}: {device_id}")
+        
+    except Exception as e:
+        print(f"❌ Error updating device config: {str(e)}")
+
+# Progress Tracking Events
+@socketio.on('update_scenario_progress')
+@authenticated_only
+def handle_scenario_progress_update(data):
+    """Handle collaborative scenario progress updates"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        progress_data = data.get('progress', {})
+        
+        # Update lobby progress
+        if 'progress' not in lobby.__dict__:
+            lobby.progress = {}
+        
+        lobby.progress.update({
+            'last_updated_by': str(current_user.id),
+            'last_updated_at': datetime.datetime.utcnow().isoformat(),
+            **progress_data
+        })
+        
+        # Update participant's individual progress
+        if str(current_user.id) in lobby.participants:
+            if 'progress' not in lobby.participants[str(current_user.id)]:
+                lobby.participants[str(current_user.id)]['progress'] = {}
+            lobby.participants[str(current_user.id)]['progress'].update(progress_data)
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast progress update to other participants
+        emit('scenario_progress_updated', {
+            'progress': progress_data,
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'lobby_progress': lobby.progress,
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"📈 Progress updated by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error updating progress: {str(e)}")
+
+# Full State Synchronization
+@socketio.on('request_full_sync')
+@authenticated_only
+def handle_full_sync_request(data=None):
+    """Handle request for full lobby state synchronization"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            return
+        
+        # Send complete lobby state to requesting user
+        emit('full_state_sync', {
+            'lobby': lobby.to_dict(),
+            'network_state': lobby.network_state,
+            'device_locks': lobby.device_locks,
+            'participants': lobby.participants,
+            'progress': getattr(lobby, 'progress', {}),
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        })
+        
+        print(f"🔄 Full sync sent to {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error sending full sync: {str(e)}")
 
 # Browse lobbies room for discovery
 @socketio.on('join_lobby_browser')
