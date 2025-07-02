@@ -403,6 +403,122 @@ class SocketClient {
             this.showNotification('OTP Delivery Failed', 
                 data.message || 'Failed to send OTP email. Please try again or contact support.', 'error');
         }));
+
+        // ===== COLLABORATIVE TROUBLESHOOTING EVENTS =====
+        // Lobby Management Events
+        this.socket.on('lobby_created', safeHandler('lobby_created', (data) => {
+            console.log('🏢 Lobby created:', data);
+            this.trigger('lobby_created', data);
+            
+            if (data.success) {
+                this.showNotification('Session Created', 
+                    `Collaborative troubleshooting session "${data.lobby.name}" created successfully!`, 'success');
+            }
+        }));
+        
+        this.socket.on('lobby_joined', safeHandler('lobby_joined', (data) => {
+            console.log('🚪 Lobby joined:', data);
+            this.trigger('lobby_joined', data);
+            
+            if (data.success) {
+                this.showNotification('Session Joined', 
+                    `You've joined the collaborative session "${data.lobby.name}"`, 'success');
+            }
+        }));
+        
+        this.socket.on('lobby_left', safeHandler('lobby_left', (data) => {
+            console.log('🚪 Lobby left:', data);
+            this.trigger('lobby_left', data);
+            
+            if (data.success) {
+                this.showNotification('Session Left', 
+                    'You have left the collaborative session', 'info');
+            }
+        }));
+        
+        this.socket.on('public_lobbies', safeHandler('public_lobbies', (data) => {
+            console.log('📋 Public lobbies:', data);
+            this.trigger('public_lobbies', data);
+        }));
+        
+        this.socket.on('my_lobby', safeHandler('my_lobby', (data) => {
+            console.log('🏠 My lobby:', data);
+            this.trigger('my_lobby', data);
+        }));
+        
+        this.socket.on('new_lobby_available', safeHandler('new_lobby_available', (data) => {
+            console.log('🆕 New lobby available:', data);
+            this.trigger('new_lobby_available', data);
+            
+            this.showNotification('New Session Available', 
+                `"${data.lobby.name}" is now available to join!`, 'info');
+        }));
+
+        // Real-time Collaboration Events
+        this.socket.on('participant_joined', safeHandler('participant_joined', (data) => {
+            console.log('👋 Participant joined:', data);
+            this.trigger('participant_joined', data);
+            
+            this.showNotification('User Joined', 
+                `${data.username} joined the session`, 'info', 3000);
+        }));
+        
+        this.socket.on('participant_left', safeHandler('participant_left', (data) => {
+            console.log('👋 Participant left:', data);
+            this.trigger('participant_left', data);
+            
+            this.showNotification('User Left', 
+                `${data.username} left the session`, 'info', 3000);
+        }));
+        
+        this.socket.on('cursor_moved', safeHandler('cursor_moved', (data) => {
+            console.debug('🖱️ Cursor moved:', data);
+            this.trigger('cursor_moved', data);
+        }));
+        
+        this.socket.on('network_topology_updated', safeHandler('network_topology_updated', (data) => {
+            console.log('🔄 Network topology updated:', data);
+            this.trigger('network_topology_updated', data);
+        }));
+        
+        this.socket.on('network_state_sync', safeHandler('network_state_sync', (data) => {
+            console.log('🔄 Network state sync:', data);
+            this.trigger('network_state_sync', data);
+        }));
+        
+        this.socket.on('lobby_chat_message', safeHandler('lobby_chat_message', (data) => {
+            console.log('💬 Lobby chat message:', data);
+            this.trigger('lobby_chat_message', data);
+        }));
+        
+        this.socket.on('troubleshooting_progress_updated', safeHandler('troubleshooting_progress_updated', (data) => {
+            console.log('📊 Troubleshooting progress updated:', data);
+            this.trigger('troubleshooting_progress_updated', data);
+        }));
+        
+        this.socket.on('lobby_state_sync', safeHandler('lobby_state_sync', (data) => {
+            console.log('🔄 Lobby state sync:', data);
+            this.trigger('lobby_state_sync', data);
+        }));
+        
+        this.socket.on('lobby_closed_by_admin', safeHandler('lobby_closed_by_admin', (data) => {
+            console.log('⚠️ Lobby closed by admin:', data);
+            this.trigger('lobby_closed_by_admin', data);
+            
+            this.showNotification('Session Closed', 
+                data.message || 'This session has been closed by an administrator', 'warning');
+        }));
+
+        // Lobby Browser Events
+        this.socket.on('joined_lobby_browser', safeHandler('joined_lobby_browser', (data) => {
+            console.log('📋 Joined lobby browser:', data);
+            this.trigger('joined_lobby_browser', data);
+        }));
+        
+        this.socket.on('left_lobby_browser', safeHandler('left_lobby_browser', (data) => {
+            console.log('📋 Left lobby browser:', data);
+            this.trigger('left_lobby_browser', data);
+        }));
     }
 
     /**
@@ -597,6 +713,98 @@ class SocketClient {
             current_step: currentStep,
             completed_steps: completedSteps
         });
+    }
+
+    // ===== COLLABORATIVE TROUBLESHOOTING METHODS =====
+    
+    /**
+     * Create a new collaborative troubleshooting lobby
+     */
+    createTroubleshootingLobby(lobbyConfig) {
+        return this.emit('create_troubleshooting_lobby', lobbyConfig);
+    }
+    
+    /**
+     * Join an existing troubleshooting lobby
+     */
+    joinTroubleshootingLobby(lobbyId, password = null) {
+        return this.emit('join_troubleshooting_lobby', {
+            lobby_id: lobbyId,
+            password: password
+        });
+    }
+    
+    /**
+     * Leave current troubleshooting lobby
+     */
+    leaveTroubleshootingLobby() {
+        return this.emit('leave_troubleshooting_lobby');
+    }
+    
+    /**
+     * Get list of public lobbies
+     */
+    getPublicLobbies() {
+        return this.emit('get_public_lobbies');
+    }
+    
+    /**
+     * Get current user's lobby
+     */
+    getMyLobby() {
+        return this.emit('get_my_lobby');
+    }
+    
+    /**
+     * Join the lobby browser room
+     */
+    joinLobbyBrowser() {
+        return this.emit('join_lobby_browser');
+    }
+    
+    /**
+     * Leave the lobby browser room
+     */
+    leaveLobbyBrowser() {
+        return this.emit('leave_lobby_browser');
+    }
+    
+    /**
+     * Update cursor position for real-time collaboration
+     */
+    updateCursorPosition(x, y) {
+        return this.emit('update_cursor_position', { x, y });
+    }
+    
+    /**
+     * Update network topology in collaborative session
+     */
+    updateNetworkTopology(changes) {
+        return this.emit('update_network_topology', changes);
+    }
+    
+    /**
+     * Send a chat message in lobby
+     */
+    sendLobbyChat(message, type = 'text') {
+        return this.emit('send_lobby_chat', {
+            message: message,
+            type: type
+        });
+    }
+    
+    /**
+     * Update troubleshooting progress in collaborative session
+     */
+    updateCollaborativeTroubleshootingProgress(progressData) {
+        return this.emit('update_troubleshooting_progress', progressData);
+    }
+    
+    /**
+     * Request full lobby state synchronization
+     */
+    requestLobbySync() {
+        return this.emit('request_lobby_sync');
     }
 
     /**

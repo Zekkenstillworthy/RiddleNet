@@ -13,7 +13,7 @@ troubleshooting_bp = Blueprint('troubleshooting', __name__, url_prefix='/trouble
 
 # Initialize controller
 controller = TroubleshootingController()
-
+    
 @troubleshooting_bp.route('/')
 @login_required
 def index():

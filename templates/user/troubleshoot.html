@@ -88,6 +88,332 @@
         }
     }
 </style>
+
+<!-- Additional CSS for Collaborative Features -->
+<style>
+    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
+    
+    /* Lobby Browser Modal */
+    .lobby-browser-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.9);
+        width: 90%;
+        max-width: 1000px;
+        max-height: 80vh;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2001;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        overflow: hidden;
+    }
+
+    .lobby-browser-modal.active {
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .lobby-browser-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .lobby-browser-header h2 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .lobby-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        overflow-y: auto;
+        max-height: 400px;
+    }
+
+    .lobby-card {
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        transition: all var(--transition-speed) ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .lobby-card:hover {
+        background: var(--glass-bg-hover);
+        border-color: var(--cyber-glow);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    }
+
+    .lobby-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .lobby-name {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 18px;
+        margin: 0;
+    }
+
+    .lobby-participants {
+        background: var(--cyber-glow);
+        color: var(--background);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .lobby-scenario {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .lobby-creator {
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    .lobby-participants-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .participant-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    /* Create Lobby Modal */
+    .create-lobby-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 500px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        z-index: 2002;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+    }
+
+    .create-lobby-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 12px;
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+    }
+
+    /* Collaboration UI */
+    .collaboration-panel {
+        position: fixed;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 300px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        z-index: 1001;
+        display: none;
+    }
+
+    .participants-list {
+        margin-bottom: 20px;
+    }
+
+    .participant-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        margin-bottom: 8px;
+        background: var(--glass-bg-light);
+        border-radius: var(--border-radius);
+    }
+
+    .participant-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--neon-green);
+    }
+
+    .chat-container {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 12px;
+        margin-bottom: 12px;
+        background: var(--glass-bg-light);
+    }
+
+    .chat-message {
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .chat-message.system {
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .chat-message.progress {
+        color: var(--neon-green);
+    }
+
+    .chat-input {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+    }
+
+    /* User Cursors */
+    .user-cursor {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1000;
+        transition: all 0.1s ease;
+    }
+
+    .cursor-icon {
+        width: 20px;
+        height: 20px;
+        background: currentColor;
+        border-radius: 50% 0 50% 50%;
+        transform: rotate(-45deg);
+    }
+
+    .cursor-label {
+        position: absolute;
+        top: 25px;
+        left: 5px;
+        background: currentColor;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Responsive Design for Collaboration UI */
+    @media (max-width: 1024px) {
+        .collaboration-panel {
+            width: 280px;
+            right: 10px;
+        }
+        
+        .lobby-browser-modal {
+            width: 95%;
+            padding: 20px;
+        }
+        
+        .create-lobby-modal {
+            width: 90%;
+            max-width: 450px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .collaboration-panel {
+            width: 250px;
+            right: 5px;
+            top: auto;
+            bottom: 120px;
+            transform: none;
+        }
+        
+        .chat-container {
+            height: 150px;
+        }
+        
+        .lobby-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -1628,6 +1954,385 @@
                 0 0 30px var(--neon-green),
                 0 0 60px rgba(57, 255, 20, 0.7);
         }    }
+
+    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
+
+    /* Lobby Browser Modal */
+    .lobby-browser-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.9);
+        width: 90%;
+        max-width: 1000px;
+        max-height: 80vh;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2001;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        overflow: hidden;
+    }
+
+    .lobby-browser-modal.active {
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .lobby-browser-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .lobby-browser-header h2 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .lobby-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        overflow-y: auto;
+        max-height: 450px;
+        padding: 4px;
+    }
+
+    .lobby-card {
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        transition: all var(--transition-speed) ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lobby-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .lobby-card:hover {
+        background: var(--glass-bg-hover);
+        border-color: var(--cyber-glow);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    }
+
+    .lobby-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .lobby-name {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 18px;
+        margin: 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .lobby-participants {
+        background: var(--cyber-glow);
+        color: var(--background);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .lobby-scenario {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .lobby-creator {
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    .lobby-participants-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .participant-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Create Lobby Modal */
+    .create-lobby-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 500px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        z-index: 2002;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+    }
+
+    .create-lobby-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 12px;
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        transition: all var(--transition-speed) ease;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+    }
+        transform: translate(-50%, -50%);
+        width: 500px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        z-index: 2002;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+    }
+
+    .create-lobby-form {
+        display: flex;
+        z-index: 1001;
+        display: none;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .participants-list {
+        margin-bottom: 20px;
+    }
+
+    .participant-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        margin-bottom: 8px;
+        background: var(--glass-bg-light);
+        border-radius: var(--border-radius);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .participant-item:hover {
+        background: var(--glass-bg-hover);
+    }
+
+    .participant-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--neon-green);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .chat-container {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 12px;
+        margin-bottom: 12px;
+        background: var(--glass-bg-light);
+    }
+
+    .chat-message {
+        margin-bottom: 8px;
+        font-size: 14px;
+        word-wrap: break-word;
+    }
+
+    .chat-message.system {
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .chat-message.progress {
+        color: var(--neon-green);
+        font-weight: 500;
+    }
+
+    .chat-input {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--glass-bg-light);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+    }
+
+    /* User Cursors */
+    .user-cursor {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1000;
+        transition: all 0.1s ease;
+    }
+
+    .cursor-icon {
+        width: 20px;
+        height: 20px;
+        background: currentColor;
+        border-radius: 50% 0 50% 50%;
+        transform: rotate(-45deg);
+    }
+
+    .cursor-label {
+        position: absolute;
+        top: 25px;
+        left: 5px;
+        background: currentColor;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Connection Status Indicator */
+    .collaboration-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 12px;
+        z-index: 1000;
+        display: none;
+    }
+
+    .collaboration-status.connected {
+        border-color: var(--neon-green);
+        color: var(--neon-green);
+    }
+
+    .collaboration-status.disconnected {
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .collaboration-panel {
+            position: fixed;
+            bottom: 120px;
+            right: 10px;
+            left: 10px;
+            width: auto;
+            transform: none;
+        }
+
+        .lobby-browser-modal {
+            width: 95%;
+            max-height: 85vh;
+        }
+
+        .create-lobby-modal {
+            width: 95%;
+        }
+
+        .lobby-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <div id="app">
@@ -1755,6 +2460,128 @@
             </div>
         </div>
 
+        <!-- ===== COLLABORATIVE TROUBLESHOOTING MODALS ===== -->
+        
+        <!-- Lobby Browser Modal -->
+        <div id="lobbyBrowserModal" class="lobby-browser-modal">
+            <div class="lobby-browser-header">
+                <h2>Join Collaborative Session</h2>
+                <button class="profile-exit-btn" onclick="closeLobbyBrowser()">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-buttons" style="margin-bottom: 20px;">
+                <button class="action-btn" onclick="refreshLobbies()">
+                    <i class="bx bx-refresh"></i>
+                    <span class="label">Refresh</span>
+                </button>
+                <button class="action-btn" onclick="showCreateLobby()">
+                    <i class="bx bx-plus"></i>
+                    <span class="label">Create Session</span>
+                </button>
+            </div>
+            
+            <div id="lobbyGrid" class="lobby-grid">
+                <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>No active sessions found</p>
+                        <p style="font-size: 14px;">Create a new session to start collaborating!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Lobby Modal -->
+        <div id="createLobbyModal" class="create-lobby-modal">
+            <div class="modal-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="color: var(--cyber-glow); margin: 0;">Create Collaborative Session</h2>
+                <button class="profile-exit-btn" onclick="closeCreateLobby()">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+            
+            <form id="createLobbyForm" class="create-lobby-form">
+                <div class="form-group">
+                    <label for="lobbyName">Session Name</label>
+                    <input type="text" id="lobbyName" name="name" placeholder="Enter session name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scenarioType">Difficulty Level</label>
+                    <select id="scenarioType" name="scenario_type" required>
+                        <option value="easy">Easy - Basic Network Issues</option>
+                        <option value="medium">Medium - Advanced Troubleshooting</option>
+                        <option value="hard">Hard - Complex Network Problems</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scenarioId">Specific Scenario</label>
+                    <select id="scenarioId" name="scenario_id" required>
+                        <!-- Options will be populated based on difficulty -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="maxParticipants">Maximum Participants</label>
+                    <select id="maxParticipants" name="max_participants">
+                        <option value="2">2 Users</option>
+                        <option value="4">4 Users</option>
+                        <option value="6" selected>6 Users</option>
+                        <option value="8">8 Users</option>
+                    </select>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isPrivate" name="is_private">
+                    <label for="isPrivate">Private Session (requires password)</label>
+                </div>
+                
+                <div class="form-group" id="passwordGroup" style="display: none;">
+                    <label for="lobbyPassword">Session Password</label>
+                    <input type="password" id="lobbyPassword" name="password" placeholder="Enter password">
+                </div>
+                
+                <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px;">
+                    <button type="button" class="action-btn" onclick="closeCreateLobby()">Cancel</button>
+                    <button type="submit" class="action-btn" style="background: var(--gradient-primary);">
+                        <i class="bx bx-plus"></i>
+                        <span class="label">Create Session</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Collaboration Panel -->
+        <div id="collaborationPanel" class="collaboration-panel">
+            <h3 style="color: var(--cyber-glow); margin-bottom: 16px;">Team Session</h3>
+            
+            <div class="participants-list">
+                <h4 style="color: var(--text-primary); margin-bottom: 12px;">Participants</h4>
+                <div id="participantsList"></div>
+            </div>
+            
+            <div class="chat-container" id="chatContainer"></div>
+            
+            <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." 
+                   onkeypress="handleChatKeypress(event)">
+            
+            <div class="modal-buttons" style="margin-top: 16px;">
+                <button class="action-btn" onclick="leaveLobby()">
+                    <i class="bx bx-exit"></i>
+                    <span class="label">Leave Session</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Collaboration Status Indicator -->
+        <div id="collaborationStatus" class="collaboration-status">
+            <i class="bx bx-group"></i>
+            <span>Not connected</span>
+        </div>
+
 
         <!-- Main Canvas -->
         <div id="canvas-container">
@@ -1764,9 +2591,13 @@
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
         <div id="device-palette">
             <div class="palette-section left-section">
-                <div class="action-btn" id="select-scenario-btn" onclick="showScenarioSelection()">
-                    <i class='bx bx-list-ul'></i>
-                    <span class="label">Scenario</span>
+                <div class="action-btn" id="collaborative-session-btn" onclick="showLobbyBrowser()">
+                    <i class='bx bx-group'></i>
+                    <span class="label">Collaborate</span>
+                </div>
+                <div class="action-btn" id="solo-scenario-btn" onclick="showSoloScenarioSelection()">
+                    <i class='bx bx-user'></i>
+                    <span class="label">Solo Mode</span>
                 </div>
                 <div class="action-btn" id="troubleshoot-btn">
                     <i class='bx bx-check-shield'></i>
@@ -3190,7 +4021,10 @@
             topologySound.loop = false;
         }
 
-        document.getElementById("select-scenario-btn").addEventListener("click", resetScenarios);
+        const selectScenarioBtn = document.getElementById("select-scenario-btn");
+        if (selectScenarioBtn) {
+            selectScenarioBtn.addEventListener("click", resetScenarios);
+        }
 
         function markScenarioAsCompleted(difficulty, problemType) {
             const button = document.querySelector(`.select-btn[onclick="startScenario('${difficulty}', '${problemType}')"]`);
@@ -3230,10 +4064,576 @@
             button.addEventListener('click', playExitSound);
         });
 
-        // WebSocket Integration for Real-time Troubleshooting Updates
-        document.addEventListener('DOMContentLoaded', function () {
+        // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
+        // Note: These functions must be in global scope for onclick handlers to work
+        
+        // Lobby Management Variables
+        let currentLobby = null;
+        let userCursors = new Map();
+
+        // Global variables for enhanced lobby browser
+        let lobbyBrowserOpen = false;
+        let lobbyRefreshInterval = null;
+
+        // Lobby Browser Functions
+        function showLobbyBrowser() {
+            console.log('🎯 Collaboration button clicked!');
+            
+            // Check if socket client is available
+            if (!window.socketClient) {
+                console.error('❌ SocketClient not available. Please refresh the page.');
+                alert('WebSocket connection not available. Please refresh the page and try again.');
+                return;
+            }
+            
+            console.log('✅ SocketClient is available');
+            
+            // Show collaboration intro if first time
+            const hasSeenIntro = localStorage.getItem('riddlenet_collaboration_intro');
+            if (!hasSeenIntro) {
+                console.log('📋 Showing collaboration intro for first-time user');
+                showCollaborationIntro();
+                return;
+            }
+            
+            console.log('🔍 Opening lobby browser modal');
+            const modal = document.getElementById('lobbyBrowserModal');
+            if (!modal) {
+                console.error('❌ Lobby browser modal not found');
+                alert('Collaboration interface not loaded properly. Please refresh the page.');
+                return;
+            }
+            
+            modal.classList.add('active');
+            lobbyBrowserOpen = true;
+            console.log('✅ Modal opened successfully');
+            
+            // Join lobby browser room and set up auto-refresh
+            console.log('🌐 Joining lobby browser room...');
+            try {
+                window.socketClient.joinLobbyBrowser();
+                refreshLobbies();
+                console.log('✅ Successfully joined lobby browser and refreshed lobbies');
+                
+                // Set up automatic refresh every 15 seconds while browser is open
+                if (lobbyRefreshInterval) {
+                    clearInterval(lobbyRefreshInterval);
+                }
+                lobbyRefreshInterval = setInterval(() => {
+                    if (lobbyBrowserOpen) {
+                        console.log('🔄 Auto-refreshing lobby list...');
+                        refreshLobbies();
+                    }
+                }, 60000); // 60 seconds (reduced from 15 seconds)
+                
+            } catch (error) {
+                console.error('❌ Error joining lobby browser:', error);
+                alert('Failed to connect to collaboration system. Please try again.');
+            }
+        }
+
+        function showCollaborationIntro() {
+            const introHtml = `
+                <div class="collaboration-intro-modal" style="
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                    background: rgba(0,0,0,0.8); z-index: 9999; 
+                    display: flex; align-items: center; justify-content: center;
+                ">
+                    <div style="
+                        background: var(--glass-bg); backdrop-filter: blur(20px);
+                        border: 1px solid var(--glass-border); border-radius: 16px;
+                        padding: 40px; max-width: 600px; margin: 20px;
+                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+                    ">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <i class="bx bx-group" style="font-size: 64px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
+                            <h2 style="color: var(--cyber-glow); margin: 0;">Welcome to Collaboration!</h2>
+                        </div>
+                        
+                        <div style="color: var(--text-primary); line-height: 1.6; margin-bottom: 24px;">
+                            <p><strong>🚀 Revolutionary Team Learning:</strong></p>
+                            <p>Work together in real-time on network troubleshooting scenarios, just like professional IT teams!</p>
+                            
+                            <p><strong>✨ Key Features:</strong></p>
+                            <ul style="margin: 16px 0; padding-left: 20px;">
+                                <li>👥 Real-time cursor tracking</li>
+                                <li>🔄 Synchronized network topology</li>
+                                <li>💬 Built-in team chat</li>
+                                <li>📊 Shared progress tracking</li>
+                            </ul>
+                            
+                            <p><strong>🎯 Getting Started:</strong></p>
+                            <p>• <strong>Join Session:</strong> Browse available team sessions<br>
+                            • <strong>Create Session:</strong> Start your own collaborative workspace</p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="closeCollaborationIntro()" class="action-btn" style="
+                                background: var(--glass-bg); border: 1px solid var(--glass-border);
+                            ">Maybe Later</button>
+                            <button onclick="startCollaboration()" class="action-btn" style="
+                                background: var(--gradient-primary); color: white;
+                            ">🚀 Start Collaborating!</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', introHtml);
+        }
+
+        function closeCollaborationIntro() {
+            const modal = document.querySelector('.collaboration-intro-modal');
+            if (modal) modal.remove();
+        }
+
+        function startCollaboration() {
+            localStorage.setItem('riddlenet_collaboration_intro', 'seen');
+            closeCollaborationIntro();
+            
+            // Now show the actual lobby browser
+            const modal = document.getElementById('lobbyBrowserModal');
+            modal.classList.add('active');
+            
+            if (window.socketClient) {
+                window.socketClient.joinLobbyBrowser();
+                refreshLobbies();
+            }
+        }
+
+        function closeLobbyBrowser() {
+            const modal = document.getElementById('lobbyBrowserModal');
+            modal.classList.remove('active');
+            
+            // Leave lobby browser room
+            if (window.socketClient) {
+                window.socketClient.leaveLobbyBrowser();
+            }
+        }
+
+        function showCreateLobby() {
+            document.getElementById('createLobbyModal').style.display = 'flex';
+            updateScenarioOptions();
+        }
+
+        function closeCreateLobby() {
+            document.getElementById('createLobbyModal').style.display = 'none';
+        }
+
+        function updateScenarioOptions() {
+            const scenarioType = document.getElementById('scenarioType').value;
+            const scenarioSelect = document.getElementById('scenarioId');
+            
+            const scenarios = {
+                easy: [
+                    { id: 'network', name: 'Misconfigured Network Address' },
+                    { id: 'passive', name: 'Passive Interface' },
+                    { id: 'version', name: 'Incorrect Version' }
+                ],
+                medium: [
+                    { id: 'split', name: 'Split Horizon' },
+                    { id: 'hopcount', name: 'Maximum Hop Count Reached' },
+                    { id: 'timers', name: 'Timers Mismatch' }
+                ],
+                hard: [
+                    { id: 'flapping', name: 'Route Flapping' },
+                    { id: 'loops', name: 'Routing Loops' },
+                    { id: 'summarization', name: 'Incorrect Route Summarization' },
+                    { id: 'auth', name: 'Authentication Failure (RIP v2)' }
+                ]
+            };
+            
+            scenarioSelect.innerHTML = '';
+            scenarios[scenarioType].forEach(scenario => {
+                const option = document.createElement('option');
+                option.value = scenario.id;
+                option.textContent = scenario.name;
+                scenarioSelect.appendChild(option);
+            });
+        }
+
+        function refreshLobbies() {
+            console.log('🔄 Refreshing lobbies...');
+            if (window.socketClient) {
+                window.socketClient.getPublicLobbies();
+                console.log('✅ Lobby refresh request sent');
+            } else {
+                console.error('❌ SocketClient not available for lobby refresh');
+            }
+        }
+
+        function joinLobby(lobbyId, requiresPassword = false) {
+            let password = null;
+            
+            if (requiresPassword) {
+                password = prompt('Enter session password:');
+                if (!password) return;
+            }
+            
+            if (window.socketClient) {
+                window.socketClient.joinTroubleshootingLobby(lobbyId, password);
+            }
+        }
+
+        function leaveLobby() {
+            if (window.socketClient && currentLobby) {
+                window.socketClient.leaveTroubleshootingLobby();
+            }
+        }
+
+        // Chat functionality
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const message = input.value.trim();
+                
+                if (message && window.socketClient) {
+                    window.socketClient.sendLobbyChat(message, 'text');
+                    input.value = '';
+                }
+            }
+        }
+
+        function addChatMessage(messageData) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${messageData.type}`;
+            
+            const time = new Date(messageData.timestamp).toLocaleTimeString();
+            
+            if (messageData.type === 'system') {
+                messageDiv.innerHTML = `<span style="color: var(--text-muted);">[${time}] ${messageData.message}</span>`;
+            } else {
+                messageDiv.innerHTML = `
+                    <strong style="color: var(--cyber-glow);">${messageData.username}</strong>
+                    <span style="color: var(--text-muted); font-size: 12px;">[${time}]</span><br>
+                    <span style="color: var(--text-primary);">${messageData.message}</span>
+                `;
+            }
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateParticipantsList(participants) {
+            const container = document.getElementById('participantsList');
+            container.innerHTML = '';
+            
+            Object.values(participants).forEach(participant => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.innerHTML = `
+                    <div class="participant-status"></div>
+                    <div class="participant-avatar" style="background-color: ${participant.color};">
+                        ${participant.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span style="color: var(--text-primary);">${participant.username}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // User cursor management
+        function updateUserCursor(userId, username, position, color) {
+            let cursor = userCursors.get(userId);
+            
+            if (!cursor) {
+                cursor = document.createElement('div');
+                cursor.className = 'user-cursor';
+                cursor.style.color = color;
+                cursor.innerHTML = `
+                    <div class="cursor-icon"></div>
+                    <div class="cursor-label">${username}</div>
+                `;
+                document.body.appendChild(cursor);
+                userCursors.set(userId, cursor);
+            }
+            
+            cursor.style.left = position.x + 'px';
+            cursor.style.top = position.y + 'px';
+        }
+
+        function removeUserCursor(userId) {
+            const cursor = userCursors.get(userId);
+            if (cursor) {
+                cursor.remove();
+                userCursors.delete(userId);
+            }
+        }
+
+        function updateLobbyGrid(lobbies) {
+            const grid = document.getElementById('lobbyGrid');
+            
+            if (!grid) {
+                console.error('❌ Lobby grid element not found! Cannot update lobby list.');
+                return;
+            }
+            
+            console.log('🔄 Updating lobby grid with', lobbies.length, 'lobbies');
+            
+            if (lobbies.length === 0) {
+                grid.innerHTML = `
+                    <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <p>No active sessions found</p>
+                            <p style="font-size: 14px;">Create a new session to start collaborating!</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = lobbies.map(lobby => `
+                <div class="lobby-card" onclick="joinLobby('${lobby.id}', ${lobby.is_private})">
+                    <div class="lobby-card-header">
+                        <h3 class="lobby-name">${lobby.name}</h3>
+                        <span class="lobby-participants">${lobby.participant_count}/${lobby.max_participants}</span>
+                    </div>
+                    <div class="lobby-scenario">
+                        ${lobby.scenario_type.toUpperCase()}: ${lobby.scenario_id}
+                    </div>
+                    <div class="lobby-creator">Created by ${lobby.creator_name}</div>
+                    <div class="lobby-participants-list">
+                        ${Object.values(lobby.participants).map(p => 
+                            `<div class="participant-avatar" style="background-color: ${p.color};">
+                                ${p.username.charAt(0).toUpperCase()}
+                            </div>`
+                        ).join('')}
+                    </div>
+                    ${lobby.is_private ? '<div style="margin-top: 8px; color: var(--warning-color); font-size: 12px;"><i class="bx bx-lock"></i> Private Session</div>' : ''}
+                </div>
+            `).join('');
+            
+            console.log('✅ Lobby grid HTML updated');
+        }
+
+        function showCollaborationIntro() {
+            const introHtml = `
+                <div class="collaboration-intro-modal" style="
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                    background: rgba(0,0,0,0.8); z-index: 9999; 
+                    display: flex; align-items: center; justify-content: center;
+                ">
+                    <div style="
+                        background: var(--glass-bg); backdrop-filter: blur(20px);
+                        border: 1px solid var(--glass-border); border-radius: 16px;
+                        padding: 40px; max-width: 600px; margin: 20px;
+                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+                    ">
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <i class="bx bx-group" style="font-size: 64px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
+                            <h2 style="color: var(--cyber-glow); margin: 0;">Welcome to Collaboration!</h2>
+                        </div>
+                        
+                        <div style="color: var(--text-primary); line-height: 1.6; margin-bottom: 24px;">
+                            <p><strong>🚀 Revolutionary Team Learning:</strong></p>
+                            <p>Work together in real-time on network troubleshooting scenarios, just like professional IT teams!</p>
+                            
+                            <p><strong>✨ Key Features:</strong></p>
+                            <ul style="margin: 16px 0; padding-left: 20px;">
+                                <li>👥 Real-time cursor tracking</li>
+                                <li>🔄 Synchronized network topology</li>
+                                <li>💬 Built-in team chat</li>
+                                <li>📊 Shared progress tracking</li>
+                            </ul>
+                            
+                            <p><strong>🎯 Getting Started:</strong></p>
+                            <p>• <strong>Join Session:</strong> Browse available team sessions<br>
+                            • <strong>Create Session:</strong> Start your own collaborative workspace</p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; justify-content: center;">
+                            <button onclick="closeCollaborationIntro()" class="action-btn" style="
+                                background: var(--glass-bg); border: 1px solid var(--glass-border);
+                            ">Maybe Later</button>
+                            <button onclick="startCollaboration()" class="action-btn" style="
+                                background: var(--gradient-primary); color: white;
+                            ">🚀 Start Collaborating!</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', introHtml);
+        }
+
+        function closeCollaborationIntro() {
+            const modal = document.querySelector('.collaboration-intro-modal');
+            if (modal) modal.remove();
+        }
+
+        function startCollaboration() {
+            localStorage.setItem('riddlenet_collaboration_intro', 'seen');
+            closeCollaborationIntro();
+            
+            // Now show the actual lobby browser
+            const modal = document.getElementById('lobbyBrowserModal');
+            modal.classList.add('active');
+            
+            if (window.socketClient) {
+                window.socketClient.joinLobbyBrowser();
+                refreshLobbies();
+            }
+        }
+        
+        // Function to join a troubleshooting-specific room when scenario is selected
+        function joinTroubleshootingRoom(scenarioId) {
+            if (scenarioId && window.socketClient) {
+                window.socketClient.emit('join_troubleshooting', {
+                    scenario_id: scenarioId,
+                    page: 'troubleshooting'
+                });
+                console.log('Joined troubleshooting room:', scenarioId);
+            }
+        // Admin messages event handler
+        function setupAdminMessages() {
+            if (window.socketClient) {
+                window.socketClient.on('admin_troubleshooting_message', function (data) {
+                    console.log('Admin troubleshooting message:', data);
+                    window.socketClient.showNotification(
+                        `Message from ${data.admin_name}`,
+                        data.message
+                    );
+                });
+            }
+        }
+
+        // Emit troubleshooting events when user interacts
+        window.emitTroubleshootingUpdate = function (updateData) {
+            if (window.socketClient) {
+                window.socketClient.emit('troubleshooting_progress', {
+                    ...updateData,
+                    timestamp: new Date().toISOString(),
+                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
+                });
+            }
+        };
+
+        // Override scenario selection to join appropriate rooms
+        function setupScenarioSelection() {
+            const originalSelectScenario = window.selectScenario;
+            if (originalSelectScenario) {
+                window.selectScenario = function (scenarioId) {
+                    const result = originalSelectScenario(scenarioId);
+                    joinTroubleshootingRoom(scenarioId);
+                    return result;
+                };
+            }
+        }
+
+        // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
+        
+        // Lobby Management Variables
+        const currentLobby = null; // Using a single global instance
+
+                // The collaborative-session-btn is already set up with onclick="showLobbyBrowser()"
+                // All duplicate functions have been removed and consolidated
+                }
+
+        // Unified Event Handlers - Merged from multiple DOMContentLoaded blocks
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Setting up consolidated troubleshooting WebSocket and UI handlers...');
+            
+            // Handle scenario type change
+            const scenarioTypeSelect = document.getElementById('scenarioType');
+            if (scenarioTypeSelect) {
+                scenarioTypeSelect.addEventListener('change', updateScenarioOptions);
+            }
+
+            // Handle private session checkbox
+            const isPrivateCheckbox = document.getElementById('isPrivate');
+            if (isPrivateCheckbox) {
+                isPrivateCheckbox.addEventListener('change', function() {
+                    const passwordGroup = document.getElementById('passwordGroup');
+                    passwordGroup.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+
+            // Handle create lobby form submission
+            const createLobbyForm = document.getElementById('createLobbyForm');
+            if (createLobbyForm) {
+                createLobbyForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const lobbyData = {
+                        name: formData.get('name'),
+                        scenario_type: formData.get('scenario_type'),
+                        scenario_id: formData.get('scenario_id'),
+                        max_participants: parseInt(formData.get('max_participants')),
+                        is_private: formData.has('is_private'),
+                        password: formData.get('password')
+                    };
+                    
+                    if (window.socketClient) {
+                        console.log('🏗️ Creating lobby with data:', lobbyData);
+                        window.socketClient.createTroubleshootingLobby(lobbyData);
+                    } else {
+                        console.error('❌ SocketClient not available for lobby creation');
+                        alert('WebSocket connection not available. Please refresh the page.');
+                    }
+                });
+            }
+
+            // Update initial scenario options
+            updateScenarioOptions();
+            
+            // --- WebSocket Event Listeners for Troubleshooting ---
             if (window.socketClient) {
                 console.log('Setting up troubleshooting WebSocket handlers...');
+
+                // === LOBBY BROWSER EVENT HANDLERS ===
+                
+                // Handle public lobbies response
+                window.socketClient.on('public_lobbies', function(data) {
+                    console.log('📋 Received public lobbies:', data);
+                    if (data.success && data.lobbies) {
+                        console.log('🔄 Updating lobby grid with', data.lobbies.length, 'lobbies');
+                        updateLobbyGrid(data.lobbies);
+                        console.log('✅ Lobby grid updated successfully');
+                    } else {
+                        console.error('❌ Failed to get public lobbies:', data);
+                        updateLobbyGrid([]); // Show empty state
+                    }
+                });
+
+                // Handle new lobby availability broadcast
+                window.socketClient.on('new_lobby_available', function(data) {
+                    console.log('🆕 New lobby available:', data);
+                    // Refresh the lobby list to include the new lobby
+                    if (lobbyBrowserOpen) {
+                        refreshLobbies();
+                    }
+                });
+
+                // Handle lobby creation success
+                window.socketClient.on('lobby_created', function(data) {
+                    console.log('🏗️ Lobby created successfully:', data);
+                    if (data.success) {
+                        // Close create lobby modal
+                        const createModal = document.getElementById('createLobbyModal');
+                        if (createModal) {
+                            createModal.style.display = 'none';
+                        }
+                        
+                        // Show success notification
+                        if (window.socketClient.showNotification) {
+                            window.socketClient.showNotification(
+                                'Session Created!',
+                                `"${data.lobby.name}" has been created successfully.`,
+                                'success'
+                            );
+                        }
+                        
+                        // Refresh lobby list if browser is open
+                        if (lobbyBrowserOpen) {
+                            refreshLobbies();
+                        }
+                    }
+                });
+
+                // === TROUBLESHOOTING EVENT HANDLERS ===
 
                 // Join troubleshooting-specific room when scenario is selected
                 function joinTroubleshootingRoom(scenarioId) {
@@ -3250,7 +4650,7 @@
                 window.socketClient.on('troubleshooting_progress', function (data) {
                     console.log('Troubleshooting progress update:', data);
 
-                    // Update progress indicators
+                    // Update progress indicators[
                     if (data.progress_percentage !== undefined) {
                         const progressElement = document.querySelector('#progress-indicator');
                         if (progressElement) {
@@ -3287,45 +4687,58 @@
                         );
                     }
                 });
-
-                // Listen for admin messages specific to troubleshooting
-                window.socketClient.on('admin_troubleshooting_message', function (data) {
-                    console.log('Admin troubleshooting message:', data);
-                    window.socketClient.showNotification(
-                        `Message from ${data.admin_name}`,
-                        data.message
-                    );
-                });
-
-                // Emit troubleshooting events when user interacts
-                window.emitTroubleshootingUpdate = function (updateData) {
-                    if (window.socketClient) {
-                        window.socketClient.emit('troubleshooting_progress', {
-                            ...updateData,
-                            timestamp: new Date().toISOString(),
-                            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
-                        });
-                    }
-                };
-
-                // Override scenario selection to join appropriate rooms
-                const originalSelectScenario = window.selectScenario;
-                if (originalSelectScenario) {
-                    window.selectScenario = function (scenarioId) {
-                        const result = originalSelectScenario(scenarioId);
-                        joinTroubleshootingRoom(scenarioId);
-                        return result;
-                    };
-                }
-
-                console.log('Troubleshooting WebSocket handlers initialized');
-            } else {
-                console.warn('SocketClient not available for troubleshooting WebSocket integration');
             }
+            
+            // Test collaboration system readiness
+            setTimeout(() => {
+                console.log('🔍 Testing collaboration system readiness...');
+                
+                // Check if collaboration button exists
+                const collabBtn = document.getElementById('collaborative-session-btn');
+                if (collabBtn) {
+                    console.log('✅ Collaboration button found');
+                } else {
+                    console.error('❌ Collaboration button not found');
+                }
+                
+                // Check if modal exists
+                const modal = document.getElementById('lobbyBrowserModal');
+                if (modal) {
+                    console.log('✅ Lobby browser modal found');
+                } else {
+                    console.error('❌ Lobby browser modal not found');
+                }
+                
+                // Check if socket client is available
+                if (window.socketClient) {
+                    console.log('✅ SocketClient is available');
+                    console.log('✅ Collaboration system is ready!');
+                    
+                    // Add visual indicator that collaboration is ready
+                    if (collabBtn) {
+                        collabBtn.style.borderColor = 'var(--success-color)';
+                        collabBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
+                    }
+                } else {
+                    console.error('❌ SocketClient not available');
+                    console.warn('🔄 Collaboration system not ready - WebSocket client missing');
+                    
+                    // Add visual indicator that collaboration is not ready
+                    if (collabBtn) {
+                        collabBtn.style.borderColor = 'var(--warning-color)';
+                        collabBtn.style.opacity = '0.7';
+                        collabBtn.title = 'WebSocket connection required. Please refresh the page.';
+                    }
+                }
+            }, 1000);
         });
+
+        // ===== CONSOLIDATED COLLABORATION FUNCTIONS =====
+        // (All duplicate function definitions removed and consolidated into the main DOMContentLoaded block above)
     </script>
+
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
     <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
     <audio id="bgSound" src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}"></audio>
 
-    {% endblock %}
+{% endblock %}

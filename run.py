@@ -108,6 +108,11 @@ try:
         from user.routes.troubleshooting_routes import troubleshooting_bp
         app.register_blueprint(troubleshooting_bp)
         print("User Troubleshooting Blueprint registered successfully")
+        
+        # Register collaborative troubleshooting API blueprint
+        from user.routes.collaborative_troubleshooting_api import collaborative_troubleshooting_api_bp
+        app.register_blueprint(collaborative_troubleshooting_api_bp)
+        print("Collaborative Troubleshooting API Blueprint registered successfully")
     except Exception as e:
         print(f"Error registering User Troubleshooting blueprint: {e}")
     # No separate simulation blueprint registration needed
