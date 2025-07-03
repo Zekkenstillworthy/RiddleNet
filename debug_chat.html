@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Debug Test</title>
+    <style>
+        body {
+            background: #0F172A;
+            color: #F8FAFC;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .collaboration-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 1001;
+            display: block;
+        }
+        
+        .chat-container {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .chat-message {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .chat-message.system {
+            color: #64748B;
+            font-style: italic;
+        }
+        
+        .chat-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #F8FAFC;
+        }
+        
+        .debug-btn {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .debug-btn:hover {
+            background: #2563EB;
+        }
+        
+        .debug-panel {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .debug-log {
+            background: #000;
+            color: #00FF00;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        :root {
+            --cyber-glow: #00D9FF;
+            --text-primary: #F8FAFC;
+            --text-secondary: #CBD5E1;
+            --text-muted: #64748B;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-panel">
+        <h2>Chat Debug Test</h2>
+        <p>This test checks if the addChatMessage function works properly.</p>
+        
+        <button class="debug-btn" onclick="testSystemMessage()">Test System Message</button>
+        <button class="debug-btn" onclick="testUserMessage()">Test User Message</button>
+        <button class="debug-btn" onclick="testUserMessageWithImage()">Test User Message with Image</button>
+        <button class="debug-btn" onclick="clearChat()">Clear Chat</button>
+        <button class="debug-btn" onclick="testChatContainer()">Test Chat Container</button>
+        
+        <div class="debug-log" id="debugLog"></div>
+    </div>
+    
+    <div class="collaboration-panel">
+        <h3>Collaboration Panel</h3>
+        <div class="chat-container" id="chatContainer"></div>
+        <input type="text" class="chat-input" placeholder="Type a message..." onkeypress="handleChatKeypress(event)">
+    </div>
+    
+    <script>
+        // Debug logging function
+        function debugLog(message) {
+            const log = document.getElementById('debugLog');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `[${time}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+        
+        // Test functions
+        function testSystemMessage() {
+            debugLog('🤖 Testing system message...');
+            addChatMessage({
+                type: 'system',
+                message: 'This is a test system message',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        function testUserMessage() {
+            debugLog('👤 Testing user message...');
+            addChatMessage({
+                type: 'text',
+                username: 'Test User',
+                message: 'Hello, this is a test user message!',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        function testUserMessageWithImage() {
+            debugLog('🖼️ Testing user message with profile image...');
+            addChatMessage({
+                type: 'text',
+                username: 'Image User',
+                profile_image: 'test_avatar.jpg',
+                message: 'Hello, this is a test message with profile image!',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        function clearChat() {
+            debugLog('🧹 Clearing chat...');
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '';
+        }
+        
+        function testChatContainer() {
+            debugLog('🔍 Testing chat container...');
+            const container = document.getElementById('chatContainer');
+            if (container) {
+                debugLog('✅ Chat container found');
+                debugLog(`   - Display: ${getComputedStyle(container).display}`);
+                debugLog(`   - Visibility: ${getComputedStyle(container).visibility}`);
+                debugLog(`   - Width: ${getComputedStyle(container).width}`);
+                debugLog(`   - Height: ${getComputedStyle(container).height}`);
+                debugLog(`   - Children count: ${container.children.length}`);
+            } else {
+                debugLog('❌ Chat container not found!');
+            }
+        }
+        
+        // Chat message function (copied from your original code)
+        function addChatMessage(messageData) {
+            debugLog('💬 Adding chat message: ' + JSON.stringify(messageData));
+            
+            const container = document.getElementById('chatContainer');
+            if (!container) {
+                debugLog('❌ Chat container not found! Cannot display message.');
+                return;
+            }
+            
+            debugLog('✅ Chat container found, adding message...');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${messageData.type || 'text'}`;
+            
+            const time = new Date(messageData.timestamp).toLocaleTimeString();
+            
+            if (messageData.type === 'system') {
+                debugLog('🤖 Creating system message');
+                messageDiv.innerHTML = `<span style="color: var(--text-muted);">[${time}] ${messageData.message}</span>`;
+            } else {
+                debugLog('👤 Creating user message');
+                const username = messageData.username || 'Unknown User';
+                const message = messageData.message || '';
+                
+                // Create profile image or fallback
+                let avatarHtml = '';
+                if (messageData.profile_image) {
+                    avatarHtml = `
+                        <img src="/static/img/profiles/${messageData.profile_image}" 
+                             alt="${username}" 
+                             style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                        <div style="display: none; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                } else {
+                    avatarHtml = `
+                        <div style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                }
+                
+                messageDiv.innerHTML = `
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 4px;">
+                        ${avatarHtml}
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 2px;">
+                                <strong style="color: var(--cyber-glow);">${username}</strong>
+                                <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">[${time}]</span>
+                            </div>
+                            <div style="color: var(--text-primary);">${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            debugLog('✅ Chat message added successfully');
+        }
+        
+        // Chat input handling
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                const input = event.target;
+                const message = input.value.trim();
+                
+                if (message) {
+                    addChatMessage({
+                        type: 'text',
+                        username: 'You',
+                        message: message,
+                        timestamp: new Date().toISOString()
+                    });
+                    input.value = '';
+                }
+            }
+        }
+        
+        // Initialize
+        debugLog('🚀 Chat debug test initialized');
+        testChatContainer();
+    </script>
+</body>
+</html>

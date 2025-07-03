@@ -207,15 +207,36 @@
     }
 
     .participant-avatar {
-        width: 24px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 10px;
+        font-size: 14px;
         font-weight: 600;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid var(--cyber-glow);
+        box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+    }
+
+    .participant-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .participant-avatar .avatar-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background: inherit;
+        border-radius: 50%;
     }
 
     /* Create Lobby Modal */
@@ -363,6 +384,31 @@
         background: currentColor;
         border-radius: 50% 0 50% 50%;
         transform: rotate(-45deg);
+        position: relative;
+    }
+
+    .cursor-profile-img {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        object-fit: cover;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .cursor-profile-fallback {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        font-size: 10px;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .cursor-label {
@@ -3245,9 +3291,16 @@
             topologySound.play();
             topologySound.loop = true;
             // Update the "Select Scenario" button text and style
-            const selectScenarioBtn = document.getElementById("select-scenario-btn");
-            selectScenarioBtn.textContent = `Selected Scenario: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)}`;
-            selectScenarioBtn.classList.add('selected');
+            const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
+            if (selectScenarioBtn) {
+                const labelSpan = selectScenarioBtn.querySelector('.label');
+                if (labelSpan) {
+                    labelSpan.textContent = `${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)}`;
+                } else {
+                    selectScenarioBtn.textContent = `Selected Scenario: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)}`;
+                }
+                selectScenarioBtn.classList.add('selected');
+            }
 
             // Reapply the completed class to buttons if necessary
             document.querySelectorAll('.select-btn').forEach(button => {
@@ -3441,7 +3494,7 @@
                 case 'loops':
                     // Setup for Routing Loops problem
                     let routerA = new Router(200, 100, 'Router A');
-                    let routerB = new Router(400, 100, 'Router B');
+                    let routerB = new Router(400, 100, 'Router B');zz
                     let routerC = new Router(300, 250, 'Router C');
 
                     routerA.ipv4 = '192.168.30.1';
@@ -4044,9 +4097,16 @@
             showScenarioSelection();
 
             // Reset the "Select Scenario" button text and style
-            const selectScenarioBtn = document.getElementById("select-scenario-btn");
-            selectScenarioBtn.textContent = "Select Scenario";
-            selectScenarioBtn.classList.remove('selected');
+            const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
+            if (selectScenarioBtn) {
+                const labelSpan = selectScenarioBtn.querySelector('.label');
+                if (labelSpan) {
+                    labelSpan.textContent = "Solo Mode";
+                } else {
+                    selectScenarioBtn.textContent = "Select Scenario";
+                }
+                selectScenarioBtn.classList.remove('selected');
+            }
 
             const topologySound = document.getElementById('bgSound');
             topologySound.pause();
@@ -4327,24 +4387,80 @@
         }
 
         function addChatMessage(messageData) {
+            console.log('💬 Adding chat message:', messageData);
+            console.log('📋 Message data keys:', Object.keys(messageData));
+            console.log('📋 Message type:', messageData.type);
+            console.log('📋 Message content:', messageData.message);
+            
             const container = document.getElementById('chatContainer');
+            if (!container) {
+                console.error('❌ Chat container not found! Cannot display message.');
+                return;
+            }
+            
+            console.log('✅ Chat container found, adding message...');
+            
+            // Always ensure collaboration panel is visible when adding chat messages
+            const collaborationPanel = document.getElementById('collaborationPanel');
+            if (collaborationPanel) {
+                if (collaborationPanel.style.display === 'none' || !collaborationPanel.style.display) {
+                    console.log('⚠️ Collaboration panel was hidden. Making it visible to display chat.');
+                    collaborationPanel.style.display = 'block';
+                }
+                console.log('✅ Collaboration panel is now visible');
+            }
+            
             const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${messageData.type}`;
+            messageDiv.className = `chat-message ${messageData.type || 'text'}`;
             
             const time = new Date(messageData.timestamp).toLocaleTimeString();
             
             if (messageData.type === 'system') {
+                console.log('🤖 Creating system message');
                 messageDiv.innerHTML = `<span style="color: var(--text-muted);">[${time}] ${messageData.message}</span>`;
             } else {
+                console.log('👤 Creating user message');
+                const username = messageData.username || 'Unknown User';
+                const message = messageData.message || '';
+                
+                // Create profile image or fallback
+                let avatarHtml = '';
+                if (messageData.profile_image) {
+                    avatarHtml = `
+                        <img src="/static/img/profiles/${messageData.profile_image}" 
+                             alt="${username}" 
+                             style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                        <div style="display: none; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                } else {
+                    avatarHtml = `
+                        <div style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                }
+                
                 messageDiv.innerHTML = `
-                    <strong style="color: var(--cyber-glow);">${messageData.username}</strong>
-                    <span style="color: var(--text-muted); font-size: 12px;">[${time}]</span><br>
-                    <span style="color: var(--text-primary);">${messageData.message}</span>
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 4px;">
+                        ${avatarHtml}
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 2px;">
+                                <strong style="color: var(--cyber-glow);">${username}</strong>
+                                <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">[${time}]</span>
+                            </div>
+                            <div style="color: var(--text-primary);">${message}</div>
+                        </div>
+                    </div>
                 `;
             }
             
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
+            
+            console.log('✅ Chat message added successfully');
         }
 
         function updateParticipantsList(participants) {
@@ -4354,10 +4470,30 @@
             Object.values(participants).forEach(participant => {
                 const item = document.createElement('div');
                 item.className = 'participant-item';
+                
+                // Create avatar with profile image or fallback to initial
+                let avatarContent = '';
+                if (participant.profile_image) {
+                    avatarContent = `
+                        <img src="/static/img/profiles/${participant.profile_image}" 
+                             alt="${participant.username}" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="avatar-text" style="display: none; background-color: ${participant.color};">
+                            ${participant.username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                } else {
+                    avatarContent = `
+                        <div class="avatar-text" style="background-color: ${participant.color};">
+                            ${participant.username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                }
+                
                 item.innerHTML = `
                     <div class="participant-status"></div>
-                    <div class="participant-avatar" style="background-color: ${participant.color};">
-                        ${participant.username.charAt(0).toUpperCase()}
+                    <div class="participant-avatar">
+                        ${avatarContent}
                     </div>
                     <span style="color: var(--text-primary);">${participant.username}</span>
                 `;
@@ -4366,15 +4502,38 @@
         }
 
         // User cursor management
-        function updateUserCursor(userId, username, position, color) {
+        function updateUserCursor(userId, username, position, color, profileImage = null) {
             let cursor = userCursors.get(userId);
             
             if (!cursor) {
                 cursor = document.createElement('div');
                 cursor.className = 'user-cursor';
                 cursor.style.color = color;
+                
+                // Create cursor content with profile image or fallback
+                let cursorIconContent = '';
+                if (profileImage) {
+                    cursorIconContent = `
+                        <img src="/static/img/profiles/${profileImage}" 
+                             class="cursor-profile-img"
+                             alt="${username}" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="cursor-profile-fallback" style="display: none;">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                } else {
+                    cursorIconContent = `
+                        <div class="cursor-profile-fallback">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                    `;
+                }
+                
                 cursor.innerHTML = `
-                    <div class="cursor-icon"></div>
+                    <div class="cursor-icon">
+                        ${cursorIconContent}
+                    </div>
                     <div class="cursor-label">${username}</div>
                 `;
                 document.body.appendChild(cursor);
@@ -4427,11 +4586,28 @@
                     </div>
                     <div class="lobby-creator">Created by ${lobby.creator_name}</div>
                     <div class="lobby-participants-list">
-                        ${Object.values(lobby.participants).map(p => 
-                            `<div class="participant-avatar" style="background-color: ${p.color};">
-                                ${p.username.charAt(0).toUpperCase()}
-                            </div>`
-                        ).join('')}
+                        ${Object.values(lobby.participants).map(p => {
+                            let avatarContent = '';
+                            if (p.profile_image) {
+                                avatarContent = `
+                                    <img src="/static/img/profiles/${p.profile_image}" 
+                                         alt="${p.username}" 
+                                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background-color: ${p.color}; border-radius: 50%; font-size: 10px; font-weight: 600; color: white;">
+                                        ${p.username.charAt(0).toUpperCase()}
+                                    </div>
+                                `;
+                            } else {
+                                avatarContent = `
+                                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: ${p.color}; border-radius: 50%; font-size: 10px; font-weight: 600; color: white;">
+                                        ${p.username.charAt(0).toUpperCase()}
+                                    </div>
+                                `;
+                            }
+                            
+                            return `<div class="participant-avatar">${avatarContent}</div>`;
+                        }).join('')}
                     </div>
                     <div style="margin-top: 8px; color: var(--success-color); font-size: 12px;">
                         <i class="bx bx-group"></i> Public Session - Click to Join
@@ -4606,6 +4782,12 @@
             // --- WebSocket Event Listeners for Troubleshooting ---
             if (window.socketClient) {
                 console.log('Setting up troubleshooting WebSocket handlers...');
+                
+                // Check if user is already in a lobby when page loads
+                setTimeout(() => {
+                    console.log('🔍 Checking for existing lobby...');
+                    window.socketClient.getMyLobby();
+                }, 1000);
 
                 // === LOBBY BROWSER EVENT HANDLERS ===
                 
@@ -4657,6 +4839,67 @@
                     }
                 });
 
+                // Handle checking for existing lobby (when page loads)
+                window.socketClient.on('my_lobby', function(data) {
+                    console.log('🔍 My lobby check result:', data);
+                    if (data.success && data.lobby) {
+                        console.log('✅ User is already in lobby:', data.lobby.name);
+                        console.log('📊 Existing lobby data:', JSON.stringify(data, null, 2));
+                        
+                        // Set current lobby
+                        currentLobby = data.lobby;
+                        
+                        // Update collaboration status
+                        const statusIndicator = document.getElementById('collaborationStatus');
+                        if (statusIndicator) {
+                            statusIndicator.className = 'collaboration-status connected';
+                            statusIndicator.innerHTML = `<i class="bx bx-group"></i><span>In "${data.lobby.name}"</span>`;
+                        }
+                        
+                        // Update participants list
+                        if (data.lobby.participants) {
+                            updateParticipantsList(data.lobby.participants);
+                        }
+                        
+                        // Show collaboration panel
+                        const collabPanel = document.getElementById('collaborationPanel');
+                        if (collabPanel) {
+                            collabPanel.style.display = 'block';
+                            console.log('✅ Collaboration panel is now visible (existing lobby)');
+                        }
+                        
+                        // Load existing chat history
+                        const chatContainer = document.getElementById('chatContainer');
+                        if (chatContainer) {
+                            chatContainer.innerHTML = ''; // Clear first
+                            console.log('🧹 Chat container cleared for existing lobby content');
+                        }
+                        
+                        // Load recent chat history
+                        if (data.lobby.recent_chat && data.lobby.recent_chat.length > 0) {
+                            console.log('💬 Loading existing chat history:', data.lobby.recent_chat);
+                            console.log('📊 Number of existing messages:', data.lobby.recent_chat.length);
+                            data.lobby.recent_chat.forEach((chatMessage, index) => {
+                                console.log(`📝 Processing existing message ${index + 1}:`, chatMessage);
+                                addChatMessage(chatMessage);
+                            });
+                            console.log('✅ Existing chat history loading completed');
+                        } else {
+                            console.log('ℹ️ No existing chat history to load');
+                        }
+                        
+                        // Add a system message to indicate reconnection
+                        addChatMessage({
+                            type: 'system',
+                            message: 'Reconnected to the session',
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                    } else {
+                        console.log('ℹ️ User is not in any lobby currently');
+                    }
+                });
+
                 // Handle lobby join success
                 window.socketClient.on('lobby_joined', function(data) {
                     console.log('🚪 Successfully joined lobby:', data);
@@ -4690,6 +4933,33 @@
                             updateParticipantsList(data.lobby.participants);
                         }
                         
+                        // Show collaboration panel
+                        const collabPanel = document.getElementById('collaborationPanel');
+                        if (collabPanel) {
+                            collabPanel.style.display = 'block';
+                            console.log('✅ Collaboration panel is now visible');
+                        }
+                        
+                        // Clear any existing chat before loading new content
+                        const chatContainer = document.getElementById('chatContainer');
+                        if (chatContainer) {
+                            chatContainer.innerHTML = '';
+                            console.log('🧹 Chat container cleared for new lobby content');
+                        }
+                        
+                        // Load recent chat history
+                        if (data.lobby.recent_chat && data.lobby.recent_chat.length > 0) {
+                            console.log('💬 Loading recent chat history:', data.lobby.recent_chat);
+                            console.log('📊 Number of recent messages:', data.lobby.recent_chat.length);
+                            data.lobby.recent_chat.forEach((chatMessage, index) => {
+                                console.log(`📝 Processing message ${index + 1}:`, chatMessage);
+                                addChatMessage(chatMessage);
+                            });
+                            console.log('✅ Chat history loading completed');
+                        } else {
+                            console.log('ℹ️ No recent chat history to load');
+                        }
+                        
                         // ===== AUTOMATICALLY START THE COLLABORATIVE SCENARIO =====
                         // Get scenario information from the lobby
                         const scenarioType = data.lobby.scenario_type; // 'easy', 'medium', 'hard'
@@ -4700,14 +4970,20 @@
                         
                         // Automatically select and start the scenario
                         if (scenarioType && scenarioId) {
-                            // Update the scenario button to show selection
-                            const selectScenarioBtn = document.getElementById("select-scenario-btn");
+                            // Try to update the scenario button to show selection
+                            const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
                             if (selectScenarioBtn) {
-                                selectScenarioBtn.textContent = `Collaborative: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
+                                // Update the label span within the button
+                                const labelSpan = selectScenarioBtn.querySelector('.label');
+                                if (labelSpan) {
+                                    labelSpan.textContent = `${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
+                                } else {
+                                    selectScenarioBtn.textContent = `Collaborative: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
+                                }
                                 selectScenarioBtn.classList.add('selected');
                                 console.log('✅ Updated scenario button text');
                             } else {
-                                console.error('❌ Select scenario button not found');
+                                console.log('ℹ️ No scenario button found to update - this is OK for collaborative mode');
                             }
                             
                             // Start the scenario simulation
@@ -4758,34 +5034,44 @@
                 // Handle participant joining the session
                 window.socketClient.on('participant_joined', function(data) {
                     console.log('👤 Participant joined:', data);
-                    if (data.participant) {
+                    if (data.user_id && data.username && data.participant_data) {
                         // Update participants list
                         if (currentLobby && currentLobby.participants) {
-                            currentLobby.participants[data.participant.id] = data.participant;
+                            currentLobby.participants[data.user_id] = data.participant_data;
                             updateParticipantsList(currentLobby.participants);
+                            
+                            // Update the collaboration panel if it exists
+                            if (typeof updateCollaborationPanel === 'function') {
+                                updateCollaborationPanel();
+                            }
                         }
                         
                         // Add system message to chat
                         addChatMessage({
                             type: 'system',
-                            message: `${data.participant.username} joined the session`,
+                            message: `${data.username} joined the session`,
                             timestamp: new Date().toISOString()
                         });
+                        
+                        // Show notification
+                        if (window.socketClient.showNotification) {
+                            window.socketClient.showNotification(`${data.username} joined the session`, 'info');
+                        }
                     }
                 });
 
                 // Handle participant leaving the session
                 window.socketClient.on('participant_left', function(data) {
                     console.log('👤 Participant left:', data);
-                    if (data.participant_id) {
+                    if (data.user_id) {
                         // Update participants list
                         if (currentLobby && currentLobby.participants) {
-                            const username = currentLobby.participants[data.participant_id]?.username || 'Someone';
-                            delete currentLobby.participants[data.participant_id];
+                            const username = data.username || currentLobby.participants[data.user_id]?.username || 'Someone';
+                            delete currentLobby.participants[data.user_id];
                             updateParticipantsList(currentLobby.participants);
                             
                             // Remove user cursor if it exists
-                            removeUserCursor(data.participant_id);
+                            removeUserCursor(data.user_id);
                             
                             // Add system message to chat
                             addChatMessage({
@@ -4806,7 +5092,7 @@
                 // Handle cursor movement from other participants
                 window.socketClient.on('cursor_moved', function(data) {
                     if (data.user_id !== window.currentUserId) {
-                        updateUserCursor(data.user_id, data.username, data.position, data.color);
+                        updateUserCursor(data.user_id, data.username, data.position, data.color, data.profile_image);
                     }
                 });
 

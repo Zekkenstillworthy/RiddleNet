@@ -173,13 +173,8 @@ class SocketClient {
         this.socket.on('disconnect', (reason) => {
             console.log('🔌 Disconnected from WebSocket server:', reason);
             this.connected = false;
+            this.stopHealthCheck();
             this.trigger('disconnected', reason);
-            
-            // Clear health check interval
-            if (this.healthCheckInterval) {
-                clearInterval(this.healthCheckInterval);
-                this.healthCheckInterval = null;
-            }
             
             // Display connection status only if not a planned disconnect
             if (reason !== 'io client disconnect') {
@@ -624,6 +619,34 @@ class SocketClient {
         }
         
         return notification;
+    }
+
+    /**
+     * Start health check to monitor connection
+     */
+    startHealthCheck() {
+        // Clear any existing health check
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+        }
+        
+        // Start periodic health check
+        this.healthCheckInterval = setInterval(() => {
+            if (this.connected && this.socket) {
+                const timestamp = Date.now();
+                this.socket.emit('ping', { client_time: timestamp });
+            }
+        }, 30000); // Check every 30 seconds
+    }
+
+    /**
+     * Stop health check
+     */
+    stopHealthCheck() {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
     }
 
     /**

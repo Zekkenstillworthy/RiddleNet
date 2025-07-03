@@ -39,6 +39,7 @@ class TroubleshootingLobby:
         self.participants[user_id] = {
             'user_id': user_id,
             'username': user_info.get('username', 'Unknown'),
+            'profile_image': user_info.get('profile_image', None),
             'joined_at': datetime.utcnow().isoformat(),
             'cursor_position': {'x': 0, 'y': 0},
             'selected_device': None,
@@ -248,13 +249,17 @@ class TroubleshootingLobby:
         """Add a chat message to lobby history"""
         if user_id == 'system':
             username = 'System'
+            profile_image = None
         else:
-            username = self.participants.get(user_id, {}).get('username', 'Unknown')
+            participant = self.participants.get(user_id, {})
+            username = participant.get('username', 'Unknown')
+            profile_image = participant.get('profile_image', None)
         
         chat_message = {
             'id': str(uuid.uuid4()),
             'user_id': user_id,
             'username': username,
+            'profile_image': profile_image,
             'message': message,
             'type': message_type,  # 'text', 'system', 'action', 'progress'
             'timestamp': datetime.utcnow().isoformat()
@@ -361,7 +366,7 @@ class LobbyManager:
         self._cleanup_timer.daemon = True
         self._cleanup_timer.start()
     
-    def create_lobby(self, creator_id: str, creator_name: str, lobby_config: dict) -> TroubleshootingLobby:
+    def create_lobby(self, creator_id: str, creator_name: str, lobby_config: dict, creator_profile_image: str = None) -> TroubleshootingLobby:
         """Create a new troubleshooting lobby"""
         with self._lock:
             lobby_id = str(uuid.uuid4())[:8].upper()
@@ -379,6 +384,7 @@ class LobbyManager:
             # Add creator as first participant
             lobby.add_participant(creator_id, {
                 'username': creator_name,
+                'profile_image': creator_profile_image,
                 'is_creator': True
             })
             

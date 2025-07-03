@@ -363,6 +363,7 @@ def handle_create_lobby(data):
         lobby = lobby_manager.create_lobby(
             creator_id=str(current_user.id),
             creator_name=current_user.username,
+            creator_profile_image=current_user.profile_img,
             lobby_config=lobby_config
         )
         
@@ -408,7 +409,10 @@ def handle_join_lobby(data):
         result = lobby_manager.join_lobby(
             lobby_id=lobby_id,
             user_id=str(current_user.id),
-            user_info={'username': current_user.username}
+            user_info={
+                'username': current_user.username,
+                'profile_image': current_user.profile_img
+            }
         )
         
         if result['success']:
@@ -425,11 +429,19 @@ def handle_join_lobby(data):
             })
             
             # Notify other participants of new user
-            emit('participant_joined', {
+            participant_data = lobby.participants[str(current_user.id)]
+            join_event_data = {
                 'user_id': str(current_user.id),
                 'username': current_user.username,
-                'participant_data': lobby.participants[str(current_user.id)]
-            }, room=room_name, include_self=False)
+                'participant_data': participant_data
+            }
+            
+            print(f"🔍 Emitting participant_joined event:")
+            print(f"   Room: {room_name}")
+            print(f"   Event data: {join_event_data}")
+            print(f"   Participants in lobby: {list(lobby.participants.keys())}")
+            
+            emit('participant_joined', join_event_data, room=room_name, include_self=False)
             
             # Send current network state to new participant
             emit('network_state_sync', {
@@ -562,7 +574,8 @@ def handle_cursor_update(data):
             'user_id': str(current_user.id),
             'username': current_user.username,
             'position': position,
-            'color': lobby.participants[str(current_user.id)]['color']
+            'color': lobby.participants[str(current_user.id)]['color'],
+            'profile_image': current_user.profile_img
         }, room=room_name, include_self=False)
         
     except Exception as e:
@@ -1105,6 +1118,45 @@ def handle_scenario_progress_update(data):
         
     except Exception as e:
         print(f"❌ Error updating progress: {str(e)}")
+
+# Chat Events
+@socketio.on('send_lobby_chat')
+@authenticated_only
+def handle_send_lobby_chat(data):
+    """Handle sending chat messages in collaborative lobby"""
+    if not lobby_manager:
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            emit('lobby_chat_error', {'error': 'Not in any lobby'})
+            return
+        
+        message = data.get('message', '').strip()
+        message_type = data.get('type', 'text')
+        
+        if not message:
+            emit('lobby_chat_error', {'error': 'Message cannot be empty'})
+            return
+        
+        # Add chat message to lobby
+        chat_message = lobby.add_chat_message(
+            user_id=str(current_user.id),
+            message=message,
+            message_type=message_type
+        )
+        
+        room_name = f"troubleshooting_lobby_{lobby.id}"
+        
+        # Broadcast chat message to all participants in the lobby
+        emit('lobby_chat_message', chat_message, room=room_name)
+        
+        print(f"💬 Chat message from {current_user.username} in lobby {lobby.id}: {message}")
+        
+    except Exception as e:
+        print(f"❌ Error sending chat message: {str(e)}")
+        emit('lobby_chat_error', {'error': str(e)})
 
 # Full State Synchronization
 @socketio.on('request_full_sync')

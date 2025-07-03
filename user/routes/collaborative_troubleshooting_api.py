@@ -90,6 +90,7 @@ def create_lobby():
         lobby = lobby_manager.create_lobby(
             creator_id=str(current_user.id),
             creator_name=current_user.username,
+            creator_profile_image=current_user.profile_img,
             lobby_config=lobby_config
         )
         
