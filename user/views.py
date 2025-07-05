@@ -1,8 +1,8 @@
 from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
 from sqlalchemy import func
 import os
+from datetime import datetime
 import sys
-import datetime
 import traceback
 import random
 from werkzeug.utils import secure_filename
@@ -500,7 +500,7 @@ def update_profile():
                 socketio.emit('profile_updated', {
                     'user_id': user.id,
                     'username': user.username,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 }, room=f'user_{user.id}')
         except Exception as e:
             print(f"WebSocket notification failed: {e}")
@@ -595,7 +595,7 @@ def save_crimping_score():
                     'username': user.username if user else 'Unknown',
                     'score': score,
                     'wiring_type': wiring_type,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 }, room=f'user_{user_id}')
         except Exception as e:
             print(f"WebSocket notification failed: {e}")
@@ -633,7 +633,7 @@ def logout():
                 'user_id': user_id,
                 'username': username,
                 'action': 'logout',
-                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
             }, room='admin_room')
             
@@ -641,7 +641,7 @@ def logout():
             socketio.emit('logout_complete', {
                 'status': 'success',
                 'message': f'Goodbye, {username}!',
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room=f'user_{user_id}')
             
             print(f"WebSocket logout notifications sent for user: {username}")
@@ -680,7 +680,7 @@ def login():
             socketio.emit('user_login_activity', {
                 'username': username,
                 'action': 'login_attempt_started',
-                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
                 'user_agent': request.headers.get('User-Agent', 'unknown')
             }, room='admin_room')
@@ -701,7 +701,7 @@ def login():
                     'username': username,
                     'action': 'login_failed',
                     'reason': 'user_not_found',
-                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                 }, room='admin_room')
         except Exception as ws_error:
@@ -724,7 +724,7 @@ def login():
                     'username': username,
                     'action': 'login_failed',
                     'reason': 'invalid_password',
-                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                 }, room='admin_room')
         except Exception as ws_error:
@@ -744,7 +744,7 @@ def login():
                         'username': username,
                         'action': 'login_failed',
                         'reason': 'otp_required_but_not_provided',
-                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                     }, room='admin_room')
             except Exception as ws_error:
@@ -766,7 +766,7 @@ def login():
                             'username': username,
                             'action': 'login_failed',
                             'reason': 'invalid_otp',
-                            'timestamp': datetime.datetime.utcnow().isoformat(),
+                            'timestamp': datetime.utcnow().isoformat(),
                             'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                         }, room='admin_room')
                 except Exception as ws_error:
@@ -775,7 +775,7 @@ def login():
                 return render_template('user/index.html', message='Invalid OTP code. Please try again or request a new code.')
                 
             # Check if OTP is expired (10 minutes)
-            current_time = datetime.datetime.now()
+            current_time = datetime.now()
             if user.otp_generated_at:
                 otp_age = current_time - user.otp_generated_at
                 if otp_age.total_seconds() > 600:  # 10 minutes in seconds
@@ -791,7 +791,7 @@ def login():
                                 'action': 'login_failed',
                                 'reason': 'otp_expired',
                                 'otp_age_minutes': round(otp_age.total_seconds() / 60, 2),
-                                'timestamp': datetime.datetime.utcnow().isoformat(),
+                                'timestamp': datetime.utcnow().isoformat(),
                                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                             }, room='admin_room')
                     except Exception as ws_error:
@@ -810,7 +810,7 @@ def login():
                             'username': username,
                             'action': 'login_failed',
                             'reason': 'otp_timestamp_missing',
-                            'timestamp': datetime.datetime.utcnow().isoformat(),
+                            'timestamp': datetime.utcnow().isoformat(),
                             'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                         }, room='admin_room')
                 except Exception as ws_error:
@@ -836,7 +836,7 @@ def login():
                         'action': 'login_failed',
                         'reason': 'otp_validation_error',
                         'error': str(e),
-                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                     }, room='admin_room')
             except Exception as ws_error:
@@ -862,7 +862,7 @@ def login():
                 'username': username,
                 'action': 'login_successful',
                 'email': user.email,
-                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
                 'user_agent': request.headers.get('User-Agent', 'unknown')
             }, room='admin_room')
@@ -871,7 +871,7 @@ def login():
             socketio.emit('login_success', {
                 'status': 'success',
                 'message': f'Welcome back, {username}!',
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room=f'user_{user.id}')
             
             print(f"WebSocket login success notifications sent for user: {username}")
@@ -965,7 +965,7 @@ def send_otp():
             
             # Update the user's OTP in the database
             user.otp = otp
-            user.otp_generated_at = datetime.datetime.now()
+            user.otp_generated_at = datetime.now()
             user.totp_enabled = True  # Keep this flag for consistency
             db.session.commit()
             
@@ -979,7 +979,7 @@ def send_otp():
                         'username': username,
                         'action': 'otp_requested',
                         'email': user.email,
-                        'timestamp': datetime.datetime.utcnow().isoformat(),
+                        'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                     }, room='admin_room')
                     
@@ -987,7 +987,7 @@ def send_otp():
                     socketio.emit('otp_request_received', {
                         'status': 'processing',
                         'message': 'OTP request received, sending email...',
-                        'timestamp': datetime.datetime.utcnow().isoformat()
+                        'timestamp': datetime.utcnow().isoformat()
                     }, room=f'user_{user.id}')
                     
                     print(f"WebSocket notifications sent for OTP request: {username}")
@@ -1008,14 +1008,14 @@ def send_otp():
                             'username': username,
                             'action': 'otp_sent_successfully',
                             'email': user.email,
-                            'timestamp': datetime.datetime.utcnow().isoformat()
+                            'timestamp': datetime.utcnow().isoformat()
                         }, room='admin_room')
                         
                         # Notify user of successful email delivery
                         socketio.emit('otp_email_sent', {
                             'status': 'success',
                             'message': 'OTP sent to your email successfully',
-                            'timestamp': datetime.datetime.utcnow().isoformat()
+                            'timestamp': datetime.utcnow().isoformat()
                         }, room=f'user_{user.id}')
                 except Exception as ws_error:
                     print(f"WebSocket success notification failed: {str(ws_error)}")
@@ -1033,14 +1033,14 @@ def send_otp():
                             'action': 'otp_failed',
                             'email': user.email,
                             'error': 'SMTP delivery failed',
-                            'timestamp': datetime.datetime.utcnow().isoformat()
+                            'timestamp': datetime.utcnow().isoformat()
                         }, room='admin_room')
                         
                         # Notify user of failed email delivery
                         socketio.emit('otp_email_failed', {
                             'status': 'error',
                             'message': 'Failed to send OTP email',
-                            'timestamp': datetime.datetime.utcnow().isoformat()
+                            'timestamp': datetime.utcnow().isoformat()
                         }, room=f'user_{user.id}')
                 except Exception as ws_error:
                     print(f"WebSocket failure notification failed: {str(ws_error)}")
@@ -1063,7 +1063,7 @@ def send_otp():
                         'username': username if 'username' in locals() else 'unknown',
                         'action': 'otp_error',
                         'error': str(e),
-                        'timestamp': datetime.datetime.utcnow().isoformat()
+                        'timestamp': datetime.utcnow().isoformat()
                     }, room='admin_room')
             except Exception as ws_error:
                 print(f"WebSocket error notification failed: {str(ws_error)}")
@@ -1221,7 +1221,7 @@ def save_topology_progress():
             if completed:
                 progress.completion_count += 1
             
-            progress.last_attempt = datetime.datetime.utcnow()
+            progress.last_attempt = datetime.utcnow()
         else:
             # Create new record
             progress = TopologyProgress(
@@ -1357,7 +1357,7 @@ def register_user_websocket_events():
                 emit('user_joined', {
                     'user_id': current_user.id,
                     'username': current_user.username,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 })
                 print(f"User {current_user.username} joined general room")
         except Exception as e:
@@ -1379,7 +1379,7 @@ def register_user_websocket_events():
                 'activity_type': activity_type,
                 'page': page,
                 'details': details,
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room='admin_room')
             
             print(f"User {current_user.username} activity: {activity_type} on {page}")
@@ -1404,7 +1404,7 @@ def register_user_websocket_events():
                 'username': current_user.username,
                 'action': 'joined',
                 'topology_type': topology_type,
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room='admin_room')
             
             emit('topology_joined', {'topology_type': topology_type})
@@ -1437,14 +1437,14 @@ def register_user_websocket_events():
                         topology_progress.highest_score = score
                     if completed:
                         topology_progress.completion_count += 1
-                    topology_progress.last_attempt = datetime.datetime.utcnow()
+                    topology_progress.last_attempt = datetime.utcnow()
                 else:
                     topology_progress = TopologyProgress(
                         user_id=current_user.id,
                         topology_type=topology_type,
                         highest_score=score,
                         completion_count=1 if completed else 0,
-                        last_attempt=datetime.datetime.utcnow()
+                        last_attempt=datetime.utcnow()
                     )
                     db.session.add(topology_progress)
                 
@@ -1461,7 +1461,7 @@ def register_user_websocket_events():
                 'progress': progress,
                 'score': score,
                 'completed': completed,
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room='admin_room')
             
             # Emit to topology room
@@ -1501,7 +1501,7 @@ def register_user_websocket_events():
                     'username': current_user.username,
                     'category': category,
                     'score': score,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 }, room='admin_room')
                 
                 emit('score_saved', {
@@ -1531,7 +1531,7 @@ def register_user_websocket_events():
                 'user_id': current_user.id,
                 'username': username,
                 'action': 'otp_requested',
-                'timestamp': datetime.datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat()
             }, room='admin_room')
             
             print(f"OTP requested for user: {username}")
@@ -1551,7 +1551,7 @@ def register_user_websocket_events():
                 'username': username,
                 'success': success,
                 'method': method,
-                'timestamp': datetime.datetime.utcnow().isoformat(),
+                'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
             }, room='admin_room')
             
@@ -1691,7 +1691,7 @@ def track_networking_progress():
         # Update existing record
         progress.completed = completed
         progress.progress_percent = progress_percent
-        progress.last_accessed = datetime.datetime.utcnow()
+        progress.last_accessed = datetime.utcnow()
     else:
         # Create new record
         progress = NetworkingProgress(
@@ -1885,7 +1885,7 @@ def track_networking2_progress():
         # Update existing record
         progress.completed = completed
         progress.progress_percent = progress_percent
-        progress.last_accessed = datetime.datetime.utcnow()
+        progress.last_accessed = datetime.utcnow()
     else:
         # Create new record
         progress = Networking2Progress(
@@ -2180,3 +2180,4 @@ def networking2_qos_simulation():
     """QoS & Network Performance Analysis Simulation"""
     user = get_user_from_session()
     return render_template('user/networking2-qos-simulation.html', user=user)
+

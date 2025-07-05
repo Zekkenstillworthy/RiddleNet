@@ -612,31 +612,7 @@
                 <h3><i class='bx bx-broadcast'></i> Real-Time Communication Hub</h3>
                 
                 <div class="communication-grid">
-                    <!-- Message Broadcasting Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Broadcast System</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="broadcast-message">Network Message</label>
-                                <textarea id="broadcast-message" class="form-control" rows="4" placeholder="Compose your network announcement..."></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="broadcast-target">Target Network Nodes</label>
-                                <select id="broadcast-target" class="form-control">
-                                    <option value="all_users">🌐 All Network Nodes</option>
-                                    <option value="topology_users">🔗 Topology Training Nodes</option>
-                                    <option value="troubleshooting_users">🔧 Troubleshooting Nodes</option>
-                                </select>
-                            </div>
-                            
-                            <button id="send-broadcast" class="btn btn-primary">
-                                <i class='bx bx-send'></i> Transmit Message
-                            </button>
-                        </div>
-                    </div>
+
 
                     <!-- Connected Users Card -->
                     <div class="card">
@@ -680,42 +656,6 @@
     <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Enhanced broadcasting with visual feedback
-            document.getElementById('send-broadcast').addEventListener('click', function() {
-                const message = document.getElementById('broadcast-message').value.trim();
-                const target = document.getElementById('broadcast-target').value;
-                const button = this;
-                
-                if (!message) {
-                    showNotification('Please enter a message to broadcast', 'warning');
-                    return;
-                }
-                
-                // Visual feedback for sending
-                button.style.transform = 'scale(0.95)';
-                button.innerHTML = '<i class="bx bx-loader bx-spin"></i> Transmitting...';
-                button.disabled = true;
-                
-                // Send the broadcast through WebSocket
-                socketClient.emit('admin_broadcast', {
-                    message: message,
-                    target: target
-                });
-                
-                // Reset button after animation
-                setTimeout(() => {
-                    button.innerHTML = '<i class="bx bx-send"></i> Transmit Message';
-                    button.style.transform = 'scale(1)';
-                    button.disabled = false;
-                    
-                    // Clear the message input
-                    document.getElementById('broadcast-message').value = '';
-                    
-                    // Show success notification
-                    showNotification('Network message transmitted successfully', 'success');
-                }, 1500);
-            });
-            
             // Enhanced activity feed management
             const activityFeed = document.getElementById('live-activity-feed');
             

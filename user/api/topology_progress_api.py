@@ -49,7 +49,7 @@ def save_topology_progress():
             if score > progress.highest_score:
                 progress.highest_score = score
                 progress.completion_count += 1 if completed else 0
-                progress.last_attempt = datetime.datetime.utcnow()
+                progress.last_attempt = datetime.utcnow()
         else:
             # Create new progress record
             progress = TopologyProgress(
@@ -57,7 +57,7 @@ def save_topology_progress():
                 topology_type=topology_type,
                 highest_score=score,
                 completion_count=1 if completed else 0,
-                last_attempt=datetime.datetime.utcnow()
+                last_attempt=datetime.utcnow()
             )
             db.session.add(progress)
             
@@ -146,3 +146,4 @@ def get_all_topology_progress():
             'status': 'error',
             'message': f'Server error: {str(e)}'
         }), 500
+

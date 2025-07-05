@@ -600,7 +600,489 @@
             border-top-color: transparent;
             animation: spin 1s linear infinite;
             margin-right: 8px;
-        }        /* Additional animations for network theme */
+        }        /* Enhanced WebSocket Connection Status Indicator */
+        .websocket-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 25px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+        }
+
+        .websocket-status.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* Authentication States with Clear Visual Hierarchy */
+        .websocket-status.authenticated {
+            border-color: var(--success-color);
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .websocket-status.network-connected {
+            border-color: rgba(0, 217, 255, 0.5);
+            color: rgba(0, 217, 255, 0.8);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .websocket-status.awaiting-auth {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        .websocket-status.connecting {
+            border-color: var(--cyber-glow);
+            color: var(--cyber-glow);
+            background: rgba(0, 217, 255, 0.05);
+        }
+
+        .websocket-status.disconnected {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Hide status on login page unless there's a critical connection issue */
+        .websocket-status.login-page-hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+        .connection-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        /* Enhanced connection indicator states */
+        .websocket-status.authenticated .connection-indicator {
+            background: var(--success-color);
+            box-shadow: 
+                0 0 8px var(--success-color),
+                0 0 16px rgba(16, 185, 129, 0.4);
+            animation: authenticatedPulse 2s infinite;
+        }
+
+        .websocket-status.network-connected .connection-indicator {
+            background: rgba(0, 217, 255, 0.8);
+            box-shadow: 
+                0 0 6px rgba(0, 217, 255, 0.6),
+                0 0 12px rgba(0, 217, 255, 0.3);
+            animation: networkPulse 2s infinite;
+        }
+
+        .websocket-status.awaiting-auth .connection-indicator {
+            background: var(--warning-color);
+            box-shadow: 0 0 8px var(--warning-color);
+            animation: authWaitPulse 1.5s infinite;
+        }
+
+        .websocket-status.connecting .connection-indicator {
+            background: var(--cyber-glow);
+            animation: connectionBlink 1s infinite;
+        }
+
+        .websocket-status.disconnected .connection-indicator {
+            background: var(--danger-color);
+            animation: connectionError 0.5s infinite alternate;
+        }
+
+        /* Enhanced animations for connection states */
+        @keyframes authenticatedPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.3);
+                opacity: 0.8;
+                box-shadow: 
+                    0 0 12px var(--success-color),
+                    0 0 24px rgba(16, 185, 129, 0.6);
+            }
+        }
+
+        @keyframes networkPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 1;
+                box-shadow: 
+                    0 0 10px rgba(0, 217, 255, 0.8),
+                    0 0 20px rgba(0, 217, 255, 0.5);
+            }
+        }
+
+        @keyframes authWaitPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% { 
+                transform: scale(1.1);
+                opacity: 1;
+                box-shadow: 0 0 10px var(--warning-color);
+            }
+        }
+
+        @keyframes connectionBlink {
+            0%, 50% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            51%, 100% { 
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        @keyframes connectionError {
+            0% { 
+                transform: scale(1);
+                background: var(--danger-color);
+            }
+            100% { 
+                transform: scale(1.2);
+                background: rgba(239, 68, 68, 0.7);
+            }
+        }
+
+        /* Enhanced login page behavior and authentication feedback */
+        .login-page .websocket-status:not(.authenticated):not(.disconnected) {
+            opacity: 0.7;
+            transform: scale(0.9);
+        }
+
+        .login-page .websocket-status.authenticated {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Authentication state visual feedback on forms */
+        .form-panel.authentication-success {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-panel.authentication-error {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            animation: authErrorShake 0.5s ease-in-out;
+        }
+
+        @keyframes authErrorShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Enhanced input field states for authentication feedback */
+        .input-field.auth-success {
+            border-color: var(--success-color);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .input-field.auth-error {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+            animation: inputErrorPulse 0.3s ease-in-out;
+        }
+
+        @keyframes inputErrorPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* WebSocket notification improvements */
+        .websocket-notification.login-success {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, 
+                rgba(16, 185, 129, 0.1), 
+                rgba(16, 185, 129, 0.05));
+        }
+
+        .websocket-notification.login-error {
+            border-color: var(--danger-color);
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.1), 
+                rgba(239, 68, 68, 0.05));
+        }
+
+        /* Status text styling */
+        .websocket-status #connection-text {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        @keyframes authenticatedPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes authWaitPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        @keyframes connectionBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        @keyframes connectionError {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* WebSocket Data Flow Animation */
+        .data-flow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--cyber-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--cyber-glow);
+            opacity: 0;
+            animation: dataFlow 3s linear infinite;
+        }
+
+        .data-packet.active {
+            opacity: 1;
+        }
+
+        @keyframes dataFlow {
+            0% {
+                transform: translateX(0) translateY(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(300px) translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced Network Visualization */
+        .network-nodes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .network-node {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--cyber-glow);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: nodeFloat 4s ease-in-out infinite;
+        }
+
+        .network-node::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 10px;
+            height: 10px;
+            border: 1px solid var(--cyber-glow);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: nodeRipple 3s ease-out infinite;
+        }
+
+        .network-node.active {
+            animation: nodeActive 2s ease-in-out infinite;
+        }
+
+        @keyframes nodeFloat {
+            0%, 100% { 
+                transform: translateY(0) scale(1);
+                opacity: 0.6;
+            }
+            50% { 
+                transform: translateY(-20px) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes nodeRipple {
+            0% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        @keyframes nodeActive {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 8px var(--cyber-glow);
+            }
+            50% { 
+                transform: scale(1.3);
+                box-shadow: 0 0 20px var(--cyber-glow);
+            }
+        }
+
+        /* Real-time Notification Toast */
+        .websocket-notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            min-width: 300px;
+            max-width: 400px;
+            padding: 16px 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .websocket-notification.show {
+            transform: translateX(0);
+        }
+
+        .websocket-notification.success {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .websocket-notification.error {
+            border-color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .websocket-notification.warning {
+            border-color: var(--warning-color);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .notification-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-body {
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+        }
+
+        /* Form Enhancement for WebSocket Activity */
+        .form-panel.websocket-active {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.1);
+        }
+
+        .input-field.websocket-active {
+            border-color: var(--cyber-glow);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+        }
+
+        .btn-primary.websocket-processing {
+            background: linear-gradient(45deg, var(--cyber-glow), var(--network-purple));
+            animation: processingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes processingPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.02);
+                opacity: 0.9;
+            }
+        }
+
+        /* Additional animations for network theme */
         @keyframes pulse {
             0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
@@ -666,13 +1148,65 @@
             z-index: -1;
             opacity: 0.3;
         }
+
+        /* Responsive WebSocket Elements */
+        @media (max-width: 768px) {
+            .websocket-status {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .websocket-notification {
+                right: 10px;
+                left: 10px;
+                width: auto;
+                min-width: unset;
+                max-width: unset;
+            }
+
+            .data-flow-container {
+                display: none;
+            }
+        }
     </style>
 </head>
-<body>    <!-- Main Container -->
+<body>
+    <!-- WebSocket Connection Status Indicator -->
+    <div class="websocket-status" id="websocket-status">
+        <div class="connection-indicator"></div>
+        <span id="connection-text" style="display: none;">Initializing...</span>
+    </div>
+
+    <!-- WebSocket Real-time Notification -->
+    <div class="websocket-notification" id="websocket-notification">
+        <div class="notification-header">
+            <div class="notification-icon">
+                <i class="fas fa-wifi"></i>
+            </div>
+            <span id="notification-title">Network Status</span>
+        </div>
+        <div class="notification-body" id="notification-message">
+            Establishing secure connection...
+        </div>
+    </div>
+
+    <!-- Network Nodes Background -->
+    <div class="network-nodes" id="network-nodes">
+        <!-- Dynamic nodes will be generated by JavaScript -->
+    </div>
+
+    <!-- Data Flow Container -->
+    <div class="data-flow-container" id="data-flow-container">
+        <!-- Dynamic data packets will be generated by JavaScript -->
+    </div>
+
+    <!-- Main Container -->
     <div class="auth-container" id="authContainer">
         <!-- Sign In Panel -->
         <div class="form-panel signin">
-            <form action="{{ url_for('user.login') }}" method="POST">
+            <form action="{{ url_for('user.login') }}" method="POST" id="loginForm">
                 <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet Logo" class="logo">
                 <h1 class="form-title">Welcome Back</h1>
                 <p class="form-subtitle">Connect to your network learning hub</p>
@@ -700,7 +1234,7 @@
                     OTP expires in: <span id="countdown">10:00</span>
                 </div>
                 
-                <button type="submit" class="btn-primary">
+                <button type="submit" class="btn-primary" id="loginSubmitBtn">
                     <i class='bx bx-log-in'></i>
                     Sign In
                 </button>
@@ -815,21 +1349,37 @@
             });
         }
 
-        // Handle signup form submission
+        // Enhanced signup form submission with WebSocket feedback
         document.querySelector('#signupForm').addEventListener('submit', function(event) {
             event.preventDefault();
             
             const formData = new FormData(this);
             const messageElement = document.getElementById('signup-message');
             const submitButton = this.querySelector('button[type="submit"]');
+            const formElement = this;
             
-            // Show loading state
+            // Clear previous authentication states
+            if (websocketManager) {
+                websocketManager.clearAuthenticationState(formElement);
+                websocketManager.activateFormWebSocket(formElement);
+            }
+            
+            // Show loading state with enhanced feedback
             messageElement.className = 'message-container show';
             messageElement.innerHTML = '<span class="loading-spinner"></span>Creating your account...';
             
             // Disable submit button
             submitButton.disabled = true;
             submitButton.style.opacity = '0.7';
+
+            // WebSocket feedback for form processing
+            if (websocketManager) {
+                websocketManager.showNotification(
+                    'Creating Account',
+                    'Processing your registration...',
+                    'warning'
+                );
+            }
 
             fetch("{{ url_for('user.signup') }}", {
                 method: 'POST',
@@ -841,17 +1391,25 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'error') {
-                    // Show error message
+                    // Enhanced error handling with WebSocket feedback
                     messageElement.className = 'message-container error-message show';
                     messageElement.textContent = data.message;
                     
+                    if (websocketManager) {
+                        websocketManager.showAuthenticationError(formElement, data.message);
+                    }
+                    
                     // Clear and focus on the appropriate field
                     if (data.message.includes('Username already exists')) {
-                        document.querySelector('input[name="username"]').value = '';
-                        document.querySelector('input[name="username"]').focus();
+                        const usernameField = document.querySelector('input[name="username"]');
+                        usernameField.value = '';
+                        usernameField.focus();
+                        usernameField.classList.add('auth-error');
                     } else if (data.message.includes('Email address already in use')) {
-                        document.querySelector('input[name="email"]').value = '';
-                        document.querySelector('input[name="email"]').focus();
+                        const emailField = document.querySelector('input[name="email"]');
+                        emailField.value = '';
+                        emailField.focus();
+                        emailField.classList.add('auth-error');
                     }
                     
                     // Re-enable submit button
@@ -862,14 +1420,26 @@
                     setTimeout(() => {
                         messageElement.className = 'message-container';
                         messageElement.style.display = 'none';
+                        if (websocketManager) {
+                            websocketManager.clearAuthenticationState(formElement);
+                        }
                     }, 5000);
                     
                     return Promise.reject('Registration error');
                 }
                 
-                // Show success message
+                // Enhanced success handling with WebSocket feedback
                 messageElement.className = 'message-container success-message show';
                 messageElement.textContent = data.message;
+                
+                if (websocketManager) {
+                    websocketManager.showAuthenticationSuccess(formElement);
+                    websocketManager.showNotification(
+                        'Account Created',
+                        'Welcome to RiddleNet! Redirecting to login...',
+                        'success'
+                    );
+                }
                 
                 // Reset form
                 this.querySelectorAll('input').forEach(input => input.value = '');
@@ -923,11 +1493,646 @@
         });
     </script>
 
-    <!-- WebSocket Client for Real-time Notifications -->
+    <!-- Enhanced WebSocket Client for Real-time Notifications -->
     <script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
     <script>
+        // Enhanced WebSocket Management and Visual Feedback System
+        class WebSocketVisualManager {
+            constructor() {
+                this.statusElement = document.getElementById('websocket-status');
+                this.notificationElement = document.getElementById('websocket-notification');
+                this.connectionText = document.getElementById('connection-text');
+                this.notificationTitle = document.getElementById('notification-title');
+                this.notificationMessage = document.getElementById('notification-message');
+                this.networkNodes = document.getElementById('network-nodes');
+                this.dataFlowContainer = document.getElementById('data-flow-container');
+                
+                this.isConnected = false;
+                this.isAuthenticated = false;
+                this.nodeCount = 8;
+                this.dataPacketInterval = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.createNetworkNodes();
+                this.checkAuthenticationStatus();
+                this.setupWebSocketHandlers();
+            }
+
+            checkAuthenticationStatus() {
+                // Check if user is already logged in
+                const isLoggedIn = document.body.classList.contains('authenticated') || 
+                                  document.querySelector('.dashboard-nav') !== null ||
+                                  window.location.pathname.includes('/dashboard') ||
+                                  window.location.pathname.includes('/profile') ||
+                                  window.location.pathname.includes('/classes') ||
+                                  window.location.pathname.includes('/troubleshoot');
+                
+                if (isLoggedIn) {
+                    this.isAuthenticated = true;
+                    this.showStatusIndicator();
+                    this.updateConnectionStatus('connecting');
+                } else {
+                    this.isAuthenticated = false;
+                    this.hideStatusIndicator();
+                }
+            }
+
+            showStatusIndicator() {
+                this.statusElement.classList.add('show');
+            }
+
+            hideStatusIndicator() {
+                this.statusElement.classList.remove('show');
+            }
+
+            createNetworkNodes() {
+                for (let i = 0; i < this.nodeCount; i++) {
+                    const node = document.createElement('div');
+                    node.className = 'network-node';
+                    
+                    // Random positioning
+                    const x = Math.random() * 80 + 10; // 10-90%
+                    const y = Math.random() * 80 + 10; // 10-90%
+                    
+                    node.style.left = `${x}%`;
+                    node.style.top = `${y}%`;
+                    node.style.animationDelay = `${Math.random() * 4}s`;
+                    
+                    this.networkNodes.appendChild(node);
+                }
+            }
+
+            updateConnectionStatus(status) {
+                // Remove all status classes and add new ones
+                this.statusElement.className = 'websocket-status';
+                this.statusElement.classList.add(status);
+                
+                // Check if we're on a login page first
+                const isLoginPage = window.location.pathname === '/user/login' || 
+                                  window.location.pathname === '/' || 
+                                  window.location.pathname === '/user/';
+                
+                // Update connection text and state with improved messaging
+                switch (status) {
+                    case 'authenticated':
+                        this.connectionText.textContent = 'Authenticated & Connected';
+                        this.isConnected = true;
+                        this.isAuthenticated = true;
+                        this.activateNetworkNodes();
+                        this.startDataFlow();
+                        break;
+                    case 'network-connected':
+                        // Don't show basic connection text on login page
+                        if (!isLoginPage) {
+                            this.connectionText.textContent = 'Network Connected';
+                        }
+                        this.isConnected = true;
+                        this.isAuthenticated = false;
+                        this.deactivateNetworkNodes();
+                        this.stopDataFlow();
+                        break;
+                    case 'awaiting-auth':
+                        // Don't show auth waiting text on login page
+                        if (!isLoginPage) {
+                            this.connectionText.textContent = 'Please Log In';
+                        }
+                        this.isConnected = true;
+                        this.isAuthenticated = false;
+                        this.deactivateNetworkNodes();
+                        this.stopDataFlow();
+                        break;
+                    case 'connecting':
+                        // Don't show connecting text on login page
+                        if (!isLoginPage) {
+                            this.connectionText.textContent = 'Connecting...';
+                        }
+                        this.isConnected = false;
+                        this.isAuthenticated = false;
+                        this.deactivateNetworkNodes();
+                        this.stopDataFlow();
+                        break;
+                    case 'disconnected':
+                        this.connectionText.textContent = 'Connection Lost';
+                        this.isConnected = false;
+                        this.isAuthenticated = false;
+                        this.deactivateNetworkNodes();
+                        this.stopDataFlow();
+                        break;
+                }
+                
+                // Enhanced visibility logic to reduce confusion
+                if (isLoginPage) {
+                    // On login page: completely hide WebSocket status text
+                    this.connectionText.style.display = 'none';
+                    this.statusElement.classList.add('login-page-hidden');
+                    
+                    // Only show for critical issues
+                    if (status === 'disconnected') {
+                        this.showStatusIndicator();
+                    } else {
+                        this.hideStatusIndicator();
+                    }
+                } else {
+                    // On authenticated pages: show connection text normally
+                    this.connectionText.style.display = 'inline';
+                    this.statusElement.classList.remove('login-page-hidden');
+                    
+                    // Show when connected or when issues occur
+                    if (this.isAuthenticated || status === 'disconnected' || status === 'awaiting-auth') {
+                        this.showStatusIndicator();
+                    } else {
+                        this.hideStatusIndicator();
+                    }
+                }
+            }
+
+            activateNetworkNodes() {
+                const nodes = this.networkNodes.querySelectorAll('.network-node');
+                nodes.forEach((node, index) => {
+                    setTimeout(() => {
+                        node.classList.add('active');
+                    }, index * 200);
+                });
+            }
+
+            deactivateNetworkNodes() {
+                const nodes = this.networkNodes.querySelectorAll('.network-node');
+                nodes.forEach(node => {
+                    node.classList.remove('active');
+                });
+            }
+
+            startDataFlow() {
+                if (this.dataPacketInterval) return;
+                
+                this.dataPacketInterval = setInterval(() => {
+                    this.createDataPacket();
+                }, 800);
+            }
+
+            stopDataFlow() {
+                if (this.dataPacketInterval) {
+                    clearInterval(this.dataPacketInterval);
+                    this.dataPacketInterval = null;
+                }
+            }
+
+            createDataPacket() {
+                const packet = document.createElement('div');
+                packet.className = 'data-packet active';
+                
+                // Random starting position
+                packet.style.left = `${Math.random() * 20}%`;
+                packet.style.top = `${Math.random() * 80 + 10}%`;
+                
+                this.dataFlowContainer.appendChild(packet);
+                
+                // Remove packet after animation
+                setTimeout(() => {
+                    if (packet.parentNode) {
+                        packet.parentNode.removeChild(packet);
+                    }
+                }, 3000);
+            }
+
+            showNotification(title, message, type = 'success') {
+                this.notificationTitle.textContent = title;
+                this.notificationMessage.textContent = message;
+                this.notificationElement.className = `websocket-notification ${type} show`;
+                
+                // Auto-hide after 4 seconds
+                setTimeout(() => {
+                    this.hideNotification();
+                }, 4000);
+            }
+
+            hideNotification() {
+                this.notificationElement.classList.remove('show');
+            }
+
+            activateFormWebSocket(formElement) {
+                formElement.classList.add('websocket-active');
+                
+                const inputs = formElement.querySelectorAll('.input-field');
+                inputs.forEach(input => {
+                    input.classList.add('websocket-active');
+                });
+            }
+
+            deactivateFormWebSocket(formElement) {
+                formElement.classList.remove('websocket-active');
+                
+                const inputs = formElement.querySelectorAll('.input-field');
+                inputs.forEach(input => {
+                    input.classList.remove('websocket-active');
+                });
+            }
+
+            activateFormWebSocket(formElement) {
+                if (formElement) {
+                    formElement.classList.add('websocket-active');
+                    const inputs = formElement.querySelectorAll('.input-field');
+                    inputs.forEach(input => {
+                        input.classList.add('websocket-active');
+                    });
+                }
+            }
+
+            deactivateFormWebSocket(formElement) {
+                if (formElement) {
+                    formElement.classList.remove('websocket-active');
+                    const inputs = formElement.querySelectorAll('.input-field');
+                    inputs.forEach(input => {
+                        input.classList.remove('websocket-active');
+                    });
+                }
+            }
+
+            // Enhanced authentication feedback methods
+            showAuthenticationSuccess(formElement) {
+                if (formElement) {
+                    formElement.classList.remove('authentication-error');
+                    formElement.classList.add('authentication-success');
+                    
+                    const inputs = formElement.querySelectorAll('.input-field');
+                    inputs.forEach(input => {
+                        input.classList.remove('auth-error');
+                        input.classList.add('auth-success');
+                    });
+                }
+            }
+
+            showAuthenticationError(formElement, errorMessage = null) {
+                if (formElement) {
+                    formElement.classList.remove('authentication-success');
+                    formElement.classList.add('authentication-error');
+                    
+                    const inputs = formElement.querySelectorAll('.input-field');
+                    inputs.forEach(input => {
+                        input.classList.remove('auth-success');
+                        input.classList.add('auth-error');
+                    });
+                    
+                    if (errorMessage) {
+                        this.showNotification(
+                            'Authentication Failed',
+                            errorMessage,
+                            'error'
+                        );
+                    }
+                }
+            }
+
+            clearAuthenticationState(formElement) {
+                if (formElement) {
+                    formElement.classList.remove('authentication-success', 'authentication-error');
+                    
+                    const inputs = formElement.querySelectorAll('.input-field');
+                    inputs.forEach(input => {
+                        input.classList.remove('auth-success', 'auth-error', 'websocket-active');
+                    });
+                }
+            }
+
+            // Method to handle login form submission
+            handleLoginAttempt() {
+                this.showStatusIndicator();
+                this.updateConnectionStatus('connecting');
+                this.showNotification(
+                    'Authenticating',
+                    'Verifying your credentials...',
+                    'warning'
+                );
+            }
+
+            // Method to handle successful login
+            handleLoginSuccess(username) {
+                this.isAuthenticated = true;
+                this.updateConnectionStatus('authenticated');
+                this.showNotification(
+                    'Login Successful',
+                    `Welcome back, ${username}!`,
+                    'success'
+                );
+            }
+
+            // Method to handle login failure
+            handleLoginFailure(reason) {
+                this.updateConnectionStatus('awaiting-auth');
+                this.showNotification(
+                    'Login Failed',
+                    reason || 'Please check your credentials and try again',
+                    'error'
+                );
+            }
+
+            setupWebSocketHandlers() {
+                // Wait for socket client to be available
+                const checkSocketClient = () => {
+                    if (window.socketClient) {
+                        this.bindSocketEvents();
+                        
+                        // Enhanced authentication-aware status logic
+                        if (this.isAuthenticated) {
+                            this.updateConnectionStatus('authenticated');
+                            this.showNotification(
+                                'Connected & Authenticated',
+                                'All real-time features are active',
+                                'success'
+                            );
+                        } else {
+                            // On login page: don't confuse users with connection status
+                            const isLoginPage = window.location.pathname === '/user/login' || 
+                                              window.location.pathname === '/' || 
+                                              window.location.pathname === '/user/';
+                            
+                            if (isLoginPage) {
+                                // Hide status on login page - let them focus on logging in
+                                this.hideStatusIndicator();
+                            } else {
+                                // On other pages: show that login is required
+                                this.updateConnectionStatus('awaiting-auth');
+                                this.showNotification(
+                                    'Authentication Required',
+                                    'Please log in to access real-time features',
+                                    'warning'
+                                );
+                            }
+                        }
+                    } else {
+                        setTimeout(checkSocketClient, 500);
+                    }
+                };
+                
+                setTimeout(checkSocketClient, 1000);
+            }
+
+            bindSocketEvents() {
+                const socket = window.socketClient;
+                
+                // Connection events
+                socket.on('connect', () => {
+                    if (this.isAuthenticated) {
+                        this.updateConnectionStatus('authenticated');
+                        this.showNotification(
+                            'Connected & Authenticated',
+                            'Real-time features are available',
+                            'success'
+                        );
+                    } else {
+                        this.updateConnectionStatus('awaiting-auth');
+                        // Only show notification if not on login page
+                        if (window.location.pathname !== '/user/login' && window.location.pathname !== '/') {
+                            this.showNotification(
+                                'Network Connected',
+                                'Please log in to access features',
+                                'warning'
+                            );
+                        }
+                    }
+                });
+
+                socket.on('disconnect', () => {
+                    this.updateConnectionStatus('disconnected');
+                    this.showNotification(
+                        'Connection Lost',
+                        'Attempting to reconnect...',
+                        'error'
+                    );
+                });
+
+                socket.on('reconnect', () => {
+                    if (this.isAuthenticated) {
+                        this.updateConnectionStatus('authenticated');
+                        this.showNotification(
+                            'Reconnected',
+                            'Real-time features restored',
+                            'success'
+                        );
+                    } else {
+                        this.updateConnectionStatus('awaiting-auth');
+                        this.showNotification(
+                            'Reconnected',
+                            'Please log in to access features',
+                            'warning'
+                        );
+                    }
+                });
+
+                // Authentication events
+                socket.on('login_success', (data) => {
+                    this.isAuthenticated = true;
+                    this.updateConnectionStatus('authenticated');
+                    this.showNotification(
+                        'Login Successful',
+                        `Welcome back, ${data.username || 'User'}!`,
+                        'success'
+                    );
+                });
+
+                socket.on('logout_complete', (data) => {
+                    this.isAuthenticated = false;
+                    this.updateConnectionStatus('awaiting-auth');
+                    this.showNotification(
+                        'Logout Complete',
+                        'You have been safely signed out',
+                        'success'
+                    );
+                    
+                    // Hide status indicator after logout
+                    setTimeout(() => {
+                        this.hideStatusIndicator();
+                    }, 3000);
+                });
+
+                // OTP events with enhanced feedback
+                socket.on('otp_request_received', (data) => {
+                    this.showNotification(
+                        'OTP Request Received',
+                        'Processing your OTP request...',
+                        'warning'
+                    );
+                    
+                    const otpButton = document.getElementById('requestOtp');
+                    if (otpButton) {
+                        this.setButtonProcessing(otpButton, true);
+                    }
+                });
+
+                socket.on('otp_email_sent', (data) => {
+                    this.showNotification(
+                        'OTP Sent Successfully',
+                        'Please check your email and enter the code below',
+                        'success'
+                    );
+                    
+                    const otpButton = document.getElementById('requestOtp');
+                    const otpInput = document.getElementById('otp');
+                    
+                    if (otpButton) {
+                        this.setButtonProcessing(otpButton, false);
+                    }
+                    
+                    if (otpInput) {
+                        otpInput.focus();
+                        otpInput.classList.add('websocket-active');
+                    }
+                    
+                    // Show timer
+                    const timer = document.getElementById('otp-timer');
+                    if (timer) {
+                        timer.style.display = 'block';
+                    }
+                });
+
+                socket.on('otp_email_failed', (data) => {
+                    this.showNotification(
+                        'OTP Send Failed',
+                        data.message || 'Unable to send OTP. Please try again.',
+                        'error'
+                    );
+                    
+                    const otpButton = document.getElementById('requestOtp');
+                    if (otpButton) {
+                        this.setButtonProcessing(otpButton, false);
+                    }
+                });
+
+                // User activity events
+                socket.on('user_activity', (data) => {
+                    if (data.activity_type === 'form_interaction') {
+                        this.createDataPacket();
+                    }
+                });
+
+                // System events
+                socket.on('system_notification', (data) => {
+                    this.showNotification(
+                        data.title || 'System Notification',
+                        data.message || 'System update received',
+                        data.type || 'info'
+                    );
+                });
+            }
+        }
+
+        // Initialize WebSocket Visual Manager
+        let websocketManager;
+        
         // Initialize WebSocket event handlers for login/logout notifications
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize WebSocket visual manager
+            websocketManager = new WebSocketVisualManager();
+            
+            // Enhanced form interaction tracking with WebSocket feedback
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('focus', (e) => {
+                    if (websocketManager && websocketManager.isConnected) {
+                        websocketManager.activateFormWebSocket(form);
+                        websocketManager.createDataPacket();
+                    }
+                }, true);
+                
+                form.addEventListener('blur', (e) => {
+                    if (websocketManager) {
+                        setTimeout(() => {
+                            if (!form.contains(document.activeElement)) {
+                                websocketManager.deactivateFormWebSocket(form);
+                            }
+                        }, 100);
+                    }
+                }, true);
+            });
+            
+            // Enhanced login form handler with WebSocket feedback
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(event) {
+                    const submitButton = this.querySelector('#loginSubmitBtn');
+                    const messageElement = document.getElementById('message');
+                    
+                    // Clear previous authentication states
+                    if (websocketManager) {
+                        websocketManager.clearAuthenticationState(this);
+                        websocketManager.activateFormWebSocket(this);
+                        websocketManager.updateConnectionStatus('connecting');
+                        websocketManager.showNotification(
+                            'Authenticating',
+                            'Verifying your credentials...',
+                            'warning'
+                        );
+                    }
+                    
+                    // Add visual feedback
+                    submitButton.classList.add('websocket-processing');
+                    
+                    // Let the normal form submission proceed
+                    // WebSocket events will handle the response
+                });
+            }
+            
+            // Enhanced signup success continuation
+            setTimeout(() => {
+                // Reset forms and switch to login
+                const authContainer = document.getElementById('authContainer');
+                const toggleBtn = document.getElementById('toggleBtn');
+                
+                if (authContainer && toggleBtn) {
+                    authContainer.classList.remove('signup-mode');
+                    toggleBtn.innerHTML = '<i class="bx bx-user-plus"></i> Sign Up';
+                    isSignupMode = false;
+                }
+                
+                // Hide message and clear authentication state
+                messageElement.className = 'message-container';
+                messageElement.style.display = 'none';
+                
+                if (websocketManager) {
+                    websocketManager.clearAuthenticationState(formElement);
+                }
+                
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+            }, 2000);
+            })
+            .catch(error => {
+                if (error === 'Registration error') return;
+                
+                // Show general error
+                messageElement.className = 'message-container error-message show';
+                messageElement.textContent = 'An error occurred. Please try again.';
+                
+                if (websocketManager) {
+                    websocketManager.showAuthenticationError(formElement);
+                }
+                
+                console.error('Error:', error);
+                
+                // Re-enable submit button
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    messageElement.className = 'message-container';
+                    messageElement.style.display = 'none';
+                    if (websocketManager) {
+                        websocketManager.clearAuthenticationState(formElement);
+                    }
+                }, 5000);
+            });
+        
+        // Initialize WebSocket visual manager and form handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize WebSocket visual manager
+            websocketManager = new WebSocketVisualManager();
+            
+            // Legacy socket event handlers for compatibility
             if (window.socketClient) {
                 // Handle login success notifications
                 window.socketClient.on('login_success', function(data) {

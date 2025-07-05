@@ -493,15 +493,7 @@
                     updateScoreCharts();
                 });
 
-                socketClient.on('broadcast_delivered', function(data) {
-                    console.log('📢 Broadcast delivered:', data);
-                    showBroadcastSuccess(data);
-                });
-
-                socketClient.on('broadcast_error', function(data) {
-                    console.log('❌ Broadcast error:', data);
-                    showBroadcastError(data.error || 'Unknown error');
-                });                socketClient.on('system_status', function(data) {
+                socketClient.on('system_status', function(data) {
                     console.log('⚙️ System status:', data);
                     updateSystemMetrics(data);
                 });
@@ -1016,92 +1008,13 @@
             logActivity(message, type);
         }
 
-        function updateConnectionStatus(isConnected) {
-            const statusElements = document.querySelectorAll('.connection-status');
-            statusElements.forEach(element => {
-                element.className = `connection-status ${isConnected ? 'text-green-400' : 'text-red-400'}`;
-                element.textContent = isConnected ? 'Connected' : 'Disconnected';
-            });
-
-            const statusText = document.querySelector('.status-text');
-            if (statusText) {
-                statusText.textContent = isConnected ? 'WebSocket Connected' : 'Connection Error';
-            }
-        }
-
-        function initializeBroadcastForm() {
-            const broadcastForm = document.getElementById('broadcastForm');
-            const broadcastBtn = document.getElementById('broadcastBtn');
-            
-            if (broadcastForm) {
-                broadcastForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    sendBroadcast();
-                });
-            }
-
-            if (broadcastBtn) {
-                broadcastBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    sendBroadcast();
-                });
-            }
-        }
-
-        function sendBroadcast() {
-            const messageInput = document.getElementById('broadcastMessage');
-            const prioritySelect = document.getElementById('broadcastPriority');
-            
-            if (!messageInput || !messageInput.value.trim()) {
-                showStatus('Please enter a broadcast message', 'warning');
-                return;
-            }
-
-            if (!socketClient || !socketClient.isConnected()) {
-                showStatus('Cannot send broadcast - not connected to server', 'error');
-                return;
-            }
-
-            const broadcastData = {
-                message: messageInput.value.trim(),
-                priority: prioritySelect ? prioritySelect.value : 'normal',
-                timestamp: new Date().toISOString(),
-                admin_user: 'Admin'
-            };
-
-            console.log('📢 Sending broadcast:', broadcastData);
-            socketClient.emit('admin_broadcast', broadcastData);
-            
-            // Clear the form
-            messageInput.value = '';
-            
-            // Show sending status
-            logActivity(`Broadcasting message: "${broadcastData.message}"`, 'info');
-            playClickSound();
-        }
-
         function initializeKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
-                // Ctrl+B for broadcast
-                if (e.ctrlKey && e.key === 'b') {
-                    e.preventDefault();
-                    document.getElementById('broadcastMessage')?.focus();
-                }
-                
                 // Ctrl+R for refresh users
                 if (e.ctrlKey && e.key === 'r') {
                     e.preventDefault();
                     requestActiveUsers();
                     logActivity('Refreshing user list...', 'info');
-                }
-                
-                // Escape to clear broadcast message
-                if (e.key === 'Escape') {
-                    const messageInput = document.getElementById('broadcastMessage');
-                    if (messageInput && document.activeElement === messageInput) {
-                        messageInput.value = '';
-                        messageInput.blur();
-                    }
                 }
             });
         }
@@ -1128,7 +1041,6 @@
             // Initialize all components
             initializeWebSocket();
             initializeCharts();
-            initializeBroadcastForm();
             initializeKeyboardShortcuts();
             
             // Log initial dashboard load
@@ -1173,18 +1085,6 @@
             logActivity('WebSocket connection unavailable', 'error');
         }
 
-        function showBroadcastSuccess(data) {
-            // Show broadcast success notification
-            logActivity(`✅ Broadcast delivered successfully to ${data.recipients || 'all'} users`, 'success');
-            playNotificationSound();
-        }
-
-        function showBroadcastError(error) {
-            // Show broadcast error notification
-            logActivity(`❌ Broadcast failed: ${error}`, 'error');
-            playNotificationSound();
-        }
-
         // Helper function to update the active users list in the UI
         function updateActiveUsersList(users) {
             const usersList = document.getElementById('active-users-list');
@@ -1207,26 +1107,6 @@
 
             usersList.innerHTML = usersHtml;
             logActivity(`Updated users list: ${users.length} active users`, 'info');
-        }
-
-        // Helper function to update connection status indicator
-        function updateConnectionStatus(isConnected) {
-            const statusDot = document.querySelector('#admin-socket-status .status-dot');
-            const statusText = document.querySelector('#admin-socket-status .status-text');
-            
-            if (statusDot && statusText) {
-                if (isConnected) {
-                    statusDot.className = 'status-dot connected';
-                    statusDot.style.background = 'var(--neon-green)';
-                    statusDot.style.boxShadow = '0 0 20px var(--neon-green)';
-                    statusText.textContent = 'Connected';
-                } else {
-                    statusDot.className = 'status-dot disconnected';
-                    statusDot.style.background = '#ff6b6b';
-                    statusDot.style.boxShadow = '0 0 20px #ff6b6b';
-                    statusText.textContent = 'Disconnected';
-                }
-            }
         }
     </script>
 

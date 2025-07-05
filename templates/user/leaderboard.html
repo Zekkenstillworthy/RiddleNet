@@ -694,6 +694,92 @@
     }
   }
 
+  /* Live notification styles */
+  .live-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 16px;
+    max-width: 300px;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    opacity: 0;
+    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+  }
+
+  .live-notification.success {
+    border-left: 4px solid #ffd700;
+  }
+
+  .live-notification.info {
+    border-left: 4px solid var(--cyber-glow);
+  }
+
+  .live-notification.warning {
+    border-left: 4px solid var(--warning-color);
+  }
+
+  .live-notification.error {
+    border-left: 4px solid var(--danger-color);
+  }
+
+  /* Achievement entry styles */
+  .achievement-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin: 8px 0;
+    background: var(--dark-bg);
+    border-radius: 8px;
+    border-left: 3px solid var(--cyber-glow);
+    transition: all 0.3s ease;
+  }
+
+  .achievement-entry:hover {
+    background: rgba(0, 217, 255, 0.1);
+    transform: translateX(5px);
+  }
+
+  .achievement-entry.new-achievement {
+    border-left-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  }
+
+  /* Animation for new high scores */
+  @keyframes pulse-gold {
+    0%, 100% { 
+      transform: scale(1); 
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    50% { 
+      transform: scale(1.05); 
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+  }
+
+  /* Empty leaderboard styles */
+  .empty-leaderboard {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .empty-leaderboard h3 {
+    margin: 16px 0 8px;
+    color: var(--text-primary);
+  }
+
+  .empty-leaderboard p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
   @media (max-width: 768px) {
     .page-container {
       padding: 16px;
@@ -802,100 +888,927 @@
 <div class="page-container">
   <!-- Page Header - Admin Dashboard Style -->
   <div class="page-header">
-    <h1>
-      <i class="fas fa-trophy header-icon"></i>
-      Network Champions Leaderboard
-    </h1>
-    <span class="header-subtitle">Track your progress and compete with peers</span>
+    <div class="header-content">
+      <h1>
+        <i class="fas fa-trophy header-icon"></i>
+        Live Leaderboard
+        <div class="live-indicator">
+          <div class="live-dot"></div>
+          <span>LIVE</span>
+        </div>
+      </h1>
+      <p class="header-subtitle">Real-time rankings and achievements across all categories</p>
+    </div>
+    
+    <!-- Time Period Filters -->
+    <div class="time-period-filters">
+      <button class="time-period-btn active" data-time-period="all_time">All Time</button>
+      <button class="time-period-btn" data-time-period="daily">Today</button>
+      <button class="time-period-btn" data-time-period="weekly">This Week</button>
+      <button class="time-period-btn" data-time-period="monthly">This Month</button>
+    </div>
   </div>
 
   <div class="leaderboard-container">
     <!-- Category Filter Tabs -->
     <div class="category-filters">
       <button class="filter-btn active" data-category="all" onclick="showCategory('all')">
-        <i class="fas fa-trophy"></i> Overall
+        <i class="fas fa-globe"></i>
+        Overall
       </button>
-      <button class="filter-btn" data-category="crimping" onclick="showCategory('crimping')">
-        <i class="fas fa-plug"></i> Crimping
+      <button class="filter-btn" data-category="networking" onclick="showCategory('networking')">
+        <i class="fas fa-network-wired"></i>
+        Networking
       </button>
       <button class="filter-btn" data-category="topology" onclick="showCategory('topology')">
-        <i class="fas fa-network-wired"></i> Topology
+        <i class="fas fa-project-diagram"></i>
+        Topology
       </button>
-      <button class="filter-btn" data-category="troubleshoot" onclick="showCategory('troubleshoot')">
-        <i class="fas fa-tools"></i> Troubleshooting
+      <button class="filter-btn" data-category="troubleshooting" onclick="showCategory('troubleshooting')">
+        <i class="fas fa-tools"></i>
+        Troubleshooting
+      </button>
+      <button class="filter-btn" data-category="crimping" onclick="showCategory('crimping')">
+        <i class="fas fa-plug"></i>
+        Crimping
       </button>
       <button class="filter-btn" data-category="riddle" onclick="showCategory('riddle')">
-        <i class="fas fa-puzzle-piece"></i> Riddles
+        <i class="fas fa-question-circle"></i>
+        Riddles
+      </button>
+      <button class="filter-btn" data-category="collaboration" onclick="showCategory('collaboration')">
+        <i class="fas fa-users"></i>
+        Collaboration
       </button>
     </div>
-
-    <!-- Main Leaderboard Card -->
-    <div class="modern-card">
-      <div class="leaderboard-list">
-        {% for item in leaderboard %}
-        <div class="leaderboard-entry" data-rank="{{ loop.index }}">
-          <div class="rank-badge">
-            {% if loop.index == 1 %}
-              <i class="fas fa-crown" style="color: #ffd700;"></i>
-            {% elif loop.index == 2 %}
-              <i class="fas fa-medal" style="color: #c0c0c0;"></i>
-            {% elif loop.index == 3 %}
-              <i class="fas fa-medal" style="color: #cd7f32;"></i>
-            {% else %}
-              <span class="rank-number">{{ loop.index }}</span>
-            {% endif %}
-          </div>
-          <div class="user-info">
-            <div class="user-avatar">
-              {% if item.profile_image %}
-                <img src="{{ url_for('static', filename='img/profiles/' + item.profile_image) }}" alt="{{ item.username }}'s avatar" onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/' + item.profile_image) }}'; this.onerror=function(){ this.style.display='none'; this.nextElementSibling.style.display='flex'; };">
-                <span class="avatar-text" style="display: none;">{{ item.username[0].upper() }}</span>
-              {% else %}
-                <span class="avatar-text">{{ item.username[0].upper() }}</span>
-              {% endif %}
-            </div>
-            <div class="user-details">
-              <h4 class="user-name">{{ item.username }}</h4>
-              <div class="user-score">
-                <span class="category-badge">
-                  {% if item.category == 'crimping' %}
-                    Cable Crimping
-                  {% elif item.category == 'topology' %}
-                    Network Topology
-                  {% elif item.category == 'troubleshoot' %}
-                    Troubleshooting
-                  {% elif item.category == 'riddle' %}
-                    Network Riddles
+    
+    <!-- Main Leaderboard -->
+    <div class="leaderboard-wrapper">
+      <h2 class="leaderboard-heading">
+        Current Rankings
+      </h2>
+      
+      <div class="modern-card">
+        <div class="leaderboard-list" id="leaderboard-list">
+          <!-- Leaderboard entries will be populated here -->
+          {% if leaderboard %}
+            {% for entry in leaderboard %}
+            <div class="leaderboard-entry" data-rank="{{ loop.index }}" data-user-id="{{ entry.user_id }}">
+              <div class="rank-badge">
+                {% if loop.index == 1 %}
+                  <i class="fas fa-crown"></i>
+                {% elif loop.index == 2 %}
+                  <i class="fas fa-medal"></i>
+                {% elif loop.index == 3 %}
+                  <i class="fas fa-medal"></i>
+                {% else %}
+                  {{ loop.index }}
+                {% endif %}
+              </div>
+              
+              <div class="user-info">
+                <div class="user-avatar">
+                  {% if entry.profile_img %}
+                    <img src="{{ url_for('static', filename='img/profiles/' + entry.profile_img) }}" alt="{{ entry.username }}'s avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <span class="avatar-text" style="display: none;">{{ entry.username[0].upper() }}</span>
                   {% else %}
-                    Overall Best
+                    <span class="avatar-text">{{ entry.username[0].upper() }}</span>
                   {% endif %}
-                </span>
-                <span class="attempt-date">{{ item.date_attempted.strftime('%b %d, %Y') if item.date_attempted else 'Recent' }}</span>
+                </div>
+                
+                <div class="user-details">
+                  <h4 class="user-name">{{ entry.username }}</h4>
+                  <div class="user-score">
+                    <span class="category-badge">{{ entry.category|title }}</span>
+                    <span class="attempt-date">{{ entry.date_attempted|strftime('%b %d, %Y') if entry.date_attempted else 'Recent' }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="score-display">
+                <div class="score-value">{{ entry.score }}%</div>
+                <div class="score-label">Best Score</div>
               </div>
             </div>
-          </div>
-          <div class="score-display">
-            <div class="score-value">{{ item.score }}%</div>
-            <div class="score-label">Best Score</div>
-          </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-leaderboard">
+              <i class="fas fa-trophy"></i>
+              <h3>No Entries Yet</h3>
+              <p>Be the first to complete challenges and claim your spot on the leaderboard!</p>
+            </div>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="empty-leaderboard">
-          <i class="fas fa-trophy"></i>
-          <h3>Become a Network Legend!</h3>
-          <p>Complete networking challenges to earn your spot on the leaderboard. Show off your skills in cable crimping, network topology, troubleshooting, and network riddles.</p>
-        </div>
-        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- Recent Achievements Widget -->
+    <div class="modern-card recent-achievements">
+      <div class="section-header">
+        <i class="fas fa-star section-icon"></i>
+        <h3>Recent Achievements</h3>
+      </div>
+      <div class="achievements-list" id="recent-achievements">
+        <!-- Recent achievements will be populated here -->
       </div>
     </div>
   </div>
 </div>
 
+<!-- Live Notification Container -->
+<div id="live-notifications"></div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Simple fade-in animation for entries
-    const entries = document.querySelectorAll('.leaderboard-entry');
-    if (entries.length > 0) {
+    // Live Leaderboard System Variables
+    let currentCategory = 'all';
+    let currentTimePeriod = 'all_time';
+    let leaderboardData = {};
+    let updateAnimationQueue = [];
+    
+    // Enhanced WebSocket Integration for Live Updates
+    if (window.socketClient) {
+        console.log('Leaderboard: Initializing live update WebSocket handlers...');
+        
+        // Join leaderboard room for real-time updates
+        window.socketClient.emit('join_leaderboard', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+            page: 'leaderboard'
+        });
+        
+        // Handle leaderboard initialization
+        window.socketClient.on('leaderboard_initialized', function(data) {
+            console.log('Leaderboard: Initialized with data:', data);
+            leaderboardData = data;
+            updateLeaderboardDisplay(data.overall);
+            setupCategoryData(data.categories);
+            loadRecentAchievements();
+        });
+        
+        // Handle live leaderboard updates
+        window.socketClient.on('live_leaderboard_update', function(data) {
+            console.log('Leaderboard: Live update received:', data);
+            handleLiveUpdate(data);
+        });
+        
+        // Handle category-specific updates
+        window.socketClient.on('category_leaderboard_update', function(data) {
+            console.log('Leaderboard: Category update received:', data);
+            handleCategoryUpdate(data);
+        });
+        
+        // Handle new high score achievements
+        window.socketClient.on('new_high_score_achieved', function(data) {
+            console.log('Leaderboard: New high score achieved:', data);
+            handleNewHighScore(data);
+        });
+        
+        // Handle leaderboard data responses
+        window.socketClient.on('leaderboard_data', function(data) {
+            console.log('Leaderboard: Data received:', data);
+            updateFilteredLeaderboard(data);
+        });
+        
+        // Request initial data
+        window.socketClient.emit('get_leaderboard_data', {
+            category: 'all',
+            time_period: 'all_time',
+            limit: 50
+        });
+        
+        console.log('Leaderboard: Live update handlers initialized successfully');
+    }
+    
+    // Live Update Functions
+    function handleLiveUpdate(data) {
+        // Update local leaderboard data
+        if (data.leaderboard_data) {
+            leaderboardData = data.leaderboard_data;
+            
+            // Update display if showing overall or matching category
+            if (currentCategory === 'all' || currentCategory === data.category) {
+                updateLeaderboardDisplay(data.leaderboard_data.overall || data.leaderboard_data.categories[data.category]);
+            }
+        }
+        
+        // Show real-time notification
+        if (data.is_new_high_score) {
+            showLiveNotification(
+                '🏆 New High Score!',
+                `${data.username} achieved ${data.score}% in ${data.category}!`,
+                'success'
+            );
+        } else {
+            showLiveNotification(
+                '📊 Score Update',
+                `${data.username} scored ${data.score}% in ${data.category}`,
+                'info'
+            );
+        }
+        
+        // Update recent achievements
+        updateRecentAchievements(data);
+        
+        // Highlight user if this is their score
+        if (data.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}') {
+            highlightUserEntry(data);
+        }
+    }
+    
+    function handleCategoryUpdate(data) {
+        // Update category-specific leaderboard if currently selected
+        if (currentCategory === data.category) {
+            updateLeaderboardDisplay(data.leaderboard_data);
+        }
+    }
+    
+    function handleNewHighScore(data) {
+        // Show special high score notification
+        showLiveNotification(
+            '🎉 New High Score Achievement!',
+            `${data.username} achieved ${data.score}% in ${data.category} - Now Rank #${data.new_rank}!`,
+            'success'
+        );
+        
+        // Add special highlighting and animation
+        highlightNewHighScore(data);
+        
+        // Update recent achievements
+        addRecentAchievement({
+            username: data.username,
+            score: data.score,
+            category: data.category,
+            type: 'high_score',
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    function updateFilteredLeaderboard(data) {
+        updateLeaderboardDisplay(data.entries);
+        
+        // Update user rank display if available
+        if (data.user_rank) {
+            updateUserRankDisplay(data.user_rank);
+        }
+    }
+    
+    function updateLeaderboardDisplay(entries) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        if (!leaderboardList || !entries || entries.length === 0) {
+            showEmptyLeaderboard();
+            return;
+        }
+        
+        // Clear existing entries
+        leaderboardList.innerHTML = '';
+        
+        // Add new entries with animation
+        entries.forEach((entry, index) => {
+            const entryElement = createLeaderboardEntry(entry, index + 1);
+            leaderboardList.appendChild(entryElement);
+            
+            // Animate entry in
+            setTimeout(() => {
+                entryElement.style.opacity = '1';
+                entryElement.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
+    }
+    
+    function createLeaderboardEntry(entry, rank) {
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'leaderboard-entry';
+        entryDiv.dataset.userId = entry.user_id;
+        entryDiv.dataset.rank = rank;
+        
+        // Initial animation state
+        entryDiv.style.opacity = '0';
+        entryDiv.style.transform = 'translateY(20px)';
+        entryDiv.style.transition = 'all 0.3s ease';
+        
+        // Determine medal/rank display
+        let rankDisplay = '';
+        if (rank === 1) {
+            rankDisplay = '<i class="fas fa-crown" style="color: #ffd700;"></i>';
+        } else if (rank === 2) {
+            rankDisplay = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>';
+        } else if (rank === 3) {
+            rankDisplay = '<i class="fas fa-medal" style="color: #cd7f32;"></i>';
+        } else {
+            rankDisplay = `<span class="rank-number">${rank}</span>`;
+        }
+        
+        entryDiv.innerHTML = `
+            <div class="rank-badge">${rankDisplay}</div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    ${entry.profile_img ? 
+                        `<img src="{{ url_for('static', filename='img/profiles/') }}${entry.profile_img}" alt="${entry.username}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                         <span class="avatar-text" style="display: none;">${entry.username[0].toUpperCase()}</span>` :
+                        `<span class="avatar-text">${entry.username[0].toUpperCase()}</span>`
+                    }
+                </div>
+                <div class="user-details">
+                    <h4 class="user-name">${entry.username}</h4>
+                    <div class="user-score">
+                        <span class="category-badge">${formatCategory(entry.category)}</span>
+                        <span class="attempt-date">${formatDate(entry.date_attempted)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="score-display">
+                <div class="score-value">${entry.score}%</div>
+                <div class="score-label">Best Score</div>
+            </div>
+        `;
+        
+        // Add hover effects
+        entryDiv.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px) scale(1.01)';
+            this.style.boxShadow = '0 8px 25px rgba(0, 217, 255, 0.3)';
+        });
+        
+        entryDiv.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = 'none';
+        });
+        
+        return entryDiv;
+    }
+    
+    function showEmptyLeaderboard() {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        if (!leaderboardList) return;
+        
+        leaderboardList.innerHTML = `
+            <div class="empty-leaderboard">
+                <i class="fas fa-trophy" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 16px;"></i>
+                <h3>No Entries Yet</h3>
+                <p>Be the first to complete challenges and claim your spot on the leaderboard!</p>
+            </div>
+        `;
+    }
+    
+    function showLiveNotification(title, message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `live-notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 300px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            opacity: 0;
+        `;
+        
+        const iconMap = {
+            'success': '🏆',
+            'info': '📊',
+            'warning': '⚠️',
+            'error': '❌'
+        };
+        
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 1.5rem;">${iconMap[type] || '📊'}</div>
+                <div>
+                    <div style="color: var(--text-primary); font-weight: 500; margin-bottom: 4px;">${title}</div>
+                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">${message}</div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+            notification.style.opacity = '1';
+        }, 100);
+        
+        // Remove after delay
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 4000);
+    }
+    
+    function updateRecentAchievements(data) {
+        const achievementsList = document.getElementById('recent-achievements');
+        if (!achievementsList) return;
+        
+        const achievement = document.createElement('div');
+        achievement.className = 'achievement-entry';
+        achievement.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--cyber-glow);
+            transition: all 0.3s ease;
+        `;
+        
+        achievement.innerHTML = `
+            <div class="achievement-icon" style="font-size: 1.5rem;">
+                ${data.is_new_high_score ? '🏆' : '📊'}
+            </div>
+            <div class="achievement-details">
+                <strong style="color: var(--text-primary);">${data.username}</strong> 
+                <span style="color: rgba(255, 255, 255, 0.8);">scored ${data.score}% in ${formatCategory(data.category)}</span>
+                <br>
+                <small style="color: rgba(255, 255, 255, 0.6);">Just now</small>
+            </div>
+        `;
+        
+        // Add to top of list
+        achievementsList.insertBefore(achievement, achievementsList.firstChild);
+        
+        // Remove old achievements (keep only 10)
+        while (achievementsList.children.length > 10) {
+            achievementsList.removeChild(achievementsList.lastChild);
+        }
+    }
+    
+    function highlightUserEntry(data) {
+        const userEntries = document.querySelectorAll(`[data-user-id="${data.user_id}"]`);
+        userEntries.forEach(entry => {
+            entry.style.background = 'rgba(0, 217, 255, 0.2)';
+            entry.style.border = '2px solid var(--cyber-glow)';
+            
+            setTimeout(() => {
+                entry.style.background = '';
+                entry.style.border = '';
+            }, 3000);
+        });
+    }
+    
+    function highlightNewHighScore(data) {
+        const userEntries = document.querySelectorAll(`[data-user-id="${data.user_id}"]`);
+        userEntries.forEach(entry => {
+            entry.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(0, 217, 255, 0.3))';
+            entry.style.border = '2px solid #ffd700';
+            entry.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.5)';
+            entry.style.animation = 'pulse-gold 2s ease-in-out 3';
+            
+            setTimeout(() => {
+                entry.style.background = '';
+                entry.style.border = '';
+                entry.style.boxShadow = '';
+                entry.style.animation = '';
+            }, 6000);
+        });
+    }
+    
+    function updateUserRankDisplay(rank) {
+        // Update user rank display in header or stats area
+        const rankDisplay = document.getElementById('user-rank-display');
+        if (rankDisplay) {
+            rankDisplay.textContent = `Your Rank: #${rank}`;
+        }
+    }
+    
+    function formatCategory(category) {
+        const categoryMap = {
+            'networking': 'Networking',
+            'topology': 'Network Topology',
+            'troubleshooting': 'Troubleshooting',
+            'crimping': 'Cable Crimping',
+            'riddle': 'Network Riddles',
+            'collaboration': 'Collaboration',
+            'all': 'Overall'
+        };
+        return categoryMap[category] || category;
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Recent';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        
+        return date.toLocaleDateString();
+    }
+    
+    function addRecentAchievement(achievement) {
+        const achievementsList = document.getElementById('recent-achievements');
+        if (!achievementsList) return;
+        
+        const achievementElement = document.createElement('div');
+        achievementElement.className = 'achievement-entry new-achievement';
+        achievementElement.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--dark-bg);
+            border-radius: 8px;
+            border-left: 3px solid #ffd700;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        `;
+        
+        achievementElement.innerHTML = `
+            <div class="achievement-icon" style="font-size: 1.5rem;">
+                ${achievement.type === 'high_score' ? '🏆' : '📊'}
+            </div>
+            <div class="achievement-details">
+                <strong style="color: var(--text-primary);">${achievement.username}</strong> 
+                <span style="color: rgba(255, 255, 255, 0.8);">
+                    ${achievement.type === 'high_score' ? 'achieved a new high score' : 'completed a challenge'}
+                </span>
+                <br>
+                <small style="color: rgba(255, 255, 255, 0.6);">${achievement.score}% in ${formatCategory(achievement.category)}</small>
+            </div>
+            <div class="achievement-time" style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+                Just now
+            </div>
+        `;
+        
+        achievementsList.insertBefore(achievementElement, achievementsList.firstChild);
+        
+        // Animate in
+        setTimeout(() => {
+            achievementElement.style.opacity = '1';
+            achievementElement.style.transform = 'translateY(0)';
+        }, 100);
+        
+        // Remove new class after animation
+        setTimeout(() => {
+            achievementElement.classList.remove('new-achievement');
+        }, 2000);
+        
+        // Limit to 10 achievements
+        while (achievementsList.children.length > 10) {
+            achievementsList.removeChild(achievementsList.lastChild);
+        }
+    }
+    
+    // Load recent achievements on page load
+    function loadRecentAchievements() {
+        const achievementsList = document.getElementById('recent-achievements');
+        if (!achievementsList) return;
+        
+        achievementsList.innerHTML = `
+            <div class="achievement-entry" style="display: flex; align-items: center; gap: 12px; padding: 12px; margin: 8px 0; background: var(--dark-bg); border-radius: 8px; border-left: 3px solid rgba(255, 255, 255, 0.2);">
+                <div class="achievement-icon" style="font-size: 1.5rem;">📊</div>
+                <div class="achievement-details">
+                    <em style="color: rgba(255, 255, 255, 0.6);">Recent achievements will appear here...</em>
+                </div>
+            </div>
+        `;
+    }
+    
+    function setupCategoryData(categories) {
+        // Store category data for filtering
+        if (categories) {
+            Object.keys(categories).forEach(category => {
+                leaderboardData.categories = leaderboardData.categories || {};
+                leaderboardData.categories[category] = categories[category];
+            });
+        }
+    }
+    
+    // Initialize recent achievements
+    loadRecentAchievements();
+    
+    // Time Period Filter Event Handlers
+    document.querySelectorAll('.time-period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Update active button
+            document.querySelectorAll('.time-period-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Update current time period
+            currentTimePeriod = this.dataset.timePeriod;
+            
+            // Request filtered data
+            if (window.socketClient) {
+                window.socketClient.emit('get_leaderboard_data', {
+                    category: currentCategory,
+                    time_period: currentTimePeriod,
+                    limit: 50
+                });
+            }
+        });
+    });
+    
+    // Category Filter Event Handlers
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Update current category
+            currentCategory = this.dataset.category;
+            
+            // Request filtered data
+            if (window.socketClient) {
+                window.socketClient.emit('get_leaderboard_data', {
+                    category: currentCategory,
+                    time_period: currentTimePeriod,
+                    limit: 50
+                });
+            }
+        });
+    });
+    
+    // Live Update Functions
+    function handleLiveUpdate(data) {
+        // Update local leaderboard data
+        if (data.leaderboard_data) {
+            leaderboardData = data.leaderboard_data;
+            
+            // Update display if showing overall or matching category
+            if (currentCategory === 'all' || currentCategory === data.category) {
+                updateLeaderboardDisplay(data.leaderboard_data.overall || data.leaderboard_data.categories[data.category]);
+            }
+        }
+        
+        // Show real-time notification
+        if (data.is_new_high_score) {
+            showLiveNotification(
+                '🏆 New High Score!',
+                `${data.username} achieved ${data.score}% in ${data.category}!`,
+                'success'
+            );
+        } else {
+            showLiveNotification(
+                '📊 Score Update',
+                `${data.username} scored ${data.score}% in ${data.category}`,
+                'info'
+            );
+        }
+        
+        // Update display based on current filter
+        if (currentCategory === 'all' || currentCategory === data.category) {
+            updateLeaderboardDisplay(leaderboardData.overall);
+            
+            // Highlight the updated user
+            highlightUserUpdate(data.user_id, data.is_new_high_score);
+        }
+        
+        // Update category display if viewing that category
+        if (currentCategory === data.category && leaderboardData.categories[data.category]) {
+            updateLeaderboardDisplay(leaderboardData.categories[data.category]);
+        }
+    }
+    
+    function handleCategoryUpdate(data) {
+        // Update category-specific data
+        if (leaderboardData.categories && data.category) {
+            // Request fresh category data
+            window.socketClient.emit('get_leaderboard_data', {
+                category: data.category,
+                time_period: currentTimePeriod,
+                limit: 20
+            });
+        }
+    }
+    
+    function handleNewHighScore(data) {
+        // Special handling for new high scores
+        showCelebrationEffect(data);
+        
+        // Update leaderboard with celebration
+        setTimeout(() => {
+            updateLeaderboardDisplay(leaderboardData.overall);
+            highlightUserUpdate(data.user_id, true);
+        }, 1000);
+    }
+    
+    function showCelebrationEffect(data) {
+        // Create celebration overlay
+        const celebration = document.createElement('div');
+        celebration.className = 'celebration-overlay';
+        celebration.innerHTML = `
+            <div class="celebration-content">
+                <div class="celebration-icon">🏆</div>
+                <h2>NEW HIGH SCORE!</h2>
+                <p><strong>${data.username}</strong></p>
+                <p>${data.score}% in ${data.category}</p>
+                <p>Rank #${data.rank}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(celebration);
+        
+        // Remove after animation
+        setTimeout(() => {
+            celebration.remove();
+        }, 4000);
+    }
+    
+    function highlightUserUpdate(userId, isHighScore = false) {
+        const userEntry = document.querySelector(`[data-user-id="${userId}"]`);
+        if (userEntry) {
+            if (isHighScore) {
+                userEntry.classList.add('new-high-score');
+                userEntry.style.animation = 'pulse-gold 2s ease-in-out 3';
+            } else {
+                userEntry.classList.add('score-updated');
+                userEntry.style.animation = 'pulse-blue 1s ease-in-out 2';
+            }
+            
+            // Scroll to the updated entry
+            userEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Remove classes after animation
+            setTimeout(() => {
+                userEntry.classList.remove('new-high-score', 'score-updated');
+                userEntry.style.animation = '';
+            }, 6000);
+        }
+    }
+    
+    function updateLeaderboardDisplay(entries) {
+        const leaderboardList = document.querySelector('#leaderboard-list');
+        if (!leaderboardList) return;
+        
+        // Save current scroll position
+        const scrollPosition = window.pageYOffset;
+        
+        // Smooth update with fade effect
+        leaderboardList.style.transition = 'opacity 0.3s ease';
+        leaderboardList.style.opacity = '0.6';
+        
+        setTimeout(() => {
+            leaderboardList.innerHTML = '';
+            
+            if (entries.length === 0) {
+                leaderboardList.innerHTML = `
+                    <div class="empty-leaderboard">
+                        <i class="fas fa-trophy"></i>
+                        <h3>No Entries Yet</h3>
+                        <p>Be the first to complete challenges and claim your spot!</p>
+                    </div>
+                `;
+            } else {
+                entries.forEach((entry, index) => {
+                    const entryElement = createLeaderboardEntry(entry, index + 1);
+                    leaderboardList.appendChild(entryElement);
+                });
+            }
+            
+            // Restore visibility
+            leaderboardList.style.opacity = '1';
+            
+            // Restore scroll position
+            window.scrollTo(0, scrollPosition);
+            
+            // Animate entries
+            animateEntriesIn();
+        }, 300);
+    }
+    
+    function createLeaderboardEntry(entry, rank) {
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'leaderboard-entry';
+        entryDiv.setAttribute('data-user-id', entry.user_id);
+        entryDiv.setAttribute('data-rank', rank);
+        
+        // Determine rank display
+        let rankDisplay = '';
+        if (rank === 1) {
+            rankDisplay = '<i class="fas fa-crown" style="color: #ffd700;"></i>';
+        } else if (rank === 2) {
+            rankDisplay = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>';
+        } else if (rank === 3) {
+            rankDisplay = '<i class="fas fa-medal" style="color: #cd7f32;"></i>';
+        } else {
+            rankDisplay = `<span class="rank-number">${rank}</span>`;
+        }
+        
+        entryDiv.innerHTML = `
+            <div class="rank-badge">${rankDisplay}</div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    ${entry.profile_img ? 
+                        `<img src="/static/img/profiles/${entry.profile_img}" alt="${entry.username}'s avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                         <span class="avatar-text" style="display: none;">${entry.username[0].toUpperCase()}</span>` : 
+                        `<span class="avatar-text">${entry.username[0].toUpperCase()}</span>`
+                    }
+                </div>
+                <div class="user-details">
+                    <h4 class="user-name">${entry.username}</h4>
+                    <div class="user-score">
+                        <span class="category-badge">${formatCategory(entry.category)}</span>
+                        <span class="attempt-date">${formatDate(entry.date_attempted)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="score-display">
+                <div class="score-value">${entry.score}%</div>
+                <div class="score-label">Best Score</div>
+            </div>
+        `;
+        
+        // Add hover effects
+        entryDiv.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px) scale(1.02)';
+            this.style.boxShadow = '0 12px 40px rgba(0, 217, 255, 0.3)';
+        });
+        
+        entryDiv.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = 'var(--shadow-lg)';
+        });
+        
+        return entryDiv;
+    }
+    
+    function setupCategoryData(categories) {
+        // Store category data for quick access
+        leaderboardData.categories = categories;
+    }
+    
+    function updateFilteredLeaderboard(data) {
+        updateLeaderboardDisplay(data.entries);
+        updateFilterInfo(data.category, data.time_period);
+    }
+    
+    function updateFilterInfo(category, timePeriod) {
+        const filterInfo = document.querySelector('.filter-info');
+        if (filterInfo) {
+            filterInfo.textContent = `${formatCategory(category)} • ${formatTimePeriod(timePeriod)}`;
+        }
+    }
+    
+    // Enhanced Category Filtering with Live Updates
+    function showCategory(category) {
+        currentCategory = category;
+        
+        // Update active button
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        
+        // Request fresh data for the category
+        window.socketClient.emit('get_leaderboard_data', {
+            category: category,
+            time_period: currentTimePeriod,
+            limit: 50
+        });
+    }
+    
+    // Time Period Filtering
+    function setupTimePeriodFilters() {
+        const timePeriodButtons = document.querySelectorAll('.time-period-btn');
+        timePeriodButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const timePeriod = this.dataset.timePeriod;
+                currentTimePeriod = timePeriod;
+                
+                // Update active button
+                timePeriodButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Request fresh data
+                window.socketClient.emit('get_leaderboard_data', {
+                    category: currentCategory,
+                    time_period: timePeriod,
+                    limit: 50
+                });
+            });
+        });
+    }
+    
+    function loadRecentAchievements() {
+        // Load recent achievements via WebSocket or AJAX
+        // This would typically be loaded from the server
+        const achievementsList = document.getElementById('recent-achievements');
+        achievementsList.innerHTML = `
+            <div class="achievement-item">
+                <div class="achievement-icon">🏆</div>
+                <div class="achievement-text">Loading recent achievements...</div>
+            </div>
+        `;
+    }
+    
+    function animateEntriesIn() {
+        const entries = document.querySelectorAll('.leaderboard-entry');
         entries.forEach((entry, index) => {
             entry.style.opacity = '0';
             entry.style.transform = 'translateY(20px)';
@@ -903,38 +1816,88 @@ document.addEventListener('DOMContentLoaded', function () {
                 entry.style.transition = 'all 0.5s ease';
                 entry.style.opacity = '1';
                 entry.style.transform = 'translateY(0)';
-            }, index * 100);
+            }, index * 50);
         });
     }
-});
-
-// WebSocket Integration for Leaderboard Page
+    
+    // Helper Functions
+    function formatCategory(category) {
+        const categoryMap = {
+            'topology': 'Network Topology',
+            'crimping': 'Cable Crimping',
+            'troubleshooting': 'Troubleshooting',
+            'riddle': 'Network Riddles',
+            'networking': 'Networking',
+            'collaboration': 'Collaboration',
+            'all': 'Overall'
+        };
+        return categoryMap[category] || category;
+    }
+    
+    function formatTimePeriod(period) {
+        const periodMap = {
+            'daily': 'Today',
+            'weekly': 'This Week',
+            'monthly': 'This Month',
+            'yearly': 'This Year',
+            'all_time': 'All Time'
+        };
+        return periodMap[period] || period;
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Recent';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
+    
+    function showLiveNotification(title, message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `live-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <div class="notification-icon">
+                    ${type === 'success' ? '🏆' : type === 'info' ? '📊' : '⚡'}
+                </div>
+                <div class="notification-text">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+        
+        // Remove after delay
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 4000);
+    }
+    
+    // Initialize time period filters
+    setupTimePeriodFilters();
+    
+    // Make showCategory globally accessible
+    window.showCategory = showCategory;
+    
+    // WebSocket handlers continuation
     if (window.socketClient) {
-        console.log('Leaderboard: Initializing WebSocket handlers...');
-        
-        // Join leaderboard-specific room
-        window.socketClient.emit('join_leaderboard', {
-            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-            page: 'leaderboard'
-        });
-        
-        // Handle real-time leaderboard updates
-        window.socketClient.on('leaderboard_update', function(data) {
-            console.log('Leaderboard: Update received:', data);
-            updateLeaderboardDisplay(data);
-            showLeaderboardNotification('Leaderboard Updated', 'New scores have been added!', 'info');
-        });
-        
-        // Handle new high score achievements
-        window.socketClient.on('new_high_score', function(data) {
-            console.log('Leaderboard: New high score received:', data);
-            highlightNewHighScore(data);
-            showLeaderboardNotification('New High Score!', `${data.username} achieved ${data.score}% in ${data.category}!`, 'success');
-        });
-        
-        // Handle user rank changes
-        window.socketClient.on('rank_change', function(data) {
-            console.log('Leaderboard: Rank change received:', data);
+        // Handle position change notifications
+        window.socketClient.on('leaderboard_position_change', function(data) {
+            console.log('Leaderboard: Position change received:', data);
             if (data.user_id === '{{ current_user.id if current_user.is_authenticated else "" }}') {
                 showLeaderboardNotification('Rank Changed!', `You are now rank #${data.new_rank}!`, 'success');
                 highlightUserRank(data.new_rank);
@@ -1114,8 +2077,8 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
     document.head.appendChild(pulseStyles);
 
-// Category filtering functionality - Admin Dashboard Style
-function showCategory(category) {
+    // Category filtering functionality - Admin Dashboard Style
+    function showCategory(category) {
     // Update active button
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -1202,5 +2165,7 @@ function getCategoryFromText(text) {
     if (text.includes('Riddles')) return 'riddle';
     return 'all';
 }
+
+}); // End DOMContentLoaded
 </script>
 {% endblock %}

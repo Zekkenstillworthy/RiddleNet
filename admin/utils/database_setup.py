@@ -16,6 +16,10 @@ def setup_database():
     from admin.models.essay_response import EssayResponse
     from admin.models.activity_log import ActivityLog
     from admin.models.topology import Topology
+    
+    # Import performance feedback models
+    from user.models.performance_feedback import PerformanceFeedback, FeedbackSession
+    
     from werkzeug.security import generate_password_hash
     
     print("Creating database tables...")
@@ -40,6 +44,7 @@ def setup_database():
     migrate_existing_tables()
     
     print("Database setup complete!")
+    print("✅ Performance feedback tables created successfully!")
 
 def migrate_existing_tables():
     """Add missing columns to existing tables"""

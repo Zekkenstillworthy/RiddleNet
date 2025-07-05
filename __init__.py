@@ -54,6 +54,14 @@ def create_app(config=None):
     db.init_app(app)
     migrate.init_app(app, db)
     
+    # Add custom Jinja2 filters
+    @app.template_filter('strftime')
+    def strftime_filter(date, format='%Y-%m-%d %H:%M:%S'):
+        """Convert a datetime to a string using strftime."""
+        if date:
+            return date.strftime(format)
+        return ""
+    
     # Initialize Login Manager
     login_manager.init_app(app)
     login_manager.login_view = 'user.login'  # Specify the login view endpoint

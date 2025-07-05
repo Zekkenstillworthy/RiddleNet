@@ -342,6 +342,152 @@
       background-position: -200% 0;
     }
   }
+
+  /* Live Leaderboard Animations */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { 
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+      transform: scale(1);
+    }
+    50% { 
+      box-shadow: 0 0 30px rgba(255, 215, 0, 1);
+      transform: scale(1.02);
+    }
+  }
+
+  @keyframes pulse-blue {
+    0%, 100% { 
+      box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
+      transform: scale(1);
+    }
+    50% { 
+      box-shadow: 0 0 25px rgba(0, 217, 255, 0.8);
+      transform: scale(1.01);
+    }
+  }
+
+  /* Celebration Effect */
+  .celebration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: celebrationFade 4s ease-in-out;
+  }
+
+  .celebration-content {
+    background: var(--glass-bg);
+    border: 2px solid #ffd700;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    animation: celebrationBounce 1s ease-out;
+  }
+
+  .celebration-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: celebrationSpin 2s ease-in-out;
+  }
+
+  @keyframes celebrationFade {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes celebrationBounce {
+    0% { transform: scale(0.5) rotate(-10deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  @keyframes celebrationSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Live Notification Styles */
+  .live-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    backdrop-filter: blur(20px);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 350px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .live-notification.show {
+    transform: translateX(0);
+  }
+
+  .live-notification.success {
+    border-left: 4px solid #ffd700;
+  }
+
+  .live-notification.info {
+    border-left: 4px solid var(--cyber-glow);
+  }
+
+  .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .notification-icon {
+    font-size: 1.5rem;
+    min-width: 24px;
+  }
+
+  .notification-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .notification-message {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+  }
+
+  /* Leaderboard Entry Animations */
+  .leaderboard-entry.new-high-score {
+    animation: pulse-gold 2s ease-in-out 3;
+  }
+
+  .leaderboard-entry.score-updated {
+    animation: pulse-blue 1s ease-in-out 2;
+  }
+
+  .leaderboard-entry {
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-entry:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+  }
 </style>
 
 <link
@@ -425,6 +571,33 @@
         <p style="color: rgba(255, 255, 255, 0.8); margin: 0; font-size: 0.9rem;">
           You have a Quiz on Monday 10 am
         </p>
+      </div>
+    </div>
+
+    <!-- Live Leaderboard Widget - Compact -->
+    <div class="modern-card" style="margin-bottom: 24px;">
+      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <i class="fas fa-trophy section-icon"></i>
+          <h2 style="margin: 0; font-size: 1.3rem;">Live Leaderboard</h2>
+        </div>
+        <div class="live-indicator" style="display: flex; align-items: center; gap: 8px;">
+          <div class="live-dot" style="width: 8px; height: 8px; background: #00ff00; border-radius: 50%; animation: pulse 2s infinite;"></div>
+          <span style="color: #00ff00; font-size: 0.85rem; font-weight: 500;">LIVE</span>
+        </div>
+      </div>
+      
+      <div id="dashboard-leaderboard" style="margin-top: 16px;">
+        <div class="leaderboard-loading" style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
+          <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+          <p>Loading live leaderboard...</p>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 16px;">
+        <a href="{{ url_for('user.leaderboard') }}" class="btn-primary" style="padding: 8px 16px; font-size: 0.9rem; text-decoration: none; border-radius: 6px;">
+          View Full Leaderboard
+        </a>
       </div>
     </div>
 
@@ -543,36 +716,89 @@
           playClickSound();
         }
       });
-    });
-
-    // Enhanced WebSocket Integration for Dashboard
-    setTimeout(() => {
-      if (window.socketClient) {
-        console.log('Dashboard: Initializing comprehensive WebSocket handlers...');
-        
-        // Join dashboard-specific room
-        window.socketClient.emit('join_dashboard', {
-          user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-          page: 'dashboard'
-        });
-        
-        // Handle real-time score updates
-        window.socketClient.on('score_update', function(data) {
-          console.log('Dashboard: Score update received:', data);
-          updateDashboardScore(data);
-          
-          // Show notification
-          if (window.socketClient.showNotification) {
-            window.socketClient.showNotification(
-              'Score Updated!', 
-              `Your ${data.category} score: ${data.score}`, 
-              'success'
-            );
-          }
-        });
-        
-        // Handle leaderboard updates
-        window.socketClient.on('leaderboard_update', function(data) {
+    });        // Enhanced WebSocket Integration for Dashboard
+        setTimeout(() => {
+          if (window.socketClient) {
+            console.log('Dashboard: Initializing comprehensive WebSocket handlers...');
+            
+            // Join dashboard-specific room
+            window.socketClient.emit('join_dashboard', {
+              user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+              page: 'dashboard'
+            });
+            
+            // Join live leaderboard for dashboard updates
+            window.socketClient.emit('join_leaderboard', {
+              user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+              page: 'dashboard'
+            });
+            
+            // Handle real-time score updates
+            window.socketClient.on('score_update', function(data) {
+              console.log('Dashboard: Score update received:', data);
+              updateDashboardScore(data);
+              
+              // Show notification
+              if (window.socketClient.showNotification) {
+                window.socketClient.showNotification(
+                  'Score Updated!', 
+                  `Your ${data.category} score: ${data.score}`, 
+                  'success'
+                );
+              }
+            });
+            
+            // Handle leaderboard initialization
+            window.socketClient.on('leaderboard_initialized', function(data) {
+              console.log('Dashboard: Leaderboard initialized:', data);
+              if (data.overall) {
+                updateDashboardLeaderboard(data.overall);
+              }
+            });
+            
+            // Handle live leaderboard updates
+            window.socketClient.on('live_leaderboard_update', function(data) {
+              console.log('Dashboard: Live leaderboard update:', data);
+              if (data.leaderboard_data && data.leaderboard_data.overall) {
+                updateDashboardLeaderboard(data.leaderboard_data.overall);
+              }
+              
+              // Show notification for score updates
+              if (data.is_new_high_score) {
+                showDashboardNotification(
+                  '🏆 New High Score!',
+                  `${data.username} achieved ${data.score}% in ${data.category}!`,
+                  'success'
+                );
+              } else {
+                showDashboardNotification(
+                  '📊 Score Update',
+                  `${data.username} scored ${data.score}% in ${data.category}`,
+                  'info'
+                );
+              }
+            });
+            
+            // Handle new high score achievements
+            window.socketClient.on('new_high_score_achieved', function(data) {
+              console.log('Dashboard: New high score achieved:', data);
+              showDashboardNotification(
+                '🎉 New High Score!',
+                `${data.username} achieved ${data.score}% in ${data.category} - Rank #${data.new_rank}`,
+                'success'
+              );
+            });
+            
+            // Handle leaderboard data responses
+            window.socketClient.on('leaderboard_data', function(data) {
+              console.log('Dashboard: Leaderboard data received:', data);
+              if (data.entries) {
+                updateDashboardLeaderboard(data.entries);
+              }
+            });
+            
+            // Handle leaderboard updates
+            window.socketClient.on('leaderboard_update', function(data) {
           console.log('Dashboard: Leaderboard update received:', data);
           updateDashboardLeaderboard(data);
         });
@@ -622,28 +848,6 @@
 
     // ===== DASHBOARD-SPECIFIC FUNCTIONALITY =====
     // Note: Sidebar functionality is now handled by sidebar.js
-
-    // Update connection status (dashboard-specific implementation)
-    function updateConnectionStatus(isConnected) {
-        const statusDot = document.querySelector('.status-dot');
-        const statusText = document.querySelector('.status-text');
-        
-        if (statusDot && statusText) {
-            if (isConnected) {
-                statusDot.classList.remove('disconnected');
-                statusText.textContent = 'Connected';
-            } else {
-                statusDot.classList.add('disconnected');
-                statusText.textContent = 'Disconnected';
-            }
-        }
-    }
-
-    // WebSocket connection monitoring
-    if (typeof window.socketClient !== 'undefined') {
-        window.socketClient.on('connected', () => updateConnectionStatus(true));
-        window.socketClient.on('disconnected', () => updateConnectionStatus(false));
-    }
 
     // Ripple effect function for dashboard elements
     function addRippleEffect(element, event) {
@@ -800,9 +1004,194 @@
           }
         }
       });
+    }        // Enhanced live leaderboard for dashboard
+        function updateDashboardLeaderboard(leaderboardData) {
+          const leaderboardContainer = document.getElementById('dashboard-leaderboard');
+          if (!leaderboardContainer) return;
+          
+          // Show loading state
+          leaderboardContainer.innerHTML = `
+            <div class="leaderboard-loading" style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
+              <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+              <p>Updating leaderboard...</p>
+            </div>
+          `;
+          
+          setTimeout(() => {            if (leaderboardData && leaderboardData.length > 0) {
+              const topEntries = leaderboardData.slice(0, 5); // Show top 5
+              
+              leaderboardContainer.innerHTML = `
+                <div class="dashboard-leaderboard-list">
+                  ${topEntries.map((entry, index) => `
+                    <div class="dashboard-leaderboard-entry" style="display: flex; align-items: center; padding: 12px; margin: 8px 0; background: var(--dark-bg); border-radius: 8px; border-left: 3px solid ${index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : 'var(--cyber-glow)'}; transition: all 0.3s ease;">
+                      <div class="rank-badge" style="width: 30px; height: 30px; border-radius: 50%; background: ${index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : 'var(--cyber-glow)'}; color: var(--dark-bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; margin-right: 12px;">
+                        ${index === 0 ? '<i class="fas fa-crown"></i>' : index === 1 ? '<i class="fas fa-medal"></i>' : index === 2 ? '<i class="fas fa-medal"></i>' : index + 1}
+                      </div>
+                      <div class="user-info" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                        <div class="user-avatar" style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid var(--cyber-glow);">
+                          ${entry.profile_img ? 
+                            `<img src="{{ url_for('static', filename='img/profiles/') }}${entry.profile_img}" alt="${entry.username}" style="width: 100%; height: 100%; object-fit: cover;">` :
+                            `<div style="width: 100%; height: 100%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 500; font-size: 0.8rem;">${entry.username[0].toUpperCase()}</div>`
+                          }
+                        </div>
+                        <span style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">${entry.username}</span>
+                      </div>
+                      <div class="score-info" style="text-align: right;">
+                        <div style="color: var(--cyber-glow); font-weight: 700; font-size: 0.9rem;">${entry.score}%</div>
+                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">${formatCategory(entry.category)}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+              
+              // Add hover effects
+              const entryElements = leaderboardContainer.querySelectorAll('.dashboard-leaderboard-entry');
+              entryElements.forEach(entry => {
+                entry.addEventListener('mouseenter', function() {
+                  this.style.transform = 'translateX(5px)';
+                  this.style.boxShadow = '0 4px 12px rgba(0, 217, 255, 0.2)';
+                });
+                
+                entry.addEventListener('mouseleave', function() {
+                  this.style.transform = 'translateX(0)';
+                  this.style.boxShadow = 'none';
+                });
+              });
+            } else {
+              leaderboardContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
+                  <i class="fas fa-trophy" style="font-size: 2rem; margin-bottom: 8px; opacity: 0.5;"></i>
+                  <p>No leaderboard data available</p>
+                  <p style="font-size: 0.85rem; margin-top: 8px;">Complete challenges to see rankings!</p>
+                </div>
+              `;
+            }
+      }, 300);
     }
     
-    function updateDashboardLeaderboard(leaderboardData) {
+    // Initialize dashboard live leaderboard
+    function initializeDashboardLeaderboard() {
+      if (window.socketClient) {
+        // Join dashboard leaderboard updates
+        window.socketClient.emit('join_leaderboard', {
+          user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+          page: 'dashboard'
+        });
+        
+        // Handle dashboard leaderboard updates
+        window.socketClient.on('leaderboard_initialized', function(data) {
+          console.log('Dashboard: Leaderboard initialized:', data);
+          updateDashboardLeaderboard(data);
+        });
+        
+        window.socketClient.on('live_leaderboard_update', function(data) {
+          console.log('Dashboard: Live leaderboard update:', data);
+          updateDashboardLeaderboard(data.leaderboard_data);
+          
+          // Show mini notification
+          showDashboardNotification(
+            data.is_new_high_score ? '🏆 New High Score!' : '📊 Score Update',
+            `${data.username} scored ${data.score}% in ${data.category}`,
+            data.is_new_high_score ? 'success' : 'info'
+          );
+        });
+        
+        // Request initial leaderboard data
+        window.socketClient.emit('get_leaderboard_data', {
+          category: 'all',
+          time_period: 'all_time',
+          limit: 5
+        });
+      }
+    }
+    
+    // Dashboard notification system
+    function showDashboardNotification(title, message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `dashboard-notification ${type}`;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        backdrop-filter: blur(20px);
+        z-index: 1000;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        max-width: 300px;
+      `;
+      
+      notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="font-size: 1.2rem;">${type === 'success' ? '🏆' : '📊'}</div>
+          <div>
+            <div style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">${title}</div>
+            <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; margin-top: 2px;">${message}</div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // Remove after delay
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      }, 4000);
+    }
+    
+    // Helper function for category formatting
+    function formatCategory(category) {
+      const categoryMap = {
+        'topology': 'Network Topology',
+        'crimping': 'Cable Crimping',
+        'troubleshooting': 'Troubleshooting',
+        'riddle': 'Network Riddles',
+        'networking': 'Networking',
+        'collaboration': 'Collaboration',
+        'all': 'Overall'
+      };
+      return categoryMap[category] || category;
+    }        // Initialize dashboard live leaderboard
+        function initializeDashboardLeaderboard() {
+          if (window.socketClient) {
+            console.log('Dashboard: Initializing live leaderboard...');
+            
+            // Request initial leaderboard data
+            window.socketClient.emit('get_leaderboard_data', {
+              category: 'all',
+              time_period: 'all_time',
+              limit: 5
+            });
+            
+            // Set up periodic refresh
+            setInterval(() => {
+              window.socketClient.emit('get_leaderboard_data', {
+                category: 'all',
+                time_period: 'all_time',
+                limit: 5
+              });
+            }, 30000); // Refresh every 30 seconds
+          }
+        }
+        
+        // Initialize dashboard leaderboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(initializeDashboardLeaderboard, 1000);
+        });
+    
+    function updateDashboardLeaderboard_OLD(leaderboardData) {
       const leaderboardTable = document.querySelector('.modern-table tbody');
       if (leaderboardTable && leaderboardData.entries) {
         // Add fade-out animation

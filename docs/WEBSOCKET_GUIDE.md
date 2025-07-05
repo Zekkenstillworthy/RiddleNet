@@ -55,7 +55,6 @@ The following WebSocket events are implemented:
 - `topology_progress_updated`: Updates on topology progress
 - `topology_state_updated`: Network state updates
 - `essay_submitted`: Confirmation of essay submission
-- `admin_message`: Messages from administrators
 - `user_troubleshooting_progress`: Updates on troubleshooting progress
 
 ### Client to Server Events:
@@ -63,7 +62,6 @@ The following WebSocket events are implemented:
 - `join_troubleshooting`: Join a troubleshooting room
 - `topology_network_update`: Send network updates
 - `troubleshooting_progress`: Report progress on troubleshooting
-- `admin_broadcast`: Send admin messages
 
 ## Room-Based Communication
 

@@ -1,5 +1,5 @@
 from __init__ import db
-import datetime
+from datetime import datetime
 
 class TopologyProgress(db.Model):
     """Model for tracking user progress on topology exercises"""
@@ -10,9 +10,9 @@ class TopologyProgress(db.Model):
     topology_type = db.Column(db.String(50), nullable=False)
     highest_score = db.Column(db.Integer, default=0)
     completion_count = db.Column(db.Integer, default=0)
-    last_attempt = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    last_attempt = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationship
     user = db.relationship('User', backref=db.backref('topology_progress', lazy='dynamic'))

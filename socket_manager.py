@@ -3,7 +3,7 @@ from flask import request
 from flask_login import current_user
 import functools
 import eventlet
-import datetime
+from datetime import datetime
 
 # Apply eventlet monkey patch for better performance
 eventlet.monkey_patch()
@@ -114,7 +114,7 @@ def register_handlers():
                 user_connections[request.sid] = {
                     'user_id': user_id,
                     'username': username,
-                    'connected_at': datetime.datetime.utcnow().isoformat()
+                    'connected_at': datetime.utcnow().isoformat()
                 }
                 
                 # Join user-specific room
@@ -144,7 +144,7 @@ def register_handlers():
                 emit('user_connected', {
                     'user_id': user_id,
                     'username': username,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 }, room='admin_room')
                 
             else:
@@ -175,7 +175,7 @@ def register_handlers():
                 emit('user_disconnected', {
                     'user_id': user_id,
                     'username': username,
-                    'timestamp': datetime.datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat()
                 }, room='admin_room')
         except Exception as e:
             print(f"❌ Error in disconnect handler: {str(e)}")
@@ -187,7 +187,7 @@ def register_handlers():
             socket_monitor.update_activity(request.sid)
             emit('health_status', {
                 'status': 'healthy',
-                'server_time': datetime.datetime.utcnow().isoformat(),
+                'server_time': datetime.utcnow().isoformat(),
                 'active_connections': len(user_connections),
                 'client_time': data.get('client_time') if data else None
             })

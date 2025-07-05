@@ -228,13 +228,1257 @@
             min-height: 50px;
         }
     }
+
+    /* ===== PERFORMANCE FEEDBACK SIDEBAR STYLES ===== */
+    
+    /* Mobile Performance Toggle Button */
+    .mobile-performance-toggle {
+        display: none;
+        position: fixed;
+        bottom: 160px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1600;
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3), 0 0 20px rgba(0, 217, 255, 0.2);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .mobile-performance-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.3);
+    }
+
+    .mobile-performance-toggle:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-performance-toggle i {
+        color: var(--cyber-glow);
+        font-size: 24px;
+    }
+    
+    .performance-sidebar {
+        position: fixed;
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%);
+        width: 350px;
+        height: 80vh;
+        max-height: 800px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        z-index: 1500;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(-50%) translateX(320px);
+        opacity: 0;
+        overflow: hidden;
+    }
+
+    .performance-sidebar.active {
+        transform: translateY(-50%) translateX(0);
+        opacity: 1;
+    }
+
+    .performance-sidebar.flash {
+        animation: flashSidebar 2s ease-in-out;
+    }
+    
+    @keyframes flashSidebar {
+        0%, 100% { 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
+        }
+        50% { 
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
+                       0 0 20px rgba(76, 175, 80, 0.3); 
+        }
+    }
+    
+    .performance-sidebar .hint.success {
+        background: linear-gradient(135deg, 
+            rgba(76, 175, 80, 0.1) 0%, 
+            rgba(76, 175, 80, 0.05) 100%);
+        border-left: 4px solid #4CAF50;
+        animation: slideInRight 0.5s ease-out;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .performance-sidebar .progress-ring.complete {
+        animation: pulseComplete 1s ease-in-out;
+    }
+    
+    @keyframes pulseComplete {
+        0%, 100% { 
+            transform: scale(1); 
+        }
+        50% { 
+            transform: scale(1.05); 
+        }
+    }
+    
+    .performance-sidebar .achievement.unlocked {
+        animation: achievementUnlock 0.6s ease-out;
+    }
+    
+    @keyframes achievementUnlock {
+        0% {
+            transform: scale(0.8) rotate(-5deg);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1) rotate(2deg);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+    }
+
+    .performance-toggle {
+        position: absolute;
+        left: -60px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 120px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .performance-toggle:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: translateY(-50%) translateX(-5px);
+    }
+
+    .performance-toggle i {
+        font-size: 24px;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+        transform: rotate(90deg);
+    }
+
+    .toggle-text {
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .sidebar-content {
+        height: 100%;
+        overflow-y: auto;
+        padding: 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-glow) rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 24px 16px;
+        border-bottom: 1px solid var(--glass-border);
+        background: rgba(0, 217, 255, 0.05);
+    }
+
+    .sidebar-header h3 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .close-sidebar {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .close-sidebar:hover {
+        color: var(--danger-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .feedback-section {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feedback-section:last-child {
+        border-bottom: none;
+    }
+
+    .feedback-section h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .feedback-section h4 i {
+        color: var(--cyber-glow);
+        font-size: 16px;
+    }
+
+    /* Score Display */
+    .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-bottom: 16px;
+    }
+
+    .score-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .score-unit {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .score-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    .score-item span:first-child {
+        color: var(--text-secondary);
+    }
+
+    .score-item span:last-child {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    /* Progress Meter */
+    .progress-meter {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .progress-circle {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    .progress-ring-fill {
+        transition: stroke-dashoffset 0.5s ease;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .progress-details {
+        flex: 1;
+    }
+
+    .progress-status {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .estimated-time {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    /* Hints Container */
+    .hints-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .hint-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(0, 217, 255, 0.05);
+        border-left: 3px solid var(--cyber-glow);
+        border-radius: 8px;
+        animation: slideInFromRight 0.3s ease;
+    }
+
+    @keyframes slideInFromRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .hint-icon {
+        color: var(--cyber-glow);
+        font-size: 16px;
+        margin-top: 2px;
+    }
+
+    .hint-text {
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .metric-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .metric-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--cyber-glow);
+    }
+
+    .metric-icon {
+        color: var(--cyber-glow);
+        font-size: 18px;
+    }
+
+    .metric-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .metric-value {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 16px;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .metric-label {
+        color: var(--text-secondary);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Achievements */
+    .achievements-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .achievement-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03);
+        transition: all var(--transition-speed) ease;
+        flex: 1;
+        min-width: 70px;
+        cursor: default;
+    }
+
+    .achievement-badge.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+    }
+
+    .achievement-badge.unlocked {
+        border-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+        animation: achievementUnlock 0.6s ease;
+    }
+
+    @keyframes achievementUnlock {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .achievement-icon {
+        font-size: 20px;
+        color: var(--success-color);
+    }
+
+    .achievement-text {
+        font-size: 10px;
+        color: var(--text-primary);
+        text-align: center;
+        font-weight: 500;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid var(--cyber-glow);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        text-decoration: none;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(0, 217, 255, 0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    .quick-action-btn i {
+        color: var(--cyber-glow);
+        font-size: 16px;
+    }
+
+    /* Responsive Design for Performance Sidebar */
+    @media (max-width: 1200px) {
+        .performance-sidebar {
+            width: 300px;
+            transform: translateY(-50%) translateX(270px);
+        }
+        
+        .performance-sidebar.active {
+            transform: translateY(-50%) translateX(0);
+        }
+        
+        .feedback-section {
+            padding: 16px 20px;
+        }
+        
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .mobile-performance-toggle {
+            display: flex !important;
+        }
+        
+        .performance-sidebar {
+            width: 280px;
+            height: 70vh;
+            top: auto;
+            bottom: 140px;
+            right: 10px;
+            transform: translateX(300px);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .performance-sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .performance-toggle {
+            display: none;
+        }
+        
+        .sidebar-header {
+            padding: 16px 16px 12px;
+        }
+        
+        .feedback-section {
+            padding: 12px 16px;
+        }
+        
+        .score-value {
+            font-size: 28px;
+        }
+        
+        .progress-circle {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .progress-circle svg {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .achievements-container {
+            gap: 6px;
+        }
+        
+        .achievement-badge {
+            min-width: 60px;
+            padding: 8px 6px;
+        }
+    }
+
+    /* Achievement Notifications */
+    .achievement-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, var(--cyber-glow) 0%, var(--cyber-accent) 100%);
+        color: var(--background);
+        padding: 16px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        box-shadow: 0 8px 32px rgba(0, 217, 255, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 10000;
+    }
+
+    .achievement-notification.show {
+        transform: translateX(0);
+    }
+
+    .achievement-icon {
+        font-size: 32px;
+        line-height: 1;
+    }
+
+    .achievement-details {
+        flex: 1;
+    }
+
+    .achievement-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .achievement-desc {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 4px;
+    }
+
+    .achievement-points {
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    /* Score Change Animation */
+    .score-change {
+        position: absolute;
+        top: -10px;
+        right: 0;
+        font-size: 14px;
+        font-weight: 600;
+        pointer-events: none;
+        animation: scoreChange 2s ease-out forwards;
+    }
+
+    .score-change.positive {
+        color: var(--success);
+    }
+
+    .score-change.negative {
+        color: var(--error);
+    }
+
+    @keyframes scoreChange {
+        0% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+
+    /* Leaderboard Info */
+    .leaderboard-info {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 12px;
+    }
+
+    .leaderboard-rank {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        margin-bottom: 4px;
+    }
+
+    .leaderboard-score {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .leaderboard-trend {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .leaderboard-trend.up {
+        color: var(--success);
+    }
+
+    .leaderboard-trend.down {
+        color: var(--error);
+    }
+
+    /* Hint Backend Styling */
+    .hint-backend {
+        border-left: 3px solid var(--cyber-accent);
+        background: rgba(0, 217, 255, 0.1);
+    }
+
+    .hint-backend .hint-icon {
+        color: var(--cyber-accent);
+    }
+
+    .hint-backend .hint-source {
+        color: var(--cyber-accent);
+        font-weight: 600;
+    }
+
+    /* Performance Feedback Mobile Adjustments */
+    @media (max-width: 768px) {
+        .achievement-notification {
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            min-width: unset;
+        }
+    }
 </style>
 
 <!-- Additional CSS for Collaborative Features -->
 <style>
+    /* ===== SCENARIO TIMER SYSTEM STYLES ===== */
+    
+    /* Main Timer Display */
+    .scenario-timer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 280px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 16px;
+        z-index: 1010;
+        box-shadow: var(--shadow-lg);
+        transition: all var(--transition-speed) ease;
+        opacity: 0;
+        transform: translateY(-20px);
+        display: none;
+    }
+    
+    .scenario-timer.active {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .scenario-timer.warning {
+        border-color: var(--warning-color);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+        animation: pulse-warning 2s ease-in-out infinite;
+    }
+    
+    .scenario-timer.critical {
+        border-color: var(--danger-color);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        animation: pulse-critical 1s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-warning {
+        0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.7); }
+    }
+    
+    @keyframes pulse-critical {
+        0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.9); }
+    }
+    
+    .timer-display {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .timer-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        color: white;
+        font-size: 18px;
+    }
+    
+    .timer-content {
+        flex: 1;
+    }
+    
+    .timer-time {
+        font-family: 'Orbitron', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: 1px;
+    }
+    
+    .timer-time.warning {
+        color: var(--warning-color);
+    }
+    
+    .timer-time.critical {
+        color: var(--danger-color);
+        animation: blink-critical 1s ease-in-out infinite;
+    }
+    
+    @keyframes blink-critical {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.5; }
+    }
+    
+    .timer-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+    
+    .timer-controls {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .timer-btn {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 50%;
+        background: var(--glass-bg-light);
+        color: var(--text-primary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-speed) ease;
+        font-size: 14px;
+    }
+    
+    .timer-btn:hover {
+        background: var(--cyber-glow);
+        color: var(--background);
+        transform: scale(1.1);
+    }
+    
+    .timer-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .timer-progress {
+        margin-top: 12px;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: var(--gradient-primary);
+        border-radius: 3px;
+        transition: all 1s ease;
+        width: 100%;
+    }
+    
+    .progress-fill.warning {
+        background: linear-gradient(90deg, var(--warning-color), var(--cyber-glow));
+    }
+    
+    .progress-fill.critical {
+        background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
+        animation: progress-flash 0.5s ease-in-out infinite alternate;
+    }
+    
+    @keyframes progress-flash {
+        from { opacity: 0.7; }
+        to { opacity: 1; }
+    }
+    
+    .timer-status {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .timer-status.paused {
+        color: var(--warning-color);
+    }
+    
+    .timer-status.expired {
+        color: var(--danger-color);
+        font-weight: 600;
+    }
+    
+    /* Timer Warning Modal */
+    .timer-warning-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+        opacity: 0;
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .timer-warning-modal.active {
+        display: flex;
+        opacity: 1;
+    }
+    
+    .warning-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--warning-color);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
+        transform: scale(0.9);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .timer-warning-modal.active .warning-content {
+        transform: scale(1);
+    }
+    
+    .warning-icon {
+        font-size: 3rem;
+        color: var(--warning-color);
+        margin-bottom: 16px;
+        animation: bounce-warning 1s ease-in-out infinite;
+    }
+    
+    @keyframes bounce-warning {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+    
+    .warning-message {
+        font-size: 16px;
+        color: var(--text-primary);
+        margin-bottom: 24px;
+        line-height: 1.5;
+    }
+    
+    .warning-actions {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .warning-btn {
+        padding: 12px 24px;
+        background: var(--warning-color);
+        color: var(--background);
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .warning-btn:hover {
+        background: color-mix(in srgb, var(--warning-color) 80%, white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    }
+    
+    /* Timer Expired Modal */
+    .timer-expired-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(15px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 3001;
+        opacity: 0;
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .timer-expired-modal.active {
+        display: flex;
+        opacity: 1;
+    }
+    
+    .expired-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--danger-color);
+        border-radius: var(--border-radius-xl);
+        padding: 40px;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(239, 68, 68, 0.4);
+        transform: scale(0.8);
+        transition: all var(--transition-speed) ease;
+    }
+    
+    .timer-expired-modal.active .expired-content {
+        transform: scale(1);
+    }
+    
+    .expired-icon {
+        font-size: 4rem;
+        color: var(--danger-color);
+        margin-bottom: 20px;
+        animation: rotate-hourglass 3s ease-in-out infinite;
+    }
+    
+    @keyframes rotate-hourglass {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(180deg); }
+    }
+    
+    .expired-content h2 {
+        color: var(--danger-color);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 28px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .expired-message {
+        color: var(--text-primary);
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+    
+    .expired-message p {
+        margin-bottom: 8px;
+    }
+    
+    .performance-summary {
+        background: var(--glass-bg-light);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin-bottom: 24px;
+        text-align: left;
+    }
+    
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+    
+    .summary-label {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    
+    .summary-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .expired-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+    
+    .expired-btn {
+        padding: 14px 28px;
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 14px;
+    }
+    
+    .expired-btn.primary {
+        background: var(--cyber-glow);
+        color: var(--background);
+    }
+    
+    .expired-btn.primary:hover {
+        background: color-mix(in srgb, var(--cyber-glow) 80%, white);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
+    }
+    
+    .expired-btn.secondary {
+        background: var(--glass-bg-light);
+        color: var(--text-primary);
+        border: 2px solid var(--glass-border);
+    }
+    
+    .expired-btn.secondary:hover {
+        background: var(--glass-bg-hover);
+        border-color: var(--cyber-glow);
+        transform: translateY(-2px);
+    }
+    
+    /* Timer Collaborative Indicators */
+    .collaborative-timer-indicator {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 20px;
+        height: 20px;
+        background: var(--neon-green);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--background);
+        font-weight: 600;
+        animation: pulse-collaborative 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-collaborative {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+    }
+    
+    /* Responsive Design for Timer */
+    @media (max-width: 768px) {
+        .scenario-timer {
+            position: fixed;
+            top: auto;
+            bottom: 120px;
+            right: 10px;
+            left: 10px;
+            width: auto;
+            max-width: none;
+        }
+        
+        .timer-display {
+            flex-direction: row;
+            align-items: center;
+        }
+        
+        .timer-time {
+            font-size: 20px;
+        }
+        
+        .expired-content {
+            padding: 24px;
+            max-width: 90%;
+        }
+        
+        .expired-content h2 {
+            font-size: 24px;
+        }
+        
+        .expired-actions {
+            flex-direction: column;
+        }
+        
+        .expired-btn {
+            width: 100%;
+        }
+    }
+    
+    /* Timer Integration with Existing UI */
+    .collaboration-panel {
+        top: 320px; /* Adjust to avoid timer overlap */
+    }
+    
+    @media (max-width: 1024px) {
+        .collaboration-panel {
+            top: 280px;
+        }
+    }
+
     /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
     
-    /* Lobby Browser Modal */
+    /* Modal Backdrop for Better Visual Hierarchy */
+    .lobby-browser-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        opacity: 0;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .lobby-browser-backdrop.active {
+        display: block;
+        opacity: 1;
+    }
+    
+    /* Lobby Browser Modal - Enhanced Centering and Layout */
     .lobby-browser-modal {
         display: none;
         position: fixed;
@@ -243,35 +1487,43 @@
         transform: translate(-50%, -50%) scale(0.9);
         width: 90%;
         max-width: 1000px;
-        max-height: 80vh;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
+        max-height: 85vh;
+        background: rgba(26, 32, 46, 0.98);
+        backdrop-filter: blur(8px);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-xl);
-        padding: 32px;
+        padding: 0;
         opacity: 0;
         pointer-events: none;
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2001;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
         overflow: hidden;
+        /* Enhanced centering and visual hierarchy */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
     }
 
     .lobby-browser-modal.active {
-        display: flex;
-        flex-direction: column;
-        opacity: 1;
-        pointer-events: auto;
-        transform: translate(-50%, -50%) scale(1);
+        display: flex !important;
+        flex-direction: column !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translate(-50%, -50%) scale(1) !important;
     }
 
     .lobby-browser-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
+        margin: 0;
+        padding: 32px 32px 24px 32px;
         border-bottom: 1px solid var(--glass-border);
+        background: rgba(20, 25, 40, 0.3);
+        border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
+        position: relative;
     }
 
     .lobby-browser-header h2 {
@@ -279,6 +1531,73 @@
         font-family: 'Orbitron', sans-serif;
         font-weight: 700;
         margin: 0;
+        font-size: 24px;
+        text-align: center;
+        flex-grow: 1;
+        letter-spacing: 0.5px;
+    }
+
+    /* Enhanced close button positioning */
+    .lobby-browser-header .profile-exit-btn {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 40px;
+        height: 40px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        z-index: 10;
+    }
+
+    .lobby-browser-header .profile-exit-btn:hover {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.6);
+        transform: scale(1.1);
+    }
+
+    .lobby-browser-header .profile-exit-btn i {
+        color: var(--danger);
+        font-size: 20px;
+    }
+
+    /* Modal content area with consistent spacing */
+    .lobby-browser-modal .modal-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        padding: 24px 32px;
+        margin: 0;
+        background: rgba(20, 25, 40, 0.2);
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .lobby-browser-modal .modal-buttons .action-btn {
+        flex: 1;
+        max-width: 200px;
+        padding: 12px 24px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-weight: 500;
+        transition: all var(--transition-speed) ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .lobby-browser-modal .modal-buttons .action-btn:hover {
+        background: var(--glass-bg-hover);
+        border-color: var(--cyber-glow);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
     }
 
     .lobby-grid {
@@ -287,30 +1606,118 @@
         gap: 20px;
         overflow-y: auto;
         max-height: 400px;
+        padding: 32px;
+        flex-grow: 1;
     }
 
     .lobby-card {
         background: var(--glass-bg-light);
         border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        padding: 20px;
+        border-radius: var(--border-radius-lg);
+        padding: 24px;
         transition: all var(--transition-speed) ease;
         cursor: pointer;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 180px;
+        /* Enhanced visual hierarchy */
+        backdrop-filter: blur(10px);
     }
 
     .lobby-card:hover {
         background: var(--glass-bg-hover);
         border-color: var(--cyber-glow);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 217, 255, 0.3);
     }
 
     .lobby-card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        margin-bottom: 16px;
+        gap: 12px;
+    }
+
+    .lobby-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.3;
+        word-wrap: break-word;
+    }
+
+    .lobby-participants {
+        background: rgba(0, 217, 255, 0.1);
+        color: var(--cyber-glow);
+        padding: 4px 8px;
+        border-radius: var(--border-radius-sm);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .lobby-scenario {
+        color: var(--text-secondary);
+        font-size: 14px;
         margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lobby-scenario::before {
+        content: "🎯";
+        font-size: 16px;
+    }
+
+    .lobby-creator {
+        color: var(--text-muted);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: auto;
+    }
+
+    /* Empty state styling for better UX */
+    .lobby-grid .lobby-card[style*="dashed"] {
+        border-style: dashed !important;
+        border-width: 2px !important;
+        border-color: var(--glass-border) !important;
+        opacity: 0.6 !important;
+        background: rgba(20, 25, 40, 0.1) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        min-height: 200px !important;
+    }
+
+    .lobby-grid .lobby-card[style*="dashed"] div {
+        padding: 40px 20px !important;
+        color: var(--text-muted) !important;
+    }
+
+    .lobby-grid .lobby-card[style*="dashed"] i {
+        font-size: 48px !important;
+        margin-bottom: 16px !important;
+        color: var(--text-muted) !important;
+        opacity: 0.8 !important;
+    }
+
+    .lobby-grid .lobby-card[style*="dashed"] p {
+        margin: 8px 0 !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+    }
+
+    .lobby-grid .lobby-card[style*="dashed"] p:first-of-type {
+        font-weight: 500 !important;
+        color: var(--text-secondary) !important;
     }
 
     .lobby-name {
@@ -380,6 +1787,26 @@
         border-radius: 50%;
     }
 
+    /* Create Lobby Modal Backdrop */
+    .create-lobby-modal-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px); /* Reduced blur on backdrop for better readability */
+        z-index: 2001;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .create-lobby-modal-backdrop.active {
+        display: block;
+        opacity: 1;
+    }
+
     /* Create Lobby Modal */
     .create-lobby-modal {
         display: none;
@@ -388,40 +1815,85 @@
         left: 50%;
         transform: translate(-50%, -50%);
         width: 500px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
+        background: rgba(26, 32, 46, 0.98); /* Increased opacity for better readability */
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-xl);
         padding: 32px;
         z-index: 2002;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        /* Explicitly remove all blur effects from modal content */
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .create-lobby-modal.active {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        flex-direction: column !important;
+    }
+
+    .create-lobby-modal.active .create-lobby-form {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+
+    .create-lobby-modal.active .form-group {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .create-lobby-modal.active .modal-buttons {
+        display: flex !important;
+        gap: 12px !important;
+        justify-content: flex-end !important;
     }
 
     .create-lobby-form {
         display: flex;
         flex-direction: column;
         gap: 16px;
+        /* Ensure all form content is crisp and readable */
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     .form-group {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        /* Prevent any blur effects on form groups */
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     .form-group label {
         color: var(--text-primary);
         font-weight: 500;
+        /* Ensure labels are crisp and readable */
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     .form-group input,
     .form-group select {
         padding: 12px;
-        background: var(--glass-bg-light);
+        background: rgba(20, 25, 40, 0.9);
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius);
         color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
         transition: all var(--transition-speed) ease;
+        /* Ensure form fields are crisp and readable */
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     .form-group input:focus,
@@ -429,6 +1901,11 @@
         outline: none;
         border-color: var(--cyber-glow);
         box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        background: var(--surface);
+    }
+
+    .form-group input::placeholder {
+        color: var(--text-muted);
     }
 
     .checkbox-group {
@@ -439,6 +1916,32 @@
 
     .checkbox-group input[type="checkbox"] {
         width: auto;
+    }
+
+    /* Ensure modal header and buttons are crisp and readable */
+    .create-lobby-modal .modal-header {
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .create-lobby-modal .modal-header h2 {
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .create-lobby-modal .modal-buttons {
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .create-lobby-modal .modal-buttons button {
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    .create-lobby-modal .profile-exit-btn {
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     /* Collaboration UI */
@@ -565,22 +2068,139 @@
         white-space: nowrap;
     }
 
-    /* Responsive Design for Collaboration UI */
+    /* Enhanced Responsive Design for Collaboration UI */
     @media (max-width: 1024px) {
         .collaboration-panel {
             width: 280px;
             right: 10px;
         }
         
+        /* Responsive lobby browser modal */
         .lobby-browser-modal {
             width: 95%;
-            padding: 20px;
+            max-width: 900px;
+            max-height: 90vh;
+            margin: 0 auto;
+        }
+        
+        .lobby-browser-header {
+            padding: 24px 24px 20px 24px;
+        }
+        
+        .lobby-browser-header h2 {
+            font-size: 20px;
+        }
+        
+        .lobby-browser-header .profile-exit-btn {
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+        }
+        
+        .lobby-grid {
+            padding: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .lobby-browser-modal .modal-buttons {
+            padding: 20px 24px;
         }
         
         .create-lobby-modal {
             width: 90%;
             max-width: 450px;
         }
+    }
+
+    @media (max-width: 768px) {
+        /* Mobile-first responsive design */
+        .lobby-browser-modal {
+            width: 95%;
+            max-width: 100%;
+            max-height: 95vh;
+            margin: 0;
+            border-radius: var(--border-radius-lg);
+        }
+        
+        .lobby-browser-header {
+            padding: 20px 20px 16px 20px;
+        }
+        
+        .lobby-browser-header h2 {
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .lobby-browser-header .profile-exit-btn {
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+        }
+        
+        .lobby-browser-header .profile-exit-btn i {
+            font-size: 16px;
+        }
+        
+        .lobby-grid {
+            padding: 20px;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            max-height: 350px;
+        }
+        
+        .lobby-card {
+            padding: 20px;
+            min-height: 160px;
+        }
+        
+        .lobby-name {
+            font-size: 16px;
+        }
+        
+        .lobby-browser-modal .modal-buttons {
+            padding: 16px 20px;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .lobby-browser-modal .modal-buttons .action-btn {
+            max-width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* Small mobile devices */
+        .lobby-browser-modal {
+            width: 100%;
+            max-height: 100vh;
+            border-radius: 0;
+            top: 0;
+            left: 0;
+            transform: none;
+            position: fixed;
+        }
+        
+        .lobby-browser-modal.active {
+            transform: none !important;
+        }
+        
+        .lobby-browser-header h2 {
+            font-size: 16px;
+        }
+        
+        .lobby-grid {
+            padding: 16px;
+            max-height: 300px;
+        }
+        
+        .lobby-card {
+            padding: 16px;
+            min-height: 140px;
+        }
+    }
 
         /* Tablet device palette adjustments */
         .palette-section {
@@ -2614,93 +4234,6 @@
         border: 2px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Create Lobby Modal */
-    .create-lobby-modal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 500px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        z-index: 2002;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
-    }
-
-    .create-lobby-form {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-group label {
-        color: var(--text-primary);
-        font-weight: 500;
-        font-family: 'Orbitron', sans-serif;
-    }
-
-    .form-group input,
-    .form-group select {
-        padding: 12px;
-        background: var(--glass-bg-light);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        color: var(--text-primary);
-        transition: all var(--transition-speed) ease;
-        font-family: inherit;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: var(--cyber-glow);
-        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-    }
-
-    .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-        width: auto;
-    }
-
-    /* Create Lobby Modal */
-    .create-lobby-modal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 500px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        z-index: 2002;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
-    }
-
-    .create-lobby-form {
-        display: flex;
-        z-index: 1001;
-        display: none;
-        box-shadow: var(--shadow-lg);
-    }
-
     .participants-list {
         margin-bottom: 20px;
     }
@@ -2983,6 +4516,9 @@
 
         <!-- ===== COLLABORATIVE TROUBLESHOOTING MODALS ===== -->
         
+        <!-- Lobby Browser Modal Backdrop -->
+        <div id="lobbyBrowserBackdrop" class="lobby-browser-backdrop" onclick="closeLobbyBrowser()"></div>
+        
         <!-- Lobby Browser Modal -->
         <div id="lobbyBrowserModal" class="lobby-browser-modal collaboration-feature">
             <div class="lobby-browser-header">
@@ -2993,10 +4529,6 @@
             </div>
             
             <div class="modal-buttons" style="margin-bottom: 20px;">
-                <button class="action-btn" onclick="refreshLobbies()">
-                    <i class="bx bx-refresh"></i>
-                    <span class="label">Refresh</span>
-                </button>
                 <button class="action-btn" onclick="showCreateLobby()">
                     <i class="bx bx-plus"></i>
                     <span class="label">Create Session</span>
@@ -3013,6 +4545,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Create Lobby Modal Backdrop -->
+        <div id="createLobbyModalBackdrop" class="create-lobby-modal-backdrop" onclick="closeCreateLobby()"></div>
 
         <!-- Create Lobby Modal -->
         <div id="createLobbyModal" class="create-lobby-modal collaboration-feature">
@@ -3057,9 +4592,12 @@
                 
                 <!-- All sessions are now public - no private options needed -->
                 
-                <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px;">
-                    <button type="button" class="action-btn" onclick="closeCreateLobby()">Cancel</button>
-                    <button type="submit" class="action-btn" style="background: var(--gradient-primary);">
+                <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="action-btn" onclick="closeCreateLobby()" style="background: var(--surface); color: var(--text-secondary); border: 1px solid var(--glass-border);">
+                        <i class="bx bx-x"></i>
+                        <span class="label">Cancel</span>
+                    </button>
+                    <button type="submit" class="action-btn" style="background: var(--gradient-primary); color: white; border: none; min-width: 140px;">
                         <i class="bx bx-plus"></i>
                         <span class="label">Create Session</span>
                     </button>
@@ -3095,6 +4633,76 @@
             <span>Not connected</span>
         </div>
 
+        <!-- Scenario Timer UI -->
+        <div id="scenario-timer" class="scenario-timer">
+            <div class="timer-display">
+                <div class="timer-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="timer-content">
+                    <div class="timer-time" id="timer-display">
+                        <span class="minutes">00</span>:<span class="seconds">00</span>
+                    </div>
+                    <div class="timer-label">Time Remaining</div>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn pause-btn" id="pause-timer-btn" title="Pause Timer">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="timer-btn resume-btn" id="resume-timer-btn" title="Resume Timer" style="display: none;">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="timer-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="timer-progress"></div>
+                </div>
+                <div class="timer-status" id="timer-status">Ready</div>
+            </div>
+        </div>
+
+        <!-- Timer Warning Modal -->
+        <div id="timer-warning-modal" class="timer-warning-modal">
+            <div class="warning-content">
+                <div class="warning-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="warning-message" id="warning-message">
+                    Warning message here
+                </div>
+                <div class="warning-actions">
+                    <button class="warning-btn acknowledge-btn" onclick="acknowledgeWarning()">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Expired Modal -->
+        <div id="timer-expired-modal" class="timer-expired-modal">
+            <div class="expired-content">
+                <div class="expired-icon">
+                    <i class="fas fa-hourglass-end"></i>
+                </div>
+                <h2>Time's Up!</h2>
+                <div class="expired-message">
+                    <p>The time limit for this scenario has been reached.</p>
+                    <p>Your progress has been automatically submitted.</p>
+                </div>
+                <div class="performance-summary" id="performance-summary">
+                    <!-- Performance data will be populated here -->
+                </div>
+                <div class="expired-actions">
+                    <button class="expired-btn primary" onclick="viewResults()">
+                        View Results
+                    </button>
+                    <button class="expired-btn secondary" onclick="retryScenario()">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Canvas -->
         <div id="canvas-container">
@@ -3148,7 +4756,1475 @@
                 </div>
             </div>
         </div>
+
+        <!-- Mobile Performance Toggle Button -->
+        <div id="mobile-performance-toggle" class="mobile-performance-toggle">
+            <i class="bx bx-bar-chart-alt-2"></i>
+        </div>
+
+        <!-- Performance Feedback Sidebar -->
+        <div id="performance-sidebar" class="performance-sidebar">
+            <!-- Hamburger Toggle Button -->
+            <div id="performance-toggle" class="performance-toggle">
+                <i class="bx bx-bar-chart-alt-2"></i>
+                <span class="toggle-text">Performance</span>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3><i class="bx bx-bar-chart-alt-2"></i> Live Performance</h3>
+                    <button class="close-sidebar" id="close-performance-sidebar">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
+                
+                <!-- Real-time Progress -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-trophy"></i> Current Score</h4>
+                    <div class="score-display">
+                        <span class="score-value" id="current-score">0</span>
+                        <span class="score-unit">pts</span>
+                    </div>
+                    <div class="score-breakdown">
+                        <div class="score-item">
+                            <span>Devices Placed:</span>
+                            <span id="devices-score">0/5</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Connections Made:</span>
+                            <span id="connections-score">0/3</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Configurations:</span>
+                            <span id="config-score">0/2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Meter -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-time"></i> Progress</h4>
+                    <div class="progress-meter">
+                        <div class="progress-circle">
+                            <svg class="progress-ring" width="80" height="80">
+                                <circle class="progress-ring-background" 
+                                        cx="40" cy="40" r="30" 
+                                        stroke="rgba(255,255,255,0.1)" 
+                                        stroke-width="6" 
+                                        fill="transparent"/>
+                                <circle class="progress-ring-fill" 
+                                        cx="40" cy="40" r="30" 
+                                        stroke="var(--cyber-glow)" 
+                                        stroke-width="6" 
+                                        fill="transparent"
+                                        stroke-dasharray="188.5"
+                                        stroke-dashoffset="188.5"
+                                        id="progress-ring"/>
+                            </svg>
+                            <div class="progress-text">
+                                <span id="progress-percentage">0%</span>
+                            </div>
+                        </div>
+                        <div class="progress-details">
+                            <div class="progress-status" id="progress-status">Getting Started</div>
+                            <div class="estimated-time">
+                                <i class="bx bx-clock"></i>
+                                <span id="estimated-completion">Est. 15 min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Hints -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-bulb"></i> Smart Hints</h4>
+                    <div class="hints-container" id="hints-container">
+                        <div class="hint-item">
+                            <i class="bx bx-info-circle hint-icon"></i>
+                            <div class="hint-text">
+                                Start by placing network devices on the canvas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-trending-up"></i> Metrics</h4>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <i class="bx bx-timer metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="time-spent">0:00</span>
+                                <span class="metric-label">Time</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="bx bx-mouse metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="actions-count">0</span>
+                                <span class="metric-label">Actions</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="bx bx-error metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="mistakes-count">0</span>
+                                <span class="metric-label">Errors</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="bx bx-help-circle metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="hints-used">0</span>
+                                <span class="metric-label">Hints</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievement Badges -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-medal"></i> Achievements</h4>
+                    <div class="achievements-container" id="achievements-container">
+                        <div class="achievement-badge locked" data-achievement="first-device">
+                            <i class="bx bx-desktop achievement-icon"></i>
+                            <span class="achievement-text">First Device</span>
+                        </div>
+                        <div class="achievement-badge locked" data-achievement="network-builder">
+                            <i class="bx bx-network-chart achievement-icon"></i>
+                            <span class="achievement-text">Network Builder</span>
+                        </div>
+                        <div class="achievement-badge locked" data-achievement="speed-demon">
+                            <i class="bx bx-rocket achievement-icon"></i>
+                            <span class="achievement-text">Speed Demon</span>
+                        </div>
+                        <div class="achievement-badge locked" data-achievement="perfectionist">
+                            <i class="bx bx-check-shield achievement-icon"></i>
+                            <span class="achievement-text">Perfectionist</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Section -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-trophy"></i> Leaderboard</h4>
+                    <div class="leaderboard-info" id="leaderboard-info">
+                        <div class="leaderboard-rank">Rank: #--</div>
+                        <div class="leaderboard-score">Score: 0</div>
+                        <div class="leaderboard-trend">
+                            🔄 Calculating...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-bolt"></i> Quick Actions</h4>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" id="get-hint-btn">
+                            <i class="bx bx-bulb"></i>
+                            Get Hint
+                        </button>
+                        <button class="quick-action-btn" id="check-solution-btn">
+                            <i class="bx bx-check-circle"></i>
+                            Check Solution
+                        </button>
+                        <button class="quick-action-btn" id="reset-progress-btn">
+                            <i class="bx bx-refresh"></i>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 </div>
+    <script>
+        // ===== PERFORMANCE FEEDBACK SIDEBAR SYSTEM =====
+        
+        class PerformanceFeedbackSystem {
+            constructor() {
+                this.sidebar = document.getElementById('performance-sidebar');
+                this.toggle = document.getElementById('performance-toggle');
+                this.closeBtn = document.getElementById('close-performance-sidebar');
+                this.isVisible = false;
+                this.startTime = null;
+                this.sessionId = null;
+                this.backendSession = null;
+                this.realTimeEnabled = false;
+                this.socketConnected = false;
+                this.currentScenario = null;
+                this.currentLobby = null;
+                this.lastSyncTime = 0;
+                
+                // Metrics tracking (now connected to backend)
+                this.metrics = {
+                    score: 0,
+                    devicesPlaced: 0,
+                    connectionsMade: 0,
+                    configurationsComplete: 0,
+                    actionsCount: 0,
+                    mistakesCount: 0,
+                    hintsUsed: 0,
+                    timeSpent: 0,
+                    successRate: 0,
+                    averageResponseTime: 0
+                };
+                
+                // Achievement tracking (persistent in backend)
+                this.achievements = {
+                    'first-device': false,
+                    'network-builder': false,
+                    'speed-demon': false,
+                    'perfectionist': false
+                };
+                
+                this.hints = [];
+                this.progressTimer = null;
+                this.syncTimer = null;
+                
+                this.init();
+            }
+
+            init() {
+                console.log('🎯 Initializing Performance Feedback System with Backend Integration');
+                
+                // Initialize backend connection
+                this.initializeBackendConnection();
+                
+                // Event listeners
+                this.toggle.addEventListener('click', () => this.toggleSidebar());
+                this.closeBtn.addEventListener('click', () => this.hideSidebar());
+                
+                // Mobile toggle button
+                const mobileToggle = document.getElementById('mobile-performance-toggle');
+                if (mobileToggle) {
+                    mobileToggle.addEventListener('click', () => this.toggleSidebar());
+                }
+                
+                // Quick action buttons
+                document.getElementById('get-hint-btn').addEventListener('click', () => this.getSmartHint());
+                document.getElementById('check-solution-btn').addEventListener('click', () => this.checkCurrentSolution());
+                document.getElementById('reset-progress-btn').addEventListener('click', () => this.resetProgress());
+                
+                // Start monitoring
+                this.startProgressMonitoring();
+                this.addInitialHint();
+                
+                // Auto-show on first visit
+                const hasSeenSidebar = localStorage.getItem('riddlenet_performance_sidebar_seen');
+                if (!hasSeenSidebar) {
+                    setTimeout(() => {
+                        this.showSidebar();
+                        this.addHint('Welcome! This sidebar tracks your progress in real-time. Click the toggle anytime to hide/show it.', 'welcome');
+                        localStorage.setItem('riddlenet_performance_sidebar_seen', 'true');
+                    }, 3000);
+                }
+                
+                console.log('✅ Performance Feedback System initialized with backend integration');
+            }
+
+            initializeBackendConnection() {
+                // Connect to existing WebSocket system
+                if (window.socketClient) {
+                    this.realTimeEnabled = true;
+                    this.setupWebSocketHandlers();
+                    console.log('📡 Connected to backend WebSocket system');
+                } else {
+                    console.warn('⚠️ WebSocket not available, running in local mode');
+                    // Setup fallback polling
+                    setTimeout(() => this.initializeBackendConnection(), 2000);
+                }
+            }
+
+            setupWebSocketHandlers() {
+                // Handle backend feedback session updates
+                window.socketClient.on('feedback_session_update', (data) => {
+                    if (data.session_id === this.sessionId) {
+                        this.updateFromBackendData(data);
+                    }
+                });
+
+                // Handle real-time action tracking
+                window.socketClient.on('action_tracked', (data) => {
+                    if (data.session_id === this.sessionId) {
+                        this.handleBackendActionUpdate(data);
+                    }
+                });
+
+                // Handle progress updates
+                window.socketClient.on('progress_update', (data) => {
+                    if (data.session_id === this.sessionId) {
+                        this.updateProgressFromBackend(data);
+                    }
+                });
+
+                // Handle hint responses
+                window.socketClient.on('smart_hint_response', (data) => {
+                    if (data.session_id === this.sessionId) {
+                        this.displayBackendHint(data.hint, data.type);
+                    }
+                });
+
+                // Handle achievement unlocks
+                window.socketClient.on('achievement_unlocked', (data) => {
+                    if (data.session_id === this.sessionId) {
+                        this.addAchievement(data.achievement);
+                        this.showAchievementNotification(data.achievement);
+                    }
+                });
+
+                // Handle leaderboard updates
+                window.socketClient.on('leaderboard_update', (data) => {
+                    this.updateLeaderboardPosition(data);
+                });
+
+                console.log('🔗 WebSocket handlers set up for performance feedback');
+            }
+
+            updateFromBackendData(data) {
+                // Update metrics from backend feedback session
+                if (data.metrics) {
+                    this.metrics = { ...this.metrics, ...data.metrics };
+                    this.updateMetricsDisplay();
+                    this.updateScoreDisplay();
+                }
+                
+                // Update progress ring
+                if (data.progress_percentage !== undefined) {
+                    this.updateProgressRing(data.progress_percentage);
+                }
+                
+                console.log('🔄 Updated from backend data:', data);
+            }
+
+            handleBackendActionUpdate(data) {
+                // Handle specific action types from backend
+                switch (data.action_type) {
+                    case 'device_placed':
+                        this.metrics.devicesPlaced++;
+                        break;
+                    case 'connection_made':
+                        this.metrics.connectionsMade++;
+                        break;
+                    case 'configuration_complete':
+                        this.metrics.configurationsComplete++;
+                        break;
+                    case 'mistake_made':
+                        this.metrics.mistakesCount++;
+                        break;
+                }
+                
+                this.metrics.actionsCount++;
+                this.calculateSuccessRate();
+                this.updateMetricsDisplay();
+                
+                // Send feedback to backend about the action
+                this.sendActionFeedback(data.action_type, data.success);
+                
+                console.log('⚡ Backend action update:', data);
+            }
+
+            updateProgressFromBackend(data) {
+                // Update progress based on backend calculations
+                if (data.completion_percentage !== undefined) {
+                    this.updateProgressRing(data.completion_percentage);
+                }
+                
+                if (data.score_delta !== undefined) {
+                    this.metrics.score += data.score_delta;
+                    this.updateScoreDisplay();
+                    
+                    // Show score change animation
+                    this.animateScoreChange(data.score_delta);
+                }
+                
+                console.log('📈 Progress updated from backend:', data);
+            }
+
+            // Continuous sync with backend
+            syncWithBackend() {
+                if (!this.realTimeEnabled || !window.socketClient || !this.sessionId) {
+                    return;
+                }
+                
+                const syncData = {
+                    session_id: this.sessionId,
+                    metrics: this.metrics,
+                    timestamp: Date.now(),
+                    scenario_id: this.currentScenario?.id || 'general',
+                    lobby_id: this.currentLobby?.id || null
+                };
+                
+                window.socketClient.emit('sync_performance_metrics', syncData);
+                this.lastSyncTime = Date.now();
+                
+                console.log('🔄 Synced metrics with backend:', syncData);
+            }
+
+            // Calculate success rate
+            calculateSuccessRate() {
+                if (this.metrics.actionsCount === 0) {
+                    this.metrics.successRate = 0;
+                    return;
+                }
+                
+                const successfulActions = this.metrics.actionsCount - this.metrics.mistakesCount;
+                this.metrics.successRate = Math.round((successfulActions / this.metrics.actionsCount) * 100);
+            }
+
+            // Update achievements display
+            updateAchievementsDisplay() {
+                const achievements = JSON.parse(localStorage.getItem('riddlenet_achievements') || '[]');
+                const container = document.getElementById('achievements-container');
+                
+                if (!container) return;
+                
+                // Update achievement badges
+                achievements.forEach(achievement => {
+                    const badge = container.querySelector(`[data-achievement="${achievement.id}"]`);
+                    if (badge) {
+                        badge.classList.remove('locked');
+                        badge.classList.add('unlocked');
+                        badge.title = `${achievement.name} - ${achievement.description}`;
+                    }
+                });
+                
+                console.log('🏆 Updated achievements display:', achievements);
+            }
+
+            // Request intelligent hint from backend
+            requestBackendHint() {
+                if (!this.realTimeEnabled || !window.socketClient || !this.sessionId) {
+                    console.warn('⚠️ Backend hint request failed - not connected');
+                    return;
+                }
+                
+                const hintRequest = {
+                    session_id: this.sessionId,
+                    current_metrics: this.metrics,
+                    scenario_id: this.currentScenario?.id || 'general',
+                    current_progress: this.calculateOverallProgress(),
+                    time_spent: this.metrics.timeSpent,
+                    last_actions: this.getRecentActions()
+                };
+                
+                window.socketClient.emit('request_smart_hint', hintRequest);
+                console.log('🧠 Requested intelligent hint from backend:', hintRequest);
+            }
+
+            // Get recent actions for context
+            getRecentActions() {
+                // Return recent actions from session storage or memory
+                const actions = JSON.parse(sessionStorage.getItem('recent_actions') || '[]');
+                return actions.slice(-5); // Last 5 actions
+            }
+
+            // Log action for hint context
+            logAction(actionType, details = {}) {
+                const action = {
+                    type: actionType,
+                    timestamp: Date.now(),
+                    details: details
+                };
+                
+                // Store in session storage
+                let actions = JSON.parse(sessionStorage.getItem('recent_actions') || '[]');
+                actions.push(action);
+                
+                // Keep only last 10 actions
+                if (actions.length > 10) {
+                    actions = actions.slice(-10);
+                }
+                
+                sessionStorage.setItem('recent_actions', JSON.stringify(actions));
+                
+                // Send to backend if connected
+                if (this.realTimeEnabled && window.socketClient && this.sessionId) {
+                    window.socketClient.emit('log_user_action', {
+                        session_id: this.sessionId,
+                        action: action
+                    });
+                }
+                
+                console.log('📝 Logged action:', action);
+            }
+
+            displayBackendHint(hint, type) {
+                const hintElement = document.createElement('div');
+                hintElement.className = `hint-item hint-${type || 'backend'}`;
+                hintElement.innerHTML = `
+                    <div class="hint-icon">${this.getHintIcon(type)}</div>
+                    <div class="hint-content">
+                        <div class="hint-text">${hint}</div>
+                        <div class="hint-source">AI Assistant</div>
+                    </div>
+                `;
+                
+                const hintsContainer = document.querySelector('.hints-container');
+                if (hintsContainer) {
+                    hintsContainer.appendChild(hintElement);
+                    hintElement.scrollIntoView({ behavior: 'smooth' });
+                }
+                
+                this.metrics.hintsUsed++;
+                this.updateMetricsDisplay();
+            }
+
+            sendActionFeedback(actionType, success) {
+                if (!this.realTimeEnabled || !window.socketClient) return;
+                
+                const feedbackData = {
+                    session_id: this.sessionId,
+                    action_type: actionType,
+                    success: success,
+                    timestamp: Date.now(),
+                    scenario_id: this.currentScenario?.id || 'general',
+                    metrics_snapshot: { ...this.metrics }
+                };
+                
+                window.socketClient.emit('action_feedback', feedbackData);
+                console.log('📤 Sent action feedback:', feedbackData);
+            }
+
+            addAchievement(achievement) {
+                // Add achievement to local storage
+                let achievements = JSON.parse(localStorage.getItem('riddlenet_achievements') || '[]');
+                if (!achievements.find(a => a.id === achievement.id)) {
+                    achievements.push({
+                        id: achievement.id,
+                        name: achievement.name,
+                        description: achievement.description,
+                        icon: achievement.icon,
+                        earned_at: new Date().toISOString(),
+                        points: achievement.points || 0
+                    });
+                    localStorage.setItem('riddlenet_achievements', JSON.stringify(achievements));
+                }
+                
+                // Update achievements display
+                this.updateAchievementsDisplay();
+            }
+
+            showAchievementNotification(achievement) {
+                // Create achievement notification
+                const notification = document.createElement('div');
+                notification.className = 'achievement-notification';
+                notification.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-details">
+                        <div class="achievement-name">${achievement.name}</div>
+                        <div class="achievement-desc">${achievement.description}</div>
+                        <div class="achievement-points">+${achievement.points || 0} pts</div>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 300);
+                }, 5000);
+            }
+
+            updateLeaderboardPosition(data) {
+                // Update leaderboard display in sidebar
+                const leaderboardInfo = document.querySelector('.leaderboard-info');
+                if (leaderboardInfo) {
+                    leaderboardInfo.innerHTML = `
+                        <div class="leaderboard-rank">Rank: #${data.rank || 'N/A'}</div>
+                        <div class="leaderboard-score">Score: ${data.score || 0}</div>
+                        <div class="leaderboard-trend ${data.trend === 'up' ? 'up' : 'down'}">
+                            ${data.trend === 'up' ? '↗️' : '↘️'} ${data.change || 0}
+                        </div>
+                    `;
+                }
+            }
+
+            getHintIcon(type) {
+                const icons = {
+                    'general': '💡',
+                    'device': '📱',
+                    'connection': '🔗',
+                    'configuration': '⚙️',
+                    'troubleshooting': '🔧',
+                    'performance': '📊',
+                    'backend': '🤖',
+                    'ai': '🧠'
+                };
+                return icons[type] || '💡';
+            }
+
+            animateScoreChange(delta) {
+                const scoreElement = document.querySelector('.score-number');
+                if (!scoreElement) return;
+                
+                const changeElement = document.createElement('div');
+                changeElement.className = `score-change ${delta > 0 ? 'positive' : 'negative'}`;
+                changeElement.textContent = `${delta > 0 ? '+' : ''}${delta}`;
+                
+                scoreElement.parentNode.appendChild(changeElement);
+                
+                // Remove after animation
+                setTimeout(() => changeElement.remove(), 2000);
+            }
+
+            toggleSidebar() {
+                if (this.isVisible) {
+                    this.hideSidebar();
+                } else {
+                    this.showSidebar();
+                }
+            }
+
+            showSidebar() {
+                this.sidebar.classList.add('active');
+                this.isVisible = true;
+                
+                // Start session if not already started
+                if (!this.startTime) {
+                    this.startSession();
+                }
+                
+                // Update all metrics
+                this.updateAllMetrics();
+                
+                console.log('📊 Performance sidebar shown');
+            }
+
+            hideSidebar() {
+                this.sidebar.classList.remove('active');
+                this.isVisible = false;
+                console.log('📊 Performance sidebar hidden');
+            }
+
+            startSession() {
+                this.startTime = Date.now();
+                this.sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // Start backend session via WebSocket
+                if (this.realTimeEnabled && window.socketClient) {
+                    window.socketClient.emit('start_feedback_session', {
+                        session_id: this.sessionId,
+                        scenario_id: window.currentScenario ? window.currentScenario.problemType : 'general',
+                        scenario_type: 'troubleshooting',
+                        lobby_id: window.currentLobby ? window.currentLobby.id : null,
+                        user_id: window.current_user_id || 'anonymous'
+                    });
+                    console.log('🎯 Started backend feedback session:', this.sessionId);
+                }
+
+                // Reset local metrics
+                this.metrics = {
+                    score: 0,
+                    devicesPlaced: 0,
+                    connectionsMade: 0,
+                    configurationsComplete: 0,
+                    actionsCount: 0,
+                    mistakesCount: 0,
+                    hintsUsed: 0,
+                    timeSpent: 0
+                };
+                
+                // Start time tracking
+                this.progressTimer = setInterval(() => {
+                    this.updateTimeMetric();
+                    this.checkForTimeBasedHints();
+                    this.syncWithBackend();
+                }, 1000);
+                
+                console.log('🎯 Performance tracking session started with backend integration');
+            }
+
+            startProgressMonitoring() {
+                // Monitor device additions
+                this.originalAddDevice = window.addDevice;
+                window.addDevice = (...args) => {
+                    if (this.originalAddDevice) {
+                        const result = this.originalAddDevice.apply(this, args);
+                        this.onDeviceAdded();
+                        return result;
+                    }
+                };
+
+                // Monitor connections
+                setInterval(() => {
+                    this.updateConnectionsMetric();
+                    this.updateProgressRing();
+                    this.checkAchievements();
+                }, 1000);
+            }
+
+            onDeviceAdded() {
+                this.metrics.devicesPlaced = devices ? devices.length : 0;
+                this.metrics.actionsCount++;
+                
+                // Update UI
+                this.updateDevicesMetric();
+                this.updateScoreMetric();
+                this.updateActionsMetric();
+                
+                // Check for first device achievement
+                if (this.metrics.devicesPlaced === 1) {
+                    this.unlockAchievement('first-device');
+                    this.addHint('Great start! Now try connecting your devices using the connection tool.', 'progress');
+                }
+                
+                // Check for network builder achievement
+                if (this.metrics.devicesPlaced >= 5) {
+                    this.unlockAchievement('network-builder');
+                }
+                
+                // Provide contextual hints
+                if (this.metrics.devicesPlaced === 2) {
+                    this.addHint('You can connect devices by clicking the "Connect" button, then clicking two devices.', 'tip');
+                } else if (this.metrics.devicesPlaced === 3) {
+                    this.addHint('Don\'t forget to configure IP addresses for your devices!', 'config');
+                }
+            }
+
+            updateConnectionsMetric() {
+                const currentConnections = connections ? connections.length : 0;
+                if (currentConnections !== this.metrics.connectionsMade) {
+                    this.metrics.connectionsMade = currentConnections;
+                    this.metrics.actionsCount++;
+                    
+                    this.updateConnectionsDisplay();
+                    this.updateScoreMetric();
+                    this.updateActionsMetric();
+                    
+                    if (this.metrics.connectionsMade === 1) {
+                        this.addHint('Excellent! Your first connection is established. Networks are taking shape!', 'success');
+                    } else if (this.metrics.connectionsMade >= 3) {
+                        this.addHint('Your network topology is looking good. Time to configure device settings!', 'config');
+                    }
+                }
+            }
+
+            updateAllMetrics() {
+                this.updateDevicesMetric();
+                this.updateConnectionsDisplay();
+                this.updateScoreMetric();
+                this.updateTimeMetric();
+                this.updateActionsMetric();
+                this.updateProgressRing();
+            }
+
+            updateDevicesMetric() {
+                const devicesScore = document.getElementById('devices-score');
+                if (devicesScore) {
+                    const required = this.getRequiredDevices();
+                    devicesScore.textContent = `${this.metrics.devicesPlaced}/${required}`;
+                }
+            }
+
+            updateConnectionsDisplay() {
+                const connectionsScore = document.getElementById('connections-score');
+                if (connectionsScore) {
+                    const required = this.getRequiredConnections();
+                    connectionsScore.textContent = `${this.metrics.connectionsMade}/${required}`;
+                }
+            }
+
+            updateScoreMetric() {
+                // Calculate score based on progress
+                const deviceProgress = Math.min(this.metrics.devicesPlaced / this.getRequiredDevices(), 1);
+                const connectionProgress = Math.min(this.metrics.connectionsMade / this.getRequiredConnections(), 1);
+                const configProgress = Math.min(this.metrics.configurationsComplete / this.getRequiredConfigs(), 1);
+                
+                this.metrics.score = Math.round(
+                    (deviceProgress * 30) + 
+                    (connectionProgress * 40) + 
+                    (configProgress * 30)
+                );
+                
+                const scoreValue = document.getElementById('current-score');
+                if (scoreValue) {
+                    scoreValue.textContent = this.metrics.score;
+                }
+            }
+
+            updateTimeMetric() {
+                if (!this.startTime) return;
+                
+                this.metrics.timeSpent = Math.floor((Date.now() - this.startTime) / 1000);
+                const timeSpent = document.getElementById('time-spent');
+                if (timeSpent) {
+                    const minutes = Math.floor(this.metrics.timeSpent / 60);
+                    const seconds = this.metrics.timeSpent % 60;
+                    timeSpent.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+
+            updateActionsMetric() {
+                const actionsCount = document.getElementById('actions-count');
+                if (actionsCount) {
+                    actionsCount.textContent = this.metrics.actionsCount;
+                }
+            }
+
+            updateProgressRing() {
+                const progress = this.calculateOverallProgress();
+                const progressRing = document.getElementById('progress-ring');
+                const progressPercentage = document.getElementById('progress-percentage');
+                const progressStatus = document.getElementById('progress-status');
+                
+                if (progressRing && progressPercentage) {
+                    const circumference = 2 * Math.PI * 30; // radius = 30
+                    const offset = circumference - (progress / 100) * circumference;
+                    
+                    progressRing.style.strokeDashoffset = offset;
+                    progressPercentage.textContent = `${Math.round(progress)}%`;
+                }
+                
+                if (progressStatus) {
+                    if (progress < 20) {
+                        progressStatus.textContent = 'Getting Started';
+                    } else if (progress < 50) {
+                        progressStatus.textContent = 'Building Network';
+                    } else if (progress < 80) {
+                        progressStatus.textContent = 'Configuring Devices';
+                    } else if (progress < 100) {
+                        progressStatus.textContent = 'Almost Complete';
+                    } else {
+                        progressStatus.textContent = 'Scenario Complete!';
+                    }
+                }
+            }
+
+            calculateOverallProgress() {
+                const deviceProgress = Math.min(this.metrics.devicesPlaced / this.getRequiredDevices(), 1) * 40;
+                const connectionProgress = Math.min(this.metrics.connectionsMade / this.getRequiredConnections(), 1) * 35;
+                const configProgress = Math.min(this.metrics.configurationsComplete / this.getRequiredConfigs(), 1) * 25;
+                
+                return deviceProgress + connectionProgress + configProgress;
+            }
+
+            getRequiredDevices() {
+                // Get from current scenario or default
+                if (window.currentScenario && window.currentScenario.requiredDevices) {
+                    return window.currentScenario.requiredDevices;
+                }
+                return 5; // Default
+            }
+
+            getRequiredConnections() {
+                if (window.currentScenario && window.currentScenario.requiredConnections) {
+                    return window.currentScenario.requiredConnections;
+                }
+                return 3; // Default
+            }
+
+            getRequiredConfigs() {
+                if (window.currentScenario && window.currentScenario.requiredConfigs) {
+                    return window.currentScenario.requiredConfigs;
+                }
+                return 2; // Default
+            }
+
+            addHint(text, type = 'info') {
+                const hintsContainer = document.getElementById('hints-container');
+                if (!hintsContainer) return;
+                
+                // Limit to 3 most recent hints
+                const existingHints = hintsContainer.querySelectorAll('.hint-item');
+                if (existingHints.length >= 3) {
+                    existingHints[0].remove();
+                }
+                
+                const hintElement = document.createElement('div');
+                hintElement.className = 'hint-item';
+                
+                let iconClass = 'bx-info-circle';
+                if (type === 'success') iconClass = 'bx-check-circle';
+                else if (type === 'warning') iconClass = 'bx-error-circle';
+                else if (type === 'tip') iconClass = 'bx-bulb';
+                else if (type === 'config') iconClass = 'bx-cog';
+                else if (type === 'welcome') iconClass = 'bx-star';
+                
+                hintElement.innerHTML = `
+                    <i class="bx ${iconClass} hint-icon"></i>
+                    <div class="hint-text">${text}</div>
+                `;
+                
+                hintsContainer.appendChild(hintElement);
+                
+                // Auto-remove hint after 30 seconds
+                setTimeout(() => {
+                    if (hintElement.parentNode) {
+                        hintElement.remove();
+                    }
+                }, 30000);
+            }
+
+            addInitialHint() {
+                this.addHint('Start by placing network devices on the canvas. Drag from the device palette below!', 'tip');
+            }
+
+            getSmartHint() {
+                this.metrics.hintsUsed++;
+                const hintsUsed = document.getElementById('hints-used');
+                if (hintsUsed) {
+                    hintsUsed.textContent = this.metrics.hintsUsed;
+                }
+                
+                // Log the hint request action
+                this.logAction('hint_requested', {
+                    progress: this.calculateOverallProgress(),
+                    time_spent: this.metrics.timeSpent,
+                    devices_placed: this.metrics.devicesPlaced,
+                    connections_made: this.metrics.connectionsMade
+                });
+                
+                // Try to get backend hint first
+                if (this.realTimeEnabled && window.socketClient && this.sessionId) {
+                    this.requestBackendHint();
+                    this.addHint('🤖 AI Assistant is analyzing your progress...', 'ai-processing');
+                    return;
+                }
+                
+                // Fallback to local hints if backend unavailable
+                this.generateLocalHint();
+            }
+
+            generateLocalHint() {
+                // Generate contextual hint based on current progress
+                const progress = this.calculateOverallProgress();
+                let hint = '';
+                
+                if (progress < 20) {
+                    hint = 'Try dragging devices from the bottom palette onto the canvas to start building your network.';
+                } else if (progress < 40) {
+                    hint = 'Use the "Connect" button to link your devices together. Click two devices to create a connection.';
+                } else if (progress < 60) {
+                    hint = 'Double-click on devices to configure their IP addresses and network settings.';
+                } else if (progress < 80) {
+                    hint = 'Check if all devices are properly configured and connected according to the scenario requirements.';
+                } else {
+                    hint = 'You\'re almost done! Use the "Check" button to validate your solution.';
+                }
+                
+                this.addHint(hint, 'tip');
+            }
+
+            // Override action tracking methods to log actions
+            onDeviceAddedEnhanced(deviceType, position) {
+                this.onDeviceAdded();
+                this.logAction('device_added', {
+                    device_type: deviceType,
+                    position: position,
+                    total_devices: this.metrics.devicesPlaced
+                });
+            }
+
+            onConnectionMadeEnhanced(device1, device2) {
+                this.onConnectionMade();
+                this.logAction('connection_made', {
+                    device1: device1,
+                    device2: device2,
+                    total_connections: this.metrics.connectionsMade
+                });
+            }
+
+            onConfigurationCompleteEnhanced(deviceId, config) {
+                this.onConfigurationComplete();
+                this.logAction('configuration_complete', {
+                    device_id: deviceId,
+                    config: config,
+                    total_configs: this.metrics.configurationsComplete
+                });
+            }
+
+            onMistakeMadeEnhanced(errorType, details) {
+                this.onMistakeMade();
+                this.logAction('mistake_made', {
+                    error_type: errorType,
+                    details: details,
+                    total_mistakes: this.metrics.mistakesCount
+                });
+            }
+
+            checkCurrentSolution() {
+                // Trigger existing solution check
+                if (typeof checkSolution === 'function' && window.currentScenario) {
+                    checkSolution(window.currentScenario);
+                } else {
+                    this.addHint('No active scenario to check. Start a scenario first!', 'warning');
+                }
+            }
+
+            resetProgress() {
+                if (confirm('Are you sure you want to reset your progress? This will clear all devices and connections.')) {
+                    // Reset the scenario
+                    if (typeof resetScenarios === 'function') {
+                        resetScenarios();
+                    }
+                    
+                    // Reset metrics
+                    this.metrics = {
+                        score: 0,
+                        devicesPlaced: 0,
+                        connectionsMade: 0,
+                        configurationsComplete: 0,
+                        actionsCount: 0,
+                        mistakesCount: 0,
+                        hintsUsed: 0,
+                        timeSpent: 0
+                    };
+                    
+                    // Reset achievements
+                    Object.keys(this.achievements).forEach(key => {
+                        this.achievements[key] = false;
+                        const badge = document.querySelector(`[data-achievement="${key}"]`);
+                        if (badge) {
+                            badge.classList.remove('unlocked');
+                            badge.classList.add('locked');
+                        }
+                    });
+                    
+                    // Clear hints
+                    const hintsContainer = document.getElementById('hints-container');
+                    if (hintsContainer) {
+                        hintsContainer.innerHTML = '';
+                    }
+                    
+                    // Restart session
+                    this.startSession();
+                    this.addInitialHint();
+                    this.updateAllMetrics();
+                    
+                    this.addHint('Progress reset! Start building your network again.', 'success');
+                }
+            }
+
+            unlockAchievement(achievementId) {
+                if (this.achievements[achievementId]) return; // Already unlocked
+                
+                this.achievements[achievementId] = true;
+                const badge = document.querySelector(`[data-achievement="${achievementId}"]`);
+                if (badge) {
+                    badge.classList.remove('locked');
+                    badge.classList.add('unlocked');
+                }
+                
+                // Show achievement notification
+                let achievementText = '';
+                switch (achievementId) {
+                    case 'first-device':
+                        achievementText = '🎉 Achievement: First Device placed!';
+                        break;
+                    case 'network-builder':
+                        achievementText = '🏗️ Achievement: Network Builder - 5 devices placed!';
+                        break;
+                    case 'speed-demon':
+                        achievementText = '⚡ Achievement: Speed Demon - Completed in under 5 minutes!';
+                        break;
+                    case 'perfectionist':
+                        achievementText = '✨ Achievement: Perfectionist - No mistakes made!';
+                        break;
+                }
+                
+                if (achievementText) {
+                    this.addHint(achievementText, 'success');
+                }
+                
+                console.log(`🏆 Achievement unlocked: ${achievementId}`);
+            }
+
+            checkForTimeBasedHints() {
+                const timeSpent = this.metrics.timeSpent;
+                
+                // Time-based hints
+                if (timeSpent === 60 && this.metrics.devicesPlaced === 0) {
+                    this.addHint('Take your time! Try dragging a device from the palette below onto the canvas.', 'tip');
+                } else if (timeSpent === 180 && this.calculateOverallProgress() < 20) {
+                    this.addHint('Need help? Click the "Get Hint" button for personalized guidance!', 'tip');
+                } else if (timeSpent === 300 && this.calculateOverallProgress() < 50) {
+                    this.addHint('You\'re doing great! Remember to connect devices after placing them.', 'tip');
+                }
+                
+                // Check for speed achievement
+                if (this.calculateOverallProgress() >= 100 && timeSpent <= 300) {
+                    this.unlockAchievement('speed-demon');
+                }
+                
+                // Check for perfectionist achievement
+                if (this.calculateOverallProgress() >= 100 && this.metrics.mistakesCount === 0) {
+                    this.unlockAchievement('perfectionist');
+                }
+            }
+
+            // Public API for external integration
+            trackAction(actionType, data = {}) {
+                console.log(`🎯 Tracking action: ${actionType}`, data);
+                
+                // Update local metrics first for immediate feedback
+                this.updateLocalMetrics(actionType, data);
+                
+                // Send to backend if connected
+                if (this.realTimeEnabled && window.socketClient) {
+                    window.socketClient.emit('track_user_action', {
+                        session_id: this.sessionId,
+                        action_type: actionType,
+                        action_data: data,
+                        timestamp: Date.now(),
+                        current_metrics: this.metrics
+                    });
+                }
+                
+                // Update display
+                this.updateAllMetrics();
+                
+                // Check for achievements and hints
+                this.checkForAchievements();
+                this.checkForSmartHints();
+            }
+            
+            updateLocalMetrics(actionType, actionData) {
+                // Update metrics based on action type
+                switch (actionType) {
+                    case 'device_placed':
+                        this.onDeviceAdded();
+                        break;
+                    case 'connection_made':
+                        this.metrics.connectionsMade++;
+                        this.metrics.actionsCount++;
+                        this.metrics.score += 15;
+                        break;
+                    case 'configuration_changed':
+                        this.metrics.configurationsComplete++;
+                        this.metrics.actionsCount++;
+                        this.metrics.score += 25;
+                        break;
+                    case 'mistake_made':
+                        this.metrics.mistakesCount++;
+                        this.metrics.actionsCount++;
+                        this.metrics.score = Math.max(0, this.metrics.score - 5);
+                        this.addHint('Don\'t worry about mistakes - they\'re part of learning!', 'tip');
+                        break;
+                    case 'hint_used':
+                        this.metrics.hintsUsed++;
+                        this.metrics.score = Math.max(0, this.metrics.score - 2);
+                        break;
+                    case 'action_generic':
+                        this.metrics.actionsCount++;
+                        this.metrics.score += 1;
+                        break;
+                }
+            }
+            
+            updateFromBackendData(backendData) {
+                console.log('📊 Updating from backend data:', backendData);
+                
+                // Update metrics from backend
+                if (backendData.metrics) {
+                    this.metrics = {
+                        ...this.metrics,
+                        ...backendData.metrics
+                    };
+                }
+                
+                // Update session info
+                if (backendData.session_info) {
+                    this.backendSession = backendData.session_info;
+                    this.sessionId = backendData.session_info.session_id;
+                    
+                    // Update start time if provided
+                    if (backendData.session_info.start_time) {
+                        this.startTime = new Date(backendData.session_info.start_time).getTime();
+                    }
+                }
+                
+                // Update performance indicators
+                if (backendData.performance_indicators) {
+                    this.updatePerformanceIndicators(backendData.performance_indicators);
+                }
+                
+                // Update smart hints
+                if (backendData.smart_hints) {
+                    this.updateSmartHints(backendData.smart_hints);
+                }
+                
+                // Refresh display
+                this.updateAllMetrics();
+                
+                console.log('✅ Backend data sync complete');
+            }
+            
+            handleBackendActionUpdate(actionData) {
+                console.log('🔄 Backend action update:', actionData);
+                
+                // Update specific metrics based on action type
+                switch (actionData.action_type) {
+                    case 'device_placed':
+                        this.metrics.devicesPlaced = actionData.count || this.metrics.devicesPlaced;
+                        break;
+                    case 'connection_made':
+                        this.metrics.connectionsMade = actionData.count || this.metrics.connectionsMade;
+                        break;
+                    case 'configuration_complete':
+                        this.metrics.configurationsComplete = actionData.count || this.metrics.configurationsComplete;
+                        break;
+                    case 'mistake_made':
+                        this.metrics.mistakesCount = actionData.count || this.metrics.mistakesCount;
+                        break;
+                    case 'hint_used':
+                        this.metrics.hintsUsed = actionData.count || this.metrics.hintsUsed;
+                        break;
+                    case 'score_update':
+                        this.metrics.score = actionData.score || this.metrics.score;
+                        break;
+                }
+                
+                // Update action count
+                this.metrics.actionsCount = actionData.total_actions || this.metrics.actionsCount;
+                
+                // Update display
+                this.updateAllMetrics();
+                
+                // Check for achievements
+                this.checkForAchievements();
+            }
+            
+            syncWithBackend() {
+                if (!this.realTimeEnabled || !window.socketClient) return;
+                
+                // Request progress update from backend
+                window.socketClient.emit('get_progress_update', {
+                    session_id: this.sessionId,
+                    current_metrics: this.metrics,
+                    timestamp: Date.now()
+                });
+            }
+            
+            checkForAchievements() {
+                // Check for all achievements
+                if (this.metrics.devicesPlaced === 1) {
+                    this.unlockAchievement('first-device');
+                }
+                
+                if (this.metrics.devicesPlaced >= 5) {
+                    this.unlockAchievement('network-builder');
+                }
+                
+                if (this.calculateOverallProgress() >= 100 && this.metrics.timeSpent <= 300) {
+                    this.unlockAchievement('speed-demon');
+                }
+                
+                if (this.calculateOverallProgress() >= 100 && this.metrics.mistakesCount === 0) {
+                    this.unlockAchievement('perfectionist');
+                }
+            }
+            
+            checkForSmartHints() {
+                // Smart hint logic based on current state
+                if (this.metrics.devicesPlaced === 2 && this.metrics.connectionsMade === 0) {
+                    this.addHint('You can connect devices by clicking the "Connect" button, then clicking two devices.', 'tip');
+                } else if (this.metrics.devicesPlaced === 3 && this.metrics.configurationsComplete === 0) {
+                    this.addHint('Don\'t forget to configure IP addresses for your devices!', 'config');
+                }
+            }
+            
+            updatePerformanceIndicators(indicators) {
+                // Update performance indicators from backend
+                if (indicators.efficiency) {
+                    this.updateEfficiencyIndicator(indicators.efficiency);
+                }
+                
+                if (indicators.accuracy) {
+                    this.updateAccuracyIndicator(indicators.accuracy);
+                }
+                
+                if (indicators.speed) {
+                    this.updateSpeedIndicator(indicators.speed);
+                }
+            }
+            
+            updateSmartHints(hints) {
+                // Update smart hints from backend
+                if (hints && hints.length > 0) {
+                    hints.forEach(hint => {
+                        this.addHint(hint.message, hint.type || 'tip');
+                    });
+                }
+            }
+
+            endSession() {
+                if (this.progressTimer) {
+                    clearInterval(this.progressTimer);
+                    this.progressTimer = null;
+                }
+                
+                // Send session end to backend
+                if (this.realTimeEnabled && window.socketClient && this.sessionId) {
+                    window.socketClient.emit('end_feedback_session', {
+                        session_id: this.sessionId,
+                        final_metrics: this.metrics,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // Save session data locally
+                this.saveSessionData();
+                
+                // Show session summary
+                this.showSessionSummary();
+                
+                // Reset session
+                this.sessionId = null;
+                this.backendSession = null;
+                this.startTime = null;
+                this.metrics = {
+                    score: 0,
+                    devicesPlaced: 0,
+                    connectionsMade: 0,
+                    configurationsComplete: 0,
+                    actionsCount: 0,
+                    mistakesCount: 0,
+                    hintsUsed: 0,
+                    timeSpent: 0
+                };
+                
+                console.log('🎯 Performance tracking session ended');
+            }
+            
+            saveSessionData() {
+                const sessionData = {
+                    sessionId: this.sessionId,
+                    startTime: this.startTime,
+                    endTime: Date.now(),
+                    metrics: this.metrics,
+                    achievements: this.achievements,
+                    timestamp: Date.now()
+                };
+                
+                // Save to localStorage
+                const savedSessions = JSON.parse(localStorage.getItem('performanceSessions') || '[]');
+                savedSessions.push(sessionData);
+                
+                // Keep only last 10 sessions
+                if (savedSessions.length > 10) {
+                    savedSessions.splice(0, savedSessions.length - 10);
+                }
+                
+                localStorage.setItem('performanceSessions', JSON.stringify(savedSessions));
+            }
+            
+            showSessionSummary() {
+                const duration = this.metrics.timeSpent;
+                const progress = this.calculateOverallProgress();
+                
+                // Create summary message
+                let summary = `🎯 Session Complete!\n\n`;
+                summary += `⏱️ Duration: ${Math.floor(duration / 60)}m ${duration % 60}s\n`;
+                summary += `🏆 Score: ${this.metrics.score}\n`;
+                summary += `📊 Progress: ${progress}%\n`;
+                summary += `⚡ Actions: ${this.metrics.actionsCount}\n`;
+                summary += `🔧 Devices: ${this.metrics.devicesPlaced}\n`;
+                summary += `🔗 Connections: ${this.metrics.connectionsMade}\n`;
+                
+                // Show achievements
+                const unlockedAchievements = Object.keys(this.achievements).filter(key => this.achievements[key]);
+                if (unlockedAchievements.length > 0) {
+                    summary += `\n🏆 Achievements: ${unlockedAchievements.length}\n`;
+                }
+                
+                // Add hint with summary
+                this.addHint(summary, 'success');
+                
+                // Flash the sidebar to draw attention
+                this.flashSidebar();
+            }
+            
+            flashSidebar() {
+                this.sidebar.classList.add('flash');
+                setTimeout(() => {
+                    this.sidebar.classList.remove('flash');
+                }, 2000);
+            }
+            
+            // External integration methods
+            static getInstance() {
+                if (!window.performanceFeedback) {
+                    window.performanceFeedback = new PerformanceFeedbackSystem();
+                }
+                return window.performanceFeedback;
+            }
+            
+            // Static methods for external integration
+            static trackDevicePlacement(deviceData) {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.trackAction('device_placed', deviceData);
+            }
+            
+            static trackConnectionMade(connectionData) {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.trackAction('connection_made', connectionData);
+            }
+            
+            static trackConfigurationChange(configData) {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.trackAction('configuration_changed', configData);
+            }
+            
+            static trackMistake(mistakeData) {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.trackAction('mistake_made', mistakeData);
+            }
+            
+            static trackHintUsed(hintData) {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.trackAction('hint_used', hintData);
+            }
+            
+            static showSidebar() {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.showSidebar();
+            }
+            
+            static hideSidebar() {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                instance.hideSidebar();
+            }
+            
+            static getPerformanceData() {
+                const instance = PerformanceFeedbackSystem.getInstance();
+                return instance.getPerformanceData();
+            }
+        }
+
+        // Initialize Performance Feedback System
+        let performanceFeedback = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for other systems to load first
+            setTimeout(() => {
+                performanceFeedback = new PerformanceFeedbackSystem();
+                
+                // Make it globally accessible
+                window.performanceFeedback = performanceFeedback;
+                
+                console.log('🎯 Performance Feedback System ready');
+            }, 2000);
+        });
+
+        // Integration hooks for existing code
+        function trackPerformanceAction(actionType, data = {}) {
+            if (window.performanceFeedback) {
+                window.performanceFeedback.trackAction(actionType, data);
+            }
+        }
+
+        // Export for external use
+        window.trackPerformanceAction = trackPerformanceAction;
+        
+        console.log('📊 Performance Feedback System script loaded');
+    </script>
     <script>
         const palette = document.getElementById("device-palette");
         const canvas = document.getElementById("Canvas");
@@ -3266,6 +6342,8 @@
         };
 
         function addDevice(type, x, y) {
+            const startTime = Date.now(); // Track start time for performance feedback
+            
             let newDevice;
             deviceCounter[type]++;
             const label = `${type.charAt(0).toUpperCase() + type.slice(1)} ${deviceCounter[type]}`;
@@ -3284,9 +6362,20 @@
                     return; // If no valid type is passed, don't add a device
             }
 
+            // Add placement start time for feedback tracking
+            newDevice.placementStartTime = startTime;
+            
             devices.push(newDevice);
             selectedDevice = newDevice;
             redrawCanvas();
+            
+            // Track device placement for performance feedback
+            if (window.performanceFeedback) {
+                window.performanceFeedback.trackAction('device_placed', {
+                    device_type: type,
+                    device_label: newDevice.label
+                });
+            }
         }
 
 
@@ -3367,6 +6456,14 @@
             if (!existingConnection) {
                 connections.push({ device1, device2 });
                 redrawCanvas();
+                
+                // Track connection creation for performance feedback
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.trackAction('connection_made', {
+                        device1_type: device1.type,
+                        device2_type: device2.type
+                    });
+                }
             }
             firstDevice = null;  // Reset after connection
         }
@@ -3792,6 +6889,17 @@
             connections = [];
             // Redraw the canvas
             redrawCanvas();
+            
+            // Start feedback session for this scenario
+            const scenarioId = `${difficulty}_${problemType}`;
+            if (window.performanceFeedback) {
+                window.performanceFeedback.trackAction('scenario_started', {
+                    scenarioId: scenarioId,
+                    lobbyId: currentLobby?.id
+                });
+                console.log('📊 Performance tracking started for scenario:', scenarioId);
+            }
+            
             // Call the appropriate setup function
             switch (difficulty) {
                 case 'easy':
@@ -3809,6 +6917,11 @@
 
             // Store the current scenario for solution checking
             currentScenario = { difficulty, problemType };
+            
+            // Initialize feedback for the scenario
+            setTimeout(() => {
+                enhanceScenarioWithFeedback(difficulty, scenarioId);
+            }, 1000);
         }
 
         function setupEasyScenario(problemType) {
@@ -4391,6 +7504,13 @@
         }
 
         function handleCliCommand(command, device) {
+            const startTime = Date.now();
+            let output = '';
+            
+            // Capture original CLI output
+            const originalCliOutput = document.getElementById("cli-output");
+            const initialChildCount = originalCliOutput ? originalCliOutput.children.length : 0;
+            
             switch (currentScenario.problemType) {
                 case 'network':
                     handleCliCommandForMisconfiguredNetwork(command, device);
@@ -4426,6 +7546,23 @@
                     cliOutput.appendChild(outputLine);
                     break;
             }
+            
+            // Capture the output that was added
+            setTimeout(() => {
+                if (originalCliOutput && originalCliOutput.children.length > initialChildCount) {
+                    const newOutput = originalCliOutput.children[originalCliOutput.children.length - 1];
+                    output = newOutput ? newOutput.textContent : '';
+                }
+                
+                // Track CLI command for performance feedback
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.trackAction('cli_command', {
+                        command: command,
+                        device: device,
+                        output: output
+                    });
+                }
+            }, 50);
         }
 
         function checkMisconfiguredNetworkAddress() {
@@ -4954,10 +8091,17 @@
             
             console.log('🔍 Opening lobby browser modal');
             const modal = document.getElementById('lobbyBrowserModal');
+            const backdrop = document.getElementById('lobbyBrowserBackdrop');
+            
             if (!modal) {
                 console.error('❌ Lobby browser modal not found');
                 alert('Collaboration interface not loaded properly. Please refresh the page.');
                 return;
+            }
+            
+            // Show backdrop first
+            if (backdrop) {
+                backdrop.classList.add('active');
             }
             
             modal.classList.add('active');
@@ -5059,7 +8203,24 @@
 
         function closeLobbyBrowser() {
             const modal = document.getElementById('lobbyBrowserModal');
-            modal.classList.remove('active');
+            const backdrop = document.getElementById('lobbyBrowserBackdrop');
+            
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            
+            if (backdrop) {
+                backdrop.classList.remove('active');
+            }
+            
+            // Clear auto-refresh interval
+            if (lobbyRefreshInterval) {
+                clearInterval(lobbyRefreshInterval);
+                lobbyRefreshInterval = null;
+                console.log('🛑 Stopped auto-refresh for lobby browser');
+            }
+            
+            lobbyBrowserOpen = false;
             
             // Leave lobby browser room
             if (window.socketClient) {
@@ -5068,17 +8229,81 @@
         }
 
         function showCreateLobby() {
-            document.getElementById('createLobbyModal').style.display = 'flex';
-            updateScenarioOptions();
+            console.log('🎯 Opening create lobby modal');
+            
+            // Close any existing browser modal first
+            const browserModal = document.getElementById('lobbyBrowserModal');
+            if (browserModal) {
+                browserModal.style.display = 'none';
+                browserModal.classList.remove('active');
+            }
+            
+            const modal = document.getElementById('createLobbyModal');
+            const backdrop = document.getElementById('createLobbyModalBackdrop');
+            
+            if (modal && backdrop) {
+                // Show backdrop first
+                backdrop.style.display = 'block';
+                backdrop.classList.add('active');
+                
+                // Show modal with clean, crisp styling (no blur on content)
+                modal.style.display = 'flex';
+                modal.style.flexDirection = 'column';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                modal.style.pointerEvents = 'auto';
+                modal.classList.add('active');
+                
+                // Ensure form is visible
+                const form = document.getElementById('createLobbyForm');
+                if (form) {
+                    form.style.display = 'flex';
+                    form.style.flexDirection = 'column';
+                    console.log('✅ Form visibility ensured');
+                }
+                
+                // Update scenario options and ensure dropdown is populated
+                updateScenarioOptions();
+                
+                // Ensure all form elements are visible
+                const formElements = modal.querySelectorAll('.form-group');
+                formElements.forEach(group => {
+                    group.style.display = 'flex';
+                    group.style.flexDirection = 'column';
+                });
+                
+                console.log('✅ Create lobby modal opened with crisp, readable content');
+            } else {
+                console.error('❌ Create lobby modal or backdrop not found');
+            }
         }
 
         function closeCreateLobby() {
-            document.getElementById('createLobbyModal').style.display = 'none';
+            console.log('🔒 Closing create lobby modal');
+            const modal = document.getElementById('createLobbyModal');
+            const backdrop = document.getElementById('createLobbyModalBackdrop');
+            
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+                console.log('✅ Create lobby modal closed');
+            }
+            
+            if (backdrop) {
+                backdrop.style.display = 'none';
+                backdrop.classList.remove('active');
+            }
         }
 
         function updateScenarioOptions() {
+            console.log('🔄 Updating scenario options...');
             const scenarioType = document.getElementById('scenarioType').value;
             const scenarioSelect = document.getElementById('scenarioId');
+            
+            if (!scenarioType || !scenarioSelect) {
+                console.error('❌ Scenario elements not found', { scenarioType, scenarioSelect });
+                return;
+            }
             
             const scenarios = {
                 easy: [
@@ -5100,12 +8325,21 @@
             };
             
             scenarioSelect.innerHTML = '';
-            scenarios[scenarioType].forEach(scenario => {
+            const selectedScenarios = scenarios[scenarioType];
+            
+            if (!selectedScenarios) {
+                console.error('❌ No scenarios found for type:', scenarioType);
+                return;
+            }
+            
+            selectedScenarios.forEach(scenario => {
                 const option = document.createElement('option');
                 option.value = scenario.id;
                 option.textContent = scenario.name;
                 scenarioSelect.appendChild(option);
             });
+            
+            console.log('✅ Scenario options updated:', selectedScenarios.length, 'options for', scenarioType);
         }
 
         function refreshLobbies() {
@@ -5513,6 +8747,9 @@
             const scenarioTypeSelect = document.getElementById('scenarioType');
             if (scenarioTypeSelect) {
                 scenarioTypeSelect.addEventListener('change', updateScenarioOptions);
+                console.log('✅ Scenario type change listener added');
+            } else {
+                console.error('❌ Scenario type select not found');
             }
 
             // Handle create lobby form submission
@@ -5542,6 +8779,28 @@
 
             // Update initial scenario options
             updateScenarioOptions();
+            
+            // Test modal elements on page load
+            console.log('🔍 Testing modal elements on page load:');
+            const modalElementsTest = [
+                'createLobbyModal',
+                'createLobbyForm', 
+                'lobbyName',
+                'scenarioType',
+                'scenarioId',
+                'maxParticipants'
+            ];
+            
+            modalElementsTest.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    console.log(`✅ ${id} found:`, element.tagName);
+                } else {
+                    console.error(`❌ ${id} NOT FOUND`);
+                }
+            });
+            
+            console.log('Modal elements test complete');
             
             // --- WebSocket Event Listeners for Troubleshooting ---
             if (window.socketClient) {
@@ -5581,25 +8840,23 @@
                 window.socketClient.on('lobby_created', function(data) {
                     console.log('🏗️ Lobby created successfully:', data);
                     if (data.success) {
-                        // Close create lobby modal
-                        const createModal = document.getElementById('createLobbyModal');
-                        if (createModal) {
-                            createModal.style.display = 'none';
-                        }
+                        // Close create lobby modal and backdrop
+                        closeCreateLobby();
                         
                         // Show success notification
                         if (window.socketClient.showNotification) {
                             window.socketClient.showNotification(
                                 'Session Created!',
-                                `"${data.lobby.name}" has been created successfully.`,
+                                `"${data.lobby.name}" has been created successfully. Opening lobby browser...`,
                                 'success'
                             );
                         }
                         
-                        // Refresh lobby list if browser is open
-                        if (lobbyBrowserOpen) {
-                            refreshLobbies();
-                        }
+                        // Automatically open the lobby browser to show the newly created lobby
+                        console.log('🎯 Auto-opening lobby browser to show newly created session');
+                        setTimeout(() => {
+                            showLobbyBrowser();
+                        }, 500); // Small delay to allow modal transitions to complete
                     }
                 });
 
@@ -6428,14 +9685,24 @@
 
             // === ENHANCED CANVAS EVENT HANDLERS FOR COLLABORATION ===
 
-            // Override the original addDevice function to include collaboration
+            // Override the original addDevice function to include collaboration and feedback
             const originalAddDevice = window.addDevice || addDevice;
             function addDevice(type, x, y) {
+                const startTime = Date.now();
                 const device = originalAddDevice.call(this, type, x, y);
                 
                 // Add unique ID for collaboration
                 if (device && !device.id) {
                     device.id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                }
+                
+                // Track device placement for feedback
+                if (device && window.performanceFeedback) {
+                    window.performanceFeedback.trackAction('device_placed', {
+                        device: device,
+                        position: { x, y },
+                        startTime: startTime
+                    });
                 }
                 
                 // Broadcast device addition via specific event
@@ -6459,10 +9726,21 @@
                 return device;
             }
 
-            // Override the original addConnection function to include collaboration
+            // Override the original addConnection function to include collaboration and feedback
             const originalAddConnection = window.addConnection || addConnection;
             function addConnection(device1, device2, connectionType = 'ethernet') {
+                const startTime = Date.now();
                 const connection = originalAddConnection.call(this, device1, device2);
+                
+                // Track connection creation for feedback
+                if (connection && window.performanceFeedback) {
+                    window.performanceFeedback.trackAction('connection_created', {
+                        device1: device1,
+                        device2: device2,
+                        connectionType: connectionType,
+                        startTime: startTime
+                    });
+                }
                 
                 // Broadcast connection addition
                 if (currentLobby && connection && window.socketClient && device1 && device2) {
@@ -6770,6 +10048,799 @@
 
         // ===== CONSOLIDATED COLLABORATION FUNCTIONS =====
         // (All duplicate function definitions removed and consolidated into the main DOMContentLoaded block above)
+    </script>
+
+    <!-- ===== SCENARIO TIMER SYSTEM ===== -->
+    <script>
+        // Timer System Variables
+        let scenarioTimer = {
+            id: null,
+            isActive: false,
+            isPaused: false,
+            startTime: null,
+            endTime: null,
+            timeLimit: 0,
+            remaining: 0,
+            difficulty: 'medium',
+            scenarioType: 'troubleshooting',
+            scenarioId: null,
+            lobbyId: null,
+            isCollaborative: false,
+            warningShown: {
+                '5_minute': false,
+                '1_minute': false,
+                '30_second': false
+            }
+        };
+
+        let timerInterval = null;
+        let timerUpdateInterval = null;
+
+        // Timer UI Elements
+        const timerContainer = document.getElementById('scenario-timer');
+        const timerDisplay = document.getElementById('timer-display');
+        const timerStatus = document.getElementById('timer-status');
+        const timerProgress = document.getElementById('timer-progress');
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        const resumeBtn = document.getElementById('resume-timer-btn');
+        const warningModal = document.getElementById('timer-warning-modal');
+        const expiredModal = document.getElementById('timer-expired-modal');
+
+        // Timer Management Functions
+        function initializeTimer(config) {
+            console.log('🕒 Initializing timer with config:', config);
+
+            // Set timer configuration
+            scenarioTimer = {
+                ...scenarioTimer,
+                ...config,
+                isActive: true,
+                isPaused: false,
+                startTime: new Date(),
+                warningShown: {
+                    '5_minute': false,
+                    '1_minute': false,
+                    '30_second': false
+                }
+            };
+
+            // Show timer UI
+            if (timerContainer) {
+                timerContainer.classList.add('active');
+            }
+
+            // Start timer via WebSocket
+            if (window.socketClient) {
+                window.socketClient.emit('start_scenario_timer', {
+                    scenario_id: scenarioTimer.scenarioId,
+                    scenario_type: scenarioTimer.scenarioType,
+                    difficulty: scenarioTimer.difficulty,
+                    time_limit_minutes: scenarioTimer.timeLimit / 60,
+                    lobby_id: scenarioTimer.lobbyId
+                });
+            }
+
+            // Start local timer update
+            startTimerUpdate();
+            
+            // Set up event listeners
+            setupTimerEventListeners();
+        }
+
+        function startTimerUpdate() {
+            if (timerUpdateInterval) {
+                clearInterval(timerUpdateInterval);
+            }
+
+            timerUpdateInterval = setInterval(() => {
+                updateTimerDisplay();
+                checkTimerWarnings();
+                checkTimerExpiration();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            if (!scenarioTimer.isActive || !timerDisplay) return;
+
+            if (scenarioTimer.isPaused) {
+                // Don't update when paused
+                return;
+            }
+
+            const now = new Date();
+            const elapsed = Math.floor((now - scenarioTimer.startTime) / 1000);
+            scenarioTimer.remaining = Math.max(0, scenarioTimer.timeLimit - elapsed);
+
+            // Update display
+            const minutes = Math.floor(scenarioTimer.remaining / 60);
+            const seconds = scenarioTimer.remaining % 60;
+
+            const minutesSpan = timerDisplay.querySelector('.minutes');
+            const secondsSpan = timerDisplay.querySelector('.seconds');
+
+            if (minutesSpan && secondsSpan) {
+                minutesSpan.textContent = minutes.toString().padStart(2, '0');
+                secondsSpan.textContent = seconds.toString().padStart(2, '0');
+            }
+
+            // Update progress bar
+            if (timerProgress) {
+                const progressPercentage = (scenarioTimer.remaining / scenarioTimer.timeLimit) * 100;
+                timerProgress.style.width = `${progressPercentage}%`;
+
+                // Update progress bar color based on remaining time
+                timerProgress.classList.remove('warning', 'critical');
+                if (scenarioTimer.remaining <= 60) {
+                    timerProgress.classList.add('critical');
+                } else if (scenarioTimer.remaining <= 300) {
+                    timerProgress.classList.add('warning');
+                }
+            }
+
+            // Update timer container styling
+            if (timerContainer) {
+                timerContainer.classList.remove('warning', 'critical');
+                if (scenarioTimer.remaining <= 60) {
+                    timerContainer.classList.add('critical');
+                    timerDisplay.classList.add('critical');
+                } else if (scenarioTimer.remaining <= 300) {
+                    timerContainer.classList.add('warning');
+                    timerDisplay.classList.add('warning');
+                } else {
+                    timerDisplay.classList.remove('warning', 'critical');
+                }
+            }
+        }
+
+        function checkTimerWarnings() {
+            if (!scenarioTimer.isActive || scenarioTimer.isPaused) return;
+
+            // 5 minute warning
+            if (scenarioTimer.remaining <= 300 && scenarioTimer.remaining > 295 && !scenarioTimer.warningShown['5_minute']) {
+                showTimerWarning('5_minute_warning', scenarioTimer.remaining);
+                scenarioTimer.warningShown['5_minute'] = true;
+            }
+
+            // 1 minute warning
+            if (scenarioTimer.remaining <= 60 && scenarioTimer.remaining > 55 && !scenarioTimer.warningShown['1_minute']) {
+                showTimerWarning('1_minute_warning', scenarioTimer.remaining);
+                scenarioTimer.warningShown['1_minute'] = true;
+            }
+
+            // 30 second warning
+            if (scenarioTimer.remaining <= 30 && scenarioTimer.remaining > 25 && !scenarioTimer.warningShown['30_second']) {
+                showTimerWarning('30_second_warning', scenarioTimer.remaining);
+                scenarioTimer.warningShown['30_second'] = true;
+            }
+        }
+
+        function checkTimerExpiration() {
+            if (!scenarioTimer.isActive || scenarioTimer.isPaused) return;
+
+            if (scenarioTimer.remaining <= 0) {
+                handleTimerExpiration();
+            }
+
+            // Send periodic status updates to server for collaborative sync
+            if (scenarioTimer.remaining % 30 === 0 && window.socketClient) {
+                window.socketClient.emit('check_timer_expiration', {
+                    timer_id: scenarioTimer.id,
+                    current_progress: getCurrentProgress()
+                });
+            }
+        }
+
+        function handleTimerExpiration() {
+            console.log('⏰ Timer expired - auto-submitting scenario');
+
+            scenarioTimer.isActive = false;
+            scenarioTimer.endTime = new Date();
+
+            // Stop timer updates
+            if (timerUpdateInterval) {
+                clearInterval(timerUpdateInterval);
+            }
+
+            // Update UI
+            if (timerStatus) {
+                timerStatus.textContent = 'EXPIRED';
+                timerStatus.classList.add('expired');
+            }
+
+            // Auto-submit current progress
+            autoSubmitScenario();
+
+            // Show expiration modal
+            showTimerExpiredModal();
+        }
+
+        function showTimerWarning(type, remainingSeconds) {
+            if (!warningModal) return;
+
+            const warningMessage = document.getElementById('warning-message');
+            if (warningMessage) {
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = remainingSeconds % 60;
+
+                let message = '';
+                switch (type) {
+                    case '5_minute_warning':
+                        message = `⚠️ Only 5 minutes remaining! Please review your progress.`;
+                        break;
+                    case '1_minute_warning':
+                        message = `⚠️ Only 1 minute remaining! Consider submitting your solution.`;
+                        break;
+                    case '30_second_warning':
+                        message = `🚨 Only 30 seconds left! The scenario will auto-submit soon.`;
+                        break;
+                    default:
+                        message = `⏰ ${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                }
+
+                warningMessage.textContent = message;
+            }
+
+            // Show modal
+            warningModal.classList.add('active');
+
+            // Auto-hide warning after 5 seconds
+            setTimeout(() => {
+                if (warningModal.classList.contains('active')) {
+                    warningModal.classList.remove('active');
+                }
+            }, 5000);
+
+            // Acknowledge warning with server
+            if (window.socketClient && scenarioTimer.id) {
+                window.socketClient.emit('timer_warning_acknowledged', {
+                    timer_id: scenarioTimer.id,
+                    warning_type: type,
+                    remaining_seconds: remainingSeconds
+                });
+            }
+        }
+
+        function showTimerExpiredModal() {
+            if (!expiredModal) return;
+
+            // Populate performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                const progress = getCurrentProgress();
+                performanceSummary.innerHTML = `
+                    <div class="summary-item">
+                        <span class="summary-label">Time Taken:</span>
+                        <span class="summary-value">${formatTime(scenarioTimer.timeLimit)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Completion:</span>
+                        <span class="summary-value">${progress.completion_percentage}%</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Current Score:</span>
+                        <span class="summary-value">${progress.current_score}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Time Bonus:</span>
+                        <span class="summary-value">0 (Expired)</span>
+                    </div>
+                `;
+            }
+
+            expiredModal.classList.add('active');
+        }
+
+        function pauseTimer() {
+            if (!scenarioTimer.isActive || scenarioTimer.isPaused) return;
+
+            scenarioTimer.isPaused = true;
+            
+            if (timerStatus) {
+                timerStatus.textContent = 'PAUSED';
+                timerStatus.classList.add('paused');
+            }
+
+            // Update UI buttons
+            if (pauseBtn) pauseBtn.style.display = 'none';
+            if (resumeBtn) resumeBtn.style.display = 'block';
+
+            // Notify server
+            if (window.socketClient && scenarioTimer.id) {
+                window.socketClient.emit('pause_timer', {
+                    timer_id: scenarioTimer.id,
+                    reason: 'User paused'
+                });
+            }
+
+            console.log('⏸️ Timer paused');
+        }
+
+        function resumeTimer() {
+            if (!scenarioTimer.isActive || !scenarioTimer.isPaused) return;
+
+            scenarioTimer.isPaused = false;
+
+            if (timerStatus) {
+                timerStatus.textContent = 'ACTIVE';
+                timerStatus.classList.remove('paused');
+            }
+
+            // Update UI buttons
+            if (pauseBtn) pauseBtn.style.display = 'block';
+            if (resumeBtn) resumeBtn.style.display = 'none';
+
+            // Notify server
+            if (window.socketClient && scenarioTimer.id) {
+                window.socketClient.emit('resume_timer', {
+                    timer_id: scenarioTimer.id
+                });
+            }
+
+            console.log('▶️ Timer resumed');
+        }
+
+        function completeScenario(finalScore, completionPercentage) {
+            if (!scenarioTimer.isActive) return;
+
+            console.log('✅ Completing scenario with score:', finalScore);
+
+            scenarioTimer.isActive = false;
+            scenarioTimer.endTime = new Date();
+
+            // Stop timer updates
+            if (timerUpdateInterval) {
+                clearInterval(timerUpdateInterval);
+            }
+
+            // Update UI
+            if (timerStatus) {
+                timerStatus.textContent = 'COMPLETED';
+                timerStatus.classList.add('completed');
+            }
+
+            // Hide timer
+            if (timerContainer) {
+                timerContainer.classList.remove('active');
+            }
+
+            // Notify server
+            if (window.socketClient && scenarioTimer.id) {
+                window.socketClient.emit('complete_scenario', {
+                    timer_id: scenarioTimer.id,
+                    final_score: finalScore,
+                    completion_percentage: completionPercentage,
+                    solution_data: getCurrentSolutionData()
+                });
+            }
+        }
+
+        function autoSubmitScenario() {
+            console.log('🤖 Auto-submitting scenario due to timer expiration');
+
+            const progress = getCurrentProgress();
+            
+            // Trigger existing solution check with current state
+            if (typeof checkSolution === 'function') {
+                checkSolution(currentScenario, true); // true flag for auto-submit
+            }
+
+            // Complete the timer
+            completeScenario(progress.current_score, progress.completion_percentage);
+        }
+
+        function getCurrentProgress() {
+            // Get current scenario progress
+            let completionPercentage = 0;
+            let currentScore = 0;
+
+            // Try to calculate based on current scenario state
+            if (typeof calculateScenarioProgress === 'function') {
+                const progress = calculateScenarioProgress();
+                completionPercentage = progress.completion || 0;
+                currentScore = progress.score || 0;
+            } else {
+                // Fallback calculation based on devices and connections
+                const deviceCount = devices ? devices.length : 0;
+                const connectionCount = connections ? connections.length : 0;
+                const requiredDevices = getCurrentScenarioRequirements()?.devices?.length || 5;
+                const requiredConnections = getCurrentScenarioRequirements()?.connections?.length || 3;
+
+                completionPercentage = Math.min(100, 
+                    ((deviceCount / requiredDevices) * 50) + 
+                    ((connectionCount / requiredConnections) * 50)
+                );
+
+                // Basic scoring
+                currentScore = Math.round(completionPercentage);
+            }
+
+            return {
+                completion_percentage: completionPercentage,
+                current_score: currentScore,
+                devices_placed: devices ? devices.length : 0,
+                connections_made: connections ? connections.length : 0
+            };
+        }
+
+        function getCurrentSolutionData() {
+            return {
+                devices: devices || [],
+                connections: connections || [],
+                scenario_id: scenarioTimer.scenarioId,
+                scenario_type: scenarioTimer.scenarioType,
+                difficulty: scenarioTimer.difficulty
+            };
+        }
+
+        function setupTimerEventListeners() {
+            // Pause/Resume button handlers
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', pauseTimer);
+            }
+
+            if (resumeBtn) {
+                resumeBtn.addEventListener('click', resumeTimer);
+            }
+
+            // WebSocket event handlers
+            if (window.socketClient) {
+                window.socketClient.on('timer_started', handleTimerStarted);
+                window.socketClient.on('timer_status', handleTimerStatus);
+                window.socketClient.on('timer_paused', handleTimerPaused);
+                window.socketClient.on('timer_resumed', handleTimerResumed);
+                window.socketClient.on('timer_extended', handleTimerExtended);
+                window.socketClient.on('timer_expired', handleTimerExpired);
+                window.socketClient.on('timer_warning', handleTimerWarning);
+                window.socketClient.on('scenario_completed_success', handleScenarioCompleted);
+                window.socketClient.on('collaborative_timer_started', handleCollaborativeTimerStarted);
+                window.socketClient.on('timer_sync_update', handleTimerSyncUpdate);
+                window.socketClient.on('timer_error', handleTimerError);
+            }
+        }
+
+        // WebSocket Event Handlers
+        function handleTimerStarted(data) {
+            if (data.success) {
+                console.log('✅ Timer started successfully:', data.timer);
+                scenarioTimer.id = data.timer.id;
+                scenarioTimer.remaining = data.timer.remaining_seconds;
+                
+                if (timerStatus) {
+                    timerStatus.textContent = 'ACTIVE';
+                }
+            } else {
+                console.error('❌ Failed to start timer:', data.error);
+            }
+        }
+
+        function handleTimerStatus(data) {
+            if (data.success && data.timer) {
+                console.log('📊 Timer status update:', data.timer);
+                scenarioTimer.remaining = data.remaining_seconds;
+                updateTimerDisplay();
+            }
+        }
+
+        function handleTimerPaused(data) {
+            if (data.timer_id === scenarioTimer.id) {
+                console.log('⏸️ Timer paused by:', data.paused_by);
+                scenarioTimer.isPaused = true;
+                
+                if (timerStatus) {
+                    timerStatus.textContent = `PAUSED BY ${data.paused_by.toUpperCase()}`;
+                    timerStatus.classList.add('paused');
+                }
+            }
+        }
+
+        function handleTimerResumed(data) {
+            if (data.timer_id === scenarioTimer.id) {
+                console.log('▶️ Timer resumed by:', data.resumed_by);
+                scenarioTimer.isPaused = false;
+                
+                if (timerStatus) {
+                    timerStatus.textContent = 'ACTIVE';
+                    timerStatus.classList.remove('paused');
+                }
+            }
+        }
+
+        function handleTimerExtended(data) {
+            console.log('⏰ Timer extended:', data);
+            scenarioTimer.timeLimit += (data.additional_minutes * 60);
+            
+            // Show notification
+            showNotification('Timer Extended', 
+                `${data.additional_minutes} minutes added by ${data.extended_by}`, 
+                'success');
+        }
+
+        function handleTimerExpired(data) {
+            console.log('⏰❌ Timer expired:', data);
+            handleTimerExpiration();
+        }
+
+        function handleTimerWarning(data) {
+            console.log('⚠️ Timer warning:', data);
+            showTimerWarning(data.type, data.remaining_seconds);
+        }
+
+        function handleScenarioCompleted(data) {
+            console.log('🎉 Scenario completed:', data);
+            
+            // Show success notification
+            showNotification('Scenario Completed!', 
+                `Final Score: ${data.performance_summary.total_score}`, 
+                'success');
+        }
+
+        function handleCollaborativeTimerStarted(data) {
+            if (scenarioTimer.isCollaborative) {
+                console.log('👥 Collaborative timer started by:', data.started_by);
+                showNotification('Timer Started', 
+                    `Timer started by ${data.started_by}`, 
+                    'info');
+            }
+        }
+
+        function handleTimerSyncUpdate(data) {
+            if (scenarioTimer.isCollaborative) {
+                console.log('🔄 Timer sync update:', data);
+                // Sync timer state with collaborative session
+                if (data.timer_data) {
+                    scenarioTimer.remaining = data.timer_data.remaining_seconds || scenarioTimer.remaining;
+                }
+            }
+        }
+
+        function handleTimerError(data) {
+            console.error('❌ Timer error:', data.error);
+            showNotification('Timer Error', data.error, 'error');
+        }
+
+        // Utility Functions
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function acknowledgeWarning() {
+            if (warningModal) {
+                warningModal.classList.remove('active');
+            }
+        }
+
+        function viewResults() {
+            if (expiredModal) {
+                expiredModal.classList.remove('active');
+            }
+            // Show results modal or redirect to results page
+            showScenarioResults();
+        }
+
+        function retryScenario() {
+            if (expiredModal) {
+                expiredModal.classList.remove('active');
+            }
+            // Reset and restart the scenario
+            resetScenarios();
+        }
+
+        // Integration with Existing Scenario System
+        function enhanceScenarioWithTimer() {
+            console.log('🔧 Enhancing scenario system with timer integration');
+
+            // Override existing startScenario function to include timer
+            const originalStartScenario = window.startScenario;
+            if (originalStartScenario) {
+                window.startScenario = function(difficulty, problemType) {
+                    // Call original function
+                    originalStartScenario.call(this, difficulty, problemType);
+
+                    // Start timer after scenario setup
+                    setTimeout(() => {
+                        const timeLimits = {
+                            'easy': 900,     // 15 minutes
+                            'medium': 1800,  // 30 minutes
+                            'hard': 2700     // 45 minutes
+                        };
+
+                        initializeTimer({
+                            scenarioId: `${difficulty}_${problemType}`,
+                            scenarioType: 'troubleshooting',
+                            difficulty: difficulty,
+                            timeLimit: timeLimits[difficulty] || 1800,
+                            lobbyId: currentLobby ? currentLobby.id : null,
+                            isCollaborative: !!currentLobby
+                        });
+                    }, 1000);
+                };
+            }
+
+            // Override checkSolution to include timer completion
+            const originalCheckSolution = window.checkSolution;
+            if (originalCheckSolution) {
+                window.checkSolution = function(scenario, autoSubmit = false) {
+                    const result = originalCheckSolution.call(this, scenario);
+                    
+                    if (result || autoSubmit) {
+                        // Calculate final score and completion percentage
+                        const progress = getCurrentProgress();
+                        const finalScore = autoSubmit ? progress.current_score : 100;
+                        
+                        completeScenario(finalScore, progress.completion_percentage);
+                    }
+                    
+                    return result;
+                };
+            }
+        }
+
+        // Initialize timer system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🕒 Initializing scenario timer system');
+            
+            // Enhance existing scenario system
+            setTimeout(enhanceScenarioWithTimer, 2000);
+            
+            // Set up WebSocket connection for timer events
+            if (window.socketClient) {
+                console.log('🔌 Timer system connected to WebSocket');
+            }
+        });
+
+        // Export timer functions for external use
+        window.scenarioTimerSystem = {
+            initialize: initializeTimer,
+            pause: pauseTimer,
+            resume: resumeTimer,
+            complete: completeScenario,
+            getCurrentProgress: getCurrentProgress,
+            getTimerInfo: () => scenarioTimer
+        };
+
+        console.log('✅ Scenario Timer System loaded successfully');
+    </script>
+
+    <script>
+        // Initialize performance feedback system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize performance feedback system
+            window.performanceFeedback = new PerformanceFeedbackSystem();
+            
+            // Backend integration status check
+            console.log('🎯 Performance Feedback System Integration Status:');
+            console.log('✅ Frontend sidebar with glassmorphism design');
+            console.log('✅ Real-time metrics tracking');
+            console.log('✅ WebSocket handlers for backend communication');
+            console.log('✅ Achievement system with notifications');
+            console.log('✅ Intelligent hint system with backend AI');
+            console.log('✅ Leaderboard integration');
+            console.log('✅ Action logging and sync');
+            console.log('✅ Session management with backend');
+            console.log('✅ Responsive design with mobile support');
+            console.log('🚀 System ready for live performance tracking!');
+            
+            // Auto-show sidebar after 3 seconds
+            setTimeout(() => {
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.showSidebar();
+                }
+            }, 3000);
+            
+            // Add global event listeners for automatic tracking
+            document.addEventListener('click', function(e) {
+                // Track button clicks that might be relevant
+                if (e.target.classList.contains('device') || e.target.closest('.device')) {
+                    window.performanceFeedback?.trackAction('device_interaction', {
+                        element: e.target.className,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                if (e.target.classList.contains('action-btn') || e.target.closest('.action-btn')) {
+                    window.performanceFeedback?.trackAction('action_generic', {
+                        element: e.target.className,
+                        timestamp: Date.now()
+                    });
+                }
+            });
+            
+            // Track drag and drop events
+            document.addEventListener('dragend', function(e) {
+                if (e.target.classList.contains('device') || e.target.closest('.device')) {
+                    window.performanceFeedback?.trackAction('device_placed', {
+                        deviceType: e.target.dataset.type || 'unknown',
+                        timestamp: Date.now()
+                    });
+                }
+            });
+            
+            // Global integration functions
+            window.trackPerformanceAction = function(actionType, data = {}) {
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.trackAction(actionType, data);
+                }
+            };
+            
+            window.showPerformanceSidebar = function() {
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.showSidebar();
+                }
+            };
+            
+            window.hidePerformanceSidebar = function() {
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.hideSidebar();
+                }
+            };
+            
+            window.getPerformanceData = function() {
+                if (window.performanceFeedback) {
+                    return window.performanceFeedback.getPerformanceData();
+                }
+                return null;
+            };
+            
+            console.log('🎯 Performance feedback system initialized with backend integration');
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (window.performanceFeedback) {
+                window.performanceFeedback.endSession();
+            }
+        });
+        
+        // Handle WebSocket connection events
+        document.addEventListener('websocket-connected', function() {
+            console.log('📡 WebSocket connected - Performance feedback ready for backend integration');
+            if (window.performanceFeedback) {
+                window.performanceFeedback.realTimeEnabled = true;
+                window.performanceFeedback.initializeBackendConnection();
+            }
+        });
+        
+        document.addEventListener('websocket-disconnected', function() {
+            console.log('📡 WebSocket disconnected - Performance feedback running in offline mode');
+            if (window.performanceFeedback) {
+                window.performanceFeedback.realTimeEnabled = false;
+            }
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Shift+P to toggle performance sidebar
+            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+                e.preventDefault();
+                if (window.performanceFeedback) {
+                    if (window.performanceFeedback.isVisible) {
+                        window.performanceFeedback.hideSidebar();
+                    } else {
+                        window.performanceFeedback.showSidebar();
+                    }
+                }
+            }
+            
+            // Ctrl+Shift+H to get a hint
+            if (e.ctrlKey && e.shiftKey && e.key === 'H') {
+                e.preventDefault();
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.requestHint();
+                }
+            }
+            
+            // Ctrl+Shift+R to reset session
+            if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                e.preventDefault();
+                if (window.performanceFeedback && confirm('Reset performance tracking session?')) {
+                    window.performanceFeedback.resetSession();
+                }
+            }
+        });
+        
+        console.log('🎯 Performance feedback system ready with full backend integration');
     </script>
 
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>

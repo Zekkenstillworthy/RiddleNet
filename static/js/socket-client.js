@@ -111,9 +111,6 @@ class SocketClient {
             return;
         }
 
-        // Show connecting status
-        this.showConnectionStatus(null); // null indicates connecting state
-
         // Load socket.io client from CDN if not already loaded
         if (!window.io) {
             console.log('Loading socket.io client...');
@@ -126,7 +123,6 @@ class SocketClient {
             script.onerror = (err) => {
                 console.error('Error loading socket.io client:', err);
                 // Graceful fallback - continue without WebSocket
-                this.showConnectionStatus(false, true);
             };
             document.head.appendChild(script);
         } else {
@@ -165,9 +161,6 @@ class SocketClient {
             
             // Start health check
             this.startHealthCheck();
-            
-            // Display connection status
-            this.showConnectionStatus(true);
         });
 
         this.socket.on('disconnect', (reason) => {
@@ -175,11 +168,6 @@ class SocketClient {
             this.connected = false;
             this.stopHealthCheck();
             this.trigger('disconnected', reason);
-            
-            // Display connection status only if not a planned disconnect
-            if (reason !== 'io client disconnect') {
-                this.showConnectionStatus(false);
-            }
         });
 
         this.socket.on('connect_error', (error) => {
@@ -188,7 +176,6 @@ class SocketClient {
             
             if (this.reconnectAttempts >= this.maxReconnectAttempts) {
                 console.log('❌ Maximum reconnect attempts reached');
-                this.showConnectionStatus(false, true);
             } else {
                 console.log(`🔄 Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
                 this.reconnectDelay = Math.min(this.reconnectDelay * 1.2, 10000);
@@ -223,73 +210,6 @@ class SocketClient {
         
         // Set up handlers for application-specific events
         this.setupEventHandlers();
-    }
-      /**
-     * Display a connection status indicator
-     */
-    showConnectionStatus(connected, failed = false) {
-        // Remove any existing status element
-        const existingStatus = document.getElementById('socket-connection-status');
-        if (existingStatus) {
-            existingStatus.remove();
-        }
-        
-        if (failed) {
-            // Permanently failed - show a more prominent error
-            const errorDiv = document.createElement('div');
-            errorDiv.id = 'socket-connection-status';
-            errorDiv.className = 'socket-error';
-            errorDiv.innerHTML = `
-                <div class="status-dot"></div>
-                <span class="status-text">Real-time updates unavailable</span>
-                <button onclick="socketClient.connect()">Retry Connection</button>
-            `;
-            document.body.appendChild(errorDiv);
-            return;
-        }        
-        // Create status indicator
-        const statusDiv = document.createElement('div');
-        statusDiv.id = 'socket-connection-status';
-        
-        // Add appropriate content and class based on connection status
-        if (connected === true) {
-            statusDiv.className = 'socket-connected';
-            statusDiv.innerHTML = `
-                <div class="status-dot"></div>
-                <span class="status-text">Connected to server</span>
-            `;
-        } else if (connected === false) {
-            statusDiv.className = 'socket-disconnected';
-            statusDiv.innerHTML = `
-                <div class="status-dot"></div>
-                <span class="status-text">Disconnected from server</span>
-            `;
-        } else {
-            // Connecting state
-            statusDiv.className = 'socket-connecting';
-            statusDiv.innerHTML = `
-                <div class="status-dot"></div>
-                <span class="status-text">Connecting to server...</span>
-            `;
-        }
-        
-        // Add to page
-        document.body.appendChild(statusDiv);
-        
-        // Hide after a delay for connected and disconnected states
-        if (connected === true || connected === false) {
-            setTimeout(() => {
-                if (statusDiv.parentNode) {
-                    statusDiv.classList.add('fade-out');
-                    setTimeout(() => {
-                        if (statusDiv.parentNode) {
-                            statusDiv.remove();
-                        }
-                    }, 600); // Match the CSS transition duration
-                }
-            }, connected === true ? 3000 : 5000); // Show disconnected longer
-        }
-        // For connecting state (connected === undefined/null), keep showing until resolved
     }
 
     /**
@@ -338,24 +258,6 @@ class SocketClient {
                 data.message || 'Your essay has been submitted for review', 'success');
         }));
         
-        // Admin messages
-        this.socket.on('admin_message', safeHandler('admin_message', (data) => {
-            console.log('👤 Admin message received:', data);
-            this.trigger('admin_message', data);
-            
-            this.showNotification('Message from Admin', 
-                data.message || 'You have a new message', 'info');
-        }));
-          // User connection events (for admin dashboard)
-        this.socket.on('user_connected', safeHandler('user_connected', (data) => {
-            console.log('👋 User connected:', data);
-            this.trigger('user_connected', data);
-        }));
-        
-        this.socket.on('user_disconnected', safeHandler('user_disconnected', (data) => {
-            console.log('👋 User disconnected:', data);
-            this.trigger('user_disconnected', data);
-        }));
 
         // User Authentication Events
         this.socket.on('login_success', safeHandler('login_success', (data) => {

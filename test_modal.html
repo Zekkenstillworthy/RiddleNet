@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Create Lobby Modal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .test-btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .test-btn:hover {
+            background: #0052a3;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 30, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #0066cc;
+            z-index: 1000;
+            min-width: 400px;
+        }
+        
+        .modal.active {
+            display: block;
+        }
+        
+        .backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .cancel-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .create-btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .create-btn:hover {
+            background: #0052a3;
+        }
+        
+        .cancel-btn:hover {
+            background: #555;
+        }
+        
+        .test-result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            border-left: 4px solid #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Lobby Modal Test</h1>
+    <p>This test page replicates the create lobby modal functionality to verify it's working correctly.</p>
+    
+    <button class="test-btn" onclick="showModal()">Open Create Session Modal</button>
+    
+    <div id="testModal" class="modal">
+        <h2 style="margin-top: 0; color: #0066cc;">Create Collaborative Session</h2>
+        
+        <form id="testForm">
+            <div class="form-group">
+                <label for="sessionName">Session Name</label>
+                <input type="text" id="sessionName" placeholder="Enter session name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="difficultyLevel">Difficulty Level</label>
+                <select id="difficultyLevel" onchange="updateScenarios()">
+                    <option value="easy">Easy - Basic Network Issues</option>
+                    <option value="medium">Medium - Advanced Troubleshooting</option>
+                    <option value="hard">Hard - Complex Network Problems</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="scenario">Specific Scenario</label>
+                <select id="scenario"></select>
+            </div>
+            
+            <div class="form-group">
+                <label for="maxUsers">Maximum Participants</label>
+                <select id="maxUsers">
+                    <option value="2">2 Users</option>
+                    <option value="4">4 Users</option>
+                    <option value="6" selected>6 Users</option>
+                    <option value="8">8 Users</option>
+                </select>
+            </div>
+            
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="create-btn">Create Session</button>
+            </div>
+        </form>
+    </div>
+    
+    <div id="testResult" class="test-result" style="display: none;"></div>
+    
+    <script>
+        const scenarios = {
+            easy: [
+                { id: 'network', name: 'Misconfigured Network Address' },
+                { id: 'passive', name: 'Passive Interface' },
+                { id: 'version', name: 'Incorrect Version' }
+            ],
+            medium: [
+                { id: 'split', name: 'Split Horizon' },
+                { id: 'hopcount', name: 'Maximum Hop Count Reached' },
+                { id: 'timers', name: 'Timers Mismatch' }
+            ],
+            hard: [
+                { id: 'flapping', name: 'Route Flapping' },
+                { id: 'loops', name: 'Routing Loops' },
+                { id: 'summarization', name: 'Incorrect Route Summarization' },
+                { id: 'auth', name: 'Authentication Failure (RIP v2)' }
+            ]
+        };
+        
+        function showModal() {
+            const modal = document.getElementById('testModal');
+            const backdrop = document.createElement('div');
+            backdrop.className = 'backdrop';
+            backdrop.onclick = closeModal;
+            backdrop.id = 'modalBackdrop';
+            
+            document.body.appendChild(backdrop);
+            modal.classList.add('active');
+            updateScenarios();
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('testModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            
+            modal.classList.remove('active');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+        
+        function updateScenarios() {
+            const difficultyLevel = document.getElementById('difficultyLevel').value;
+            const scenarioSelect = document.getElementById('scenario');
+            
+            scenarioSelect.innerHTML = '';
+            scenarios[difficultyLevel].forEach(scenario => {
+                const option = document.createElement('option');
+                option.value = scenario.id;
+                option.textContent = scenario.name;
+                scenarioSelect.appendChild(option);
+            });
+        }
+        
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const sessionData = {
+                name: document.getElementById('sessionName').value,
+                difficulty: document.getElementById('difficultyLevel').value,
+                scenario: document.getElementById('scenario').value,
+                maxUsers: document.getElementById('maxUsers').value
+            };
+            
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = `
+                <h3>Form Submitted Successfully!</h3>
+                <p><strong>Session Name:</strong> ${sessionData.name}</p>
+                <p><strong>Difficulty:</strong> ${sessionData.difficulty}</p>
+                <p><strong>Scenario:</strong> ${document.getElementById('scenario').selectedOptions[0].textContent}</p>
+                <p><strong>Max Users:</strong> ${sessionData.maxUsers}</p>
+            `;
+            resultDiv.style.display = 'block';
+            
+            closeModal();
+        });
+        
+        // Initialize scenarios on page load
+        updateScenarios();
+    </script>
+</body>
+</html>
