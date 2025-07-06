@@ -22,34 +22,57 @@ class_9_bp = Blueprint(
 @flexible_login_required
 def class_home():
     """Main class page"""
-    class_obj = Class.query.get_or_404(9)
-    
-    # Get user context (handles both admin and user authentication)
     user_context = get_current_user_context()
     user_id = user_context['user_id'] if user_context['is_authenticated'] else None
     
-    # Prepare template data
-    data = {
-        'class_id': class_obj.id,
-        'class_name': class_obj.name,
-        'class_description': class_obj.description,
-        'class_code': class_obj.code,
-        'modules': get_class_modules(9)
-    }
+    if not user_id:
+        return redirect(url_for('user.index', message='You need to log in first!'))
     
-    template_data = {
-        'class_obj': class_obj,
-        'data': data,
-        'modules': get_class_modules(9),
-        'simulations': get_class_simulations(9),
-        'question_groups': get_class_question_groups(9),
-        'user_progress': get_user_progress(user_id, 9) if user_id else None,
-        'user_context': user_context
-    }
+    # Get user model for template compatibility
+    from user.models.user import User
+    user = User.query.get(user_id)
+    
+    # Import Networking2Progress model for progress tracking
+    try:
+        from user.models.networking2_progress import Networking2Progress
+        # Get user's progress for all networking 2 lessons
+        progress = Networking2Progress.query.filter_by(user_id=user_id).all()
+        
+        # Format progress data for the template
+        progress_data = {}
+        for item in progress:
+            if item.module_id not in progress_data:
+                progress_data[item.module_id] = {
+                    "lessons": {},
+                    "completed_count": 0,
+                    "total_lessons": 0
+                }
+            
+            progress_data[item.module_id]["lessons"][item.lesson_id] = {
+                "completed": item.completed,
+                "progress": item.progress_percent
+            }
+            
+            # Update module completion stats
+            progress_data[item.module_id]["total_lessons"] += 1
+            if item.completed:
+                progress_data[item.module_id]["completed_count"] += 1
+        
+        # Calculate overall module progress percentages
+        for module_id, module_data in progress_data.items():
+            if module_data["total_lessons"] > 0:
+                module_data["progress_percent"] = int((module_data["completed_count"] / module_data["total_lessons"]) * 100)
+            else:
+                module_data["progress_percent"] = 0
+                
+    except ImportError:
+        # If progress model doesn't exist, use empty progress
+        progress_data = {}
     
     return render_template(
-        'user/classes/class_9_qka5an.html',
-        **template_data
+        'user/learning_networking2.html',
+        user=user,
+        progress_data=progress_data
     )
 
 @class_9_bp.route('/module/<int:module_id>')
