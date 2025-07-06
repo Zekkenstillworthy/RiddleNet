@@ -185,16 +185,26 @@ def class_detail(class_id):
         flash('You are not enrolled in this class', 'error')
         return redirect(url_for('user.classes'))
     
-    # Special handling for Networking classes
+    # Check if dynamic class route exists for this class
     print(f"DEBUG: Class name is: '{class_obj.name}'")  # Debug line
-    if class_obj.name == "Networking 1" or class_obj.name == "Networking 1 ":
-        print("DEBUG: Redirecting to networking_1")  # Debug line
-        return redirect(url_for('user.networking_1'))
-    elif class_obj.name == "Networking 2" or class_obj.name == "Networking 2 ":
-        print("DEBUG: Redirecting to networking_2")  # Debug line
-        return redirect(url_for('user.networking_2'))
-    else:
-        print("DEBUG: No match for Networking classes, continuing with normal flow")  # Debug line
+    print("DEBUG: Checking for dynamic class route")  # Debug line
+    
+    # Try to redirect to dynamic class route if it exists
+    try:
+        from flask import current_app
+        template_dir = os.path.join(current_app.root_path, 'templates', 'user', 'classes')
+        template_file = f'class_{class_id}_{class_obj.code.lower().replace(" ", "_")}.html'
+        
+        if os.path.exists(os.path.join(template_dir, template_file)):
+            print(f"DEBUG: Found dynamic template: {template_file}")
+            # Redirect to dynamic class route
+            return redirect(f'/class/{class_id}/')
+        else:
+            print(f"DEBUG: No dynamic template found, using generic template")
+    except Exception as e:
+        print(f"DEBUG: Error checking for dynamic template: {e}")
+    
+    print("DEBUG: Using generic class template")  # Debug line
     
     # Format student data for template - use direct query
     # We already imported class_students above

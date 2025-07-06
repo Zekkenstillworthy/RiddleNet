@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from admin import db
 from admin.models.class_model import Class
-from admin.models.question_group_model import QuestionGroup
+from admin.models.question_group import QuestionGroup
 import random
 import string
 from datetime import datetime
@@ -123,6 +123,34 @@ def create_class():
                 if group:
                     new_class.question_groups.append(group)
             db.session.commit()
+        
+        # 🚀 ENHANCED AUTOMATION: Generate class files automatically
+        try:
+            from admin.services.enhanced_class_template_generator import enhanced_template_generator
+            from admin.services.dynamic_route_registry import route_registry
+            
+            print(f"🎯 Generating automated files for class: {new_class.name}")
+            
+            # Generate template and routes
+            result = enhanced_template_generator.generate_all_class_resources(new_class)
+            
+            if result.get('success'):
+                print(f"✅ Auto-generated files:")
+                print(f"   - Template: {result.get('template_path')}")
+                print(f"   - Routes: {result.get('routes_path')}")
+                
+                # Register routes dynamically
+                route_registry.register_class_routes(new_class)
+                print(f"✅ Routes registered for class {new_class.id}")
+                
+            else:
+                print(f"⚠️  File generation had issues: {result.get('error', 'Unknown error')}")
+                
+        except Exception as auto_error:
+            print(f"⚠️  Automation system error: {auto_error}")
+            # Don't fail the class creation if automation fails
+            import traceback
+            traceback.print_exc()
         
         return jsonify({
             'message': 'Class created successfully',

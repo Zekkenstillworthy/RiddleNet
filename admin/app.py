@@ -102,6 +102,7 @@ class AdminApp:
         from admin.routes.topology_routes import topology_bp
         from admin.routes.topology_api_routes import topology_api_bp
         from admin.routes.troubleshooting_routes import troubleshooting_bp
+        from admin.routes.learning_routes import learning_path_bp
         
         # Register only available blueprints
         self.app.register_blueprint(auth_bp)
@@ -117,6 +118,7 @@ class AdminApp:
         self.app.register_blueprint(topology_bp)
         self.app.register_blueprint(topology_api_bp)
         self.app.register_blueprint(troubleshooting_bp)
+        self.app.register_blueprint(learning_path_bp)
         
         # Add root route to redirect to admin dashboard
         @self.app.route('/')

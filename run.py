@@ -181,6 +181,30 @@ try:
 except Exception as e:
     print(f"General error registering admin blueprints: {e}")
 
+# Initialize and register dynamic class routes
+print("\n=== Registering Dynamic Class Routes ===")
+try:
+    from admin.services.dynamic_route_registry import route_registry
+    
+    # Initialize the route registry with the app
+    route_registry.init_app(app)
+    
+    # Get statistics about registered routes
+    stats = route_registry.get_statistics()
+    print(f"✅ Dynamic route registry initialized")
+    print(f"   Total classes: {stats.get('total_classes', 0)}")
+    print(f"   Registered classes: {stats.get('registered_classes', 0)}")
+    print(f"   Route files: {stats.get('route_files', 0)}")
+    print(f"   Registration rate: {stats.get('registration_rate', 0):.1f}%")
+    
+    if stats.get('registered_class_ids'):
+        print(f"   Registered class IDs: {stats['registered_class_ids']}")
+    
+except Exception as e:
+    print(f"❌ Error initializing dynamic route registry: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Print all registered routes for debugging
 print("\n=== Registered Routes ===")
 for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):

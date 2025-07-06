@@ -8,9 +8,16 @@ from datetime import datetime
 import json
 import random
 import string
+from admin.services.class_template_generator import ClassTemplateGenerator
+from admin.services.enhanced_class_template_generator import enhanced_template_generator
+from admin.services.dynamic_route_registry import route_registry
 
 # Create a blueprint for class related routes
 class_controller = Blueprint('class_controller', __name__, url_prefix='/admin')
+
+# Initialize the template generators
+template_generator = ClassTemplateGenerator()
+enhanced_generator = enhanced_template_generator
 
 @class_controller.route('/classes')
 @login_required
@@ -116,10 +123,28 @@ def create_class():
         db.session.add(new_class)
         db.session.commit()
         
+        # Generate dynamic template and routes for the new class
+        try:
+            # Use enhanced generator for better static template integration
+            generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
+            
+            # Register routes dynamically
+            route_registry.register_class_routes(new_class.id)
+            
+            # Create dashboard integration
+            integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
+            
+            flash(f"Class created successfully! Enhanced template generated: {generation_result['template']}", 'success')
+        except Exception as e:
+            flash(f"Class created but enhanced template generation failed: {str(e)}", 'warning')
+        
         return jsonify({
             "success": True, 
-            "message": "Class created successfully!",
-            "classId": new_class.id
+            "message": "Class created successfully with enhanced dynamic template!",
+            "classId": new_class.id,
+            "templateGenerated": True,
+            "enhancedFeatures": True,
+            "dashboardUrl": f"/class/{new_class.id}/"
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -192,9 +217,45 @@ def update_class(class_id):
         
         db.session.commit()
         
+        # Also update template if question groups changed
+        try:
+            if 'questionGroups' in data:
+                generation_result = template_generator.regenerate_class_resources(class_id)
+                flash(f"Class updated and template regenerated!", 'success')
+        except Exception as e:
+            print(f"Warning: Could not regenerate template: {e}")
+        
         return jsonify({"success": True, "message": "Class updated successfully!"})
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/regenerate-template', methods=['POST'])
+@login_required
+def regenerate_class_template(class_id):
+    """API endpoint to regenerate enhanced template for a class"""
+    try:
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Regenerate enhanced template and routes
+        generation_result = enhanced_generator.regenerate_class_resources(class_id)
+        
+        # Refresh route registration
+        route_registry.refresh_class_routes(class_id)
+        
+        # Update dashboard integration
+        integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
+        
+        return jsonify({
+            "success": True, 
+            "message": "Enhanced template regenerated successfully!",
+            "template": generation_result['template'],
+            "routes": generation_result['routes'],
+            "enhancedFeatures": True,
+            "dashboardUrl": f"/class/{class_id}/",
+            "staticIntegrations": integration_info.get('static_integrations', [])
+        })
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @class_controller.route('/api/classes/<int:class_id>', methods=['DELETE'])
@@ -203,10 +264,17 @@ def delete_class(class_id):
     """API endpoint to delete a class"""
     try:
         cls = Class.query.get_or_404(class_id)
+        
+        # Clean up generated resources
+        try:
+            template_generator.cleanup_class_resources(class_id)
+        except Exception as e:
+            print(f"Warning: Could not clean up class resources: {e}")
+        
         db.session.delete(cls)
         db.session.commit()
         
-        return jsonify({"success": True, "message": "Class deleted successfully!"})
+        return jsonify({"success": True, "message": "Class and its resources deleted successfully!"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500

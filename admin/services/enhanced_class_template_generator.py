@@ -1,0 +1,865 @@
+"""
+Enhanced Class Template Generation Service
+
+Extends the existing template generator with improved static template integration
+and more sophisticated classroom automation logic.
+"""
+
+import os
+import json
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+from flask import current_app, url_for
+from admin.models.class_model import Class
+from admin.models.question_group import QuestionGroup
+from admin.services.class_template_generator import ClassTemplateGenerator
+
+
+class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
+    """Enhanced service for generating dynamic class templates with better static integration"""
+    
+    def __init__(self):
+        try:
+            super().__init__()
+        except RuntimeError:
+            # Handle case where no app context is available
+            self.templates_dir = None
+            self.routes_dir = None
+        self.static_templates_map = self._build_static_templates_map()
+        self.simulation_routes_map = self._build_simulation_routes_map()
+    
+    def _build_static_templates_map(self) -> Dict[str, Dict]:
+        """Map class types to existing static templates and simulations"""
+        return {
+            'networking1': {
+                'learning_template': 'user/learning_networking1.html',
+                'simulations_template': 'user/networking1_simulations.html',
+                'simulations': [
+                    {
+                        'id': 'components',
+                        'name': 'Network Components Builder',
+                        'template': 'user/networking1-components-simulation.html',
+                        'route': '/user/networking1/components-simulation',
+                        'icon': 'fas fa-network-wired',
+                        'description': 'Build and explore computer network components'
+                    },
+                    {
+                        'id': 'osi',
+                        'name': 'OSI Model Explorer',
+                        'template': 'user/networking1-osi-simulation.html',
+                        'route': '/user/networking1/osi-simulation',
+                        'icon': 'fas fa-layer-group',
+                        'description': 'Interactive OSI model demonstrations'
+                    },
+                    {
+                        'id': 'tcpip',
+                        'name': 'TCP/IP Protocol Stack',
+                        'template': 'user/networking1-tcpip-simulation.html',
+                        'route': '/user/networking1/tcpip-simulation',
+                        'icon': 'fas fa-globe',
+                        'description': 'Dive deep into TCP/IP protocol suite'
+                    },
+                    {
+                        'id': 'ethernet',
+                        'name': 'Ethernet Frame Builder',
+                        'template': 'user/networking1-ethernet-simulation.html',
+                        'route': '/user/networking1/ethernet-simulation',
+                        'icon': 'fas fa-ethernet',
+                        'description': 'Learn Ethernet technology through hands-on frame construction'
+                    },
+                    {
+                        'id': 'application',
+                        'name': 'Application Layer Protocols',
+                        'template': 'user/networking1-application-simulation.html',
+                        'route': '/user/networking1/application-simulation',
+                        'icon': 'fas fa-server',
+                        'description': 'Explore application layer protocols'
+                    }
+                ],
+                'modules': [
+                    'Computer Network Fundamentals',
+                    'Ethernet Technology', 
+                    'Transport Layer and TCP/IP',
+                    'Application Layer'
+                ]
+            },
+            'networking2': {
+                'learning_template': 'user/learning_networking2.html',
+                'simulations_template': 'user/networking2_simulations.html',
+                'simulations': [
+                    {
+                        'id': 'routing-fundamentals',
+                        'name': 'Routing Fundamentals Lab',
+                        'template': 'user/networking2-routing-fundamentals-simulation.html',
+                        'route': '/user/networking2/routing-fundamentals-simulation',
+                        'icon': 'fas fa-route',
+                        'description': 'Master fundamental routing concepts'
+                    },
+                    {
+                        'id': 'dynamic-routing',
+                        'name': 'Dynamic Routing Protocols',
+                        'template': 'user/networking2-dynamic-routing-simulation.html',
+                        'route': '/user/networking2/dynamic-routing-simulation',
+                        'icon': 'fas fa-exchange-alt',
+                        'description': 'Compare RIP, OSPF, and EIGRP behaviors'
+                    },
+                    {
+                        'id': 'network-security',
+                        'name': 'Network Security Lab',
+                        'template': 'user/networking2-security-simulation.html',
+                        'route': '/user/networking2/security-simulation',
+                        'icon': 'fas fa-shield-alt',
+                        'description': 'Implement security measures and policies'
+                    },
+                    {
+                        'id': 'vlan',
+                        'name': 'VLAN Trunking Lab',
+                        'template': 'user/networking2-vlan-simulation.html',
+                        'route': '/user/networking2/vlan-simulation',
+                        'icon': 'fas fa-layer-group',
+                        'description': 'Configure VLANs and trunking protocols'
+                    },
+                    {
+                        'id': 'wireless',
+                        'name': 'Wireless Networks Lab',
+                        'template': 'user/networking2-wireless-simulation.html',
+                        'route': '/user/networking2/wireless-simulation',
+                        'icon': 'fas fa-wifi',
+                        'description': 'Design wireless topologies and security'
+                    },
+                    {
+                        'id': 'qos',
+                        'name': 'Quality of Service Lab',
+                        'template': 'user/networking2-qos-simulation.html',
+                        'route': '/user/networking2/qos-simulation',
+                        'icon': 'fas fa-tachometer-alt',
+                        'description': 'Configure QoS policies and traffic shaping'
+                    },
+                    {
+                        'id': 'management',
+                        'name': 'Network Management Lab',
+                        'template': 'user/networking2-management-simulation.html',
+                        'route': '/user/networking2/management-simulation',
+                        'icon': 'fas fa-chart-line',
+                        'description': 'Monitor networks with SNMP and analysis tools'
+                    }
+                ],
+                'modules': [
+                    'Routing Fundamentals',
+                    'Network Security Fundamentals',
+                    'Wireless Networks',
+                    'Network Management',
+                    'Advanced Routing/OSPF',
+                    'Network Security and VPN',
+                    'Network Troubleshooting'
+                ]
+            }
+        }
+    
+    def _build_simulation_routes_map(self) -> Dict[str, str]:
+        """Map simulation IDs to their actual route patterns"""
+        routes = {}
+        
+        # Networking 1 routes
+        net1_base = '/user/networking1'
+        for sim in self.static_templates_map['networking1']['simulations']:
+            routes[f"networking1_{sim['id']}"] = sim['route']
+        
+        # Networking 2 routes  
+        net2_base = '/user/networking2'
+        for sim in self.static_templates_map['networking2']['simulations']:
+            routes[f"networking2_{sim['id']}"] = sim['route']
+            
+        return routes
+    
+    def _detect_class_type(self, class_obj: Class) -> str:
+        """Intelligently detect class type from name and question groups"""
+        name_lower = class_obj.name.lower()
+        
+        # Direct name matching with more comprehensive patterns
+        if any(pattern in name_lower for pattern in ['networking 1', 'network 1', 'networking1', 'intro to network', 'introduction to network', 'network fundamental', 'basic network']):
+            return 'networking1'
+        elif any(pattern in name_lower for pattern in ['networking 2', 'network 2', 'networking2', 'advanced network', 'intermediate network']):
+            return 'networking2'
+        elif any(pattern in name_lower for pattern in ['security', 'cybersecurity', 'cyber security', 'information security']):
+            return 'security'
+        
+        # Question group analysis
+        if class_obj.question_groups:
+            categories = [qg.category.lower() if qg.category else '' for qg in class_obj.question_groups]
+            category_text = ' '.join(categories)
+            
+            if any(term in category_text for term in ['osi', 'tcp', 'ethernet', 'fundamental', 'basic', 'intro']):
+                return 'networking1'
+            elif any(term in category_text for term in ['routing', 'ospf', 'vlan', 'wireless', 'advanced']):
+                return 'networking2'
+            elif any(term in category_text for term in ['security', 'firewall', 'vpn', 'encryption']):
+                return 'security'
+        
+        return 'general'
+    
+    def _generate_enhanced_template_content(self, data: Dict[str, Any]) -> str:
+        """Generate enhanced template content with static template integration"""
+        class_type = data.get('class_type', 'general')
+        
+        if class_type in self.static_templates_map:
+            return self._generate_integrated_template(data, class_type)
+        else:
+            return super()._generate_template_content(data)
+    
+    def _generate_integrated_template(self, data: Dict[str, Any], class_type: str) -> str:
+        """Generate template that integrates with existing static templates"""
+        static_config = self.static_templates_map[class_type]
+        
+        template = f'''
+{{% if user_context and user_context.get('is_admin') %}}
+{{% extends "admin/base.html" %}}
+{{% else %}}
+{{% extends "user/base.html" %}}
+{{% endif %}}
+
+{{% block title %}}{data['class_name']} - Learning Portal{{% endblock %}}
+
+{{% block extra_css %}}
+<link rel="stylesheet" href="{{{{ url_for('static', filename='css/user/dynamic_class.css') }}}}">
+<link rel="stylesheet" href="{{{{ url_for('static', filename='css/user/class_integration.css') }}}}">
+<style>
+  :root {{
+    --class-primary: #3B82F6;
+    --class-secondary: #8B5CF6; 
+    --class-accent: #10B981;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+  }}
+  
+  .class-portal {{
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
+    color: white;
+    font-family: 'Inter', sans-serif;
+  }}
+  
+  .class-header {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    margin: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+  }}
+  
+  .class-header::before {{
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: rotate 20s linear infinite;
+  }}
+  
+  @keyframes rotate {{
+    0% {{ transform: rotate(0deg); }}
+    100% {{ transform: rotate(360deg); }}
+  }}
+  
+  .class-title {{
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+  }}
+  
+  .class-meta {{
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    font-size: 1.1rem;
+  }}
+  
+  .nav-tabs {{
+    display: flex;
+    gap: 0.5rem;
+    margin: 2rem;
+    background: rgba(26, 35, 126, 0.3);
+    border-radius: 15px;
+    padding: 0.5rem;
+    backdrop-filter: blur(20px);
+  }}
+  
+  .nav-tab {{
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }}
+  
+  .nav-tab.active,
+  .nav-tab:hover {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }}
+  
+  .tab-content {{
+    display: none;
+    margin: 2rem;
+    animation: fadeIn 0.5s ease;
+  }}
+  
+  .tab-content.active {{
+    display: block;
+  }}
+  
+  @keyframes fadeIn {{
+    from {{ opacity: 0; transform: translateY(20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+  }}
+  
+  .content-grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+  }}
+  
+  .content-card {{
+    background: rgba(26, 35, 126, 0.4);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 15px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }}
+  
+  .content-card::before {{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+    opacity: 0.8;
+  }}
+  
+  .content-card:hover {{
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 217, 255, 0.4);
+    border-color: var(--cyber-glow);
+  }}
+  
+  .card-header {{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }}
+  
+  .card-icon {{
+    font-size: 2rem;
+    color: var(--cyber-glow);
+  }}
+  
+  .card-title {{
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+  }}
+  
+  .card-description {{
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }}
+  
+  .card-button {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }}
+  
+  .card-button:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4);
+    color: white;
+  }}
+  
+  .progress-section {{
+    background: rgba(26, 35, 126, 0.3);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-top: 2rem;
+  }}
+  
+  .progress-stats {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }}
+  
+  .stat-card {{
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+  }}
+  
+  .stat-value {{
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--cyber-glow);
+    display: block;
+  }}
+  
+  .stat-label {{
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+  }}
+</style>
+{{% endblock %}}
+
+{{% block content %}}
+<div class="class-portal">
+  <!-- Class Header -->
+  <div class="class-header">
+    <h1 class="class-title">{data['class_name']}</h1>
+    <div class="class-meta">
+      <span><i class="fas fa-layer-group"></i> Section: {data['class_section'] or 'General'}</span>
+      <span><i class="fas fa-code"></i> Code: {data['class_code']}</span>
+      <span><i class="fas fa-users"></i> Class Portal</span>
+    </div>
+    {{% if data.get('class_description') %}}
+    <p class="mt-3" style="position: relative; z-index: 2; font-size: 1.1rem; opacity: 0.9;">
+      {data['class_description']}
+    </p>
+    {{% endif %}}
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('learning')">
+      <i class="fas fa-graduation-cap"></i> Learning
+    </button>
+    <button class="nav-tab" onclick="showTab('simulations')">
+      <i class="fas fa-flask"></i> Simulations
+    </button>
+    <button class="nav-tab" onclick="showTab('assessments')">
+      <i class="fas fa-clipboard-check"></i> Assessments
+    </button>
+    <button class="nav-tab" onclick="showTab('progress')">
+      <i class="fas fa-chart-line"></i> Progress
+    </button>
+  </div>
+
+  <!-- Learning Tab -->
+  <div id="learning-tab" class="tab-content active">
+    <div class="content-grid">
+      <div class="content-card">
+        <div class="card-header">
+          <i class="fas fa-book-open card-icon"></i>
+          <h3 class="card-title">Interactive Learning</h3>
+        </div>
+        <p class="card-description">
+          Access comprehensive learning materials, lessons, and interactive content designed for {class_type.title()}.
+        </p>
+        <a href="{static_config['learning_template'].replace('user/', '/user/')}" class="card-button">
+          <i class="fas fa-play"></i>
+          Start Learning
+        </a>
+      </div>
+      
+      {{% for module in data.get('modules', []) %}}
+      <div class="content-card">
+        <div class="card-header">
+          <i class="fas fa-layer-group card-icon"></i>
+          <h3 class="card-title">{{{{ module.name }}}}</h3>
+        </div>
+        <p class="card-description">
+          {{{{ module.description or "Interactive learning module with lessons and activities" }}}}
+        </p>
+        <button class="card-button" onclick="startModule({{{{ module.id }}}})">
+          <i class="fas fa-play-circle"></i>
+          Start Module
+        </button>
+      </div>
+      {{% endfor %}}
+    </div>
+  </div>
+
+  <!-- Simulations Tab -->
+  <div id="simulations-tab" class="tab-content">
+    <div class="content-grid">
+      <div class="content-card">
+        <div class="card-header">
+          <i class="fas fa-desktop card-icon"></i>
+          <h3 class="card-title">All Simulations</h3>
+        </div>
+        <p class="card-description">
+          Access the complete simulation laboratory for hands-on practice and experimentation.
+        </p>
+        <a href="{static_config['simulations_template'].replace('user/', '/user/')}" class="card-button">
+          <i class="fas fa-rocket"></i>
+          Open Lab
+        </a>
+      </div>
+      
+      {{% for sim in simulations %}}
+      <div class="content-card">
+        <div class="card-header">
+          <i class="{{{{ sim.icon or 'fas fa-play' }}}} card-icon"></i>
+          <h3 class="card-title">{{{{ sim.name }}}}</h3>
+        </div>
+        <p class="card-description">{{{{ sim.description }}}}</p>
+        <a href="{{{{ sim.route }}}}" class="card-button" target="_blank">
+          <i class="fas fa-external-link-alt"></i>
+          Launch Simulation
+        </a>
+      </div>
+      {{% endfor %}}
+    </div>
+  </div>
+
+  <!-- Assessments Tab -->
+  <div id="assessments-tab" class="tab-content">
+    <div class="content-grid">
+      {{% for qg in question_groups %}}
+      <div class="content-card">
+        <div class="card-header">
+          <i class="fas fa-clipboard-check card-icon"></i>
+          <h3 class="card-title">{{{{ qg.name }}}}</h3>
+        </div>
+        <p class="card-description">
+          {{{{ qg.description or "Test your knowledge and skills" }}}}
+        </p>
+        <div style="margin-bottom: 1rem;">
+          <span style="color: var(--cyber-glow);"><i class="fas fa-questions"></i> {{{{ qg.questions|length }}}} Questions</span>
+          <span style="color: rgba(255,255,255,0.7); margin-left: 1rem;"><i class="fas fa-clock"></i> {{{{ (qg.questions|length * 2) }}}} min</span>
+        </div>
+        <button class="card-button" onclick="startAssessment({{{{ qg.id }}}})">
+          <i class="fas fa-play-circle"></i>
+          Start Assessment
+        </button>
+      </div>
+      {{% endfor %}}
+    </div>
+  </div>
+
+  <!-- Progress Tab -->
+  <div id="progress-tab" class="tab-content">
+    <div class="progress-section">
+      <h2 style="color: var(--cyber-glow); margin-bottom: 2rem; font-size: 2rem;">
+        <i class="fas fa-chart-line"></i> Your Progress
+      </h2>
+      <div class="progress-stats">
+        <div class="stat-card">
+          <span class="stat-value">{{{{ modules|length }}}}</span>
+          <span class="stat-label">Learning Modules</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{{{ simulations|length }}}}</span>
+          <span class="stat-label">Simulations</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value">{{{{ question_groups|length }}}}</span>
+          <span class="stat-label">Assessments</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="overallProgress">0%</span>
+          <span class="stat-label">Overall Progress</span>
+        </div>
+      </div>
+      <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 2rem; margin-top: 2rem;">
+        <canvas id="progressChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Class-specific JavaScript
+const classData = {json.dumps(data, indent=2)};
+
+// Tab switching
+function showTab(tabName) {{
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {{
+    tab.classList.remove('active');
+  }});
+  document.querySelectorAll('.nav-tab').forEach(tab => {{
+    tab.classList.remove('active');
+  }});
+  
+  // Show selected tab
+  document.getElementById(tabName + '-tab').classList.add('active');
+  event.target.classList.add('active');
+}}
+
+// Module functions
+function startModule(moduleId) {{
+  window.location.href = `/class/{data['class_id']}/module/${{moduleId}}`;
+}}
+
+function startAssessment(assessmentId) {{
+  window.location.href = `/class/{data['class_id']}/assessment/${{assessmentId}}`;
+}}
+
+// Progress chart initialization
+function initProgressChart() {{
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  new Chart(ctx, {{
+    type: 'doughnut',
+    data: {{
+      labels: ['Completed', 'In Progress', 'Not Started'],
+      datasets: [{{
+        data: [30, 45, 25],
+        backgroundColor: ['#39FF14', '#00D9FF', '#8B5CF6'],
+        borderWidth: 0
+      }}]
+    }},
+    options: {{
+      responsive: true,
+      plugins: {{
+        legend: {{
+          labels: {{
+            color: 'white',
+            font: {{
+              size: 14
+            }}
+          }}
+        }}
+      }}
+    }}
+  }});
+}}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {{
+  initProgressChart();
+  
+  // Load user progress
+  fetch(`/class/{data['class_id']}/api/progress`)
+    .then(response => response.json())
+    .then(progress => {{
+      document.getElementById('overallProgress').textContent = progress.overall_progress + '%';
+    }})
+    .catch(error => console.log('Progress not available'));
+}});
+</script>
+{{% endblock %}}
+'''
+        
+        return template
+    
+    def generate_class_template(self, class_obj: Class) -> str:
+        """Enhanced class template generation with static integration"""
+        template_data = self._prepare_template_data(class_obj)
+        
+        # Detect class type and enhance data
+        class_type = self._detect_class_type(class_obj)
+        template_data['class_type'] = class_type
+        
+        # Add static simulations if applicable
+        if class_type in self.static_templates_map:
+            template_data['simulations'] = self.static_templates_map[class_type]['simulations']
+            template_data['static_learning_url'] = self.static_templates_map[class_type]['learning_template']
+            template_data['static_simulations_url'] = self.static_templates_map[class_type]['simulations_template']
+        
+        # Generate enhanced template content
+        template_content = self._generate_enhanced_template_content(template_data)
+        
+        # Save template file
+        template_filename = f"class_{class_obj.id}_{class_obj.code.lower().replace(' ', '_')}.html"
+        template_path = os.path.join(self.templates_dir, template_filename)
+        
+        with open(template_path, 'w', encoding='utf-8') as f:
+            f.write(template_content)
+        
+        return template_filename
+    
+    def _generate_enhanced_routes_content(self, data: Dict[str, Any]) -> str:
+        """Generate enhanced routes with static template integration"""
+        class_type = data.get('class_type', 'general')
+        
+        base_routes = super()._generate_routes_content(data)
+        
+        # Add simulation proxies for static templates
+        if class_type in self.static_templates_map:
+            simulation_routes = self._generate_simulation_proxy_routes(data, class_type)
+            base_routes += simulation_routes
+        
+        return base_routes
+    
+    def _generate_simulation_proxy_routes(self, data: Dict[str, Any], class_type: str) -> str:
+        """Generate proxy routes that redirect to static simulations"""
+        static_config = self.static_templates_map[class_type]
+        
+        proxy_routes = f'''
+
+# Simulation proxy routes for {class_type}
+'''
+        
+        for sim in static_config['simulations']:
+            proxy_routes += f'''
+@{data['blueprint_name']}_bp.route('/simulation/{sim['id']}')
+@flexible_login_required
+def simulation_{sim['id']}():
+    """Proxy to {sim['name']} simulation"""
+    return redirect('{sim['route']}')
+'''
+        
+        return proxy_routes
+    
+    def generate_class_routes(self, class_obj: Class) -> str:
+        """Enhanced route generation with static integration"""
+        routes_data = self._prepare_routes_data(class_obj)
+        
+        # Add class type for enhanced route generation
+        class_type = self._detect_class_type(class_obj)
+        routes_data['class_type'] = class_type
+        
+        # Generate enhanced routes content
+        routes_content = self._generate_enhanced_routes_content(routes_data)
+        
+        # Save routes file
+        routes_filename = f"class_{class_obj.id}_routes.py"
+        routes_path = os.path.join(self.routes_dir, routes_filename)
+        
+        with open(routes_path, 'w', encoding='utf-8') as f:
+            f.write(routes_content)
+        
+        return routes_filename
+    
+    def create_class_dashboard_integration(self, class_obj: Class) -> Dict[str, Any]:
+        """Create integration points for the class dashboard"""
+        class_type = self._detect_class_type(class_obj)
+        
+        integration = {
+            'class_id': class_obj.id,
+            'class_type': class_type,
+            'dashboard_url': f'/class/{class_obj.id}/',
+            'api_endpoints': {
+                'progress': f'/class/{class_obj.id}/api/progress',
+                'lessons': f'/class/{class_obj.id}/api/lessons',
+                'simulations': f'/class/{class_obj.id}/api/simulations',
+                'assessments': f'/class/{class_obj.id}/api/assessments'
+            },
+            'static_integrations': []
+        }
+        
+        if class_type in self.static_templates_map:
+            static_config = self.static_templates_map[class_type]
+            integration['static_integrations'] = [
+                {
+                    'type': 'learning',
+                    'url': static_config['learning_template'].replace('user/', '/user/'),
+                    'name': f'{class_type.title()} Learning Path'
+                },
+                {
+                    'type': 'simulations',
+                    'url': static_config['simulations_template'].replace('user/', '/user/'),
+                    'name': f'{class_type.title()} Simulations'
+                }
+            ]
+            
+            for sim in static_config['simulations']:
+                integration['static_integrations'].append({
+                    'type': 'simulation',
+                    'url': sim['route'],
+                    'name': sim['name'],
+                    'id': sim['id']
+                })
+        
+        return integration
+    
+    def generate_all_class_resources(self, class_id: int) -> Dict[str, str]:
+        """Generate all resources for a class (enhanced version)"""
+        try:
+            # Try to get class object from database
+            try:
+                from admin.models.class_model import Class
+                class_obj = Class.query.get(class_id)
+                if not class_obj:
+                    raise ValueError(f"Class with ID {class_id} not found")
+            except Exception as db_error:
+                # If database query fails, we can't generate resources
+                raise Exception(f"Database query failed: {str(db_error)}")
+            
+            # Generate template
+            template_filename = self.generate_class_template(class_obj)
+            
+            # Generate routes
+            routes_filename = self.generate_class_routes(class_obj)
+            
+            return {
+                'template': template_filename,
+                'routes': routes_filename,
+                'class_id': class_id,
+                'enhanced': True,
+                'static_integrations': len(self.static_templates_map[self._detect_class_type(class_obj)]['simulations']) if self._detect_class_type(class_obj) in self.static_templates_map else 0
+            }
+            
+        except Exception as e:
+            raise Exception(f"Enhanced template generation failed: {str(e)}")
+    
+    def generate_class_resources_from_object(self, class_obj) -> Dict[str, str]:
+        """Generate resources from an existing class object (for testing)"""
+        try:
+            # Generate template
+            template_filename = self.generate_class_template(class_obj)
+            
+            # Generate routes
+            routes_filename = self.generate_class_routes(class_obj)
+            
+            class_type = self._detect_class_type(class_obj)
+            
+            return {
+                'template': template_filename,
+                'routes': routes_filename,
+                'class_id': class_obj.id,
+                'enhanced': True,
+                'class_type': class_type,
+                'static_integrations': len(self.static_templates_map[class_type]['simulations']) if class_type in self.static_templates_map else 0
+            }
+            
+        except Exception as e:
+            raise Exception(f"Enhanced template generation from object failed: {str(e)}")
+    
+    def regenerate_class_resources(self, class_id: int) -> Dict[str, str]:
+        """Regenerate resources for an existing class (enhanced version)"""
+        return self.generate_all_class_resources(class_id)
+
+
+# Export the enhanced generator
+enhanced_template_generator = EnhancedClassTemplateGenerator()
