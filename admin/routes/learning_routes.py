@@ -48,7 +48,8 @@ def learning_path_builder():
         simulations_data = simulation_controller.get_all_simulations()
         return render_template(
             'admin/learning_path_builder.html',
-            available_simulations=simulations_data.get('simulations', [])
+            available_simulations=simulations_data.get('simulations', []),
+            active_page='learning_path_builder'
         )
     except Exception as e:
         flash(f'Error loading path builder: {str(e)}', 'error')
