@@ -205,47 +205,92 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
         if class_type in self.static_templates_map:
             return self._generate_integrated_template(data, class_type)
         else:
-            return super()._generate_template_content(data)
+            return self._generate_general_template(data)
     
-    def _generate_integrated_template(self, data: Dict[str, Any], class_type: str) -> str:
-        """Generate template that integrates with existing static templates"""
-        static_config = self.static_templates_map[class_type]
-        
+    def _generate_general_template(self, data: Dict[str, Any]) -> str:
+        """Generate general template with standardized learning_base.html styling"""
         template = f'''
 {{% if user_context and user_context.get('is_admin') %}}
 {{% extends "admin/base.html" %}}
 {{% else %}}
-{{% extends "user/base.html" %}}
+{{% extends "user/learning_base.html" %}}
 {{% endif %}}
 
 {{% block title %}}{data['class_name']} - Learning Portal{{% endblock %}}
 
-{{% block extra_css %}}
-<link rel="stylesheet" href="{{{{ url_for('static', filename='css/user/dynamic_class.css') }}}}">
-<link rel="stylesheet" href="{{{{ url_for('static', filename='css/user/class_integration.css') }}}}">
+{{% block head %}}
 <style>
-  :root {{
-    --class-primary: #3B82F6;
-    --class-secondary: #8B5CF6; 
-    --class-accent: #10B981;
-    --cyber-glow: #00D9FF;
-    --neon-green: #39FF14;
-    --network-purple: #8B5CF6;
+  .learning-container {{
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 24px;
   }}
   
-  .class-portal {{
-    min-height: 100vh;
-    background: linear-gradient(135deg, #0a0c14, #1a1b2e);
-    color: white;
-    font-family: 'Inter', sans-serif;
+  /* Header section with learning_base.html styling */
+  .learning-header {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }}
+  
+  .page-title {{
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }}
+  
+  .page-subtitle {{
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-top: 8px;
+    font-weight: 400;
+  }}
+
+  /* Navigation button */
+  .back-to-classes {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 300ms ease;
+    border: 2px solid transparent;
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+    font-weight: 600;
+  }}
+  
+  .back-to-classes:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.5);
+    border-color: var(--cyber-glow);
+    color: #fff;
+  }}
+
+  /* Class portal styling */
+  .class-container {{
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 32px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    min-height: 600px;
   }}
   
   .class-header {{
     background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
     color: white;
-    padding: 3rem 2rem;
-    border-radius: 20px;
-    margin: 2rem;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
     box-shadow: 0 8px 32px rgba(0, 217, 255, 0.3);
     position: relative;
     overflow: hidden;
@@ -268,7 +313,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
   }}
   
   .class-title {{
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 800;
     margin-bottom: 1rem;
     position: relative;
@@ -287,7 +332,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
   .nav-tabs {{
     display: flex;
     gap: 0.5rem;
-    margin: 2rem;
+    margin-bottom: 2rem;
     background: rgba(26, 35, 126, 0.3);
     border-radius: 15px;
     padding: 0.5rem;
@@ -320,24 +365,23 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
   
   .tab-content {{
     display: none;
-    margin: 2rem;
     animation: fadeIn 0.5s ease;
   }}
   
   .tab-content.active {{
     display: block;
   }}
-  
+
   @keyframes fadeIn {{
     from {{ opacity: 0; transform: translateY(20px); }}
     to {{ opacity: 1; transform: translateY(0); }}
   }}
-  
+
+  /* Content grid and cards */
   .content-grid {{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 2rem;
-    margin-top: 2rem;
   }}
   
   .content-card {{
@@ -367,7 +411,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
     box-shadow: 0 15px 35px rgba(0, 217, 255, 0.4);
     border-color: var(--cyber-glow);
   }}
-  
+
   .card-header {{
     display: flex;
     align-items: center;
@@ -412,14 +456,8 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
     box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4);
     color: white;
   }}
-  
-  .progress-section {{
-    background: rgba(26, 35, 126, 0.3);
-    border-radius: 15px;
-    padding: 2rem;
-    margin-top: 2rem;
-  }}
-  
+
+  /* Progress stats */
   .progress-stats {{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -446,161 +484,212 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
     color: rgba(255, 255, 255, 0.8);
     font-weight: 500;
   }}
+
+  /* Admin-specific styling differences */
+  {{% if user_context and user_context.get('is_admin') %}}
+  .learning-container {{
+    margin-left: 0;
+  }}
+  
+  .admin-badge {{
+    background: linear-gradient(135deg, var(--warning-color), var(--danger-color));
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 12px;
+  }}
+  {{% endif %}}
+
+  /* Responsive design */
+  @media (max-width: 768px) {{
+    .learning-header {{
+      flex-direction: column;
+      gap: 16px;
+    }}
+    
+    .content-grid {{
+      grid-template-columns: 1fr;
+    }}
+  }}
 </style>
 {{% endblock %}}
 
 {{% block content %}}
-<div class="class-portal">
-  <!-- Class Header -->
-  <div class="class-header">
-    <h1 class="class-title">{data['class_name']}</h1>
-    <div class="class-meta">
-      <span><i class="fas fa-layer-group"></i> Section: {data['class_section'] or 'General'}</span>
-      <span><i class="fas fa-code"></i> Code: {data['class_code']}</span>
-      <span><i class="fas fa-users"></i> Class Portal</span>
-    </div>
-    {{% if data.get('class_description') %}}
-    <p class="mt-3" style="position: relative; z-index: 2; font-size: 1.1rem; opacity: 0.9;">
-      {data['class_description']}
-    </p>
-    {{% endif %}}
-  </div>
-
-  <!-- Navigation Tabs -->
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showTab('learning')">
-      <i class="fas fa-graduation-cap"></i> Learning
-    </button>
-    <button class="nav-tab" onclick="showTab('simulations')">
-      <i class="fas fa-flask"></i> Simulations
-    </button>
-    <button class="nav-tab" onclick="showTab('assessments')">
-      <i class="fas fa-clipboard-check"></i> Assessments
-    </button>
-    <button class="nav-tab" onclick="showTab('progress')">
-      <i class="fas fa-chart-line"></i> Progress
-    </button>
-  </div>
-
-  <!-- Learning Tab -->
-  <div id="learning-tab" class="tab-content active">
-    <div class="content-grid">
-      <div class="content-card">
-        <div class="card-header">
-          <i class="fas fa-book-open card-icon"></i>
-          <h3 class="card-title">Interactive Learning</h3>
-        </div>
-        <p class="card-description">
-          Access comprehensive learning materials, lessons, and interactive content designed for {class_type.title()}.
+<div class="page-container">
+  <div class="learning-container">
+    <!-- Header Section -->
+    <div class="learning-header">
+      <div>
+        <h1 class="page-title">{data['class_name']} - Class {data['class_code']}</h1>
+        <p class="page-subtitle">Interactive Class Portal & Learning Environment
+          {{% if user_context and user_context.get('is_admin') %}}
+          <span class="admin-badge">Admin View</span>
+          {{% endif %}}
         </p>
-        <a href="{static_config['learning_template'].replace('user/', '/user/')}" class="card-button">
-          <i class="fas fa-play"></i>
-          Start Learning
-        </a>
       </div>
-      
-      {{% for module in data.get('modules', []) %}}
-      <div class="content-card">
-        <div class="card-header">
-          <i class="fas fa-layer-group card-icon"></i>
-          <h3 class="card-title">{{{{ module.name }}}}</h3>
+      <div>
+        {{% if user_context and user_context.get('is_admin') %}}
+        <a href="/admin/classes" class="back-to-classes">
+          <i class="fas fa-arrow-left"></i>
+          Back to Admin
+        </a>
+        {{% else %}}
+        <a href="/user/classes" class="back-to-classes">
+          <i class="fas fa-arrow-left"></i>
+          Back to Classes
+        </a>
+        {{% endif %}}
+      </div>
+    </div>
+
+    <!-- Class Content -->
+    <div class="class-container">
+      <!-- Class Header -->
+      <div class="class-header">
+        <h1 class="class-title">{data['class_name']}</h1>
+        <div class="class-meta">
+          <span>Section: {data['class_section'] or 'General'}</span>
+          <span class="mx-3">•</span>
+          <span>Code: {data['class_code']}</span>
         </div>
-        <p class="card-description">
-          {{{{ module.description or "Interactive learning module with lessons and activities" }}}}
-        </p>
-        <button class="card-button" onclick="startModule({{{{ module.id }}}})">
-          <i class="fas fa-play-circle"></i>
-          Start Module
+        {{% if data.get('class_description') %}}
+        <p class="mt-2" style="position: relative; z-index: 2; margin-top: 1rem;">{data['class_description']}</p>
+        {{% endif %}}
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('modules')">
+          <i class="fas fa-book"></i> Modules
+        </button>
+        <button class="nav-tab" onclick="showTab('assessments')">
+          <i class="fas fa-clipboard-check"></i> Assessments
+        </button>
+        <button class="nav-tab" onclick="showTab('progress')">
+          <i class="fas fa-chart-line"></i> Progress
         </button>
       </div>
-      {{% endfor %}}
-    </div>
-  </div>
 
-  <!-- Simulations Tab -->
-  <div id="simulations-tab" class="tab-content">
-    <div class="content-grid">
-      <div class="content-card">
-        <div class="card-header">
-          <i class="fas fa-desktop card-icon"></i>
-          <h3 class="card-title">All Simulations</h3>
+      <!-- Modules Tab -->
+      <div id="modules-tab" class="tab-content active">
+        <div class="content-grid">
+          <!-- Empty modules - Admin will create lessons in edit mode -->
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-plus-circle card-icon"></i>
+              <h3 class="card-title">Create Your First Module</h3>
+            </div>
+            <p class="card-description">
+              This class is ready for content! Use the admin panel to create modules and lessons.
+            </p>
+            {{% if user_context and user_context.get('is_admin') %}}
+            <a href="/admin/modules/create?class_id={data['class_id']}" class="card-button">
+              <i class="fas fa-edit"></i>
+              Create Module
+            </a>
+            {{% else %}}
+            <div class="card-button" style="opacity: 0.6; cursor: not-allowed;">
+              <i class="fas fa-lock"></i>
+              Admin Access Required
+            </div>
+            {{% endif %}}
+          </div>
+          
+          {{% for module in modules %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-layer-group card-icon"></i>
+              <h3 class="card-title">{{{{ module.name }}}}</h3>
+            </div>
+            <p class="card-description">
+              {{{{ module.description or "Interactive learning module" }}}}
+            </p>
+            <div style="margin-bottom: 1rem;">
+              <span style="color: var(--cyber-glow);"><i class="fas fa-book-open"></i> Lessons coming soon</span>
+            </div>
+            <button class="card-button" onclick="startModule({{{{ module.id }}}})">
+              <i class="fas fa-play-circle"></i>
+              Start Module
+            </button>
+          </div>
+          {{% endfor %}}
         </div>
-        <p class="card-description">
-          Access the complete simulation laboratory for hands-on practice and experimentation.
-        </p>
-        <a href="{static_config['simulations_template'].replace('user/', '/user/')}" class="card-button">
-          <i class="fas fa-rocket"></i>
-          Open Lab
-        </a>
       </div>
-      
-      {{% for sim in simulations %}}
-      <div class="content-card">
-        <div class="card-header">
-          <i class="{{{{ sim.icon or 'fas fa-play' }}}} card-icon"></i>
-          <h3 class="card-title">{{{{ sim.name }}}}</h3>
-        </div>
-        <p class="card-description">{{{{ sim.description }}}}</p>
-        <a href="{{{{ sim.route }}}}" class="card-button" target="_blank">
-          <i class="fas fa-external-link-alt"></i>
-          Launch Simulation
-        </a>
-      </div>
-      {{% endfor %}}
-    </div>
-  </div>
 
-  <!-- Assessments Tab -->
-  <div id="assessments-tab" class="tab-content">
-    <div class="content-grid">
-      {{% for qg in question_groups %}}
-      <div class="content-card">
-        <div class="card-header">
-          <i class="fas fa-clipboard-check card-icon"></i>
-          <h3 class="card-title">{{{{ qg.name }}}}</h3>
+      <!-- Assessments Tab -->
+      <div id="assessments-tab" class="tab-content">
+        <div class="content-grid">
+          {{% for qg in question_groups %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-clipboard-check card-icon"></i>
+              <h3 class="card-title">{{{{ qg.name }}}}</h3>
+            </div>
+            <p class="card-description">
+              {{{{ qg.description or "Test your knowledge and skills" }}}}
+            </p>
+            <div style="margin-bottom: 1rem;">
+              <span style="color: var(--cyber-glow);"><i class="fas fa-question-circle"></i> {{{{ qg.questions|length }}}} Questions</span>
+              <span style="color: rgba(255,255,255,0.7); margin-left: 1rem;"><i class="fas fa-clock"></i> {{{{ (qg.questions|length * 2) }}}} min</span>
+            </div>
+            <button class="card-button" onclick="startAssessment({{{{ qg.id }}}})">
+              <i class="fas fa-play-circle"></i>
+              Start Assessment
+            </button>
+          </div>
+          {{% endfor %}}
+          
+          {{% if not question_groups %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-plus-circle card-icon"></i>
+              <h3 class="card-title">Create Your First Assessment</h3>
+            </div>
+            <p class="card-description">
+              No assessments have been created yet. Use the admin panel to add question groups and assessments.
+            </p>
+            {{% if user_context and user_context.get('is_admin') %}}
+            <a href="/admin/question-groups/create?class_id={data['class_id']}" class="card-button">
+              <i class="fas fa-edit"></i>
+              Create Assessment
+            </a>
+            {{% else %}}
+            <div class="card-button" style="opacity: 0.6; cursor: not-allowed;">
+              <i class="fas fa-lock"></i>
+              Admin Access Required
+            </div>
+            {{% endif %}}
+          </div>
+          {{% endif %}}
         </div>
-        <p class="card-description">
-          {{{{ qg.description or "Test your knowledge and skills" }}}}
-        </p>
-        <div style="margin-bottom: 1rem;">
-          <span style="color: var(--cyber-glow);"><i class="fas fa-questions"></i> {{{{ qg.questions|length }}}} Questions</span>
-          <span style="color: rgba(255,255,255,0.7); margin-left: 1rem;"><i class="fas fa-clock"></i> {{{{ (qg.questions|length * 2) }}}} min</span>
-        </div>
-        <button class="card-button" onclick="startAssessment({{{{ qg.id }}}})">
-          <i class="fas fa-play-circle"></i>
-          Start Assessment
-        </button>
       </div>
-      {{% endfor %}}
-    </div>
-  </div>
 
-  <!-- Progress Tab -->
-  <div id="progress-tab" class="tab-content">
-    <div class="progress-section">
-      <h2 style="color: var(--cyber-glow); margin-bottom: 2rem; font-size: 2rem;">
-        <i class="fas fa-chart-line"></i> Your Progress
-      </h2>
-      <div class="progress-stats">
-        <div class="stat-card">
-          <span class="stat-value">{{{{ modules|length }}}}</span>
-          <span class="stat-label">Learning Modules</span>
+      <!-- Progress Tab -->
+      <div id="progress-tab" class="tab-content">
+        <div class="progress-section">
+          <h2 style="color: white; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; text-align: center; background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            Your Progress
+          </h2>
+          <div class="progress-stats">
+            <div class="stat-card">
+              <span class="stat-value">{{{{ modules|length }}}}</span>
+              <span class="stat-label">Learning Modules</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">{{{{ question_groups|length }}}}</span>
+              <span class="stat-label">Assessments</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="overallProgress">0%</span>
+              <span class="stat-label">Overall Progress</span>
+            </div>
+          </div>
+          <div style="background: rgba(26, 35, 126, 0.3); border-radius: 15px; padding: 2rem; backdrop-filter: blur(20px); border: 1px solid rgba(0, 217, 255, 0.3);">
+            <canvas id="progressChart"></canvas>
+          </div>
         </div>
-        <div class="stat-card">
-          <span class="stat-value">{{{{ simulations|length }}}}</span>
-          <span class="stat-label">Simulations</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value">{{{{ question_groups|length }}}}</span>
-          <span class="stat-label">Assessments</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="overallProgress">0%</span>
-          <span class="stat-label">Overall Progress</span>
-        </div>
-      </div>
-      <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 2rem; margin-top: 2rem;">
-        <canvas id="progressChart" width="400" height="200"></canvas>
       </div>
     </div>
   </div>
@@ -643,19 +732,22 @@ function initProgressChart() {{
     data: {{
       labels: ['Completed', 'In Progress', 'Not Started'],
       datasets: [{{
-        data: [30, 45, 25],
+        data: [0, 0, 100],
         backgroundColor: ['#39FF14', '#00D9FF', '#8B5CF6'],
-        borderWidth: 0
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.1)'
       }}]
     }},
     options: {{
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {{
         legend: {{
           labels: {{
             color: 'white',
             font: {{
-              size: 14
+              size: 14,
+              family: 'Inter'
             }}
           }}
         }}
@@ -668,13 +760,694 @@ function initProgressChart() {{
 document.addEventListener('DOMContentLoaded', function() {{
   initProgressChart();
   
-  // Load user progress
+  // Load user progress if available
   fetch(`/class/{data['class_id']}/api/progress`)
     .then(response => response.json())
     .then(progress => {{
       document.getElementById('overallProgress').textContent = progress.overall_progress + '%';
     }})
-    .catch(error => console.log('Progress not available'));
+    .catch(error => {{
+      console.log('Progress not available - class may be newly created');
+      document.getElementById('overallProgress').textContent = '0%';
+    }});
+}});
+</script>
+{{% endblock %}}
+'''
+        
+        return template
+    
+    def _generate_integrated_template(self, data: Dict[str, Any], class_type: str) -> str:
+        """Generate template that integrates with existing static templates"""
+        static_config = self.static_templates_map[class_type]
+        
+        template = f'''
+{{% if user_context and user_context.get('is_admin') %}}
+{{% extends "admin/base.html" %}}
+{{% else %}}
+{{% extends "user/learning_base.html" %}}
+{{% endif %}}
+
+{{% block title %}}{data['class_name']} - Learning Portal{{% endblock %}}
+
+{{% block head %}}
+<style>
+  .learning-container {{
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }}
+  
+  /* Header section with learning_base.html styling */
+  .learning-header {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }}
+  
+  .page-title {{
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }}
+  
+  .page-subtitle {{
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-top: 8px;
+    font-weight: 400;
+  }}
+
+  /* Navigation button */
+  .back-to-classes {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 300ms ease;
+    border: 2px solid transparent;
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+    font-weight: 600;
+  }}
+  
+  .back-to-classes:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.5);
+    border-color: var(--cyber-glow);
+    color: #fff;
+  }}
+
+  /* Course navigation */
+  .course-navigation {{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }}
+  
+  .course-nav-btn {{
+    background: linear-gradient(135deg, var(--network-purple), var(--cyber-glow));
+    color: #fff;
+    text-decoration: none;
+    padding: 16px 24px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 300ms ease;
+    border: 2px solid transparent;
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+    min-width: 200px;
+    text-align: center;
+  }}
+  
+  .course-nav-btn:hover {{
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 212, 255, 0.5);
+    border-color: var(--cyber-glow);
+    color: #fff;
+  }}
+
+  /* Class portal styling */
+  .class-container {{
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 32px;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    min-height: 600px;
+  }}
+  
+  .class-header {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+  }}
+  
+  .class-header::before {{
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: rotate 20s linear infinite;
+  }}
+  
+  @keyframes rotate {{
+    0% {{ transform: rotate(0deg); }}
+    100% {{ transform: rotate(360deg); }}
+  }}
+  
+  .class-title {{
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+  }}
+  
+  .class-meta {{
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    font-size: 1.1rem;
+  }}
+  
+  .nav-tabs {{
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background: rgba(26, 35, 126, 0.3);
+    border-radius: 15px;
+    padding: 0.5rem;
+    backdrop-filter: blur(20px);
+  }}
+  
+  .nav-tab {{
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }}
+  
+  .nav-tab.active,
+  .nav-tab:hover {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+  }}
+  
+  .tab-content {{
+    display: none;
+    animation: fadeIn 0.5s ease;
+  }}
+  
+  .tab-content.active {{
+    display: block;
+  }}
+
+  @keyframes fadeIn {{
+    from {{ opacity: 0; transform: translateY(20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+  }}
+
+  /* Content grid and cards */
+  .content-grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+  }}
+  
+  .content-card {{
+    background: rgba(26, 35, 126, 0.4);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 15px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+  }}
+  
+  .content-card::before {{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+    opacity: 0.8;
+  }}
+  
+  .content-card:hover {{
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 217, 255, 0.4);
+    border-color: var(--cyber-glow);
+  }}
+
+  .card-header {{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }}
+  
+  .card-icon {{
+    font-size: 2rem;
+    color: var(--cyber-glow);
+  }}
+  
+  .card-title {{
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+  }}
+  
+  .card-description {{
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }}
+  
+  .card-button {{
+    background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }}
+  
+  .card-button:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4);
+    color: white;
+  }}
+
+  /* Progress stats */
+  .progress-stats {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }}
+  
+  .stat-card {{
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+  }}
+  
+  .stat-value {{
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--cyber-glow);
+    display: block;
+  }}
+  
+  .stat-label {{
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+  }}
+
+  /* Admin-specific styling differences */
+  {{% if user_context and user_context.get('is_admin') %}}
+  .learning-container {{
+    margin-left: 0;
+  }}
+  
+  .admin-badge {{
+    background: linear-gradient(135deg, var(--warning-color), var(--danger-color));
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 12px;
+  }}
+  {{% endif %}}
+
+  /* Responsive design */
+  @media (max-width: 768px) {{
+    .learning-header {{
+      flex-direction: column;
+      gap: 16px;
+    }}
+    
+    .course-navigation {{
+      flex-direction: column;
+      gap: 12px;
+    }}
+    
+    .course-nav-btn {{
+      min-width: 100%;
+    }}
+    
+    .content-grid {{
+      grid-template-columns: 1fr;
+    }}
+  }}
+</style>
+{{% endblock %}}
+
+{{% block content %}}
+<div class="page-container">
+  <div class="learning-container">
+    <!-- Header Section -->
+    <div class="learning-header">
+      <div>
+        <h1 class="page-title">{data['class_name']} - Class {data['class_code']}</h1>
+        <p class="page-subtitle">Interactive Class Portal & Learning Environment
+          {{% if user_context and user_context.get('is_admin') %}}
+          <span class="admin-badge">Admin View</span>
+          {{% endif %}}
+        </p>
+      </div>
+      <div class="course-navigation">
+        {{% if user_context and user_context.get('is_admin') %}}
+        <a href="/admin/classes" class="back-to-classes">
+          <i class="fas fa-arrow-left"></i>
+          Back to Admin
+        </a>
+        {{% else %}}
+        <a href="/user/classes" class="back-to-classes">
+          <i class="fas fa-arrow-left"></i>
+          Back to Classes
+        </a>
+        {{% endif %}}
+        <a href="{static_config['learning_template'].replace('user/', '/user/')}" class="course-nav-btn">
+          <i class="fas fa-graduation-cap"></i>
+          <span>Learning Portal</span>
+          <small>Interactive lessons</small>
+        </a>
+        <a href="{static_config['simulations_template'].replace('user/', '/user/')}" class="course-nav-btn">
+          <i class="fas fa-flask"></i>
+          <span>Simulations Lab</span>
+          <small>Hands-on practice</small>
+        </a>
+      </div>
+    </div>
+
+    <!-- Class Content -->
+    <div class="class-container">
+      <!-- Class Header -->
+      <div class="class-header">
+        <h1 class="class-title">{data['class_name']}</h1>
+        <div class="class-meta">
+          <span>Section: {data['class_section'] or 'General'}</span>
+          <span class="mx-3">•</span>
+          <span>Code: {data['class_code']}</span>
+        </div>
+        {{% if data.get('class_description') %}}
+        <p class="mt-2" style="position: relative; z-index: 2; margin-top: 1rem;">{data['class_description']}</p>
+        {{% endif %}}
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('modules')">
+          <i class="fas fa-book"></i> Modules
+        </button>
+        <button class="nav-tab" onclick="showTab('simulations')">
+          <i class="fas fa-play-circle"></i> Simulations
+        </button>
+        <button class="nav-tab" onclick="showTab('assessments')">
+          <i class="fas fa-clipboard-check"></i> Assessments
+        </button>
+        <button class="nav-tab" onclick="showTab('progress')">
+          <i class="fas fa-chart-line"></i> Progress
+        </button>
+      </div>
+
+      <!-- Modules Tab -->
+      <div id="modules-tab" class="tab-content active">
+        <div class="content-grid">
+          <!-- Learning Portal Card -->
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-graduation-cap card-icon"></i>
+              <h3 class="card-title">Learning Portal</h3>
+            </div>
+            <p class="card-description">
+              Access comprehensive learning materials and interactive content for {class_type.title()}.
+            </p>
+            <a href="{static_config['learning_template'].replace('user/', '/user/')}" class="card-button">
+              <i class="fas fa-play"></i>
+              Start Learning
+            </a>
+          </div>
+          
+          <!-- Empty modules - Admin will create lessons in edit mode -->
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-plus-circle card-icon"></i>
+              <h3 class="card-title">Create Your First Module</h3>
+            </div>
+            <p class="card-description">
+              This class is ready for content! Use the admin panel to create modules and lessons.
+            </p>
+            {{% if user_context and user_context.get('is_admin') %}}
+            <a href="/admin/modules/create?class_id={data['class_id']}" class="card-button">
+              <i class="fas fa-edit"></i>
+              Create Module
+            </a>
+            {{% else %}}
+            <div class="card-button" style="opacity: 0.6; cursor: not-allowed;">
+              <i class="fas fa-lock"></i>
+              Admin Access Required
+            </div>
+            {{% endif %}}
+          </div>
+          
+          {{% for module in modules %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-layer-group card-icon"></i>
+              <h3 class="card-title">{{{{ module.name }}}}</h3>
+            </div>
+            <p class="card-description">
+              {{{{ module.description or "Interactive learning module" }}}}
+            </p>
+            <div style="margin-bottom: 1rem;">
+              <span style="color: var(--cyber-glow);"><i class="fas fa-book-open"></i> Lessons coming soon</span>
+            </div>
+            <button class="card-button" onclick="startModule({{{{ module.id }}}})">
+              <i class="fas fa-play-circle"></i>
+              Start Module
+            </button>
+          </div>
+          {{% endfor %}}
+        </div>
+      </div>
+
+      <!-- Simulations Tab -->
+      <div id="simulations-tab" class="tab-content">
+        <div class="content-grid">
+          <!-- Simulations Hub Card -->
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-desktop card-icon"></i>
+              <h3 class="card-title">Simulations Laboratory</h3>
+            </div>
+            <p class="card-description">
+              Access the complete simulation laboratory for hands-on practice and experimentation.
+            </p>
+            <a href="{static_config['simulations_template'].replace('user/', '/user/')}" class="card-button">
+              <i class="fas fa-rocket"></i>
+              Open Lab
+            </a>
+          </div>
+          
+          {{% for sim in simulations %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="{{{{ sim.icon or 'fas fa-play' }}}} card-icon"></i>
+              <h3 class="card-title">{{{{ sim.name }}}}</h3>
+            </div>
+            <p class="card-description">{{{{ sim.description }}}}</p>
+            <a href="{{{{ sim.route }}}}" class="card-button" target="_blank">
+              <i class="fas fa-external-link-alt"></i>
+              Launch Simulation
+            </a>
+          </div>
+          {{% endfor %}}
+        </div>
+      </div>
+
+      <!-- Assessments Tab -->
+      <div id="assessments-tab" class="tab-content">
+        <div class="content-grid">
+          {{% for qg in question_groups %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-clipboard-check card-icon"></i>
+              <h3 class="card-title">{{{{ qg.name }}}}</h3>
+            </div>
+            <p class="card-description">
+              {{{{ qg.description or "Test your knowledge and skills" }}}}
+            </p>
+            <div style="margin-bottom: 1rem;">
+              <span style="color: var(--cyber-glow);"><i class="fas fa-question-circle"></i> {{{{ qg.questions|length }}}} Questions</span>
+              <span style="color: rgba(255,255,255,0.7); margin-left: 1rem;"><i class="fas fa-clock"></i> {{{{ (qg.questions|length * 2) }}}} min</span>
+            </div>
+            <button class="card-button" onclick="startAssessment({{{{ qg.id }}}})">
+              <i class="fas fa-play-circle"></i>
+              Start Assessment
+            </button>
+          </div>
+          {{% endfor %}}
+          
+          {{% if not question_groups %}}
+          <div class="content-card">
+            <div class="card-header">
+              <i class="fas fa-plus-circle card-icon"></i>
+              <h3 class="card-title">Create Your First Assessment</h3>
+            </div>
+            <p class="card-description">
+              No assessments have been created yet. Use the admin panel to add question groups and assessments.
+            </p>
+            {{% if user_context and user_context.get('is_admin') %}}
+            <a href="/admin/question-groups/create?class_id={data['class_id']}" class="card-button">
+              <i class="fas fa-edit"></i>
+              Create Assessment
+            </a>
+            {{% else %}}
+            <div class="card-button" style="opacity: 0.6; cursor: not-allowed;">
+              <i class="fas fa-lock"></i>
+              Admin Access Required
+            </div>
+            {{% endif %}}
+          </div>
+          {{% endif %}}
+        </div>
+      </div>
+
+      <!-- Progress Tab -->
+      <div id="progress-tab" class="tab-content">
+        <div class="progress-section">
+          <h2 style="color: white; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; text-align: center; background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            Your Progress
+          </h2>
+          <div class="progress-stats">
+            <div class="stat-card">
+              <span class="stat-value">{{{{ modules|length }}}}</span>
+              <span class="stat-label">Learning Modules</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">{{{{ simulations|length }}}}</span>
+              <span class="stat-label">Simulations</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">{{{{ question_groups|length }}}}</span>
+              <span class="stat-label">Assessments</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="overallProgress">0%</span>
+              <span class="stat-label">Overall Progress</span>
+            </div>
+          </div>
+          <div style="background: rgba(26, 35, 126, 0.3); border-radius: 15px; padding: 2rem; backdrop-filter: blur(20px); border: 1px solid rgba(0, 217, 255, 0.3);">
+            <canvas id="progressChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Class-specific JavaScript
+const classData = {json.dumps(data, indent=2)};
+
+// Tab switching
+function showTab(tabName) {{
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => {{
+    tab.classList.remove('active');
+  }});
+  document.querySelectorAll('.nav-tab').forEach(tab => {{
+    tab.classList.remove('active');
+  }});
+  
+  // Show selected tab
+  document.getElementById(tabName + '-tab').classList.add('active');
+  event.target.classList.add('active');
+}}
+
+// Module functions
+function startModule(moduleId) {{
+  window.location.href = `/class/{data['class_id']}/module/${{moduleId}}`;
+}}
+
+function startAssessment(assessmentId) {{
+  window.location.href = `/class/{data['class_id']}/assessment/${{assessmentId}}`;
+}}
+
+// Progress chart initialization
+function initProgressChart() {{
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  new Chart(ctx, {{
+    type: 'doughnut',
+    data: {{
+      labels: ['Completed', 'In Progress', 'Not Started'],
+      datasets: [{{
+        data: [0, 0, 100],
+        backgroundColor: ['#39FF14', '#00D9FF', '#8B5CF6'],
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }}]
+    }},
+    options: {{
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {{
+        legend: {{
+          labels: {{
+            color: 'white',
+            font: {{
+              size: 14,
+              family: 'Inter'
+            }}
+          }}
+        }}
+      }}
+    }}
+  }});
+}}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {{
+  initProgressChart();
+  
+  // Load user progress if available
+  fetch(`/class/{data['class_id']}/api/progress`)
+    .then(response => response.json())
+    .then(progress => {{
+      document.getElementById('overallProgress').textContent = progress.overall_progress + '%';
+    }})
+    .catch(error => {{
+      console.log('Progress not available - class may be newly created');
+      document.getElementById('overallProgress').textContent = '0%';
+    }});
 }});
 </script>
 {{% endblock %}}

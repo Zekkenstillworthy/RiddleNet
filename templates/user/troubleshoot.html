@@ -111,6 +111,18 @@
         transition: none !important; /* Prevent any transitions initially */
     }
 
+    /* Body blur fix for lobby modals */
+    body.modal-open {
+        overflow: hidden;
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
+    /* Prevent backdrop filter conflicts */
+    body, html {
+        isolation: isolate;
+    }
+
     /* Critical responsive rules - Load immediately */
     @media (max-width: 1024px) {
         #device-palette {
@@ -268,9 +280,9 @@
     
     .performance-sidebar {
         position: fixed;
-        top: 50%;
+        top: 5%;
         right: 0;
-        transform: translateY(-50%);
+        transform: translateY(-5%);
         width: 350px;
         height: 80vh;
         max-height: 800px;
@@ -282,13 +294,13 @@
         z-index: 1500;
         box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(-50%) translateX(320px);
+        transform: translateY(-5%) translateX(320px);
         opacity: 0;
         overflow: hidden;
     }
 
     .performance-sidebar.active {
-        transform: translateY(-50%) translateX(0);
+        transform: translateY(-5%) translateX(0);
         opacity: 1;
     }
 
@@ -634,6 +646,41 @@
         align-items: center;
         gap: 10px;
         transition: all var(--transition-speed) ease;
+        position: relative;
+    }
+
+    .metric-card.primary-timer {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: rgba(0, 217, 255, 0.3);
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .metric-card.primary-timer .metric-content {
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .metric-card.primary-timer .timer-controls {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .timer-btn {
+        background: rgba(0, 217, 255, 0.2);
+        border: 1px solid rgba(0, 217, 255, 0.4);
+        border-radius: 4px;
+        padding: 4px 8px;
+        color: var(--cyber-glow);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+    }
+
+    .timer-btn:hover {
+        background: rgba(0, 217, 255, 0.3);
+        border-color: var(--cyber-glow);
     }
 
     .metric-card:hover {
@@ -664,6 +711,136 @@
         font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }
+
+    /* Timer Status Display in Performance Sidebar */
+    .timer-status-display {
+        text-align: center;
+        padding: 16px;
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: 12px;
+    }
+
+    .timer-main-display {
+        font-family: 'Orbitron', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    }
+
+    .timer-main-display.warning {
+        color: var(--warning-color);
+        animation: pulse-warning 1s ease-in-out infinite;
+    }
+
+    .timer-main-display.critical {
+        color: var(--danger-color);
+        animation: pulse-critical 0.5s ease-in-out infinite;
+    }
+
+    .timer-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .timer-progress-bar {
+        margin: 12px 0;
+    }
+
+    .timer-progress-bar .progress-bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .timer-progress-bar .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
+        border-radius: 3px;
+        transition: all 0.3s ease;
+    }
+
+    .timer-progress-bar .progress-fill.warning {
+        background: linear-gradient(90deg, var(--warning-color), #ff9500);
+    }
+
+    .timer-progress-bar .progress-fill.critical {
+        background: linear-gradient(90deg, var(--danger-color), #ff1744);
+        animation: progress-flash 0.5s ease-in-out infinite;
+    }
+
+    .timer-status {
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .timer-status.warning {
+        color: var(--warning-color);
+        font-weight: 600;
+    }
+
+    .timer-status.critical {
+        color: var(--danger-color);
+        font-weight: 700;
+        animation: pulse-critical 0.5s ease-in-out infinite;
+    }
+
+    .timer-status.paused {
+        color: var(--text-secondary);
+    }
+
+    .timer-status.completed {
+        color: var(--success-color);
+        font-weight: 600;
+    }
+
+    .timer-status.expired {
+        color: var(--danger-color);
+        font-weight: 700;
+    }
+
+    /* Timer warning animations */
+    @keyframes pulse-warning {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes pulse-critical {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.05); }
+    }
+
+    @keyframes progress-flash {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Enhanced hint styles for timer warnings */
+    .hint-item.hint-warning {
+        border-left: 4px solid var(--warning-color);
+        background: rgba(245, 158, 11, 0.1);
+    }
+
+    .hint-item.hint-critical {
+        border-left: 4px solid var(--danger-color);
+        background: rgba(239, 68, 68, 0.1);
+        animation: pulse-warning 1s ease-in-out infinite;
+    }
+
+    .hint-item.hint-expired {
+        border-left: 4px solid var(--danger-color);
+        background: rgba(239, 68, 68, 0.15);
+        font-weight: 600;
     }
 
     /* Achievements */
@@ -755,11 +932,11 @@
     @media (max-width: 1200px) {
         .performance-sidebar {
             width: 300px;
-            transform: translateY(-50%) translateX(270px);
+            transform: translateY(-5%) translateX(270px);
         }
         
         .performance-sidebar.active {
-            transform: translateY(-50%) translateX(0);
+            transform: translateY(-5%) translateX(0);
         }
         
         .feedback-section {
@@ -974,503 +1151,26 @@
 
 <!-- Additional CSS for Collaborative Features -->
 <style>
-    /* ===== SCENARIO TIMER SYSTEM STYLES ===== */
+    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
     
-    /* Main Timer Display */
-    .scenario-timer {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 280px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 2px solid var(--glass-border);
-        border-radius: var(--border-radius-lg);
-        padding: 16px;
-        z-index: 1010;
-        box-shadow: var(--shadow-lg);
-        transition: all var(--transition-speed) ease;
-        opacity: 0;
-        transform: translateY(-20px);
+    /* Modal Backdrop for Better Visual Hierarchy - Fixed Blur Issues */
+    .lobby-browser-backdrop {
         display: none;
-    }
-    
-    .scenario-timer.active {
-        display: block;
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    .scenario-timer.warning {
-        border-color: var(--warning-color);
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-        animation: pulse-warning 2s ease-in-out infinite;
-    }
-    
-    .scenario-timer.critical {
-        border-color: var(--danger-color);
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-        animation: pulse-critical 1s ease-in-out infinite;
-    }
-    
-    @keyframes pulse-warning {
-        0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
-        50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.7); }
-    }
-    
-    @keyframes pulse-critical {
-        0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
-        50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.9); }
-    }
-    
-    .timer-display {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .timer-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        background: var(--gradient-primary);
-        border-radius: 50%;
-        color: white;
-        font-size: 18px;
-    }
-    
-    .timer-content {
-        flex: 1;
-    }
-    
-    .timer-time {
-        font-family: 'Orbitron', monospace;
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--text-primary);
-        letter-spacing: 1px;
-    }
-    
-    .timer-time.warning {
-        color: var(--warning-color);
-    }
-    
-    .timer-time.critical {
-        color: var(--danger-color);
-        animation: blink-critical 1s ease-in-out infinite;
-    }
-    
-    @keyframes blink-critical {
-        0%, 50% { opacity: 1; }
-        51%, 100% { opacity: 0.5; }
-    }
-    
-    .timer-label {
-        font-size: 12px;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 2px;
-    }
-    
-    .timer-controls {
-        display: flex;
-        gap: 8px;
-    }
-    
-    .timer-btn {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 50%;
-        background: var(--glass-bg-light);
-        color: var(--text-primary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all var(--transition-speed) ease;
-        font-size: 14px;
-    }
-    
-    .timer-btn:hover {
-        background: var(--cyber-glow);
-        color: var(--background);
-        transform: scale(1.1);
-    }
-    
-    .timer-btn:active {
-        transform: scale(0.95);
-    }
-    
-    .timer-progress {
-        margin-top: 12px;
-    }
-    
-    .progress-bar {
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        overflow: hidden;
-        margin-bottom: 8px;
-    }
-    
-    .progress-fill {
-        height: 100%;
-        background: var(--gradient-primary);
-        border-radius: 3px;
-        transition: all 1s ease;
-        width: 100%;
-    }
-    
-    .progress-fill.warning {
-        background: linear-gradient(90deg, var(--warning-color), var(--cyber-glow));
-    }
-    
-    .progress-fill.critical {
-        background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
-        animation: progress-flash 0.5s ease-in-out infinite alternate;
-    }
-    
-    @keyframes progress-flash {
-        from { opacity: 0.7; }
-        to { opacity: 1; }
-    }
-    
-    .timer-status {
-        font-size: 11px;
-        color: var(--text-muted);
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .timer-status.paused {
-        color: var(--warning-color);
-    }
-    
-    .timer-status.expired {
-        color: var(--danger-color);
-        font-weight: 600;
-    }
-    
-    /* Timer Warning Modal */
-    .timer-warning-modal {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 3000;
-        opacity: 0;
-        transition: all var(--transition-speed) ease;
-    }
-    
-    .timer-warning-modal.active {
-        display: flex;
-        opacity: 1;
-    }
-    
-    .warning-content {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 2px solid var(--warning-color);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
-        transform: scale(0.9);
-        transition: all var(--transition-speed) ease;
-    }
-    
-    .timer-warning-modal.active .warning-content {
-        transform: scale(1);
-    }
-    
-    .warning-icon {
-        font-size: 3rem;
-        color: var(--warning-color);
-        margin-bottom: 16px;
-        animation: bounce-warning 1s ease-in-out infinite;
-    }
-    
-    @keyframes bounce-warning {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-10px); }
-        60% { transform: translateY(-5px); }
-    }
-    
-    .warning-message {
-        font-size: 16px;
-        color: var(--text-primary);
-        margin-bottom: 24px;
-        line-height: 1.5;
-    }
-    
-    .warning-actions {
-        display: flex;
-        justify-content: center;
-    }
-    
-    .warning-btn {
-        padding: 12px 24px;
-        background: var(--warning-color);
-        color: var(--background);
-        border: none;
-        border-radius: var(--border-radius);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .warning-btn:hover {
-        background: color-mix(in srgb, var(--warning-color) 80%, white);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
-    }
-    
-    /* Timer Expired Modal */
-    .timer-expired-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        backdrop-filter: blur(15px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 3001;
-        opacity: 0;
-        transition: all var(--transition-speed) ease;
-    }
-    
-    .timer-expired-modal.active {
-        display: flex;
-        opacity: 1;
-    }
-    
-    .expired-content {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 2px solid var(--danger-color);
-        border-radius: var(--border-radius-xl);
-        padding: 40px;
-        max-width: 500px;
-        text-align: center;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(239, 68, 68, 0.4);
-        transform: scale(0.8);
-        transition: all var(--transition-speed) ease;
-    }
-    
-    .timer-expired-modal.active .expired-content {
-        transform: scale(1);
-    }
-    
-    .expired-icon {
-        font-size: 4rem;
-        color: var(--danger-color);
-        margin-bottom: 20px;
-        animation: rotate-hourglass 3s ease-in-out infinite;
-    }
-    
-    @keyframes rotate-hourglass {
-        0%, 100% { transform: rotate(0deg); }
-        50% { transform: rotate(180deg); }
-    }
-    
-    .expired-content h2 {
-        color: var(--danger-color);
-        font-family: 'Orbitron', sans-serif;
-        font-size: 28px;
-        margin-bottom: 16px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    .expired-message {
-        color: var(--text-primary);
-        margin-bottom: 24px;
-        line-height: 1.6;
-    }
-    
-    .expired-message p {
-        margin-bottom: 8px;
-    }
-    
-    .performance-summary {
-        background: var(--glass-bg-light);
-        border-radius: var(--border-radius);
-        padding: 20px;
-        margin-bottom: 24px;
-        text-align: left;
-    }
-    
-    .summary-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--glass-border);
-    }
-    
-    .summary-item:last-child {
-        border-bottom: none;
-    }
-    
-    .summary-label {
-        color: var(--text-secondary);
-        font-size: 14px;
-    }
-    
-    .summary-value {
-        color: var(--text-primary);
-        font-weight: 600;
-        font-size: 16px;
-    }
-    
-    .expired-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-    }
-    
-    .expired-btn {
-        padding: 14px 28px;
-        border: none;
-        border-radius: var(--border-radius);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 14px;
-    }
-    
-    .expired-btn.primary {
-        background: var(--cyber-glow);
-        color: var(--background);
-    }
-    
-    .expired-btn.primary:hover {
-        background: color-mix(in srgb, var(--cyber-glow) 80%, white);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
-    }
-    
-    .expired-btn.secondary {
-        background: var(--glass-bg-light);
-        color: var(--text-primary);
-        border: 2px solid var(--glass-border);
-    }
-    
-    .expired-btn.secondary:hover {
-        background: var(--glass-bg-hover);
-        border-color: var(--cyber-glow);
-        transform: translateY(-2px);
-    }
-    
-    /* Timer Collaborative Indicators */
-    .collaborative-timer-indicator {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 20px;
-        height: 20px;
-        background: var(--neon-green);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        color: var(--background);
-        font-weight: 600;
-        animation: pulse-collaborative 2s ease-in-out infinite;
-    }
-    
-    @keyframes pulse-collaborative {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.2); opacity: 0.8; }
-    }
-    
-    /* Responsive Design for Timer */
-    @media (max-width: 768px) {
-        .scenario-timer {
-            position: fixed;
-            top: auto;
-            bottom: 120px;
-            right: 10px;
-            left: 10px;
-            width: auto;
-            max-width: none;
-        }
-        
-        .timer-display {
-            flex-direction: row;
-            align-items: center;
-        }
-        
-        .timer-time {
-            font-size: 20px;
-        }
-        
-        .expired-content {
-            padding: 24px;
-            max-width: 90%;
-        }
-        
-        .expired-content h2 {
-            font-size: 24px;
-        }
-        
-        .expired-actions {
-            flex-direction: column;
-        }
-        
-        .expired-btn {
-            width: 100%;
-        }
-    }
-    
-    /* Timer Integration with Existing UI */
-    .collaboration-panel {
-        top: 320px; /* Adjust to avoid timer overlap */
-    }
-    
-    @media (max-width: 1024px) {
-        .collaboration-panel {
-            top: 280px;
-        }
-    }
-
-    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
-    
-    /* Modal Backdrop for Better Visual Hierarchy */
-    .lobby-browser-backdrop {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(2px); /* Reduced blur to prevent stacking */
         z-index: 2000;
         opacity: 0;
-        transition: all var(--transition-speed) ease;
+        transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
+        /* Prevent blur inheritance issues */
+        isolation: isolate;
+        /* Ensure backdrop is always centered and covers canvas area */
+        margin: 0;
+        padding: 0;
     }
 
     .lobby-browser-backdrop.active {
@@ -1478,29 +1178,46 @@
         opacity: 1;
     }
     
-    /* Lobby Browser Modal - Enhanced Centering and Layout */
+    /* Lobby Browser Modal - Enhanced Centering with Fixed Blur */
     .lobby-browser-modal {
-        display: none;
-        position: fixed;
+        /* Perfect centering within canvas container */
+        position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%) scale(0.9);
-        width: 90%;
-        max-width: 1000px;
-        max-height: 85vh;
-        background: rgba(26, 32, 46, 0.98);
-        backdrop-filter: blur(8px);
-        border: 1px solid var(--glass-border);
+        transform: translate(-50%, -50%) scale(0.95);
+        
+        /* Enhanced centering */
+        margin: 0 auto;
+        
+        /* Dimensions and styling */
+        width: 70%;
+        max-width: 800px;
+        max-height: 70vh;
+        background: rgba(15, 23, 42, 0.95); /* More opaque background */
+        border: 2px solid rgba(0, 217, 255, 0.3);
         border-radius: var(--border-radius-xl);
         padding: 0;
+        
+        /* Visibility states */
+        display: none;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 2001;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        
+        /* Enhanced visual effects */
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.6),
+            0 0 40px rgba(0, 217, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         overflow: hidden;
-        /* Enhanced centering and visual hierarchy */
-        display: flex;
+        
+        /* Prevent blur conflicts and ensure crisp content */
+        backdrop-filter: none !important;
+        filter: none !important;
+        isolation: isolate;
+        
+        /* Internal layout */
         flex-direction: column;
         justify-content: flex-start;
         align-items: stretch;
@@ -1514,16 +1231,26 @@
         transform: translate(-50%, -50%) scale(1) !important;
     }
 
+    /* Ensure all modal content is crisp and readable */
+    .lobby-browser-modal * {
+        backdrop-filter: none !important;
+        filter: none !important;
+    }
+
     .lobby-browser-header {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         margin: 0;
-        padding: 32px 32px 24px 32px;
-        border-bottom: 1px solid var(--glass-border);
-        background: rgba(20, 25, 40, 0.3);
+        padding: 24px 24px 18px 24px;
+        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+        background: rgba(10, 15, 35, 0.9); /* More opaque for better readability */
         border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
         position: relative;
+        /* Ensure crisp text rendering */
+        backdrop-filter: none !important;
+        filter: none !important;
+        isolation: isolate;
     }
 
     .lobby-browser-header h2 {
@@ -1533,8 +1260,11 @@
         margin: 0;
         font-size: 24px;
         text-align: center;
-        flex-grow: 1;
         letter-spacing: 0.5px;
+        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        /* Ensure crisp text */
+        backdrop-filter: none !important;
+        filter: none !important;
     }
 
     /* Enhanced close button positioning */
@@ -1571,7 +1301,7 @@
         display: flex;
         gap: 16px;
         justify-content: center;
-        padding: 24px 32px;
+        padding: 20px 24px;
         margin: 0;
         background: rgba(20, 25, 40, 0.2);
         border-bottom: 1px solid var(--glass-border);
@@ -1602,35 +1332,42 @@
 
     .lobby-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
         overflow-y: auto;
-        max-height: 400px;
-        padding: 32px;
+        max-height: 300px;
+        padding: 24px;
         flex-grow: 1;
     }
 
     .lobby-card {
-        background: var(--glass-bg-light);
-        border: 1px solid var(--glass-border);
+        background: rgba(10, 15, 35, 0.8);
+        border: 2px solid rgba(0, 217, 255, 0.2);
         border-radius: var(--border-radius-lg);
-        padding: 24px;
-        transition: all var(--transition-speed) ease;
+        padding: 20px;
+        transition: all 0.3s ease;
         cursor: pointer;
         position: relative;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 180px;
-        /* Enhanced visual hierarchy */
-        backdrop-filter: blur(10px);
+        min-height: 150px;
+        /* Enhanced visual hierarchy with crisp content */
+        backdrop-filter: none !important;
+        filter: none !important;
+        isolation: isolate;
+        /* Better text rendering */
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
     }
 
     .lobby-card:hover {
-        background: var(--glass-bg-hover);
+        background: rgba(5, 10, 25, 0.9);
         border-color: var(--cyber-glow);
-        transform: translateY(-4px);
-        box-shadow: 0 12px 30px rgba(0, 217, 255, 0.3);
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 
+            0 15px 35px rgba(0, 217, 255, 0.4),
+            0 0 25px rgba(0, 217, 255, 0.3);
     }
 
     .lobby-card-header {
@@ -1787,7 +1524,7 @@
         border-radius: 50%;
     }
 
-    /* Create Lobby Modal Backdrop */
+    /* Create Lobby Modal Backdrop - Fixed Blur */
     .create-lobby-modal-backdrop {
         display: none;
         position: fixed;
@@ -1795,11 +1532,12 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(5px); /* Reduced blur on backdrop for better readability */
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(2px); /* Reduced blur to prevent conflicts */
         z-index: 2001;
         opacity: 0;
-        transition: all 0.3s ease;
+        transition: opacity 0.3s ease;
+        isolation: isolate; /* Prevent blur inheritance */
     }
 
     .create-lobby-modal-backdrop.active {
@@ -1807,26 +1545,30 @@
         opacity: 1;
     }
 
-    /* Create Lobby Modal */
+    /* Create Lobby Modal - Enhanced Readability */
     .create-lobby-modal {
         display: none;
         position: fixed;
-        top: 50%;
+        top: 0%;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, calc(5% - 23px));
         width: 500px;
-        background: rgba(26, 32, 46, 0.98); /* Increased opacity for better readability */
-        border: 1px solid var(--glass-border);
+        background: rgba(15, 23, 42, 0.95); /* More opaque for better readability */
+        border: 2px solid rgba(0, 217, 255, 0.3);
         border-radius: var(--border-radius-xl);
         padding: 32px;
         z-index: 2002;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.6), 
+            0 0 40px rgba(0, 217, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         opacity: 0;
         visibility: hidden;
         transition: all 0.3s ease;
-        /* Explicitly remove all blur effects from modal content */
+        /* Remove all blur effects from modal content for crisp text */
         backdrop-filter: none !important;
         filter: none !important;
+        isolation: isolate;
     }
 
     .create-lobby-modal.active {
@@ -1835,6 +1577,16 @@
         visibility: visible !important;
         pointer-events: auto !important;
         flex-direction: column !important;
+    }
+
+    /* Ensure all modal content is crisp and readable */
+    .create-lobby-modal *,
+    .lobby-browser-modal * {
+        backdrop-filter: none !important;
+        filter: none !important;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 
     .create-lobby-modal.active .create-lobby-form {
@@ -1883,25 +1635,28 @@
 
     .form-group input,
     .form-group select {
-        padding: 12px;
-        background: rgba(20, 25, 40, 0.9);
-        border: 1px solid var(--glass-border);
+        padding: 12px 16px;
+        background: rgba(10, 15, 35, 0.9);
+        border: 2px solid rgba(0, 217, 255, 0.2);
         border-radius: var(--border-radius);
         color: var(--text-primary);
         font-size: 14px;
         font-family: inherit;
-        transition: all var(--transition-speed) ease;
+        transition: all 0.3s ease;
         /* Ensure form fields are crisp and readable */
         backdrop-filter: none !important;
         filter: none !important;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
     }
 
     .form-group input:focus,
     .form-group select:focus {
         outline: none;
         border-color: var(--cyber-glow);
-        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-        background: var(--surface);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+        background: rgba(5, 10, 25, 0.95);
+        transform: scale(1.02);
     }
 
     .form-group input::placeholder {
@@ -1948,8 +1703,8 @@
     .collaboration-panel {
         position: fixed;
         right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
+        top: calc(20% - 23px);
+        transform: translateY(-20%);
         width: 300px;
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
@@ -2080,7 +1835,7 @@
             width: 95%;
             max-width: 900px;
             max-height: 90vh;
-            margin: 0 auto;
+            /* Remove conflicting margin - keep transform centering */
         }
         
         .lobby-browser-header {
@@ -2120,7 +1875,7 @@
             width: 95%;
             max-width: 100%;
             max-height: 95vh;
-            margin: 0;
+            /* Ensure perfect centering on mobile */
             border-radius: var(--border-radius-lg);
         }
         
@@ -2371,6 +2126,8 @@
         overflow: hidden;
         min-height: 0;
         height: calc(100vh - 220px); /* Adjusted height calculation */
+        /* Ensure this is a positioning context for absolutely positioned modals */
+        isolation: isolate;
     }
 
     /* Ensure modals appear above sidebar */
@@ -4094,13 +3851,17 @@
     /* Lobby Browser Modal */
     .lobby-browser-modal {
         display: none;
-        position: fixed;
+        position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) scale(0.9);
-        width: 90%;
-        max-width: 1000px;
-        max-height: 80vh;
+        
+        /* Enhanced centering */
+        margin: 0 auto;
+        
+        width: 70%;
+        max-width: 800px;
+        max-height: 70vh;
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
@@ -4514,38 +4275,6 @@
             </div>
         </div>
 
-        <!-- ===== COLLABORATIVE TROUBLESHOOTING MODALS ===== -->
-        
-        <!-- Lobby Browser Modal Backdrop -->
-        <div id="lobbyBrowserBackdrop" class="lobby-browser-backdrop" onclick="closeLobbyBrowser()"></div>
-        
-        <!-- Lobby Browser Modal -->
-        <div id="lobbyBrowserModal" class="lobby-browser-modal collaboration-feature">
-            <div class="lobby-browser-header">
-                <h2>Join Collaborative Session</h2>
-                <button class="profile-exit-btn" onclick="closeLobbyBrowser()">
-                    <i class="bx bx-x"></i>
-                </button>
-            </div>
-            
-            <div class="modal-buttons" style="margin-bottom: 20px;">
-                <button class="action-btn" onclick="showCreateLobby()">
-                    <i class="bx bx-plus"></i>
-                    <span class="label">Create Session</span>
-                </button>
-            </div>
-            
-            <div id="lobbyGrid" class="lobby-grid">
-                <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
-                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                        <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
-                        <p>No active sessions found</p>
-                        <p style="font-size: 14px;">Create a new session to start collaborating!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Create Lobby Modal Backdrop -->
         <div id="createLobbyModalBackdrop" class="create-lobby-modal-backdrop" onclick="closeCreateLobby()"></div>
 
@@ -4633,80 +4362,45 @@
             <span>Not connected</span>
         </div>
 
-        <!-- Scenario Timer UI -->
-        <div id="scenario-timer" class="scenario-timer">
-            <div class="timer-display">
-                <div class="timer-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="timer-content">
-                    <div class="timer-time" id="timer-display">
-                        <span class="minutes">00</span>:<span class="seconds">00</span>
-                    </div>
-                    <div class="timer-label">Time Remaining</div>
-                </div>
-                <div class="timer-controls">
-                    <button class="timer-btn pause-btn" id="pause-timer-btn" title="Pause Timer">
-                        <i class="fas fa-pause"></i>
-                    </button>
-                    <button class="timer-btn resume-btn" id="resume-timer-btn" title="Resume Timer" style="display: none;">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="timer-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="timer-progress"></div>
-                </div>
-                <div class="timer-status" id="timer-status">Ready</div>
-            </div>
-        </div>
 
-        <!-- Timer Warning Modal -->
-        <div id="timer-warning-modal" class="timer-warning-modal">
-            <div class="warning-content">
-                <div class="warning-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="warning-message" id="warning-message">
-                    Warning message here
-                </div>
-                <div class="warning-actions">
-                    <button class="warning-btn acknowledge-btn" onclick="acknowledgeWarning()">
-                        Got it!
-                    </button>
-                </div>
-            </div>
-        </div>
 
-        <!-- Timer Expired Modal -->
-        <div id="timer-expired-modal" class="timer-expired-modal">
-            <div class="expired-content">
-                <div class="expired-icon">
-                    <i class="fas fa-hourglass-end"></i>
-                </div>
-                <h2>Time's Up!</h2>
-                <div class="expired-message">
-                    <p>The time limit for this scenario has been reached.</p>
-                    <p>Your progress has been automatically submitted.</p>
-                </div>
-                <div class="performance-summary" id="performance-summary">
-                    <!-- Performance data will be populated here -->
-                </div>
-                <div class="expired-actions">
-                    <button class="expired-btn primary" onclick="viewResults()">
-                        View Results
-                    </button>
-                    <button class="expired-btn secondary" onclick="retryScenario()">
-                        Try Again
-                    </button>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Main Canvas -->
         <div id="canvas-container">
             <canvas id="Canvas"></canvas>
+            
+            <!-- ===== COLLABORATIVE TROUBLESHOOTING MODALS ===== -->
+            
+            <!-- Lobby Browser Modal Backdrop -->
+            <div id="lobbyBrowserBackdrop" class="lobby-browser-backdrop" onclick="closeLobbyBrowser()"></div>
+            
+            <!-- Lobby Browser Modal -->
+            <div id="lobbyBrowserModal" class="lobby-browser-modal collaboration-feature">
+                <div class="lobby-browser-header">
+                    <h2>Join Collaborative Session</h2>
+                    <button class="profile-exit-btn" onclick="closeLobbyBrowser()">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-buttons" style="margin-bottom: 20px;">
+                    <button class="action-btn" onclick="showCreateLobby()">
+                        <i class="bx bx-plus"></i>
+                        <span class="label">Create Session</span>
+                    </button>
+                </div>
+                
+                <div id="lobbyGrid" class="lobby-grid">
+                    <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <p>No active sessions found</p>
+                            <p style="font-size: 14px;">Create a new session to start collaborating!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
@@ -4836,6 +4530,23 @@
                     </div>
                 </div>
 
+                <!-- Timer Status -->
+                <div class="feedback-section" id="timer-status-section" style="display: none;">
+                    <h4><i class="bx bx-stopwatch"></i> Session Timer</h4>
+                    <div class="timer-status-display">
+                        <div class="timer-main-display" id="timer-display">
+                            <span class="minutes">00</span>:<span class="seconds">00</span>
+                        </div>
+                        <div class="timer-label" id="timer-label">Time Remaining</div>
+                        <div class="timer-progress-bar">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="timer-progress"></div>
+                            </div>
+                        </div>
+                        <div class="timer-status" id="timer-status">Ready</div>
+                    </div>
+                </div>
+
                 <!-- Live Hints -->
                 <div class="feedback-section">
                     <h4><i class="bx bx-bulb"></i> Smart Hints</h4>
@@ -4853,11 +4564,19 @@
                 <div class="feedback-section">
                     <h4><i class="bx bx-trending-up"></i> Metrics</h4>
                     <div class="metrics-grid">
-                        <div class="metric-card">
+                        <div class="metric-card primary-timer">
                             <i class="bx bx-timer metric-icon"></i>
                             <div class="metric-content">
                                 <span class="metric-value" id="time-spent">0:00</span>
                                 <span class="metric-label">Time</span>
+                            </div>
+                            <div class="timer-controls">
+                                <button class="timer-btn pause-btn" id="pause-timer-btn" title="Pause Timer">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                <button class="timer-btn resume-btn" id="resume-timer-btn" title="Resume Timer" style="display: none;">
+                                    <i class="fas fa-play"></i>
+                                </button>
                             </div>
                         </div>
                         <div class="metric-card">
@@ -5643,6 +5362,8 @@
                 let iconClass = 'bx-info-circle';
                 if (type === 'success') iconClass = 'bx-check-circle';
                 else if (type === 'warning') iconClass = 'bx-error-circle';
+                else if (type === 'critical') iconClass = 'bx-error';
+                else if (type === 'expired') iconClass = 'bx-time';
                 else if (type === 'tip') iconClass = 'bx-bulb';
                 else if (type === 'config') iconClass = 'bx-cog';
                 else if (type === 'welcome') iconClass = 'bx-star';
@@ -5654,12 +5375,14 @@
                 
                 hintsContainer.appendChild(hintElement);
                 
-                // Auto-remove hint after 30 seconds
-                setTimeout(() => {
-                    if (hintElement.parentNode) {
-                        hintElement.remove();
-                    }
-                }, 30000);
+                // Auto-remove hint after 30 seconds (except for critical/expired messages)
+                if (type !== 'critical' && type !== 'expired') {
+                    setTimeout(() => {
+                        if (hintElement.parentNode) {
+                            hintElement.remove();
+                        }
+                    }, 30000);
+                }
             }
 
             addInitialHint() {
@@ -6146,6 +5869,49 @@
                 setTimeout(() => {
                     this.sidebar.classList.remove('flash');
                 }, 2000);
+            }
+
+            showFinalResults(results) {
+                // Update the performance sidebar to show final results
+                console.log('📊 Showing final results:', results);
+                
+                // Update current score with final values
+                const scoreElement = document.getElementById('current-score');
+                if (scoreElement) {
+                    scoreElement.textContent = results.score || 0;
+                }
+                
+                // Update progress ring with final completion
+                this.updateProgressRing(results.completion || 0);
+                
+                // Update progress status
+                const progressStatus = document.getElementById('progress-status');
+                if (progressStatus) {
+                    if (results.timeExpired) {
+                        progressStatus.textContent = 'Time Expired';
+                        progressStatus.style.color = 'var(--danger-color)';
+                    } else {
+                        progressStatus.textContent = 'Completed';
+                        progressStatus.style.color = 'var(--success-color)';
+                    }
+                }
+                
+                // Show completion message
+                const completionMessage = results.timeExpired ? 
+                    'Session ended due to time limit' : 
+                    'Congratulations! Session completed successfully';
+                
+                this.addHint(completionMessage, results.timeExpired ? 'expired' : 'success');
+                
+                // Update timer status section to show final time
+                const timerSection = document.getElementById('timer-status-section');
+                if (timerSection) {
+                    timerSection.style.display = 'block';
+                    const timerLabel = document.getElementById('timer-label');
+                    if (timerLabel) {
+                        timerLabel.textContent = 'Final Time';
+                    }
+                }
             }
             
             // External integration methods
@@ -8099,14 +7865,27 @@
                 return;
             }
             
-            // Show backdrop first
+            // Clear any existing styles that might interfere
+            document.body.style.filter = 'none';
+            document.body.style.backdropFilter = 'none';
+            
+            // Show backdrop first with proper isolation
             if (backdrop) {
+                backdrop.style.display = 'block';
                 backdrop.classList.add('active');
+                console.log('✅ Backdrop shown with proper isolation');
             }
             
+            // Show modal with enhanced visibility
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.opacity = '1';
+            modal.style.visibility = 'visible';
+            modal.style.pointerEvents = 'auto';
             modal.classList.add('active');
+            
             lobbyBrowserOpen = true;
-            console.log('✅ Modal opened successfully');
+            console.log('✅ Modal opened successfully with enhanced visibility');
             
             // Join lobby browser room and set up auto-refresh
             console.log('🌐 Joining lobby browser room...');
@@ -8115,7 +7894,7 @@
                 refreshLobbies();
                 console.log('✅ Successfully joined lobby browser and refreshed lobbies');
                 
-                // Set up automatic refresh every 15 seconds while browser is open
+                // Set up automatic refresh every 60 seconds while browser is open
                 if (lobbyRefreshInterval) {
                     clearInterval(lobbyRefreshInterval);
                 }
@@ -8124,7 +7903,7 @@
                         console.log('🔄 Auto-refreshing lobby list...');
                         refreshLobbies();
                     }
-                }, 60000); // 60 seconds (reduced from 15 seconds)
+                }, 60000); // 60 seconds
                 
             } catch (error) {
                 console.error('❌ Error joining lobby browser:', error);
@@ -8207,11 +7986,20 @@
             
             if (modal) {
                 modal.classList.remove('active');
+                modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+                modal.style.pointerEvents = 'none';
             }
             
             if (backdrop) {
                 backdrop.classList.remove('active');
+                backdrop.style.display = 'none';
             }
+            
+            // Clear any global filter effects
+            document.body.style.filter = '';
+            document.body.style.backdropFilter = '';
             
             // Clear auto-refresh interval
             if (lobbyRefreshInterval) {
@@ -8226,6 +8014,8 @@
             if (window.socketClient) {
                 window.socketClient.leaveLobbyBrowser();
             }
+            
+            console.log('✅ Lobby browser closed with proper cleanup');
         }
 
         function showCreateLobby() {
@@ -8929,12 +8719,8 @@
                     if (data.success) {
                         currentLobby = data.lobby;
                         
-                        // Close lobby browser modal
-                        const lobbyBrowserModal = document.getElementById('lobbyBrowserModal');
-                        if (lobbyBrowserModal) {
-                            lobbyBrowserModal.classList.remove('active');
-                            lobbyBrowserModal.style.display = 'none';
-                        }
+                        // Close lobby browser modal and backdrop completely
+                        closeLobbyBrowser();
                         
                         // Show collaboration panel
                         const collaborationPanel = document.getElementById('collaborationPanel');
@@ -10076,15 +9862,15 @@
         let timerInterval = null;
         let timerUpdateInterval = null;
 
-        // Timer UI Elements
-        const timerContainer = document.getElementById('scenario-timer');
+        // Timer UI Elements - Integrated in performance sidebar
+        const timerSection = document.getElementById('timer-status-section');
         const timerDisplay = document.getElementById('timer-display');
         const timerStatus = document.getElementById('timer-status');
         const timerProgress = document.getElementById('timer-progress');
+        const timerLabel = document.getElementById('timer-label');
         const pauseBtn = document.getElementById('pause-timer-btn');
         const resumeBtn = document.getElementById('resume-timer-btn');
-        const warningModal = document.getElementById('timer-warning-modal');
-        const expiredModal = document.getElementById('timer-expired-modal');
+        const timeSpentElement = document.getElementById('time-spent');
 
         // Timer Management Functions
         function initializeTimer(config) {
@@ -10104,9 +9890,22 @@
                 }
             };
 
-            // Show timer UI
-            if (timerContainer) {
-                timerContainer.classList.add('active');
+            // Show timer section in performance sidebar
+            if (timerSection) {
+                timerSection.style.display = 'block';
+                
+                // Update timer label based on config
+                if (timerLabel) {
+                    timerLabel.textContent = config.timeLimit ? 'Time Remaining' : 'Time Elapsed';
+                }
+                
+                // Initialize timer display
+                updateTimerDisplay();
+                
+                // Show performance sidebar if not already visible
+                if (window.performanceFeedback && !window.performanceFeedback.isVisible) {
+                    window.performanceFeedback.showSidebar();
+                }
             }
 
             // Start timer via WebSocket
@@ -10140,7 +9939,7 @@
         }
 
         function updateTimerDisplay() {
-            if (!scenarioTimer.isActive || !timerDisplay) return;
+            if (!scenarioTimer.isActive) return;
 
             if (scenarioTimer.isPaused) {
                 // Don't update when paused
@@ -10149,45 +9948,72 @@
 
             const now = new Date();
             const elapsed = Math.floor((now - scenarioTimer.startTime) / 1000);
-            scenarioTimer.remaining = Math.max(0, scenarioTimer.timeLimit - elapsed);
+            
+            if (scenarioTimer.timeLimit > 0) {
+                // Countdown timer
+                scenarioTimer.remaining = Math.max(0, scenarioTimer.timeLimit - elapsed);
+                
+                // Update main timer display
+                const minutes = Math.floor(scenarioTimer.remaining / 60);
+                const seconds = scenarioTimer.remaining % 60;
 
-            // Update display
-            const minutes = Math.floor(scenarioTimer.remaining / 60);
-            const seconds = scenarioTimer.remaining % 60;
+                const minutesSpan = timerDisplay?.querySelector('.minutes');
+                const secondsSpan = timerDisplay?.querySelector('.seconds');
 
-            const minutesSpan = timerDisplay.querySelector('.minutes');
-            const secondsSpan = timerDisplay.querySelector('.seconds');
-
-            if (minutesSpan && secondsSpan) {
-                minutesSpan.textContent = minutes.toString().padStart(2, '0');
-                secondsSpan.textContent = seconds.toString().padStart(2, '0');
-            }
-
-            // Update progress bar
-            if (timerProgress) {
-                const progressPercentage = (scenarioTimer.remaining / scenarioTimer.timeLimit) * 100;
-                timerProgress.style.width = `${progressPercentage}%`;
-
-                // Update progress bar color based on remaining time
-                timerProgress.classList.remove('warning', 'critical');
-                if (scenarioTimer.remaining <= 60) {
-                    timerProgress.classList.add('critical');
-                } else if (scenarioTimer.remaining <= 300) {
-                    timerProgress.classList.add('warning');
+                if (minutesSpan && secondsSpan) {
+                    minutesSpan.textContent = minutes.toString().padStart(2, '0');
+                    secondsSpan.textContent = seconds.toString().padStart(2, '0');
                 }
-            }
 
-            // Update timer container styling
-            if (timerContainer) {
-                timerContainer.classList.remove('warning', 'critical');
-                if (scenarioTimer.remaining <= 60) {
-                    timerContainer.classList.add('critical');
-                    timerDisplay.classList.add('critical');
-                } else if (scenarioTimer.remaining <= 300) {
-                    timerContainer.classList.add('warning');
-                    timerDisplay.classList.add('warning');
-                } else {
+                // Update time spent metric
+                if (timeSpentElement) {
+                    const elapsedMinutes = Math.floor(elapsed / 60);
+                    const elapsedSeconds = elapsed % 60;
+                    timeSpentElement.textContent = `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')}`;
+                }
+
+                // Update progress bar
+                if (timerProgress) {
+                    const progressPercentage = (scenarioTimer.remaining / scenarioTimer.timeLimit) * 100;
+                    timerProgress.style.width = `${progressPercentage}%`;
+
+                    // Update progress bar color based on remaining time
+                    timerProgress.classList.remove('warning', 'critical');
+                    if (scenarioTimer.remaining <= 60) {
+                        timerProgress.classList.add('critical');
+                    } else if (scenarioTimer.remaining <= 300) {
+                        timerProgress.classList.add('warning');
+                    }
+                }
+
+                // Update timer display styling
+                if (timerDisplay) {
                     timerDisplay.classList.remove('warning', 'critical');
+                    if (scenarioTimer.remaining <= 60) {
+                        timerDisplay.classList.add('critical');
+                    } else if (scenarioTimer.remaining <= 300) {
+                        timerDisplay.classList.add('warning');
+                    }
+                }
+            } else {
+                // Count-up timer (stopwatch mode)
+                if (timeSpentElement) {
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    timeSpentElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                // Also update main timer display if visible
+                if (timerDisplay) {
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    const minutesSpan = timerDisplay.querySelector('.minutes');
+                    const secondsSpan = timerDisplay.querySelector('.seconds');
+
+                    if (minutesSpan && secondsSpan) {
+                        minutesSpan.textContent = minutes.toString().padStart(2, '0');
+                        secondsSpan.textContent = seconds.toString().padStart(2, '0');
+                    }
                 }
             }
         }
@@ -10255,40 +10081,40 @@
         }
 
         function showTimerWarning(type, remainingSeconds) {
-            if (!warningModal) return;
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
 
-            const warningMessage = document.getElementById('warning-message');
-            if (warningMessage) {
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
-
-                let message = '';
-                switch (type) {
-                    case '5_minute_warning':
-                        message = `⚠️ Only 5 minutes remaining! Please review your progress.`;
-                        break;
-                    case '1_minute_warning':
-                        message = `⚠️ Only 1 minute remaining! Consider submitting your solution.`;
-                        break;
-                    case '30_second_warning':
-                        message = `🚨 Only 30 seconds left! The scenario will auto-submit soon.`;
-                        break;
-                    default:
-                        message = `⏰ ${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
-                }
-
-                warningMessage.textContent = message;
+            let message = '';
+            let warningType = 'warning';
+            
+            switch (type) {
+                case '5_minute_warning':
+                    message = `⚠️ Only 5 minutes remaining! Please review your progress.`;
+                    warningType = 'warning';
+                    break;
+                case '1_minute_warning':
+                    message = `⚠️ Only 1 minute remaining! Consider submitting your solution.`;
+                    warningType = 'warning';
+                    break;
+                case '30_second_warning':
+                    message = `🚨 Only 30 seconds left! The scenario will auto-submit soon.`;
+                    warningType = 'critical';
+                    break;
+                default:
+                    message = `⏰ ${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                    warningType = 'info';
             }
 
-            // Show modal
-            warningModal.classList.add('active');
+            // Show warning in the live performance sidebar hints section
+            if (window.performanceFeedback) {
+                window.performanceFeedback.addHint(message, warningType);
+            }
 
-            // Auto-hide warning after 5 seconds
-            setTimeout(() => {
-                if (warningModal.classList.contains('active')) {
-                    warningModal.classList.remove('active');
-                }
-            }, 5000);
+            // Also update timer status to show warning
+            if (timerStatus) {
+                timerStatus.textContent = `WARNING: ${Math.floor(remainingSeconds / 60)}:${(remainingSeconds % 60).toString().padStart(2, '0')} LEFT`;
+                timerStatus.classList.add('warning');
+            }
 
             // Acknowledge warning with server
             if (window.socketClient && scenarioTimer.id) {
@@ -10301,33 +10127,34 @@
         }
 
         function showTimerExpiredModal() {
-            if (!expiredModal) return;
+            // Instead of showing a modal, update the live performance section
+            console.log('⏰ Timer expired - updating performance section');
 
-            // Populate performance summary
-            const performanceSummary = document.getElementById('performance-summary');
-            if (performanceSummary) {
-                const progress = getCurrentProgress();
-                performanceSummary.innerHTML = `
-                    <div class="summary-item">
-                        <span class="summary-label">Time Taken:</span>
-                        <span class="summary-value">${formatTime(scenarioTimer.timeLimit)}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Completion:</span>
-                        <span class="summary-value">${progress.completion_percentage}%</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Current Score:</span>
-                        <span class="summary-value">${progress.current_score}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Time Bonus:</span>
-                        <span class="summary-value">0 (Expired)</span>
-                    </div>
-                `;
+            // Update timer status in sidebar
+            if (timerStatus) {
+                timerStatus.textContent = 'EXPIRED';
+                timerStatus.classList.add('expired');
             }
 
-            expiredModal.classList.add('active');
+            // Show expiration message in hints section
+            if (window.performanceFeedback) {
+                const progress = getCurrentProgress();
+                const message = `🕐 Time's up! Your progress has been automatically submitted. Completion: ${progress.completion_percentage}%, Score: ${progress.current_score}`;
+                window.performanceFeedback.addHint(message, 'expired');
+                
+                // Update the performance sidebar to show final results
+                window.performanceFeedback.showFinalResults({
+                    timeExpired: true,
+                    completion: progress.completion_percentage,
+                    score: progress.current_score,
+                    timeBonus: 0
+                });
+            }
+
+            // Show a brief notification instead of blocking modal
+            if (typeof showNotification === 'function') {
+                showNotification('Time Expired', 'Your progress has been automatically submitted', 'warning');
+            }
         }
 
         function pauseTimer() {
@@ -10392,15 +10219,20 @@
                 clearInterval(timerUpdateInterval);
             }
 
-            // Update UI
+            // Update UI in performance sidebar
             if (timerStatus) {
                 timerStatus.textContent = 'COMPLETED';
                 timerStatus.classList.add('completed');
             }
 
-            // Hide timer
-            if (timerContainer) {
-                timerContainer.classList.remove('active');
+            // Show final results in performance sidebar
+            if (window.performanceFeedback) {
+                window.performanceFeedback.showFinalResults({
+                    timeExpired: false,
+                    completion: completionPercentage,
+                    score: finalScore,
+                    timeBonus: calculateTimeBonus()
+                });
             }
 
             // Notify server
@@ -10412,6 +10244,17 @@
                     solution_data: getCurrentSolutionData()
                 });
             }
+        }
+
+        function calculateTimeBonus() {
+            if (!scenarioTimer.timeLimit || scenarioTimer.remaining <= 0) {
+                return 0;
+            }
+            
+            // Calculate bonus based on remaining time (max 20% bonus)
+            const timeUsedPercentage = (scenarioTimer.timeLimit - scenarioTimer.remaining) / scenarioTimer.timeLimit;
+            const bonus = Math.max(0, (1 - timeUsedPercentage) * 20);
+            return Math.round(bonus);
         }
 
         function autoSubmitScenario() {
@@ -10629,14 +10472,142 @@
 
         // Integration with Existing Scenario System
         function enhanceScenarioWithTimer() {
-            console.log('🔧 Enhancing scenario system with timer integration');
+            console.log('🔧 Enhancing scenario system with integrated timer and performance feedback');
 
-            // Override existing startScenario function to include timer
+            // Override existing startScenario function to include timer and performance tracking
             const originalStartScenario = window.startScenario;
             if (originalStartScenario) {
                 window.startScenario = function(difficulty, problemType) {
                     // Call original function
                     originalStartScenario.call(this, difficulty, problemType);
+                    
+                    // Initialize timer based on difficulty
+                    const timerConfig = getTimerConfigForDifficulty(difficulty);
+                    initializeTimer(timerConfig);
+                    
+                    // Show performance sidebar with timer
+                    setTimeout(() => {
+                        if (window.performanceFeedback && !window.performanceFeedback.isVisible) {
+                            window.performanceFeedback.showSidebar();
+                            const timeMsg = timerConfig.timeLimit ? 
+                                `You have ${Math.floor(timerConfig.timeLimit / 60)} minutes to complete this ${difficulty} scenario` :
+                                'Take your time - this is practice mode';
+                            window.performanceFeedback.addHint(timeMsg, 'info');
+                        }
+                    }, 1000);
+                };
+            }
+
+            // Override existing resetScenarios function to reset timer
+            const originalResetScenarios = window.resetScenarios;
+            if (originalResetScenarios) {
+                window.resetScenarios = function() {
+                    // Reset timer first
+                    resetTimer();
+                    // Call original function
+                    originalResetScenarios.call(this);
+                    
+                    // Reset performance tracking
+                    if (window.performanceFeedback) {
+                        window.performanceFeedback.resetSession();
+                    }
+                };
+            }
+
+            // Enhance solution checking for timer integration
+            const originalCheckSolution = window.checkSolution;
+            if (originalCheckSolution) {
+                window.checkSolution = function(scenario, autoSubmit = false) {
+                    console.log('🔍 Checking solution with timer integration');
+                    
+                    // Run original solution check
+                    const result = originalCheckSolution.call(this, scenario);
+                    
+                    if (result || autoSubmit) {
+                        // Calculate final score and completion percentage
+                        const progress = getCurrentProgress();
+                        const timeBonus = calculateTimeBonus();
+                        const finalScore = autoSubmit ? progress.current_score : Math.min(100, progress.current_score + timeBonus);
+                        
+                        completeScenario(finalScore, progress.completion_percentage);
+                    }
+                    
+                    return result;
+                };
+            }
+
+            // Initialize stopwatch mode for general troubleshooting
+            if (!scenarioTimer.isActive) {
+                initializeTimer({
+                    timeLimit: 0, // No time limit - stopwatch mode
+                    difficulty: 'medium',
+                    scenarioType: 'troubleshooting',
+                    scenarioId: 'general-troubleshooting'
+                });
+            }
+        }
+
+        function getTimerConfigForDifficulty(difficulty) {
+            const configs = {
+                'easy': { timeLimit: 20 * 60, difficulty: 'easy' },    // 20 minutes
+                'medium': { timeLimit: 15 * 60, difficulty: 'medium' }, // 15 minutes
+                'hard': { timeLimit: 10 * 60, difficulty: 'hard' }     // 10 minutes
+            };
+            
+            return {
+                ...configs[difficulty] || configs['medium'],
+                scenarioType: 'troubleshooting',
+                scenarioId: `troubleshooting-${difficulty}`
+            };
+        }
+
+        function resetTimer() {
+            console.log('🔄 Resetting timer');
+            
+            // Clear intervals
+            if (timerUpdateInterval) {
+                clearInterval(timerUpdateInterval);
+                timerUpdateInterval = null;
+            }
+
+            // Reset timer state
+            scenarioTimer.isActive = false;
+            scenarioTimer.isPaused = false;
+            scenarioTimer.remaining = 0;
+            
+            // Hide timer section
+            if (timerSection) {
+                timerSection.style.display = 'none';
+            }
+            
+            // Reset time spent display
+            if (timeSpentElement) {
+                timeSpentElement.textContent = '0:00';
+            }
+            
+            // Reset timer display
+            if (timerDisplay) {
+                const minutesSpan = timerDisplay.querySelector('.minutes');
+                const secondsSpan = timerDisplay.querySelector('.seconds');
+                if (minutesSpan && secondsSpan) {
+                    minutesSpan.textContent = '00';
+                    secondsSpan.textContent = '00';
+                }
+                timerDisplay.classList.remove('warning', 'critical');
+            }
+            
+            // Reset progress bar
+            if (timerProgress) {
+                timerProgress.style.width = '100%';
+                timerProgress.classList.remove('warning', 'critical');
+            }
+            
+            // Update status
+            if (timerStatus) {
+                timerStatus.textContent = 'Ready';
+                timerStatus.classList.remove('paused', 'expired');
+            }
+        }
 
                     // Start timer after scenario setup
                     setTimeout(() => {

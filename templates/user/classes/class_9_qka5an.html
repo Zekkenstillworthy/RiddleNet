@@ -2,12 +2,13 @@
 {% if user_context and user_context.get('is_admin') %}
 {% extends "admin/base.html" %}
 {% else %}
-{% extends "user/base.html" %}
+{% extends "user/learning_base.html" %}
 {% endif %}
 
 {% block title %}Networking 2 - Learning Portal{% endblock %}
 
-{% block extra_css %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user/learning_class_common.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/user/dynamic_class.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/user/class_integration.css') }}">
 <style>
@@ -237,7 +238,30 @@
 {% endblock %}
 
 {% block content %}
-<div class="class-portal">
+<div class="page-container">
+  <div class="learning-container">
+    <!-- Header Section -->
+    <div class="learning-header">
+      <div>
+        <h1 class="page-title">Networking 2 - Class QKA5AN</h1>
+        <p class="page-subtitle">Interactive Class Portal & Learning Environment</p>
+      </div>
+      <div class="course-navigation">
+        <a href="{{ url_for('user.networking2_simulations') }}" class="course-nav-btn" style="margin-right: 16px; background: linear-gradient(135deg, #ff6b6b, #4ecdc4);">
+          <i class="fas fa-play-circle"></i>
+          <span>Interactive Simulations</span>
+          <small>Practice with Live Demos</small>
+        </a>
+        <a href="{{ url_for('user.learning_networking2') }}" class="course-nav-btn">
+          <i class="fas fa-book-open"></i>
+          <span>Full Learning Path</span>
+          <small>Complete Course Materials</small>
+        </a>
+      </div>
+    </div>
+
+    <!-- Class Content -->
+    <div class="class-portal">
   <!-- Class Header -->
   <div class="class-header">
     <h1 class="class-title">Networking 2</h1>
@@ -389,6 +413,7 @@
       <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 2rem; margin-top: 2rem;">
         <canvas id="progressChart" width="400" height="200"></canvas>
       </div>
+    </div>
     </div>
   </div>
 </div>
