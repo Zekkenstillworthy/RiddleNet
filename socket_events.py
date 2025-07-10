@@ -213,15 +213,65 @@ def handle_send_notification(data):
         emit('error', {'message': 'Unauthorized: Admin access required'})
         return
     
-    target_user = data.get('target_user')
-    title = data.get('title', 'Notification')
-    message = data.get('message', '')
-    notification_type = data.get('type', 'info')
-    
-    notification_data = {
-        'title': title,
-        'message': message,
-        'type': notification_type,
+    # Use the new notification service for enhanced notifications
+    try:
+        from services.notification_service import get_notification_service, NotificationType, NotificationPriority, NotificationChannel
+        notification_service = get_notification_service(socketio)
+        
+        target_user = data.get('target_user')
+        title = data.get('title', 'Notification')
+        message = data.get('message', '')
+        notification_type = NotificationType(data.get('notification_type', 'admin_notice'))
+        priority = NotificationPriority(data.get('priority', 'normal'))
+        channel = NotificationChannel(data.get('channel', 'websocket'))
+        
+        if target_user == 'all':
+            # Send to all users
+            result = notification_service.send_system_announcement(
+                title=title,
+                message=message,
+                priority=priority
+            )
+        elif target_user == 'admins':
+            # Send to all admins
+            result = notification_service.send_admin_notification(
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                priority=priority
+            )
+        else:
+            # Send to specific user
+            try:
+                user_id = int(target_user)
+                result = notification_service.send_user_notification(
+                    user_id=user_id,
+                    notification_type=notification_type,
+                    title=title,
+                    message=message,
+                    priority=priority,
+                    channel=channel
+                )
+            except (ValueError, TypeError):
+                emit('error', {'message': 'Invalid user ID'})
+                return
+        
+        # Send result back to admin
+        emit('notification_sent', result)
+        
+    except Exception as e:
+        print(f"Enhanced notification failed, falling back to legacy: {e}")
+        
+        # Fallback to legacy notification system
+        target_user = data.get('target_user')
+        title = data.get('title', 'Notification')
+        message = data.get('message', '')
+        notification_type = data.get('type', 'info')
+        
+        notification_data = {
+            'title': title,
+            'message': message,
+            'type': notification_type,
         'from_admin': True,
         'admin_name': getattr(current_user, 'username', 'Admin'),
         'timestamp': datetime.utcnow().isoformat()

@@ -866,21 +866,47 @@ def login():
     try:
         socketio = get_socketio()
         if socketio:
-            # Notify admin of successful login
-            socketio.emit('user_login_activity', {
-                'user_id': user.id,
-                'username': username,
-                'action': 'login_successful',
-                'email': user.email,
-                'timestamp': datetime.utcnow().isoformat(),
-                'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
-                'user_agent': request.headers.get('User-Agent', 'unknown')
-            }, room='admin_room')
-            
-            # Send welcome notification to user's personal room
-            socketio.emit('login_success', {
-                'status': 'success',
-                'message': f'Welcome back, {username}!',
+            # Send enhanced notification using new service
+            try:
+                from services.notification_service import get_notification_service, NotificationType, NotificationPriority
+                notification_service = get_notification_service(socketio)
+                
+                # Send welcome notification to user
+                notification_service.send_user_notification(
+                    user_id=user.id,
+                    notification_type=NotificationType.LOGIN_ACTIVITY,
+                    title="Welcome Back!",
+                    message=f"Successfully logged in to RiddleNet at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
+                    priority=NotificationPriority.LOW
+                )
+                
+                # Send admin notification for high-value accounts or security alerts
+                if hasattr(user, 'is_admin') and user.is_admin:
+                    notification_service.send_admin_notification(
+                        notification_type=NotificationType.SECURITY_ALERT,
+                        title="Admin Login Detected",
+                        message=f"Admin user {username} logged in from {request.environ.get('REMOTE_ADDR', 'unknown')}",
+                        priority=NotificationPriority.HIGH
+                    )
+            except Exception as enhanced_error:
+                print(f"Enhanced notification failed, using legacy: {enhanced_error}")
+                
+                # Fallback to legacy notifications
+                # Notify admin of successful login
+                socketio.emit('user_login_activity', {
+                    'user_id': user.id,
+                    'username': username,
+                    'action': 'login_successful',
+                    'email': user.email,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
+                    'user_agent': request.headers.get('User-Agent', 'unknown')
+                }, room='admin_room')
+                
+                # Send welcome notification to user's personal room
+                socketio.emit('login_success', {
+                    'status': 'success',
+                    'message': f'Welcome back, {username}!',
                 'timestamp': datetime.utcnow().isoformat()
             }, room=f'user_{user.id}')
             
