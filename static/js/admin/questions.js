@@ -159,7 +159,7 @@ function addMatchingPair(container) {
 
 // Question Group Management
 function viewQuestionGroup(groupId, groupName, groupDescription) {
-    fetch(`/admin/questions/group/${groupId}`)
+    fetch(`/admin/groups/api/${groupId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -243,7 +243,7 @@ function editQuestionGroup(groupId, groupName, groupDescription) {
 function deleteQuestionGroup(groupId, groupName) {
     console.log('Requesting deletion of question group:', groupName, 'ID:', groupId);
     
-    fetch(`/admin/questions/group/${groupId}`, {
+    fetch(`/admin/groups/api/delete/${groupId}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
@@ -285,25 +285,30 @@ function loadUngroupedQuestions() {
         const category = categoryFilter.value;
         const url = category === 'all' ? '/admin/questions/ungrouped?format=json' : `/admin/questions/ungrouped?category=${category}&format=json`;
         
-        container.innerHTML = '<div class="loading-spinner" style="text-align: center; color: var(--text-muted); padding: 40px;">Loading ungrouped questions...</div>';
+        console.log('Loading ungrouped questions from:', url);
+        container.innerHTML = '<div class="loading-spinner" style="text-align: center; color: rgba(255, 255, 255, 0.6); padding: 40px;">Loading ungrouped questions...</div>';
         
         fetch(url)
             .then(response => {
+                console.log('Response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('Received data:', data);
                 if (data.success) {
+                    console.log('Number of questions:', data.questions.length);
                     displayUngroupedQuestions(data.questions);
                 } else {
-                    container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Error loading questions</p>';
+                    console.error('API returned success: false', data);
+                    container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 40px;">Error loading questions</p>';
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">Error loading questions. Please try again.</p>';
+                console.error('Error loading ungrouped questions:', error);
+                container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 40px;">Error loading questions. Please try again.</p>';
             });
     }
     
@@ -312,32 +317,40 @@ function loadUngroupedQuestions() {
 }
 
 function displayUngroupedQuestions(questions) {
+    console.log('Displaying questions in UI:', questions);
     const container = document.getElementById('main-ungrouped-container');
     
     if (questions.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px;">No ungrouped questions found for this category.</p>';
+        container.innerHTML = '<p style="color: rgba(255, 255, 255, 0.6); text-align: center; padding: 40px;">No ungrouped questions found for this category.</p>';
         return;
     }
     
-    container.innerHTML = questions.map(q => `
-        <div class="question-item" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: start; gap: 12px;">
-            <input type="checkbox" class="question-checkbox" value="${q.id}" style="margin-top: 4px;">
-            <div style="flex: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                    <h4 style="color: var(--text-primary); margin: 0;">Question ${q.numb}</h4>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-small" onclick="editQuestion(${q.id})">Edit</button>
-                        <button class="btn btn-danger btn-small" onclick="deleteQuestion(${q.id})">Delete</button>
+    console.log('Rendering', questions.length, 'questions');
+    
+    container.innerHTML = questions.map(q => {
+        console.log('Rendering question:', q.id, q.question || q.content);
+        return `
+            <div class="question-item" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: start; gap: 12px;">
+                <input type="checkbox" class="question-checkbox" value="${q.id}" style="margin-top: 4px;">
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <h4 style="color: var(--cyber-glow); margin: 0;">Question ${q.numb || q.id}</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-small" onclick="editQuestion(${q.id})" style="background: var(--gradient-primary); font-size: 0.8rem;">Edit</button>
+                            <button class="btn btn-small" onclick="deleteQuestion(${q.id})" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); font-size: 0.8rem;">Delete</button>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 8px 0;">${q.question || q.content || 'No content'}</p>
+                    <div style="display: flex; gap: 12px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                        <span>Type: ${q.type || 'Unknown'}</span>
+                        <span>Category: ${q.category || 'None'}</span>
                     </div>
                 </div>
-                <p style="color: var(--text-secondary); margin: 0 0 8px 0;">${q.question}</p>
-                <div style="display: flex; gap: 12px; font-size: 0.85rem; color: var(--text-muted);">
-                    <span>Type: ${q.question_type}</span>
-                    <span>Category: ${q.category}</span>
-                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    console.log('Questions rendered successfully');
     
     // Update checkbox listeners
     updateCheckboxListeners();
@@ -544,7 +557,7 @@ function setupEventListeners() {
 
 function submitQuestionForm(form, action) {
     const formData = new FormData(form);
-    const url = action === 'add' ? '/questions/add' : `/questions/${formData.get('question_id')}/edit`;
+    const url = action === 'add' ? '/admin/questions/add' : `/admin/questions/${formData.get('question_id')}/edit`;
     const method = action === 'add' ? 'POST' : 'PUT';
     
     // Process options for multiple choice questions
@@ -604,7 +617,7 @@ function submitGroupingForm(form) {
     // Add selected questions to form data
     selectedQuestions.forEach(id => formData.append('question_ids', id));
     
-    fetch('/questions/group', {
+    fetch('/admin/questions/group_questions', {
         method: 'POST',
         body: formData
     })
@@ -834,7 +847,7 @@ function loadUngroupedQuestionsInModal() {
     
     container.innerHTML = '<div class="loading-spinner" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading questions...</div>';
     
-    fetch('/questions/ungrouped?format=json')
+    fetch('/admin/questions/ungrouped?format=json')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

@@ -5,7 +5,7 @@ from __init__ import db
 from ..models.question import Question
 from ..models.question_group import QuestionGroup
 
-question_bp = Blueprint('question', __name__, url_prefix='/questions')
+question_bp = Blueprint('question', __name__, url_prefix='/admin/questions')
 
 class QuestionController:
     @staticmethod
@@ -15,23 +15,67 @@ class QuestionController:
         # Show question groups first instead of all questions
         groups = QuestionGroup.query.order_by(QuestionGroup.name).all()
         
+        # Get total question count
+        total_questions = Question.query.count()
+        
         return render_template(
             'admin/questions.html',
             groups=groups,
+            question_count=total_questions,
+            categorized_questions={},  # Will be loaded dynamically
             active_page='questions'
         )
     @staticmethod
     @question_bp.route('/ungrouped', methods=['GET'])
     @login_required
     def get_ungrouped_questions():
+        # Check if this is an API request
+        format_param = request.args.get('format')
+        category = request.args.get('category', 'all')
+        
+        # Get all question groups
+        groups = QuestionGroup.query.all()
+        
+        # Get all grouped question IDs
         grouped_question_ids = []
         for group in groups:
             for question in group.questions:
                 grouped_question_ids.append(question.id)
         
-        ungrouped_questions = Question.query.filter(~Question.id.in_(grouped_question_ids)).all() if grouped_question_ids else Question.query.all()
+        # Build query for ungrouped questions
+        query = Question.query
+        if grouped_question_ids:
+            query = query.filter(~Question.id.in_(grouped_question_ids))
         
-        # Group ungrouped questions by category
+        # Apply category filter if specified and not 'all'
+        if category != 'all':
+            query = query.filter_by(category=category)
+            
+        ungrouped_questions = query.order_by(Question.numb).all()
+        
+        # If this is an API request, return JSON
+        if format_param == 'json':
+            questions_data = []
+            for q in ungrouped_questions:
+                # Extract question type for display
+                question_type = 'Multiple Choice'  # Default
+                if q.explanation and '[TYPE:' in q.explanation:
+                    type_start = q.explanation.find('[TYPE:') + 6
+                    type_end = q.explanation.find(']', type_start)
+                    if type_end > type_start:
+                        question_type = q.explanation[type_start:type_end].replace('_', ' ').title()
+                        
+                questions_data.append({
+                    'id': q.id,
+                    'question': q.question[:60] + ('...' if len(q.question) > 60 else ''),
+                    'category': q.category,
+                    'type': question_type,
+                    'numb': q.numb
+                })
+                
+            return jsonify({'success': True, 'questions': questions_data})
+        
+        # Group ungrouped questions by category for template rendering
         categorized_questions = {}
         for question in ungrouped_questions:
             if question.category not in categorized_questions:

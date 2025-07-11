@@ -4,7 +4,7 @@ from __init__ import db
 from ..models.question_group import QuestionGroup
 from ..models.question import Question
 
-question_group_bp = Blueprint('question_group', __name__, url_prefix='/groups')
+question_group_bp = Blueprint('question_group', __name__, url_prefix='/admin/groups')
 
 class QuestionGroupController:
     @staticmethod
@@ -88,6 +88,29 @@ class QuestionGroupController:
             flash(f'Error deleting question group: {str(e)}', 'error')
             
         return redirect(url_for('question_group.index'))
+
+    @staticmethod
+    @question_group_bp.route('/api/delete/<int:group_id>', methods=['DELETE', 'POST'])
+    @login_required
+    def delete_group_api(group_id):
+        """API endpoint to delete a question group and return JSON response"""
+        try:
+            group = QuestionGroup.query.get_or_404(group_id)
+            group_name = group.name
+            
+            db.session.delete(group)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Question group "{group_name}" deleted successfully'
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False, 
+                'message': f'Error deleting question group: {str(e)}'
+            }), 500
     
     @staticmethod
     @question_group_bp.route('/<int:group_id>')
@@ -196,3 +219,46 @@ class QuestionGroupController:
             db.session.rollback()
             print(f"Error deleting group: {str(e)}")
             return False, 0
+    
+    @staticmethod
+    @question_group_bp.route('/api/<int:group_id>')
+    @login_required 
+    def view_group_api(group_id):
+        """API endpoint to get group questions as JSON"""
+        try:
+            group = QuestionGroup.query.get_or_404(group_id)
+            
+            questions_data = []
+            for question in group.questions:
+                # Extract question type from explanation field
+                question_type = 'Multiple Choice'  # Default
+                if question.explanation and '[TYPE:' in question.explanation:
+                    type_start = question.explanation.find('[TYPE:') + 6
+                    type_end = question.explanation.find(']', type_start)
+                    if type_end > type_start:
+                        question_type = question.explanation[type_start:type_end].replace('_', ' ').title()
+                        
+                questions_data.append({
+                    'id': question.id,
+                    'numb': question.numb,
+                    'question': question.question,
+                    'category': question.category,
+                    'type': question_type,
+                    'answer': question.answer,
+                    'options': question.options
+                })
+            
+            return jsonify({
+                'success': True,
+                'questions': questions_data,
+                'group': {
+                    'id': group.id,
+                    'name': group.name,
+                    'description': group.description
+                }
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error loading group: {str(e)}'
+            }), 500
