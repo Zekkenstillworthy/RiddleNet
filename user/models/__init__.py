@@ -19,6 +19,14 @@ def get_class_students_table():
     from admin.models.class_model import class_students
     return class_students
 
+def get_user_notification_model():
+    from .user_notification import UserNotification
+    return UserNotification
+
+def get_notification_preferences_model():
+    from .notification_preferences import NotificationPreferences
+    return NotificationPreferences
+
 # For backward compatibility with existing code that imports directly
 # These will be available but not imported at module level to avoid circular imports
 def __getattr__(name):
@@ -30,5 +38,9 @@ def __getattr__(name):
         return get_topology_progress_model()
     elif name == 'class_students':
         return get_class_students_table()
+    elif name == 'UserNotification':
+        return get_user_notification_model()
+    elif name == 'NotificationPreferences':
+        return get_notification_preferences_model()
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

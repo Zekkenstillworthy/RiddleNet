@@ -71,42 +71,108 @@ class NotificationHistory(db.Model):
     
     @classmethod
     def create_record(cls, sender_id, sender_type, sender_username, notification_data, result, delivery_time=None):
-        """Create a new notification history record"""
-        try:
-            record = cls(
-                sender_id=sender_id,
-                sender_type=sender_type,
-                sender_username=sender_username,
-                notification_type=notification_data.get('notification_type', 'admin_notice'),
-                title=notification_data.get('title', ''),
-                message=notification_data.get('message', ''),
-                priority=notification_data.get('priority', 'normal'),
-                recipient_type=notification_data.get('recipient_type', 'all_users'),
-                recipient_count=result.get('email_sent', 0) + result.get('websocket_sent', 0),
-                specific_user_id=notification_data.get('specific_user'),
-                delivery_channel=notification_data.get('channel', 'both'),
-                email_sent=result.get('email_sent', 0),
-                websocket_sent=result.get('websocket_sent', 0),
-                failed_deliveries=result.get('failed', 0),
-                status='sent' if result.get('failed', 0) == 0 else 'partial' if result.get('email_sent', 0) > 0 or result.get('websocket_sent', 0) > 0 else 'failed',
-                delivery_time=delivery_time,
-                template_data=notification_data.get('template_data'),
-                error_details=', '.join(result.get('errors', []))
-            )
-            
-            db.session.add(record)
-            db.session.commit()
-            return record
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error creating notification history record: {e}")
-            return None
+        """Create a new notification history record with thread-safe session handling"""
+        import threading
+        import time
+        from sqlalchemy.exc import OperationalError
+        
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                # Create a new session for this thread to avoid lock conflicts
+                from __init__ import db
+                
+                # Use the existing session with proper error handling
+                local_session = db.session
+                
+                record = cls(
+                    sender_id=sender_id,
+                    sender_type=sender_type,
+                    sender_username=sender_username,
+                    notification_type=notification_data.get('notification_type', 'admin_notice'),
+                    title=notification_data.get('title', ''),
+                    message=notification_data.get('message', ''),
+                    priority=notification_data.get('priority', 'normal'),
+                    recipient_type=notification_data.get('recipient_type', 'all_users'),
+                    recipient_count=result.get('email_sent', 0) + result.get('websocket_sent', 0),
+                    specific_user_id=notification_data.get('specific_user'),
+                    delivery_channel=notification_data.get('channel', 'both'),
+                    email_sent=result.get('email_sent', 0),
+                    websocket_sent=result.get('websocket_sent', 0),
+                    failed_deliveries=result.get('failed', 0),
+                    status='sent' if result.get('failed', 0) == 0 else 'partial' if result.get('email_sent', 0) > 0 or result.get('websocket_sent', 0) > 0 else 'failed',
+                    delivery_time=delivery_time,
+                    template_data=notification_data.get('template_data'),
+                    error_details=', '.join(result.get('errors', []))
+                )
+                
+                local_session.add(record)
+                local_session.commit()
+                return record
+                
+            except (OperationalError, Exception) as e:
+                if 'local_session' in locals():
+                    local_session.rollback()
+                
+                retry_count += 1
+                if retry_count >= max_retries:
+                    print(f"Error creating notification history record after {max_retries} retries: {e}")
+                    return None
+                else:
+                    print(f"Database write retry {retry_count}/{max_retries}: {e}")
+                    time.sleep(0.1 * retry_count)  # Progressive delay
+            finally:
+                if 'local_session' in locals():
+                    try:
+                        local_session.close()
+                    except:
+                        pass
+        
+        return None
     
     @classmethod
     def get_recent_notifications(cls, limit=50):
-        """Get recent notifications"""
-        return cls.query.order_by(cls.created_at.desc()).limit(limit).all()
+        """Get recent notifications with thread-safe access"""
+        try:
+            # Use the existing session properly
+            from __init__ import db
+            
+            notifications = db.session.query(cls).order_by(cls.created_at.desc()).limit(limit).all()
+            
+            # Convert to dict to avoid session binding issues
+            result = []
+            for n in notifications:
+                try:
+                    # Always use manual conversion to avoid session binding issues
+                    result.append({
+                        'id': getattr(n, 'id', 0),
+                        'sender_username': getattr(n, 'sender_username', 'Unknown'),
+                        'sender_type': getattr(n, 'sender_type', 'unknown'),
+                        'type': getattr(n, 'notification_type', 'admin_notice'),
+                        'title': getattr(n, 'title', 'No Title'),
+                        'message': getattr(n, 'message', 'No Message'),
+                        'priority': getattr(n, 'priority', 'normal'),
+                        'recipient_type': getattr(n, 'recipient_type', 'all_users'),
+                        'recipient_count': getattr(n, 'recipient_count', 0),
+                        'delivery_channel': getattr(n, 'delivery_channel', 'both'),
+                        'email_sent': getattr(n, 'email_sent', 0),
+                        'websocket_sent': getattr(n, 'websocket_sent', 0),
+                        'failed_deliveries': getattr(n, 'failed_deliveries', 0),
+                        'status': getattr(n, 'status', 'sent'),
+                        'timestamp': getattr(n, 'created_at').isoformat() if hasattr(n, 'created_at') and n.created_at else 'Unknown',
+                        'delivery_time': getattr(n, 'delivery_time', 0)
+                    })
+                except Exception as e:
+                    print(f"Error converting notification {getattr(n, 'id', 'unknown')}: {e}")
+                    continue
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error loading recent notifications: {e}")
+            return []
     
     @classmethod
     def get_statistics(cls, days=1):

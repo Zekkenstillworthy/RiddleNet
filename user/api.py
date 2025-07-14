@@ -312,6 +312,49 @@ def leave_class(class_id):
         traceback.print_exc()
         return jsonify({"status": "error", "message": f"Error leaving class: {str(e)}"}), 500
 
+@api_blueprint.route('/networking1/save-score', methods=['POST'])
+def save_networking1_score():
+    """API endpoint to save Networking 1 quiz score"""
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "User not logged in"}), 401
+    
+    try:
+        data = request.json
+        user_id = session['user_id']
+        
+        # Import score model
+        from user.models.score import Score
+        from user.models.user import UserModel
+        
+        # Create score entry
+        score = Score(
+            user_id=user_id,
+            score=data.get('score', 0),
+            category='networking1',
+            total_questions=data.get('total_questions', 5),
+            correct_answers=data.get('correct_answers', 0)
+        )
+        
+        db.session.add(score)
+        db.session.commit()
+        
+        # Update user's total score
+        user = UserModel.query.get(user_id)
+        if user:
+            user.update_total_score()
+            db.session.commit()
+        
+        return jsonify({
+            "status": "success", 
+            "message": "Score saved successfully",
+            "score": data.get('score', 0)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving networking1 score: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @api_blueprint.route('/networking1/lessons', methods=['GET'])
 def get_networking1_lessons():
     """API endpoint to get Networking 1 lesson content"""

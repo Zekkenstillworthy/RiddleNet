@@ -173,6 +173,8 @@
     .module-networking2 { background: var(--network-purple); }
     .module-security { background: var(--danger-color); }
     .module-troubleshooting { background: var(--warning-color); }
+    .module-quiz { background: linear-gradient(135deg, #00d4ff, #00a8cc); }
+    .module-exam { background: linear-gradient(135deg, #ffd700, #ff8c00); }
 
     .module-info h4 {
         margin: 0 0 4px 0;
@@ -466,6 +468,210 @@
         color: var(--accent-color);
     }
 
+    /* Path node animation */
+    @keyframes nodeAppear {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    /* Quiz Selection Modal Styles */
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background: var(--card-background);
+        border-radius: var(--border-radius);
+        max-width: 600px;
+        width: 90%;
+        max-height: 70vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        color: var(--text-primary);
+    }
+    
+    .close {
+        color: var(--text-muted);
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+    }
+    
+    .close:hover {
+        color: var(--text-primary);
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .quiz-selection-tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border-color);
+        margin-bottom: 20px;
+    }
+    
+    .quiz-tab {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .quiz-tab.active {
+        color: var(--accent-color);
+        border-bottom-color: var(--accent-color);
+    }
+    
+    .quiz-tab-content {
+        display: none;
+    }
+    
+    .quiz-tab-content.active {
+        display: block;
+    }
+    
+    .question-groups-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .question-group-item {
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .question-group-item:hover {
+        border-color: var(--accent-color);
+        background: rgba(0, 212, 255, 0.1);
+    }
+    
+    .question-group-item.selected {
+        border-color: var(--accent-color);
+        background: rgba(0, 212, 255, 0.2);
+    }
+    
+    .question-group-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+    }
+    
+    .question-group-meta {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        display: flex;
+        gap: 15px;
+    }
+    
+    .quiz-form .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .quiz-form label {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    
+    .quiz-form input,
+    .quiz-form textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        background: var(--background);
+        color: var(--text-primary);
+        font-family: inherit;
+        resize: vertical;
+    }
+    
+    .quiz-form input:focus,
+    .quiz-form textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+    }
+    
+    /* Quiz node specific styles */
+    .node-quiz-info {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 4px;
+        padding: 8px;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: var(--accent-color);
+        text-align: center;
+    }
+    
+    .prerequisite-item {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .prerequisite-item:last-child {
+        border-bottom: none;
+    }
+    
+    .prerequisite-item label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: var(--text-primary);
+    }
+    
+    .prerequisite-item input[type="checkbox"] {
+        margin: 0;
+        width: auto;
+    }
+
     @media (max-width: 1200px) {
         .builder-layout {
             grid-template-columns: 280px 1fr 280px;
@@ -585,6 +791,44 @@
                             <p>Network problem solving</p>
                         </div>
                     </div>
+                    
+                    <!-- Quiz and Assessment Modules -->
+                    <div class="module-item" draggable="true" data-module="quiz-basics">
+                        <div class="module-icon module-quiz">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Basic Knowledge Quiz</h4>
+                            <p>Test fundamental concepts</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="quiz-intermediate">
+                        <div class="module-icon module-quiz">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Intermediate Assessment</h4>
+                            <p>Evaluate practical skills</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="quiz-advanced">
+                        <div class="module-icon module-quiz">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Advanced Assessment</h4>
+                            <p>Comprehensive evaluation</p>
+                        </div>
+                    </div>
+                    <div class="module-item" draggable="true" data-module="final-exam">
+                        <div class="module-icon module-exam">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="module-info">
+                            <h4>Final Examination</h4>
+                            <p>Complete course evaluation</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -690,6 +934,60 @@
     </div>
 </div>
 
+<!-- Quiz Selection Modal -->
+<div id="quizSelectionModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Select Quiz Content</h3>
+            <span class="close" onclick="closeQuizModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="quiz-selection-tabs">
+                <button class="quiz-tab active" onclick="showQuizTab('existing')">
+                    <i class="fas fa-list"></i> Existing Question Groups
+                </button>
+                <button class="quiz-tab" onclick="showQuizTab('create')">
+                    <i class="fas fa-plus"></i> Create New Quiz
+                </button>
+            </div>
+            
+            <!-- Existing Question Groups Tab -->
+            <div id="existingQuizTab" class="quiz-tab-content active">
+                <div class="question-groups-list" id="questionGroupsList">
+                    <!-- Question groups will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Create New Quiz Tab -->
+            <div id="createQuizTab" class="quiz-tab-content">
+                <div class="quiz-form">
+                    <div class="form-group">
+                        <label>Quiz Name</label>
+                        <input type="text" id="newQuizName" placeholder="Enter quiz name">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="newQuizDescription" placeholder="Enter quiz description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Estimated Duration (minutes)</label>
+                        <input type="number" id="newQuizDuration" value="30" min="5" max="180">
+                    </div>
+                    <button class="btn btn-primary" onclick="createNewQuiz()">
+                        <i class="fas fa-plus"></i> Create Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeQuizModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="assignSelectedQuiz()" id="assignQuizBtn" disabled>
+                <i class="fas fa-check"></i> Assign Quiz
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     let pathModules = [];
     let selectedModule = null;
@@ -731,6 +1029,38 @@
             duration: 150,
             icon: 'fas fa-tools',
             color: 'module-troubleshooting'
+        },
+        'quiz-basics': {
+            title: 'Basic Knowledge Quiz',
+            description: 'Assessment of fundamental networking concepts and terminology',
+            duration: 30,
+            icon: 'fas fa-clipboard-check',
+            color: 'module-quiz',
+            type: 'assessment'
+        },
+        'quiz-intermediate': {
+            title: 'Intermediate Assessment',
+            description: 'Practical application of networking protocols and configurations',
+            duration: 45,
+            icon: 'fas fa-tasks',
+            color: 'module-quiz',
+            type: 'assessment'
+        },
+        'quiz-advanced': {
+            title: 'Advanced Assessment',
+            description: 'Complex network scenarios and troubleshooting challenges',
+            duration: 60,
+            icon: 'fas fa-medal',
+            color: 'module-quiz',
+            type: 'assessment'
+        },
+        'final-exam': {
+            title: 'Final Examination',
+            description: 'Comprehensive evaluation of all course materials and skills',
+            duration: 90,
+            icon: 'fas fa-graduation-cap',
+            color: 'module-exam',
+            type: 'assessment'
         }
     };
 
@@ -768,6 +1098,13 @@
         if (!moduleTemplates[moduleId]) return;
 
         const template = moduleTemplates[moduleId];
+        
+        // Check if this is a quiz/assessment module
+        if (template.type === 'assessment') {
+            showQuizSelectionModal(moduleId, template);
+            return;
+        }
+
         const module = {
             id: ++moduleCounter,
             moduleId: moduleId,
@@ -777,14 +1114,169 @@
             icon: template.icon,
             color: template.color,
             prerequisites: [],
-            completionType: 'required'
+            completionType: 'required',
+            type: template.type || 'learning'
         };
 
         pathModules.push(module);
         renderPath();
         updatePathStats();
     }
+    
+    // Quiz Selection Modal Functions
+    let selectedQuestionGroup = null;
+    let pendingAssessmentModule = null;
+    
+    function showQuizSelectionModal(moduleId, template) {
+        pendingAssessmentModule = { moduleId, template };
+        selectedQuestionGroup = null;
+        
+        // Load question groups
+        loadQuestionGroups();
+        
+        // Show modal
+        document.getElementById('quizSelectionModal').style.display = 'flex';
+        
+        // Reset tabs
+        showQuizTab('existing');
+    }
+    
+    function closeQuizModal() {
+        document.getElementById('quizSelectionModal').style.display = 'none';
+        pendingAssessmentModule = null;
+        selectedQuestionGroup = null;
+        document.getElementById('assignQuizBtn').disabled = true;
+    }
+    
+    function showQuizTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.quiz-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.quiz-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabName + 'QuizTab').classList.add('active');
+    }
+    
+    async function loadQuestionGroups() {
+        try {
+            const response = await fetch('/admin/api/question-groups');
+            const questionGroups = await response.json();
+            
+            const container = document.getElementById('questionGroupsList');
+            container.innerHTML = '';
+            
+            if (questionGroups.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No question groups available. Create one first.</p>';
+                return;
+            }
+            
+            questionGroups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'question-group-item';
+                groupDiv.onclick = () => selectQuestionGroup(group, groupDiv);
+                
+                groupDiv.innerHTML = `
+                    <div class="question-group-name">${group.name}</div>
+                    <div class="question-group-meta">
+                        <span><i class="fas fa-question-circle"></i> ${group.questionCount} questions</span>
+                        <span><i class="fas fa-tag"></i> ${group.category || 'General'}</span>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+                        ${group.description || 'No description available'}
+                    </div>
+                `;
+                
+                container.appendChild(groupDiv);
+            });
+        } catch (error) {
+            console.error('Error loading question groups:', error);
+            document.getElementById('questionGroupsList').innerHTML = 
+                '<p style="text-align: center; color: var(--danger-color);">Error loading question groups.</p>';
+        }
+    }
+    
+    function selectQuestionGroup(group, element) {
+        // Remove previous selection
+        document.querySelectorAll('.question-group-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // Select current
+        element.classList.add('selected');
+        selectedQuestionGroup = group;
+        
+        // Enable assign button
+        document.getElementById('assignQuizBtn').disabled = false;
+    }
+    
+    function assignSelectedQuiz() {
+        if (!selectedQuestionGroup || !pendingAssessmentModule) return;
+        
+        const { moduleId, template } = pendingAssessmentModule;
+        
+        const module = {
+            id: ++moduleCounter,
+            moduleId: moduleId,
+            title: selectedQuestionGroup.name,
+            description: selectedQuestionGroup.description || template.description,
+            duration: template.duration,
+            icon: template.icon,
+            color: template.color,
+            prerequisites: [],
+            completionType: 'required',
+            type: 'assessment',
+            questionGroupId: selectedQuestionGroup.id,
+            questionCount: selectedQuestionGroup.questionCount
+        };
 
+        pathModules.push(module);
+        renderPath();
+        updatePathStats();
+        closeQuizModal();
+    }
+    
+    async function createNewQuiz() {
+        const name = document.getElementById('newQuizName').value.trim();
+        const description = document.getElementById('newQuizDescription').value.trim();
+        const duration = parseInt(document.getElementById('newQuizDuration').value);
+        
+        if (!name) {
+            alert('Please enter a quiz name');
+            return;
+        }
+        
+        try {
+            // This would typically create a new question group via API
+            // For now, we'll create a placeholder
+            const newGroup = {
+                id: Date.now(), // Temporary ID
+                name: name,
+                description: description,
+                questionCount: 0,
+                category: 'Custom'
+            };
+            
+            alert('Quiz created successfully! You can now add questions to it in the Questions management section.');
+            
+            // Add to current session
+            selectedQuestionGroup = newGroup;
+            document.getElementById('assignQuizBtn').disabled = false;
+            
+            // Switch to existing tab to show selection
+            showQuizTab('existing');
+            loadQuestionGroups();
+            
+        } catch (error) {
+            console.error('Error creating quiz:', error);
+            alert('Error creating quiz. Please try again.');
+        }
+    }
+    
     function renderPath() {
         const pathFlow = document.getElementById('pathFlow');
         const canvasEmpty = document.getElementById('canvasEmpty');
@@ -801,10 +1293,48 @@
 
         pathModules.forEach((module, index) => {
             // Add node
-            const nodeElement = createPathNode(module);
-            pathFlow.appendChild(nodeElement);
-
-            // Add arrow if not last item
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'path-node';
+            nodeDiv.onclick = () => selectModule(module);
+            
+            const isAssessment = module.type === 'assessment';
+            const assessmentInfo = isAssessment ? 
+                `<div class="node-meta">
+                    <span><i class="fas fa-question-circle"></i> ${module.questionCount || 0} questions</span>
+                    <span><i class="fas fa-clock"></i> ${module.duration}min</span>
+                </div>` : 
+                `<div class="node-meta">
+                    <span><i class="fas fa-clock"></i> ${module.duration}min</span>
+                    <span><i class="fas fa-tasks"></i> ${module.completionType}</span>
+                </div>`;
+            
+            nodeDiv.innerHTML = `
+                <div class="node-actions">
+                    <button class="action-btn" onclick="event.stopPropagation(); editModule(${module.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn" onclick="event.stopPropagation(); removeModule(${module.id})" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="node-header">
+                    <div class="node-icon ${module.color}">
+                        <i class="${module.icon}"></i>
+                    </div>
+                </div>
+                <h4 class="node-title">${module.title}</h4>
+                ${assessmentInfo}
+                <div class="node-description">${module.description}</div>
+                ${isAssessment && module.questionGroupId ? 
+                    `<div class="node-quiz-info">
+                        <i class="fas fa-link"></i> Connected to Question Group
+                    </div>` : ''
+                }
+            `;
+            
+            pathFlow.appendChild(nodeDiv);
+            
+            // Add arrow between nodes (except after last)
             if (index < pathModules.length - 1) {
                 const arrow = document.createElement('div');
                 arrow.className = 'path-arrow';
@@ -813,57 +1343,16 @@
         });
     }
 
-    function createPathNode(module) {
-        const node = document.createElement('div');
-        node.className = 'path-node';
-        node.dataset.moduleId = module.id;
-        node.onclick = () => selectModule(module);
-
-        node.innerHTML = `
-            <div class="node-actions">
-                <button class="action-btn" onclick="editModule(${module.id})" title="Edit">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn" onclick="removeModule(${module.id})" title="Remove">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="node-header">
-                <div class="node-icon ${module.color}">
-                    <i class="${module.icon}"></i>
-                </div>
-                <h4 class="node-title">${module.title}</h4>
-            </div>
-            <div class="node-meta">
-                <span>Module ${module.id}</span>
-                <span class="completion-badge completion-${module.completionType}">${module.completionType}</span>
-            </div>
-            <div class="node-description">${module.description}</div>
-            <div class="node-stats">
-                <div class="stat-item">
-                    <span class="stat-value">${module.duration}m</span>
-                    <span class="stat-label">Duration</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${module.prerequisites.length}</span>
-                    <span class="stat-label">Prerequisites</span>
-                </div>
-            </div>
-        `;
-
-        return node;
-    }
-
     function selectModule(module) {
         selectedModule = module;
         
-        // Update UI selection
+        // Update visual selection
         document.querySelectorAll('.path-node').forEach(node => {
             node.classList.remove('selected');
         });
-        document.querySelector(`[data-module-id="${module.id}"]`).classList.add('selected');
-
-        // Show module properties panel
+        event.currentTarget.classList.add('selected');
+        
+        // Show properties panel
         document.getElementById('moduleProperties').style.display = 'block';
         document.getElementById('noModuleSelected').style.display = 'none';
 
@@ -919,33 +1408,6 @@
         if (confirm('Are you sure you want to remove this module?')) {
             pathModules = pathModules.filter(module => module.id !== moduleId);
             
-            // Remove this module from prerequisites of other modules
-            pathModules.forEach(module => {
-                module.prerequisites = module.prerequisites.filter(id => id !== moduleId);
-            });
-
-            renderPath();
-            updatePathStats();
-            
-            if (selectedModule && selectedModule.id === moduleId) {
-                selectedModule = null;
-                document.getElementById('moduleProperties').style.display = 'none';
-                document.getElementById('noModuleSelected').style.display = 'block';
-            }
-        }
-    }
-
-    function updatePathStats() {
-        const moduleCount = pathModules.length;
-        const totalDuration = pathModules.reduce((sum, module) => sum + module.duration, 0);
-        
-        document.getElementById('moduleCount').textContent = moduleCount;
-        document.getElementById('estimatedTime').textContent = Math.round(totalDuration / 60) + 'h';
-    }
-
-    function clearPath() {
-        if (pathModules.length === 0) return;
-        
         if (confirm('Are you sure you want to clear the entire path?')) {
             pathModules = [];
             selectedModule = null;

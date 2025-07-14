@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from admin.models.essay_response import EssayResponse
 from admin.models.user import AdminUser
 from admin.models.activity_log import ActivityLog
+from user.models.user import User  # Import the correct User model
 from admin import db
 from sqlalchemy import func
 from datetime import datetime
@@ -187,8 +188,8 @@ def get_user_essays(user_id):
     for essay in essays:
         essays_data.append({
             'id': essay.id,
-            'question': essay.question,
-            'answer': essay.answer,
+            'question': essay.question_text,  # Changed from essay.question
+            'answer': essay.response_text,    # Changed from essay.answer
             'category': essay.category,
             'submission_date': essay.submission_date.strftime('%Y-%m-%d %H:%M'),
             'is_graded': essay.is_graded,
@@ -209,29 +210,28 @@ def api_grade_essay(essay_id):
     
     # Get grade from request
     data = request.json
-    score = data.get('score')
+    grade = data.get('grade')
     
-    if score is None:
-        return jsonify({'error': 'Score is required'}), 400
+    if grade is None:
+        return jsonify({'error': 'Grade is required'}), 400
     
     try:
-        score = float(score)
-        if score < 0 or score > 100:
-            return jsonify({'error': 'Score must be between 0 and 100'}), 400
+        grade = float(grade)
+        if grade < 0 or grade > 100:
+            return jsonify({'error': 'Grade must be between 0 and 100'}), 400
     except ValueError:
-        return jsonify({'error': 'Invalid score value'}), 400
+        return jsonify({'error': 'Invalid grade value'}), 400
     
     # Update the essay
-    essay.graded_score = score
+    essay.graded_score = grade
     essay.is_graded = True
-    essay.graded_at = datetime.utcnow()
     db.session.commit()
     
     # Log the activity
     ActivityLog.log_activity(
-        user_id=1,  # Admin user ID
+        user_id=current_user.id,
         action_type='grade',
-        message=f'Graded essay response #{essay_id} with score {score}',
+        message=f'Graded essay response #{essay_id} with score {grade}',
         related_entity_type='essay',
         related_entity_id=essay_id
     )
@@ -239,5 +239,52 @@ def api_grade_essay(essay_id):
     return jsonify({
         'success': True,
         'essay_id': essay_id,
-        'score': score
+        'grade': grade
+    })
+
+@essay_bp.route('/api/essays/<int:essay_id>')
+@login_required
+def api_get_essay(essay_id):
+    """API endpoint to get essay details"""
+    essay = EssayResponse.query.get_or_404(essay_id)
+    
+    return jsonify({
+        'success': True,
+        'essay': {
+            'id': essay.id,
+            'question_text': essay.question_text,
+            'response_text': essay.response_text,
+            'category': essay.category,
+            'submission_date': essay.submission_date.strftime('%Y-%m-%d %H:%M'),
+            'is_graded': essay.is_graded,
+            'graded_score': essay.graded_score,
+            'user_id': essay.user_id
+        }
+    })
+
+@essay_bp.route('/<int:essay_id>/edit', methods=['POST'])
+@login_required
+def edit(essay_id):
+    """Edit an essay response"""
+    essay = EssayResponse.query.get_or_404(essay_id)
+    
+    # Update essay fields
+    essay.question_text = request.form.get('question_text', essay.question_text)
+    essay.response_text = request.form.get('response_text', essay.response_text)
+    essay.category = request.form.get('category', essay.category)
+    
+    db.session.commit()
+    
+    # Log the activity
+    ActivityLog.log_activity(
+        user_id=current_user.id,
+        action_type='edit',
+        message=f'Edited essay response #{essay_id}',
+        related_entity_type='essay',
+        related_entity_id=essay_id
+    )
+    
+    return jsonify({
+        'success': True,
+        'message': 'Essay updated successfully'
     })

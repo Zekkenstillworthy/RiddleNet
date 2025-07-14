@@ -79,19 +79,23 @@ class ScoreController:
     @login_required
     def export_scores():
         try:
-            scores = Score.query.order_by(Score.date_attempted.desc()).all()
+            # Join scores with users to get username
+            scores_with_users = db.session.query(Score, User).join(
+                User, Score.user_id == User.id
+            ).order_by(Score.date_attempted.desc()).all()
             
             # Create a CSV string
             output = StringIO()
             writer = csv.writer(output)
             
-            # Write header
-            writer.writerow(['ID', 'User ID', 'Score', 'Category', 'Date Attempted'])
+            # Write header with Username included
+            writer.writerow(['ID', 'User ID', 'Username', 'Score', 'Category', 'Date Attempted'])
             
             # Write data
-            for score in scores:
+            for score, user in scores_with_users:
                 date_str = score.date_attempted.strftime('%Y-%m-%d %H:%M:%S') if score.date_attempted else 'N/A'
-                writer.writerow([score.id, score.user_id, score.score, score.category, date_str])
+                username = user.username if user else 'Unknown User'
+                writer.writerow([score.id, score.user_id, username, score.score, score.category, date_str])
             
             # Prepare the response
             output.seek(0)

@@ -72,49 +72,8 @@ def classes():
     
 @user_bp.route('/learning/networking-1')
 def networking_1():
-    if 'user_id' not in session:
-        return redirect(url_for('user.index', message='You need to log in first!'))
-    
-    user_id = session['user_id']
-    user = UserModel.query.get(user_id)
-    
-    # Import NetworkingProgress model
-    from user.models.networking_progress import NetworkingProgress
-    
-    # Get user's progress for all networking lessons
-    progress = NetworkingProgress.query.filter_by(user_id=user_id).all()
-    
-    # Format progress data for the template
-    progress_data = {}
-    for item in progress:
-        # Module format: "1" for module 1
-        # Lesson format: "1.1" for module 1, lesson 1
-        if item.module_id not in progress_data:
-            progress_data[item.module_id] = {
-                "lessons": {},
-                "completed_count": 0,
-                "total_lessons": 0
-            }
-        
-        progress_data[item.module_id]["lessons"][item.lesson_id] = {
-            "completed": item.completed,
-            "progress": item.progress_percent
-        }
-        
-        # Update module completion stats
-        progress_data[item.module_id]["total_lessons"] += 1
-        if item.completed:
-            progress_data[item.module_id]["completed_count"] += 1
-      # Calculate overall module progress percentages
-    for module_id, module_data in progress_data.items():
-        if module_data["total_lessons"] > 0:
-            module_data["progress_percent"] = int((module_data["completed_count"] / module_data["total_lessons"]) * 100)
-        else:
-            module_data["progress_percent"] = 0
-    
-    return render_template('user/learning_networking1.html', 
-                          user=user, 
-                          progress_data=progress_data)
+    # Redirect to class 7 instead of the old learning page
+    return redirect('/class/7/')
 
 @user_bp.route('/learning/networking-2')
 def networking_2():

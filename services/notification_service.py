@@ -127,6 +127,7 @@ class NotificationService:
     def _send_websocket_notification(self, user: Any, notification_data: Dict) -> bool:
         """Send WebSocket notification to user"""
         if not self.socketio:
+            print(f"⚠️ SocketIO not available for WebSocket notification to {user.username}")
             return False
             
         try:
@@ -135,6 +136,27 @@ class NotificationService:
             
             # Send to user's personal room
             self.socketio.emit('notification', notification_data, room=room)
+            print(f"📤 Notification sent to user {user.id} ({user.username}) room: {room}")
+            
+            # For system announcements and admin notices, also emit as announcement
+            notification_type = notification_data.get('type', '')
+            if notification_type in ['system_update', 'admin_notice', 'maintenance', 'security_alert', 'course_update']:
+                # Create properly formatted announcement data for dashboard
+                announcement_data = {
+                    'title': notification_data.get('title', 'Announcement'),
+                    'message': notification_data.get('message', ''),
+                    'type': notification_data.get('type', 'admin_notice'),
+                    'priority': notification_data.get('priority', 'normal'),
+                    'timestamp': notification_data.get('timestamp'),
+                    'from_admin': True,
+                    'admin_name': notification_data.get('sender_username', 'Admin'),
+                    'content': notification_data.get('message', ''),  # Alternative field for message
+                    'source': 'admin_notification'
+                }
+                
+                # Emit to specific user for dashboard announcements
+                self.socketio.emit('new_announcement', announcement_data, room=room)
+                print(f"✅ Announcement sent to user {user.id} ({user.username}): {announcement_data['title']}")
             
             # Also send to admin room if it's a high priority notification
             if notification_data.get('priority') in ['high', 'urgent']:
@@ -362,7 +384,7 @@ class NotificationService:
             <div class="container">
                 <div class="header">
                     <div class="logo">RiddleNet</div>
-                    <div class="subtitle">Cyber Security Learning Platform</div>
+                    <div class="subtitle">Learning Platform</div>
                 </div>
                 
                 <div class="content">
@@ -404,10 +426,10 @@ class NotificationService:
                 
                 <div class="footer">
                     <div class="footer-text">
-                        This is an automated notification from RiddleNet Security Platform
+                        This is an automated notification from RiddleNet Platform
                     </div>
                     <div class="footer-text">
-                        © 2024 RiddleNet - Cyber Security Training Platform
+                        © 2024 RiddleNet - Learning Platform
                     </div>
                 </div>
             </div>
@@ -428,9 +450,8 @@ class NotificationService:
                 server.starttls()
                 server.login(self.sender_email, self.sender_password)
                 
-                # Send email
-                text = message.as_string()
-                server.sendmail(self.sender_email, recipient_email, text)
+                # Send email with proper encoding
+                server.send_message(message)
                 
             return True
             
@@ -499,18 +520,145 @@ class NotificationService:
                                sender_info: Optional[Dict] = None) -> Dict[str, Any]:
         """Send system-wide announcement to all users"""
         
+        start_time = time.time()
+        
         # Get all users
         all_users = User.query.all()
         
-        return self.send_notification(
-            users=all_users,
-            notification_type=NotificationType.SYSTEM_UPDATE,
-            title=title,
-            message=message,
-            priority=priority,
-            channel=NotificationChannel.BOTH,
-            sender_info=sender_info
-        )
+        # Create announcement data for dashboard
+        announcement_data = {
+            'title': title,
+            'message': message,
+            'content': message,  # Alternative field for message
+            'type': 'system_update',
+            'priority': priority.value,
+            'timestamp': datetime.utcnow().isoformat(),
+            'from_admin': True,
+            'admin_name': sender_info.get('sender_username', 'Admin') if sender_info else 'System',
+            'source': 'system_announcement'
+        }
+        
+        results = {
+            'email_sent': 0,
+            'websocket_sent': 0,
+            'failed': 0,
+            'errors': []
+        }
+        
+        # Emit announcement to all users via individual rooms for better delivery
+        if self.socketio:
+            try:
+                print(f"✅ Sending system announcement to all users: {title}")
+                print(f"   Priority: {priority.value} | From: {announcement_data['admin_name']}")
+                
+                # Send to individual user rooms (more reliable than global broadcast)
+                websocket_count = 0
+                for user in all_users:
+                    room = f"user_{user.id}"
+                    self.socketio.emit('new_announcement', announcement_data, room=room)
+                    print(f"   📤 Sent to {user.username} (room: {room})")
+                    websocket_count += 1
+                    
+                results['websocket_sent'] = websocket_count
+                    
+            except Exception as e:
+                print(f"❌ Failed to send announcements: {e}")
+                results['errors'].append(f"WebSocket announcement failed: {e}")
+        
+        # Send emails to all users (if email channel is enabled)
+        channel = NotificationChannel(sender_info.get('channel', 'both')) if sender_info else NotificationChannel.BOTH
+        
+        if channel in [NotificationChannel.EMAIL, NotificationChannel.BOTH]:
+            email_count = 0
+            for user in all_users:
+                if hasattr(user, 'email') and user.email:
+                    try:
+                        # Create email notification data
+                        notification_data = {
+                            'title': title,
+                            'message': message,
+                            'type': NotificationType.SYSTEM_UPDATE.value,
+                            'priority': priority.value,
+                            'timestamp': datetime.utcnow().isoformat()
+                        }
+                        
+                        # Send email
+                        email_sent = self._send_email_notification(user, NotificationType.SYSTEM_UPDATE, notification_data)
+                        if email_sent:
+                            email_count += 1
+                            
+                    except Exception as e:
+                        print(f"❌ Failed to send email to {user.username}: {e}")
+                        results['errors'].append(f"Email to {user.username} failed: {e}")
+                        results['failed'] += 1
+                        
+            results['email_sent'] = email_count
+        
+        # Create individual UserNotification records for persistent display
+        user_notifications_created = 0
+        try:
+            from user.models.user_notification import UserNotification
+            
+            for user in all_users:
+                try:
+                    # Create UserNotification for each user
+                    user_notification = UserNotification.create_notification(
+                        user_id=user.id,
+                        notification_type='system_announcement',
+                        title=title,
+                        message=message,
+                        priority=priority.value.lower(),
+                        delivery_channel=sender_info.get('channel', 'both') if sender_info else 'both'
+                    )
+                    
+                    if user_notification:
+                        user_notifications_created += 1
+                        
+                except Exception as e:
+                    print(f"❌ Failed to create UserNotification for {user.username}: {e}")
+                    results['errors'].append(f"UserNotification for {user.username} failed: {e}")
+                    
+            print(f"✅ Created {user_notifications_created} individual user notifications")
+            results['user_notifications_created'] = user_notifications_created
+            
+        except Exception as e:
+            print(f"❌ Error creating user notifications: {e}")
+            results['errors'].append(f"User notification creation failed: {e}")
+
+        # Record single notification history entry for "all users" for admin audit trail
+        delivery_time = time.time() - start_time
+        if sender_info:
+            try:
+                from admin.models.notification_history import NotificationHistory
+                
+                # Create single record for system announcement
+                db_notification_data = {
+                    'notification_type': NotificationType.SYSTEM_UPDATE.value,
+                    'title': title,
+                    'message': message,
+                    'priority': priority.value,
+                    'recipient_type': 'all_users',
+                    'specific_user': None,
+                    'channel': sender_info.get('channel', 'both'),
+                    'template_data': json.dumps({
+                        'user_count': len(all_users),
+                        'user_notifications_created': user_notifications_created
+                    })
+                }
+                
+                NotificationHistory.create_record(
+                    sender_id=sender_info.get('sender_id'),
+                    sender_type=sender_info.get('sender_type', 'admin'),
+                    sender_username=sender_info.get('sender_username', 'System'),
+                    notification_data=db_notification_data,
+                    result=results,
+                    delivery_time=delivery_time
+                )
+                
+            except Exception as e:
+                print(f"❌ Error recording notification history: {e}")
+        
+        return results
     
     def _record_notification_history(self, sender_info: Dict, notification_data: Dict, result: Dict, delivery_time: float):
         """Record notification in database for audit trail"""
@@ -584,19 +732,30 @@ class NotificationService:
                                       users: List[Any],
                                       course_name: str,
                                       update_details: str,
-                                      priority: NotificationPriority = NotificationPriority.NORMAL) -> Dict[str, Any]:
+                                      priority: NotificationPriority = NotificationPriority.NORMAL,
+                                      sender_info: Optional[Dict] = None) -> Dict[str, Any]:
         """Send course update notification"""
         
         title = f"Course Update: {course_name}"
         message = f"Update to {course_name}: {update_details}"
         
+        # Enhanced template data for course notifications
+        template_data = {
+            'course_name': course_name,
+            'update_details': update_details,
+            'notification_category': 'course_update'
+        }
+        
+        # Send notification with course_update type for proper announcement handling
         return self.send_notification(
             users=users,
             notification_type=NotificationType.COURSE_UPDATE,
             title=title,
             message=message,
             priority=priority,
-            channel=NotificationChannel.BOTH
+            channel=NotificationChannel.BOTH,
+            template_data=template_data,
+            sender_info=sender_info
         )
     
     def send_quiz_result_notification(self, 

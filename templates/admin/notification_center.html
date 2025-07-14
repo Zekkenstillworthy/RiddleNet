@@ -647,6 +647,17 @@
         async function sendNotification(event) {
             event.preventDefault();
             
+            // Prevent double submission
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            if (submitButton.disabled) {
+                console.log('Form already being submitted, ignoring duplicate submission');
+                return;
+            }
+            
+            // Disable submit button to prevent double submission
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
+            
             const formData = {
                 recipient_type: document.getElementById('recipientType').value,
                 specific_user: document.getElementById('specificUser').value,
@@ -659,10 +670,15 @@
 
             if (!formData.title || !formData.message) {
                 showAlert('Please fill in title and message', 'error');
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="bx bx-send"></i> Send Notification';
                 return;
             }
 
             try {
+                console.log('Sending notification:', formData);
+                
                 const response = await fetch('/admin/api/notifications/send', {
                     method: 'POST',
                     headers: {
@@ -672,18 +688,31 @@
                 });
 
                 const result = await response.json();
+                console.log('Notification response:', result);
                 
                 if (response.ok) {
-                    showAlert(`Notification sent successfully! ${result.email_sent} emails, ${result.websocket_sent} WebSocket notifications`, 'success');
+                    // Show detailed success message
+                    const successMsg = `✅ Notification sent successfully!\n📧 ${result.email_sent || 0} emails sent\n⚡ ${result.websocket_sent || 0} WebSocket notifications sent`;
+                    showAlert(successMsg, 'success');
+                    
+                    // Reset form
                     document.getElementById('notificationForm').reset();
+                    
+                    // Refresh data
                     loadNotificationHistory();
                     updateStatistics();
                 } else {
-                    showAlert(result.error || 'Failed to send notification', 'error');
+                    showAlert(`❌ Error: ${result.error || 'Failed to send notification'}`, 'error');
                 }
             } catch (error) {
                 console.error('Error sending notification:', error);
-                showAlert('Failed to send notification', 'error');
+                showAlert('❌ Network error: Failed to send notification', 'error');
+            } finally {
+                // Re-enable button after 2 seconds
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="bx bx-send"></i> Send Notification';
+                }, 2000);
             }
         }
 
@@ -723,13 +752,13 @@
                     type: 'account_activity',
                     priority: 'normal',
                     title: 'Welcome to RiddleNet!',
-                    message: 'Welcome to the RiddleNet cyber security learning platform! Get started by exploring our interactive simulations and courses.'
+                    message: 'Welcome to the RiddleNet! Get started by exploring our interactive simulations and courses.'
                 },
                 course_update: {
                     type: 'course_update',
                     priority: 'normal',
                     title: 'New Course Available',
-                    message: 'A new course has been added to your learning path. Check out the latest content and continue your cyber security journey.'
+                    message: 'A new course has been added to your learning path. Check out the latest content and continue your RiddleNet journey.'
                 },
                 quiz_result: {
                     type: 'quiz_result',

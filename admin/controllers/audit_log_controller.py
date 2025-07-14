@@ -150,22 +150,68 @@ def export_logs():
         except ValueError:
             pass
     
-    # Fetch all logs matching the criteria
-    logs = query.all()
+    # Build the base query with joins for user information
+    base_query = db.session.query(ActivityLog, User, Admin).outerjoin(
+        User, ActivityLog.user_id == User.id
+    ).outerjoin(
+        Admin, ActivityLog.user_id == Admin.id
+    )
+    
+    # Apply filters if provided
+    if user_id:
+        base_query = base_query.filter(ActivityLog.user_id == user_id)
+    
+    if action_type:
+        base_query = base_query.filter(ActivityLog.action_type == action_type)
+        
+    if entity_type:
+        base_query = base_query.filter(ActivityLog.related_entity_type == entity_type)
+    
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d')
+            base_query = base_query.filter(ActivityLog.timestamp >= from_date_obj)
+        except ValueError:
+            pass
+    
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d')
+            to_date_obj = to_date_obj + timedelta(days=1)
+            base_query = base_query.filter(ActivityLog.timestamp <= to_date_obj)
+        except ValueError:
+            pass
+    
+    # Execute query and get results
+    logs_with_users = base_query.order_by(desc(ActivityLog.timestamp)).all()
     
     # Create a CSV string
     output = StringIO()
     writer = csv.writer(output)
     
-    # Write header
-    writer.writerow(['ID', 'User ID', 'Action Type', 'Message', 'Timestamp', 'Entity Type', 'Entity ID'])
+    # Write header with Username included
+    writer.writerow(['ID', 'User ID', 'Username', 'User Type', 'Action Type', 'Message', 'Timestamp', 'Entity Type', 'Entity ID'])
     
     # Write data
-    for log in logs:
+    for log, user, admin in logs_with_users:
         timestamp_str = log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A'
+        
+        # Determine username and user type
+        if user:
+            username = user.username
+            user_type = 'Student'
+        elif admin:
+            username = admin.username
+            user_type = 'Admin'
+        else:
+            username = 'Unknown User'
+            user_type = 'Unknown'
+        
         writer.writerow([
             log.id, 
             log.user_id, 
+            username,
+            user_type,
             log.action_type, 
             log.message, 
             timestamp_str, 

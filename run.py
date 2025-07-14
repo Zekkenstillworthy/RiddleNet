@@ -21,6 +21,14 @@ ctx.push()
 from socket_manager import init_socketio
 init_socketio(app)
 
+# Inject socketio instance into notification controller
+try:
+    from admin.controllers.notification_controller import set_socketio_instance
+    set_socketio_instance(socketio)
+    print("✅ SocketIO instance injected into notification controller")
+except ImportError as e:
+    print(f"⚠️ Could not inject socketio into notification controller: {e}")
+
 cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
     r"/admin/troubleshooting/*": {"origins": "*"}
@@ -118,6 +126,11 @@ try:
         from user.api.feedback_api import feedback_api
         app.register_blueprint(feedback_api)
         print("Feedback API Blueprint registered successfully")
+        
+        # Register user notification routes
+        from user.routes.notification_routes import notification_bp
+        app.register_blueprint(notification_bp)
+        print("User Notification Blueprint registered successfully")
     except Exception as e:
         print(f"Error registering User Troubleshooting blueprint: {e}")
     # No separate simulation blueprint registration needed

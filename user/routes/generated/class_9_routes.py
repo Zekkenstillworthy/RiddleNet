@@ -1,10 +1,9 @@
-
 """
 Auto-generated routes for Class: Networking 2 (ID: 9)
 Generated on: 2025-07-06 19:10:24
 """
 
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from user.models.user import User
 from admin.models.class_model import Class
@@ -99,9 +98,42 @@ def simulation_detail(simulation_id):
 @class_9_bp.route('/assessment/<int:assessment_id>')
 @flexible_login_required
 def assessment_detail(assessment_id):
-    """Assessment page"""
-    # Implementation for assessment
-    pass
+    """Assessment page for quiz/question group"""
+    try:
+        qg = QuestionGroup.query.get_or_404(assessment_id)
+        
+        # Format questions for the quiz interface
+        questions = []
+        for q in qg.questions:
+            question_data = {
+                'id': q.id,
+                'question': q.question,
+                'options': q.options if hasattr(q, 'options') and q.options else [],
+                'type': getattr(q, 'type', 'multiple_choice'),
+                'difficulty': getattr(q, 'difficulty', 'medium'),
+                'category': q.category
+            }
+            questions.append(question_data)
+        
+        assessment_data = {
+            'id': qg.id,
+            'name': qg.name,
+            'description': qg.description,
+            'questions': questions,
+            'total_questions': len(questions),
+            'estimated_time': len(questions) * 2
+        }
+        
+        return render_template('user/quiz_interface.html', 
+                             assessment=assessment_data,
+                             class_info={
+                                 'id': 9,
+                                 'name': 'Networking 2',
+                                 'code': 'QKA5AN'
+                             })
+    except Exception as e:
+        flash(f'Error loading assessment: {str(e)}', 'error')
+        return redirect(url_for('class_9.index'))
 
 @class_9_bp.route('/api/lesson/<int:lesson_id>')
 @flexible_login_required
@@ -140,6 +172,41 @@ def api_submit_answer():
     result = process_answer_submission(user_id, data)
     
     return jsonify(result)
+
+@class_9_bp.route('/api/assessments')
+@flexible_login_required
+def api_get_assessments():
+    """API endpoint to get assessment data for the class"""
+    user_context = get_current_user_context()
+    user_id = user_context['user_id'] if user_context['is_authenticated'] else None
+    
+    if not user_id:
+        return jsonify({'error': 'Authentication required'}), 401
+    
+    # Get class data
+    class_obj = Class.query.get(9)
+    if not class_obj:
+        return jsonify({'error': 'Class not found'}), 404
+    
+    # Get question groups for this class
+    question_groups = class_obj.question_groups.all()
+    
+    # Format assessments data
+    assessments = []
+    for qg in question_groups:
+        question_count = len(qg.questions) if hasattr(qg, 'questions') and qg.questions else 0
+        assessments.append({
+            'id': qg.id,
+            'name': qg.name,
+            'description': qg.description,
+            'question_count': question_count,
+            'estimated_time': question_count * 2
+        })
+    
+    return jsonify({
+        'assessments': assessments,
+        'total_count': len(assessments)
+    })
 
 # Helper functions
 def get_class_modules(class_id):

@@ -1843,8 +1843,35 @@
     }
 
     function exportClassReport(classId, format) {
-      // Placeholder for export functionality
-      alert(`Exporting class report in ${format.toUpperCase()} format... (Feature coming soon)`);
+      if (format === 'csv') {
+        // Download CSV export
+        const exportUrl = `/admin/api/classes/${classId}/export/csv`;
+        
+        // Create a temporary link to trigger download
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = `class_${classId}_report.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showNotification('CSV export started...', 'info');
+      } else if (format === 'pdf') {
+        // Call PDF export endpoint
+        fetch(`/admin/api/classes/${classId}/export/pdf`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.message) {
+              showNotification(data.message, 'info');
+            } else {
+              showNotification('PDF export functionality is coming soon!', 'info');
+            }
+          })
+          .catch(error => {
+            console.error('Error exporting PDF:', error);
+            showNotification('Error exporting PDF: ' + error.message, 'error');
+          });
+      }
     }
 
     // Update the existing populateClassDetailsModal function to use the new enhanced version

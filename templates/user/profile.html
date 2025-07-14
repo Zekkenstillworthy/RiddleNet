@@ -536,6 +536,7 @@
   .profile-image.loading {
     opacity: 0.6;
     filter: blur(2px);
+    animation: loadingPulse 1.5s infinite;
   }
 
   .profile-image.updated {
@@ -544,10 +545,147 @@
     box-shadow: 0 0 30px rgba(0, 255, 136, 0.8) !important;
   }
 
+  .profile-image.preview-active {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.6) !important;
+  }
+
   @keyframes profilePulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
+  }
+
+  @keyframes loadingPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Enhanced preview notification */
+  .preview-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(135deg, #ffd700, #ffb347);
+    color: #000;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    animation: fadeInScale 0.3s ease-out;
+    z-index: 10;
+  }
+
+  /* Enhanced preview container with zoom effect */
+  .profile-image-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-image-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
+    border: 2px dashed rgba(0, 217, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1;
+  }
+
+  .profile-image-container:hover::before {
+    opacity: 1;
+    width: 150px;
+    height: 150px;
+  }
+
+  /* Cropping preview overlay */
+  .crop-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .crop-preview-overlay.active {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .crop-preview-text {
+    color: var(--cyber-glow);
+    font-size: 0.8rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  @keyframes fadeInScale {
+    0% { 
+      opacity: 0; 
+      transform: scale(0.5); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: scale(1); 
+    }
+  }
+
+  @keyframes fadeInUp {
+    0% { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  @keyframes fadeOutDown {
+    0% { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+  }
+
+  @keyframes slideInRight {
+    0% { 
+      opacity: 0; 
+      transform: translateX(100%); 
+    }
+    100% { 
+      opacity: 1; 
+      transform: translateX(0); 
+    }
+  }
+
+  @keyframes slideOutRight {
+    0% { 
+      opacity: 1; 
+      transform: translateX(0); 
+    }
+    100% { 
+      opacity: 0; 
+      transform: translateX(100%); 
+    }
   }
 
   .upload-button-container {
@@ -779,6 +917,7 @@
                    alt="Profile Image" 
                    style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); background-color: #fff; object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
                    class="profile-image"
+                   data-original-src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}"
                    onclick="document.getElementById('profile_img').click()">
               {% else %}
               <img id="profile-img-preview"
@@ -787,6 +926,7 @@
                    src="{{ url_for('static', filename='img/Logo.png') }}"
                    alt="Profile Image"
                    class="profile-image"
+                   data-original-src="{{ url_for('static', filename='img/Logo.png') }}"
                    onclick="document.getElementById('profile_img').click()">
               {% endif %}
               
@@ -798,6 +938,56 @@
                         class="upload-btn">
                     <i class="fas fa-camera"></i> Change Photo
                 </button>
+                <button type="button" 
+                        id="reset-preview-btn"
+                        onclick="resetPreview()" 
+                        class="upload-btn"
+                        style="background: linear-gradient(135deg, #ff4757, #ff3838); margin-left: 8px; display: none;">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+                <button type="button" 
+                        id="compare-preview-btn"
+                        onclick="toggleCompareView()" 
+                        class="upload-btn"
+                        style="background: linear-gradient(135deg, #3742fa, #2f3542); margin-left: 8px; display: none;">
+                    <i class="fas fa-exchange-alt"></i> Compare
+                </button>
+              </div>
+              
+              <!-- Enhanced Preview Comparison Container -->
+              <div id="comparison-container" style="display: none; margin-top: 16px; text-align: center;">
+                <div style="
+                    display: flex; 
+                    justify-content: space-around; 
+                    align-items: center; 
+                    gap: 20px;
+                    background: rgba(0, 0, 0, 0.2);
+                    padding: 16px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(0, 217, 255, 0.2);
+                ">
+                  <div style="text-align: center;">
+                    <p style="color: var(--cyber-glow); font-size: 0.8rem; margin: 0 0 8px 0; font-weight: 600;">BEFORE</p>
+                    <img id="original-preview" 
+                         style="height: 80px; width: 80px; border-radius: 50%; border: 2px solid #666; object-fit: cover;"
+                         alt="Original Profile">
+                  </div>
+                  <div style="
+                    display: flex; 
+                    align-items: center; 
+                    color: var(--cyber-glow); 
+                    font-size: 1.5rem;
+                    animation: pulse 2s infinite;
+                  ">
+                    <i class="fas fa-arrow-right"></i>
+                  </div>
+                  <div style="text-align: center;">
+                    <p style="color: var(--neon-green); font-size: 0.8rem; margin: 0 0 8px 0; font-weight: 600;">AFTER</p>
+                    <img id="new-preview" 
+                         style="height: 80px; width: 80px; border-radius: 50%; border: 2px solid var(--neon-green); object-fit: cover;"
+                         alt="New Profile">
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -886,15 +1076,16 @@
 function previewImage(event) {
     const file = event.target.files[0];
     const preview = document.getElementById('profile-img-preview');
+    const container = preview.parentElement;
     
     if (!file) {
         return;
     }
     
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (PNG, JPG, JPEG, or GIF)');
+        showImagePreviewNotification('❌ Invalid File Type', 'Please select a valid image file (PNG, JPG, JPEG, GIF, or WebP)', 'error');
         event.target.value = '';
         return;
     }
@@ -902,45 +1093,152 @@ function previewImage(event) {
     // Validate file size (5MB limit)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-        alert('File size must be less than 5MB');
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        showImagePreviewNotification('❌ File Too Large', `File size is ${sizeMB}MB. Maximum allowed is 5MB.`, 'error');
         event.target.value = '';
         return;
     }
     
-    // Add loading state
+    // Add loading state with enhanced animation
     preview.classList.add('loading');
+    preview.classList.remove('updated', 'preview-active');
+    
+    // Remove any existing preview indicator
+    const existingIndicator = container.querySelector('.preview-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
+    // Show file processing notification
+    const fileSizeKB = (file.size / 1024).toFixed(1);
+    showImagePreviewNotification('📁 Processing Image', `Loading ${file.name} (${fileSizeKB} KB)...`, 'info');
     
     // Create FileReader to read the selected image
     const reader = new FileReader();
     reader.onload = function(e) {
-        // Update preview image with selected file (base64 URL)
-        preview.src = e.target.result;
+        // Create a new image to validate dimensions and get metadata
+        const img = new Image();
+        img.onload = function() {
+            // Update preview image with selected file (base64 URL)
+            preview.src = e.target.result;
+            
+            // Enhanced styling with better visual feedback
+            preview.style.height = '120px';
+            preview.style.width = '120px';
+            preview.style.borderRadius = '50%';
+            preview.style.border = '4px solid var(--cyber-glow)';
+            preview.style.backgroundColor = '#fff';
+            preview.style.objectFit = 'cover';
+            preview.style.cursor = 'pointer';
+            preview.style.transition = 'all 0.3s ease';
+            preview.style.filter = 'brightness(1.1) contrast(1.05)';
+            
+            // Remove loading and add preview state
+            preview.classList.remove('loading');
+            preview.classList.add('updated', 'preview-active');
+            
+            // Add enhanced preview indicator badge with file info
+            const indicator = document.createElement('div');
+            indicator.className = 'preview-indicator';
+            indicator.innerHTML = `<i class="fas fa-star"></i> NEW`;
+            container.appendChild(indicator);
+            
+            // Show reset and compare buttons
+            const resetBtn = document.getElementById('reset-preview-btn');
+            const compareBtn = document.getElementById('compare-preview-btn');
+            if (resetBtn) {
+                resetBtn.style.display = 'inline-block';
+                resetBtn.style.animation = 'fadeInScale 0.3s ease-out';
+            }
+            if (compareBtn) {
+                compareBtn.style.display = 'inline-block';
+                compareBtn.style.animation = 'fadeInScale 0.3s ease-out 0.1s both';
+            }
+            
+            // Show enhanced success notification with detailed image info
+            const dimensions = `${img.width}×${img.height}`;
+            const aspectRatio = (img.width / img.height).toFixed(2);
+            showImagePreviewNotification(
+                '✅ Preview Ready!', 
+                `Image loaded successfully (${dimensions}, ${aspectRatio}:1 ratio). Click "Update Profile" to save.`,
+                'success'
+            );
+            
+            // Add subtle bounce animation to preview
+            preview.style.animation = 'profilePulse 0.6s ease-in-out';
+            
+            // Remove animation class after it completes
+            setTimeout(() => {
+                preview.classList.remove('updated');
+                preview.style.animation = '';
+            }, 600);
+            
+            // Auto-remove preview indicator after 10 seconds with fade effect
+            setTimeout(() => {
+                if (indicator.parentElement) {
+                    indicator.style.opacity = '0';
+                    indicator.style.transform = 'scale(0.5)';
+                    setTimeout(() => {
+                        if (indicator.parentElement) {
+                            indicator.remove();
+                        }
+                    }, 300);
+                }
+            }, 10000);
+            
+            // Add hover effects for better interactivity
+            preview.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.08)';
+                this.style.boxShadow = '0 0 35px rgba(0, 217, 255, 0.8)';
+            });
+            
+            preview.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '0 0 25px rgba(0, 217, 255, 0.4)';
+            });
+        };
         
-        // Update styling to match reference
-        preview.style.height = '120px';
-        preview.style.width = '120px';
-        preview.style.borderRadius = '50%';
-        preview.style.border = '4px solid var(--cyber-glow)';
-        preview.style.backgroundColor = '#fff';
-        preview.style.objectFit = 'cover';
-        preview.style.cursor = 'pointer';
-        preview.style.transition = 'all 0.3s ease';
+        img.onerror = function() {
+            showImagePreviewNotification('❌ Invalid Image', 'The selected file is not a valid image.', 'error');
+            event.target.value = '';
+            preview.classList.remove('loading');
+        };
         
-        // Remove loading and add updated animation
-        preview.classList.remove('loading');
-        preview.classList.add('updated');
-        
-        // Show success notification
-        showImagePreviewNotification('📷 Image Selected!', 'Your new profile image is ready to save.');
-        
-        // Remove animation class after it completes
-        setTimeout(() => {
-            preview.classList.remove('updated');
-        }, 600);
+        img.src = e.target.result;
     };
     
     reader.onerror = function() {
-        alert('Error reading file. Please try again.');
+        showImagePreviewNotification('❌ Read Error', 'Error reading file. Please try again.', 'error');
+        event.target.value = '';
+        preview.classList.remove('loading');
+    };
+    
+    // Read the file as data URL (base64)
+    reader.readAsDataURL(file);
+}
+                if (indicator.parentElement) {
+                    indicator.style.opacity = '0';
+                    indicator.style.transform = 'scale(0.5)';
+                    setTimeout(() => {
+                        if (indicator.parentElement) {
+                            indicator.remove();
+                        }
+                    }, 300);
+                }
+            }, 10000);
+        };
+        
+        img.onerror = function() {
+            showImagePreviewNotification('❌ Invalid Image', 'The selected file is not a valid image.');
+            event.target.value = '';
+            preview.classList.remove('loading');
+        };
+        
+        img.src = e.target.result;
+    };
+    
+    reader.onerror = function() {
+        showImagePreviewNotification('❌ Read Error', 'Error reading file. Please try again.');
         event.target.value = '';
         preview.classList.remove('loading');
     };
@@ -949,49 +1247,243 @@ function previewImage(event) {
     reader.readAsDataURL(file);
 }
 
+// Reset preview function with enhanced feedback
+function resetPreview() {
+    const preview = document.getElementById('profile-img-preview');
+    const fileInput = document.getElementById('profile_img');
+    const resetBtn = document.getElementById('reset-preview-btn');
+    const compareBtn = document.getElementById('compare-preview-btn');
+    const container = preview.parentElement;
+    const comparisonContainer = document.getElementById('comparison-container');
+    
+    // Clear file input
+    fileInput.value = '';
+    
+    // Remove preview state classes
+    preview.classList.remove('loading', 'updated', 'preview-active');
+    
+    // Remove preview indicator
+    const indicator = container.querySelector('.preview-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
+    
+    // Reset to original image
+    const originalImageSrc = preview.dataset.originalSrc || "{{ url_for('static', filename='img/Logo.png') }}";
+    preview.src = originalImageSrc;
+    
+    // Hide buttons
+    resetBtn.style.display = 'none';
+    compareBtn.style.display = 'none';
+    comparisonContainer.style.display = 'none';
+    
+    // Reset styling
+    preview.style.filter = 'brightness(1)';
+    preview.style.transform = 'scale(1)';
+    
+    // Show notification
+    showImagePreviewNotification('🔄 Preview Reset', 'Returned to original profile image.', 'info');
+}
+
+// Enhanced comparison view toggle
+function toggleCompareView() {
+    const comparisonContainer = document.getElementById('comparison-container');
+    const compareBtn = document.getElementById('compare-preview-btn');
+    const preview = document.getElementById('profile-img-preview');
+    const originalPreview = document.getElementById('original-preview');
+    const newPreview = document.getElementById('new-preview');
+    
+    if (comparisonContainer.style.display === 'none') {
+        // Show comparison view
+        comparisonContainer.style.display = 'block';
+        comparisonContainer.style.animation = 'fadeInUp 0.4s ease-out';
+        
+        // Update comparison images
+        const originalSrc = preview.dataset.originalSrc || "{{ url_for('static', filename='img/Logo.png') }}";
+        originalPreview.src = originalSrc;
+        newPreview.src = preview.src;
+        
+        // Update button text
+        compareBtn.innerHTML = '<i class="fas fa-times"></i> Close';
+        compareBtn.style.background = 'linear-gradient(135deg, #ff4757, #ff3838)';
+        
+        showImagePreviewNotification('🔍 Comparison View', 'Comparing original and new profile images.', 'info');
+    } else {
+        // Hide comparison view
+        comparisonContainer.style.animation = 'fadeOutDown 0.4s ease-out';
+        setTimeout(() => {
+            comparisonContainer.style.display = 'none';
+        }, 400);
+        
+        // Reset button
+        compareBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Compare';
+        compareBtn.style.background = 'linear-gradient(135deg, #3742fa, #2f3542)';
+    }
+}
+
+// Enhanced image drag and drop functionality
+function setupImageDragDrop() {
+    const preview = document.getElementById('profile-img-preview');
+    const container = preview.parentElement;
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        container.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        container.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        container.addEventListener(eventName, unhighlight, false);
+    });
+    
+    container.addEventListener('drop', handleDrop, false);
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        container.style.background = 'rgba(0, 217, 255, 0.1)';
+        container.style.borderColor = 'var(--cyber-glow)';
+        preview.style.transform = 'scale(1.05)';
+    }
+    
+    function unhighlight(e) {
+        container.style.background = '';
+        container.style.borderColor = '';
+        preview.style.transform = 'scale(1)';
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const fileInput = document.getElementById('profile_img');
+            fileInput.files = files;
+            
+            // Trigger the preview function
+            const event = { target: { files: files } };
+            previewImage(event);
+        }
+    }
+}
+
 // Enhanced notification function for image preview
-function showImagePreviewNotification(title, message) {
+function showImagePreviewNotification(title, message, type = 'success') {
     const notification = document.createElement('div');
+    
+    // Determine colors based on type
+    let bgGradient, textColor, iconColor;
+    switch(type) {
+        case 'error':
+            bgGradient = 'linear-gradient(135deg, #ff4757, #ff3838)';
+            textColor = '#fff';
+            iconColor = '#fff';
+            break;
+        case 'warning':
+            bgGradient = 'linear-gradient(135deg, #ffa502, #ff7675)';
+            textColor = '#000';
+            iconColor = '#000';
+            break;
+        default: // success
+            bgGradient = 'linear-gradient(135deg, var(--cyber-glow), #00b8d4)';
+            textColor = '#000';
+            iconColor = '#000';
+    }
+    
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: linear-gradient(135deg, var(--cyber-glow), #00b8d4);
-        color: #000;
-        padding: 15px 25px;
+        background: ${bgGradient};
+        color: ${textColor};
+        padding: 16px 24px;
         border-radius: 15px;
         font-size: 0.9rem;
         font-weight: 600;
         z-index: 10000;
         opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.4s ease;
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+        transform: translateX(100%) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         border: 2px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        max-width: 350px;
+        word-wrap: break-word;
     `;
-    notification.innerHTML = `<strong>${title}</strong><br><small>${message}</small>`;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <div style="font-size: 1.2rem; margin-top: 2px;">${title.split(' ')[0]}</div>
+            <div style="flex: 1;">
+                <div style="font-weight: 700; margin-bottom: 4px;">${title.substring(title.indexOf(' ') + 1)}</div>
+                <div style="font-size: 0.8rem; opacity: 0.9; line-height: 1.3;">${message}</div>
+            </div>
+        </div>
+    `;
     
     document.body.appendChild(notification);
     
     // Animate in
     setTimeout(() => {
         notification.style.opacity = '1';
-        notification.style.transform = 'translateX(0)';
+        notification.style.transform = 'translateX(0) scale(1)';
     }, 100);
     
-    // Animate out and remove
+    // Add hover interaction
+    notification.addEventListener('mouseenter', () => {
+        notification.style.transform = 'translateX(0) scale(1.02)';
+    });
+    
+    notification.addEventListener('mouseleave', () => {
+        notification.style.transform = 'translateX(0) scale(1)';
+    });
+    
+    // Click to dismiss
+    notification.addEventListener('click', () => {
+        dismissNotification(notification);
+    });
+    
+    // Auto-dismiss after delay (longer for errors)
+    const delay = type === 'error' ? 5000 : 3500;
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 400);
-    }, 3000);
+        if (notification.parentNode) {
+            dismissNotification(notification);
+        }
+    }, delay);
+}
+
+function dismissNotification(notification) {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(100%) scale(0.9)';
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 400);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize profile image preview system
+    const preview = document.getElementById('profile-img-preview');
+    if (preview) {
+        // Store original image source for reset functionality
+        preview.dataset.originalSrc = preview.src;
+        
+        // Setup drag and drop functionality
+        setupImageDragDrop();
+        
+        // Add enhanced click interaction
+        preview.addEventListener('click', function() {
+            document.getElementById('profile_img').click();
+        });
+    }
+    
     // Enhanced fade-in animation for profile elements
     const profileCard = document.querySelector('.profile-card');
     if (profileCard) {
@@ -1048,6 +1540,23 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Enhanced profile image hover effects
     const profileImage = document.getElementById('profile-img-preview');
+    if (profileImage) {
+        profileImage.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.filter = 'brightness(1.1)';
+        });
+        
+        profileImage.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.filter = 'brightness(1)';
+        });
+    }
+    
+    // Initialize welcome message
+    setTimeout(() => {
+        showImagePreviewNotification('👋 Profile Ready', 'Click on your profile image to upload a new photo!');
+    }, 1000);
+});
     if (profileImage) {
         profileImage.addEventListener('mouseenter', function() {
             this.style.filter = 'brightness(1.1) contrast(1.1)';
@@ -1241,5 +1750,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+});
+
+setupImageDragDrop();
 </script>
 {% endblock %}

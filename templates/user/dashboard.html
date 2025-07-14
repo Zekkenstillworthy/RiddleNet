@@ -563,14 +563,14 @@
         <h2 style="margin: 0; font-size: 1.3rem;">Announcements</h2>
       </div>
       
-      <div style="background: var(--dark-bg); border-radius: 8px; padding: 16px; border-left: 4px solid var(--cyber-glow); margin-top: 12px;">
-        <h3 style="color: var(--cyber-glow); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-          <i class="fas fa-network-wired"></i>
-          Networking 1
-        </h3>
-        <p style="color: rgba(255, 255, 255, 0.8); margin: 0; font-size: 0.9rem;">
-          You have a Quiz on Monday 10 am
-        </p>
+      <!-- Dynamic announcements will be added here via WebSocket -->
+      <div id="announcements-container" style="margin-top: 12px;">
+        <div class="no-announcements" style="background: var(--dark-bg); border-radius: 8px; padding: 16px; border-left: 4px solid rgba(255, 255, 255, 0.3); text-align: center;">
+          <i class="fas fa-info-circle" style="color: rgba(255, 255, 255, 0.6); font-size: 1.2rem; margin-bottom: 8px;"></i>
+          <p style="color: rgba(255, 255, 255, 0.6); margin: 0; font-size: 0.9rem;">
+            No announcements at this time. Check back later for updates.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -815,19 +815,18 @@
           updateProgressIndicators(data);
         });
         
-        // Handle announcements
-        window.socketClient.on('new_announcement', function(data) {
-          console.log('Dashboard: New announcement received:', data);
-          addAnnouncementToUI(data);
-          
-          if (window.socketClient.showNotification) {
-            window.socketClient.showNotification(
-              'New Announcement', 
-              data.title || 'Check the announcements section', 
-              'info'
-            );
+        // Handle announcements via trigger system (avoids duplication)
+        if (window.socketClient) {
+          // Remove the socket.on handler since socket-client.js already handles it
+          // Instead, listen to the custom event handlers that socket-client.js provides
+          if (typeof window.socketClient.on === 'function') {
+            // Use a custom event name to avoid conflicts
+            window.addEventListener('announcement-received', function(event) {
+              console.log('Dashboard: New announcement received via custom event:', event.detail);
+              addAnnouncementToUI(event.detail);
+            });
           }
-        });
+        }
         
         // Connection status handlers
         window.socketClient.on('connected', () => {
@@ -1261,41 +1260,90 @@
       }
     }
     
+    function loadRecentAnnouncements() {
+      console.log('📢 Loading recent announcements on page load...');
+      fetch('/user/api/notifications/recent-announcements')
+        .then(response => response.json())
+        .then(data => {
+          console.log('📢 Recent announcements response:', data);
+          if (data.success && data.announcements && data.announcements.length > 0) {
+            // Display each announcement (most recent first)
+            data.announcements.forEach((announcement, index) => {
+              // Add a small delay between announcements for smooth loading effect
+              setTimeout(() => {
+                addAnnouncementToUI(announcement);
+              }, index * 200);
+            });
+            console.log(`📢 Loaded ${data.announcements.length} recent announcements`);
+          } else {
+            console.log('📢 No recent announcements found');
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error loading recent announcements:', error);
+        });
+    }
+    
     function addAnnouncementToUI(announcementData) {
-      const announcementsSection = document.querySelector('.modern-card:has(.section-header h2:contains("Announcements"))');
-      if (announcementsSection) {
+      console.log('🔧 addAnnouncementToUI called with:', announcementData);
+      const announcementsContainer = document.getElementById('announcements-container');
+      console.log('🔧 announcements-container found:', !!announcementsContainer);
+      if (announcementsContainer) {
+        // Remove the "no announcements" placeholder if it exists
+        const noAnnouncementsPlaceholder = announcementsContainer.querySelector('.no-announcements');
+        console.log('🔧 no-announcements placeholder found:', !!noAnnouncementsPlaceholder);
+        if (noAnnouncementsPlaceholder) {
+          noAnnouncementsPlaceholder.remove();
+          console.log('🔧 removed no-announcements placeholder');
+        }
+        
         const newAnnouncement = document.createElement('div');
         newAnnouncement.style.cssText = `
           background: var(--dark-bg);
-          border-radius: 12px;
-          padding: 24px;
+          border-radius: 8px;
+          padding: 16px;
           border-left: 4px solid var(--cyber-glow);
-          margin-top: 16px;
+          margin-bottom: 12px;
           opacity: 0;
           transform: translateY(20px);
           transition: all 0.3s ease;
         `;
         
+        // Determine priority styling
+        const priority = announcementData.priority || 'normal';
+        const priorityColor = priority === 'high' ? '#ff6b6b' : priority === 'urgent' ? '#ff3333' : 'var(--cyber-glow)';
+        const priorityIcon = priority === 'high' ? 'fa-exclamation-triangle' : priority === 'urgent' ? 'fa-bolt' : 'fa-bullhorn';
+        
         newAnnouncement.innerHTML = `
-          <h3 style="color: var(--cyber-glow); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-bullhorn"></i>
+          <h3 style="color: ${priorityColor}; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+            <i class="fas ${priorityIcon}"></i>
             ${announcementData.title || 'New Announcement'}
+            ${priority !== 'normal' ? `<span style="background: ${priorityColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">${priority}</span>` : ''}
           </h3>
-          <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 8px;">
+          <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 8px; font-size: 0.9rem;">
             ${announcementData.message || announcementData.content}
           </p>
-          <small style="color: rgba(255, 255, 255, 0.6);">
-            ${new Date().toLocaleDateString()} - Just now
+          <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+            ${announcementData.admin_name ? `From: ${announcementData.admin_name} - ` : ''}${new Date(announcementData.timestamp || Date.now()).toLocaleString()}
           </small>
         `;
         
-        announcementsSection.appendChild(newAnnouncement);
+        // Insert at the top of the container
+        announcementsContainer.insertBefore(newAnnouncement, announcementsContainer.firstChild);
+        console.log('🔧 New announcement element inserted into DOM');
         
         // Animate in
         setTimeout(() => {
           newAnnouncement.style.opacity = '1';
           newAnnouncement.style.transform = 'translateY(0)';
+          console.log('🔧 Announcement animation completed');
         }, 100);
+        
+        // Limit to max 5 announcements
+        const announcements = announcementsContainer.querySelectorAll('div[style*="border-left: 4px solid"]');
+        if (announcements.length > 5) {
+          announcements[announcements.length - 1].remove();
+        }
       }
     }
     

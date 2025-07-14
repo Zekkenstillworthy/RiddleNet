@@ -1,13 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, make_response
 from flask_login import login_required, current_user
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
 from user.models.user import User  # Import User model for the relationship
+from user.models.score import Score  # Import Score model for performance data
 from admin import db
 from datetime import datetime
 import json
 import random
 import string
+import csv
+import io
 from admin.services.class_template_generator import ClassTemplateGenerator
 from admin.services.enhanced_class_template_generator import enhanced_template_generator
 from admin.services.dynamic_route_registry import route_registry
@@ -29,21 +32,129 @@ def index():
     
     return render_template('admin/class.html', active_page='classes')
 
-@class_controller.route('/api/question-groups', methods=['GET'])
+@class_controller.route('/api/classes/<int:class_id>/export/csv', methods=['GET'])
 @login_required
-def get_question_groups():
-    """API endpoint to retrieve all question groups"""
+def export_class_csv(class_id):
+    """Export class data including students and performance to CSV"""
     try:
-        # Get all question groups from database
-        groups = QuestionGroup.query.all()
-        return jsonify([{
-            'id': group.id,
-            'name': group.name,
-            'questionCount': len(group.questions) if hasattr(group, 'questions') and group.questions else 0
-        } for group in groups])
+        cls = Class.query.get_or_404(class_id)
+        
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write class information header
+        writer.writerow(['Class Report - ' + cls.name])
+        writer.writerow(['Generated on:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow([])  # Empty row
+        
+        # Class details section
+        writer.writerow(['Class Information'])
+        writer.writerow(['Class Name', cls.name])
+        writer.writerow(['Section', cls.section or 'N/A'])
+        writer.writerow(['Class Code', cls.code])
+        writer.writerow(['Description', cls.description or 'N/A'])
+        writer.writerow(['Start Date', cls.start_date.strftime('%Y-%m-%d') if cls.start_date else 'N/A'])
+        writer.writerow(['End Date', cls.end_date.strftime('%Y-%m-%d') if cls.end_date else 'N/A'])
+        writer.writerow(['Max Students', cls.max_students])
+        writer.writerow(['Current Students', cls.students.count() if cls.students else 0])
+        writer.writerow(['Status', cls.status])
+        writer.writerow([])  # Empty row
+        
+        # Question groups section
+        writer.writerow(['Assigned Question Groups'])
+        writer.writerow(['Group ID', 'Group Name', 'Question Count'])
+        if cls.question_groups:
+            for group in cls.question_groups:
+                question_count = len(group.questions) if hasattr(group, 'questions') and group.questions else 0
+                writer.writerow([group.id, group.name, question_count])
+        else:
+            writer.writerow(['N/A', 'No question groups assigned', '0'])
+        writer.writerow([])  # Empty row
+        
+        # Students section
+        writer.writerow(['Enrolled Students'])
+        writer.writerow(['Student ID', 'Username', 'Email', 'Total Scores', 'Average Score', 'Best Score'])
+        
+        if cls.students:
+            for student in cls.students.all():
+                # Get student's scores for this class or related assessments
+                student_scores = Score.query.filter_by(user_id=student.id).all()
+                
+                total_scores = len(student_scores)
+                if student_scores:
+                    scores_values = [score.score for score in student_scores if score.score is not None]
+                    avg_score = sum(scores_values) / len(scores_values) if scores_values else 0
+                    best_score = max(scores_values) if scores_values else 0
+                else:
+                    avg_score = 0
+                    best_score = 0
+                
+                writer.writerow([
+                    student.id,
+                    student.username,
+                    student.email if hasattr(student, 'email') else 'N/A',
+                    total_scores,
+                    f"{avg_score:.1f}%" if avg_score > 0 else "N/A",
+                    f"{best_score:.1f}%" if best_score > 0 else "N/A"
+                ])
+        else:
+            writer.writerow(['N/A', 'No students enrolled', 'N/A', 'N/A', 'N/A', 'N/A'])
+        
+        # Performance summary
+        writer.writerow([])
+        writer.writerow(['Performance Summary'])
+        if cls.students:
+            all_scores = []
+            for student in cls.students.all():
+                student_scores = Score.query.filter_by(user_id=student.id).all()
+                for score in student_scores:
+                    if score.score is not None:
+                        all_scores.append(score.score)
+            
+            if all_scores:
+                writer.writerow(['Class Average', f"{sum(all_scores) / len(all_scores):.1f}%"])
+                writer.writerow(['Highest Score', f"{max(all_scores):.1f}%"])
+                writer.writerow(['Lowest Score', f"{min(all_scores):.1f}%"])
+                writer.writerow(['Total Assessments Taken', len(all_scores)])
+            else:
+                writer.writerow(['Class Average', 'No scores recorded'])
+        else:
+            writer.writerow(['Class Average', 'No students enrolled'])
+        
+        # Prepare the response
+        output.seek(0)
+        
+        response = make_response(output.getvalue())
+        response.headers['Content-Disposition'] = f'attachment; filename=class_{cls.code}_{cls.name}_report.csv'
+        response.headers['Content-Type'] = 'text/csv'
+        
+        return response
+        
     except Exception as e:
-        print(f"Error fetching question groups: {e}")
-        return jsonify({"error": "Failed to fetch question groups"}), 500
+        return jsonify({"error": f"Failed to export class data: {str(e)}"}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/export/pdf', methods=['GET'])
+@login_required
+def export_class_pdf(class_id):
+    """Export class data to PDF (placeholder for now)"""
+    try:
+        cls = Class.query.get_or_404(class_id)
+        
+        # For now, return a message indicating PDF functionality is coming soon
+        # In a full implementation, you would use libraries like reportlab or weasyprint
+        return jsonify({
+            "message": "PDF export functionality is coming soon!",
+            "suggestion": "Please use CSV export for now",
+            "classInfo": {
+                "name": cls.name,
+                "code": cls.code,
+                "students": cls.students.count() if cls.students else 0
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to export PDF: {str(e)}"}), 500
 
 @class_controller.route('/api/classes', methods=['GET'])
 @login_required

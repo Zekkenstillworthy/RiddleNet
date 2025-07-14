@@ -1,0 +1,483 @@
+/* Enhanced Modal System for RiddleNet */
+/* Modern, responsive, and beautiful modal components */
+
+/* ========================================
+   ENHANCED MODAL BASE STYLES
+   ======================================== */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    z-index: 10000;
+    animation: modalBackdropFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced Modal Content Container */
+.modal-content {
+    background: linear-gradient(145deg, 
+        rgba(26, 35, 126, 0.95) 0%, 
+        rgba(15, 23, 42, 0.98) 100%);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 
+        0 25px 80px rgba(26, 35, 126, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: modalSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Gradient Top Border */
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        #00D9FF 0%, 
+        #8B5CF6 50%, 
+        #39FF14 100%);
+    border-radius: 24px 24px 0 0;
+    animation: gradientShift 3s ease-in-out infinite;
+}
+
+/* Floating Glow Effect */
+.modal-content::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+        rgba(0, 217, 255, 0.1), 
+        rgba(139, 92, 246, 0.1), 
+        rgba(57, 255, 20, 0.1));
+    border-radius: 26px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    filter: blur(8px);
+}
+
+.modal-content:hover::after {
+    opacity: 1;
+}
+
+/* ========================================
+   MODAL HEADER ENHANCEMENTS
+   ======================================== */
+
+.modal-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(26, 35, 126, 0.3);
+    border-radius: 24px 24px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.1), 
+        transparent);
+    animation: shimmer 2s infinite;
+}
+
+.modal-header h2,
+.modal-header h3 {
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, 
+        #00D9FF 0%, 
+        #8B5CF6 50%, 
+        #39FF14 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+/* Enhanced Close Button */
+.close,
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    outline: none;
+}
+
+.close:hover,
+.close-modal:hover {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.5);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 
+        0 8px 25px rgba(255, 59, 48, 0.3),
+        0 0 0 4px rgba(255, 59, 48, 0.1);
+}
+
+/* ========================================
+   MODAL BODY ENHANCEMENTS
+   ======================================== */
+
+.modal-body {
+    padding: 32px 40px;
+    overflow-y: auto;
+    flex: 1;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #39FF14, #00D9FF);
+}
+
+/* ========================================
+   MODAL FOOTER ENHANCEMENTS
+   ======================================== */
+
+.modal-footer {
+    padding: 24px 40px 32px;
+    border-top: 1px solid rgba(0, 217, 255, 0.2);
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 24px 24px;
+}
+
+/* Enhanced Modal Buttons */
+.modal-footer .btn,
+.modal-footer button {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-width: 120px;
+}
+
+/* Primary Button */
+.modal-footer .btn-primary {
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.modal-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+    background: linear-gradient(135deg, #39FF14, #00D9FF);
+}
+
+/* Secondary Button */
+.modal-footer .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-footer .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Danger/Delete Button */
+.modal-footer .btn-danger,
+.modal-footer .btn-delete {
+    background: linear-gradient(135deg, #FF6B6B, #FF3B30);
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.modal-footer .btn-danger:hover,
+.modal-footer .btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+/* ========================================
+   SPECIALIZED MODAL TYPES
+   ======================================== */
+
+/* Tutorial Modal */
+.modal.tutorial-modal .modal-content {
+    max-width: 800px;
+    background: linear-gradient(145deg, 
+        rgba(57, 255, 20, 0.1) 0%, 
+        rgba(26, 35, 126, 0.95) 100%);
+}
+
+.modal.tutorial-modal .modal-header h2 {
+    background: linear-gradient(135deg, #39FF14, #00D9FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Form Modal */
+.modal.form-modal .modal-content {
+    max-width: 500px;
+}
+
+/* Large Content Modal */
+.modal.large-modal .modal-content {
+    max-width: 90vw;
+    max-height: 95vh;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes modalBackdropFadeIn {
+    from { 
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to { 
+        opacity: 1;
+        backdrop-filter: blur(20px);
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes gradientShift {
+    0%, 100% { 
+        background: linear-gradient(90deg, #00D9FF 0%, #8B5CF6 50%, #39FF14 100%);
+    }
+    33% { 
+        background: linear-gradient(90deg, #8B5CF6 0%, #39FF14 50%, #00D9FF 100%);
+    }
+    66% { 
+        background: linear-gradient(90deg, #39FF14 0%, #00D9FF 50%, #8B5CF6 100%);
+    }
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 0.6; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.1);
+    }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-width: 95vw;
+        border-radius: 16px;
+        margin: 0;
+    }
+    
+    .modal-header {
+        padding: 24px 20px 16px;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .modal-header h2,
+    .modal-header h3 {
+        font-size: 1.4rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        padding: 16px 20px 24px;
+        flex-direction: column;
+        border-radius: 0 0 16px 16px;
+    }
+    
+    .modal-footer .btn,
+    .modal-footer button {
+        width: 100%;
+        margin: 0;
+    }
+    
+    .close,
+    .close-modal {
+        width: 40px;
+        height: 40px;
+        top: 16px;
+        right: 16px;
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header h2,
+    .modal-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .modal-footer {
+        padding: 12px 16px 20px;
+    }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.modal-blur-background {
+    filter: blur(8px);
+    transition: filter 0.3s ease;
+}
+
+.modal-no-scroll {
+    overflow: hidden;
+}
+
+/* Loading state for modal content */
+.modal-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.modal-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 217, 255, 0.3);
+    border-top: 3px solid #00D9FF;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success/Error states */
+.modal-success .modal-content::before {
+    background: linear-gradient(90deg, #39FF14, #00FF7F, #39FF14);
+}
+
+.modal-error .modal-content::before {
+    background: linear-gradient(90deg, #FF6B6B, #FF3B30, #FF6B6B);
+}
+
+/* Modal with image/media content */
+.modal-media .modal-content {
+    max-width: 90vw;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.modal-media .modal-body {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-media img,
+.modal-media video {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+}

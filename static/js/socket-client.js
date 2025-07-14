@@ -117,15 +117,18 @@ class SocketClient {
             const script = document.createElement('script');
             script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js';
             script.onload = () => {
+                console.log('✅ Socket.io client loaded successfully');
                 // Add a small delay to ensure the script is fully loaded
                 setTimeout(() => this.initializeSocket(), 100);
             };
             script.onerror = (err) => {
-                console.error('Error loading socket.io client:', err);
+                console.error('❌ Error loading socket.io client:', err);
+                console.log('⚠️ WebSocket features will be unavailable');
                 // Graceful fallback - continue without WebSocket
             };
             document.head.appendChild(script);
         } else {
+            console.log('✅ Socket.io client already available');
             this.initializeSocket();
         }
     }
@@ -415,6 +418,38 @@ class SocketClient {
         this.socket.on('left_lobby_browser', safeHandler('left_lobby_browser', (data) => {
             console.log('📋 Left lobby browser:', data);
             this.trigger('left_lobby_browser', data);
+        }));
+
+        // Notification System Events
+        this.socket.on('new_announcement', safeHandler('new_announcement', (data) => {
+            console.log('📢 New announcement received:', data);
+            this.trigger('new_announcement', data);
+            
+            // Dispatch custom event for dashboard to avoid duplicate handlers
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('announcement-received', { 
+                    detail: data 
+                }));
+            }
+            
+            // Show browser notification
+            this.showNotification(
+                data.title || 'New Announcement', 
+                data.message || data.content || 'Check the announcements section', 
+                'info'
+            );
+        }));
+        
+        this.socket.on('notification', safeHandler('notification', (data) => {
+            console.log('🔔 Notification received:', data);
+            this.trigger('notification', data);
+            
+            // Show browser notification
+            this.showNotification(
+                data.title || 'Notification', 
+                data.message || 'You have a new notification', 
+                data.type || 'info'
+            );
         }));
     }
 

@@ -247,11 +247,6 @@
         <p class="page-subtitle">Interactive Class Portal & Learning Environment</p>
       </div>
       <div class="course-navigation">
-        <a href="{{ url_for('user.networking2_simulations') }}" class="course-nav-btn" style="margin-right: 16px; background: linear-gradient(135deg, #ff6b6b, #4ecdc4);">
-          <i class="fas fa-play-circle"></i>
-          <span>Interactive Simulations</span>
-          <small>Practice with Live Demos</small>
-        </a>
         <a href="{{ url_for('user.learning_networking2') }}" class="course-nav-btn">
           <i class="fas fa-book-open"></i>
           <span>Full Learning Path</span>
@@ -331,20 +326,6 @@
   <!-- Simulations Tab -->
   <div id="simulations-tab" class="tab-content">
     <div class="content-grid">
-      <div class="content-card">
-        <div class="card-header">
-          <i class="fas fa-desktop card-icon"></i>
-          <h3 class="card-title">All Simulations</h3>
-        </div>
-        <p class="card-description">
-          Access the complete simulation laboratory for hands-on practice and experimentation.
-        </p>
-        <a href="/user/networking2_simulations.html" class="card-button">
-          <i class="fas fa-rocket"></i>
-          Open Lab
-        </a>
-      </div>
-      
       {% for sim in simulations %}
       <div class="content-card">
         <div class="card-header">
@@ -505,7 +486,15 @@ function showTab(tabName) {
   
   // Show selected tab
   document.getElementById(tabName + '-tab').classList.add('active');
-  event.target.classList.add('active');
+  
+  // Find and activate the corresponding nav tab
+  const navTabs = document.querySelectorAll('.nav-tab');
+  navTabs.forEach(tab => {
+    if (tab.textContent.toLowerCase().includes(tabName) || 
+        tab.onclick.toString().includes(tabName)) {
+      tab.classList.add('active');
+    }
+  });
 }
 
 // Module functions
@@ -549,6 +538,15 @@ function initProgressChart() {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
   initProgressChart();
+  
+  // Check for URL parameters to show specific tab
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get('tab');
+  
+  if (tab === 'assessments') {
+    // Switch to assessments tab
+    showTab('assessments');
+  }
   
   // Load user progress
   fetch(`/class/9/api/progress`)

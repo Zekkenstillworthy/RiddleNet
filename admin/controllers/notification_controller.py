@@ -10,11 +10,27 @@ from services.notification_service import get_notification_service, Notification
 from user.models.user import User
 from admin.models.user import Admin
 from admin.models.notification_history import NotificationHistory
+from utils.auth_decorators import admin_required, api_admin_required
 from __init__ import db
 import json
+import os
+
+# SocketIO injection to avoid circular imports
+_socketio_instance = None
+
+def set_socketio_instance(socketio_instance):
+    """Set the socketio instance to avoid circular imports"""
+    global _socketio_instance
+    _socketio_instance = socketio_instance
+    print(f"✅ SocketIO instance set in notification controller: {socketio_instance is not None}")
+
+def get_socketio_instance():
+    """Get the socketio instance"""
+    return _socketio_instance
+
 
 # Create blueprint
-notification_controller = Blueprint('notification', __name__, url_prefix='/admin')
+notification_controller = Blueprint('notification_controller', __name__, url_prefix='/admin')
 
 @notification_controller.route('/notifications')
 @login_required
@@ -27,15 +43,17 @@ def notification_center():
 def send_notification():
     """Send notification via API"""
     try:
+        print(f"🔔 Notification API called by user {current_user.username} at {datetime.now()}")
+        
         data = request.get_json()
+        print(f"📋 Notification data: {data}")
         
         # Validate required fields
         if not data.get('title') or not data.get('message'):
             return jsonify({'error': 'Title and message are required'}), 400
         
         # Get notification service
-        from run import socketio  # Import from main run file
-        notification_service = get_notification_service(socketio)
+        notification_service = get_notification_service(get_socketio_instance())
         
         # Parse notification type and priority
         notification_type = NotificationType(data.get('notification_type', 'admin_notice'))
@@ -56,7 +74,7 @@ def send_notification():
         recipient_type = data.get('recipient_type', 'all_users')
         
         if recipient_type == 'all_users':
-            # Send to all users
+            # Send to all users - system announcements appear as real-time announcements
             result = notification_service.send_system_announcement(
                 title=data['title'],
                 message=data['message'],
@@ -90,6 +108,7 @@ def send_notification():
         else:
             return jsonify({'error': 'Invalid recipient type'}), 400
         
+        print(f"✅ Notification sent successfully: {result}")
         return jsonify(result)
         
     except Exception as e:
@@ -107,10 +126,8 @@ def notification_history():
         # Get notifications from database
         notifications = NotificationHistory.get_recent_notifications(limit=limit)
         
-        # Convert to dictionary format
-        notification_list = [notification.to_dict() for notification in notifications]
-        
-        return jsonify(notification_list)
+        # notifications already contains dictionaries from get_recent_notifications
+        return jsonify(notifications)
         
     except Exception as e:
         current_app.logger.error(f"Error getting notification history: {e}")
@@ -201,8 +218,7 @@ def send_maintenance_notification():
         end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
         
         # Get notification service
-        from run import socketio
-        notification_service = get_notification_service(socketio)
+        notification_service = get_notification_service(get_socketio_instance())
         
         # Send maintenance notification
         result = notification_service.send_maintenance_notification(
@@ -231,8 +247,7 @@ def send_security_alert():
             return jsonify({'error': 'Alert type and details are required'}), 400
         
         # Get notification service
-        from run import socketio
-        notification_service = get_notification_service(socketio)
+        notification_service = get_notification_service(get_socketio_instance())
         
         # Get all users for security alert
         all_users = User.query.all()
@@ -263,8 +278,7 @@ def send_course_update():
             return jsonify({'error': 'Course name and update details are required'}), 400
         
         # Get notification service
-        from run import socketio
-        notification_service = get_notification_service(socketio)
+        notification_service = get_notification_service(get_socketio_instance())
         
         # Get target users (all users for now, could be filtered by course enrollment)
         all_users = User.query.all()
@@ -309,7 +323,7 @@ def get_notification_templates():
             },
             'welcome': {
                 'title': 'Welcome to RiddleNet!',
-                'message': 'Welcome to the RiddleNet cyber security learning platform! Get started by exploring our interactive simulations and courses.',
+                'message': 'Welcome to the RiddleNet learning platform! Get started by exploring our interactive simulations and courses.',
                 'priority': 'normal',
                 'type': 'account_activity'
             },
@@ -331,6 +345,67 @@ def get_notification_templates():
         
     except Exception as e:
         current_app.logger.error(f"Error getting templates: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@notification_controller.route('/api/notifications/test-email', methods=['POST'])
+@api_admin_required
+def test_email_configuration():
+    """Test email configuration by sending a test email"""
+    try:
+        data = request.get_json()
+        recipient_email = data.get('email', getattr(current_user, 'email', 'admin@example.com'))
+        
+        notification_service = get_notification_service(get_socketio_instance())
+        
+        # Send test notification
+        from user.models.user import User
+        test_user = User.query.first()  # Get any user for testing
+        if not test_user:
+            # Create a temporary user object for testing
+            class TestUser:
+                def __init__(self):
+                    self.username = current_user.username
+                    self.email = recipient_email
+                    self.id = current_user.id
+            test_user = TestUser()
+        
+        result = notification_service.send_user_notification(
+            user_id=test_user.id,
+            notification_type=NotificationType.SYSTEM_UPDATE,
+            title="Email Configuration Test",
+            message="This is a test email to verify your notification system is working correctly.",
+            priority=NotificationPriority.LOW,
+            channel=NotificationChannel.EMAIL
+        )
+        
+        return jsonify({
+            'success': result.get('email_sent', 0) > 0,
+            'result': result,
+            'message': 'Test email sent successfully' if result.get('email_sent', 0) > 0 else 'Test email failed'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error testing email configuration: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@notification_controller.route('/api/notifications/config-status')
+@api_admin_required
+def get_configuration_status():
+    """Get notification system configuration status"""
+    try:
+        status = {
+            'email_configured': bool(os.getenv('MAIL_USERNAME') and os.getenv('MAIL_PASSWORD')),
+            'websocket_available': get_socketio_instance() is not None,
+            'database_connected': True,  # If we reach here, DB is connected
+            'templates_loaded': True,
+            'mail_server': os.getenv('MAIL_USERNAME', 'Not configured'),
+            'socketio_status': 'Connected' if get_socketio_instance() is not None else 'Disconnected'
+        }
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting configuration status: {e}")
         return jsonify({'error': str(e)}), 500
 
 # WebSocket events for real-time notification management
@@ -356,17 +431,26 @@ def setup_notification_websocket_events(socketio):
                 return
             
             # Send notification
-            notification_service = get_notification_service(socketio)
+            notification_service = get_notification_service(get_socketio_instance())
             
             # Process the notification based on data
             notification_type = NotificationType(data.get('type', 'admin_notice'))
             priority = NotificationPriority(data.get('priority', 'normal'))
             
+            # Create sender info for WebSocket notifications
+            sender_info = {
+                'sender_id': current_user.id,
+                'sender_type': 'admin',
+                'sender_username': current_user.username,
+                'timestamp': datetime.now().isoformat()
+            }
+            
             if data.get('target') == 'all_users':
                 result = notification_service.send_system_announcement(
                     title=data['title'],
                     message=data['message'],
-                    priority=priority
+                    priority=priority,
+                    sender_info=sender_info
                 )
             elif data.get('target') == 'all_admins':
                 result = notification_service.send_admin_notification(

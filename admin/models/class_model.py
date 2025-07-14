@@ -95,7 +95,6 @@ class Class(db.Model):
                 'id': qg.id,
                 'name': qg.name,
                 'description': qg.description,
-                'category': qg.category,
                 'question_count': question_count,
                 'question_types': list(question_types)
             })
