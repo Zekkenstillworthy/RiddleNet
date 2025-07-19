@@ -25,6 +25,9 @@ class QuestionController:
             categorized_questions={},  # Will be loaded dynamically
             active_page='questions'
         )
+    
+
+    
     @staticmethod
     @question_bp.route('/ungrouped', methods=['GET'])
     @login_required
@@ -371,20 +374,39 @@ class QuestionController:
         return render_template('admin/edit_question.html', question=question)
 
     @staticmethod
-    @question_bp.route('/delete/<int:question_id>', methods=['POST'])
+    @question_bp.route('/delete/<int:question_id>', methods=['POST', 'DELETE'])
     @login_required
-    def delete_question(question_id):
-        question = Question.query.get_or_404(question_id)
-        
+    def delete_question_api(question_id):
+        """API endpoint to delete a question"""
         try:
+            question = Question.query.get_or_404(question_id)
+            question_text = question.question[:50] + ('...' if len(question.question) > 50 else '')
+            
             db.session.delete(question)
             db.session.commit()
-            flash('Question deleted successfully', 'success')
+            
+            return jsonify({
+                'success': True,
+                'message': f'Question "{question_text}" deleted successfully'
+            })
         except Exception as e:
             db.session.rollback()
-            flash(f'Error deleting question: {str(e)}', 'error')
-        
-        return redirect(url_for('question.index'))
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+    @staticmethod
+    @question_bp.route('/<int:question_id>', methods=['GET', 'DELETE'])
+    @login_required
+    def question_detail(question_id):
+        """Handle individual question GET and DELETE requests"""
+        if request.method == 'GET':
+            # Redirect to the get_question method or handle it directly
+            return QuestionController.get_question(question_id)
+        elif request.method == 'DELETE':
+            # Handle DELETE request
+            return QuestionController.delete_question_api(question_id)
 
     @staticmethod
     @question_bp.route('/api/questions')
@@ -649,7 +671,7 @@ class QuestionController:
                 }
             })
         except Exception as e:
-            return jsonify({'success': False, 'message': str(e)}), 500
+            return jsonify({'success': False, 'error': str(e)}), 500
 
     @staticmethod
     @question_bp.route('/api/ungrouped', methods=['GET'])
@@ -704,6 +726,59 @@ class QuestionController:
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
 
+    @staticmethod
+    @question_bp.route('/api/by_topic', methods=['GET'])
+    @login_required
+    def get_questions_by_topic_api():
+        """API endpoint to get questions filtered by topic"""
+        try:
+            topic = request.args.get('topic', 'all')
+            chapter = request.args.get('chapter', 'all')
+            
+            # Start with base query
+            query = Question.query
+            
+            # Apply topic filter if specified
+            if topic != 'all':
+                query = query.filter(Question.category == topic)
+                
+            # Apply chapter filter if specified (assuming chapter info is stored in explanation field)
+            if chapter != 'all':
+                query = query.filter(Question.explanation.contains(f'Chapter {chapter}'))
+            
+            questions = query.order_by(Question.numb).all()
+            
+            # Format for response
+            questions_data = []
+            for q in questions:
+                questions_data.append({
+                    'id': q.id,
+                    'numb': q.numb,
+                    'question': q.question,
+                    'answer': q.answer,
+                    'options': q.options,
+                    'explanation': q.explanation,
+                    'category': q.category,
+                    'type': q.question_type if hasattr(q, 'question_type') else 'multiple_choice'
+                })
+                
+            return jsonify({'success': True, 'questions': questions_data})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @staticmethod
+    @question_bp.route('/api/topics', methods=['GET'])
+    @login_required
+    def get_quiz_topics_api():
+        """API endpoint to get available quiz topics/categories"""
+        try:
+            topics = db.session.query(Question.category).distinct().all()
+            topic_list = [{'id': topic[0], 'name': topic[0].title()} for topic in topics]
+            
+            return jsonify({'success': True, 'topics': topic_list})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
     def get_questions_by_category(self, category):
         """Get questions by category"""
         try:
@@ -730,3 +805,13 @@ class QuestionController:
         except Exception as e:
             print(f"Error fetching question by ID: {str(e)}")
             return None
+
+    @staticmethod
+    @question_bp.route('/test-ungrouped')
+    @login_required
+    def test_ungrouped_questions():
+        """Test page for ungrouped questions"""
+        import os
+        test_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'test_ungrouped_questions.html')
+        with open(test_file_path, 'r') as f:
+            return f.read()

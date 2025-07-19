@@ -34,11 +34,13 @@ class QuizController:
         
         # Quiz data routes - register both with and without API prefix for fallback
         self.app.route('/questions')(self.get_questions)
+        self.app.route('/questions_by_topic')(self.get_questions_by_topic)
         
         # Quiz view routes
         self.app.route('/topology', methods=['GET', 'POST'])(self.topology)
         self.app.route('/troubleshoot', methods=['GET', 'POST'])(self.troubleshoot)
         self.app.route('/crimp', methods=['GET', 'POST'])(self.crimp)
+        self.app.route('/quiz_topics')(self.get_quiz_topics)
 
     def submit_quiz(self):
         if 'user_id' not in session:
@@ -192,6 +194,49 @@ class QuizController:
             question_list.append(question_dict)
             
         return jsonify(question_list)
+
+    def get_questions_by_topic(self):
+        """Get questions filtered by topic/category"""
+        Score, Question, EssayResponse, User = get_models()
+        topic = request.args.get('topic', 'all')
+        chapter = request.args.get('chapter', 'all')
+        
+        # Start with base query
+        query = Question.query
+        
+        # Apply topic filter if specified
+        if topic != 'all':
+            query = query.filter(Question.category == topic)
+            
+        # Apply chapter filter if specified (assuming chapter info is stored in explanation field)
+        if chapter != 'all':
+            query = query.filter(Question.explanation.contains(f'Chapter {chapter}'))
+        
+        questions = query.all()
+        question_list = []
+        
+        for q in questions:
+            question_dict = {
+                'id': q.id,
+                'numb': q.numb,
+                'question': q.question,
+                'answer': q.answer,
+                'options': q.options,
+                'explanation': q.explanation,
+                'category': q.category,
+                'type': q.question_type if hasattr(q, 'question_type') else 'multiple_choice'
+            }
+            question_list.append(question_dict)
+            
+        return jsonify(question_list)
+
+    def get_quiz_topics(self):
+        """Get available quiz topics/categories"""
+        Score, Question, EssayResponse, User = get_models()
+        topics = db.session.query(Question.category).distinct().all()
+        topic_list = [{'id': topic[0], 'name': topic[0].title()} for topic in topics]
+        
+        return jsonify(topic_list)
 
     def topology(self):
         """Render topology quiz page"""

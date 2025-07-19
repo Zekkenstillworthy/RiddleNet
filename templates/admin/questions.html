@@ -5,549 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Question Management | RiddleNet</title>    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" crossorigin="anonymous"><style>
-        /* Ensure icon fonts load properly */
-        .fas, .fab, .far {
-            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", "Font Awesome 6 Pro" !important;
-        }
-        .bx {
-            font-family: "boxicons" !important;
-        }
-        /* Fallback for missing icons */
-        .icon-fallback::before {
-            content: "📡" !important;
-            font-family: initial !important;
-        }
-          /* Ensure all icons are properly sized and aligned */
-        .section-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* Fix icon alignment in buttons */
-        .btn i {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 4px;
-        }
-        
-        /* Ensure boxicons are properly loaded */
-        @import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
-          /* Additional icon fixes */
-        .fas.fa-network-wired::before { content: "\f6ff"; }
-        .fas.fa-database::before { content: "\f1c0"; }
-        .fas.fa-layer-group::before { content: "\f5fd"; }
-        .fas.fa-question-circle::before { content: "\f059"; }
-        .fas.fa-mouse-pointer::before { content: "\f245"; }
-        .fas.fa-share-alt::before { content: "\f1e0"; }
-        .fas.fa-list::before { content: "\f03a"; }
-        .fas.fa-edit::before { content: "\f044"; }
-        .fas.fa-trash::before { content: "\f2ed"; }
-        .fas.fa-spinner::before { content: "\f110"; }
-        
-        /* Boxicons fallbacks */
-        .bx {
-            font-size: inherit;
-            line-height: inherit;
-            vertical-align: baseline;
-        }
-        
-        /* Ensure icons are visible */
-        i[class*="bx"], i[class*="fas"], i[class*="far"], i[class*="fab"] {
-            opacity: 1;
-            visibility: visible;
-            display: inline-block;
-        }
-        
-        /* Loading state for icons */
-        .icon-loading {
-            opacity: 0.5;
-            animation: iconPulse 1s ease-in-out infinite;
-        }
-        
-        @keyframes iconPulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-    </style>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" crossorigin="anonymous">
+    
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/questions.css') }}">
     <script src="{{ url_for('static', filename='js/admin/questions.js') }}"></script>
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
 </head>
-<style>
-    :root {
-        --cyber-glow: #00D9FF;
-        --neon-green: #39FF14;
-        --network-purple: #8B5CF6;
-        --dark-bg: rgba(26, 35, 126, 0.85);
-        --glass-bg: rgba(139, 92, 246, 0.08);
-        --glass-border: rgba(0, 217, 255, 0.15);
-        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
-    }
 
-    body {
-        background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
-        background-size: cover;
-        color: #fff;
-        min-height: 100vh;
-        font-family: 'Orbitron', 'Poppins', sans-serif;
-    }
-
-    /* Enhanced glassmorphism effects */
-    .modern-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .modern-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: var(--gradient-primary);
-        opacity: 0.8;
-    }
-
-    .modern-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
-        border-color: var(--cyber-glow);
-    }
-
-    /* Enhanced section headers */
-    .section-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin: 48px 0 32px;
-        padding-bottom: 16px;
-        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
-        position: relative;
-    }
-
-    .section-header h2 {
-        font-size: 1.8rem;
-        font-weight: 600;
-        background: var(--gradient-primary);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .section-header .section-icon {
-        font-size: 1.8rem;
-        color: var(--cyber-glow);
-        filter: drop-shadow(0 0 10px var(--cyber-glow));
-    }
-
-    /* Cyber-themed animations */
-    @keyframes dataFlow {
-        0%, 100% { opacity: 0.3; }
-        50% { opacity: 1; }
-    }
-
-    .data-flow {
-        animation: dataFlow 2s ease-in-out infinite;
-    }    /* Network-themed decorative elements */
-    .network-node {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: var(--cyber-glow);
-        border-radius: 50%;
-        box-shadow: 0 0 15px var(--cyber-glow);
-        animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { 
-            opacity: 0.6;
-            transform: scale(1);
-        }
-        50% { 
-            opacity: 1;
-            transform: scale(1.2);
-        }
-    }
-
-    /* Enhanced stat cards */
-    .stat-card-modern {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: 20px;
-        padding: 32px 24px;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .stat-card-modern::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-primary);
-    }
-
-    .stat-card-modern:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 48px rgba(0, 217, 255, 0.25);
-    }
-
-    /* Enhanced button styles */
-    .modern-btn {
-        position: relative;
-        overflow: hidden;
-    }
-
-    .modern-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .modern-btn:hover::before {
-        left: 100%;
-    }
-
-    .modern-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-    }
-
-    /* Base button styles */
-    .btn {
-        background: var(--gradient-primary);
-        border: none;
-        padding: 12px 20px;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn:hover::before {
-        left: 100%;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-    }
-
-    /* Small button variant */
-    .btn-small {
-        padding: 8px 16px;
-        font-size: 0.85rem;
-        border-radius: 8px;
-    }
-
-    /* Secondary button variant */
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid var(--glass-border);
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: var(--cyber-glow);
-        box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
-    }
-
-    /* Remove pair button */
-    .btn-remove-pair {
-        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-        border: none;
-        color: white;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-left: 8px;
-    }
-
-    .btn-remove-pair:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-    }
-
-    /* Form styling */
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--cyber-glow);
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        background: var(--dark-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: white;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: var(--cyber-glow);
-        box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
-    }
-
-    .form-help {
-        display: block;
-        margin-top: 4px;
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.6);
-        font-style: italic;
-    }
-
-    /* Option inputs styling */
-    .option-inputs {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 16px;
-    }
-
-    .option-inputs input {
-        margin-bottom: 0;
-    }
-
-    /* Matching pairs styling */
-    .matching-pairs {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 16px;
-    }
-
-    .matching-pair {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-    }
-
-    .matching-pair input {
-        flex: 1;
-        margin-bottom: 0;
-    }
-
-    /* Modal footer styling */
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid var(--glass-border);
-    }
-
-    /* Selection stats styling */
-    .selection-stats {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-    }
-
-    /* Question selector styling */
-    .question-selector {
-        background: var(--dark-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 12px;
-        padding: 16px;
-        margin-top: 12px;
-    }
-
-    .available-questions {
-        max-height: 300px;
-        overflow-y: auto;
-        margin-top: 12px;
-    }
-
-    .no-questions {
-        text-align: center;
-        color: rgba(255, 255, 255, 0.6);
-        padding: 20px;
-        font-style: italic;
-    }
-
-    /* Group selection styling */
-    .group-selection input[type="radio"] {
-        width: auto;
-        margin-right: 8px;
-    }
-
-    .group-selection label {
-        display: inline;
-        margin-bottom: 0;
-        margin-right: 8px;
-        font-weight: normal;
-    }
-
-    /* Modal styling */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
-    }
-
-    .modal-content {
-        background: var(--dark-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        margin: 0 auto;
-        padding: 0;
-        width: 90%;
-        max-width: 600px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .modal-content::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-primary);
-    }
-
-    .modal-header {
-        padding: 24px 32px 16px;
-        border-bottom: 1px solid var(--glass-border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-header h3 {
-        color: var(--cyber-glow);
-        margin: 0;
-        font-size: 1.4rem;
-        font-weight: 700;
-    }
-
-    .close-modal {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 32px;
-        font-weight: bold;
-        cursor: pointer;
-        line-height: 1;
-        transition: all 0.3s ease;
-    }
-
-    .close-modal:hover,
-    .close-modal:focus {
-        color: var(--cyber-glow);
-        transform: scale(1.1);
-    }
-
-    .modal-body {
-        padding: 24px 32px;
-    }
-
-    /* Loading spinner styling */
-    .loading-spinner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .loading-spinner i {
-        font-size: 2rem;
-        margin-bottom: 16px;
-        color: var(--cyber-glow);
-    }
-
-    /* Question container styling */
-    .main-ungrouped-questions-container {
-        border: 1px solid var(--glass-border);
-        border-radius: 12px;
-        padding: 20px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(15px);
-    }
-
-    .ungrouped-questions-container {
-        max-height: 400px;
-        overflow-y: auto;
-        border: 1px solid var(--glass-border);
-        border-radius: 8px;
-        padding: 16px;
-        background: var(--dark-bg);
-    }
-</style>
 {% endblock %}
 
 {% block body %}
@@ -736,13 +201,6 @@
                                 <div class="form-group">
                                     <label>Add Questions (Optional)</label>
                                     <div class="question-selector">
-                                        <select id="question-category-filter">
-                                            <option value="all">All Categories</option>
-                                            <option value="riddle">Riddle</option>
-                                            <option value="topology">Topology</option>
-                                            <option value="crimping">Crimping</option>
-                                            <option value="troubleshoot">Troubleshoot</option>
-                                        </select>
                                         <div class="available-questions">
                                             <!-- Will be populated dynamically -->
                                             <div class="no-questions">Loading questions...</div>
@@ -758,6 +216,55 @@
                     </div>
                 </div>
                 
+                <!-- Modal for Edit Question Group -->
+                <div id="editGroupModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Edit Question Group</h3>
+                            <span class="close-modal" onclick="closeModal('editGroupModal')">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editGroupForm" action="{{ url_for('question_group.edit_group', group_id=0) }}" method="POST">
+                                <input type="hidden" id="edit-group-id" name="group_id" value="">
+                                <div class="form-group">
+                                    <label for="edit-group-name">Group Name</label>
+                                    <input type="text" id="edit-group-name" name="name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-group-description">Description</label>
+                                    <textarea id="edit-group-description" name="description" rows="3"></textarea>
+                                </div>
+                                
+                                <!-- Add Ungrouped Questions Section -->
+                                <div class="form-group">
+                                    <label>Add Ungrouped Questions</label>
+                                    <div class="question-selector">
+                                        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+                                            <button type="button" id="refresh-ungrouped-btn" class="btn btn-small" style="background: var(--gradient-primary); border: none; padding: 6px 12px;">
+                                                <i class="fas fa-sync"></i> Refresh
+                                            </button>
+                                        </div>
+                                        <div id="edit-available-questions" class="available-questions" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; background: var(--surface);">
+                                            <div class="loading-spinner" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading questions...</div>
+                                        </div>
+                                        <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                            <span id="edit-selection-stats" class="selection-stats">0 questions selected</span>
+                                            <button type="button" id="add-selected-questions-btn" class="btn btn-small" style="background: var(--gradient-secondary); border: none; padding: 6px 12px;" disabled>
+                                                <i class="fas fa-plus"></i> Add Selected
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" onclick="closeModal('editGroupModal')">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Update Group</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Modal for Ungrouped Questions -->
                 <div id="ungroupedQuestionsModal" class="modal">
                     <div class="modal-content" style="max-width: 900px;">
@@ -766,17 +273,6 @@
                             <span class="close-modal" onclick="closeModal('ungroupedQuestionsModal')">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <div class="form-group">
-                                <label for="ungrouped-category-filter">Filter by Category:</label>
-                                <select id="ungrouped-category-filter" class="form-control">
-                                    <option value="all">All Categories</option>
-                                    <option value="riddle">Riddle</option>
-                                    <option value="topology">Topology</option>
-                                    <option value="crimping">Crimping</option>
-                                    <option value="troubleshoot">Troubleshoot</option>
-                                </select>
-                            </div>
-
                             <form id="groupUngroupedForm">
                                 <div class="ungrouped-questions-container">
                                     <!-- Questions will be loaded dynamically -->
@@ -937,105 +433,29 @@
                     <h2>Unassigned Network Questions</h2>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <label style="color: var(--cyber-glow); font-weight: 600; font-size: 1rem;">Filter by Category:</label>
-                        <select id="main-ungrouped-category-filter" style="background: var(--dark-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 16px; color: white; font-size: 0.95rem; font-weight: 500;">
-                            <option value="all">All Categories</option>
-                            <option value="riddle">Riddle</option>
-                            <option value="topology">Topology</option>
-                            <option value="crimping">Crimping</option>
-                            <option value="troubleshoot">Troubleshoot</option>
-                        </select>
-                    </div>                    <button id="groupSelectedBtn" class="btn modern-btn" style="display:none; background: var(--gradient-primary); border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                    <button onclick="loadUngroupedQuestions()" class="btn modern-btn" style="background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.5); color: rgba(255, 255, 255, 0.9); padding: 8px 16px; border-radius: 8px; font-weight: 500;">
+                        <i class='fas fa-sync-alt'></i> Refresh Questions
+                    </button>
+                    <button id="groupSelectedBtn" class="btn modern-btn" style="display:none; background: var(--gradient-primary); border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">
                         <i class='bx bxs-folder-plus'></i> Group Selected Questions
                     </button>
                 </div>
                 
-                <div id="main-ungrouped-container" class="main-ungrouped-questions-container modern-card" style="background: var(--dark-bg); border-radius: 16px; padding: 32px; min-height: 200px; border: 1px solid var(--glass-border);">
+                <div id="main-ungrouped-container" class="main-ungrouped-questions-container modern-card" style="background: var(--dark-bg, rgba(15, 23, 42, 0.9)); border-radius: 16px; padding: 32px; min-height: 200px; border: 1px solid var(--glass-border, rgba(59, 130, 246, 0.3)); display: block; visibility: visible; opacity: 1;">
                     <div class="loading-spinner" style="text-align: center; color: var(--cyber-glow);">
                         <i class="fas fa-spinner fa-spin data-flow" style="font-size: 2.5rem; margin-bottom: 20px;"></i>
                         <p style="font-size: 1.1rem; font-weight: 500;">Loading ungrouped questions...</p>
                     </div>
                 </div>
                 
-                {% if categorized_questions|length == 0 %}
-                    <div style="text-align: center; padding: 60px 20px; color: rgba(255, 255, 255, 0.7);">                        <div style="background: var(--gradient-primary); padding: 24px; border-radius: 50%; display: inline-block; margin-bottom: 24px; box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);">
-                            <i class='bx bx-help-circle' style="font-size: 2.5rem; color: white;"></i>
-                        </div>
-                        <h3 style="color: var(--cyber-glow); margin-bottom: 16px; font-size: 1.4rem; font-weight: 700;">No ungrouped questions available</h3>
-                        <p style="font-size: 1rem; line-height: 1.5;">Click "Add Question" to create your first network challenge.</p>
-                    </div>
-                {% endif %}
+                
                 
                 <div class="network-node" style="top: 20px; right: 20px;"></div>
                 <div class="network-node data-flow" style="bottom: 20px; left: 20px; animation-delay: 2s;"></div>
             </div>
         </div>
     </main>
-</body>    <script>
-        // Icon loading error handler
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Font Awesome loaded
-            const fontAwesome = document.querySelector('link[href*="font-awesome"]');
-            if (fontAwesome) {
-                fontAwesome.onerror = function() {
-                    console.warn('Font Awesome failed to load, using fallback');
-                    // Add fallback CSS
-                    const fallbackCSS = document.createElement('style');
-                    fallbackCSS.textContent = `
-                        .fas::before, .far::before, .fab::before { 
-                            content: "⚙️"; 
-                            font-family: initial; 
-                        }
-                        .fas.fa-network-wired::before { content: "🔗"; }
-                        .fas.fa-database::before { content: "🗄️"; }
-                        .fas.fa-layer-group::before { content: "📚"; }
-                        .fas.fa-question-circle::before { content: "❓"; }
-                        .fas.fa-mouse-pointer::before { content: "👆"; }
-                        .fas.fa-share-alt::before { content: "🔗"; }
-                        .fas.fa-list::before { content: "📋"; }
-                        .fas.fa-edit::before { content: "✏️"; }
-                        .fas.fa-trash::before { content: "🗑️"; }
-                        .fas.fa-spinner::before { content: "⚡"; }
-                    `;
-                    document.head.appendChild(fallbackCSS);
-                };
-            }
-            
-            // Check if Boxicons loaded
-            const boxicons = document.querySelector('link[href*="boxicons"]');
-            if (boxicons) {
-                boxicons.onerror = function() {
-                    console.warn('Boxicons failed to load, using fallback');
-                    // Add fallback CSS
-                    const fallbackCSS = document.createElement('style');
-                    fallbackCSS.textContent = `
-                        .bx::before { 
-                            content: "📋"; 
-                            font-family: initial; 
-                        }
-                        .bxs-folder-plus::before { content: "📁"; }
-                        .bx-plus::before { content: "➕"; }
-                        .bxs-info-circle::before { content: "ℹ️"; }
-                        .bxs-folder::before { content: "📂"; }
-                        .bx-help-circle::before { content: "❓"; }
-                    `;
-                    document.head.appendChild(fallbackCSS);
-                };
-            }
-            
-            // Verify icons are loaded after a short delay
-            setTimeout(function() {
-                const icons = document.querySelectorAll('i[class*="fas"], i[class*="bx"]');
-                icons.forEach(function(icon) {
-                    const computedStyle = window.getComputedStyle(icon, '::before');
-                    if (!computedStyle.content || computedStyle.content === 'none') {
-                        icon.classList.add('icon-loading');
-                        console.warn('Icon not loaded properly:', icon.className);
-                    }
-                });
-            }, 500);
-        });
-    </script>
+</body>    
+
 {% endblock %}

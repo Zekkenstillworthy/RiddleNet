@@ -262,3 +262,68 @@ class QuestionGroupController:
                 'success': False,
                 'message': f'Error loading group: {str(e)}'
             }), 500
+
+    @staticmethod
+    @question_group_bp.route('/add-questions', methods=['POST'])
+    @login_required
+    def add_questions_to_group_ajax():
+        """
+        AJAX endpoint to add questions to a group
+        Expects: group_id and question_ids[] in form data
+        """
+        try:
+            group_id = request.form.get('group_id')
+            question_ids = request.form.getlist('question_ids[]')
+            
+            if not group_id:
+                return jsonify({
+                    'success': False,
+                    'message': 'Group ID is required'
+                }), 400
+            
+            if not question_ids:
+                return jsonify({
+                    'success': False,
+                    'message': 'No questions selected'
+                }), 400
+            
+            # Get the group
+            group = QuestionGroup.query.get_or_404(group_id)
+            
+            # Get the questions
+            selected_questions = Question.query.filter(Question.id.in_(question_ids)).all()
+            
+            if not selected_questions:
+                return jsonify({
+                    'success': False,
+                    'message': 'No valid questions found'
+                }), 400
+            
+            # Add questions to group (avoid duplicates)
+            added_count = 0
+            for question in selected_questions:
+                if question not in group.questions:
+                    group.questions.append(question)
+                    added_count += 1
+            
+            # Commit the changes
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Successfully added {added_count} question(s) to group "{group.name}"',
+                'added_count': added_count,
+                'group': {
+                    'id': group.id,
+                    'name': group.name,
+                    'total_questions': len(group.questions)
+                }
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error adding questions to group: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Error adding questions to group: {str(e)}'
+            }), 500

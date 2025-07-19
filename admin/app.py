@@ -63,28 +63,28 @@ class AdminApp:
                 user = db.session.get(User, int(user_id))
                 return user
                 
-        def register_template_filters(self):
-            """Register custom template filters."""
-            @self.app.template_filter('from_json')
-            def from_json_filter(value):
-                import json
-                try:
-                    return json.loads(value)
-                except (ValueError, TypeError):
-                    return []
-                    
-            # Add context processors for static file server
-            @self.app.context_processor
-            def utility_processor():
-                def static_url(path):
-                    """Generate URL for static files from separate server"""
-                    return f"http://localhost:5001/static/{path}"
-                    
-                def media_url(type, path):
-                    """Generate URL for media files (video/audio)"""
-                    return f"http://localhost:5001/media/{type}/{path}"
-                    
-                return dict(static_url=static_url, media_url=media_url)
+    def register_template_filters(self):
+        """Register custom template filters."""
+        @self.app.template_filter('from_json')
+        def from_json_filter(value):
+            import json
+            try:
+                return json.loads(value)
+            except (ValueError, TypeError):
+                return []
+                
+        # Add context processors for static file server
+        @self.app.context_processor
+        def utility_processor():
+            def static_url(path):
+                """Generate URL for static files from separate server"""
+                return f"http://localhost:5001/static/{path}"
+                
+            def media_url(type, path):
+                """Generate URL for media files (video/audio)"""
+                return f"http://localhost:5001/media/{type}/{path}"
+                
+            return dict(static_url=static_url, media_url=media_url)
 
     def register_blueprints(self):
         """Register all blueprints with the application."""
@@ -98,7 +98,7 @@ class AdminApp:
         from admin.controllers.question_group_controller import question_group_bp
         from admin.controllers.class_controller import class_controller
         from admin.controllers.notification_controller import notification_controller
-        from admin.controllers.scenario_controller import scenario_bp
+        # from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
         from admin.routes.topology_routes import topology_bp
         from admin.routes.topology_api_routes import topology_api_bp
@@ -115,7 +115,7 @@ class AdminApp:
         self.app.register_blueprint(question_group_bp)        
         self.app.register_blueprint(class_controller)
         self.app.register_blueprint(notification_controller)
-        self.app.register_blueprint(scenario_bp)
+        # self.app.register_blueprint(scenario_bp)
         self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)
         self.app.register_blueprint(topology_bp)
         self.app.register_blueprint(topology_api_bp)
