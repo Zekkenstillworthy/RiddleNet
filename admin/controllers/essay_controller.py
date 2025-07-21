@@ -1,9 +1,4 @@
-from flask import Blueprint, render_template, redire        return render_template('admin/essays.html',
-                             step='classes',
-                             classes_data=classes_data,
-                             pagination=classes_pagination,
-                             active_page='essays',
-                             current_filters={})rl_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from admin.models.essay_response import EssayResponse
 from admin.models.user import AdminUser
 from admin.models.activity_log import ActivityLog
