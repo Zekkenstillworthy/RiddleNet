@@ -157,20 +157,7 @@ def handle_essay_submission(data):
 @admin_only
 def handle_get_active_users(data=None):
     """Get list of currently active users - admin only"""
-    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
-    is_admin = False
-    
-    # Check if it's an Admin model instance (from 'admins' table)
-    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
-        is_admin = True
-    # Check if it's an AdminUser with is_admin=True (from 'user' table)
-    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
-        is_admin = True
-    
-    if not is_admin:
-        emit('error', {'message': 'Unauthorized: Admin access required'})
-        return
-      # Get active users from socket manager
+    # Get active users from socket manager
     active_users = []
     try:
         from socket_manager import get_active_users_list
@@ -199,20 +186,6 @@ def handle_admin_get_users(data=None):
 @admin_only
 def handle_send_notification(data):
     """Send real-time notifications to users"""
-    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
-    is_admin = False
-    
-    # Check if it's an Admin model instance (from 'admins' table)
-    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
-        is_admin = True
-    # Check if it's an AdminUser with is_admin=True (from 'user' table)
-    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
-        is_admin = True
-    
-    if not is_admin:
-        emit('error', {'message': 'Unauthorized: Admin access required'})
-        return
-    
     # Use the new notification service for enhanced notifications
     try:
         from services.notification_service import get_notification_service, NotificationType, NotificationPriority, NotificationChannel

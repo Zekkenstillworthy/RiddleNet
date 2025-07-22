@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Activity Feed Percentage Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .activity { 
+            display: flex; 
+            align-items: center; 
+            gap: 16px; 
+            padding: 16px; 
+            background: rgba(139, 92, 246, 0.08); 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            border-left: 4px solid #00D9FF; 
+        }
+        .avatar { 
+            width: 40px; 
+            height: 40px; 
+            background: #8B5CF6; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: bold; 
+        }
+        .content { flex: 1; }
+        .username { color: white; font-weight: 500; margin-bottom: 4px; }
+        .message { color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 8px; }
+        .time { color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; }
+        .score { color: #39FF14; font-weight: bold; font-size: 1.1rem; }
+        button { 
+            background: linear-gradient(135deg, #00D9FF, #8B5CF6); 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 10px 0; 
+        }
+        pre { background: #333; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Activity Feed Percentage Fix Test</h1>
+    
+    <button onclick="loadActivityFeed()">Load Activity Feed</button>
+    <button onclick="testNormalization()">Test Score Normalization</button>
+    
+    <div id="activity-feed"></div>
+    <div id="test-results"></div>
+    
+    <script>
+        // Helper function to normalize scores to percentage (same as in dashboard)
+        function normalizeScore(score) {
+            if (score === null || score === undefined || isNaN(score)) {
+                return 0;
+            }
+            
+            const numScore = parseFloat(score);
+            
+            // If already in reasonable percentage range
+            if (numScore >= 0 && numScore <= 100) {
+                return Math.round(numScore * 10) / 10; // Round to 1 decimal
+            }
+            
+            // If in 0-3 scale, convert to percentage
+            if (numScore <= 3) {
+                return Math.round((numScore / 3) * 1000) / 10; // Convert and round to 1 decimal
+            }
+            
+            // For any other high values, cap at 100%
+            return 100;
+        }
+        
+        async function loadActivityFeed() {
+            const feed = document.getElementById('activity-feed');
+            feed.innerHTML = '<p>Loading activity feed...</p>';
+            
+            try {
+                const response = await fetch('/admin/api/analytics/activity-feed?limit=5');
+                const data = await response.json();
+                
+                if (data.success) {
+                    feed.innerHTML = data.data.map(activity => `
+                        <div class="activity">
+                            <div class="avatar">
+                                ${activity.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="content">
+                                <div class="username">${activity.username}</div>
+                                <div class="message">${activity.message || (activity.action + ' in ' + activity.category)}</div>
+                                <div class="time">${activity.time_ago}</div>
+                            </div>
+                            <div class="score">
+                                ${normalizeScore(activity.score)}%
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Show raw data for debugging
+                    feed.innerHTML += '<h3>Raw API Response:</h3>';
+                    feed.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    feed.innerHTML = `<p>❌ Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                feed.innerHTML = `<p>❌ Network Error: ${error.message}</p>`;
+            }
+        }
+        
+        function testNormalization() {
+            const testResults = document.getElementById('test-results');
+            const testScores = [3167, 2900, 3067, 100, 75, 3, 2.5, 1.5, 0, null, undefined, 'invalid'];
+            
+            let html = '<h3>📊 Score Normalization Test Results:</h3>';
+            html += '<table border="1" style="border-collapse: collapse; width: 100%;">';
+            html += '<tr><th>Input Score</th><th>Normalized Score</th><th>Status</th></tr>';
+            
+            testScores.forEach(score => {
+                const normalized = normalizeScore(score);
+                const status = normalized <= 100 ? '✅ Valid' : '❌ Invalid';
+                html += `<tr><td>${score}</td><td>${normalized}%</td><td>${status}</td></tr>`;
+            });
+            
+            html += '</table>';
+            testResults.innerHTML = html;
+        }
+        
+        // Auto-load on page load
+        window.addEventListener('load', function() {
+            setTimeout(loadActivityFeed, 1000);
+            testNormalization();
+        });
+    </script>
+</body>
+</html>

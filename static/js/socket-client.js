@@ -141,9 +141,10 @@ class SocketClient {
         
         const url = getHostUrl();
         
+        // Enhanced configuration for admin authentication
         this.socket = io(url, {
             transports: ['websocket', 'polling'],
-            withCredentials: true,
+            withCredentials: true, // This is crucial for admin sessions
             reconnection: true,
             reconnectionDelay: this.reconnectDelay,
             reconnectionDelayMax: 10000,
@@ -151,7 +152,16 @@ class SocketClient {
             forceNew: false,
             autoConnect: true,
             upgrade: true,
-            rememberUpgrade: false
+            rememberUpgrade: false,
+            auth: {
+                // Include any additional auth data if needed
+                userAgent: navigator.userAgent,
+                timestamp: Date.now()
+            },
+            extraHeaders: {
+                // Include CSRF token if available
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
 
         // Set up event handlers with better error handling
@@ -164,6 +174,14 @@ class SocketClient {
             
             // Start health check
             this.startHealthCheck();
+            
+            // For admin pages, automatically test authentication
+            if (window.location.pathname.includes('/admin') && window.AdminSocketDebug) {
+                setTimeout(() => {
+                    console.log('🔍 Admin page detected - running authentication check...');
+                    window.AdminSocketDebug.testAuthentication();
+                }, 1000);
+            }
         });
 
         this.socket.on('disconnect', (reason) => {
@@ -189,7 +207,12 @@ class SocketClient {
 
         // Handle general errors more gracefully
         this.socket.on('error', (error) => {
-            console.warn('⚠️ WebSocket general error:', error);
+            // Improved error logging for debugging
+            if (error && (error.message || error.msg)) {
+                console.warn('⚠️ WebSocket general error:', error.message || error.msg, error);
+            } else {
+                console.warn('⚠️ WebSocket general error:', error);
+            }
             // Don't trigger disconnect for general errors, just log them
             this.trigger('socket_error', error);
         });

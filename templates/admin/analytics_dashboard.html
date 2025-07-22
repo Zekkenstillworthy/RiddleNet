@@ -1,0 +1,1124 @@
+{% extends 'admin/base.html' %}
+
+{% block head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard | RiddleNet</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/dashboard.css') }}">
+    
+    <!-- Chart.js and Date adapter -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    
+    <!-- Date picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+
+<style>
+    :root {
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        --dark-bg: rgba(26, 35, 126, 0.85);
+        --glass-bg: rgba(139, 92, 246, 0.08);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --error-color: #EF4444;
+    }
+
+    body {
+        background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
+        background-size: cover;
+        color: #fff;
+        min-height: 100vh;
+        font-family: 'Orbitron', 'Poppins', sans-serif;
+    }
+
+    /* Analytics-specific styles */
+    .analytics-container {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+    }
+
+    .analytics-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--cyber-glow);
+    }
+
+    .analytics-controls {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .control-group label {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+    }
+
+    .control-input {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #fff;
+        font-size: 0.9rem;
+    }
+
+    .control-input:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+    }
+
+    .btn-analytics {
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-analytics:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    }
+
+    /* Chart containers */
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 20px;
+    }
+
+    .chart-container.large {
+        height: 500px;
+    }
+
+    .chart-container.small {
+        height: 300px;
+    }
+
+    /* Grid layouts */
+    .analytics-grid {
+        display: grid;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .analytics-grid.four-col {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .analytics-grid.two-col {
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    }
+
+    .analytics-grid.three-col {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+
+    /* Modern card styles */
+    .modern-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .card-value {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        background: rgba(0, 0, 0, 0.2);
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+    }
+
+    .kpi-label {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 12px;
+    }
+
+    .kpi-trend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 0.9rem;
+    }
+
+    .trend-up {
+        color: var(--success-color);
+    }
+
+    .trend-down {
+        color: var(--error-color);
+    }
+
+    .trend-stable {
+        color: var(--warning-color);
+    }
+
+    /* Real-time indicators */
+    .real-time-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 16px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success-color);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Activity feed */
+    .activity-feed {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        border-left: 3px solid var(--cyber-glow);
+    }
+
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-message {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 2px;
+    }
+
+    .activity-time {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Export section */
+    .export-section {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-top: 30px;
+    }
+
+    .export-options {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .export-btn {
+        background: var(--gradient-secondary);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .export-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(57, 255, 20, 0.3);
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .analytics-header {
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .analytics-controls {
+            flex-wrap: wrap;
+        }
+
+        .analytics-grid.two-col,
+        .analytics-grid.three-col {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-container {
+            height: 300px;
+        }
+    }
+
+    /* Loading states */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: 16px;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid var(--cyber-glow);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+<div class="analytics-container">
+    <!-- Analytics Header -->
+    <div class="analytics-header">
+        <div class="analytics-title">
+            <i class="fas fa-chart-line"></i>
+            Analytics Dashboard
+        </div>
+        <div class="analytics-controls">
+            <div class="control-group">
+                <label for="date-range">Date Range</label>
+                <select id="date-range" class="control-input">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last year</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="category-filter">Category</label>
+                <select id="category-filter" class="control-input">
+                    <option value="all">All Categories</option>
+                    <option value="riddle">Riddle</option>
+                    <option value="topology">Topology</option>
+                    <option value="troubleshoot">Troubleshoot</option>
+                    <option value="crimping">Crimping</option>
+                    <option value="networking">Networking</option>
+                    <option value="collaboration">Collaboration</option>
+                </select>
+            </div>
+            <button class="btn-analytics" onclick="refreshAnalytics()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="analytics-grid four-col">
+        <div class="modern-card kpi-card">
+            <div class="real-time-indicator">
+                <div class="status-dot"></div>
+                Live Data
+            </div>
+            <div class="kpi-value" id="total-attempts">{{ performance_data.total_attempts|default(0) }}</div>
+            <div class="kpi-label">Total Attempts</div>
+            <div class="kpi-trend">
+                <i class="fas fa-arrow-up trend-up"></i>
+                <span>12% vs last month</span>
+            </div>
+        </div>
+
+        <div class="modern-card kpi-card">
+            <div class="real-time-indicator">
+                <div class="status-dot"></div>
+                Updated Now
+            </div>
+            <div class="kpi-value" id="avg-score">{{ "%.1f"|format(performance_data.average_score|default(0)) }}%</div>
+            <div class="kpi-label">Average Score</div>
+            <div class="kpi-trend">
+                <i class="fas fa-arrow-up trend-up"></i>
+                <span>5.2% improvement</span>
+            </div>
+        </div>
+
+        <div class="modern-card kpi-card">
+            <div class="real-time-indicator">
+                <div class="status-dot"></div>
+                Real-time
+            </div>
+            <div class="kpi-value" id="active-users">{{ engagement_data.active_users|default(0) }}</div>
+            <div class="kpi-label">Active Users</div>
+            <div class="kpi-trend">
+                <i class="fas fa-minus trend-stable"></i>
+                <span>Stable</span>
+            </div>
+        </div>
+
+        <div class="modern-card kpi-card">
+            <div class="real-time-indicator">
+                <div class="status-dot"></div>
+                Live
+            </div>
+            <div class="kpi-value" id="completion-rate">{{ "%.1f"|format(performance_data.completion_rates.riddle|default(0)) }}%</div>
+            <div class="kpi-label">Completion Rate</div>
+            <div class="kpi-trend">
+                <i class="fas fa-arrow-up trend-up"></i>
+                <span>8% increase</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts Grid -->
+    <div class="analytics-grid two-col">
+        <!-- Performance Trend Chart -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Performance Trends
+                </div>
+                <div class="card-value">30-day overview</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="performanceTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Score Distribution -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Score Distribution
+                </div>
+                <div class="card-value">Current period</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="scoreDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Performance and Engagement -->
+    <div class="analytics-grid two-col">
+        <!-- Category Performance -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-radar-chart"></i>
+                    Category Performance
+                </div>
+                <div class="card-value">Comparative analysis</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="categoryPerformanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- User Engagement Heatmap -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-fire"></i>
+                    Engagement Heatmap
+                </div>
+                <div class="card-value">Activity patterns</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="engagementHeatmapChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Grid -->
+    <div class="analytics-grid three-col">
+        <!-- Learning Path Progress -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-route"></i>
+                    Learning Paths
+                </div>
+                <div class="card-value">Progress tracking</div>
+            </div>
+            <div class="chart-container small">
+                <canvas id="learningPathChart"></canvas>
+            </div>
+        </div>
+
+        <!-- User Activity Timeline -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-clock"></i>
+                    Activity Timeline
+                </div>
+                <div class="card-value">24-hour view</div>
+            </div>
+            <div class="chart-container small">
+                <canvas id="activityTimelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Real-time Activity Feed -->
+        <div class="modern-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-stream"></i>
+                    Live Activity Feed
+                </div>
+                <div class="card-value">Real-time updates</div>
+            </div>
+            <div class="activity-feed" id="activity-feed">
+                <!-- Activities will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="export-section">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-download"></i>
+                Export Analytics
+            </div>
+        </div>
+        <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 16px;">
+            Generate comprehensive reports in multiple formats for detailed analysis and documentation.
+        </p>
+        <div class="export-options">
+            <button class="export-btn" onclick="exportData('pdf')">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </button>
+            <button class="export-btn" onclick="exportData('csv')">
+                <i class="fas fa-file-csv"></i>
+                Export CSV
+            </button>
+            <button class="export-btn" onclick="exportData('json')">
+                <i class="fas fa-file-code"></i>
+                Export JSON
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Analytics Dashboard Loading...');
+    
+    // Initialize charts
+    initializeAnalyticsCharts();
+    
+    // Load real-time activity feed
+    loadActivityFeed();
+    
+    // Set up auto-refresh for real-time data
+    setInterval(updateRealTimeData, 30000); // Update every 30 seconds
+    
+    // Initialize event listeners
+    initializeEventListeners();
+    
+    console.log('✅ Analytics Dashboard Loaded Successfully');
+});
+
+let charts = {};
+
+function initializeAnalyticsCharts() {
+    try {
+        // Performance Trend Chart
+        const performanceCtx = document.getElementById('performanceTrendChart');
+        if (performanceCtx) {
+            charts.performance = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: [], // Will be populated from API
+                    datasets: [{
+                        label: 'Average Score',
+                        data: [],
+                        borderColor: '#00D9FF',
+                        backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#00D9FF',
+                        pointBorderColor: '#ffffff',
+                        pointRadius: 5
+                    }, {
+                        label: 'Total Attempts',
+                        data: [],
+                        borderColor: '#39FF14',
+                        backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { color: '#39FF14' },
+                            grid: { drawOnChartArea: false }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Score Distribution Chart
+        const scoreDistCtx = document.getElementById('scoreDistributionChart');
+        if (scoreDistCtx) {
+            charts.scoreDistribution = new Chart(scoreDistCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+                    datasets: [{
+                        label: 'Number of Scores',
+                        data: [], // Will be populated from API
+                        backgroundColor: [
+                            'rgba(255, 107, 107, 0.8)',
+                            'rgba(255, 165, 0, 0.8)',
+                            'rgba(255, 206, 84, 0.8)',
+                            'rgba(57, 255, 20, 0.8)',
+                            'rgba(0, 217, 255, 0.8)'
+                        ],
+                        borderColor: [
+                            '#ff6b6b',
+                            '#ffa500',
+                            '#ffce54',
+                            '#39ff14',
+                            '#00d9ff'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Category Performance Radar Chart
+        const categoryCtx = document.getElementById('categoryPerformanceChart');
+        if (categoryCtx) {
+            charts.categoryPerformance = new Chart(categoryCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Riddle', 'Topology', 'Troubleshoot', 'Crimping', 'Networking', 'Collaboration'],
+                    datasets: [{
+                        label: 'Average Score',
+                        data: [], // Will be populated from API
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        pointBackgroundColor: '#8B5CF6',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#8B5CF6',
+                        borderWidth: 2
+                    }, {
+                        label: 'Engagement Level',
+                        data: [], // Will be populated from API
+                        borderColor: '#00D9FF',
+                        backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                        pointBackgroundColor: '#00D9FF',
+                        pointBorderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { color: '#fff' },
+                            ticks: { 
+                                color: '#fff',
+                                backdropColor: 'transparent'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Engagement Heatmap (using line chart for activity patterns)
+        const engagementCtx = document.getElementById('engagementHeatmapChart');
+        if (engagementCtx) {
+            charts.engagement = new Chart(engagementCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'User Activity',
+                        data: [], // Will be populated from API
+                        borderColor: '#39FF14',
+                        backgroundColor: 'rgba(57, 255, 20, 0.2)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Learning Path Progress (Doughnut Chart)
+        const learningPathCtx = document.getElementById('learningPathChart');
+        if (learningPathCtx) {
+            charts.learningPath = new Chart(learningPathCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'In Progress', 'Not Started'],
+                    datasets: [{
+                        data: [45, 30, 25], // Will be populated from API
+                        backgroundColor: [
+                            '#10B981',
+                            '#F59E0B', 
+                            '#EF4444'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                color: '#fff',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Activity Timeline (Bar Chart)
+        const timelineCtx = document.getElementById('activityTimelineChart');
+        if (timelineCtx) {
+            charts.timeline = new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Daily Activity',
+                        data: [], // Will be populated from API
+                        backgroundColor: 'rgba(0, 217, 255, 0.7)',
+                        borderColor: '#00D9FF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        console.log('📊 All charts initialized successfully');
+        
+        // Load initial data
+        loadChartData();
+        
+    } catch (error) {
+        console.error('❌ Error initializing charts:', error);
+    }
+}
+
+async function loadChartData() {
+    try {
+        const dateRange = document.getElementById('date-range').value;
+        
+        // Load performance trend data
+        const performanceResponse = await fetch(`/admin/api/analytics/chart-data/performance-trend?date_range=${dateRange}`);
+        const performanceData = await performanceResponse.json();
+        
+        if (performanceData.success && charts.performance) {
+            charts.performance.data = performanceData.data;
+            charts.performance.update();
+        }
+
+        // Load score distribution data
+        const scoreDistResponse = await fetch(`/admin/api/analytics/chart-data/score-distribution?date_range=${dateRange}`);
+        const scoreDistData = await scoreDistResponse.json();
+        
+        if (scoreDistData.success && charts.scoreDistribution) {
+            charts.scoreDistribution.data = scoreDistData.data;
+            charts.scoreDistribution.update();
+        }
+
+        // Load category performance data
+        const categoryResponse = await fetch(`/admin/api/analytics/chart-data/category-performance?date_range=${dateRange}`);
+        const categoryData = await categoryResponse.json();
+        
+        if (categoryData.success && charts.categoryPerformance) {
+            charts.categoryPerformance.data = categoryData.data;
+            charts.categoryPerformance.update();
+        }
+
+        // Load engagement data
+        const engagementResponse = await fetch(`/admin/api/analytics/chart-data/engagement-heatmap?date_range=${dateRange}`);
+        const engagementData = await engagementResponse.json();
+        
+        if (engagementData.success && charts.engagement) {
+            const hourlyData = engagementData.data.hourly_activity || {};
+            charts.engagement.data.datasets[0].data = Array.from({length: 24}, (_, i) => hourlyData[i] || 0);
+            charts.engagement.update();
+        }
+
+        console.log('📈 Chart data loaded successfully');
+        
+    } catch (error) {
+        console.error('❌ Error loading chart data:', error);
+    }
+}
+
+async function loadActivityFeed() {
+    try {
+        const response = await fetch('/admin/api/analytics/activity-feed?limit=10');
+        const data = await response.json();
+        
+        if (data.success) {
+            const feedContainer = document.getElementById('activity-feed');
+            feedContainer.innerHTML = data.data.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-${getActivityIcon(activity.type)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-message">${activity.message}</div>
+                        <div class="activity-time">${formatTime(activity.timestamp)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('❌ Error loading activity feed:', error);
+    }
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'score': 'trophy',
+        'essay': 'pencil-alt',
+        'login': 'sign-in-alt',
+        'quiz': 'question-circle'
+    };
+    return icons[type] || 'info-circle';
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+    return date.toLocaleDateString();
+}
+
+async function updateRealTimeData() {
+    try {
+        const response = await fetch('/admin/api/analytics/real-time');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update KPI values
+            const metrics = data.data;
+            
+            if (metrics.active_sessions !== undefined) {
+                document.getElementById('active-users').textContent = metrics.active_sessions;
+            }
+            
+            // Refresh activity feed
+            loadActivityFeed();
+            
+            console.log('🔄 Real-time data updated');
+        }
+    } catch (error) {
+        console.error('❌ Error updating real-time data:', error);
+    }
+}
+
+function initializeEventListeners() {
+    // Date range change
+    document.getElementById('date-range').addEventListener('change', function() {
+        loadChartData();
+        updateRealTimeData();
+    });
+    
+    // Category filter change
+    document.getElementById('category-filter').addEventListener('change', function() {
+        loadChartData();
+    });
+}
+
+function refreshAnalytics() {
+    console.log('🔄 Refreshing analytics...');
+    loadChartData();
+    updateRealTimeData();
+    loadActivityFeed();
+}
+
+async function exportData(format) {
+    try {
+        const dateRange = document.getElementById('date-range').value;
+        
+        console.log(`📥 Exporting data in ${format} format...`);
+        
+        // Show loading state
+        const exportBtn = event.target;
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        exportBtn.disabled = true;
+        
+        const response = await fetch(`/admin/api/export/analytics?format=${format}&date_range=${dateRange}`);
+        
+        if (response.ok) {
+            // Create download link
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `riddlenet_analytics_${new Date().toISOString().split('T')[0]}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            console.log(`✅ ${format.toUpperCase()} export completed`);
+        } else {
+            console.error('❌ Export failed');
+            alert('Export failed. Please try again.');
+        }
+        
+        // Restore button state
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('❌ Error exporting data:', error);
+        alert('Export failed. Please try again.');
+        
+        // Restore button state
+        const exportBtn = event.target;
+        exportBtn.innerHTML = exportBtn.innerHTML.replace('<i class="fas fa-spinner fa-spin"></i> Exporting...', originalText);
+        exportBtn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

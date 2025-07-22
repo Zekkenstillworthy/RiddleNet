@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics API Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #1a1a2e;
+            color: white; 
+            padding: 20px;
+        }
+        .result {
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .success { border-color: #4caf50; }
+        .error { border-color: #f44336; }
+        button {
+            background: #0f3460;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Analytics API Test Page</h1>
+    <p>Testing the analytics endpoints directly from the browser...</p>
+    
+    <button onclick="testEndpoint('/admin/api/analytics/real-time', 'real-time')">Test Real-time</button>
+    <button onclick="testEndpoint('/admin/api/analytics/activity-feed?limit=5', 'activity-feed')">Test Activity Feed</button>
+    <button onclick="testEndpoint('/admin/api/analytics/chart-data/performance-trend?date_range=30', 'performance-trend')">Test Performance Trend</button>
+    <button onclick="testEndpoint('/admin/api/analytics/chart-data/score-distribution?date_range=30', 'score-distribution')">Test Score Distribution</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testEndpoint(url, name) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+            
+            try {
+                console.log(`Testing: ${url}`);
+                const response = await fetch(url);
+                
+                resultDiv.innerHTML = `
+                    <h3>🧪 ${name}</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                `;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className += ' success';
+                    resultDiv.innerHTML += `
+                        <p><strong>✅ Success!</strong></p>
+                        <p><strong>Data Keys:</strong> ${Object.keys(data).join(', ')}</p>
+                        <details>
+                            <summary>View Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    resultDiv.className += ' error';
+                    const text = await response.text();
+                    resultDiv.innerHTML += `
+                        <p><strong>❌ Error!</strong></p>
+                        <details>
+                            <summary>View Error Response</summary>
+                            <pre>${text}</pre>
+                        </details>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className += ' error';
+                resultDiv.innerHTML = `
+                    <h3>🧪 ${name}</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>❌ Network Error:</strong> ${error.message}</p>
+                    <p><strong>Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                `;
+            }
+            
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+        }
+        
+        // Auto-test all endpoints on load
+        window.addEventListener('load', function() {
+            console.log('🚀 Auto-testing analytics endpoints...');
+            setTimeout(() => testEndpoint('/admin/api/analytics/real-time', 'real-time'), 500);
+            setTimeout(() => testEndpoint('/admin/api/analytics/activity-feed?limit=5', 'activity-feed'), 1000);
+            setTimeout(() => testEndpoint('/admin/api/analytics/chart-data/performance-trend?date_range=30', 'performance-trend'), 1500);
+            setTimeout(() => testEndpoint('/admin/api/analytics/chart-data/score-distribution?date_range=30', 'score-distribution'), 2000);
+        });
+    </script>
+</body>
+</html>
