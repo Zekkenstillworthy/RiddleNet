@@ -3,6 +3,7 @@ from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
 from __init__ import db
 from datetime import datetime, timedelta
+from typing import List
 import json
 
 try:
@@ -15,6 +16,299 @@ try:
 except ImportError:
     # Handle case where UserModel might be in a different module
     UserModel = None
+
+# Real-time notification system
+def emit_assignment_notification(user_id: int, notification_data: dict):
+    """Emit assignment notification to a specific user"""
+    try:
+        socketio.emit('assignment_notification', notification_data, room=f'user_{user_id}')
+        print(f"📢 Sent assignment notification to user {user_id}: {notification_data['title']}")
+    except Exception as e:
+        print(f"❌ Error sending assignment notification: {str(e)}")
+
+def emit_simulation_update(class_id: int, update_data: dict):
+    """Emit simulation update to all users in a class"""
+    try:
+        socketio.emit('simulation_update', update_data, room=f'class_{class_id}')
+        print(f"📢 Sent simulation update to class {class_id}")
+    except Exception as e:
+        print(f"❌ Error sending simulation update: {str(e)}")
+
+def emit_grade_notification(user_id: int, grade_data: dict):
+    """Emit grade notification to a specific user"""
+    try:
+        socketio.emit('grade_notification', grade_data, room=f'user_{user_id}')
+        print(f"📢 Sent grade notification to user {user_id}")
+    except Exception as e:
+        print(f"❌ Error sending grade notification: {str(e)}")
+
+# ===== WEEK 2 ENHANCEMENT: REAL-TIME CONTENT UPDATES =====
+
+def emit_new_simulation_available(simulation_id: int, category: str, class_ids: List[int] = None):
+    """Notify users when new simulation is available"""
+    try:
+        from admin.models.simulation import Simulation
+        from admin.models.class_model import Class
+        from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
+        
+        simulation = Simulation.query.get(simulation_id)
+        if not simulation:
+            return
+            
+        notification_data = {
+            'type': 'new_simulation',
+            'simulation_id': simulation_id,
+            'title': simulation.title,
+            'category': category,
+            'message': f'🎉 New simulation available: {simulation.title}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Find affected classes
+        if class_ids:
+            affected_classes = Class.query.filter(Class.id.in_(class_ids)).all()
+        else:
+            affected_classes = Class.query.filter(
+                Class.name.ilike(f'%{category}%')
+            ).all()
+        
+        generator = EnhancedClassTemplateGenerator()
+        
+        for class_obj in affected_classes:
+            # Regenerate class template with new simulation
+            try:
+                generator.regenerate_class_resources(class_obj.id)
+                print(f"✅ Regenerated template for class {class_obj.name}")
+            except Exception as e:
+                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+            
+            # Notify users in this class
+            class_notification = notification_data.copy()
+            class_notification['class_id'] = class_obj.id
+            class_notification['class_name'] = class_obj.name
+            
+            socketio.emit('new_simulation_available', class_notification, room=f'class_{class_obj.id}')
+            print(f"📢 Notified class {class_obj.id} about new simulation {simulation_id}")
+        
+        # Broadcast to category room for users not in specific classes
+        socketio.emit('new_simulation_available', notification_data, room=f'category_{category}')
+        
+    except Exception as e:
+        print(f"❌ Error sending new simulation notification: {str(e)}")
+
+def emit_new_learning_path_available(path_id: int, category: str, class_ids: List[int] = None):
+    """Notify users when new learning path is available"""
+    try:
+        from admin.models.learning_path import LearningPath
+        from admin.models.class_model import Class
+        from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
+        
+        learning_path = LearningPath.query.get(path_id)
+        if not learning_path:
+            return
+            
+        notification_data = {
+            'type': 'new_learning_path',
+            'path_id': path_id,
+            'title': learning_path.name,
+            'category': category,
+            'message': f'🚀 New learning path available: {learning_path.name}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Find affected classes
+        if class_ids:
+            affected_classes = Class.query.filter(Class.id.in_(class_ids)).all()
+        else:
+            affected_classes = Class.query.filter(
+                Class.name.ilike(f'%{category}%')
+            ).all()
+        
+        generator = EnhancedClassTemplateGenerator()
+        
+        for class_obj in affected_classes:
+            # Regenerate class template with new learning path
+            try:
+                generator.regenerate_class_resources(class_obj.id)
+                print(f"✅ Regenerated template for class {class_obj.name}")
+            except Exception as e:
+                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+            
+            # Notify users in this class
+            class_notification = notification_data.copy()
+            class_notification['class_id'] = class_obj.id
+            class_notification['class_name'] = class_obj.name
+            
+            socketio.emit('new_learning_path_available', class_notification, room=f'class_{class_obj.id}')
+            print(f"📢 Notified class {class_obj.id} about new learning path {path_id}")
+        
+        # Broadcast to category room
+        socketio.emit('new_learning_path_available', notification_data, room=f'category_{category}')
+        
+    except Exception as e:
+        print(f"❌ Error sending new learning path notification: {str(e)}")
+
+def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: str):
+    """Notify users when new assignment is created"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        from admin.models.simulation import Simulation
+        
+        assignment = SimulationAssignment.query.get(assignment_id)
+        if not assignment:
+            return
+            
+        simulation = Simulation.query.get(assignment.simulation_id)
+        
+        notification_data = {
+            'type': 'new_assignment',
+            'assignment_id': assignment_id,
+            'assignment_title': assignment.title,
+            'simulation_title': simulation.title if simulation else 'Unknown',
+            'assignment_type': assignment_type,
+            'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+            'class_id': class_id,
+            'message': f'📝 New assignment: {assignment.title}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Notify all users in the class
+        socketio.emit('new_assignment_created', notification_data, room=f'class_{class_id}')
+        print(f"📢 Notified class {class_id} about new assignment {assignment_id}")
+        
+    except Exception as e:
+        print(f"❌ Error sending assignment creation notification: {str(e)}")
+
+# WebSocket Event Handlers for Week 2 Features
+@socketio.on('join_category_room')
+@authenticated_only  
+def handle_join_category_room(data):
+    """Join category-specific room for content updates"""
+    if current_user.is_authenticated:
+        category = data.get('category')
+        if category:
+            room = f'category_{category}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'category', 'category': category})
+            print(f"📂 User {current_user.id} joined category room {room}")
+
+@socketio.on('simulation_created')
+def handle_simulation_created(data):
+    """Handle notification when admin creates new simulation"""
+    simulation_id = data.get('simulation_id')
+    category = data.get('category')
+    class_ids = data.get('class_ids')
+    
+    if simulation_id and category:
+        emit_new_simulation_available(simulation_id, category, class_ids)
+
+@socketio.on('learning_path_created')
+def handle_learning_path_created(data):
+    """Handle notification when admin creates new learning path"""
+    path_id = data.get('path_id')
+    category = data.get('category')
+    class_ids = data.get('class_ids')
+    
+    if path_id and category:
+        emit_new_learning_path_available(path_id, category, class_ids)
+
+@socketio.on('assignment_created')
+def handle_assignment_created(data):
+    """Handle notification when admin creates new assignment"""
+    assignment_id = data.get('assignment_id')
+    class_id = data.get('class_id')
+    assignment_type = data.get('assignment_type', 'class')
+    
+    if assignment_id and class_id:
+        emit_assignment_created(assignment_id, class_id, assignment_type)
+
+# User room management
+@socketio.on('join_user_room')
+@authenticated_only
+def handle_join_user_room():
+    """Join user-specific room for notifications"""
+    if current_user.is_authenticated:
+        room = f'user_{current_user.id}'
+        join_room(room)
+        emit('joined_room', {'room': room, 'type': 'user'})
+        print(f"👤 User {current_user.id} joined room {room}")
+
+@socketio.on('join_class_room')
+@authenticated_only
+def handle_join_class_room(data):
+    """Join class-specific room for updates"""
+    if current_user.is_authenticated:
+        class_id = data.get('class_id')
+        if class_id:
+            room = f'class_{class_id}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'class', 'class_id': class_id})
+            print(f"🏫 User {current_user.id} joined class room {room}")
+
+@socketio.on('leave_class_room')
+@authenticated_only
+def handle_leave_class_room(data):
+    """Leave class-specific room"""
+    if current_user.is_authenticated:
+        class_id = data.get('class_id')
+        if class_id:
+            room = f'class_{class_id}'
+            leave_room(room)
+            emit('left_room', {'room': room, 'type': 'class', 'class_id': class_id})
+            print(f"🏫 User {current_user.id} left class room {room}")
+
+# Assignment-related events
+@socketio.on('assignment_started')
+@authenticated_only
+def handle_assignment_started(data):
+    """Handle when a user starts an assignment"""
+    if current_user.is_authenticated:
+        assignment_id = data.get('assignment_id')
+        attempt_id = data.get('attempt_id')
+        
+        # Emit to class room that someone started the assignment
+        if 'class_id' in data:
+            update_data = {
+                'type': 'assignment_started',
+                'assignment_id': assignment_id,
+                'attempt_id': attempt_id,
+                'user_id': current_user.id,
+                'username': getattr(current_user, 'username', 'Unknown'),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            emit_simulation_update(data['class_id'], update_data)
+
+@socketio.on('assignment_completed')
+@authenticated_only
+def handle_assignment_completed(data):
+    """Handle when a user completes an assignment"""
+    if current_user.is_authenticated:
+        assignment_id = data.get('assignment_id')
+        attempt_id = data.get('attempt_id')
+        score = data.get('score', 0)
+        
+        # Emit grade notification to user
+        grade_data = {
+            'assignment_id': assignment_id,
+            'attempt_id': attempt_id,
+            'score': score,
+            'completed_at': datetime.utcnow().isoformat(),
+            'message': f"Assignment completed! Score: {score}%"
+        }
+        emit_grade_notification(current_user.id, grade_data)
+        
+        # Emit to class room that someone completed the assignment
+        if 'class_id' in data:
+            update_data = {
+                'type': 'assignment_completed',
+                'assignment_id': assignment_id,
+                'attempt_id': attempt_id,
+                'user_id': current_user.id,
+                'username': getattr(current_user, 'username', 'Unknown'),
+                'score': score,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            emit_simulation_update(data['class_id'], update_data)
 
 # Health check events
 @socketio.on('ping')

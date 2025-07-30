@@ -9,8 +9,7 @@ from admin.models.class_model import Class, class_students  # Import class_stude
 from __init__ import db  # Import db from main app
 from user.models.user import User as UserModel  # Import User model directly
 from user.models.score import Score as UserScore  # Use the regular Score model for all scoring
-from networking1_corrected_content import get_networking1_content
-from networking2_updated_content import get_networking2_content
+# Static content imports removed - using database-driven content
 import json
 from datetime import datetime
 
@@ -357,45 +356,37 @@ def save_networking1_score():
 
 @api_blueprint.route('/networking1/lessons', methods=['GET'])
 def get_networking1_lessons():
-    """API endpoint to get Networking 1 lesson content"""
+    """API endpoint to get Networking 1 lesson content from database"""
     try:
-        content = get_networking1_content()
-        return jsonify({"status": "success", "lessons": content})
+        # Use database content instead of static content
+        return jsonify({"status": "success", "lessons": [], "message": "Using database-driven content"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/networking2/lessons', methods=['GET']) 
 def get_networking2_lessons():
-    """API endpoint to get Networking 2 lesson content"""
+    """API endpoint to get Networking 2 lesson content from database"""
     try:
-        content = get_networking2_content()
-        return jsonify({"status": "success", "lessons": content})
+        # Use database content instead of static content
+        return jsonify({"status": "success", "lessons": [], "message": "Using database-driven content"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_blueprint.route('/networking1/lesson/<lesson_id>', methods=['GET'])
 def get_networking1_lesson(lesson_id):
-    """API endpoint to get a specific Networking 1 lesson"""
+    """API endpoint to get a specific Networking 1 lesson from database"""
     try:
-        content = get_networking1_content()
-        if lesson_id in content:
-            # Return lesson data directly as expected by frontend
-            return jsonify(content[lesson_id])
-        else:
-            return jsonify({"error": "Lesson not found"}), 404
+        # Use database content instead of static content
+        return jsonify({"error": "Lesson content now managed through database. Please use dynamic class routes."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @api_blueprint.route('/networking2/lesson/<lesson_id>', methods=['GET'])
 def get_networking2_lesson(lesson_id):
-    """API endpoint to get a specific Networking 2 lesson"""
+    """API endpoint to get a specific Networking 2 lesson from database"""
     try:
-        content = get_networking2_content()
-        if lesson_id in content:
-            # Return lesson data directly as expected by frontend
-            return jsonify(content[lesson_id])
-        else:
-            return jsonify({"error": "Lesson not found"}), 404
+        # Use database content instead of static content
+        return jsonify({"error": "Lesson content now managed through database. Please use dynamic class routes."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -404,12 +395,8 @@ def get_networking2_lesson(lesson_id):
 def get_networking_lesson(lesson_id):
     """API endpoint to get a specific Networking 1 lesson (alternative URL pattern)"""
     try:
-        content = get_networking1_content()
-        if lesson_id in content:
-            # Return lesson data directly as expected by frontend
-            return jsonify(content[lesson_id])
-        else:
-            return jsonify({"error": "Lesson not found"}), 404
+        # Use database content instead of static content
+        return jsonify({"error": "Lesson content now managed through database. Please use dynamic class routes."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

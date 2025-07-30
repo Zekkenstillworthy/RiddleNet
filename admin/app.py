@@ -19,7 +19,7 @@ class AdminApp:
 
     def configure_app(self):
         """Configure the Flask application."""
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///riddlenet.db'
         self.app.config['SECRET_KEY'] = 'your_secret_key'
         self.app.config['ADMIN_PORT'] = 5001
         
@@ -97,6 +97,7 @@ class AdminApp:
         from admin.controllers.dashboard_controller import dashboard_bp
         from admin.controllers.question_group_controller import question_group_bp
         from admin.controllers.class_controller import class_controller
+        from admin.controllers.class_content_controller import class_content_controller
         from admin.controllers.notification_controller import notification_controller
         # from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
@@ -114,6 +115,7 @@ class AdminApp:
         self.app.register_blueprint(dashboard_bp)
         self.app.register_blueprint(question_group_bp)        
         self.app.register_blueprint(class_controller)
+        self.app.register_blueprint(class_content_controller)
         self.app.register_blueprint(notification_controller)
         # self.app.register_blueprint(scenario_bp)
         self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)

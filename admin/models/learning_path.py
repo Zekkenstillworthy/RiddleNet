@@ -189,7 +189,7 @@ class UserLearningProgress(db.Model):
     __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=False)
     simulation_id = db.Column(db.Integer, db.ForeignKey('simulations.id'), nullable=False)
     

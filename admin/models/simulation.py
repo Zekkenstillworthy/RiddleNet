@@ -244,7 +244,7 @@ class SimulationAttempt(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     simulation_id = db.Column(db.Integer, db.ForeignKey('simulations.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Attempt Details
     started_at = db.Column(db.DateTime, default=datetime.utcnow)

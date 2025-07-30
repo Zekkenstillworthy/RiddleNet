@@ -1,0 +1,646 @@
+{% if user_context and user_context.get('is_admin') %}
+{% extends "admin/base.html" %}
+{% else %}
+{% extends "user/learning_base.html" %}
+{% endif %}
+
+{% block title %}{{ class_data.name or 'Class Portal' }} - RiddleNet{% endblock %}
+
+{% block head %}
+<style>
+:root {
+  --cyber-glow: #00D9FF;
+  --neon-green: #39FF14;
+  --network-purple: #8B5CF6;
+  --card-bg: rgba(26, 35, 126, 0.6);
+  --sidebar-bg: rgba(26, 35, 126, 0.8);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --glow-cyan: 0 0 30px rgba(0, 217, 255, 0.4);
+  --border-glow: rgba(0, 217, 255, 0.3);
+}
+
+.learning-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  min-height: 100vh;
+  gap: 2rem;
+}
+
+/* Sidebar - matches the first screenshot */
+.class-sidebar {
+  width: 350px;
+  background: var(--sidebar-bg);
+  border-radius: 20px;
+  border: 2px solid var(--border-glow);
+  box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  padding: 2rem;
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.class-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--cyber-glow);
+  margin-bottom: 0.5rem;
+}
+
+.class-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Sidebar tabs */
+.sidebar-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.sidebar-tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-glow);
+  color: var(--text-secondary);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sidebar-tab.active,
+.sidebar-tab:hover {
+  background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+  color: white;
+  border-color: var(--cyber-glow);
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+/* Module list in sidebar */
+.module-list {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.module-item {
+  background: rgba(26, 35, 126, 0.4);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.module-item:hover {
+  transform: translateX(5px);
+  border-color: var(--cyber-glow);
+  box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+}
+
+.module-number {
+  color: var(--cyber-glow);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.module-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.module-description {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.module-progress {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--cyber-glow);
+  font-weight: 600;
+}
+
+/* Progress stats in sidebar */
+.progress-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.stat-card {
+  background: rgba(26, 35, 126, 0.4);
+  border: 1px solid var(--border-glow);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cyber-glow);
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.content-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+}
+
+/* Content cards - matching the first screenshot */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.content-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border-glow);
+  border-radius: 20px;
+  padding: 2.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.content-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+  opacity: 0.8;
+}
+
+.content-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 217, 255, 0.4);
+  border-color: var(--cyber-glow);
+}
+
+.card-icon {
+  font-size: 3rem;
+  color: var(--cyber-glow);
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.card-description {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.card-button {
+  background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.card-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4);
+  color: white;
+  text-decoration: none;
+}
+
+.card-button.simulations-btn {
+  background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+}
+
+.card-button.simulations-btn:hover {
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+.card-button.quiz-btn {
+  background: linear-gradient(135deg, var(--network-purple), #e056fd);
+}
+
+.card-button.quiz-btn:hover {
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: var(--border-glow);
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .learning-container {
+    flex-direction: column;
+  }
+  
+  .class-sidebar {
+    width: 100%;
+    position: static;
+  }
+  
+  .sidebar-tabs {
+    justify-content: center;
+  }
+  
+  .progress-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .learning-container {
+    padding: 0 16px;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .progress-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Custom scrollbar for module list */
+.module-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.module-list::-webkit-scrollbar-track {
+  background: rgba(26, 35, 126, 0.3);
+  border-radius: 3px;
+}
+
+.module-list::-webkit-scrollbar-thumb {
+  background: var(--cyber-glow);
+  border-radius: 3px;
+}
+
+.module-list::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-green);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="learning-container">
+    <!-- Sidebar - matches first screenshot design -->
+    <div class="class-sidebar">
+      <div class="sidebar-header">
+        <h2 class="class-title">{{ class_data.name or 'Class Portal' }}</h2>
+        <p class="class-subtitle">{{ class_data.description or 'Interactive Learning Environment' }}</p>
+      </div>
+
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" onclick="showSidebarTab('modules')">
+          Class Modules
+        </button>
+        <button class="sidebar-tab" onclick="showSidebarTab('progress')">
+          Progress
+        </button>
+      </div>
+
+      <!-- Class Modules Tab -->
+      <div id="modules-sidebar" class="sidebar-content active">
+        <div class="module-list">
+          {% if modules %}
+            {% for module in modules %}
+            <div class="module-item" onclick="selectModule({{ module.id }})">
+              <div class="module-number">Module {{ loop.index }}</div>
+              <div class="module-title">{{ module.name }}</div>
+              <div class="module-description">{{ module.description or 'Interactive learning module' }}</div>
+              <div class="module-progress">{{ module.progress or '0' }}% Complete</div>
+            </div>
+            {% endfor %}
+          {% elif lessons %}
+            {% for lesson in lessons %}
+            <div class="module-item" onclick="window.location.href='{{ lesson.url }}'">
+              <div class="module-number">{{ loop.index }}.</div>
+              <div class="module-title">{{ lesson.title }}</div>
+              <div class="module-description">{{ lesson.description or 'Interactive lesson content' }}</div>
+              <div class="module-progress">0%</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <!-- Default modules based on class type -->
+            {% if class_data.id == 7 %}
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_components_simulation') }}'">
+              <div class="module-number">1.1</div>
+              <div class="module-title">Introduction to Computer Networks</div>
+              <div class="module-description">Basic networking concepts and components</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_osi_simulation') }}'">
+              <div class="module-number">1.2</div>
+              <div class="module-title">Network Architecture and Types</div>
+              <div class="module-description">Understanding network topologies and architectures</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_tcpip_simulation') }}'">
+              <div class="module-number">1.3</div>
+              <div class="module-title">OSI Model and Layered Architecture</div>
+              <div class="module-description">Seven-layer OSI model in detail</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_ethernet_simulation') }}'">
+              <div class="module-number">1.4</div>
+              <div class="module-title">TCP/IP Model</div>
+              <div class="module-description">Internet protocol suite fundamentals</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item">
+              <div class="module-number">2.1</div>
+              <div class="module-title">Ethernet Technology</div>
+              <div class="module-description">Ethernet standards and technologies</div>
+              <div class="module-progress">0%</div>
+            </div>
+            {% elif class_data.id == 9 %}
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_routing_fundamentals_simulation') }}'">
+              <div class="module-number">1.1</div>
+              <div class="module-title">Advanced Network Protocols</div>
+              <div class="module-description">Advanced routing and switching concepts</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_ospf_simulation') }}'">
+              <div class="module-number">1.2</div>
+              <div class="module-title">Dynamic Routing Protocols</div>
+              <div class="module-description">OSPF, EIGRP, and BGP routing protocols</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_vlan_simulation') }}'">
+              <div class="module-number">1.3</div>
+              <div class="module-title">Static vs Dynamic Routing</div>
+              <div class="module-description">Routing table management and optimization</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_security_simulation') }}'">
+              <div class="module-number">1.4</div>
+              <div class="module-title">Load Balancing</div>
+              <div class="module-description">Traffic distribution and load balancing techniques</div>
+              <div class="module-progress">0%</div>
+            </div>
+            <div class="module-item">
+              <div class="module-number">2.1</div>
+              <div class="module-title">Network Security Fundamentals</div>
+              <div class="module-description">Firewalls, VPNs, and security protocols</div>
+              <div class="module-progress">0%</div>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Progress Tab -->
+      <div id="progress-sidebar" class="sidebar-content" style="display: none;">
+        <div class="progress-stats">
+          <div class="stat-card">
+            <span class="stat-value">{{ overall_progress or 0 }}%</span>
+            <span class="stat-label">Overall</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ modules|length or lessons|length or 5 }}</span>
+            <span class="stat-label">Modules</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ simulations|length or static_simulations|length or 3 }}</span>
+            <span class="stat-label">Simulations</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ question_groups|length or 1 }}</span>
+            <span class="stat-label">Quizzes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <div class="content-header">
+        <h1 class="page-title">{{ class_data.name or 'Networking 1' }}</h1>
+        <p class="page-subtitle">Foundations of Computer Networking</p>
+      </div>
+
+      <!-- Main Content Cards - matching first screenshot -->
+      <div class="content-grid">
+        <!-- Course Content Card -->
+        <div class="content-card">
+          <i class="fas fa-book-open card-icon"></i>
+          <h3 class="card-title">{{ class_data.name or 'Networking 1' }} Course</h3>
+          <p class="card-description">Learn computer networking fundamentals with interactive lessons</p>
+          {% if class_data.id == 7 %}
+          <a href="{{ url_for('user.networking_1') }}" class="card-button">
+            <i class="fas fa-arrow-right"></i>
+            Start Learning
+          </a>
+          {% elif class_data.id == 9 %}
+          <a href="{{ url_for('user.networking_2') }}" class="card-button">
+            <i class="fas fa-arrow-right"></i>
+            Start Learning
+          </a>
+          {% else %}
+          <button class="card-button" onclick="alert('Course content coming soon!')">
+            <i class="fas fa-arrow-right"></i>
+            Start Learning
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Interactive Simulations Card -->
+        <div class="content-card">
+          <i class="fas fa-flask card-icon"></i>
+          <h3 class="card-title">Interactive Simulations</h3>
+          <p class="card-description">Hands-on practice with network components and protocols</p>
+          {% if class_data.id == 7 %}
+          <a href="{{ url_for('user.networking1_simulations') }}" class="card-button simulations-btn">
+            <i class="fas fa-play"></i>
+            Practice with Live Demos
+          </a>
+          {% elif class_data.id == 9 %}
+          <a href="{{ url_for('user.networking2_simulations') }}" class="card-button simulations-btn">
+            <i class="fas fa-play"></i>
+            Practice with Live Demos
+          </a>
+          {% else %}
+          <button class="card-button simulations-btn" onclick="alert('Simulations coming soon!')">
+            <i class="fas fa-play"></i>
+            Practice with Live Demos
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Take Quiz Card -->
+        <div class="content-card">
+          <i class="fas fa-question-circle card-icon"></i>
+          <h3 class="card-title">Take Quiz</h3>
+          <p class="card-description">Test your knowledge with interactive assessments</p>
+          {% if question_groups %}
+          <button class="card-button quiz-btn" onclick="startAssessment({{ question_groups[0].id }})">
+            <i class="fas fa-arrow-right"></i>
+            Start Assessment
+          </button>
+          {% else %}
+          <button class="card-button quiz-btn" onclick="alert('Assessments coming soon!')">
+            <i class="fas fa-arrow-right"></i>
+            Coming Soon
+          </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Additional Content Section -->
+      {% if recent_activities %}
+      <div class="content-card" style="margin-top: 2rem;">
+        <h3 style="color: var(--cyber-glow); margin-bottom: 1.5rem; text-align: left;">
+          <i class="fas fa-history"></i> Recent Activity
+        </h3>
+        <div class="activity-list">
+          {% for activity in recent_activities %}
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div>
+              <strong style="color: var(--cyber-glow);">{{ activity.type }}</strong>
+              <span style="color: var(--text-secondary); margin-left: 0.5rem;">{{ activity.description }}</span>
+            </div>
+            <small style="color: var(--text-muted);">{{ activity.timestamp }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+// Sidebar tab switching
+function showSidebarTab(tabName) {
+  // Hide all sidebar contents
+  document.querySelectorAll('.sidebar-content').forEach(content => {
+    content.style.display = 'none';
+  });
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Show selected content and mark tab as active
+  document.getElementById(tabName + '-sidebar').style.display = 'block';
+  event.target.classList.add('active');
+}
+
+// Module selection
+function selectModule(moduleId) {
+  window.location.href = `/class/{{ class_data.id }}/module/${moduleId}`;
+}
+
+// Assessment functions
+function startAssessment(assessmentId) {
+  window.location.href = `/class/{{ class_data.id }}/assessment/${assessmentId}`;
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  // Load user progress if available
+  {% if class_data.id %}
+  fetch(`/class/{{ class_data.id }}/api/progress`)
+    .then(response => response.json())
+    .then(progress => {
+      console.log('Progress loaded:', progress);
+      // Update progress indicators as needed
+    })
+    .catch(error => console.log('Progress not available'));
+  {% endif %}
+});
+</script>
+{% endblock %}

@@ -42,7 +42,7 @@ def create_app(config=None):
     
     # Set sensible defaults if config file doesn't exist
     if 'SQLALCHEMY_DATABASE_URI' not in app.config:
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "test.db")}'
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "riddlenet.db")}'
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
@@ -105,6 +105,14 @@ def create_app(config=None):
         from user.views import user_bp
         app.register_blueprint(user_bp)
         
+        # Register dynamic simulation routes blueprint
+        try:
+            from user.dynamic_simulation_routes import dynamic_sim_bp
+            app.register_blueprint(dynamic_sim_bp)
+            print("✅ Dynamic simulation routes registered successfully")
+        except Exception as e:
+            print(f"⚠️ Error registering dynamic simulation blueprint: {e}")
+        
         # Register the API blueprint with explicit url_prefix
         # Commented out to avoid conflicts with QuizController routes
         # We'll register this in run.py after the QuizController
@@ -136,5 +144,48 @@ def create_app(config=None):
             return f"http://localhost:5001/media/{type}/{path}"
             
         return dict(static_url=static_url, media_url=media_url)
+    
+    # Add global user context processor
+    @app.context_processor
+    def inject_user():
+        """Inject user information into all templates"""
+        from flask_login import current_user
+        from flask import session
+        
+        # Debug: Print current request info
+        try:
+            from flask import request
+            path = request.path if request else "unknown"
+        except:
+            path = "unknown"
+        
+        # First, try to get user from Flask-Login (current_user)
+        if current_user.is_authenticated:
+            print(f"Context processor [{path}]: Found authenticated user via Flask-Login: {current_user.username}")
+            return dict(user=current_user)
+        
+        # If not authenticated via Flask-Login, try session-based authentication
+        if 'user_id' in session:
+            try:
+                from user.models.user import User
+                user = User.query.get(session['user_id'])
+                if user:
+                    print(f"Context processor [{path}]: Found user via session: {user.username}")
+                    return dict(user=user)
+                else:
+                    print(f"Context processor [{path}]: User ID {session['user_id']} not found in database")
+            except Exception as e:
+                print(f"Context processor [{path}]: Error getting user from session: {e}")
+        
+        # No user found - this will result in "U User" fallback
+        print(f"Context processor [{path}]: No user found in session or current_user")
+        return dict(user=None)
+    
+    # Register template helpers
+    try:
+        from user.template_helpers import register_template_helpers
+        register_template_helpers(app)
+    except ImportError:
+        pass  # Template helpers not available yet
     
     return app

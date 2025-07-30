@@ -514,3 +514,156 @@ def remove_student_from_class(class_id, student_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/class/<int:class_id>/overview')
+@login_required
+def class_overview(class_id):
+    """Display class overview and content editing page for admin"""
+    try:
+        print(f"Loading class overview for class ID: {class_id}")
+        
+        # Get the class details
+        cls = Class.query.get_or_404(class_id)
+        print(f"Found class: {cls.name}")
+        
+        # Get enrolled students
+        students = cls.students.all() if cls.students else []
+        print(f"Found {len(students)} students")
+        
+        # Get question groups assigned to this class
+        question_groups = cls.question_groups.all() if cls.question_groups else []
+        print(f"Found {len(question_groups)} question groups")
+        
+        # Get class performance data
+        performance_data = []
+        if students:
+            for student in students:
+                student_scores = Score.query.filter_by(user_id=student.id).all()
+                if student_scores:
+                    scores_values = [score.score for score in student_scores if score.score is not None]
+                    avg_score = sum(scores_values) / len(scores_values) if scores_values else 0
+                    best_score = max(scores_values) if scores_values else 0
+                    total_assessments = len(scores_values)
+                else:
+                    avg_score = 0
+                    best_score = 0
+                    total_assessments = 0
+                
+                performance_data.append({
+                    'student': student,
+                    'avg_score': avg_score,
+                    'best_score': best_score,
+                    'total_assessments': total_assessments
+                })
+        
+        # Get available question groups for assignment
+        all_question_groups = QuestionGroup.query.all()
+        available_question_groups = [qg for qg in all_question_groups if qg not in question_groups]
+        
+        print(f"Rendering template with class data")
+        return render_template('admin/class_overview.html',
+                             class_data=cls,
+                             students=students,
+                             question_groups=question_groups,
+                             available_question_groups=available_question_groups,
+                             performance_data=performance_data,
+                             active_page='classes')
+                             
+    except Exception as e:
+        error_msg = f'Error loading class overview for class {class_id}: {str(e)}'
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        
+        # Add error to flash messages
+        flash(error_msg, 'error')
+        
+        # Return JSON response if it's an AJAX request
+        if request.is_json or 'application/json' in request.headers.get('Accept', ''):
+            return jsonify({"error": error_msg}), 500
+            
+        return redirect(url_for('class_controller.index'))
+
+@class_controller.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
+@login_required
+def add_question_group_to_class(class_id):
+    """Add a question group to a class"""
+    try:
+        data = request.json
+        question_group_id = data.get('question_group_id')
+        
+        cls = Class.query.get_or_404(class_id)
+        question_group = QuestionGroup.query.get_or_404(question_group_id)
+        
+        # Check if already assigned
+        if question_group in cls.question_groups:
+            return jsonify({"error": "Question group is already assigned to this class"}), 400
+        
+        # Add the question group to the class
+        cls.question_groups.append(question_group)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Question group '{question_group.name}' added to class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def remove_question_group_from_class(class_id, group_id):
+    """Remove a question group from a class"""
+    try:
+        cls = Class.query.get_or_404(class_id)
+        question_group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Check if assigned
+        if question_group not in cls.question_groups:
+            return jsonify({"error": "Question group is not assigned to this class"}), 400
+        
+        # Remove the question group from the class
+        cls.question_groups.remove(question_group)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Question group '{question_group.name}' removed from class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/students', methods=['POST'])
+@login_required
+def add_student_to_class_by_username(class_id):
+    """Add a student to a class by username"""
+    try:
+        data = request.json
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        cls = Class.query.get_or_404(class_id)
+        student = User.query.filter_by(username=username).first()
+        
+        if not student:
+            return jsonify({"error": f"Student with username '{username}' not found"}), 404
+        
+        # Check if already enrolled
+        if student in cls.students:
+            return jsonify({"error": f"Student '{username}' is already enrolled in this class"}), 400
+        
+        # Add the student to the class
+        cls.students.append(student)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Student '{username}' added to class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

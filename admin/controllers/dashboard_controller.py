@@ -1,4 +1,5 @@
-from flask import Blueprint, redirect, url_for, flash, jsonify, request, render_template, send_file
+
+from flask import Blueprint, redirect, url_for, flash, jsonify, request, render_template, send_file, current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, and_, extract, or_
 import json
@@ -388,8 +389,23 @@ def simulation_builder():
 @login_required
 def manage_simulations():
     """Manage existing simulations page"""
-    return render_safe_template('admin/manage_simulations.html', 
-                               active_page='manage_simulations')
+    try:
+        from admin.controllers.simulation_controller import SimulationController
+        simulation_controller = SimulationController()
+        
+        # Get only active simulations by default (exclude deleted ones)
+        simulations_data = simulation_controller.get_all_simulations(include_inactive=False)
+        
+        return render_safe_template('admin/manage_simulations.html', 
+                                   active_page='manage_simulations',
+                                   simulations=simulations_data.get('simulations', []),
+                                   total_count=simulations_data.get('total_count', 0))
+    except Exception as e:
+        current_app.logger.error(f"Error loading manage simulations: {str(e)}")
+        return render_safe_template('admin/manage_simulations.html', 
+                                   active_page='manage_simulations',
+                                   simulations=[],
+                                   total_count=0)
 
 @dashboard_bp.route('/module-builder')
 @login_required

@@ -42,6 +42,14 @@ with app.app_context():
 
 quiz_controller = QuizController(app)
 
+# Register dynamic simulation routes - already registered in __init__.py
+# try:
+#     from user.dynamic_simulation_routes import register_dynamic_routes
+#     register_dynamic_routes(app)
+#     print("✅ Dynamic simulation routes registered")
+# except ImportError as e:
+#     print(f"⚠️ Could not register dynamic routes: {e}")
+
 login_manager.init_app(app)
 login_manager.login_view = 'user.login'  
 login_manager.login_message_category = 'info'
@@ -131,6 +139,11 @@ try:
         from user.routes.notification_routes import notification_bp
         app.register_blueprint(notification_bp)
         print("User Notification Blueprint registered successfully")
+        
+        # Register dynamic simulation routes
+        from user.dynamic_simulation_routes import dynamic_sim_bp
+        app.register_blueprint(dynamic_sim_bp)
+        print("Dynamic Simulation Blueprint registered successfully")
     except Exception as e:
         print(f"Error registering User Troubleshooting blueprint: {e}")
     # No separate simulation blueprint registration needed
@@ -195,6 +208,37 @@ try:
 except Exception as e:
     print(f"General error registering admin blueprints: {e}")
 
+# Register Enhanced User Routes for User-Facing Integration
+print("\n=== Registering Enhanced User Routes ===")
+try:
+    from user.routes.enhanced.hybrid_routes import enhanced_user_bp
+    app.register_blueprint(enhanced_user_bp, url_prefix='/enhanced')
+    print("✅ Enhanced user routes registered successfully")
+    print("   • /enhanced/networking1-simulations - Shows static + database content")
+    print("   • /enhanced/networking2-simulations - Shows static + database content")
+    print("   • /enhanced/class/<id>/enhanced - Shows learning paths as modules")
+    print("   • /simulation/<id> - Unified simulation runner")
+    print("   • /simulation/static/<lesson_key> - Static content runner")
+except Exception as e:
+    print(f"❌ Error registering enhanced user routes: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Register Progression API for sequential unlock mechanics
+print("\n=== Registering Progression API ===")
+try:
+    from user.api.progression_api import progression_api
+    app.register_blueprint(progression_api)
+    print("✅ Progression API registered successfully")
+    print("   • /api/progression/simulation/<id>/unlock-status - Check unlock status")
+    print("   • /api/progression/learning-path/<id>/progress - Get progress")
+    print("   • /api/progression/simulation/<id>/complete - Mark completed")
+    print("   • /api/progression/user/achievements - Get achievements")
+except Exception as e:
+    print(f"❌ Error registering progression API: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Initialize and register dynamic class routes
 print("\n=== Registering Dynamic Class Routes ===")
 try:
@@ -218,6 +262,26 @@ except Exception as e:
     print(f"❌ Error initializing dynamic route registry: {e}")
     import traceback
     traceback.print_exc()
+    
+    # Manual fallback: Register the class routes directly
+    print("\n=== Manual Fallback: Registering Class Routes ===")
+    try:
+        from user.routes.generated.class_7_routes import class_7_bp
+        from user.routes.generated.class_9_routes import class_9_bp
+        
+        app.register_blueprint(class_7_bp)
+        app.register_blueprint(class_9_bp)
+        
+        print("✅ Class 7 and Class 9 routes registered manually")
+        print("   • /class/7/ - Networking 1 class home")
+        print("   • /class/7/assessment/<int:assessment_id> - Networking 1 assessments")
+        print("   • /class/9/ - Networking 2 class home")
+        print("   • /class/9/assessment/<int:assessment_id> - Networking 2 assessments")
+        
+    except Exception as fallback_error:
+        print(f"❌ Manual registration also failed: {fallback_error}")
+        import traceback
+        traceback.print_exc()
 
 # Print all registered routes for debugging
 print("\n=== Registered Routes ===")

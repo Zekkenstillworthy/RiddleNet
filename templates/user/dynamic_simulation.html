@@ -1,0 +1,948 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>{{ simulation.title }} | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+
+<style>
+    /* Base from troubleshoot.html with dynamic simulation adaptations */
+    :root {
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+
+        --background: #020617;
+        --surface: #0F172A;
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-bg-light: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        
+        --border-radius: 16px;
+        --border-radius-lg: 20px;
+        --border-radius-xl: 24px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+        --transition-speed: 0.3s;
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--background), var(--surface));
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden;
+        color: var(--text-primary);
+    }
+
+    .simulation-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* Top Header */
+    .simulation-header {
+        background: var(--glass-bg);
+        border-bottom: 1px solid var(--glass-border);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+        z-index: 1000;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .back-btn {
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--cyber-glow);
+    }
+
+    .simulation-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .simulation-type {
+        background: rgba(139, 92, 246, 0.2);
+        color: var(--network-purple);
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--glass-border);
+    }
+
+    .timer {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-weight: 600;
+        color: var(--cyber-glow);
+    }
+
+    /* Main Content Area */
+    .simulation-content {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+    }
+
+    .simulation-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Canvas Area */
+    .canvas-container {
+        flex: 1;
+        background: var(--surface);
+        border-right: 1px solid var(--glass-border);
+        position: relative;
+        overflow: hidden;
+    }
+
+    #simulation-canvas {
+        width: 100%;
+        height: 100%;
+        background: 
+            radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+            var(--surface);
+        position: relative;
+    }
+
+    /* Steps Panel */
+    .steps-panel {
+        width: 400px;
+        background: var(--glass-bg);
+        border-left: 1px solid var(--glass-border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .steps-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .steps-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .steps-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .steps-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    .step-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .step-item.active {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+        background: rgba(0, 217, 255, 0.1);
+    }
+
+    .step-item.completed {
+        border-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .step-number {
+        background: var(--cyber-glow);
+        color: var(--surface);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .step-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+        margin-left: 1rem;
+    }
+
+    .step-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: rgba(100, 116, 139, 0.2);
+        color: var(--text-muted);
+    }
+
+    .status-active {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--warning-color);
+    }
+
+    .status-completed {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success-color);
+    }
+
+    .step-description {
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .step-interaction {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+    }
+
+    /* Bottom Bar (like troubleshoot.html) */
+    .bottom-bar {
+        background: var(--glass-bg);
+        border-top: 1px solid var(--glass-border);
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+    }
+
+    .score-display {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .score-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .score-label {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .score-value {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--cyber-glow);
+    }
+
+    .bottom-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--cyber-glow);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success-color), #059669);
+        color: white;
+    }
+
+    .btn-disabled {
+        background: rgba(100, 116, 139, 0.2);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    /* Interactive Elements */
+    .question-container {
+        margin-top: 1rem;
+    }
+
+    .question-text {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .answer-input {
+        width: 100%;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+
+    .answer-input:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+    }
+
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .option-item {
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .option-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--cyber-glow);
+    }
+
+    .option-item.selected {
+        background: rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    /* Animation for step transitions */
+    .step-item {
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .steps-panel {
+            width: 350px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .simulation-content {
+            flex-direction: column;
+        }
+        
+        .steps-panel {
+            width: 100%;
+            height: 40vh;
+        }
+        
+        .canvas-container {
+            height: 60vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulation-wrapper">
+    <!-- Header -->
+    <div class="simulation-header">
+        <div class="header-left">
+            <a href="{{ url_for('dynamic_simulations.my_simulations') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+            <div>
+                <div class="simulation-type">{{ simulation.simulation_type }}</div>
+                <h1 class="simulation-title">{{ simulation.title }}</h1>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="progress-indicator">
+                <i class="fas fa-clock"></i>
+                <span class="timer" id="simulation-timer">00:00</span>
+            </div>
+            <div class="progress-indicator">
+                <i class="fas fa-chart-line"></i>
+                <span>Step <span id="current-step">1</span> of <span id="total-steps">{{ simulation.step_definitions|length }}</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="simulation-content">
+        <div class="simulation-main">
+            <!-- Canvas Area -->
+            <div class="canvas-container">
+                <div id="simulation-canvas">
+                    <!-- Dynamic content will be loaded here based on simulation type -->
+                    <div id="canvas-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Steps Panel -->
+        <div class="steps-panel">
+            <div class="steps-header">
+                <h3 class="steps-title">
+                    <i class="fas fa-list-ol"></i>
+                    Simulation Steps
+                </h3>
+                <p class="steps-subtitle">Follow each step to complete the simulation</p>
+            </div>
+            <div class="steps-content" id="steps-container">
+                <!-- Steps will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+        <div class="score-display">
+            <div class="score-item">
+                <span class="score-label">Score:</span>
+                <span class="score-value" id="current-score">0</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Progress:</span>
+                <span class="score-value" id="progress-percentage">0%</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Time:</span>
+                <span class="score-value" id="elapsed-time">00:00</span>
+            </div>
+        </div>
+        <div class="bottom-actions">
+            <button id="hint-btn" class="btn btn-secondary">
+                <i class="fas fa-lightbulb"></i>
+                Hint
+            </button>
+            <button id="previous-btn" class="btn btn-secondary" disabled>
+                <i class="fas fa-chevron-left"></i>
+                Previous
+            </button>
+            <button id="next-btn" class="btn btn-primary">
+                <i class="fas fa-chevron-right"></i>
+                Next
+            </button>
+            <button id="submit-btn" class="btn btn-success" style="display: none;">
+                <i class="fas fa-check"></i>
+                Submit Answer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dynamic Simulation Engine
+class DynamicSimulation {
+    constructor(simulationData) {
+        this.simulation = simulationData;
+        this.currentStepIndex = 0;
+        this.steps = this.simulation.step_definitions || [];
+        this.score = 0;
+        this.startTime = Date.now();
+        this.timer = null;
+        this.userAnswers = {};
+        
+        this.init();
+    }
+    
+    init() {
+        this.startTimer();
+        this.loadSteps();
+        this.loadCurrentStep();
+        this.setupEventListeners();
+        
+        // Mark simulation as started
+        this.markSimulationStarted();
+    }
+    
+    startTimer() {
+        this.timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('simulation-timer').textContent = timeStr;
+            document.getElementById('elapsed-time').textContent = timeStr;
+        }, 1000);
+    }
+    
+    loadSteps() {
+        const container = document.getElementById('steps-container');
+        container.innerHTML = '';
+        
+        this.steps.forEach((step, index) => {
+            const stepElement = this.createStepElement(step, index);
+            container.appendChild(stepElement);
+        });
+        
+        document.getElementById('total-steps').textContent = this.steps.length;
+    }
+    
+    createStepElement(step, index) {
+        const div = document.createElement('div');
+        div.className = `step-item ${index === 0 ? 'active' : ''}`;
+        div.setAttribute('data-step', index);
+        
+        div.innerHTML = `
+            <div class="step-header">
+                <div class="step-number">${index + 1}</div>
+                <div class="step-title">${step.title || `Step ${index + 1}`}</div>
+                <div class="step-status status-${index === 0 ? 'active' : 'pending'}" id="status-${index}">
+                    ${index === 0 ? 'Active' : 'Pending'}
+                </div>
+            </div>
+            <div class="step-description">${step.description || ''}</div>
+            <div class="step-interaction" id="interaction-${index}">
+                <!-- Interaction content will be loaded here -->
+            </div>
+        `;
+        
+        return div;
+    }
+    
+    loadCurrentStep() {
+        const step = this.steps[this.currentStepIndex];
+        if (!step) return;
+        
+        // Update step highlighting
+        document.querySelectorAll('.step-item').forEach((el, index) => {
+            el.classList.remove('active', 'completed');
+            const status = document.getElementById(`status-${index}`);
+            
+            if (index < this.currentStepIndex) {
+                el.classList.add('completed');
+                status.textContent = 'Completed';
+                status.className = 'step-status status-completed';
+            } else if (index === this.currentStepIndex) {
+                el.classList.add('active');
+                status.textContent = 'Active';
+                status.className = 'step-status status-active';
+            } else {
+                status.textContent = 'Pending';
+                status.className = 'step-status status-pending';
+            }
+        });
+        
+        // Load step interaction
+        this.loadStepInteraction(step);
+        
+        // Update UI
+        document.getElementById('current-step').textContent = this.currentStepIndex + 1;
+        document.getElementById('previous-btn').disabled = this.currentStepIndex === 0;
+        
+        // Update progress
+        const progress = Math.round((this.currentStepIndex / this.steps.length) * 100);
+        document.getElementById('progress-percentage').textContent = `${progress}%`;
+    }
+    
+    loadStepInteraction(step) {
+        const container = document.getElementById(`interaction-${this.currentStepIndex}`);
+        
+        switch (step.type) {
+            case 'question':
+                this.loadQuestionStep(step, container);
+                break;
+            case 'configuration':
+                this.loadConfigurationStep(step, container);
+                break;
+            case 'troubleshooting':
+                this.loadTroubleshootingStep(step, container);
+                break;
+            default:
+                this.loadInstructionStep(step, container);
+        }
+    }
+    
+    loadQuestionStep(step, container) {
+        const questionHtml = `
+            <div class="question-container">
+                <div class="question-text">${step.question_text || 'Answer the question below:'}</div>
+                ${step.question_type === 'multiple_choice' ? this.createMultipleChoice(step.options || []) : this.createTextInput()}
+            </div>
+        `;
+        
+        container.innerHTML = questionHtml;
+        this.showSubmitButton();
+    }
+    
+    createMultipleChoice(options) {
+        return `
+            <div class="options-list">
+                ${options.map((option, index) => `
+                    <div class="option-item" data-value="${option.value || option}" onclick="selectOption(this)">
+                        ${option.text || option}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    createTextInput() {
+        return `
+            <input type="text" class="answer-input" id="answer-input" placeholder="Enter your answer...">
+        `;
+    }
+    
+    loadConfigurationStep(step, container) {
+        container.innerHTML = `
+            <div class="configuration-task">
+                <p><strong>Device:</strong> ${step.device_type || 'Network Device'}</p>
+                <p><strong>Task:</strong> ${step.configuration_task || 'Configure the device'}</p>
+                <textarea class="answer-input" id="config-input" rows="4" placeholder="Enter configuration commands..."></textarea>
+            </div>
+        `;
+        this.showSubmitButton();
+    }
+    
+    loadTroubleshootingStep(step, container) {
+        container.innerHTML = `
+            <div class="troubleshooting-scenario">
+                <p><strong>Problem:</strong> ${step.problem_scenario || 'Identify and resolve the network issue'}</p>
+                <textarea class="answer-input" id="troubleshoot-input" rows="4" placeholder="Describe your troubleshooting steps..."></textarea>
+            </div>
+        `;
+        this.showSubmitButton();
+    }
+    
+    loadInstructionStep(step, container) {
+        container.innerHTML = `
+            <div class="instruction-content">
+                <p>${step.content || 'Follow the instructions to proceed.'}</p>
+            </div>
+        `;
+        this.hideSubmitButton();
+    }
+    
+    showSubmitButton() {
+        document.getElementById('submit-btn').style.display = 'inline-flex';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+    
+    hideSubmitButton() {
+        document.getElementById('submit-btn').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'inline-flex';
+    }
+    
+    setupEventListeners() {
+        document.getElementById('next-btn').addEventListener('click', () => this.nextStep());
+        document.getElementById('previous-btn').addEventListener('click', () => this.previousStep());
+        document.getElementById('submit-btn').addEventListener('click', () => this.submitAnswer());
+        document.getElementById('hint-btn').addEventListener('click', () => this.showHint());
+    }
+    
+    nextStep() {
+        if (this.currentStepIndex < this.steps.length - 1) {
+            this.currentStepIndex++;
+            this.loadCurrentStep();
+        } else {
+            this.completeSimulation();
+        }
+    }
+    
+    previousStep() {
+        if (this.currentStepIndex > 0) {
+            this.currentStepIndex--;
+            this.loadCurrentStep();
+        }
+    }
+    
+    submitAnswer() {
+        const step = this.steps[this.currentStepIndex];
+        let userAnswer = '';
+        
+        // Get user answer based on step type
+        const selectedOption = document.querySelector('.option-item.selected');
+        if (selectedOption) {
+            userAnswer = selectedOption.getAttribute('data-value');
+        } else {
+            const input = document.querySelector('#answer-input, #config-input, #troubleshoot-input');
+            if (input) {
+                userAnswer = input.value.trim();
+            }
+        }
+        
+        // Store answer
+        this.userAnswers[this.currentStepIndex] = userAnswer;
+        
+        // Validate answer
+        const isCorrect = this.validateAnswer(step, userAnswer);
+        
+        if (isCorrect) {
+            this.score += step.score || 10;
+            document.getElementById('current-score').textContent = this.score;
+            this.nextStep();
+        } else {
+            this.showFeedback('Incorrect answer. Please try again.', 'error');
+        }
+    }
+    
+    validateAnswer(step, userAnswer) {
+        if (!step.expected_answer) return true; // No validation defined
+        
+        const expected = step.expected_answer.toLowerCase().trim();
+        const user = userAnswer.toLowerCase().trim();
+        
+        return user === expected || user.includes(expected);
+    }
+    
+    showHint() {
+        const step = this.steps[this.currentStepIndex];
+        const hint = step.hint || 'No hint available for this step.';
+        this.showFeedback(hint, 'info');
+    }
+    
+    showFeedback(message, type) {
+        // Create feedback element
+        const feedback = document.createElement('div');
+        feedback.className = `feedback feedback-${type}`;
+        feedback.textContent = message;
+        feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: ${type === 'error' ? 'var(--danger-color)' : 'var(--accent-color)'};
+            color: white;
+            border-radius: var(--border-radius);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        `;
+        
+        document.body.appendChild(feedback);
+        
+        setTimeout(() => {
+            feedback.remove();
+        }, 3000);
+    }
+    
+    async markSimulationStarted() {
+        try {
+            await fetch(`/dynamic/api/simulation/${this.simulation.id}/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (error) {
+            console.error('Error marking simulation as started:', error);
+        }
+    }
+    
+    async completeSimulation() {
+        clearInterval(this.timer);
+        
+        const endTime = Date.now();
+        const timeSpent = Math.floor((endTime - this.startTime) / 1000);
+        
+        try {
+            const response = await fetch(`/dynamic/api/simulation/${this.simulation.id}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    score: this.score,
+                    time_spent: timeSpent,
+                    answers: this.userAnswers
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showCompletionDialog(result);
+            } else {
+                this.showFeedback('Error completing simulation: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error completing simulation:', error);
+            this.showFeedback('Network error occurred', 'error');
+        }
+    }
+    
+    showCompletionDialog(result) {
+        // Create completion overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        overlay.innerHTML = `
+            <div style="
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-lg);
+                padding: 3rem;
+                text-align: center;
+                max-width: 500px;
+                backdrop-filter: blur(20px);
+            ">
+                <i class="fas fa-trophy" style="font-size: 4rem; color: var(--cyber-glow); margin-bottom: 1rem;"></i>
+                <h2 style="color: var(--text-primary); margin-bottom: 1rem;">Simulation Complete!</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    Your Score: <strong style="color: var(--cyber-glow);">${this.score}</strong><br>
+                    Time: <strong>${document.getElementById('elapsed-time').textContent}</strong>
+                </p>
+                ${result.unlocked_simulations && result.unlocked_simulations.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--success-color);">New Simulations Unlocked!</h3>
+                        ${result.unlocked_simulations.map(sim => `
+                            <p style="color: var(--text-secondary);">${sim.title}</p>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <a href="${"{{ url_for('dynamic_simulations.my_simulations') }}"}" class="btn btn-primary">
+                        Back to Dashboard
+                    </a>
+                    <button onclick="location.reload()" class="btn btn-secondary">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+    }
+}
+
+// Global functions
+function selectOption(element) {
+    document.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+}
+
+// Initialize simulation when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const simulationData = {{ simulation.to_dict() | tojson }};
+    window.simulation = new DynamicSimulation(simulationData);
+});
+</script>
+{% endblock %}
