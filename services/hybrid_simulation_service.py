@@ -1,36 +1,28 @@
 """
-Hybrid Simulation Service - Combines Static and Database Simulations
+Database Simulation Service - Provides Database-Only Simulations
 ==================================================================
 
-This service provides a unified interface for accessing both:
-1. Static simulations (networking1_corrected_content.py, networking2_updated_content.py)
-2. Database simulations (created via Simulation Builder)
-
-Critical for user-facing integration where users see both types seamlessly.
+This service provides access to database simulations created via Simulation Builder.
+All static content has been removed - simulations are now fully database-driven.
 """
 
 from admin.models.simulation import Simulation
-from admin.models.learning_path import LearningPath, LearningPathSimulation
 from admin.models.module import Module, Lesson
 from admin.models.class_model import Class
-# Static content imports removed - content now handled dynamically
 from flask import current_app
 import json
 
 class HybridSimulationService:
-    """Service that combines static and database simulations"""
+    """Service that provides database simulations (static content removed)"""
     
     @staticmethod
     def get_all_simulations_for_class(class_id, user_id=None):
-        """Get all simulations (static + database) available to a class"""
+        """Get all database simulations available to a class"""
         try:
             # Get class information
             class_obj = Class.query.get(class_id)
             if not class_obj:
-                return {"static": [], "database": [], "learning_paths": []}
-            
-            # Get static simulations based on class level
-            static_sims = HybridSimulationService._get_static_simulations_for_class(class_obj)
+                return {"database": [], "learning_paths": []}
             
             # Get database simulations assigned to this class
             database_sims = HybridSimulationService._get_database_simulations_for_class(class_id)
@@ -40,15 +32,13 @@ class HybridSimulationService:
             
             # Add progression status if user_id provided
             if user_id:
-                static_sims = HybridSimulationService._add_progression_status(static_sims, user_id, "static")
                 database_sims = HybridSimulationService._add_progression_status(database_sims, user_id, "database")
                 learning_paths = HybridSimulationService._add_learning_path_progression(learning_paths, user_id)
             
             return {
-                "static": static_sims,
                 "database": database_sims,
                 "learning_paths": learning_paths,
-                "total_count": len(static_sims) + len(database_sims) + sum(len(lp.get('simulations', [])) for lp in learning_paths)
+                "total_count": len(database_sims) + sum(len(lp.get('simulations', [])) for lp in learning_paths)
             }
             
         except Exception as e:
@@ -111,57 +101,9 @@ class HybridSimulationService:
     
     @staticmethod
     def _get_learning_paths_for_class(class_id):
-        """Get learning paths with their simulations for a class"""
-        try:
-            # Get all published learning paths (in real implementation, filter by class assignment)
-            learning_paths = LearningPath.query.filter(
-                LearningPath.is_published == True,
-                LearningPath.is_active == True
-            ).all()
-            
-            paths_data = []
-            for path in learning_paths:
-                # Get ordered simulations for this path
-                path_simulations = []
-                associations = LearningPathSimulation.query.filter_by(
-                    learning_path_id=path.id
-                ).order_by(LearningPathSimulation.order_index).all()
-                
-                for assoc in associations:
-                    sim = assoc.simulation
-                    if sim and sim.is_published and sim.is_active:
-                        path_simulations.append({
-                            'id': sim.id,
-                            'title': sim.title,
-                            'description': sim.description,
-                            'type': 'learning_path',
-                            'category': sim.category,
-                            'difficulty': sim.difficulty,
-                            'estimated_duration': sim.estimated_duration,
-                            'url': f'/dynamic/simulation/{sim.id}',
-                            'order_index': assoc.order_index,
-                            'is_required': assoc.is_required,
-                            'unlock_criteria': assoc.unlock_criteria,
-                            'is_locked': False  # Will be updated with progression
-                        })
-                
-                if path_simulations:
-                    paths_data.append({
-                        'id': path.id,
-                        'title': path.title,
-                        'description': path.description,
-                        'course_level': path.course_level,
-                        'difficulty_level': path.difficulty_level,
-                        'estimated_total_duration': path.estimated_total_duration,
-                        'simulations': path_simulations,
-                        'url': f'/dynamic/learning-path/{path.id}'
-                    })
-            
-            return paths_data
-            
-        except Exception as e:
-            current_app.logger.error(f"Error getting learning paths: {str(e)}")
-            return []
+        """Get learning paths with their simulations for a class - Learning Paths feature removed"""
+        # Learning Paths feature has been completely removed from the system
+        return []
     
     @staticmethod
     def _determine_networking_level(class_obj):

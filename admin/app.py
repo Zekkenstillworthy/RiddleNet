@@ -104,7 +104,10 @@ class AdminApp:
         from admin.routes.topology_routes import topology_bp
         from admin.routes.topology_api_routes import topology_api_bp
         from admin.routes.troubleshooting_routes import troubleshooting_bp
-        from admin.routes.learning_routes import learning_path_bp
+        from user.routes.universal_class_routes import universal_class_bp
+        from admin.routes.api_routes import api_bp
+        
+        print("📝 Registering universal_class_bp blueprint...")
         
         # Register only available blueprints
         self.app.register_blueprint(auth_bp)
@@ -122,7 +125,9 @@ class AdminApp:
         self.app.register_blueprint(topology_bp)
         self.app.register_blueprint(topology_api_bp)
         self.app.register_blueprint(troubleshooting_bp)
-        self.app.register_blueprint(learning_path_bp)
+        self.app.register_blueprint(universal_class_bp)
+        print("✅ universal_class_bp registered successfully!")
+        self.app.register_blueprint(api_bp)
         
         # Add root route to redirect to admin dashboard
         @self.app.route('/')
@@ -134,21 +139,34 @@ class AdminApp:
         # Implement app-level protection for all admin routes
         @self.app.before_request
         def check_admin_auth():
+            # Debug output
+            print(f"🔍 ADMIN APP Protection check for path: {request.path}")
+            
             # List of paths that don't require authentication
             exempt_routes = [
                 '/static/', 
                 '/login',
+                '/signup',  # Add signup to exempt routes
+                '/admin/login',  # Add admin login with prefix
+                '/admin/signup',  # Add admin signup with prefix
                 '/auth/login',
+                '/auth/signup',  # Add auth/signup to exempt routes
                 '/logout',
                 '/auth/logout'
             ]
             
+            # Debug: show which routes are exempt
+            is_exempt = any(request.path.startswith(route) for route in exempt_routes)
+            print(f"🛡️ ADMIN APP - Path '{request.path}' is exempt: {is_exempt}")
+            
             # Skip check for exempt routes
             if any(request.path.startswith(route) for route in exempt_routes):
+                print("✅ ADMIN APP - Route is exempt, allowing access")
                 return None
             
             # Check if user is authenticated
             if not current_user.is_authenticated:
+                print(f"🚫 ADMIN APP - Blocking unauthenticated access to: {request.path}")
                 flash('Please log in to access the admin area', 'warning')
                 return redirect(url_for('auth.login', next=request.url))
 

@@ -162,7 +162,7 @@
     }
 
     .form-label {
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(251, 0, 0, 0.9);
         font-weight: 500;
         display: block;
         margin-bottom: 8px;
@@ -463,17 +463,8 @@
                     <form id="notificationForm">
                         <div class="form-group">
                             <label class="form-label">Recipient Type</label>
-                            <select class="form-select" id="recipientType" onchange="toggleRecipientOptions()">
-                                <option value="all_users">All Users</option>
+                            <select class="form-select" id="recipientType">
                                 <option value="all_admins">All Admins</option>
-                                <option value="specific_user">Specific User</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group" id="userSelectGroup" style="display: none;">
-                            <label class="form-label">Select User</label>
-                            <select class="form-select" id="specificUser">
-                                <option value="">Loading users...</option>
                             </select>
                         </div>
 
@@ -606,42 +597,9 @@
             loadNotificationHistory();
             updateStatistics();
             // loadTemplatesFromAPI(); // Removed - templates are now static quick actions only
-            
             // Set up form submission
             document.getElementById('notificationForm').addEventListener('submit', sendNotification);
         });
-
-        // Load users for specific user selection
-        async function loadUsers() {
-            try {
-                const response = await fetch('/admin/api/users');
-                const users = await response.json();
-                
-                const userSelect = document.getElementById('specificUser');
-                userSelect.innerHTML = '<option value="">Select a user...</option>';
-                
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = `${user.username} (${user.email || 'No email'})`;
-                    userSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Failed to load users:', error);
-            }
-        }
-
-        // Toggle recipient options
-        function toggleRecipientOptions() {
-            const recipientType = document.getElementById('recipientType').value;
-            const userSelectGroup = document.getElementById('userSelectGroup');
-            
-            if (recipientType === 'specific_user') {
-                userSelectGroup.style.display = 'block';
-            } else {
-                userSelectGroup.style.display = 'none';
-            }
-        }
 
         // Send notification
         async function sendNotification(event) {

@@ -32,6 +32,14 @@ def index():
     
     return render_template('admin/class.html', active_page='classes')
 
+@class_controller.route('/class/<int:class_id>/content-manager')
+@login_required
+def content_manager(class_id):
+    """Redirect to the class content manager"""
+    # Import here to avoid circular imports
+    from admin.controllers.class_content_controller import class_content_controller_old
+    return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id))
+
 @class_controller.route('/api/classes/<int:class_id>/export/csv', methods=['GET'])
 @login_required
 def export_class_csv(class_id):
@@ -234,28 +242,49 @@ def create_class():
         db.session.add(new_class)
         db.session.commit()
         
-        # Generate dynamic template and routes for the new class
-        try:
-            # Use enhanced generator for better static template integration
-            generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
-            
-            # Register routes dynamically
-            route_registry.register_class_routes(new_class.id)
-            
-            # Create dashboard integration
-            integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
-            
-            flash(f"Class created successfully! Enhanced template generated: {generation_result['template']}", 'success')
-        except Exception as e:
-            flash(f"Class created but enhanced template generation failed: {str(e)}", 'warning')
+        # CHECK TEMPLATE CONFIGURATION
+        from admin.config.class_template_config import should_use_universal_template, get_template_config
+        
+        config = get_template_config()
+        
+        if should_use_universal_template():
+            # UNIVERSAL TEMPLATE SYSTEM - No need to generate class-specific templates
+            # All classes now use the dynamic universal template (dynamic_class_universal.html)
+            try:
+                print(f"✅ Class {new_class.id} created - using universal template system")
+                print(f"   Template: {config['universal_template']}")
+                print(f"   Route: /class/{new_class.id} (handled by universal_class_routes.py)")
+                print(f"   Mode: Universal template only (configured)")
+                
+                # Optional: Create dashboard integration for admin features only
+                try:
+                    integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
+                except Exception as e:
+                    print(f"   Dashboard integration skipped: {e}")
+                
+                flash(f"Class created successfully! Using universal dynamic template system.", 'success')
+            except Exception as e:
+                flash(f"Class created successfully! Universal template system active.", 'success')
+        else:
+            # LEGACY SYSTEM - Generate class-specific templates (if configured)
+            try:
+                print(f"⚠️ Class {new_class.id} created - using legacy template generation")
+                generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
+                route_registry.register_class_routes(new_class.id)
+                integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
+                
+                flash(f"Class created successfully! Class-specific template generated: {generation_result['template']}", 'success')
+            except Exception as e:
+                flash(f"Class created but template generation failed: {str(e)}", 'warning')
         
         return jsonify({
             "success": True, 
-            "message": "Class created successfully with enhanced dynamic template!",
+            "message": "Class created successfully with universal dynamic template!",
             "classId": new_class.id,
-            "templateGenerated": True,
-            "enhancedFeatures": True,
-            "dashboardUrl": f"/class/{new_class.id}/"
+            "templateSystem": "universal",
+            "templateFile": "dynamic_class_universal.html",
+            "dashboardUrl": f"/class/{new_class.id}/",
+            "universalFeatures": True
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -344,28 +373,54 @@ def update_class(class_id):
 @class_controller.route('/api/classes/<int:class_id>/regenerate-template', methods=['POST'])
 @login_required
 def regenerate_class_template(class_id):
-    """API endpoint to regenerate enhanced template for a class"""
+    """API endpoint to regenerate template for a class - respects configuration"""
     try:
         class_obj = Class.query.get_or_404(class_id)
         
-        # Regenerate enhanced template and routes
-        generation_result = enhanced_generator.regenerate_class_resources(class_id)
+        # CHECK TEMPLATE CONFIGURATION
+        from admin.config.class_template_config import should_use_universal_template, get_template_config
         
-        # Refresh route registration
-        route_registry.refresh_class_routes(class_id)
+        config = get_template_config()
         
-        # Update dashboard integration
-        integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
-        
-        return jsonify({
-            "success": True, 
-            "message": "Enhanced template regenerated successfully!",
-            "template": generation_result['template'],
-            "routes": generation_result['routes'],
-            "enhancedFeatures": True,
-            "dashboardUrl": f"/class/{class_id}/",
-            "staticIntegrations": integration_info.get('static_integrations', [])
-        })
+        if should_use_universal_template():
+            # UNIVERSAL TEMPLATE SYSTEM - No regeneration needed
+            # All classes use dynamic_class_universal.html which adapts automatically
+            print(f"✅ Class {class_id} template refresh requested")
+            print(f"   Using universal template: {config['universal_template']}")
+            print(f"   No regeneration needed - template adapts dynamically")
+            print(f"   Mode: Universal template only (configured)")
+            
+            # Optional: Update dashboard integration for admin features
+            try:
+                integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
+            except Exception as e:
+                integration_info = {"status": "universal_system_active"}
+            
+            return jsonify({
+                "success": True, 
+                "message": "Using universal template system - no regeneration needed!",
+                "templateSystem": "universal",
+                "templateFile": config['universal_template'],
+                "universalFeatures": True,
+                "dashboardUrl": f"/class/{class_id}/",
+                "note": "All classes automatically use the dynamic universal template"
+            })
+        else:
+            # LEGACY SYSTEM - Regenerate class-specific templates
+            print(f"⚠️ Class {class_id} using legacy template regeneration")
+            generation_result = enhanced_generator.regenerate_class_resources(class_id)
+            route_registry.refresh_class_routes(class_id)
+            integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
+            
+            return jsonify({
+                "success": True, 
+                "message": "Class-specific template regenerated successfully!",
+                "template": generation_result['template'],
+                "routes": generation_result['routes'],
+                "enhancedFeatures": True,
+                "dashboardUrl": f"/class/{class_id}/",
+                "staticIntegrations": integration_info.get('static_integrations', [])
+            })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

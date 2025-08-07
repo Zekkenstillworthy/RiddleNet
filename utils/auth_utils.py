@@ -8,26 +8,29 @@ from flask_login import current_user
 
 def flexible_login_required(f):
     """
-    Decorator that allows both admin and user access to class routes.
-    Checks for admin authentication first, then user authentication.
+    UPDATED: Decorator that BLOCKS admin access to user routes 
+    Only allows regular users to access user routes for proper separation
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if user is authenticated via Flask-Login (covers both admin and user)
+        # FIRST: Block admin access to user routes
         if current_user.is_authenticated:
+            from admin.models.user import Admin
+            if isinstance(current_user, Admin):
+                # Admin trying to access user route - block it
+                print(f"🚫 BLOCKED: Admin {current_user.username} attempting to access user route: {request.path}")
+                flash('Admins cannot access student portals. Please use the admin panel instead.', 'warning')
+                return redirect('/admin/dashboard')
+        
+        # Check if regular user is authenticated via Flask-Login
+        if current_user.is_authenticated and not isinstance(current_user, Admin):
             return f(*args, **kwargs)
         
         # Check if user is in session (user authentication)
         if 'user_id' in session:
             return f(*args, **kwargs)
         
-        # No authentication found - redirect appropriately
-        # If accessing from admin area, redirect to admin login
-        if request.path.startswith('/class/') and request.referrer and '/admin' in request.referrer:
-            flash('Please log in to access the admin area', 'warning')
-            return redirect(url_for('auth.login', next=request.url))
-        
-        # Otherwise, redirect to user login
+        # No authentication found - redirect to user login
         flash('You need to log in first!', 'error')
         return redirect(url_for('user.login', next=request.url))
     
@@ -36,38 +39,67 @@ def flexible_login_required(f):
 def get_current_user_context():
     """
     Get current user context for templates, handling both admin and user authentication
+    FIXED: Prevents admin session contamination in user templates
     """
     user_context = {
         'is_authenticated': False,
         'is_admin': False,
         'user': None,
         'user_id': None,
-        'username': None
+        'username': None,
+        'profile_img': None  # Add profile_img to the context
     }
+    
+    print(f"🔍 get_current_user_context: Starting with default context")
     
     # Check Flask-Login authentication (admin or user)
     if current_user.is_authenticated:
+        print(f"🔍 Flask-Login user authenticated: {current_user.username}")
         user_context['is_authenticated'] = True
-        user_context['user'] = current_user
         user_context['user_id'] = current_user.id
         user_context['username'] = current_user.username
         
-        # Check if it's an admin user
+        # STRICT admin check - only Admin model instances are admins
         from admin.models.user import Admin
         if isinstance(current_user, Admin):
+            print(f"🔍 Admin user detected: {current_user.username}")
             user_context['is_admin'] = True
-        elif hasattr(current_user, 'is_admin') and current_user.is_admin:
-            user_context['is_admin'] = True
+            # CRITICAL FIX: Do NOT pass admin object as 'user' to prevent contamination
+            # Admin templates can use current_user directly
+            user_context['user'] = None  # Prevents admin data bleeding into user templates
+            
+            # Try to find a corresponding regular user account with the same username
+            # This allows admins to have profile pictures when viewing student interfaces
+            from user.models.user import User
+            regular_user = User.query.filter_by(username=current_user.username).first()
+            if regular_user and regular_user.profile_img:
+                print(f"🔍 Found matching regular user with profile: {regular_user.profile_img}")
+                user_context['profile_img'] = regular_user.profile_img
+            else:
+                print(f"🔍 No matching regular user or no profile image")
+                user_context['profile_img'] = getattr(current_user, 'profile_img', None)
+        else:
+            print(f"🔍 Regular user detected: {current_user.username}")
+            # Regular user - safe to pass user object
+            user_context['user'] = current_user
+            user_context['profile_img'] = getattr(current_user, 'profile_img', None)
+            print(f"🔍 Regular user profile_img: {user_context['profile_img']}")
     
     # Check session-based authentication (user only)
     elif 'user_id' in session:
+        print(f"🔍 Session-based authentication found: user_id={session['user_id']}")
         from user.models.user import User
         user = User.query.get(session['user_id'])
         if user:
+            print(f"🔍 Session user found: {user.username}, profile_img: {user.profile_img}")
             user_context['is_authenticated'] = True
             user_context['user'] = user
             user_context['user_id'] = user.id
             user_context['username'] = user.username
+            user_context['profile_img'] = getattr(user, 'profile_img', None)
             user_context['is_admin'] = False
+    else:
+        print(f"🔍 No authentication found")
     
+    print(f"🔍 Final user_context: {user_context}")
     return user_context

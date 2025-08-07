@@ -1,7 +1,8 @@
 from flask import current_app, request, jsonify
 from admin import db
 from admin.models.simulation import Simulation, SimulationAttempt
-from admin.models.learning_path import LearningPath, UserLearningProgress
+# Learning Path models removed - feature deprecated
+# from admin.models.learning_path import LearningPath, UserLearningProgress
 from datetime import datetime
 import json
 
@@ -18,8 +19,9 @@ class SimulationController:
             stats = Simulation.get_dashboard_stats()
             
             # Learning paths statistics
-            total_paths = LearningPath.query.filter_by(is_active=True).count()
-            published_paths = LearningPath.query.filter_by(is_active=True, is_published=True).count()
+            # Learning paths feature removed - returning 0 counts
+            total_paths = 0
+            published_paths = 0
             
             # Recent activity
             recent_attempts = SimulationAttempt.query.order_by(

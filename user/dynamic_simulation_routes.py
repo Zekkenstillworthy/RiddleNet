@@ -1,13 +1,14 @@
 """
 Dynamic Simulation Routes Generator
-Automatically creates routes for admin-created simulations and learning paths
+Automatically creates routes for admin-created simulations - Learning Paths feature removed
 """
 
 from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash
 from user.models.user import User as UserModel
 from admin.models.simulation import Simulation
-from admin.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
 from admin.models.class_model import Class
+# Learning Path models removed - import stubs to prevent errors
+from admin.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
 from admin import db
 from functools import wraps
 import json

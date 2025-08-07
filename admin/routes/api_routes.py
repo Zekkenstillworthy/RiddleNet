@@ -1,14 +1,15 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template
 from admin import db
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
+from admin.models.module import Module
 import random
 import string
 from datetime import datetime
 
-api_bp = Blueprint('api', __name__)
+api_bp = Blueprint('admin_api', __name__, url_prefix='/admin/api')
 
-@api_bp.route('/admin/api/test', methods=['GET'])
+@api_bp.route('/test', methods=['GET'])
 def test_api():
     """Test endpoint to verify API connectivity"""
     try:
@@ -44,7 +45,7 @@ def test_api():
             'database_connected': False
         }), 500
 
-@api_bp.route('/admin/api/classes', methods=['GET'])
+@api_bp.route('/classes', methods=['GET'])
 def get_classes():
     """Get all classes with better error handling"""
     try:
@@ -87,7 +88,7 @@ def get_classes():
             'classes': []
         }), 500
 
-@api_bp.route('/admin/api/classes', methods=['POST'])
+@api_bp.route('/classes', methods=['POST'])
 def create_class():
     """Create a new class"""
     try:
@@ -124,33 +125,15 @@ def create_class():
                     new_class.question_groups.append(group)
             db.session.commit()
         
-        # 🚀 ENHANCED AUTOMATION: Generate class files automatically
+        # ✅ UNIVERSAL TEMPLATE: All classes use the same dynamic template
+        # No need to generate class-specific templates anymore
         try:
-            from admin.services.enhanced_class_template_generator import enhanced_template_generator
-            from admin.services.dynamic_route_registry import route_registry
-            
-            print(f"🎯 Generating automated files for class: {new_class.name}")
-            
-            # Generate template and routes
-            result = enhanced_template_generator.generate_all_class_resources(new_class)
-            
-            if result.get('success'):
-                print(f"✅ Auto-generated files:")
-                print(f"   - Template: {result.get('template_path')}")
-                print(f"   - Routes: {result.get('routes_path')}")
-                
-                # Register routes dynamically
-                route_registry.register_class_routes(new_class)
-                print(f"✅ Routes registered for class {new_class.id}")
-                
-            else:
-                print(f"⚠️  File generation had issues: {result.get('error', 'Unknown error')}")
-                
-        except Exception as auto_error:
-            print(f"⚠️  Automation system error: {auto_error}")
-            # Don't fail the class creation if automation fails
-            import traceback
-            traceback.print_exc()
+            print(f"✅ Class created: {new_class.name} - will use universal dynamic template")
+            print(f"🎯 New class will be accessible at: /class/{new_class.id}")
+            print(f"📄 Using universal template: dynamic_class_universal.html") 
+        except Exception as log_error:
+            print(f"⚠️ Logging error: {log_error}")
+            # Don't fail the class creation for logging issues
         
         return jsonify({
             'message': 'Class created successfully',
@@ -161,7 +144,7 @@ def create_class():
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
-@api_bp.route('/admin/api/classes/<int:class_id>', methods=['GET'])
+@api_bp.route('/classes/<int:class_id>', methods=['GET'])
 def get_class(class_id):
     """Get a specific class"""
     try:
@@ -170,7 +153,7 @@ def get_class(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
-@api_bp.route('/admin/api/classes/<int:class_id>/students', methods=['GET'])
+@api_bp.route('/classes/<int:class_id>/students', methods=['GET'])
 def get_class_students(class_id):
     """Get students enrolled in a class"""
     try:
@@ -184,7 +167,7 @@ def get_class_students(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/admin/api/generate-class-code', methods=['GET'])
+@api_bp.route('/generate-class-code', methods=['GET'])
 def generate_class_code():
     """Generate a unique class code"""
     def generate_code():
@@ -201,7 +184,7 @@ def generate_class_code():
     # If we can't find a unique code, return an error
     return jsonify({'error': 'Unable to generate unique code'}), 500
 
-@api_bp.route('/admin/api/question-groups', methods=['GET'])
+@api_bp.route('/question-groups', methods=['GET'])
 def get_question_groups():
     """Get all question groups"""
     try:
@@ -223,3 +206,93 @@ def get_question_groups():
     except Exception as e:
         print(f"Error fetching question groups: {e}")
         return jsonify([])
+
+@api_bp.route('/render-module-preview', methods=['POST'])
+def render_module_preview():
+    """Render module preview using the student-identical template"""
+    try:
+        data = request.get_json()
+        module_data = data.get('module', {})
+        class_name = data.get('class_name', 'Sample Class')
+        
+        # Render the module preview template with the module data
+        html = render_template('admin/module_preview_template.html', 
+                             module=module_data, 
+                             class_name=class_name)
+        
+        return html
+        
+    except Exception as e:
+        print(f"Error rendering module preview: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='error-message'>Error rendering preview: {str(e)}</div>", 500
+
+@api_bp.route('/classes/<int:class_id>/modules/<int:module_id>/preview', methods=['GET'])
+def get_module_preview_data(class_id, module_id):
+    """Get detailed module data for preview"""
+    try:
+        # Get the module with all related data
+        module = Module.query.filter_by(id=module_id, class_id=class_id).first()
+        
+        if not module:
+            return jsonify({
+                'success': False,
+                'error': 'Module not found'
+            }), 404
+        
+        # Convert module to dict with all preview data
+        module_data = {
+            'id': module.id,
+            'title': module.title,
+            'description': module.description,
+            'module_number': module.module_number,
+            'estimated_duration': module.estimated_duration,
+            'level': getattr(module, 'level', 'Beginner'),
+            'learning_objectives': module.learning_objectives or [],
+            'lessons': [],
+            'materials': [],
+            'assessments': [],
+            'simulations': []
+        }
+        
+        # Add lessons with detailed data
+        if hasattr(module, 'lessons') and module.lessons:
+            for lesson in module.lessons:
+                lesson_data = {
+                    'id': lesson.id,
+                    'title': lesson.title,
+                    'description': lesson.description,
+                    'content': getattr(lesson, 'content', ''),
+                    'type': getattr(lesson, 'type', 'Lesson'),
+                    'duration': getattr(lesson, 'duration', None),
+                    'order_index': getattr(lesson, 'order_index', 0)
+                }
+                module_data['lessons'].append(lesson_data)
+        
+        # Add materials if available
+        if hasattr(module, 'materials') and module.materials:
+            for material in module.materials:
+                material_data = {
+                    'id': material.id,
+                    'title': material.title,
+                    'description': material.description,
+                    'type': getattr(material, 'type', 'document'),
+                    'filename': getattr(material, 'filename', None),
+                    'file_url': getattr(material, 'file_url', None)
+                }
+                module_data['materials'].append(material_data)
+        
+        return jsonify({
+            'success': True,
+            'module': module_data
+        })
+        
+    except Exception as e:
+        print(f"Error fetching module preview data: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to fetch module data: {str(e)}'
+        }), 500

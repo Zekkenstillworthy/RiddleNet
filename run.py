@@ -40,6 +40,18 @@ os.makedirs(instance_path, exist_ok=True)
 with app.app_context():
     db.create_all()
 
+# Initialize session cleanup middleware
+try:
+    print("🔧 Trying to import session cleanup middleware...")
+    from utils.session_cleanup_middleware import init_session_cleanup
+    print("🔧 Session cleanup middleware imported successfully")
+    init_session_cleanup(app)
+    print("🔧 Session cleanup middleware initialized")
+except ImportError as e:
+    print(f"❌ Failed to import session cleanup middleware: {e}")
+except Exception as e:
+    print(f"❌ Error initializing session cleanup middleware: {e}")
+
 quiz_controller = QuizController(app)
 
 # Register dynamic simulation routes - already registered in __init__.py
@@ -56,39 +68,83 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    from admin.models.user import Admin, AdminUser
+    """ENHANCED user_loader - Complete admin/user separation with cross-route access"""
+    from admin.models.user import Admin
     from user.models import User
-    
-    if isinstance(user_id, str) and user_id.startswith('admin-'):
-        admin_id = int(user_id.replace('admin-', ''))
-        return db.session.get(Admin, admin_id)
+    from flask import request, session
     
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):
+        print(f"❌ Invalid user_id: {user_id}")
         return None
     
+    # ENHANCED FIX: Check both admin and user tables based on request path
     if request and request.path.startswith('/admin'):
+        # Admin routes: ONLY load from admin table
         admin = db.session.get(Admin, user_id_int)
         if admin:
+            # Set session namespace to prevent contamination
+            session['auth_namespace'] = 'admin'
+            print(f"🔐 Admin route: Loaded admin {admin.username} (ID: {user_id_int})")
             return admin
+        else:
+            print(f"❌ Admin route: No admin found for ID {user_id_int}")
+            # Clear any conflicting session data
+            session.pop('auth_namespace', None)
+            return None
+    else:
+        # User routes: ONLY load from user table - NO admin access to user routes
+        user = db.session.get(User, user_id_int)
+        if user:
+            # Set session namespace to prevent contamination
+            session['auth_namespace'] = 'user'
+            print(f"👤 User route: Loaded user {user.username} (ID: {user_id_int})")
+            return user
+        else:
+            # If no user found, do NOT check admin table for user routes
+            print(f"❌ User route: No user found for ID {user_id_int}")
+            # Clear any conflicting session data
+            session.pop('auth_namespace', None)
+            return None
+
+@app.before_request
+def block_admin_access_to_user_routes():
+    """FIXED: Block admin access to user routes to prevent session contamination"""
+    from flask import request, session, redirect, url_for, flash
+    from flask_login import current_user, logout_user
     
-    user = db.session.get(User, user_id_int)
-    if user:
-        return user
-        
-    if not (request and request.path.startswith('/admin')):
-        admin = db.session.get(Admin, user_id_int)
-        if admin:
-            return admin
+    # Define user-only routes that admins should NOT access
+    user_only_routes = [
+        '/class/',
+        '/user/',
+        '/classes',
+        '/dynamic/',
+        '/learning/',
+        '/quiz/',
+        '/troubleshooting',
+        '/leaderboard',
+        '/profile'
+    ]
     
-    return None
+    # Check if this is a user route
+    is_user_route = any(request.path.startswith(route) for route in user_only_routes)
+    
+    if is_user_route and not request.path.startswith('/admin'):
+        # If admin is logged in, block access to user routes
+        if current_user.is_authenticated:
+            from admin.models.user import Admin
+            if isinstance(current_user, Admin):
+                print(f"🚫 BLOCKED: Admin {current_user.username} trying to access user route: {request.path}")
+                flash('Admins cannot access student portals. Please access the admin panel instead.', 'warning')
+                return redirect('/admin/dashboard')
 
 @app.before_request
 def check_admin_auth():
     if request.path.startswith('/admin'):
         exempt_routes = [
             '/admin/login',
+            '/admin/signup',  # Add signup route to exempt routes
             '/admin/logout',
             '/admin/static/',
             '/admin/topology/',
@@ -102,10 +158,12 @@ def check_admin_auth():
             flash('Please log in to access the admin area', 'warning')
             return redirect('/admin/login')
         
-        from admin.models.user import Admin
-        if not isinstance(current_user, Admin):
-            flash('Access denied. Admin credentials required.', 'error')
-            return redirect('/admin/login')
+        # Only check admin instance if user is authenticated
+        if current_user.is_authenticated:
+            from admin.models.user import Admin
+            if not isinstance(current_user, Admin):
+                flash('Access denied. Admin credentials required.', 'error')
+                return redirect('/admin/login')
 
 try:
     import sys
@@ -140,10 +198,8 @@ try:
         app.register_blueprint(notification_bp)
         print("User Notification Blueprint registered successfully")
         
-        # Register dynamic simulation routes
-        from user.dynamic_simulation_routes import dynamic_sim_bp
-        app.register_blueprint(dynamic_sim_bp)
-        print("Dynamic Simulation Blueprint registered successfully")
+        # NOTE: Dynamic simulation blueprint is registered in __init__.py to avoid duplicates
+        print("Dynamic Simulation Blueprint already registered in __init__.py")
     except Exception as e:
         print(f"Error registering User Troubleshooting blueprint: {e}")
     # No separate simulation blueprint registration needed
@@ -172,13 +228,14 @@ try:
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
+        ('admin.controllers.class_content_controller', 'class_content_controller', '/admin', None),
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
+        ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),  # Admin API routes with internal prefix
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
-        ('admin.routes.learning_routes', 'learning_path_bp', None, 'learning_path_bp')  # Learning path routes
+        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp')  # Enhanced simulation routes
     ]
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
@@ -260,28 +317,9 @@ try:
     
 except Exception as e:
     print(f"❌ Error initializing dynamic route registry: {e}")
-    import traceback
-    traceback.print_exc()
-    
-    # Manual fallback: Register the class routes directly
-    print("\n=== Manual Fallback: Registering Class Routes ===")
-    try:
-        from user.routes.generated.class_7_routes import class_7_bp
-        from user.routes.generated.class_9_routes import class_9_bp
-        
-        app.register_blueprint(class_7_bp)
-        app.register_blueprint(class_9_bp)
-        
-        print("✅ Class 7 and Class 9 routes registered manually")
-        print("   • /class/7/ - Networking 1 class home")
-        print("   • /class/7/assessment/<int:assessment_id> - Networking 1 assessments")
-        print("   • /class/9/ - Networking 2 class home")
-        print("   • /class/9/assessment/<int:assessment_id> - Networking 2 assessments")
-        
-    except Exception as fallback_error:
-        print(f"❌ Manual registration also failed: {fallback_error}")
-        import traceback
-        traceback.print_exc()
+    print("✅ Continuing with universal template system only...")
+    # Universal template system should handle all classes
+    # No need for class-specific route fallback
 
 # Print all registered routes for debugging
 print("\n=== Registered Routes ===")

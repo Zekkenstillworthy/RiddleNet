@@ -44,40 +44,20 @@ class ClassTemplateGenerator:
             self.ensure_directories()
     
     def generate_class_template(self, class_obj: Class) -> str:
-        """Generate HTML template for a specific class"""
-        self._ensure_app_context_directories()
-        
-        template_data = self._prepare_template_data(class_obj)
-        
-        # Generate the template content
-        template_content = self._generate_template_content(template_data)
-        
-        # Save template file
-        template_filename = f"class_{class_obj.id}_{class_obj.code.lower().replace(' ', '_')}.html"
-        template_path = os.path.join(self.templates_dir, template_filename)
-        
-        with open(template_path, 'w', encoding='utf-8') as f:
-            f.write(template_content)
-        
-        return template_filename
+        """
+        DEPRECATED: Template generation disabled - using universal dynamic template
+        All classes now use the single dynamic_class_universal.html template
+        """
+        print(f"⚠️ Template generation disabled: Class {class_obj.name} will use universal dynamic template")
+        return "dynamic_class_universal.html"
     
     def generate_class_routes(self, class_obj: Class) -> str:
-        """Generate Python routes file for a specific class"""
-        self._ensure_app_context_directories()
-        
-        routes_data = self._prepare_routes_data(class_obj)
-        
-        # Generate the routes content
-        routes_content = self._generate_routes_content(routes_data)
-        
-        # Save routes file
-        routes_filename = f"class_{class_obj.id}_routes.py"
-        routes_path = os.path.join(self.routes_dir, routes_filename)
-        
-        with open(routes_path, 'w', encoding='utf-8') as f:
-            f.write(routes_content)
-        
-        return routes_filename
+        """
+        DEPRECATED: Route generation disabled - using universal route handler
+        All classes now use the universal_class_routes.py handler
+        """
+        print(f"⚠️ Route generation disabled: Class {class_obj.name} will use universal route handler")
+        return "universal_class_routes.py"
     
     def _prepare_template_data(self, class_obj: Class) -> Dict[str, Any]:
         """Prepare data for template generation"""

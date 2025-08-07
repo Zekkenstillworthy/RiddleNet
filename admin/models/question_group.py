@@ -37,5 +37,5 @@ class QuestionGroup(db.Model):
             'name': self.name,
             'description': self.description,
             'question_count': len(self.questions),
-            'class_count': len(self.classes) if hasattr(self, 'classes') else 0
+            'class_count': self.classes.count() if hasattr(self, 'classes') else 0
         }

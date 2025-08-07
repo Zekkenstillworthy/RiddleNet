@@ -1,0 +1,361 @@
+"""
+Universal Dynamic Class Route Handler
+Handles all class detail pages using a single dynamic template
+"""
+
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask_login import login_required, current_user
+from user.models.user import User
+from user.models.score import Score  # Import Score to ensure SQLAlchemy relationship works
+from admin.models.class_model import Class
+from admin.models.question_group import QuestionGroup
+from admin.models.simulation import Simulation
+from admin.models.simulation_assignment import SimulationAssignment
+from admin.models.module import Module, Lesson
+from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+from utils.auth_utils import flexible_login_required, get_current_user_context
+from admin import db
+from sqlalchemy import and_
+
+# Create blueprint for universal class handling
+universal_class_bp = Blueprint('universal_class', __name__, url_prefix='/class')
+
+@universal_class_bp.route('/<int:class_id>')
+@flexible_login_required
+def dynamic_class_detail(class_id):
+    """
+    Universal dynamic class detail page - handles ALL classes
+    
+    This route dynamically generates class pages using a single template:
+    - Pulls all content from database (modules, simulations, assessments)
+    - Supports custom styling per class (colors, CSS)
+    - Admin can create new classes without needing new templates
+    - All content is database-driven and configurable
+    """
+    try:
+        # Get user context
+        user_context = get_current_user_context()
+        user_id = user_context['user_id'] if user_context['is_authenticated'] else None
+        
+        # Get class data from database
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Get user model for template compatibility
+        user = User.query.get(user_id) if user_id else None
+        
+        # Prepare class data for template
+        class_data = {
+            'id': class_obj.id,
+            'name': class_obj.name,
+            'description': class_obj.description,
+            'code': class_obj.code,
+            'section': class_obj.section,
+            'primary_color': getattr(class_obj, 'primary_color', '#3B82F6'),
+            'secondary_color': getattr(class_obj, 'secondary_color', '#8B5CF6'),
+            'accent_color': getattr(class_obj, 'accent_color', '#10B981'),
+            'background_color': getattr(class_obj, 'background_color', 'transparent'),
+            'background_image': getattr(class_obj, 'background_image', None),
+            'custom_css': getattr(class_obj, 'custom_css', '')
+        }
+        
+        # Get class modules from database (using Module model)
+        class_modules = []
+        modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        for module in modules:
+            # Get module lessons
+            lessons = Lesson.query.filter_by(module_id=module.id, is_active=True).order_by(Lesson.order_index).all()
+            
+            # Safely get module progress with error handling
+            try:
+                module_progress = module.get_user_progress(user_id) if user_id else None
+                completion_percentage = module_progress['progress_percentage'] if module_progress else 0
+            except Exception as e:
+                print(f"Error getting module progress for module {module.id}: {e}")
+                completion_percentage = 0
+            
+            # Safely get lesson data with error handling
+            lesson_data = []
+            for lesson in lessons:
+                try:
+                    # Get basic lesson data without progress queries that might fail
+                    lesson_data.append({
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'description': lesson.description,
+                        'lesson_number': lesson.lesson_number,
+                        'content': lesson.content,
+                        'learning_objectives': lesson.learning_objectives or [],
+                        'key_concepts': lesson.key_concepts or [],
+                        'estimated_duration': lesson.estimated_duration,
+                        'is_active': lesson.is_active,
+                        'simulation_ids': lesson.simulation_ids or [],
+                        'simulation_count': lesson.simulation_count,
+                        'order_index': lesson.order_index
+                    })
+                except Exception as e:
+                    print(f"Error getting lesson data for lesson {lesson.id}: {e}")
+                    # Add basic lesson info if there's an error
+                    lesson_data.append({
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'description': lesson.description or '',
+                        'lesson_number': getattr(lesson, 'lesson_number', ''),
+                        'estimated_duration': getattr(lesson, 'estimated_duration', 30)
+                    })
+            
+            class_modules.append({
+                'id': module.id,
+                'title': module.title,
+                'name': module.title,  # For compatibility
+                'description': module.description,
+                'module_number': module.module_number,
+                'course_type': module.course_type,
+                'learning_objectives': module.learning_objectives or [],
+                'estimated_duration': module.estimated_duration,
+                'type': 'module',
+                'lessons': lesson_data,
+                'total_lessons': len(lessons),
+                'completion_percentage': completion_percentage,
+                'is_unlocked': True  # Default to unlocked to avoid database issues
+            })
+        
+        # If no modules exist, try to get content from topics as fallback organization
+        if not class_modules:
+            topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
+            for topic in topics:
+                class_modules.append({
+                    'id': topic.id,
+                    'title': topic.name,
+                    'name': topic.name,  # For compatibility
+                    'description': topic.description,
+                    'type': 'topic',
+                    'completion_percentage': 0  # TODO: Calculate from user progress
+                })
+        
+        # Get class simulations from database
+        class_simulations = []
+        simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()
+        for assignment in simulation_assignments:
+            if assignment.simulation:
+                class_simulations.append({
+                    'id': assignment.simulation.id,
+                    'title': assignment.simulation.title,
+                    'name': assignment.simulation.title,  # For compatibility
+                    'description': assignment.simulation.description,
+                    'icon': getattr(assignment.simulation, 'icon', 'fas fa-play'),
+                    'type': 'simulation'
+                })
+        
+                # Note: Simulations don't have class_id directly - they're linked through SimulationAssignment
+        # The simulation_assignments query above already gets all assigned simulations
+        
+        # Get question groups (assessments) for this class
+        question_groups = class_obj.question_groups.all() if class_obj else []
+        question_groups_data = []
+        for qg in question_groups:
+            questions = []
+            if hasattr(qg, 'questions') and qg.questions:
+                for q in qg.questions:
+                    questions.append({
+                        'id': q.id,
+                        'question': q.question,
+                        'type': getattr(q, 'type', 'multiple_choice'),
+                        'options': getattr(q, 'options', []),
+                        'difficulty': getattr(q, 'difficulty', 'medium')
+                    })
+            
+            question_groups_data.append({
+                'id': qg.id,
+                'name': qg.name,
+                'description': qg.description,
+                'category': getattr(qg, 'category', 'General'),  # Default to 'General' if no category field
+                'questions': questions
+            })
+        
+        # Calculate class progress (mock data for now)
+        class_progress = {
+            'completion': 0,  # TODO: Calculate from user progress
+            'modules': len([m for m in class_modules]),
+            'hours': 0,  # TODO: Calculate from time tracking
+            'score': 0   # TODO: Calculate from assessment scores
+        }
+        
+        # Calculate actual progress if user is authenticated
+        if user_id:
+            # TODO: Implement progress calculation from database
+            # This would involve checking user's completion status for modules,
+            # simulation attempts, and assessment scores
+            pass
+        
+        return render_template('user/dynamic_class_universal.html',
+                             user_context=user_context,
+                             user=user,
+                             class_data=class_data,
+                             class_modules=class_modules,
+                             class_simulations=class_simulations,
+                             question_groups=question_groups_data,
+                             class_progress=class_progress)
+                             
+    except Exception as e:
+        print(f"Error in dynamic_class_detail: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Return a basic error template or redirect
+        return render_template('user/dynamic_class_universal.html',
+                             user_context=get_current_user_context(),
+                             class_data={'name': 'Class Not Found', 'id': class_id},
+                             class_modules=[],
+                             class_simulations=[],
+                             question_groups=[],
+                             class_progress={'completion': 0, 'modules': 0, 'hours': 0, 'score': 0})
+
+@universal_class_bp.route('/<int:class_id>/simulation/<int:simulation_id>')
+@flexible_login_required
+def simulation_detail(class_id, simulation_id):
+    """Handle simulation pages"""
+    # Redirect to simulation runner
+    return redirect(url_for('user.simulation_runner', simulation_id=simulation_id))
+
+@universal_class_bp.route('/<int:class_id>/assessment/<int:assessment_id>')
+@flexible_login_required
+def assessment_detail(class_id, assessment_id):
+    """Handle assessment pages"""
+    # For now, redirect to main class page with assessments tab
+    return redirect(url_for('universal_class.dynamic_class_detail', class_id=class_id) + '#assessments-tab')
+
+# API endpoints for dynamic content
+@universal_class_bp.route('/<int:class_id>/api/progress')
+@flexible_login_required
+def api_get_progress(class_id):
+    """Get user progress for the class"""
+    user_context = get_current_user_context()
+    user_id = user_context['user_id'] if user_context['is_authenticated'] else None
+    
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # TODO: Implement progress calculation from database
+    progress = {
+        'modules_completed': 0,
+        'simulations_completed': 0,
+        'assessments_completed': 0,
+        'overall_progress': 0,
+        'time_spent': 0,
+        'average_score': 0
+    }
+    
+    return jsonify(progress)
+
+@universal_class_bp.route('/<int:class_id>/api/content')
+@flexible_login_required
+def api_get_content(class_id):
+    """Get all content for the class"""
+    try:
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Get topics/modules
+        topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
+        modules = [{'id': t.id, 'name': t.name, 'description': t.description} for t in topics]
+        
+        # Get simulations
+        simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()
+        simulations = []
+        for assignment in simulation_assignments:
+            if assignment.simulation:
+                simulations.append({
+                    'id': assignment.simulation.id,
+                    'title': assignment.simulation.title,
+                    'description': assignment.simulation.description
+                })
+        
+        # Get assessments
+        question_groups = class_obj.question_groups.all()
+        assessments = [{'id': qg.id, 'name': qg.name, 'description': qg.description} for qg in question_groups]
+        
+        return jsonify({
+            'modules': modules,
+            'simulations': simulations,
+            'assessments': assessments
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@universal_class_bp.route('/<int:class_id>/module/<int:module_id>')
+@flexible_login_required
+def module_detail(class_id, module_id):
+    """Student view of a specific module"""
+    try:
+        # Get user context
+        user_context = get_current_user_context()
+        user_id = user_context['user_id'] if user_context['is_authenticated'] else None
+        
+        if not user_id:
+            return redirect(url_for('user.index', message='You need to log in first!'))
+        
+        # Get user model
+        user = User.query.get(user_id)
+        
+        # Get the module and class
+        module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first()
+        if not module:
+            return redirect(url_for('universal_class.dynamic_class_detail', class_id=class_id))
+        
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Get ALL class modules for sidebar navigation
+        all_class_modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        class_modules_data = []
+        for mod in all_class_modules:
+            try:
+                # Safely get module progress
+                module_progress = mod.get_user_progress(user_id) if user_id else None
+                completion_percentage = module_progress['progress_percentage'] if module_progress else 0
+            except Exception as e:
+                print(f"Error getting module progress for module {mod.id}: {e}")
+                completion_percentage = 0
+            
+            class_modules_data.append({
+                'id': mod.id,
+                'title': mod.title,
+                'module_number': mod.module_number,
+                'estimated_duration': mod.estimated_duration,
+                'total_lessons': mod.total_lessons,
+                'completion_percentage': completion_percentage
+            })
+        
+        # Get module lessons
+        lessons = Lesson.query.filter_by(module_id=module_id, is_active=True).order_by(Lesson.order_index).all()
+        
+        # Get module materials (if any)
+        try:
+            module_materials = ClassMaterial.query.filter_by(class_id=class_id).all()
+            # Filter materials that might be associated with this module
+            module_materials = [mat for mat in module_materials if str(module_id) in (mat.content or '')]
+        except:
+            module_materials = []
+        
+        # Calculate module progress (for now, show as 0%)
+        module_progress = {
+            'completed_lessons': 0,
+            'total_lessons': len(lessons),
+            'percentage': 0
+        }
+        
+        # Render using the module detail template with sidebar navigation
+        return render_template('user/module_detail.html',
+                             user=user,
+                             user_context=user_context,  # Add user_context for profile display
+                             class_data=class_obj,
+                             class_modules=class_modules_data,  # Add this for sidebar
+                             module=module,
+                             lessons=lessons,
+                             materials=module_materials,
+                             progress=module_progress,
+                             is_student_view=True)
+    
+    except Exception as e:
+        print(f"Error in module_detail: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return redirect(url_for('universal_class.dynamic_class_detail', class_id=class_id))

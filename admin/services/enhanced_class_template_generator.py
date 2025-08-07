@@ -1612,7 +1612,7 @@ def simulation_{sim['id']}():
         
         # Get dynamic simulations for this class
         dynamic_simulations = self._get_dynamic_simulations_for_class(class_obj)
-        dynamic_learning_paths = self._get_dynamic_learning_paths_for_class(class_obj)
+        # Learning paths feature removed
         
         integration = {
             'class_id': class_obj.id,
@@ -1620,8 +1620,7 @@ def simulation_{sim['id']}():
             'dashboard_url': f'/class/{class_obj.id}/',
             'dynamic_content': {
                 'simulations': dynamic_simulations,
-                'learning_paths': dynamic_learning_paths,
-                'has_dynamic_content': len(dynamic_simulations) > 0 or len(dynamic_learning_paths) > 0
+                'has_dynamic_content': len(dynamic_simulations) > 0
             },
             'api_endpoints': {
                 'progress': f'/class/{class_obj.id}/api/progress',
@@ -1758,23 +1757,8 @@ def simulation_{sim['id']}():
                 return []
     
     def _get_dynamic_learning_paths_for_class(self, class_obj: Class) -> List[Dict]:
-        """Get database learning paths for this class"""
-        try:
-            from admin.models.learning_path import LearningPath
-            
-            class_type = self._detect_class_type(class_obj).lower()
-            
-            learning_paths = LearningPath.query.filter_by(
-                is_published=True,
-                is_active=True
-            ).filter(
-                LearningPath.course_level.ilike(f'%{class_type}%')
-            ).all()
-            
-            return [path.to_dict(include_simulations=True) for path in learning_paths]
-        except Exception as e:
-            print(f"Error getting dynamic learning paths: {e}")
-            return []
+        """Learning paths feature removed - return empty list"""
+        return []
     
     def create_simulation_assignments_for_class(self, class_obj: Class, week: str = 'week_1', assigned_by_id: int = 1) -> List[SimulationAssignment]:
         """Create simulation assignments for a class based on templates"""

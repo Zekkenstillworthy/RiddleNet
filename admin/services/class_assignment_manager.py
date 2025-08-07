@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
 from admin.models.simulation_assignment import SimulationAssignment, SimulationAttempt
 from admin.models.simulation import Simulation
-from admin.models.learning_path import LearningPath
+# Learning Path model removed - feature deprecated
+# from admin.models.learning_path import LearningPath
 from admin.models.class_model import Class
 from admin import db
 from socket_events import emit_assignment_created, emit_new_simulation_available

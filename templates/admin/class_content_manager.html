@@ -1,0 +1,4594 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Class Content Manager - RiddleNet Admin{% endblock %}
+
+{% block head %}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Content Manager - RiddleNet Admin</title>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+
+<style>
+:root {
+    /* RiddleNet Cyberpunk Color Palette */
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    
+    /* Backgrounds */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(59, 130, 246, 0.3);
+    
+    /* Text */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    
+    /* Layout */
+    --border-radius: 12px;
+    --shadow-lg: 0 25px 50px -12px rgba(26, 35, 126, 0.8);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+    --transition-speed: 0.4s;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--background), var(--primary-color));
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Main Content Layout */
+.main-content {
+    background: var(--background);
+    min-height: 100vh;
+    padding: 0;
+}
+
+/* Google Classroom Style Header */
+.class-header {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    position: relative;
+    overflow: hidden;
+}
+
+.class-banner {
+    height: 200px;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.9), rgba(139, 92, 246, 0.9));
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 24px 32px;
+}
+
+.class-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+}
+
+.class-banner-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+.class-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.class-subtitle {
+    font-size: 1.1rem;
+    margin: 8px 0 0 0;
+    opacity: 0.9;
+}
+
+.class-info-bar {
+    background: var(--surface);
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.class-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.class-code {
+    background: var(--accent-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.class-selector-wrapper {
+    position: relative;
+}
+
+.class-selector {
+    background: var(--surface-hover);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    min-width: 200px;
+    font-size: 0.9rem;
+}
+
+.class-selector:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+.class-selector option {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.action-btn {
+    background: var(--surface-hover);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-speed) ease;
+}
+
+.action-btn:hover {
+    background: var(--surface);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: translateY(-1px);
+}
+
+/* Navigation Tabs */
+.class-tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--glass-border);
+    overflow-x: auto;
+}
+
+.tab-nav {
+    display: flex;
+    min-width: max-content;
+    padding: 0 32px;
+}
+
+.tab-item {
+    list-style: none;
+}
+
+.tab-link {
+    display: block;
+    padding: 16px 24px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    transition: all var(--transition-speed) ease;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tab-link:hover {
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.tab-link.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+/* Main Content Area */
+.class-content {
+    display: flex;
+    min-height: calc(100vh - 300px);
+}
+
+.content-main {
+    flex: 1;
+    padding: 24px 32px;
+    background: var(--background);
+}
+
+.content-sidebar {
+    width: 300px;
+    background: var(--surface);
+    border-left: 1px solid var(--glass-border);
+    padding: 24px;
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Classwork Tab - Main Content Creation */
+.create-section {
+    margin-bottom: 32px;
+}
+
+.create-btn {
+    background: linear-gradient(135deg, var(--accent-color), var(--cyber-glow));
+    border: none;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all var(--transition-speed) ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.create-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-speed) ease;
+}
+
+.create-btn:hover::before {
+    left: 100%;
+}
+
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.create-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    min-width: 280px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+}
+
+.create-dropdown.show {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.dropdown-item {
+    padding: 16px 20px;
+    color: var(--text-primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: background var(--transition-speed) ease;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: var(--surface-hover);
+    color: var(--accent-color);
+}
+
+.dropdown-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--accent-color), var(--cyber-glow));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
+
+/* Topics and Content Organization */
+.topics-container {
+    margin-bottom: 32px;
+}
+
+.topic-section {
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+.topic-header {
+    padding: 20px 24px;
+    background: var(--surface-hover);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--transition-speed) ease;
+}
+
+.topic-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.topic-toggle {
+    color: var(--text-muted);
+    transition: transform var(--transition-speed) ease;
+}
+
+.topic-section.collapsed .topic-toggle {
+    transform: rotate(-90deg);
+}
+
+.topic-content {
+    padding: 20px 24px;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+.topic-section.collapsed .topic-content {
+    max-height: 0;
+    padding: 0 24px;
+}
+
+.content-items {
+    display: grid;
+    gap: 16px;
+}
+
+.content-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all var(--transition-speed) ease;
+    backdrop-filter: blur(10px);
+}
+
+.content-card:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Student-specific card styling */
+.student-card {
+    border-left: 4px solid var(--success-color);
+}
+
+.student-card:hover {
+    border-left-color: var(--cyber-glow);
+}
+
+.student-card .content-icon {
+    background: linear-gradient(135deg, var(--success-color), var(--cyber-glow));
+}
+
+.content-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.content-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--accent-color), var(--cyber-glow));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.content-info {
+    flex: 1;
+}
+
+.content-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.content-description {
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+
+.content-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.content-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.content-action {
+    background: var(--surface-hover);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+}
+
+.content-action:hover {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.status-badge {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-published {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.status-draft {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning-color);
+}
+
+/* Sidebar */
+.sidebar-section {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.sidebar-header {
+    background: var(--surface-hover);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.sidebar-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.sidebar-content {
+    padding: 20px;
+}
+
+.due-date-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.due-date-item:last-child {
+    border-bottom: none;
+}
+
+.due-title {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.due-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all var(--transition-speed) ease;
+}
+
+.modal-close:hover {
+    background: var(--surface-hover);
+    color: var(--danger-color);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-control {
+    background: var(--surface-hover);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 0.9rem;
+    transition: all var(--transition-speed) ease;
+}
+
+.form-control:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .class-content {
+        flex-direction: column;
+    }
+    
+    .content-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--glass-border);
+    }
+}
+
+@media (max-width: 768px) {
+    .class-banner {
+        height: 150px;
+        padding: 16px 20px;
+    }
+    
+    .class-title {
+        font-size: 2rem;
+    }
+    
+    .class-info-bar {
+        padding: 12px 20px;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .content-main {
+        padding: 16px 20px;
+    }
+    
+    .tab-nav {
+        padding: 0 20px;
+    }
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    margin-bottom: 24px;
+}
+
+.empty-actions .btn {
+    background: linear-gradient(135deg, var(--accent-color), var(--cyber-glow));
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-speed) ease;
+}
+
+.empty-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Content Overview Stats */
+.content-overview {
+    margin-bottom: 32px;
+}
+
+.content-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    display: block;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <!-- Google Classroom Style Header -->
+    <div class="class-header">
+        <div class="class-banner" id="classBanner">
+            <div class="class-banner-content">
+                {% if selected_class %}
+                <h1 class="class-title" contenteditable="false" id="classTitle">{{ selected_class.name }}</h1>
+                <p class="class-subtitle">{{ selected_class.description or 'Manage content for this class' }}</p>
+                {% else %}
+                <h1 class="class-title" contenteditable="false" id="classTitle">Class Content Manager</h1>
+                <p class="class-subtitle">Select a class to manage its content</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="class-info-bar">
+            <div class="class-meta">
+                {% if selected_class %}
+                <span>Class Code: <span class="class-code">{{ selected_class.code }}</span></span>
+                <span>•</span>
+                <span>{{ class_content.student_count or 0 }} Students</span>
+                <span>•</span>
+                {% else %}
+                <span>Select a class to view details</span>
+                <span>•</span>
+                {% endif %}
+                <span>Updated: <span id="lastUpdated">Today</span></span>
+            </div>
+            
+            <div class="header-actions">
+                <div class="class-selector-wrapper" style="margin-right: 16px;">
+                    <select class="form-control class-selector" id="classSelector" onchange="switchClass(this.value)">
+                        {% if all_classes %}
+                        <option value="">Select a Class</option>
+                        {% for cls in all_classes %}
+                        <option value="{{ cls.id }}" {% if selected_class and cls.id == selected_class.id %}selected{% endif %}>
+                            {{ cls.name }} ({{ cls.code }}) - {{ cls.students.count() if cls.students else 0 }} students
+                        </option>
+                        {% endfor %}
+                        {% else %}
+                        <option value="">No Classes Available</option>
+                        {% endif %}
+                    </select>
+                    {% if not all_classes %}
+                    <div class="no-classes-alert" style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; font-size: 0.9rem; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        No classes found. <a href="{{ url_for('class_controller.index') }}" style="color: var(--danger-color); text-decoration: underline;">Create a class</a> to get started.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if selected_class %}
+                <a href="{{ url_for('class_controller.class_overview', class_id=selected_class.id) }}" class="action-btn">
+                    <i class="fas fa-chart-line"></i>
+                    Class Overview
+                </a>
+                <a href="#" class="action-btn" onclick="shareClass()">
+                    <i class="fas fa-share"></i>
+                    Share
+                </a>
+                <a href="#" class="action-btn" onclick="exportContent()">
+                    <i class="fas fa-download"></i>
+                    Export
+                </a>
+                {% else %}
+                <a href="{{ url_for('class_controller.index') }}" class="action-btn">
+                    <i class="fas fa-plus"></i>
+                    Create Class
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <nav class="class-tabs">
+            <ul class="tab-nav">
+                <li class="tab-item">
+                    <a href="#" class="tab-link" onclick="switchTab('stream'); return false;">
+                        <i class="fas fa-stream"></i>
+                        Stream
+                    </a>
+                </li>
+                <li class="tab-item">
+                    <a href="#" class="tab-link active" onclick="switchTab('classwork'); return false;">
+                        <i class="fas fa-tasks"></i>
+                        Classwork
+                    </a>
+                </li>
+                <li class="tab-item">
+                    <a href="#" class="tab-link" onclick="switchTab('people'); return false;">
+                        <i class="fas fa-users"></i>
+                        People
+                    </a>
+                </li>
+                <li class="tab-item">
+                    <a href="#" class="tab-link" onclick="switchTab('grades'); return false;">
+                        <i class="fas fa-chart-bar"></i>
+                        Grades
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="class-content">
+        <div class="content-main">
+            <!-- Classwork Tab (Main Focus) -->
+            <div id="classwork-content" class="tab-content active">
+                {% if selected_class %}
+                <div class="create-section">
+                    <div style="position: relative; display: inline-block;">
+                        <button class="create-btn" onclick="toggleCreateDropdown('content')" id="createContentBtn">
+                            <i class="fas fa-plus"></i>
+                            Create Content for {{ selected_class.name }}
+                        </button>
+                        <div class="create-dropdown" id="createDropdown">
+                            <a href="#" class="dropdown-item" onclick="createContent('module')">
+                                <div class="dropdown-icon"><i class="fas fa-book"></i></div>
+                                <div>
+                                    <div style="font-weight: 600;">Module</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Create learning modules</div>
+                                </div>
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="createContent('assignment')">
+                                <div class="dropdown-icon"><i class="fas fa-file-alt"></i></div>
+                                <div>
+                                    <div style="font-weight: 600;">Assignment</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Create homework and projects</div>
+                                </div>
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="createContent('quiz')">
+                                <div class="dropdown-icon"><i class="fas fa-question-circle"></i></div>
+                                <div>
+                                    <div style="font-weight: 600;">Quiz</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Create quizzes and assessments</div>
+                                </div>
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="createContent('material')">
+                                <div class="dropdown-icon"><i class="fas fa-file"></i></div>
+                                <div>
+                                    <div style="font-weight: 600;">Material</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Upload files and resources</div>
+                                </div>
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="addSimulation()">
+                                <div class="dropdown-icon"><i class="fas fa-play-circle"></i></div>
+                                <div>
+                                    <div style="font-weight: 600;">Simulation</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">Add interactive simulations</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Stats Overview -->
+                <div class="content-overview">
+                    <div class="content-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ class_content.modules|length or 0 }}</div>
+                            <div class="stat-label">Modules</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ class_content.simulations|length or 0 }}</div>
+                            <div class="stat-label">Simulations</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ class_content.question_groups|length or 0 }}</div>
+                            <div class="stat-label">Assessments</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ class_content.student_count or 0 }}</div>
+                            <div class="stat-label">Students</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Content Sections -->
+                <div id="dynamicContent"></div>
+
+                {% else %}
+                <!-- No Class Selected State -->
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Select a Class to Manage Content</h3>
+                    <p>Choose a class from the dropdown above to start creating and managing educational content.</p>
+                    <div class="empty-actions">
+                        <a href="{{ url_for('class_controller.index') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Create New Class
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- People Tab -->
+            <div id="people-content" class="tab-content">
+                <div class="create-section">
+                    <button class="create-btn" onclick="inviteStudents()">
+                        <i class="fas fa-user-plus"></i>
+                        Invite Students
+                    </button>
+                </div>
+                
+                <div class="people-lists">
+                    <h3 style="color: var(--text-primary); margin-bottom: 16px;">Instructors</h3>
+                    <div class="content-card">
+                        <div class="content-header">
+                            <div class="content-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="content-info">
+                                <h4 class="content-title">{{ current_user.first_name }} {{ current_user.last_name }}</h4>
+                                <p class="content-description">Course Administrator</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="color: var(--text-primary); margin: 24px 0 16px;">
+                        Students 
+                        {% if selected_class and class_content.students %}
+                            ({{ class_content.students|length }})
+                        {% else %}
+                            (0)
+                        {% endif %}
+                    </h3>
+                    
+                    {% if selected_class and class_content.students %}
+                        {% for student in class_content.students %}
+                        <div class="content-card student-card" data-student-id="{{ student.id }}">
+                            <div class="content-header">
+                                <div class="content-icon">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="content-info">
+                                    <h4 class="content-title">
+                                        {% if student.first_name and student.last_name %}
+                                            {{ student.first_name }} {{ student.last_name }}
+                                        {% else %}
+                                            {{ student.username }}
+                                        {% endif %}
+                                    </h4>
+                                    <p class="content-description">
+                                        {{ student.email if student.email else student.username }}
+                                    </p>
+                                    <div class="content-meta">
+                                        <span class="status-badge status-published"><i class="fas fa-check-circle"></i> Enrolled</span>
+                                    </div>
+                                </div>
+                                <div class="content-actions">
+                                    <button class="content-action" onclick="viewStudentProgress({{ student.id }})" title="View Progress">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                    <button class="content-action" onclick="contactStudent({{ student.id }})" title="Contact">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="content-action" onclick="removeStudent({{ student.id }})" title="Remove from Class">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% elif selected_class %}
+                        <div class="content-card">
+                            <div class="content-info">
+                                <p class="content-description">
+                                    <i class="fas fa-info-circle"></i>
+                                    No students enrolled in this class yet. Use the "Invite Students" button to add students.
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="content-card">
+                            <div class="content-info">
+                                <p class="content-description">
+                                    <i class="fas fa-info-circle"></i>
+                                    Select a class to view enrolled students.
+                                </p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Grades Tab -->
+            <div id="grades-content" class="tab-content">
+                <div class="grades-overview">
+                    <h3 style="color: var(--text-primary); margin-bottom: 16px;">Grade Overview</h3>
+                    <div class="content-card">
+                        <div class="content-info">
+                            <p class="content-description">Gradebook and analytics features coming soon...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="content-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    <h4 class="sidebar-title">Upcoming</h4>
+                </div>
+                <div class="sidebar-content">
+                    {% if class_content.assignments %}
+                        {% for assignment in class_content.assignments %}
+                            {% if assignment.due_date and assignment.due_date > now %}
+                            <div class="due-date-item">
+                                <div class="due-title">{{ assignment.title }}</div>
+                                <div class="due-date">
+                                {% if assignment.due_date.strftime %}
+                                    {{ assignment.due_date.strftime('%b %d') }}
+                                {% else %}
+                                    {{ assignment.due_date }}
+                                {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No upcoming deadlines</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    <h4 class="sidebar-title">Class Overview</h4>
+                </div>
+                <div class="sidebar-content">
+                    <div class="due-date-item">
+                        <div class="due-title">Assignments</div>
+                        <div class="due-date">{{ class_content.assignments|length or 0 }} items</div>
+                    </div>
+                    <div class="due-date-item">
+                        <div class="due-title">Materials</div>
+                        <div class="due-date">{{ class_content.materials|length or 0 }} items</div>
+                    </div>
+                    <div class="due-date-item">
+                        <div class="due-title">Topics</div>
+                        <div class="due-date">{{ class_content.topics|length or 0 }} items</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    <h4 class="sidebar-title">Class Calendar</h4>
+                </div>
+                <div class="sidebar-content">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Mini calendar widget coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Creation Modal -->
+<div id="contentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Create Module</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="contentForm">
+                <div class="form-group">
+                    <label for="contentTitle" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="contentTitle" placeholder="Enter title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contentDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="contentDescription" rows="3" placeholder="Enter description"></textarea>
+                </div>
+                
+                <div class="form-group" id="moduleFields" style="display: none;">
+                    <label for="moduleNumber" class="form-label">Module Number</label>
+                    <input type="text" class="form-control" id="moduleNumber" placeholder="e.g., 1, 1.1, 2">
+                </div>
+                
+                <div class="form-group" id="objectivesGroup" style="display: none;">
+                    <label class="form-label">Learning Objectives</label>
+                    <div id="objectivesContainer">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" placeholder="Enter learning objective">
+                            <button type="button" class="btn btn-primary" onclick="addObjective()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Class Content Manager
+class ClassContentManager {
+    constructor() {
+        // Initialize with data from server
+        {% if selected_class %}
+        this.currentClass = {
+            id: {{ selected_class.id }},
+            name: '{{ selected_class.name }}',
+            code: '{{ selected_class.code }}',
+            description: '{{ selected_class.description or "" }}'
+        };
+        {% else %}
+        this.currentClass = null;
+        {% endif %}
+        
+        this.activeTab = 'classwork';
+        
+        // Load class content if available
+        {% if class_content %}
+        this.classContent = {{ class_content | tojson }};
+        {% else %}
+        this.classContent = {
+            modules: [],
+            simulations: [],
+            question_groups: [],
+            assignments: [],
+            materials: [],
+            topics: [],
+            student_count: 0,
+            students: []
+        };
+        {% endif %}
+        
+        this.init();
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.loadDynamicContent();
+        this.initializeTabs();
+        console.log('ClassContentManager initialized');
+    }
+    
+    initializeTabs() {
+        // Ensure the initial tab state is correct
+        const activeTab = document.querySelector('.tab-link.active');
+        if (activeTab) {
+            this.activeTab = 'classwork'; // Default to classwork tab
+            // Make sure the corresponding content is visible
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            const targetContent = document.getElementById(this.activeTab + '-content');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        }
+    }
+    
+    setupEventListeners() {
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.create-btn') && !e.target.closest('.create-dropdown')) {
+                this.closeCreateDropdown();
+            }
+        });
+        
+        // Content action buttons (edit/delete)
+        document.addEventListener('click', (e) => {
+            const actionBtn = e.target.closest('[data-action]');
+            if (actionBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const action = actionBtn.dataset.action;
+                const type = actionBtn.dataset.type;
+                const id = actionBtn.dataset.id;
+                
+                if (action === 'edit') {
+                    this.editContent(type, id);
+                } else if (action === 'delete') {
+                    this.deleteContent(type, id);
+                }
+            }
+        });
+        
+        // Form submission
+        const contentForm = document.getElementById('contentForm');
+        if (contentForm) {
+            contentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.publishContent();
+            });
+        }
+    }
+    
+    loadDynamicContent() {
+        const dynamicContent = document.getElementById('dynamicContent');
+        if (!dynamicContent || !this.currentClass) return;
+        
+        let html = '';
+        
+        // Render modules section
+        if (this.classContent.modules && this.classContent.modules.length > 0) {
+            html += this.renderModulesSection();
+        }
+        
+        // Render simulations section
+        if (this.classContent.simulations && this.classContent.simulations.length > 0) {
+            html += this.renderSimulationsSection();
+        }
+        
+        // Render assignments section
+        if (this.classContent.assignments && this.classContent.assignments.length > 0) {
+            html += this.renderAssignmentsSection();
+        }
+        
+        // Show message if no content
+        const hasAnyContent = (this.classContent.modules?.length || 0) + 
+                             (this.classContent.simulations?.length || 0) + 
+                             (this.classContent.assignments?.length || 0) > 0;
+        
+        if (!hasAnyContent) {
+            html += `
+                <div class="content-card">
+                    <div class="content-info">
+                        <p class="content-description">
+                            <i class="fas fa-info-circle"></i>
+                            No content created yet. Use the "Create" button above to add modules, assignments, and materials.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        dynamicContent.innerHTML = html;
+    }
+    
+    renderModulesSection() {
+        let html = `
+            <div class="topics-container">
+                <div class="topic-section" data-topic-id="modules">
+                    <div class="topic-header" onclick="toggleTopic('modules')">
+                        <h3 class="topic-title">Class Modules</h3>
+                        <i class="fas fa-chevron-down topic-toggle"></i>
+                    </div>
+                    <div class="topic-content">
+                        <div class="content-items">
+        `;
+        
+        this.classContent.modules.forEach(module => {
+            html += `
+                <div class="content-card" data-content-id="${module.id}">
+                    <div class="content-header">
+                        <div class="content-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="content-info">
+                            <h4 class="content-title">${module.title}</h4>
+                            <p class="content-description">${module.description || ''}</p>
+                            <div class="content-meta">
+                                <span class="status-badge status-published">Module ${module.module_number || ''}</span>
+                                <span><i class="fas fa-clock"></i> ${module.estimated_duration || 60} min</span>
+                                <span><i class="fas fa-layer-group"></i> ${module.level || 'Beginner'}</span>
+                            </div>
+                        </div>
+                        <div class="content-actions">
+                            <button class="content-action" data-action="edit" data-type="module" data-id="${module.id}" title="Edit Module">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="content-action" data-action="delete" data-type="module" data-id="${module.id}" title="Delete Module">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    renderSimulationsSection() {
+        let html = `
+            <div class="topics-container">
+                <div class="topic-section" data-topic-id="simulations">
+                    <div class="topic-header" onclick="toggleTopic('simulations')">
+                        <h3 class="topic-title">Simulations</h3>
+                        <i class="fas fa-chevron-down topic-toggle"></i>
+                    </div>
+                    <div class="topic-content">
+                        <div class="content-items">
+        `;
+        
+        this.classContent.simulations.forEach(simulation => {
+            html += `
+                <div class="content-card" data-content-id="${simulation.id}">
+                    <div class="content-header">
+                        <div class="content-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="content-info">
+                            <h4 class="content-title">${simulation.title}</h4>
+                            <p class="content-description">${simulation.description || ''}</p>
+                            <div class="content-meta">
+                                <span class="status-badge status-published">Simulation</span>
+                                <span><i class="fas fa-users"></i> Interactive</span>
+                            </div>
+                        </div>
+                        <div class="content-actions">
+                            <button class="content-action" onclick="viewSimulation(${simulation.id})" title="View Simulation">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                            <button class="content-action" data-action="delete" data-type="simulation" data-id="${simulation.id}" title="Remove from Class">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    renderAssignmentsSection() {
+        let html = `
+            <div class="topics-container">
+                <div class="topic-section" data-topic-id="assignments">
+                    <div class="topic-header" onclick="toggleTopic('assignments')">
+                        <h3 class="topic-title">Assignments</h3>
+                        <i class="fas fa-chevron-down topic-toggle"></i>
+                    </div>
+                    <div class="topic-content">
+                        <div class="content-items">
+        `;
+        
+        this.classContent.assignments.forEach(assignment => {
+            html += `
+                <div class="content-card" data-content-id="${assignment.id}">
+                    <div class="content-header">
+                        <div class="content-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="content-info">
+                            <h4 class="content-title">${assignment.title}</h4>
+                            <p class="content-description">${assignment.description || ''}</p>
+                            <div class="content-meta">
+                                <span class="status-badge status-published">Assignment</span>
+                                ${assignment.due_date ? `<span><i class="fas fa-calendar"></i> Due: ${assignment.due_date}</span>` : ''}
+                                ${assignment.points ? `<span><i class="fas fa-star"></i> ${assignment.points} points</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="content-actions">
+                            <button class="content-action" data-action="edit" data-type="assignment" data-id="${assignment.id}" title="Edit Assignment">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="content-action" data-action="delete" data-type="assignment" data-id="${assignment.id}" title="Delete Assignment">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    // Tab Management
+    switchTab(tabName) {
+        console.log('Switching to tab:', tabName);
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // Find and activate the correct tab link
+        const tabLinks = document.querySelectorAll('.tab-link');
+        for (const link of tabLinks) {
+            const onclick = link.getAttribute('onclick');
+            if (onclick && onclick.includes(`switchTab('${tabName}')`)) {
+                link.classList.add('active');
+                break;
+            }
+        }
+        
+        // Show corresponding content
+        const targetContent = document.getElementById(tabName + '-content');
+        if (targetContent) {
+            targetContent.classList.add('active');
+        }
+        
+        this.activeTab = tabName;
+    }
+    
+    toggleTopic(topicId) {
+        const topicSection = document.querySelector(`[data-topic-id="${topicId}"]`);
+        if (topicSection) {
+            topicSection.classList.toggle('collapsed');
+        }
+    }
+    
+    toggleCreateDropdown(type) {
+        const dropdown = document.getElementById('createDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('show');
+        }
+    }
+    
+    closeCreateDropdown() {
+        const dropdown = document.getElementById('createDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('show');
+        }
+    }
+    
+    createContent(type) {
+        this.closeCreateDropdown();
+        
+        const modal = document.getElementById('contentModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const moduleFields = document.getElementById('moduleFields');
+        const objectivesGroup = document.getElementById('objectivesGroup');
+        
+        // Reset form
+        document.getElementById('contentForm').reset();
+        
+        // Configure modal based on content type
+        switch(type) {
+            case 'module':
+                modalTitle.textContent = 'Create Module';
+                moduleFields.style.display = 'block';
+                objectivesGroup.style.display = 'block';
+                break;
+            case 'assignment':
+                modalTitle.textContent = 'Create Assignment';
+                moduleFields.style.display = 'none';
+                objectivesGroup.style.display = 'none';
+                break;
+            case 'quiz':
+                modalTitle.textContent = 'Create Quiz';
+                moduleFields.style.display = 'none';
+                objectivesGroup.style.display = 'none';
+                break;
+            case 'material':
+                modalTitle.textContent = 'Create Material';
+                moduleFields.style.display = 'none';
+                objectivesGroup.style.display = 'none';
+                break;
+        }
+        
+        modal.style.display = 'flex';
+        modal.dataset.contentType = type;
+    }
+    
+    editContent(type, id) {
+        console.log(`Editing ${type} with ID ${id}`);
+        
+        if (type === 'module') {
+            this.editModule(id);
+        } else {
+            this.showToast(`Edit functionality for ${type} coming soon!`, 'info');
+        }
+    }
+    
+    editModule(moduleId) {
+        // Fetch module data and populate edit form
+        fetch(`/admin/api/classes/${this.currentClass.id}/modules/${moduleId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    this.showToast('Error loading module: ' + data.error, 'error');
+                    return;
+                }
+                
+                const module = data.module;
+                
+                // Populate the form
+                document.getElementById('contentTitle').value = module.title || '';
+                document.getElementById('contentDescription').value = module.description || '';
+                document.getElementById('moduleNumber').value = module.module_number || '';
+                
+                // Show modal
+                const modal = document.getElementById('contentModal');
+                const modalTitle = document.getElementById('modalTitle');
+                modalTitle.textContent = `Edit Module: ${module.title}`;
+                
+                document.getElementById('moduleFields').style.display = 'block';
+                document.getElementById('objectivesGroup').style.display = 'block';
+                
+                modal.style.display = 'flex';
+                modal.dataset.contentType = 'module';
+                modal.dataset.editId = moduleId;
+            })
+            .catch(error => {
+                console.error('Error fetching module:', error);
+                this.showToast('Error loading module data', 'error');
+            });
+    }
+    
+    deleteContent(type, id) {
+        if (!confirm(`Are you sure you want to delete this ${type}?`)) {
+            return;
+        }
+        
+        let endpoint = '';
+        switch(type) {
+            case 'module':
+                endpoint = `/admin/api/classes/${this.currentClass.id}/modules/${id}`;
+                break;
+            case 'assignment':
+                endpoint = `/admin/api/classes/${this.currentClass.id}/assignments/${id}`;
+                break;
+            default:
+                this.showToast(`Delete functionality for ${type} coming soon!`, 'info');
+                return;
+        }
+        
+        fetch(endpoint, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully!`, 'success');
+                    this.refreshContent();
+                } else {
+                    this.showToast(data.message || `Failed to delete ${type}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showToast(`Error deleting ${type}`, 'error');
+            });
+    }
+    
+    publishContent() {
+        const modal = document.getElementById('contentModal');
+        const contentType = modal.dataset.contentType;
+        const editId = modal.dataset.editId;
+        const isEdit = !!editId;
+        
+        const title = document.getElementById('contentTitle').value.trim();
+        const description = document.getElementById('contentDescription').value.trim();
+        
+        if (!title) {
+            this.showToast('Please enter a title', 'error');
+            return;
+        }
+        
+        const formData = {
+            title: title,
+            description: description,
+            class_id: this.currentClass.id
+        };
+        
+        // Add content-specific fields
+        if (contentType === 'module') {
+            formData.module_number = document.getElementById('moduleNumber').value.trim();
+            formData.learning_objectives = this.collectObjectives();
+        }
+        
+        const method = isEdit ? 'PUT' : 'POST';
+        const url = isEdit 
+            ? `/admin/api/classes/${this.currentClass.id}/${contentType}s/${editId}`
+            : `/admin/api/classes/${this.currentClass.id}/${contentType}s`;
+        
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const action = isEdit ? 'updated' : 'created';
+                this.showToast(`${contentType.charAt(0).toUpperCase() + contentType.slice(1)} ${action} successfully!`, 'success');
+                this.closeModal();
+                this.refreshContent();
+            } else {
+                this.showToast(data.message || `Failed to ${isEdit ? 'update' : 'create'} ${contentType}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            this.showToast(`Error ${isEdit ? 'updating' : 'creating'} ${contentType}`, 'error');
+        });
+    }
+    
+    collectObjectives() {
+        const inputs = document.querySelectorAll('#objectivesContainer input[type="text"]');
+        return Array.from(inputs)
+            .map(input => input.value.trim())
+            .filter(objective => objective !== '');
+    }
+    
+    addObjective() {
+        const container = document.getElementById('objectivesContainer');
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="text" class="form-control" placeholder="Enter learning objective">
+            <button type="button" class="btn btn-danger" onclick="removeObjective(this)">
+                <i class="fas fa-minus"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    }
+    
+    removeObjective(button) {
+        const container = document.getElementById('objectivesContainer');
+        if (container.children.length > 1) {
+            button.parentElement.remove();
+        }
+    }
+    
+    closeModal() {
+        const modal = document.getElementById('contentModal');
+        modal.style.display = 'none';
+        delete modal.dataset.contentType;
+        delete modal.dataset.editId;
+    }
+    
+    refreshContent() {
+        // Reload the page to get fresh data
+        window.location.reload();
+    }
+    
+    showToast(message, type = 'info') {
+        // Create notification element
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Global functions for onclick handlers
+function switchClass(classId) {
+    if (!classId) {
+        window.location.href = '/admin/class-content-manager';
+        return;
+    }
+    
+    window.location.href = `/admin/class-content-manager?class_id=${classId}`;
+}
+
+function switchTab(tabName) {
+    if (contentManager) {
+        contentManager.switchTab(tabName);
+    }
+}
+
+function toggleTopic(topicId) {
+    if (contentManager) {
+        contentManager.toggleTopic(topicId);
+    }
+}
+
+function toggleCreateDropdown(type) {
+    if (contentManager) {
+        contentManager.toggleCreateDropdown(type);
+    }
+}
+
+function createContent(type) {
+    if (contentManager && contentManager.currentClass) {
+        contentManager.createContent(type);
+    } else {
+        contentManager.showToast('Please select a class first', 'warning');
+    }
+}
+
+function closeModal() {
+    if (contentManager) {
+        contentManager.closeModal();
+    }
+}
+
+function addObjective() {
+    if (contentManager) {
+        contentManager.addObjective();
+    }
+}
+
+function removeObjective(button) {
+    if (contentManager) {
+        contentManager.removeObjective(button);
+    }
+}
+
+function addSimulation() {
+    if (contentManager && contentManager.currentClass) {
+        showAssignSimulationModal();
+    } else {
+        contentManager.showToast('Please select a class first', 'warning');
+    }
+}
+
+function shareClass() {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    const classCode = contentManager.currentClass.code;
+    const className = contentManager.currentClass.name;
+    
+    // Create a simple share modal
+    const shareUrl = `${window.location.origin}/class/${contentManager.currentClass.id}`;
+    const shareText = `Join my class "${className}" with code: ${classCode}\nAccess link: ${shareUrl}`;
+    
+    // Try to use the Web Share API if available
+    if (navigator.share) {
+        navigator.share({
+            title: `${className} - RiddleNet Class`,
+            text: shareText,
+            url: shareUrl
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            // Fallback to clipboard
+            copyToClipboard(shareText);
+        });
+    } else {
+        // Fallback to clipboard
+        copyToClipboard(shareText);
+    }
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            contentManager.showToast('Class sharing info copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            contentManager.showToast('Failed to copy to clipboard', 'error');
+        });
+    } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            contentManager.showToast('Class sharing info copied to clipboard!', 'success');
+        } catch (err) {
+            contentManager.showToast('Failed to copy to clipboard', 'error');
+        }
+        document.body.removeChild(textArea);
+    }
+}
+
+function exportContent() {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    const classId = contentManager.currentClass.id;
+    
+    // Show export options modal
+    const exportModal = document.createElement('div');
+    exportModal.className = 'modal fade';
+    exportModal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export Class Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Choose what to export for class: <strong>${contentManager.currentClass.name}</strong></p>
+                    <div class="export-options">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportModules" checked>
+                            <label class="form-check-label" for="exportModules">Modules & Lessons</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportAssignments" checked>
+                            <label class="form-check-label" for="exportAssignments">Assignments</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportMaterials" checked>
+                            <label class="form-check-label" for="exportMaterials">Materials</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportSimulations" checked>
+                            <label class="form-check-label" for="exportSimulations">Simulations</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="performExport()">Export as JSON</button>
+                    <button type="button" class="btn btn-success" onclick="exportAsCSV()">Export as CSV</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(exportModal);
+    const modal = new bootstrap.Modal(exportModal);
+    modal.show();
+    
+    // Clean up when modal is hidden
+    exportModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(exportModal);
+    });
+}
+
+function performExport() {
+    const classId = contentManager.currentClass.id;
+    const exportOptions = {
+        modules: document.getElementById('exportModules').checked,
+        assignments: document.getElementById('exportAssignments').checked,
+        materials: document.getElementById('exportMaterials').checked,
+        simulations: document.getElementById('exportSimulations').checked
+    };
+    
+    // Create export data
+    const exportData = {
+        class: contentManager.currentClass,
+        content: {},
+        exportedAt: new Date().toISOString(),
+        exportOptions
+    };
+    
+    // Add selected content types
+    if (exportOptions.modules && contentManager.classContent.modules) {
+        exportData.content.modules = contentManager.classContent.modules;
+    }
+    if (exportOptions.assignments && contentManager.classContent.assignments) {
+        exportData.content.assignments = contentManager.classContent.assignments;
+    }
+    if (exportOptions.materials && contentManager.classContent.materials) {
+        exportData.content.materials = contentManager.classContent.materials;
+    }
+    if (exportOptions.simulations && contentManager.classContent.simulations) {
+        exportData.content.simulations = contentManager.classContent.simulations;
+    }
+    
+    // Create and download JSON file
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `${contentManager.currentClass.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_content_export.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    contentManager.showToast('Content exported successfully!', 'success');
+    bootstrap.Modal.getInstance(document.querySelector('.modal.show')).hide();
+}
+
+function exportAsCSV() {
+    const classId = contentManager.currentClass.id;
+    
+    // Simple CSV export for basic data
+    let csvContent = "Type,Title,Description,Created\n";
+    
+    // Add modules
+    if (contentManager.classContent.modules) {
+        contentManager.classContent.modules.forEach(module => {
+            csvContent += `Module,"${module.title}","${module.description || ''}","${module.created_at || ''}"\n`;
+        });
+    }
+    
+    // Add assignments
+    if (contentManager.classContent.assignments) {
+        contentManager.classContent.assignments.forEach(assignment => {
+            csvContent += `Assignment,"${assignment.title}","${assignment.description || ''}","${assignment.created_at || ''}"\n`;
+        });
+    }
+    
+    // Add materials
+    if (contentManager.classContent.materials) {
+        contentManager.classContent.materials.forEach(material => {
+            csvContent += `Material,"${material.title}","${material.description || ''}","${material.created_at || ''}"\n`;
+        });
+    }
+    
+    // Create and download CSV file
+    const dataUri = 'data:text/csv;charset=utf-8,'+ encodeURIComponent(csvContent);
+    const exportFileDefaultName = `${contentManager.currentClass.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_content_export.csv`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    contentManager.showToast('Content exported as CSV successfully!', 'success');
+    bootstrap.Modal.getInstance(document.querySelector('.modal.show')).hide();
+}
+
+function inviteStudents() {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    const classCode = contentManager.currentClass.code;
+    const className = contentManager.currentClass.name;
+    
+    // Create invite modal
+    const inviteModal = document.createElement('div');
+    inviteModal.className = 'modal fade';
+    inviteModal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Invite Students to ${className}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="invite-methods">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="invite-card">
+                                    <div class="invite-icon">
+                                        <i class="fas fa-code"></i>
+                                    </div>
+                                    <h6>Class Code</h6>
+                                    <div class="class-code-display">
+                                        <code id="classCodeDisplay">${classCode}</code>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="copyClassCode()">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Students can join using this code</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="invite-card">
+                                    <div class="invite-icon">
+                                        <i class="fas fa-link"></i>
+                                    </div>
+                                    <h6>Direct Link</h6>
+                                    <div class="class-link-display">
+                                        <input type="text" class="form-control" id="classLinkDisplay" 
+                                               value="${window.location.origin}/class/${contentManager.currentClass.id}" readonly>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="copyClassLink()">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Direct link to join the class</small>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="email-invite">
+                            <h6><i class="fas fa-envelope"></i> Send Email Invitations</h6>
+                            <div class="form-group">
+                                <label for="emailList">Student Email Addresses (one per line)</label>
+                                <textarea class="form-control" id="emailList" rows="4" 
+                                          placeholder="student1@example.com&#10;student2@example.com&#10;student3@example.com"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="sendEmailInvites()">
+                                <i class="fas fa-paper-plane"></i> Send Invitations
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add styles for the invite modal
+    const style = document.createElement('style');
+    style.textContent = `
+        .invite-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            height: 100%;
+        }
+        .invite-icon {
+            font-size: 2rem;
+            color: var(--cyber-glow);
+            margin-bottom: 10px;
+        }
+        .class-code-display, .class-link-display {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .class-code-display code {
+            background: var(--background);
+            color: var(--cyber-glow);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            flex: 1;
+        }
+        .email-invite {
+            background: var(--glass-bg);
+            border-radius: 8px;
+            padding: 20px;
+        }
+    `;
+    inviteModal.appendChild(style);
+    
+    document.body.appendChild(inviteModal);
+    const modal = new bootstrap.Modal(inviteModal);
+    modal.show();
+    
+    // Clean up when modal is hidden
+    inviteModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(inviteModal);
+    });
+}
+
+function copyClassCode() {
+    const classCode = document.getElementById('classCodeDisplay').textContent;
+    copyToClipboard(classCode);
+}
+
+function copyClassLink() {
+    const classLink = document.getElementById('classLinkDisplay').value;
+    copyToClipboard(classLink);
+}
+
+function sendEmailInvites() {
+    const emailList = document.getElementById('emailList').value.trim();
+    if (!emailList) {
+        contentManager.showToast('Please enter at least one email address', 'warning');
+        return;
+    }
+    
+    const emails = emailList.split('\n').map(email => email.trim()).filter(email => email);
+    const classData = contentManager.currentClass;
+    
+    // Prepare email data
+    const inviteData = {
+        class_id: classData.id,
+        class_name: classData.name,
+        class_code: classData.code,
+        emails: emails,
+        invite_message: `You've been invited to join the class "${classData.name}" on RiddleNet.`
+    };
+    
+    // Send to backend for email processing
+    fetch('/admin/api/classes/' + classData.id + '/invite-students', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inviteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            contentManager.showToast(`Invitations sent to ${emails.length} email(s)!`, 'success');
+            bootstrap.Modal.getInstance(document.querySelector('.modal.show')).hide();
+        } else {
+            contentManager.showToast(data.message || 'Failed to send invitations', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending invites:', error);
+        contentManager.showToast('Email invitations feature requires backend setup', 'info');
+    });
+}
+
+function viewSimulation(simulationId) {
+    window.open(`/admin/simulations/${simulationId}`, '_blank');
+}
+
+function viewStudentProgress(studentId) {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    // Fetch student progress data
+    fetch(`/admin/api/classes/${contentManager.currentClass.id}/students/${studentId}/progress`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showStudentProgressModal(data.student, data.progress);
+            } else {
+                contentManager.showToast('Failed to load student progress', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading student progress:', error);
+            // For now, show a placeholder modal
+            showStudentProgressModal({id: studentId, name: 'Student'}, {});
+        });
+}
+
+function showStudentProgressModal(student, progress) {
+    const progressModal = document.createElement('div');
+    progressModal.className = 'modal fade';
+    progressModal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Progress Report - ${student.name || 'Student #' + student.id}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="progress-overview">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="progress-card">
+                                    <div class="progress-icon"><i class="fas fa-book"></i></div>
+                                    <div class="progress-value">${progress.modules_completed || 0}</div>
+                                    <div class="progress-label">Modules Completed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="progress-card">
+                                    <div class="progress-icon"><i class="fas fa-tasks"></i></div>
+                                    <div class="progress-value">${progress.assignments_submitted || 0}</div>
+                                    <div class="progress-label">Assignments Submitted</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="progress-card">
+                                    <div class="progress-icon"><i class="fas fa-star"></i></div>
+                                    <div class="progress-value">${progress.average_score || 'N/A'}</div>
+                                    <div class="progress-label">Average Score</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6>Recent Activity</h6>
+                            <div class="activity-list">
+                                ${progress.recent_activity ? progress.recent_activity.map(activity => `
+                                    <div class="activity-item">
+                                        <i class="fas fa-${activity.icon || 'circle'}"></i>
+                                        <span>${activity.description}</span>
+                                        <small class="text-muted">${activity.date}</small>
+                                    </div>
+                                `).join('') : '<p class="text-muted">No recent activity</p>'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="contactStudent(${student.id})">Contact Student</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(progressModal);
+    const modal = new bootstrap.Modal(progressModal);
+    modal.show();
+    
+    progressModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(progressModal);
+    });
+}
+
+function contactStudent(studentId) {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    const contactModal = document.createElement('div');
+    contactModal.className = 'modal fade';
+    contactModal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Contact Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="contactStudentForm">
+                        <div class="form-group mb-3">
+                            <label for="messageSubject">Subject</label>
+                            <input type="text" class="form-control" id="messageSubject" 
+                                   placeholder="Enter message subject" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="messageContent">Message</label>
+                            <textarea class="form-control" id="messageContent" rows="5" 
+                                      placeholder="Enter your message to the student" required></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="sendEmail">
+                            <label class="form-check-label" for="sendEmail">
+                                Also send via email notification
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="sendStudentMessage(${studentId})">Send Message</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(contactModal);
+    const modal = new bootstrap.Modal(contactModal);
+    modal.show();
+    
+    contactModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(contactModal);
+    });
+}
+
+function sendStudentMessage(studentId) {
+    const subject = document.getElementById('messageSubject').value.trim();
+    const content = document.getElementById('messageContent').value.trim();
+    const sendEmail = document.getElementById('sendEmail').checked;
+    
+    if (!subject || !content) {
+        contentManager.showToast('Please fill in both subject and message', 'warning');
+        return;
+    }
+    
+    const messageData = {
+        student_id: studentId,
+        class_id: contentManager.currentClass.id,
+        subject: subject,
+        content: content,
+        send_email: sendEmail
+    };
+    
+    fetch('/admin/api/classes/' + contentManager.currentClass.id + '/students/' + studentId + '/message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            contentManager.showToast('Message sent successfully!', 'success');
+            bootstrap.Modal.getInstance(document.querySelector('.modal.show')).hide();
+        } else {
+            contentManager.showToast(data.message || 'Failed to send message', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+        contentManager.showToast('Student messaging feature requires backend setup', 'info');
+    });
+}
+
+function removeStudent(studentId) {
+    if (!contentManager || !contentManager.currentClass) {
+        contentManager.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to remove this student from the class? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/admin/api/classes/${contentManager.currentClass.id}/students/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            contentManager.showToast('Student removed from class successfully!', 'success');
+            // Refresh the page or update the students list
+            window.location.reload();
+        } else {
+            contentManager.showToast(data.message || 'Failed to remove student', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing student:', error);
+        contentManager.showToast('Failed to remove student', 'error');
+    });
+}
+
+// Initialize the Class Content Manager
+let contentManager;
+
+document.addEventListener('DOMContentLoaded', function() {
+    contentManager = new ClassContentManager();
+});
+</script>
+
+{% endblock %}
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+  opacity: 0.8;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+}
+
+.page-header .subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.content-tabs {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.nav-tabs {
+  border-bottom: 2px solid var(--glass-border);
+  margin-bottom: 24px;
+}
+
+.nav-tabs .nav-link {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--cyber-glow);
+  background: rgba(0, 217, 255, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--cyber-glow);
+  background: var(--glass-bg);
+  border-bottom: 2px solid var(--cyber-glow);
+}
+
+.tab-pane {
+  min-height: 400px;
+}
+
+.content-section {
+  background: rgba(26, 35, 126, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.section-title {
+  color: var(--cyber-glow);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--network-purple);
+  color: var(--network-purple);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.content-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.content-item {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-secondary);
+  opacity: 0.6;
+}
+
+.content-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 217, 255, 0.2);
+  border-color: var(--cyber-glow);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.item-title {
+  color: var(--cyber-glow);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.item-meta {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.item-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: var(--glass-border);
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+.form-control, .form-select {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  padding: 12px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--cyber-glow) !important;
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3) !important;
+  outline: none !important;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+}
+
+.modal-content {
+  background: var(--dark-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  padding: 20px 24px !important;
+}
+
+.modal-title {
+  color: var(--cyber-glow) !important;
+  font-weight: 600 !important;
+  font-size: 1.3rem !important;
+}
+
+.modal-body {
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 24px !important;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--glass-border) !important;
+  background: var(--glass-bg) !important;
+  padding: 20px 24px !important;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--cyber-glow);
+  box-shadow: 0 8px 25px rgba(0, 217, 255, 0.2);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cyber-glow);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: var(--cyber-glow);
+}
+
+.loading-spinner i {
+  font-size: 2rem;
+  margin-right: 12px;
+}
+
+.objectives-list, .concepts-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.objectives-list li, .concepts-list li {
+  background: rgba(26, 35, 126, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+.badge {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: var(--network-purple) !important;
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  border: 1px solid var(--network-purple) !important;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+  
+  .page-header {
+    padding: 16px;
+  }
+  
+  .content-tabs {
+    padding: 16px;
+  }
+  
+  .nav-tabs .nav-link {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+
+<div class="main-content">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1>Class Content Manager</h1>
+        <p class="subtitle">{{ class_data.name }} - {{ class_data.code }}</p>
+      </div>
+      <div>
+        <a href="{{ url_for('class_controller.class_overview', class_id=class_data.id) }}" 
+           class="btn btn-secondary me-2">
+          <i class="fas fa-arrow-left"></i> Back to Class
+        </a>
+        <button class="btn btn-primary" onclick="refreshContent()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-value" id="modules-count">{{ class_modules|length }}</span>
+      <span class="stat-label">Modules</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="topics-count">{{ class_topics|length }}</span>
+      <span class="stat-label">Topics</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="simulations-count">{{ assigned_simulations|length }}</span>
+      <span class="stat-label">Simulations</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="assignments-count">{{ class_assignments|length }}</span>
+      <span class="stat-label">Assignments</span>
+    </div>
+  </div>
+
+  <!-- Content Management Tabs -->
+  <div class="content-tabs">
+    <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="modules-tab" data-bs-toggle="tab" 
+                data-bs-target="#modules-pane" type="button" role="tab">
+          <i class="fas fa-book"></i> Modules & Lessons
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="topics-tab" data-bs-toggle="tab" 
+                data-bs-target="#topics-pane" type="button" role="tab">
+          <i class="fas fa-tags"></i> Content Topics
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="simulations-tab" data-bs-toggle="tab" 
+                data-bs-target="#simulations-pane" type="button" role="tab">
+          <i class="fas fa-flask"></i> Simulations
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" 
+                data-bs-target="#assignments-pane" type="button" role="tab">
+          <i class="fas fa-tasks"></i> Assignments
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" 
+                data-bs-target="#materials-pane" type="button" role="tab">
+          <i class="fas fa-file-alt"></i> Materials
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="contentTabsContent">
+      <!-- Modules & Lessons Tab -->
+      <div class="tab-pane fade show active" id="modules-pane" role="tabpanel">
+        <div class="content-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-book"></i> Class Modules
+            </h3>
+            <button class="btn btn-primary" onclick="showCreateModuleModal()">
+              <i class="fas fa-plus"></i> Add Module
+            </button>
+          </div>
+          
+          <div id="modules-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Loading modules...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Topics Tab -->
+      <div class="tab-pane fade" id="topics-pane" role="tabpanel">
+        <div class="content-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-tags"></i> Content Organization Topics
+            </h3>
+            <button class="btn btn-primary" onclick="showCreateTopicModal()">
+              <i class="fas fa-plus"></i> Add Topic
+            </button>
+          </div>
+          
+          <div id="topics-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Loading topics...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulations Tab -->
+      <div class="tab-pane fade" id="simulations-pane" role="tabpanel">
+        <div class="content-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-flask"></i> Assigned Simulations
+            </h3>
+            <button class="btn btn-primary" onclick="showAssignSimulationModal()">
+              <i class="fas fa-plus"></i> Assign Simulation
+            </button>
+          </div>
+          
+          <div id="simulations-container">
+            <div class="content-grid">
+              {% if assigned_simulations %}
+                {% for simulation in assigned_simulations %}
+                <div class="content-item">
+                  <div class="item-header">
+                    <h4 class="item-title">{{ simulation.title }}</h4>
+                    <span class="badge">{{ simulation.simulation_type }}</span>
+                  </div>
+                  <p class="item-description">{{ simulation.description }}</p>
+                  <div class="item-actions">
+                    <button class="btn btn-secondary btn-sm" 
+                            onclick="viewSimulation({{ simulation.id }})">
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="btn btn-danger btn-sm" 
+                            onclick="unassignSimulation({{ simulation.id }})">
+                      <i class="fas fa-unlink"></i> Unassign
+                    </button>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="empty-state">
+                  <i class="fas fa-flask"></i>
+                  <h3>No Simulations Assigned</h3>
+                  <p>Add simulations to provide interactive learning experiences for students.</p>
+                  <button class="btn btn-primary" onclick="showAssignSimulationModal()">
+                    <i class="fas fa-plus"></i> Assign First Simulation
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignments Tab -->
+      <div class="tab-pane fade" id="assignments-pane" role="tabpanel">
+        <div class="content-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-tasks"></i> Class Assignments
+            </h3>
+            <button class="btn btn-primary" onclick="showCreateAssignmentModal()">
+              <i class="fas fa-plus"></i> Create Assignment
+            </button>
+          </div>
+          
+          <div id="assignments-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Loading assignments...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials Tab -->
+      <div class="tab-pane fade" id="materials-pane" role="tabpanel">
+        <div class="content-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-file-alt"></i> Class Materials
+            </h3>
+            <button class="btn btn-primary" onclick="showCreateMaterialModal()">
+              <i class="fas fa-plus"></i> Upload Material
+            </button>
+          </div>
+          
+          <div id="materials-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Loading materials...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Assignment Modal -->
+<div class="modal fade" id="createAssignmentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Assignment</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createAssignmentForm">
+          <div class="mb-3">
+            <label for="assignmentTitle" class="form-label">Assignment Title *</label>
+            <input type="text" class="form-control" id="assignmentTitle" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="assignmentDescription" class="form-label">Description *</label>
+            <textarea class="form-control" id="assignmentDescription" rows="3" required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="assignmentInstructions" class="form-label">Instructions</label>
+            <textarea class="form-control" id="assignmentInstructions" rows="4" 
+                      placeholder="Detailed instructions for students"></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="assignmentDueDate" class="form-label">Due Date</label>
+                <input type="datetime-local" class="form-control" id="assignmentDueDate">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="assignmentPoints" class="form-label">Points</label>
+                <input type="number" class="form-control" id="assignmentPoints" min="0" placeholder="100">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="assignmentPublished" checked>
+            <label class="form-check-label" for="assignmentPublished">
+              Publish immediately
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="createAssignment()">Create Assignment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Material Modal -->
+<div class="modal fade" id="createMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Upload Material</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createMaterialForm">
+          <div class="mb-3">
+            <label for="materialTitle" class="form-label">Material Title *</label>
+            <input type="text" class="form-control" id="materialTitle" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="materialDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="materialDescription" rows="3"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="materialType" class="form-label">Material Type</label>
+            <select class="form-select" id="materialType" onchange="toggleMaterialInputs()">
+              <option value="file">File Upload</option>
+              <option value="link">External Link</option>
+            </select>
+          </div>
+
+          <div class="mb-3" id="fileUploadSection">
+            <label for="materialFile" class="form-label">Choose File</label>
+            <input type="file" class="form-control" id="materialFile" 
+                   accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.mp3,.jpg,.jpeg,.png,.gif">
+            <div class="form-text">Supported formats: PDF, DOC, PPT, XLS, TXT, MP4, MP3, images</div>
+          </div>
+
+          <div class="mb-3" id="linkInputSection" style="display: none;">
+            <label for="materialLink" class="form-label">Link URL</label>
+            <input type="url" class="form-control" id="materialLink" placeholder="https://example.com">
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="materialPublished" checked>
+            <label class="form-check-label" for="materialPublished">
+              Publish immediately
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="createMaterial()">Upload Material</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Module Modal -->
+<div class="modal fade" id="createModuleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create New Module</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createModuleForm">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="moduleTitle" class="form-label">Module Title</label>
+              <input type="text" class="form-control" id="moduleTitle" required>
+            </div>
+            <div class="col-md-6">
+              <label for="moduleNumber" class="form-label">Module Number</label>
+              <input type="text" class="form-control" id="moduleNumber" placeholder="e.g., 1, 1.1, 2" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="moduleDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="moduleDescription" rows="3" required></textarea>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="moduleLevel" class="form-label">Level</label>
+              <select class="form-select" id="moduleLevel">
+                <option value="1">Main Module</option>
+                <option value="2">Sub-module</option>
+                <option value="3">Section</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="estimatedDuration" class="form-label">Estimated Duration (minutes)</label>
+              <input type="number" class="form-control" id="estimatedDuration" value="60" min="1">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Learning Objectives</label>
+            <div id="objectivesContainer">
+              <div class="input-group mb-2">
+                <input type="text" class="form-control" placeholder="Enter learning objective">
+                <button type="button" class="btn btn-secondary" onclick="addObjective()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="modulePublished" checked>
+            <label class="form-check-label" for="modulePublished">
+              Publish immediately
+            </label>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="sequentialCompletion" checked>
+            <label class="form-check-label" for="sequentialCompletion">
+              Require sequential completion
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="createModule()">Create Module</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Module Modal -->
+<div class="modal fade" id="editModuleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Module</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editModuleForm">
+          <input type="hidden" id="editModuleId">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="editModuleTitle" class="form-label">Module Title</label>
+              <input type="text" class="form-control" id="editModuleTitle" required>
+            </div>
+            <div class="col-md-6">
+              <label for="editModuleNumber" class="form-label">Module Number</label>
+              <input type="text" class="form-control" id="editModuleNumber" placeholder="e.g., 1, 1.1, 2" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="editModuleDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="editModuleDescription" rows="3" required></textarea>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="editModuleLevel" class="form-label">Level</label>
+              <select class="form-select" id="editModuleLevel">
+                <option value="1">Main Module</option>
+                <option value="2">Sub-module</option>
+                <option value="3">Section</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="editEstimatedDuration" class="form-label">Estimated Duration (minutes)</label>
+              <input type="number" class="form-control" id="editEstimatedDuration" min="1">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Learning Objectives</label>
+            <div id="editObjectivesContainer">
+              <!-- Objectives will be populated dynamically -->
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addEditObjective()">
+              <i class="fas fa-plus"></i> Add Objective
+            </button>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="editModulePublished">
+            <label class="form-check-label" for="editModulePublished">
+              Publish module
+            </label>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="editSequentialCompletion">
+            <label class="form-check-label" for="editSequentialCompletion">
+              Require sequential completion
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="updateModule()">Update Module</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Topic Modal -->
+<div class="modal fade" id="createTopicModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create New Topic</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createTopicForm">
+          <div class="mb-3">
+            <label for="topicName" class="form-label">Topic Name</label>
+            <input type="text" class="form-control" id="topicName" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="topicDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="topicDescription" rows="3"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="topicColor" class="form-label">Topic Color</label>
+            <input type="color" class="form-control" id="topicColor" value="#3B82F6">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="createTopic()">Create Topic</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Simulation Modal -->
+<div class="modal fade" id="assignSimulationModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Assign Simulation to Class</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="availableSimulationsContainer">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i> Loading available simulations...
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const classId = {{ class_data.id }};
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+  loadModules();
+  loadTopics();
+  
+  // Add tab change listeners
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function(event) {
+      const target = event.target.getAttribute('data-bs-target');
+      if (target === '#assignments-pane') {
+        loadAssignments();
+      } else if (target === '#materials-pane') {
+        loadMaterials();
+      }
+    });
+  });
+});
+
+// ========================================
+// MODULE MANAGEMENT FUNCTIONS
+// ========================================
+
+function loadModules() {
+  fetch(`/admin/api/classes/${classId}/modules`)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('modules-container');
+      
+      if (data.modules && data.modules.length > 0) {
+        let html = '<div class="content-grid">';
+        
+        data.modules.forEach(module => {
+          html += `
+            <div class="content-item">
+              <div class="item-header">
+                <h4 class="item-title">${module.title}</h4>
+                <div>
+                  <span class="badge me-2">Module ${module.module_number}</span>
+                  <span class="badge">${module.total_lessons} lessons</span>
+                </div>
+              </div>
+              <p class="item-meta">Duration: ${module.estimated_duration} minutes</p>
+              <p class="item-description">${module.description}</p>
+              
+              ${module.learning_objectives && module.learning_objectives.length > 0 ? 
+                `<div class="mb-2">
+                  <strong>Learning Objectives:</strong>
+                  <ul class="objectives-list mt-1">
+                    ${module.learning_objectives.map(obj => `<li>${obj}</li>`).join('')}
+                  </ul>
+                </div>` : ''
+              }
+              
+              <div class="item-actions">
+                <button class="btn btn-secondary btn-sm" onclick="manageLessons(${module.id})">
+                  <i class="fas fa-list"></i> Manage Lessons
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="editModule(${module.id})">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteModule(${module.id})">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-book"></i>
+            <h3>No Modules Created</h3>
+            <p>Create modules to organize your class content into structured learning units.</p>
+            <button class="btn btn-primary" onclick="showCreateModuleModal()">
+              <i class="fas fa-plus"></i> Create First Module
+            </button>
+          </div>
+        `;
+      }
+      
+      // Update stats
+      document.getElementById('modules-count').textContent = data.modules ? data.modules.length : 0;
+    })
+    .catch(error => {
+      console.error('Error loading modules:', error);
+      document.getElementById('modules-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Modules</h3>
+          <p>Failed to load modules. Please try again.</p>
+          <button class="btn btn-primary" onclick="loadModules()">Retry</button>
+        </div>
+      `;
+    });
+}
+
+function showCreateModuleModal() {
+  const modal = new bootstrap.Modal(document.getElementById('createModuleModal'));
+  modal.show();
+}
+
+function addObjective() {
+  const container = document.getElementById('objectivesContainer');
+  const div = document.createElement('div');
+  div.className = 'input-group mb-2';
+  div.innerHTML = `
+    <input type="text" class="form-control" placeholder="Enter learning objective">
+    <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+      <i class="fas fa-minus"></i>
+    </button>
+  `;
+  container.appendChild(div);
+}
+
+function createModule() {
+  const title = document.getElementById('moduleTitle').value;
+  const moduleNumber = document.getElementById('moduleNumber').value;
+  const description = document.getElementById('moduleDescription').value;
+  const level = document.getElementById('moduleLevel').value;
+  const duration = document.getElementById('estimatedDuration').value;
+  const published = document.getElementById('modulePublished').checked;
+  const sequential = document.getElementById('sequentialCompletion').checked;
+  
+  // Get learning objectives
+  const objectiveInputs = document.querySelectorAll('#objectivesContainer input');
+  const objectives = Array.from(objectiveInputs)
+    .map(input => input.value.trim())
+    .filter(value => value.length > 0);
+  
+  if (!title || !moduleNumber || !description) {
+    alert('Please fill in all required fields.');
+    return;
+  }
+  
+  const moduleData = {
+    title: title,
+    module_number: moduleNumber,
+    description: description,
+    level: parseInt(level),
+    estimated_duration: parseInt(duration),
+    learning_objectives: objectives,
+    is_published: published,
+    requires_sequential_completion: sequential,
+    course_type: '{{ class_data.name }}'
+  };
+  
+  fetch(`/admin/api/classes/${classId}/modules`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(moduleData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Module created successfully!', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('createModuleModal')).hide();
+      document.getElementById('createModuleForm').reset();
+      loadModules();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to create module'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error creating module:', error);
+    showNotification('Failed to create module. Please try again.', 'error');
+  });
+}
+
+function deleteModule(moduleId) {
+  if (!confirm('Are you sure you want to delete this module? This action cannot be undone.')) {
+    return;
+  }
+  
+  fetch(`/admin/api/classes/${classId}/modules/${moduleId}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Module deleted successfully!', 'success');
+      loadModules();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to delete module'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error deleting module:', error);
+    showNotification('Failed to delete module. Please try again.', 'error');
+  });
+}
+
+// ========================================
+// TOPIC MANAGEMENT FUNCTIONS
+// ========================================
+
+function loadTopics() {
+  fetch(`/admin/api/classes/${classId}/topics`)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('topics-container');
+      
+      if (data.topics && data.topics.length > 0) {
+        let html = '<div class="content-grid">';
+        
+        data.topics.forEach(topic => {
+          html += `
+            <div class="content-item">
+              <div class="item-header">
+                <h4 class="item-title" style="color: ${topic.color}">${topic.name}</h4>
+                <span class="badge">${topic.content_count} items</span>
+              </div>
+              <p class="item-description">${topic.description || 'No description provided'}</p>
+              <div class="item-actions">
+                <button class="btn btn-secondary btn-sm" onclick="editTopic(${topic.id})">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteTopic(${topic.id})">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-tags"></i>
+            <h3>No Topics Created</h3>
+            <p>Create topics to organize and categorize your class content.</p>
+            <button class="btn btn-primary" onclick="showCreateTopicModal()">
+              <i class="fas fa-plus"></i> Create First Topic
+            </button>
+          </div>
+        `;
+      }
+      
+      // Update stats
+      document.getElementById('topics-count').textContent = data.topics ? data.topics.length : 0;
+    })
+    .catch(error => {
+      console.error('Error loading topics:', error);
+      document.getElementById('topics-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Topics</h3>
+          <p>Failed to load topics. Please try again.</p>
+          <button class="btn btn-primary" onclick="loadTopics()">Retry</button>
+        </div>
+      `;
+    });
+}
+
+function showCreateTopicModal() {
+  const modal = new bootstrap.Modal(document.getElementById('createTopicModal'));
+  modal.show();
+}
+
+function createTopic() {
+  const name = document.getElementById('topicName').value;
+  const description = document.getElementById('topicDescription').value;
+  const color = document.getElementById('topicColor').value;
+  
+  if (!name) {
+    alert('Please enter a topic name.');
+    return;
+  }
+  
+  const topicData = {
+    name: name,
+    description: description,
+    color: color
+  };
+  
+  fetch(`/admin/api/classes/${classId}/topics`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(topicData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      bootstrap.Modal.getInstance(document.getElementById('createTopicModal')).hide();
+      document.getElementById('createTopicForm').reset();
+      loadTopics();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to create topic'));
+    }
+  })
+  .catch(error => {
+    console.error('Error creating topic:', error);
+    alert('Failed to create topic. Please try again.');
+  });
+}
+
+function deleteTopic(topicId) {
+  if (!confirm('Are you sure you want to delete this topic? This action cannot be undone.')) {
+    return;
+  }
+  
+  fetch(`/admin/api/classes/${classId}/topics/${topicId}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      loadTopics();
+    } else {
+      alert('Error: ' + (data.error || 'Failed to delete topic'));
+    }
+  })
+  .catch(error => {
+    console.error('Error deleting topic:', error);
+    alert('Failed to delete topic. Please try again.');
+  });
+}
+
+// ========================================
+// SIMULATION MANAGEMENT FUNCTIONS
+// ========================================
+
+function showAssignSimulationModal() {
+  const modal = new bootstrap.Modal(document.getElementById('assignSimulationModal'));
+  modal.show();
+  
+  // Load available simulations
+  fetch('/admin/api/simulations?available_for_class=' + classId)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('availableSimulationsContainer');
+      
+      if (data.simulations && data.simulations.length > 0) {
+        let html = '<div class="content-grid">';
+        
+        data.simulations.forEach(simulation => {
+          html += `
+            <div class="content-item">
+              <div class="item-header">
+                <h5 class="item-title">${simulation.title}</h5>
+                <span class="badge">${simulation.simulation_type}</span>
+              </div>
+              <p class="item-description">${simulation.description}</p>
+              <div class="item-actions">
+                <button class="btn btn-primary btn-sm" onclick="assignSimulation(${simulation.id})">
+                  <i class="fas fa-plus"></i> Assign to Class
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-flask"></i>
+            <h3>No Available Simulations</h3>
+            <p>All simulations are already assigned to this class or no simulations exist.</p>
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error loading simulations:', error);
+      document.getElementById('availableSimulationsContainer').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Simulations</h3>
+          <p>Failed to load available simulations.</p>
+        </div>
+      `;
+    });
+}
+
+function assignSimulation(simulationId) {
+  fetch(`/admin/api/classes/${classId}/content/simulations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ simulation_id: simulationId })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      bootstrap.Modal.getInstance(document.getElementById('assignSimulationModal')).hide();
+      location.reload(); // Reload to update the simulations tab
+    } else {
+      alert('Error: ' + (data.error || 'Failed to assign simulation'));
+    }
+  })
+  .catch(error => {
+    console.error('Error assigning simulation:', error);
+    alert('Failed to assign simulation. Please try again.');
+  });
+}
+
+function unassignSimulation(simulationId) {
+  if (!confirm('Are you sure you want to unassign this simulation from the class?')) {
+    return;
+  }
+  
+  fetch(`/admin/api/classes/${classId}/content/simulations/${simulationId}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      location.reload(); // Reload to update the simulations tab
+    } else {
+      alert('Error: ' + (data.error || 'Failed to unassign simulation'));
+    }
+  })
+  .catch(error => {
+    console.error('Error unassigning simulation:', error);
+    alert('Failed to unassign simulation. Please try again.');
+  });
+}
+
+// ========================================
+// PLACEHOLDER FUNCTIONS
+// ========================================
+
+function loadAssignments() {
+  fetch(`/admin/api/classes/${classId}/assignments`)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('assignments-container');
+      
+      if (data.assignments && data.assignments.length > 0) {
+        let html = '<div class="content-grid">';
+        
+        data.assignments.forEach(assignment => {
+          html += `
+            <div class="content-item">
+              <div class="item-header">
+                <h4 class="item-title">${assignment.title}</h4>
+                <div>
+                  ${assignment.due_date ? `<span class="badge me-2">Due: ${new Date(assignment.due_date).toLocaleDateString()}</span>` : ''}
+                  ${assignment.points ? `<span class="badge">${assignment.points} pts</span>` : ''}
+                </div>
+              </div>
+              <p class="item-description">${assignment.description || 'No description provided'}</p>
+              ${assignment.instructions ? `<p class="item-meta"><strong>Instructions:</strong> ${assignment.instructions}</p>` : ''}
+              
+              <div class="item-actions">
+                <button class="btn btn-secondary btn-sm" onclick="editAssignment(${assignment.id})">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-info btn-sm" onclick="viewAssignmentSubmissions(${assignment.id})">
+                  <i class="fas fa-eye"></i> View Submissions
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteAssignment(${assignment.id})">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-tasks"></i>
+            <h3>No Assignments Created</h3>
+            <p>Create assignments to give students tasks and assessments.</p>
+            <button class="btn btn-primary" onclick="showCreateAssignmentModal()">
+              <i class="fas fa-plus"></i> Create First Assignment
+            </button>
+          </div>
+        `;
+      }
+      
+      // Update stats
+      document.getElementById('assignments-count').textContent = data.assignments ? data.assignments.length : 0;
+    })
+    .catch(error => {
+      console.error('Error loading assignments:', error);
+      document.getElementById('assignments-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Assignments</h3>
+          <p>Failed to load assignments. Please try again.</p>
+          <button class="btn btn-primary" onclick="loadAssignments()">Retry</button>
+        </div>
+      `;
+    });
+}
+
+function loadMaterials() {
+  fetch(`/admin/api/classes/${classId}/materials`)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('materials-container');
+      
+      if (data.materials && data.materials.length > 0) {
+        let html = '<div class="content-grid">';
+        
+        data.materials.forEach(material => {
+          html += `
+            <div class="content-item">
+              <div class="item-header">
+                <h4 class="item-title">${material.title}</h4>
+                <div>
+                  ${material.material_type ? `<span class="badge me-2">${material.material_type}</span>` : ''}
+                  ${material.file_size ? `<span class="badge">${material.file_size}</span>` : ''}
+                </div>
+              </div>
+              <p class="item-description">${material.description || 'No description provided'}</p>
+              ${material.file_url ? `<p class="item-meta"><i class="fas fa-download"></i> <a href="${material.file_url}" target="_blank">Download File</a></p>` : ''}
+              
+              <div class="item-actions">
+                <button class="btn btn-secondary btn-sm" onclick="editMaterial(${material.id})">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                ${material.file_url ? `<button class="btn btn-info btn-sm" onclick="window.open('${material.file_url}', '_blank')">
+                  <i class="fas fa-external-link-alt"></i> View
+                </button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteMaterial(${material.id})">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-file-alt"></i>
+            <h3>No Materials Uploaded</h3>
+            <p>Upload materials like documents, videos, or links for your students.</p>
+            <button class="btn btn-primary" onclick="showCreateMaterialModal()">
+              <i class="fas fa-plus"></i> Upload First Material
+            </button>
+          </div>
+        `;
+      }
+      
+      // Update stats
+      document.getElementById('materials-count').textContent = data.materials ? data.materials.length : 0;
+    })
+    .catch(error => {
+      console.error('Error loading materials:', error);
+      document.getElementById('materials-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h3>Error Loading Materials</h3>
+          <p>Failed to load materials. Please try again.</p>
+          <button class="btn btn-primary" onclick="loadMaterials()">Retry</button>
+        </div>
+      `;
+    });
+}
+
+function manageLessons(moduleId) {
+  // Create lessons management modal
+  const lessonsModal = document.createElement('div');
+  lessonsModal.className = 'modal fade';
+  lessonsModal.innerHTML = `
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Manage Lessons - Module ${moduleId}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6>Module Lessons</h6>
+            <button class="btn btn-primary btn-sm" onclick="addNewLesson(${moduleId})">
+              <i class="fas fa-plus"></i> Add Lesson
+            </button>
+          </div>
+          <div id="lessonsContainer">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i> Loading lessons...
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(lessonsModal);
+  const modal = new bootstrap.Modal(lessonsModal);
+  modal.show();
+  
+  // Load lessons for this module
+  fetch(`/admin/api/classes/${classId}/modules/${moduleId}/lessons`)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('lessonsContainer');
+      
+      if (data.lessons && data.lessons.length > 0) {
+        let html = '<div class="lessons-list">';
+        
+        data.lessons.forEach((lesson, index) => {
+          html += `
+            <div class="lesson-item" draggable="true" data-lesson-id="${lesson.id}">
+              <div class="lesson-header">
+                <div class="lesson-info">
+                  <span class="lesson-number">${index + 1}</span>
+                  <h6 class="lesson-title">${lesson.title}</h6>
+                  <small class="lesson-duration">${lesson.estimated_duration || 30} min</small>
+                </div>
+                <div class="lesson-actions">
+                  <button class="btn btn-sm btn-secondary" onclick="editLesson(${lesson.id})">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteLesson(${lesson.id})">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <p class="lesson-description">${lesson.description || 'No description'}</p>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h6>No Lessons in This Module</h6>
+            <p>Add lessons to structure your module content.</p>
+            <button class="btn btn-primary" onclick="addNewLesson(${moduleId})">
+              <i class="fas fa-plus"></i> Add First Lesson
+            </button>
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error loading lessons:', error);
+      document.getElementById('lessonsContainer').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <h6>Error Loading Lessons</h6>
+          <p>Failed to load lessons for this module.</p>
+        </div>
+      `;
+    });
+  
+  // Clean up when modal is hidden
+  lessonsModal.addEventListener('hidden.bs.modal', () => {
+    document.body.removeChild(lessonsModal);
+  });
+}
+
+function showCreateAssignmentModal() {
+  const modal = new bootstrap.Modal(document.getElementById('createAssignmentModal'));
+  modal.show();
+}
+
+function showCreateMaterialModal() {
+  const modal = new bootstrap.Modal(document.getElementById('createMaterialModal'));
+  modal.show();
+}
+
+function createAssignment() {
+  const title = document.getElementById('assignmentTitle').value.trim();
+  const description = document.getElementById('assignmentDescription').value.trim();
+  const instructions = document.getElementById('assignmentInstructions').value.trim();
+  const dueDate = document.getElementById('assignmentDueDate').value;
+  const points = document.getElementById('assignmentPoints').value;
+  const published = document.getElementById('assignmentPublished').checked;
+  
+  if (!title || !description) {
+    alert('Please fill in all required fields.');
+    return;
+  }
+  
+  const assignmentData = {
+    title: title,
+    description: description,
+    instructions: instructions,
+    due_date: dueDate || null,
+    points: points ? parseInt(points) : null,
+    is_published: published
+  };
+  
+  fetch(`/admin/api/classes/${classId}/assignments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(assignmentData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Assignment created successfully!', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('createAssignmentModal')).hide();
+      document.getElementById('createAssignmentForm').reset();
+      loadAssignments();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to create assignment'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error creating assignment:', error);
+    showNotification('Failed to create assignment. Please try again.', 'error');
+  });
+}
+
+function createMaterial() {
+  const title = document.getElementById('materialTitle').value.trim();
+  const description = document.getElementById('materialDescription').value.trim();
+  const materialType = document.getElementById('materialType').value;
+  const fileInput = document.getElementById('materialFile');
+  const linkUrl = document.getElementById('materialLink').value.trim();
+  const published = document.getElementById('materialPublished').checked;
+  
+  if (!title) {
+    alert('Please enter a material title.');
+    return;
+  }
+  
+  if (materialType === 'file' && !fileInput.files[0]) {
+    alert('Please select a file to upload.');
+    return;
+  }
+  
+  if (materialType === 'link' && !linkUrl) {
+    alert('Please enter a link URL.');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('description', description);
+  formData.append('material_type', materialType);
+  formData.append('is_published', published);
+  
+  if (materialType === 'file' && fileInput.files[0]) {
+    formData.append('file', fileInput.files[0]);
+  } else if (materialType === 'link') {
+    formData.append('link_url', linkUrl);
+  }
+  
+  fetch(`/admin/api/classes/${classId}/materials`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Material uploaded successfully!', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('createMaterialModal')).hide();
+      document.getElementById('createMaterialForm').reset();
+      loadMaterials();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to upload material'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error uploading material:', error);
+    showNotification('Failed to upload material. Please try again.', 'error');
+  });
+}
+
+function deleteAssignment(assignmentId) {
+  if (!confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+    return;
+  }
+  
+  fetch(`/admin/api/classes/${classId}/assignments/${assignmentId}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Assignment deleted successfully!', 'success');
+      loadAssignments();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to delete assignment'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error deleting assignment:', error);
+    showNotification('Failed to delete assignment. Please try again.', 'error');
+  });
+}
+
+function deleteMaterial(materialId) {
+  if (!confirm('Are you sure you want to delete this material? This action cannot be undone.')) {
+    return;
+  }
+  
+  fetch(`/admin/api/classes/${classId}/materials/${materialId}`, {
+    method: 'DELETE'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showNotification('Material deleted successfully!', 'success');
+      loadMaterials();
+    } else {
+      showNotification('Error: ' + (data.error || 'Failed to delete material'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error deleting material:', error);
+    showNotification('Failed to delete material. Please try again.', 'error');
+  });
+}
+
+function editAssignment(assignmentId) {
+  alert('Assignment editing feature coming soon!');
+}
+
+function editMaterial(materialId) {
+  alert('Material editing feature coming soon!');
+}
+
+function viewAssignmentSubmissions(assignmentId) {
+  alert('Assignment submissions viewing feature coming soon!');
+}
+
+function addNewLesson(moduleId) {
+  alert('Add new lesson feature coming soon!');
+}
+
+function editLesson(lessonId) {
+  alert('Edit lesson feature coming soon!');
+}
+
+function deleteLesson(lessonId) {
+  if (!confirm('Are you sure you want to delete this lesson?')) {
+    return;
+  }
+  alert('Delete lesson feature coming soon!');
+}
+
+function editModule(moduleId) {
+  // Fetch module data and show edit modal
+  fetch(`/admin/api/classes/${classId}/modules/${moduleId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert('Error loading module: ' + data.error);
+        return;
+      }
+      
+      const module = data.module;
+      
+      // Populate the edit form
+      document.getElementById('editModuleId').value = module.id;
+      document.getElementById('editModuleTitle').value = module.title || '';
+      document.getElementById('editModuleNumber').value = module.module_number || '';
+      document.getElementById('editModuleDescription').value = module.description || '';
+      document.getElementById('editModuleLevel').value = module.level || 1;
+      document.getElementById('editEstimatedDuration').value = module.estimated_duration || 60;
+      document.getElementById('editModulePublished').checked = module.is_published || false;
+      document.getElementById('editSequentialCompletion').checked = module.requires_sequential_completion || false;
+      
+      // Populate learning objectives
+      populateEditObjectives(module.learning_objectives || []);
+      
+      // Update modal title with module info
+      document.querySelector('#editModuleModal .modal-title').textContent = 
+        `Edit Module: ${module.module_number} - ${module.title}`;
+      
+      // Show the modal
+      const modal = new bootstrap.Modal(document.getElementById('editModuleModal'));
+      modal.show();
+    })
+    .catch(error => {
+      console.error('Error fetching module:', error);
+      alert('Error loading module data');
+    });
+}
+
+function populateEditObjectives(objectives) {
+  const container = document.getElementById('editObjectivesContainer');
+  container.innerHTML = '';
+  
+  if (objectives.length === 0) {
+    // Add empty objective input
+    addEditObjective();
+  } else {
+    objectives.forEach((objective, index) => {
+      const objectiveDiv = document.createElement('div');
+      objectiveDiv.className = 'input-group mb-2';
+      objectiveDiv.innerHTML = `
+        <input type="text" class="form-control" placeholder="Enter learning objective" value="${objective}">
+        <button type="button" class="btn btn-danger" onclick="removeEditObjective(this)">
+          <i class="fas fa-minus"></i>
+        </button>
+      `;
+      container.appendChild(objectiveDiv);
+    });
+  }
+}
+
+function addEditObjective() {
+  const container = document.getElementById('editObjectivesContainer');
+  const objectiveDiv = document.createElement('div');
+  objectiveDiv.className = 'input-group mb-2';
+  objectiveDiv.innerHTML = `
+    <input type="text" class="form-control" placeholder="Enter learning objective">
+    <button type="button" class="btn btn-danger" onclick="removeEditObjective(this)">
+      <i class="fas fa-minus"></i>
+    </button>
+  `;
+  container.appendChild(objectiveDiv);
+}
+
+function removeEditObjective(button) {
+  const container = document.getElementById('editObjectivesContainer');
+  if (container.children.length > 1) {
+    button.parentElement.remove();
+  }
+}
+
+function updateModule() {
+  const moduleId = document.getElementById('editModuleId').value;
+  const title = document.getElementById('editModuleTitle').value.trim();
+  const moduleNumber = document.getElementById('editModuleNumber').value.trim();
+  const description = document.getElementById('editModuleDescription').value.trim();
+  const level = parseInt(document.getElementById('editModuleLevel').value);
+  const estimatedDuration = parseInt(document.getElementById('editEstimatedDuration').value);
+  const isPublished = document.getElementById('editModulePublished').checked;
+  const sequentialCompletion = document.getElementById('editSequentialCompletion').checked;
+  
+  // Collect learning objectives
+  const objectiveInputs = document.querySelectorAll('#editObjectivesContainer input[type="text"]');
+  const learningObjectives = Array.from(objectiveInputs)
+    .map(input => input.value.trim())
+    .filter(objective => objective !== '');
+  
+  // Validation
+  if (!title || !moduleNumber || !description) {
+    alert('Please fill in all required fields');
+    return;
+  }
+  
+  const moduleData = {
+    title: title,
+    module_number: moduleNumber,
+    description: description,
+    level: level,
+    estimated_duration: estimatedDuration,
+    learning_objectives: learningObjectives,
+    is_published: isPublished,
+    requires_sequential_completion: sequentialCompletion
+  };
+  
+  // Show loading state
+  const updateBtn = document.querySelector('#editModuleModal .btn-primary');
+  const originalText = updateBtn.textContent;
+  updateBtn.textContent = 'Updating...';
+  updateBtn.disabled = true;
+  
+  fetch(`/admin/api/classes/${classId}/modules/${moduleId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(moduleData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Close modal and refresh modules
+      bootstrap.Modal.getInstance(document.getElementById('editModuleModal')).hide();
+      loadModules();
+      
+      // Show success notification
+      showNotification('Module updated successfully!', 'success');
+    } else {
+      alert('Error updating module: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    console.error('Error updating module:', error);
+    alert('Error updating module');
+  })
+  .finally(() => {
+    // Reset button state
+    updateBtn.textContent = originalText;
+    updateBtn.disabled = false;
+  });
+}
+
+function editTopic(topicId) {
+  // Placeholder for topic editing
+  alert('Topic editing feature coming soon!');
+}
+
+function viewSimulation(simulationId) {
+  // Open simulation in new tab
+  window.open(`/admin/simulations/${simulationId}`, '_blank');
+}
+
+function refreshContent() {
+  loadModules();
+  loadTopics();
+  
+  // Show refresh notification
+  showNotification('Content refreshed successfully!', 'success');
+}
+
+function toggleMaterialInputs() {
+  const materialType = document.getElementById('materialType').value;
+  const fileSection = document.getElementById('fileUploadSection');
+  const linkSection = document.getElementById('linkInputSection');
+  
+  if (materialType === 'file') {
+    fileSection.style.display = 'block';
+    linkSection.style.display = 'none';
+    document.getElementById('materialFile').required = true;
+    document.getElementById('materialLink').required = false;
+  } else {
+    fileSection.style.display = 'none';
+    linkSection.style.display = 'block';
+    document.getElementById('materialFile').required = false;
+    document.getElementById('materialLink').required = true;
+  }
+}
+
+// Add CSS for lessons management
+const lessonStyles = document.createElement('style');
+lessonStyles.textContent = `
+  .lessons-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .lesson-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: move;
+    transition: all 0.3s ease;
+  }
+  
+  .lesson-item:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
+  }
+  
+  .lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .lesson-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .lesson-number {
+    background: var(--cyber-glow);
+    color: var(--background);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+  }
+  
+  .lesson-title {
+    margin: 0;
+    color: var(--text-primary);
+  }
+  
+  .lesson-duration {
+    color: var(--text-secondary);
+  }
+  
+  .lesson-actions {
+    display: flex;
+    gap: 6px;
+  }
+  
+  .lesson-description {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .content-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  .content-item:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  
+  .item-title {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.1rem;
+    flex: 1;
+  }
+  
+  .item-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+  
+  .item-description {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  
+  .item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .objectives-list {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+  }
+  
+  .objectives-list li {
+    margin-bottom: 4px;
+  }
+  
+  .badge {
+    background: var(--network-purple);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+  }
+`;
+document.head.appendChild(lessonStyles);
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    animation: slideInRight 0.3s ease;
+  `;
+  
+  notification.innerHTML = `
+    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 5000);
+}
+
+// Add CSS for notification animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

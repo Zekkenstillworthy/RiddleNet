@@ -1,8 +1,6 @@
-{% if user_context and user_context.get('is_admin') %}
-{% extends "admin/base.html" %}
-{% else %}
+
 {% extends "user/learning_base.html" %}
-{% endif %}
+
 
 {% block title %}{{ class_data.name or 'Class Portal' }} - RiddleNet{% endblock %}
 
@@ -167,6 +165,46 @@
 .stat-label {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.empty-description {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Disabled button state */
+.card-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(100, 116, 139, 0.3);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.card-button.disabled:hover {
+  background: rgba(100, 116, 139, 0.3);
+  border-color: rgba(100, 116, 139, 0.3);
+  transform: none;
 }
 
 /* Main content area */
@@ -396,89 +434,50 @@
       <!-- Class Modules Tab -->
       <div id="modules-sidebar" class="sidebar-content active">
         <div class="module-list">
-          {% if modules %}
-            {% for module in modules %}
-            <div class="module-item" onclick="selectModule({{ module.id }})">
-              <div class="module-number">Module {{ loop.index }}</div>
-              <div class="module-title">{{ module.name }}</div>
+          {% if class_modules %}
+            {% for module in class_modules %}
+            <div class="module-item" onclick="selectModule({{ module.id }}, '{{ module.type }}')">
+              <div class="module-number">
+                {% if module.module_number %}
+                  Module {{ module.module_number }}
+                {% else %}
+                  {{ loop.index }}
+                {% endif %}
+              </div>
+              <div class="module-title">{{ module.title }}</div>
               <div class="module-description">{{ module.description or 'Interactive learning module' }}</div>
-              <div class="module-progress">{{ module.progress or '0' }}% Complete</div>
-            </div>
-            {% endfor %}
-          {% elif lessons %}
-            {% for lesson in lessons %}
-            <div class="module-item" onclick="window.location.href='{{ lesson.url }}'">
-              <div class="module-number">{{ loop.index }}.</div>
-              <div class="module-title">{{ lesson.title }}</div>
-              <div class="module-description">{{ lesson.description or 'Interactive lesson content' }}</div>
-              <div class="module-progress">0%</div>
+              {% if module.learning_objectives %}
+                <div class="module-objectives">
+                  <strong>Objectives:</strong>
+                  <ul style="margin: 4px 0; padding-left: 16px; font-size: 0.8rem;">
+                    {% for objective in module.learning_objectives[:2] %}
+                      <li>{{ objective }}</li>
+                    {% endfor %}
+                    {% if module.learning_objectives|length > 2 %}
+                      <li>+ {{ module.learning_objectives|length - 2 }} more...</li>
+                    {% endif %}
+                  </ul>
+                </div>
+              {% endif %}
+              {% if module.total_lessons %}
+                <div class="module-meta" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                  {{ module.total_lessons }} lesson{{ 's' if module.total_lessons != 1 else '' }}
+                  {% if module.estimated_duration %} • {{ module.estimated_duration }} min{% endif %}
+                </div>
+              {% endif %}
+              <div class="module-progress">{{ module.completion_percentage or '0' }}% Complete</div>
             </div>
             {% endfor %}
           {% else %}
-            <!-- Default modules based on class type -->
-            {% if class_data.id == 7 %}
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_components_simulation') }}'">
-              <div class="module-number">1.1</div>
-              <div class="module-title">Introduction to Computer Networks</div>
-              <div class="module-description">Basic networking concepts and components</div>
-              <div class="module-progress">0%</div>
+            <!-- No modules configured - admin needs to add content through admin panel -->
+            <div class="empty-state">
+              <div class="empty-icon">📚</div>
+              <div class="empty-title">No Modules Available</div>
+              <div class="empty-description">
+                Class modules need to be configured through the admin panel.
+                <br>Contact your administrator to add course content.
+              </div>
             </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_osi_simulation') }}'">
-              <div class="module-number">1.2</div>
-              <div class="module-title">Network Architecture and Types</div>
-              <div class="module-description">Understanding network topologies and architectures</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_tcpip_simulation') }}'">
-              <div class="module-number">1.3</div>
-              <div class="module-title">OSI Model and Layered Architecture</div>
-              <div class="module-description">Seven-layer OSI model in detail</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking1_ethernet_simulation') }}'">
-              <div class="module-number">1.4</div>
-              <div class="module-title">TCP/IP Model</div>
-              <div class="module-description">Internet protocol suite fundamentals</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item">
-              <div class="module-number">2.1</div>
-              <div class="module-title">Ethernet Technology</div>
-              <div class="module-description">Ethernet standards and technologies</div>
-              <div class="module-progress">0%</div>
-            </div>
-            {% elif class_data.id == 9 %}
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_routing_fundamentals_simulation') }}'">
-              <div class="module-number">1.1</div>
-              <div class="module-title">Advanced Network Protocols</div>
-              <div class="module-description">Advanced routing and switching concepts</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_ospf_simulation') }}'">
-              <div class="module-number">1.2</div>
-              <div class="module-title">Dynamic Routing Protocols</div>
-              <div class="module-description">OSPF, EIGRP, and BGP routing protocols</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_vlan_simulation') }}'">
-              <div class="module-number">1.3</div>
-              <div class="module-title">Static vs Dynamic Routing</div>
-              <div class="module-description">Routing table management and optimization</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item" onclick="window.location.href='{{ url_for('user.networking2_security_simulation') }}'">
-              <div class="module-number">1.4</div>
-              <div class="module-title">Load Balancing</div>
-              <div class="module-description">Traffic distribution and load balancing techniques</div>
-              <div class="module-progress">0%</div>
-            </div>
-            <div class="module-item">
-              <div class="module-number">2.1</div>
-              <div class="module-title">Network Security Fundamentals</div>
-              <div class="module-description">Firewalls, VPNs, and security protocols</div>
-              <div class="module-progress">0%</div>
-            </div>
-            {% endif %}
           {% endif %}
         </div>
       </div>
@@ -491,15 +490,15 @@
             <span class="stat-label">Overall</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value">{{ modules|length or lessons|length or 5 }}</span>
+            <span class="stat-value">{{ class_modules|length }}</span>
             <span class="stat-label">Modules</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value">{{ simulations|length or static_simulations|length or 3 }}</span>
+            <span class="stat-value">{{ class_simulations|length }}</span>
             <span class="stat-label">Simulations</span>
           </div>
           <div class="stat-card">
-            <span class="stat-value">{{ question_groups|length or 1 }}</span>
+            <span class="stat-value">{{ question_groups|length }}</span>
             <span class="stat-label">Quizzes</span>
           </div>
         </div>
@@ -518,23 +517,18 @@
         <!-- Course Content Card -->
         <div class="content-card">
           <i class="fas fa-book-open card-icon"></i>
-          <h3 class="card-title">{{ class_data.name or 'Networking 1' }} Course</h3>
+          <h3 class="card-title">{{ class_data.name }} Course</h3>
           <p class="card-description">Learn computer networking fundamentals with interactive lessons</p>
-          {% if class_data.id == 7 %}
-          <a href="{{ url_for('user.networking_1') }}" class="card-button">
+          {% if class_modules %}
+          <a href="#" class="card-button" onclick="document.querySelector('.modules-tab').click()">
             <i class="fas fa-arrow-right"></i>
-            Start Learning
-          </a>
-          {% elif class_data.id == 9 %}
-          <a href="{{ url_for('user.networking_2') }}" class="card-button">
-            <i class="fas fa-arrow-right"></i>
-            Start Learning
+            Start Learning ({{ class_modules|length }} modules)
           </a>
           {% else %}
-          <button class="card-button" onclick="alert('Course content coming soon!')">
-            <i class="fas fa-arrow-right"></i>
-            Start Learning
-          </button>
+          <div class="card-button disabled">
+            <i class="fas fa-info-circle"></i>
+            No Course Content Available
+          </div>
           {% endif %}
         </div>
 
@@ -543,21 +537,16 @@
           <i class="fas fa-flask card-icon"></i>
           <h3 class="card-title">Interactive Simulations</h3>
           <p class="card-description">Hands-on practice with network components and protocols</p>
-          {% if class_data.id == 7 %}
-          <a href="{{ url_for('user.networking1_simulations') }}" class="card-button simulations-btn">
+          {% if class_simulations %}
+          <a href="{{ url_for('dynamic_simulations.simulations_dashboard') }}" class="card-button simulations-btn">
             <i class="fas fa-play"></i>
-            Practice with Live Demos
-          </a>
-          {% elif class_data.id == 9 %}
-          <a href="{{ url_for('user.networking2_simulations') }}" class="card-button simulations-btn">
-            <i class="fas fa-play"></i>
-            Practice with Live Demos
+            Start Simulations ({{ class_simulations|length }})
           </a>
           {% else %}
-          <button class="card-button simulations-btn" onclick="alert('Simulations coming soon!')">
-            <i class="fas fa-play"></i>
-            Practice with Live Demos
-          </button>
+          <div class="card-button simulations-btn disabled">
+            <i class="fas fa-info-circle"></i>
+            No Simulations Available
+          </div>
           {% endif %}
         </div>
 
@@ -620,8 +609,17 @@ function showSidebarTab(tabName) {
 }
 
 // Module selection
-function selectModule(moduleId) {
-  window.location.href = `/class/{{ class_data.id }}/module/${moduleId}`;
+function selectModule(moduleId, moduleType) {
+  if (moduleType === 'module') {
+    // Navigate to module detail page
+    window.location.href = `/class/{{ class_data.id }}/module/${moduleId}`;
+  } else if (moduleType === 'topic') {
+    // Navigate to topic content page or show topic content
+    window.location.href = `/class/{{ class_data.id }}/topic/${moduleId}`;
+  } else {
+    // Fallback to generic module page
+    window.location.href = `/class/{{ class_data.id }}/module/${moduleId}`;
+  }
 }
 
 // Assessment functions

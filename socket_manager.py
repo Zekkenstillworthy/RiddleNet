@@ -155,7 +155,7 @@ def register_handlers():
                 join_room(f'user_{user_id}')
                 join_room('all_users')
                 
-                # Check if user is admin and join admin room
+                # STRICT admin detection - only allow actual Admin model instances
                 is_admin = False
                 
                 # Method 1: Check if user is instance of Admin model (from admins table)
@@ -163,32 +163,12 @@ def register_handlers():
                     from admin.models.user import Admin
                     if isinstance(current_user, Admin):
                         is_admin = True
+                        print(f"🔐 Admin detected: {username} (instance of Admin model)")
                 except ImportError:
                     pass
                 
-                # Method 2: Check if user is instance of AdminUser model (from admin_users table)
-                if not is_admin:
-                    try:
-                        from admin.models.user import AdminUser
-                        if isinstance(current_user, AdminUser) and current_user.is_admin:
-                            is_admin = True
-                    except ImportError:
-                        pass
-                
-                # Method 3: Check for is_admin attribute
-                if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
-                    is_admin = True
-                
-                # Method 4: Check for admin role
-                if not is_admin and hasattr(current_user, 'role'):
-                    role = getattr(current_user, 'role', '').lower()
-                    if role in ['admin', 'super_admin', 'administrator']:
-                        is_admin = True
-                
-                # Method 5: Check table name directly
-                if not is_admin and hasattr(current_user, '__tablename__'):
-                    if current_user.__tablename__ in ['admins', 'admin_users']:
-                        is_admin = True
+                # REMOVED other methods to prevent user/admin confusion
+                # Only Admin model instances should join admin rooms
                 
                 if is_admin:
                     join_room('admin_room')

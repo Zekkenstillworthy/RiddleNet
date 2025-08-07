@@ -2,7 +2,39 @@
 Utility functions for optimized media handling
 """
 import os
-from flask import send_file, current_app
+import uuid
+from werkzeug.utils import secure_filename
+from flask import send_file, current_app, url_for
+
+def save_uploaded_file(file, subfolder='uploads'):
+    """
+    Save an uploaded file to the static folder with a unique filename
+    
+    Args:
+        file: Flask file upload object
+        subfolder: Subfolder within static to save the file
+        
+    Returns:
+        str: The URL path to the saved file
+    """
+    if not file or not file.filename:
+        raise ValueError("No file provided")
+    
+    # Secure the filename and add UUID to prevent conflicts
+    filename = secure_filename(file.filename)
+    name, ext = os.path.splitext(filename)
+    unique_filename = f"{name}_{uuid.uuid4().hex[:8]}{ext}"
+    
+    # Create upload directory if it doesn't exist
+    upload_dir = os.path.join(current_app.static_folder, subfolder)
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Save the file
+    file_path = os.path.join(upload_dir, unique_filename)
+    file.save(file_path)
+    
+    # Return the URL path
+    return url_for('static', filename=f'{subfolder}/{unique_filename}')
 
 def serve_optimized_video(filename, cache_timeout=43200):
     """

@@ -1,6 +1,7 @@
 """
 Module and Lesson Models for Dynamic Course Structure
 Supports hierarchical learning organization with sequential progression
+Includes user session tracking integration
 """
 
 from admin import db
@@ -278,7 +279,7 @@ class Lesson(db.Model):
 
 class ModuleProgress(db.Model):
     """
-    Track user progress through modules
+    Track user progress through modules with session integration
     """
     __tablename__ = 'module_progress'
     __table_args__ = {'extend_existing': True}
@@ -293,13 +294,18 @@ class ModuleProgress(db.Model):
     is_completed = db.Column(db.Boolean, default=False)
     current_lesson_id = db.Column(db.Integer, db.ForeignKey('lessons.id'), nullable=True)
     
+    # Session Tracking
+    total_time_spent = db.Column(db.Integer, default=0)  # Total time in seconds
+    session_count = db.Column(db.Integer, default=0)  # Number of sessions in this module
+    last_session_id = db.Column(db.String(255), nullable=True)  # Last session that accessed this module
+    
     # Timestamps
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
     last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
     
-    def update_progress(self):
-        """Update progress based on completed lessons"""
+    def update_progress(self, session_id=None):
+        """Update progress based on completed lessons and session data"""
         total_lessons = self.module.total_lessons
         if total_lessons > 0:
             self.progress_percentage = (self.completed_lessons / total_lessons) * 100
@@ -309,11 +315,31 @@ class ModuleProgress(db.Model):
                 self.completed_at = datetime.utcnow()
         
         self.last_accessed = datetime.utcnow()
+        
+        # Update session tracking
+        if session_id and session_id != self.last_session_id:
+            self.session_count += 1
+            self.last_session_id = session_id
+    
+    def add_session_time(self, seconds):
+        """Add time spent in this module during a session"""
+        self.total_time_spent += seconds
+        self.last_accessed = datetime.utcnow()
+    
+    @property
+    def total_time_hours(self):
+        """Get total time spent in hours"""
+        return round(self.total_time_spent / 3600, 2) if self.total_time_spent else 0
+    
+    @property
+    def total_time_minutes(self):
+        """Get total time spent in minutes"""
+        return round(self.total_time_spent / 60, 1) if self.total_time_spent else 0
 
 
 class LessonProgress(db.Model):
     """
-    Track user progress through individual lessons
+    Track user progress through individual lessons with session integration
     """
     __tablename__ = 'lesson_progress'
     __table_args__ = {'extend_existing': True}
@@ -327,13 +353,18 @@ class LessonProgress(db.Model):
     progress_percentage = db.Column(db.Float, default=0.0)
     is_completed = db.Column(db.Boolean, default=False)
     
+    # Session Tracking
+    total_time_spent = db.Column(db.Integer, default=0)  # Total time in seconds
+    session_count = db.Column(db.Integer, default=0)  # Number of sessions in this lesson
+    last_session_id = db.Column(db.String(255), nullable=True)  # Last session that accessed this lesson
+    
     # Timestamps
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
     last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
     
-    def update_progress(self):
-        """Update progress based on completed simulations"""
+    def update_progress(self, session_id=None):
+        """Update progress based on completed simulations and session data"""
         total_simulations = self.lesson.simulation_count
         if total_simulations > 0:
             self.progress_percentage = (self.completed_simulations / total_simulations) * 100
@@ -343,3 +374,18 @@ class LessonProgress(db.Model):
                 self.completed_at = datetime.utcnow()
         
         self.last_accessed = datetime.utcnow()
+        
+        # Update session tracking
+        if session_id and session_id != self.last_session_id:
+            self.session_count += 1
+            self.last_session_id = session_id
+    
+    def add_session_time(self, seconds):
+        """Add time spent in this lesson during a session"""
+        self.total_time_spent += seconds
+        self.last_accessed = datetime.utcnow()
+    
+    @property
+    def total_time_minutes(self):
+        """Get total time spent in minutes"""
+        return round(self.total_time_spent / 60, 1) if self.total_time_spent else 0

@@ -97,34 +97,16 @@ def emit_new_simulation_available(simulation_id: int, category: str, class_ids: 
         print(f"❌ Error sending new simulation notification: {str(e)}")
 
 def emit_new_learning_path_available(path_id: int, category: str, class_ids: List[int] = None):
-    """Notify users when new learning path is available"""
+    """Notify users when new learning path is available - DEPRECATED"""
     try:
-        from admin.models.learning_path import LearningPath
-        from admin.models.class_model import Class
-        from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
+        # Learning Path feature has been removed from RiddleNet
+        # This function now returns without doing anything
+        print(f"⚠️ Learning Path feature removed - ignoring emit for path_id: {path_id}")
+        return
         
-        learning_path = LearningPath.query.get(path_id)
-        if not learning_path:
-            return
-            
-        notification_data = {
-            'type': 'new_learning_path',
-            'path_id': path_id,
-            'title': learning_path.name,
-            'category': category,
-            'message': f'🚀 New learning path available: {learning_path.name}',
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Find affected classes
-        if class_ids:
-            affected_classes = Class.query.filter(Class.id.in_(class_ids)).all()
-        else:
-            affected_classes = Class.query.filter(
-                Class.name.ilike(f'%{category}%')
-            ).all()
-        
-        generator = EnhancedClassTemplateGenerator()
+    except Exception as e:
+        print(f"❌ Error in deprecated learning path notification: {e}")
+        return
         
         for class_obj in affected_classes:
             # Regenerate class template with new learning path

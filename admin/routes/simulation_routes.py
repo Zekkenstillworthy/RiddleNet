@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 from admin.controllers.simulation_controller import SimulationController
-from admin.controllers.learning_controller import LearningPathController
+# Learning controller removed - Learning Paths feature disabled
 from admin.services.assignment_service import assignment_service
 from socket_events import emit_new_simulation_available, emit_assignment_created
 import json
@@ -11,7 +11,7 @@ admin_simulation_bp = Blueprint('admin_simulation', __name__, url_prefix='/admin
 
 # Initialize controllers
 simulation_controller = SimulationController()
-learning_controller = LearningPathController()
+# learning_controller removed - Learning Paths feature disabled
 
 @admin_simulation_bp.route('/dashboard')
 @login_required
@@ -20,7 +20,8 @@ def simulation_dashboard():
     try:
         # Get dashboard data
         dashboard_data = simulation_controller.get_dashboard_data()
-        learning_data = learning_controller.get_dashboard_data()
+        # Learning data removed - Learning Paths feature disabled
+        learning_data = {'recent_paths': [], 'total_paths': 0, 'published_paths': 0}
         
         return render_template(
             'admin/simulation_dashboard.html',
@@ -268,62 +269,25 @@ def validate_step_response(simulation_id, step_index):
     except Exception as e:
         return jsonify({'error': f'Validation failed: {str(e)}'}), 500
 
-# Learning Path Integration Routes
+# Learning Path Integration Routes - DISABLED (Feature Removed)
 
 @admin_simulation_bp.route('/api/learning-paths', methods=['GET'])
 @login_required
 def get_learning_paths_api():
-    """Get all learning paths"""
-    try:
-        result = learning_controller.get_all_learning_paths()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Failed to get learning paths: {str(e)}'}), 500
+    """Get all learning paths - DISABLED"""
+    return jsonify({'learning_paths': [], 'message': 'Learning Paths feature has been removed'})
 
 @admin_simulation_bp.route('/api/learning-paths', methods=['POST'])
 @login_required
 def create_learning_path_api():
-    """Create a new learning path"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        simulation_ids = data.pop('simulation_ids', [])
-        result = learning_controller.create_learning_path_with_simulations(
-            data, simulation_ids, current_user.id
-        )
-        
-        if 'error' in result:
-            return jsonify(result), 400
-        
-        return jsonify(result), 201
-    except Exception as e:
-        return jsonify({'error': f'Failed to create learning path: {str(e)}'}), 500
+    """Create a new learning path - DISABLED"""
+    return jsonify({'error': 'Learning Paths feature has been removed'}), 410
 
 @admin_simulation_bp.route('/api/learning-paths/<int:path_id>/simulations', methods=['POST'])
 @login_required
 def add_simulation_to_path_api(path_id):
-    """Add simulation to learning path"""
-    try:
-        data = request.get_json()
-        if not data or 'simulation_id' not in data:
-            return jsonify({'error': 'Simulation ID required'}), 400
-        
-        result = learning_controller.add_simulation_to_path(
-            path_id,
-            data['simulation_id'],
-            data.get('order_index'),
-            data.get('is_required', True),
-            data.get('unlock_criteria')
-        )
-        
-        if 'error' in result:
-            return jsonify(result), 400
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'error': f'Failed to add simulation: {str(e)}'}), 500
+    """Add simulation to learning path - DISABLED"""
+    return jsonify({'error': 'Learning Paths feature has been removed'}), 410
 
 # Error Handlers
 @admin_simulation_bp.errorhandler(404)

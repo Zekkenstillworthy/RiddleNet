@@ -105,6 +105,18 @@ def create_app(config=None):
         from user.views import user_bp
         app.register_blueprint(user_bp)
         
+        # Register universal class routes
+        print("🔍 Attempting to register universal class routes...")
+        try:
+            from user.routes.universal_class_routes import universal_class_bp
+            print("🔍 Universal class blueprint imported successfully")
+            app.register_blueprint(universal_class_bp)
+            print("✅ Universal class routes registered successfully")
+        except Exception as e:
+            print(f"⚠️ Error registering universal class blueprint: {e}")
+            import traceback
+            traceback.print_exc()
+        
         # Register dynamic simulation routes blueprint
         try:
             from user.dynamic_simulation_routes import dynamic_sim_bp
@@ -123,6 +135,29 @@ def create_app(config=None):
         except Exception as e:
             print(f"Error registering API blueprint: {e}")
             # Continue without the API if it fails to load
+            
+        # Register admin blueprints
+        try:
+            from admin.controllers.auth_controller import auth_bp
+            app.register_blueprint(auth_bp, url_prefix='/admin')
+            print("✅ Admin auth blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin auth blueprint: {e}")
+            
+        try:
+            from admin.controllers.dashboard_controller import dashboard_bp
+            app.register_blueprint(dashboard_bp, url_prefix='/admin')
+            print("✅ Admin dashboard blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin dashboard blueprint: {e}")
+            
+        try:
+            from admin.controllers.class_content_controller import class_content_controller_old
+            app.register_blueprint(class_content_controller_old, url_prefix='/admin')
+            print("✅ Admin class content controller blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin class content controller blueprint: {e}")
+            
         '''
         
         # Print registered rules for debugging        print("Registered URL rules:")
@@ -148,23 +183,54 @@ def create_app(config=None):
     # Add global user context processor
     @app.context_processor
     def inject_user():
-        """Inject user information into all templates"""
+        """Inject user information into all templates - CRITICAL FIX: Complete admin/user separation"""
         from flask_login import current_user
-        from flask import session
+        from flask import session, request
         
         # Debug: Print current request info
         try:
-            from flask import request
             path = request.path if request else "unknown"
         except:
             path = "unknown"
         
-        # First, try to get user from Flask-Login (current_user)
-        if current_user.is_authenticated:
-            print(f"Context processor [{path}]: Found authenticated user via Flask-Login: {current_user.username}")
-            return dict(user=current_user)
+        # CRITICAL FIX: Strict admin route isolation
+        if path.startswith('/admin'):
+            # Admin routes: ONLY use Flask-Login admin authentication
+            if current_user.is_authenticated:
+                from admin.models.user import Admin
+                if isinstance(current_user, Admin):
+                    print(f"Context processor [{path}]: Admin route - authenticated admin: {current_user.username}")
+                    return dict(user=current_user)
+                else:
+                    print(f"Context processor [{path}]: Admin route - non-admin user BLOCKED")
+                    return dict(user=None)
+            else:
+                print(f"Context processor [{path}]: Admin route - no authentication")
+                return dict(user=None)
         
-        # If not authenticated via Flask-Login, try session-based authentication
+        # ENHANCED FIX: User routes with proper admin support for class routes
+        if current_user.is_authenticated:
+            from user.models.user import User
+            from admin.models.user import Admin
+            
+            if isinstance(current_user, User):
+                print(f"Context processor [{path}]: User route - authenticated user: {current_user.username}")
+                return dict(user=current_user)
+            elif isinstance(current_user, Admin):
+                # FIXED: Allow admin access to class routes with proper admin context
+                if '/class/' in path:
+                    print(f"Context processor [{path}]: Admin {current_user.username} accessing class route - allowed")
+                    # Return admin as user for proper template rendering in class views
+                    return dict(user=current_user)
+                
+                # Allow admin access to other user routes
+                print(f"Context processor [{path}]: Admin {current_user.username} accessing user route - allowed with admin context")
+                return dict(user=current_user)
+            else:
+                print(f"Context processor [{path}]: User route - unknown user type BLOCKED")
+                return dict(user=None)
+        
+        # Session-based authentication for user routes only (no admin fallback)
         if 'user_id' in session:
             try:
                 from user.models.user import User
@@ -173,12 +239,14 @@ def create_app(config=None):
                     print(f"Context processor [{path}]: Found user via session: {user.username}")
                     return dict(user=user)
                 else:
-                    print(f"Context processor [{path}]: User ID {session['user_id']} not found in database")
+                    print(f"Context processor [{path}]: User ID {session['user_id']} not found - clearing session")
+                    session.pop('user_id', None)
             except Exception as e:
                 print(f"Context processor [{path}]: Error getting user from session: {e}")
+                session.pop('user_id', None)
         
-        # No user found - this will result in "U User" fallback
-        print(f"Context processor [{path}]: No user found in session or current_user")
+        # No user found
+        print(f"Context processor [{path}]: No user found")
         return dict(user=None)
     
     # Register template helpers

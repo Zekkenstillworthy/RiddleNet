@@ -1,0 +1,1001 @@
+<!-- Module Preview Template - Identical to Student View -->
+<!-- This template renders exactly what students see when accessing a module -->
+
+<!-- Preview Mode Indicator -->
+<div class="preview-mode-indicator" style="position: sticky; top: 0; z-index: 1000; background: linear-gradient(135deg, #FF9800, #FF5722); color: white; padding: 8px 16px; text-align: center; font-weight: 600; font-size: 0.9rem; box-shadow: 0 2px 10px rgba(255, 152, 0, 0.3);">
+    <i class="fas fa-eye" style="margin-right: 8px;"></i>
+    ADMIN PREVIEW MODE - This is exactly what students see
+    <i class="fas fa-graduation-cap" style="margin-left: 8px;"></i>
+</div>
+
+<div class="student-module-view-container">
+    <!-- Module Header - Exact replica of student interface -->
+    <div class="module-header-student">
+        <div class="module-breadcrumb">
+            <span class="breadcrumb-item">
+                <i class="fas fa-home"></i> 
+                <span class="class-name">{{ class_name }}</span>
+            </span>
+            <i class="fas fa-chevron-right breadcrumb-separator"></i>
+            <span class="breadcrumb-item active">
+                <i class="fas fa-book"></i>
+                Module {{ module.module_number or 'N/A' }}
+            </span>
+        </div>
+        
+        <div class="module-title-section">
+            <h1 class="module-title-main">{{ module.title or 'Untitled Module' }}</h1>
+            <div class="module-meta-info">
+                <span class="module-badge">
+                    <i class="fas fa-layer-group"></i>
+                    Module {{ module.module_number or 'N/A' }}
+                </span>
+                <span class="module-duration">
+                    <i class="fas fa-clock"></i>
+                    {{ module.estimated_duration or 60 }} minutes
+                </span>
+                <span class="module-level">
+                    <i class="fas fa-signal"></i>
+                    {{ module.level or 'Beginner' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Progress Bar - As students see it -->
+    <div class="module-progress-container">
+        <div class="progress-header">
+            <span class="progress-label">Your Progress</span>
+            <span class="progress-percentage">0% Complete</span>
+        </div>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+        <div class="progress-stats">
+            <span class="lesson-count">
+                <i class="fas fa-list"></i>
+                {{ module.lessons|length or 0 }} lessons
+            </span>
+            <span class="time-estimate">
+                <i class="fas fa-hourglass-half"></i>
+                Est. {{ module.estimated_duration or 60 }} min
+            </span>
+        </div>
+    </div>
+
+    <!-- Module Description Section -->
+    {% if module.description %}
+    <div class="module-description-section">
+        <h3 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            About This Module
+        </h3>
+        <div class="description-content">
+            <p>{{ module.description }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Learning Objectives Section -->
+    {% if module.learning_objectives and module.learning_objectives|length > 0 %}
+    <div class="learning-objectives-section">
+        <h3 class="section-title">
+            <i class="fas fa-bullseye"></i>
+            Learning Objectives
+        </h3>
+        <div class="objectives-container">
+            <p class="objectives-intro">By the end of this module, you will be able to:</p>
+            <ul class="objectives-list">
+                {% for objective in module.learning_objectives %}
+                <li class="objective-item">
+                    <i class="fas fa-check-circle objective-icon"></i>
+                    <span>{{ objective }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Module Content Sections -->
+    <div class="module-content-sections">
+        
+        <!-- Lessons Section -->
+        <div class="content-section lessons-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Course Lessons
+                    <span class="lesson-counter">({{ module.lessons|length or 0 }} lessons)</span>
+                </h3>
+                <div class="section-actions">
+                    <button class="action-btn start-learning-btn">
+                        <i class="fas fa-play"></i>
+                        Start Learning
+                    </button>
+                </div>
+            </div>
+            
+            <div class="lessons-container">
+                {% if module.lessons and module.lessons|length > 0 %}
+                    {% for lesson in module.lessons %}
+                    <div class="lesson-card student-lesson-card" data-lesson-id="{{ lesson.id }}">
+                        <div class="lesson-header">
+                            <div class="lesson-number">
+                                <span class="lesson-index">{{ loop.index }}</span>
+                            </div>
+                            <div class="lesson-info">
+                                <h4 class="lesson-title">{{ lesson.title or 'Untitled Lesson' }}</h4>
+                                <p class="lesson-description">{{ lesson.description or 'No description available' }}</p>
+                            </div>
+                            <div class="lesson-meta">
+                                <span class="lesson-type">
+                                    <i class="fas fa-book-open"></i>
+                                    {{ lesson.type or 'Lesson' }}
+                                </span>
+                                {% if lesson.duration %}
+                                <span class="lesson-duration">
+                                    <i class="fas fa-clock"></i>
+                                    {{ lesson.duration }} min
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if lesson.content %}
+                        <div class="lesson-preview">
+                            <div class="preview-content">
+                                <p class="preview-text">
+                                    {{ lesson.content[:150] }}{{ '...' if lesson.content|length > 150 else '' }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="lesson-actions">
+                            <button class="lesson-action-btn primary" onclick="startLesson({{ lesson.id }})">
+                                <i class="fas fa-play"></i>
+                                Start Lesson
+                            </button>
+                            <button class="lesson-action-btn secondary" onclick="previewLesson({{ lesson.id }})">
+                                <i class="fas fa-eye"></i>
+                                Preview
+                            </button>
+                        </div>
+                        
+                        <div class="lesson-progress">
+                            <div class="progress-indicator">
+                                <div class="progress-circle">
+                                    <i class="fas fa-circle-notch"></i>
+                                </div>
+                                <span class="progress-text">Not Started</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h4 class="empty-title">No Lessons Available</h4>
+                        <p class="empty-description">
+                            Lessons for this module haven't been created yet. Check back later or contact your instructor.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Materials Section -->
+        {% if module.materials and module.materials|length > 0 %}
+        <div class="content-section materials-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-folder-open"></i>
+                    Course Materials
+                    <span class="material-counter">({{ module.materials|length }} items)</span>
+                </h3>
+            </div>
+            
+            <div class="materials-container">
+                {% for material in module.materials %}
+                <div class="material-card student-material-card" data-material-id="{{ material.id }}">
+                    <div class="material-header">
+                        <div class="material-icon">
+                            {% if material.type == 'video' %}
+                                <i class="fas fa-play-circle"></i>
+                            {% elif material.type == 'document' %}
+                                <i class="fas fa-file-alt"></i>
+                            {% elif material.type == 'image' %}
+                                <i class="fas fa-image"></i>
+                            {% elif material.type == 'link' %}
+                                <i class="fas fa-external-link-alt"></i>
+                            {% elif material.type == 'archive' %}
+                                <i class="fas fa-file-archive"></i>
+                            {% else %}
+                                <i class="fas fa-file"></i>
+                            {% endif %}
+                        </div>
+                        <div class="material-info">
+                            <h4 class="material-title">{{ material.title or 'Untitled Material' }}</h4>
+                            <p class="material-description">{{ material.description or 'No description available' }}</p>
+                            {% if material.filename %}
+                            <div class="material-file-info">
+                                <span class="file-name">
+                                    <i class="fas fa-file"></i>
+                                    {{ material.filename }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="material-actions">
+                            <button class="material-action-btn primary" onclick="openMaterial({{ material.id }})">
+                                <i class="fas fa-external-link-alt"></i>
+                                Open
+                            </button>
+                            {% if material.file_url %}
+                            <button class="material-action-btn secondary" onclick="downloadMaterial('{{ material.file_url }}')">
+                                <i class="fas fa-download"></i>
+                                Download
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Assessment Section -->
+        <div class="content-section assessment-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-clipboard-check"></i>
+                    Module Assessment
+                </h3>
+            </div>
+            
+            <div class="assessment-container">
+                <div class="assessment-card">
+                    <div class="assessment-info">
+                        <h4 class="assessment-title">{{ module.title }} Quiz</h4>
+                        <p class="assessment-description">
+                            Test your understanding of the concepts covered in this module.
+                        </p>
+                        <div class="assessment-meta">
+                            <span class="question-count">
+                                <i class="fas fa-question-circle"></i>
+                                Multiple questions
+                            </span>
+                            <span class="time-limit">
+                                <i class="fas fa-stopwatch"></i>
+                                No time limit
+                            </span>
+                        </div>
+                    </div>
+                    <div class="assessment-actions">
+                        <button class="assessment-btn primary" onclick="startAssessment()">
+                            <i class="fas fa-play"></i>
+                            Start Assessment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Navigation Footer -->
+    <div class="module-navigation-footer">
+        <div class="nav-actions">
+            <button class="nav-btn secondary" onclick="goBackToClass()">
+                <i class="fas fa-arrow-left"></i>
+                Back to Class
+            </button>
+            <button class="nav-btn primary" onclick="continueToNext()">
+                Continue to Next Module
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+        
+        <div class="module-info-footer">
+            <div class="completion-status">
+                <i class="fas fa-circle-notch status-icon"></i>
+                <span class="status-text">Module not started</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student View Styling - Identical to what students see -->
+<style>
+.student-module-view-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--surface, #1a1b2e);
+    color: var(--text-primary, #ffffff);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+}
+
+/* Module Header Styling */
+.module-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.breadcrumb-item.active {
+    color: var(--cyber-glow, #00D9FF);
+    font-weight: 600;
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 0.75rem;
+}
+
+.module-title-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.module-title-main {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--network-purple, #8B5CF6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+.module-meta-info {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.module-meta-info span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.module-badge {
+    background: rgba(0, 217, 255, 0.1);
+    color: var(--cyber-glow, #00D9FF);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* Progress Bar Styling */
+.module-progress-container {
+    background: rgba(26, 35, 126, 0.4);
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.progress-label {
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+}
+
+.progress-percentage {
+    font-weight: 700;
+    color: var(--cyber-glow, #00D9FF);
+}
+
+.progress-bar-wrapper {
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyber-glow, #00D9FF), var(--neon-green, #39FF14));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-stats {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.progress-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Content Sections */
+.module-content-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+.content-section {
+    background: rgba(26, 35, 126, 0.3);
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--cyber-glow, #00D9FF);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.lesson-counter, .material-counter {
+    font-size: 0.9rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    font-weight: 400;
+}
+
+/* Action Buttons */
+.action-btn, .start-learning-btn {
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--neon-green, #39FF14));
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.action-btn:hover, .start-learning-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Lesson Cards */
+.lessons-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.lesson-card {
+    background: var(--card-bg, rgba(26, 35, 126, 0.6));
+    border: 2px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.lesson-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cyber-glow, #00D9FF), var(--neon-green, #39FF14));
+}
+
+.lesson-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 217, 255, 0.3);
+    border-color: var(--cyber-glow, #00D9FF);
+}
+
+.lesson-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.lesson-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--network-purple, #8B5CF6));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.lesson-info {
+    flex: 1;
+}
+
+.lesson-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin: 0 0 0.5rem 0;
+}
+
+.lesson-description {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    margin: 0;
+    line-height: 1.5;
+}
+
+.lesson-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.lesson-type, .lesson-duration {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.lesson-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.preview-text {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    margin: 0;
+    font-style: italic;
+}
+
+.lesson-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.lesson-action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.lesson-action-btn.primary {
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--network-purple, #8B5CF6));
+    color: white;
+}
+
+.lesson-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+}
+
+.lesson-action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.lesson-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.progress-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 0.9rem;
+}
+
+.progress-circle {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+/* Material Cards */
+.materials-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.material-card {
+    background: var(--card-bg, rgba(26, 35, 126, 0.6));
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.material-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--cyber-glow, #00D9FF);
+    box-shadow: 0 8px 20px rgba(0, 217, 255, 0.2);
+}
+
+.material-header {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.material-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--network-purple, #8B5CF6));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.material-info {
+    flex: 1;
+}
+
+.material-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin: 0 0 0.5rem 0;
+}
+
+.material-description {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+}
+
+.material-file-info {
+    margin-top: 0.5rem;
+}
+
+.file-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.material-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.material-action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.material-action-btn.primary {
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--network-purple, #8B5CF6));
+    color: white;
+}
+
+.material-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+}
+
+/* Assessment Section */
+.assessment-container {
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid var(--network-purple, #8B5CF6);
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.assessment-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.assessment-info {
+    flex: 1;
+}
+
+.assessment-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin: 0 0 0.5rem 0;
+}
+
+.assessment-description {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    margin: 0 0 1rem 0;
+}
+
+.assessment-meta {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.assessment-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.assessment-btn {
+    background: linear-gradient(135deg, var(--network-purple, #8B5CF6), #e056fd);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.assessment-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+/* Navigation Footer */
+.module-navigation-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.nav-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-btn.primary {
+    background: linear-gradient(135deg, var(--cyber-glow, #00D9FF), var(--neon-green, #39FF14));
+    color: white;
+}
+
+.nav-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #ffffff);
+    border: 1px solid var(--border-glow, rgba(0, 217, 255, 0.3));
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+}
+
+.completion-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.status-icon {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--border-glow, rgba(0, 217, 255, 0.3));
+    margin-bottom: 1rem;
+}
+
+.empty-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary, #ffffff);
+    margin: 0 0 0.5rem 0;
+}
+
+.empty-description {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .student-module-view-container {
+        padding: 1rem;
+    }
+    
+    .module-title-main {
+        font-size: 2rem;
+    }
+    
+    .module-meta-info {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .lesson-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .lesson-meta {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 1rem;
+    }
+    
+    .assessment-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .module-navigation-footer {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .materials-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Preview functionality - matches student interface behavior
+function startLesson(lessonId) {
+    alert(`This would start lesson ${lessonId} in the actual student interface`);
+}
+
+function previewLesson(lessonId) {
+    alert(`This would preview lesson ${lessonId} in the actual student interface`);
+}
+
+function openMaterial(materialId) {
+    alert(`This would open material ${materialId} in the actual student interface`);
+}
+
+function downloadMaterial(fileUrl) {
+    alert(`This would download the material from ${fileUrl} in the actual student interface`);
+}
+
+function startAssessment() {
+    alert('This would start the module assessment in the actual student interface');
+}
+
+function goBackToClass() {
+    alert('This would navigate back to the class dashboard in the actual student interface');
+}
+
+function continueToNext() {
+    alert('This would continue to the next module in the actual student interface');
+}
+
+// Initialize preview with realistic student data
+document.addEventListener('DOMContentLoaded', function() {
+    // Simulate student progress
+    const progressElements = document.querySelectorAll('.progress-indicator');
+    progressElements.forEach((element, index) => {
+        // Simulate different completion states
+        const statuses = ['Not Started', 'In Progress', 'Completed'];
+        const icons = ['fa-circle-notch', 'fa-clock', 'fa-check-circle'];
+        const colors = ['var(--text-muted)', 'var(--cyber-glow)', 'var(--neon-green)'];
+        
+        const status = statuses[index % 3];
+        const icon = icons[index % 3];
+        const color = colors[index % 3];
+        
+        element.querySelector('.progress-circle i').className = `fas ${icon}`;
+        element.querySelector('.progress-text').textContent = status;
+        element.style.color = color;
+    });
+    
+    console.log('Module Preview loaded - identical to student view');
+});
+</script>
