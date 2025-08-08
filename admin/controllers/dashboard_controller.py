@@ -519,56 +519,58 @@ def class_content_manager():
             class_modules = []
             
         # Always log module loading status for debugging
-        current_app.logger.info(f"🔍 Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")            # Get class-specific content (NEW: Dynamic content from database)
-            try:
-                class_announcements = ClassAnnouncement.query.filter_by(
-                    class_id=selected_class.id,
-                    is_published=True
-                ).order_by(ClassAnnouncement.created_at.desc()).all()
-            except Exception as e:
-                current_app.logger.error(f"Error querying announcements with is_published filter: {e}")
-                # Fallback: Get all announcements for this class without the is_published filter
-                class_announcements = ClassAnnouncement.query.filter_by(
-                    class_id=selected_class.id
-                ).order_by(ClassAnnouncement.created_at.desc()).all()
-            
-            try:
-                class_assignments = ClassAssignment.query.filter_by(
-                    class_id=selected_class.id,
-                    is_published=True
-                ).order_by(ClassAssignment.due_date.asc()).all()
-            except Exception as e:
-                current_app.logger.error(f"Error querying assignments with is_published filter: {e}")
-                # Fallback: Get all assignments for this class
-                class_assignments = ClassAssignment.query.filter_by(
-                    class_id=selected_class.id
-                ).order_by(ClassAssignment.created_at.desc()).all()
-            
-            try:
-                class_materials = ClassMaterial.query.filter_by(
-                    class_id=selected_class.id,
-                    is_published=True
-                ).order_by(ClassMaterial.created_at.desc()).all()
-            except Exception as e:
-                current_app.logger.error(f"Error querying materials with is_published filter: {e}")
-                # Fallback: Get all materials for this class
-                class_materials = ClassMaterial.query.filter_by(
-                    class_id=selected_class.id
-                ).order_by(ClassMaterial.created_at.desc()).all()
-            
-            # Get class topics with error handling
-            try:
-                class_topics = ClassTopic.query.filter_by(
-                    class_id=selected_class.id
-                ).order_by(ClassTopic.sort_order.asc()).all()
-            except Exception as e:
-                current_app.logger.error(f"Error querying class topics: {e}")
-                # Create empty list if query fails
-                class_topics = []
-            
-            # Get enrolled students and their details
-            enrolled_students = selected_class.students.all() if selected_class.students else []
-            student_count = len(enrolled_students)
+        current_app.logger.info(f"🔍 Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")
+        
+        # Get class-specific content (NEW: Dynamic content from database)
+        try:
+            class_announcements = ClassAnnouncement.query.filter_by(
+                class_id=selected_class.id,
+                is_published=True
+            ).order_by(ClassAnnouncement.created_at.desc()).all()
+        except Exception as e:
+            current_app.logger.error(f"Error querying announcements with is_published filter: {e}")
+            # Fallback: Get all announcements for this class without the is_published filter
+            class_announcements = ClassAnnouncement.query.filter_by(
+                class_id=selected_class.id
+            ).order_by(ClassAnnouncement.created_at.desc()).all()
+        
+        try:
+            class_assignments = ClassAssignment.query.filter_by(
+                class_id=selected_class.id,
+                is_published=True
+            ).order_by(ClassAssignment.due_date.asc()).all()
+        except Exception as e:
+            current_app.logger.error(f"Error querying assignments with is_published filter: {e}")
+            # Fallback: Get all assignments for this class
+            class_assignments = ClassAssignment.query.filter_by(
+                class_id=selected_class.id
+            ).order_by(ClassAssignment.created_at.desc()).all()
+        
+        try:
+            class_materials = ClassMaterial.query.filter_by(
+                class_id=selected_class.id,
+                is_published=True
+            ).order_by(ClassMaterial.created_at.desc()).all()
+        except Exception as e:
+            current_app.logger.error(f"Error querying materials with is_published filter: {e}")
+            # Fallback: Get all materials for this class
+            class_materials = ClassMaterial.query.filter_by(
+                class_id=selected_class.id
+            ).order_by(ClassMaterial.created_at.desc()).all()
+        
+        # Get class topics with error handling
+        try:
+            class_topics = ClassTopic.query.filter_by(
+                class_id=selected_class.id
+            ).order_by(ClassTopic.sort_order.asc()).all()
+        except Exception as e:
+            current_app.logger.error(f"Error querying class topics: {e}")
+            # Create empty list if query fails
+            class_topics = []
+        
+        # Get enrolled students and their details
+        enrolled_students = selected_class.students.all() if selected_class.students else []
+        student_count = len(enrolled_students)
             
         # Build comprehensive class content dictionary
         class_content = {
@@ -624,23 +626,25 @@ def class_content_manager():
         }
         
         # Log module count for debugging
-        current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")            # Build comprehensive statistics
-            class_statistics = {
-                'total_students': student_count,
-                'total_simulations': len(class_simulations),
-                'total_question_groups': len(question_groups),
-                'total_modules': len(class_modules),
-                'total_announcements': len(class_announcements),
-                'total_assignments': len(class_assignments),
-                'total_materials': len(class_materials),
-                'total_topics': len(class_topics),
-                'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
-                'completion_rate': 85.5,  # Calculate actual completion rate from database
-                'average_score': 78.2     # Calculate actual average score from database
-            }
-            
-            current_app.logger.info(f"Class content for {selected_class.name}: {class_statistics}")
-            current_app.logger.info(f"*** Updated with modules support ***")
+        current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")
+        
+        # Build comprehensive statistics
+        class_statistics = {
+            'total_students': student_count,
+            'total_simulations': len(class_simulations),
+            'total_question_groups': len(question_groups),
+            'total_modules': len(class_modules),
+            'total_announcements': len(class_announcements),
+            'total_assignments': len(class_assignments),
+            'total_materials': len(class_materials),
+            'total_topics': len(class_topics),
+            'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
+            'completion_rate': 85.5,  # Calculate actual completion rate from database
+            'average_score': 78.2     # Calculate actual average score from database
+        }
+        
+        current_app.logger.info(f"Class content for {selected_class.name}: {class_statistics}")
+        current_app.logger.info(f"*** Updated with modules support ***")
         
         # Debug what we're passing to template
         current_app.logger.info(f"Template context: all_classes={len(all_classes)}, selected_class={'Yes' if selected_class else 'No'}")
