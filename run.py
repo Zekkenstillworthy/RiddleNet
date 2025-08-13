@@ -68,7 +68,7 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    """ENHANCED user_loader - Complete admin/user separation with cross-route access"""
+    """ENHANCED user_loader - Proper session isolation between admin and user"""
     from admin.models.user import Admin
     from user.models import User
     from flask import request, session
@@ -79,34 +79,32 @@ def load_user(user_id):
         print(f"❌ Invalid user_id: {user_id}")
         return None
     
-    # ENHANCED FIX: Check both admin and user tables based on request path
+    # CRITICAL FIX: Check session namespace first to prevent cross-contamination
+    auth_namespace = session.get('auth_namespace', 'unknown')
+    
+    # If we're on an admin route, ONLY load admin users
     if request and request.path.startswith('/admin'):
         # Admin routes: ONLY load from admin table
-        admin = db.session.get(Admin, user_id_int)
-        if admin:
-            # Set session namespace to prevent contamination
-            session['auth_namespace'] = 'admin'
-            print(f"🔐 Admin route: Loaded admin {admin.username} (ID: {user_id_int})")
-            return admin
-        else:
-            print(f"❌ Admin route: No admin found for ID {user_id_int}")
-            # Clear any conflicting session data
-            session.pop('auth_namespace', None)
-            return None
+        if auth_namespace == 'admin':
+            admin = db.session.get(Admin, user_id_int)
+            if admin:
+                print(f"🔐 Admin route: Loaded admin {admin.username} (ID: {user_id_int})")
+                return admin
+        
+        print(f"❌ Admin route: No admin found for ID {user_id_int} or wrong namespace: {auth_namespace}")
+        return None
+    
+    # If we're on a user route, ONLY load user accounts
     else:
-        # User routes: ONLY load from user table - NO admin access to user routes
-        user = db.session.get(User, user_id_int)
-        if user:
-            # Set session namespace to prevent contamination
-            session['auth_namespace'] = 'user'
-            print(f"👤 User route: Loaded user {user.username} (ID: {user_id_int})")
-            return user
-        else:
-            # If no user found, do NOT check admin table for user routes
-            print(f"❌ User route: No user found for ID {user_id_int}")
-            # Clear any conflicting session data
-            session.pop('auth_namespace', None)
-            return None
+        # User routes: ONLY load from user table
+        if auth_namespace == 'user':
+            user = db.session.get(User, user_id_int)
+            if user:
+                print(f"👤 User route: Loaded user {user.username} (ID: {user_id_int})")
+                return user
+        
+        print(f"❌ User route: No user found for ID {user_id_int} or wrong namespace: {auth_namespace}")
+        return None
 
 @app.before_request
 def block_admin_access_to_user_routes():
@@ -228,9 +226,15 @@ try:
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
-        ('admin.controllers.class_content_controller', 'class_content_controller', '/admin', None),
+    ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
+        # Advanced lesson editor (blueprint has its own /admin/lessons prefix)
+        ('admin.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
+        ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),  # Module management
+        ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),  # Module lesson editor
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
+        ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),  # Lesson management
+        ('simple_test_bp', 'simple_test_bp', '/admin', None),  # Simple test blueprint
         ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),  # Admin API routes with internal prefix
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
@@ -296,6 +300,39 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Register User Lesson Routes
+print("\n=== Registering User Lesson Routes ===")
+try:
+    from user.routes.lesson_routes import lesson_bp
+    app.register_blueprint(lesson_bp)
+    print("✅ User lesson routes registered successfully")
+    print("   • /lesson/class/<id>/lesson/<id> - View lesson content")
+    print("   • /lesson/class/<id>/lesson/<id>/complete - Mark lesson complete")
+    print("   • /lesson/class/<id>/lesson/<id>/progress - Update reading progress")
+    print("   • /lesson/class/<id>/lesson/<id>/start-simulation/<id> - Start simulation")
+    print("   • /lesson/api/class/<id>/lesson/<id>/analytics - Get lesson analytics")
+except Exception as e:
+    print(f"❌ Error registering user lesson routes: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Register Enhanced User Simulation Routes
+print("\n=== Registering Enhanced User Simulation Routes ===")
+try:
+    from user.routes.simulation_runner import user_simulation_bp
+    app.register_blueprint(user_simulation_bp)
+    print("✅ Enhanced user simulation routes registered successfully")
+    print("   • /simulation/dashboard - Simulation dashboard for users")
+    print("   • /simulation/<id> - Run specific simulation")
+    print("   • /simulation/<id>/results/<attempt_id> - View simulation results")
+    print("   • /simulation/api/<id>/submit-step - Submit step response")
+    print("   • /simulation/api/<id>/complete - Complete simulation")
+    print("   • /simulation/api/<id>/restart - Restart simulation")
+except Exception as e:
+    print(f"❌ Error registering enhanced user simulation routes: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Initialize and register dynamic class routes
 print("\n=== Registering Dynamic Class Routes ===")
 try:
@@ -327,6 +364,38 @@ for rule in sorted(app.url_map.iter_rules(), key=lambda x: str(x)):
     methods = ', '.join(sorted(rule.methods)) if rule.methods else ''
     print(f"{rule.endpoint:30} {methods:20} {rule.rule}")
 print("=========================\n")
+
+# Set up Jinja2 environment to ensure it can find templates
+def setup_jinja_environment():
+    """Configure the Jinja2 environment to properly find templates"""
+    from jinja2 import ChoiceLoader, FileSystemLoader
+    
+    # Get all possible template directories
+    template_dirs = [
+        app.template_folder,  # Main template folder
+        os.path.join(app.template_folder, 'admin'),  # Admin subfolder
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'admin', 'templates')  # Admin module templates
+    ]
+    
+    # Filter out non-existent directories
+    template_dirs = [d for d in template_dirs if os.path.exists(d)]
+    
+    # Create loaders for each directory
+    loaders = []
+    if app.jinja_loader:
+        loaders.append(app.jinja_loader)
+    
+    for template_dir in template_dirs:
+        loaders.append(FileSystemLoader(template_dir))
+        print(f"Added template directory to Jinja2 environment: {template_dir}")
+    
+    # Set up the ChoiceLoader
+    if len(loaders) > 1:
+        app.jinja_loader = ChoiceLoader(loaders)
+        print("Created ChoiceLoader for application")
+
+# Configure Jinja2 environment
+setup_jinja_environment()
 
 if __name__ == "__main__":
     import logging
@@ -366,7 +435,7 @@ if __name__ == "__main__":
         try:
             audio_path = os.path.join(STATIC_FOLDER, 'audio')
             response = send_from_directory(audio_path, filename)
-              # Set proper headers for audio streaming
+            # Set proper headers for audio streaming
             response.headers['Accept-Ranges'] = 'bytes'
             response.headers['Content-Type'] = 'audio/mpeg'
             response.headers['Access-Control-Allow-Origin'] = '*'
@@ -383,147 +452,86 @@ if __name__ == "__main__":
     def health_check():
         return {'status': 'healthy', 'server': 'main'}, 200
 
-    # Start the unified server with WebSocket support
-    print("Starting unified Flask-SocketIO server on port 5001...")
-    print("WebSocket events loaded and ready")
-    print("Static files will be served by Flask's built-in handler")
-    # Start the Flask-SocketIO server
-    socketio.run(
-        app, 
-        debug=True, 
-        host='127.0.0.1',
-        port=5001,
-        use_reloader=False,  # Disable reloader to prevent threading issues
-        allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
-    )
-# Set up Jinja2 environment to ensure it can find templates
-def setup_jinja_environment():
-    """Configure the Jinja2 environment to properly find templates"""
-    from jinja2 import ChoiceLoader, FileSystemLoader
-    
-    # Get all possible template directories
-    template_dirs = [
-        app.template_folder,  # Main template folder
-        os.path.join(app.template_folder, 'admin'),  # Admin subfolder
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'admin', 'templates')  # Admin module templates
-    ]
-    
-    # Filter out non-existent directories
-    template_dirs = [d for d in template_dirs if os.path.exists(d)]
-    
-    # Create loaders for each directory
-    loaders = []
-    if app.jinja_loader:
-        loaders.append(app.jinja_loader)
-    
-    for template_dir in template_dirs:
-        loaders.append(FileSystemLoader(template_dir))
-        print(f"Added template directory to Jinja2 environment: {template_dir}")
-    
-    # Set up the ChoiceLoader
-    if len(loaders) > 1:
-        app.jinja_loader = ChoiceLoader(loaders)
-        print("Created ChoiceLoader for application")
-    
-# Configure Jinja2 environment
-setup_jinja_environment()
+    # DEBUG endpoints for testing module functionality (remove in production)
+    @app.route('/api/debug/modules/<int:module_id>/test-delete', methods=['GET'])
+    def debug_test_module_delete(module_id):
+        """Debug endpoint to test delete functionality without auth"""
+        from flask import jsonify
+        from admin.models.module import Module
+        try:
+            print(f"🔧 DEBUG: Testing delete functionality for module {module_id}")
+            module = Module.query.get(module_id)
+            if not module:
+                return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
+                
+            print(f"✅ Found module: {module.title} (is_active: {module.is_active})")
+            return jsonify({
+                'success': True, 
+                'message': f'Module {module_id} exists and can be deleted',
+                'module': {
+                    'id': module.id,
+                    'title': module.title,
+                    'is_active': module.is_active,
+                    'class_id': module.class_id
+                }
+            })
+            
+        except Exception as e:
+            print(f"❌ DEBUG Exception: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
 
-if __name__ == "__main__":
-    # Import modules needed for the server
-    import threading
-    import logging
-    from flask import Flask, send_from_directory, request
-    
-    # Configure logging for static server
-    logging.basicConfig(level=logging.INFO, 
-                      format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logger = logging.getLogger('static_server')
-    
-    # Create a separate Flask app for static files
-    static_app = Flask(__name__)
-    
-    # Define the static folder path
-    STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    
-    @static_app.route('/static/<path:path>')
-    def serve_static(path):
-        """Serve static files"""
-        logger.debug(f"Serving static file: {path}")
-        return send_from_directory(STATIC_FOLDER, path)
-    
-    @static_app.route('/media/video/<path:filename>')
-    def serve_video(filename):
-        """Serve video files with optimized settings"""
-        logger.debug(f"Serving video file: {filename}")
-        video_path = os.path.join(STATIC_FOLDER, 'video', filename)
-        
-        # Handle range requests for video streaming
-        range_header = request.headers.get('Range', None)
-        if range_header:
-            logger.debug(f"Range request: {range_header}")
-        
-        response = send_from_directory(os.path.dirname(video_path), os.path.basename(video_path))
-        
-        # Add caching headers
-        response.headers['Cache-Control'] = 'public, max-age=43200'  # 12 hours
-        return response
-    
-    @static_app.route('/media/audio/<path:filename>')
-    def serve_audio(filename):
-        """Serve audio files with optimized settings"""
-        logger.debug(f"Serving audio file: {filename}")
-        audio_path = os.path.join(STATIC_FOLDER, 'audio', filename)
-        
-        response = send_from_directory(os.path.dirname(audio_path), os.path.basename(audio_path))
-        
-        # Add caching headers
-        response.headers['Cache-Control'] = 'public, max-age=43200'  # 12 hours
-        return response
-    
-    @static_app.route('/health')
-    def health_check():
-        """Health check endpoint"""
-        return {'status': 'ok', 'service': 'static_file_server'}, 200
-    def run_static_server():
-        """Run the static file server with waitress instead of eventlet"""
-        from waitress import serve
-        print("Starting static file server on port 5001...")
-        serve(static_app, host='127.0.0.1', port=5001, threads=8)
-    
-    def run_websocket_server():
-        """Run the WebSocket server"""
-        print("Starting WebSocket server on port 5000...")
-        socketio.run(
-            app, 
-            debug=True, 
-            host='127.0.0.1',
-            port=5000,
-            use_reloader=False  # Set to False to avoid issues with reloading
-        )
-    
-    # Start the static server in a separate thread
-    static_thread = threading.Thread(target=run_static_server, daemon=True)
-    static_thread.start()
-    
-    # Give the static server a moment to start
-    import time
-    time.sleep(1)
-      # Check if static server is running
-    from utils.static_server_monitor import static_server_monitor
-    if not static_server_monitor.check_availability():
-        print("\n⚠️ WARNING: Static file server failed to start on port 5001!")
-        print("Check if the port is already in use or if there are any errors.\n")
-    else:
-        print("✅ Static file server running at http://localhost:5001")
-    
-    # Run the WebSocket server in the main thread (commented out for API testing)
-    # run_websocket_server()
-    
-    # For now, run a simple Flask server for API testing
-    print("Starting Flask server for API testing on port 5001...")
-    app.run(debug=True, host='127.0.0.1', port=5001, use_reloader=False)
+    @app.route('/api/debug/modules/<int:module_id>/delete-now', methods=['GET'])
+    def debug_delete_module_now(module_id):
+        """Debug endpoint to actually delete a module without auth"""
+        from flask import jsonify
+        from admin.models.module import Module
+        from admin import db
+        from datetime import datetime
+        try:
+            print(f"🔧 DEBUG: Actually deleting module {module_id}")
+            module = Module.query.get(module_id)
+            if not module:
+                return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
+                
+            print(f"✅ Found module to delete: {module.title} (is_active: {module.is_active})")
+            
+            # Perform soft delete
+            module.is_active = False
+            module.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            print(f"✅ Module soft-deleted successfully: {module.id}")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Module {module_id} soft-deleted successfully',
+                'module': {
+                    'id': module.id,
+                    'title': module.title,
+                    'is_active': module.is_active,
+                    'class_id': module.class_id
+                }
+            })
+            
+        except Exception as e:
+            print(f"❌ DEBUG DELETE Exception: {e}")
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 500
 
-if __name__ == '__main__':
+    # Add debug middleware to track all requests
+    @app.before_request
+    def debug_requests():
+        if '/preview' in request.path or '/class-content-manager' in request.path:
+            print("🟡" + "="*80)
+            print(f"🟡 REQUEST DEBUG: {request.method} {request.path}")
+            print(f"🟡 Full URL: {request.url}")
+            print(f"🟡 Referrer: {request.referrer}")
+            print(f"🟡 User-Agent: {request.headers.get('User-Agent', 'N/A')[:100]}")
+            if request.args:
+                print(f"🟡 Query params: {dict(request.args)}")
+            print("🟡" + "="*80)
+
+    # Database setup
     with app.app_context():
         try:
             from admin.utils.database_setup import setup_database, migrate_existing_tables
@@ -538,4 +546,20 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Database setup error: {e}")
             print("Continuing with application startup...")
+
+    # Start the unified server with WebSocket support
+    print("🚀 Starting unified Flask-SocketIO server on port 5001...")
+    print("🔌 WebSocket events loaded and ready")
+    print("📁 Static files will be served by Flask's built-in handler")
+    
+    # Start the Flask-SocketIO server
+    socketio.run(
+        app, 
+        debug=True, 
+        host='127.0.0.1',
+        port=5001,
+        use_reloader=False,  # Disable reloader to prevent threading issues
+        allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
+    )
+
 

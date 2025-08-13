@@ -1,0 +1,2056 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Edit Module - {{ module.title }}{% endblock %}
+
+{% block head %}
+<style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
+    
+    :root {
+        /* Modern Gaming Network Theme - Matching User Management */
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #020617;
+        --surface: #0F172A;
+        --surface-hover: #1E293B;
+        --border-color: rgba(59, 130, 246, 0.2);
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        
+        /* Text Colors */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        --text-inverse: #ffffff;
+        
+        /* Layout */
+        --sidebar-width: 280px;
+        --sidebar-collapsed-width: 80px;
+        --transition-speed: 0.4s;
+        --border-radius: 12px;
+        --shadow-lg: 0 25px 50px -12px rgba(26, 35, 126, 0.8);
+        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+        --shadow-card: 0 8px 32px rgba(26, 35, 126, 0.4);
+        
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
+        --gradient-warning: linear-gradient(135deg, #f59e0b, #d97706);
+        
+        /* Enhanced Variables */
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-fast: all 0.15s ease;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--background);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* Network Grid Background Animation - Matching User Management */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: 
+            linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: -1;
+        animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(50px, 50px); }
+    }
+
+    /* Header - Modern Gaming Network Theme */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-color);
+        position: relative;
+    }
+    
+    .header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .back-btn {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--cyber-glow);
+        padding: 8px 16px;
+        border-radius: var(--border-radius);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: var(--transition-normal);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        backdrop-filter: blur(20px);
+    }
+
+    .back-btn:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        text-decoration: none;
+        transform: translateX(-2px);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.25rem;
+        font-weight: bold;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        backdrop-filter: blur(20px);
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .user-info::before {
+        content: "⚡";
+        color: var(--neon-green);
+        text-shadow: 0 0 8px var(--neon-green);
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.875rem;
+        border: 2px solid var(--cyber-glow);
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    /* Main Layout - Enhanced Admin Container Style */
+    .main-container {
+        max-width: 1400px;
+        margin: 12px auto;
+        padding: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        box-shadow: var(--shadow-card);
+        position: relative;
+        overflow: hidden;
+        min-height: calc(100vh - 120px);
+    }
+
+    .main-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    /* Top Navigation Bar - Modern Card Style */
+    .top-nav {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-card);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .top-nav::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .top-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .class-info-compact {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .class-title-compact {
+        font-size: 1.1rem;
+        font-weight: 600;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    .class-subtitle-compact {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin: 0;
+    }
+
+    .module-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .module-selector {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        min-width: 180px;
+        backdrop-filter: blur(10px);
+        transition: var(--transition-normal);
+    }
+
+    .module-selector:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .top-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .nav-stats {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .nav-stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-stat-icon {
+        color: var(--cyber-glow);
+        font-size: 0.9rem;
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+    }
+
+    /* Top Action Bar */
+    .top-action-bar {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn-nav {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: var(--text-secondary);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: var(--transition-normal);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+    }
+
+    .action-btn-nav:hover {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+    }
+
+    .action-btn-nav.primary {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        color: white;
+        border-color: transparent;
+    }
+
+    .action-btn-nav.primary:hover {
+        background: linear-gradient(135deg, var(--network-purple), var(--cyber-glow));
+        color: white;
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+    }
+
+    .action-btn-nav.danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border-color: transparent;
+    }
+
+    .action-btn-nav.danger:hover {
+        background: linear-gradient(135deg, #dc2626, #ef4444);
+        color: white;
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .module-list {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        color: var(--cyber-glow);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .module-item {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .module-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    .module-item.active {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .module-item.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+    }
+
+    .module-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .module-number {
+        background: var(--cyber-glow);
+        color: var(--primary-color);
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    .module-title {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex: 1;
+    }
+
+    .module-meta {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .progress-bar {
+        background: rgba(100, 116, 139, 0.3);
+        height: 4px;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--gradient-primary);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    /* Content Area */
+    .content-area {
+        width: 100%;
+        padding: 0;
+        overflow-y: auto;
+    }
+
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 2rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 12px 16px;
+    }
+
+    .breadcrumb-separator {
+        color: var(--text-muted);
+    }
+
+    /* Modern Card Styles - Matching User Management */
+    .module-header-main, .form-section {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-card);
+        transition: var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .module-header-main::before, .form-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .module-header-main:hover, .form-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    .module-main-title {
+        font-size: 2rem;
+        font-weight: 600;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .module-description {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .module-stats {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .stat-icon {
+        color: var(--cyber-glow);
+        font-size: 1rem;
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+    }
+
+    .form-section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .form-section-title i {
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        color: var(--cyber-glow);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-family: 'Inter', sans-serif;
+        transition: var(--transition-normal);
+        backdrop-filter: blur(20px);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        background: rgba(139, 92, 246, 0.05);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+        font-style: italic;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .form-text {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: var(--border-radius);
+    }
+
+    .checkbox {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--cyber-glow);
+    }
+
+    .checkbox-label {
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Action Buttons - User Management Style */
+    .action-bar {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition-normal);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        backdrop-filter: blur(20px);
+        font-family: 'Inter', sans-serif;
+        min-width: 120px;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: #fff;
+        border: 1px solid rgba(0, 217, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+        background: var(--gradient-secondary);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: var(--network-purple);
+        color: var(--network-purple);
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+
+    .btn-danger {
+        background: var(--gradient-danger);
+        color: #fff;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .btn i {
+        font-size: 16px;
+    }
+
+    /* Quick Actions Sidebar - Modern Card Style */
+    .quick-actions {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-card);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .quick-actions::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .quick-actions-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .quick-action {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 12px 16px;
+        border-radius: var(--border-radius);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: var(--transition-normal);
+        margin-bottom: 0.5rem;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+    }
+
+    .quick-action:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        text-decoration: none;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    .quick-action-icon {
+        color: var(--cyber-glow);
+        font-size: 16px;
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+    }
+
+    /* Enhanced table styles - Matching User Management */
+    .table-container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: 16px;
+        box-shadow: var(--shadow-card);
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: transparent;
+    }
+
+    th, td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+        background: rgba(0, 217, 255, 0.1);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--cyber-glow);
+        border-bottom: 2px solid var(--cyber-glow);
+    }
+
+    tr:hover {
+        background: rgba(0, 217, 255, 0.05);
+        transform: translateX(4px);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Status badges - User Management Style */
+    .badge {
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .bg-success, .badge.bg-success {
+        background: rgba(16, 185, 129, 0.2) !important;
+        color: var(--neon-green) !important;
+        border: 1px solid var(--neon-green);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .bg-secondary, .badge.bg-secondary {
+        background: rgba(100, 116, 139, 0.2) !important;
+        color: #94a3b8 !important;
+        border: 1px solid #94a3b8;
+    }
+
+    .bg-info, .badge.bg-info {
+        background: rgba(0, 217, 255, 0.2) !important;
+        color: var(--cyber-glow) !important;
+        border: 1px solid var(--cyber-glow);
+    }
+
+    /* Modern stat cards - User Management Style */
+    .stat-card-modern {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        transition: var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-card);
+    }
+
+    .stat-card-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-secondary);
+        opacity: 0.8;
+    }
+
+    .stat-card-modern:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(57, 255, 20, 0.2);
+        border-color: var(--neon-green);
+    }
+
+    /* Section headers with icons */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .section-header h2, .section-header h3, .section-header h4, .section-header h5 {
+        margin: 0;
+        color: var(--cyber-glow);
+        font-weight: 600;
+    }
+
+    .section-header .section-icon {
+        font-size: 1.8rem;
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--cyber-glow);
+        margin-bottom: 24px;
+        opacity: 0.6;
+        filter: drop-shadow(0 0 20px var(--cyber-glow));
+    }
+
+    /* Button groups */
+    .btn-group {
+        display: flex;
+        gap: 4px;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    .btn-group .btn {
+        min-width: auto;
+        padding: 8px 12px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 12px;
+        border-radius: 6px;
+    }
+
+    .btn-group .btn:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    .btn-outline-primary {
+        color: var(--cyber-glow) !important;
+        background: rgba(0, 217, 255, 0.1) !important;
+        border-color: rgba(0, 217, 255, 0.3) !important;
+    }
+
+    .btn-outline-primary:hover {
+        background: rgba(0, 217, 255, 0.2) !important;
+        border-color: var(--cyber-glow) !important;
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    .btn-outline-info {
+        color: var(--neon-green) !important;
+        background: rgba(57, 255, 20, 0.1) !important;
+        border-color: rgba(57, 255, 20, 0.3) !important;
+    }
+
+    .btn-outline-info:hover {
+        background: rgba(57, 255, 20, 0.2) !important;
+        border-color: var(--neon-green) !important;
+        box-shadow: 0 4px 12px rgba(57, 255, 20, 0.3);
+    }
+
+    /* Responsive Design - Top Bar Layout */
+    @media (max-width: 1200px) {
+        .top-nav {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+        
+        .top-nav-left, .top-nav-right {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .nav-stats {
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .main-container {
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .top-nav {
+            padding: 1rem 1.5rem;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .top-nav-left, .top-nav-right {
+            justify-content: center;
+        }
+        
+        .class-info-compact {
+            text-align: center;
+        }
+        
+        .module-nav {
+            justify-content: center;
+        }
+        
+        .module-selector {
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .top-action-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .action-buttons {
+            justify-content: center;
+        }
+
+        .nav-stats {
+            justify-content: center;
+        }
+
+        .main-container {
+            margin: 8px;
+            padding: 12px;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .action-bar {
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+        }
+        
+        .header {
+            padding: 12px;
+        }
+        
+        .content-area {
+            padding: 1rem;
+        }
+        
+        .module-stats {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            min-width: 600px;
+        }
+        
+        th, td {
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .top-nav {
+            padding: 1rem;
+        }
+        
+        .class-title-compact {
+            font-size: 1rem;
+        }
+        
+        .class-subtitle-compact {
+            font-size: 0.75rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .action-btn-nav {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .nav-stats {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .module-selector {
+            min-width: auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .main-container {
+            margin: 5px;
+            padding: 10px;
+        }
+        
+        .module-main-title {
+            font-size: 1.5rem;
+        }
+        
+        .form-section, .module-header-main {
+            padding: 1.5rem;
+        }
+        
+        .sidebar {
+            padding: 1.5rem;
+        }
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+        
+        body::before {
+            animation: none;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .module-header-main, .form-section, .sidebar, .quick-actions {
+            border-width: 2px;
+        }
+        
+        .btn {
+            border-width: 2px;
+            border-style: solid;
+        }
+    }
+
+    /* Dark mode enhancements */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --glass-bg: rgba(15, 23, 42, 0.9);
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        body::before {
+            display: none;
+        }
+        
+        .sidebar, .quick-actions, .action-bar {
+            display: none;
+        }
+        
+        .main-container {
+            box-shadow: none;
+            border: 1px solid #ccc;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="header">
+    <div class="header-left">
+        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Content Manager
+        </a>
+        <div class="logo">
+            <i class="fas fa-gamepad"></i>
+            RiddleNet
+        </div>
+    </div>
+    <div class="user-info">
+        <span>Gilbert</span>
+        <div class="user-avatar">G</div>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="main-container">
+    <!-- Top Navigation Bar -->
+    <div class="top-nav">
+        <div class="top-nav-left">
+            <!-- Class Info -->
+            <div class="class-info-compact">
+                <h2 class="class-title-compact">{{ class_obj.name }}</h2>
+                <p class="class-subtitle-compact">{{ class_obj.description or 'Foundations of Computer Networking' }}</p>
+            </div>
+
+            <!-- Module Navigation -->
+            <div class="module-nav">
+                <select class="module-selector" onchange="window.location.href = this.value">
+                    {% for mod in class_modules %}
+                    <option value="{{ url_for('enhanced_module.edit_module', class_id=class_obj.id, module_id=mod.id) }}" 
+                            {% if mod.id == module.id %}selected{% endif %}>
+                        Module {{ loop.index }}: {{ mod.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="top-nav-right">
+            <!-- Navigation Stats -->
+            <div class="nav-stats">
+                <div class="nav-stat-item">
+                    <i class="fas fa-layer-group nav-stat-icon"></i>
+                    <span>Module {{ module.order_index or 1 }}</span>
+                </div>
+                <div class="nav-stat-item">
+                    <i class="fas fa-book-open nav-stat-icon"></i>
+                    <span>{{ lessons|length }} lessons</span>
+                </div>
+                <div class="nav-stat-item">
+                    <i class="fas fa-clock nav-stat-icon"></i>
+                    <span>{{ module.estimated_duration or '140' }} min</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Action Bar -->
+    <div class="top-action-bar">
+        <div class="nav-stats">
+            <div class="nav-stat-item">
+                <i class="fas fa-users nav-stat-icon"></i>
+                <span>{{ class_modules|length }} Modules</span>
+            </div>
+            <div class="nav-stat-item">
+                <i class="fas fa-graduation-cap nav-stat-icon"></i>
+                <span>{{ class_obj.name }}</span>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="action-btn-nav primary">
+                <i class="fas fa-plus"></i>
+                Add Lesson
+            </a>
+            <a href="{{ url_for('class_content_controller_old.preview_module_page', class_id=class_obj.id, module_id=module.id) }}" class="action-btn-nav">
+                <i class="fas fa-eye"></i>
+                Preview
+            </a>
+            <button type="button" class="action-btn-nav danger" onclick="confirmDelete()">
+                <i class="fas fa-trash"></i>
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <i class="fas fa-home"></i>
+            <span>{{ class_obj.name }}</span>
+            <span class="breadcrumb-separator">></span>
+            <span style="color: var(--accent-cyan);">{{ module.title }}</span>
+        </div>
+
+        <!-- Module Header -->
+        <div class="module-header-main">
+            <h1 class="module-main-title">{{ module.title }}</h1>
+            <p class="module-description">{{ module.description or 'Static and dynamic routing concepts, router configuration basics' }}</p>
+            <div class="module-stats">
+                <div class="stat-item">
+                    <i class="fas fa-layer-group stat-icon"></i>
+                    <span>Module {{ module.order_index or 1 }}</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock stat-icon"></i>
+                    <span>{{ module.estimated_duration or '140' }} minutes</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-book-open stat-icon"></i>
+                    <span>{{ lessons|length }} lessons</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Form -->
+        <form method="POST" action="{{ url_for('enhanced_module.update_module', class_id=class_obj.id, module_id=module.id) }}">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Information
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label" for="title">Module Title</label>
+                    <input type="text" id="title" name="title" class="form-control" 
+                           value="{{ module.title }}" 
+                           placeholder="Enter module title..." required>
+                    <div class="form-text">This will be displayed as the main module heading</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="description">Module Description</label>
+                    <textarea id="description" name="description" class="form-control" 
+                              placeholder="Describe what students will learn in this module...">{{ module.description or '' }}</textarea>
+                    <div class="form-text">A brief overview of the module content and learning objectives</div>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-file-alt"></i>
+                    Module Content
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label" for="content">Content</label>
+                    <textarea id="content" name="content" class="form-control" 
+                              style="min-height: 200px;" 
+                              placeholder="Enter the main content for this module...">{{ module.content or '' }}</textarea>
+                    <div class="form-text">Supports HTML and Markdown formatting</div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="form-section">
+                <h3 class="form-section-title">
+                    <i class="fas fa-cogs"></i>
+                    Module Settings
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="order_index">Order Index</label>
+                        <input type="number" id="order_index" name="order_index" class="form-control" 
+                               value="{{ module.order_index or 0 }}" min="0">
+                        <div class="form-text">Determines the order of modules in the course</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="estimated_duration">Estimated Duration (minutes)</label>
+                        <input type="number" id="estimated_duration" name="estimated_duration" class="form-control" 
+                               value="{{ module.estimated_duration or 140 }}" min="1">
+                        <div class="form-text">Expected time to complete this module</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="is_active" name="is_active" class="checkbox" 
+                               {% if module.is_active %}checked{% endif %}>
+                        <label class="checkbox-label" for="is_active">Active Module</label>
+                    </div>
+                    <div class="form-text">Only active modules are visible to students</div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Update Module
+                    </button>
+                    <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </a>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash"></i>
+                        Delete Module
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Lessons Management Section -->
+        {% if lessons %}
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="fas fa-list"></i>
+                Module Lessons
+            </h3>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; background: rgba(15, 23, 42, 0.6); border-radius: 8px; overflow: hidden;">
+                    <thead style="background: rgba(0, 217, 255, 0.1); color: var(--text-primary);">
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border);">Title</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border);">Duration</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border);">Status</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 1px solid var(--glass-border);">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                        <tr style="border-bottom: 1px solid rgba(100, 116, 139, 0.1);">
+                            <td style="padding: 1rem; color: var(--text-primary);">
+                                <div style="font-weight: 500;">{{ lesson.title }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                    {{ lesson.description[:100] }}{% if lesson.description and lesson.description|length > 100 %}...{% endif %}
+                                </div>
+                            </td>
+                            <td style="padding: 1rem; color: var(--text-secondary);">
+                                <span style="background: rgba(139, 92, 246, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                    {{ lesson.duration or '30' }} min
+                                </span>
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if lesson.is_active %}
+                                <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                    Active
+                                </span>
+                                {% else %}
+                                <span style="background: rgba(156, 163, 175, 0.1); color: #9ca3af; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                    Inactive
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" 
+                                       style="color: var(--accent-cyan); text-decoration: none; font-size: 0.875rem;">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('lesson.view_lesson', lesson_id=lesson.id) }}" 
+                                       style="color: var(--text-secondary); text-decoration: none; font-size: 0.875rem;">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.style.borderColor = 'var(--accent-cyan)';
+            this.style.boxShadow = '0 0 0 3px rgba(0, 217, 255, 0.1)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.style.borderColor = 'rgba(100, 116, 139, 0.3)';
+            this.style.boxShadow = 'none';
+        });
+    });
+    
+    // Auto-save draft functionality
+    let saveTimeout;
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                // Auto-save logic here
+                console.log('Auto-saving draft...');
+            }, 2000);
+        });
+    });
+});
+
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete this module? This action cannot be undone and will also delete all associated lessons.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("enhanced_module.delete_module", class_id=class_obj.id, module_id=module.id) }}';
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+                    <div class="section-header">
+                        <i class="fas fa-edit section-icon" style="font-size: 1.4rem;"></i>
+                        <h4>Module Details</h4>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('enhanced_module.update_module', class_id=class_obj.id, module_id=module.id) }}">
+                        <div class="mb-4">
+                            <label for="title" class="form-label">
+                                <i class="fas fa-heading" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Module Title
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Description
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter module description...">{{ module.description or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                <i class="fas fa-file-alt" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Module Content
+                            </label>
+                            <textarea class="form-control" id="content" name="content" rows="10" placeholder="Enter module content with HTML or markdown...">{{ module.content or '' }}</textarea>
+                            <div class="form-text text-muted mt-2">
+                                <i class="fas fa-info-circle" style="margin-right: 4px;"></i>
+                                Supports HTML and markdown formatting
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label for="order_index" class="form-label">
+                                        <i class="fas fa-sort-numeric-up" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                        Order Index
+                                    </label>
+                                    <input type="number" class="form-control" id="order_index" name="order_index" value="{{ module.order_index or 0 }}" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        <i class="fas fa-toggle-on" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                        Module Status
+                                    </label>
+                                    <div class="form-check" style="margin-top: 12px;">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if module.is_active %}checked{% endif %}>
+                                        <label class="form-check-label text-muted" for="is_active">
+                                            Active Module
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-primary btn-modern">
+                                <i class="fas fa-save"></i>
+                                Update Module
+                            </button>
+                            <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="btn btn-secondary btn-modern">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lessons Section -->
+                <div class="modern-card">
+                    <div class="section-header">
+                        <i class="fas fa-book-open section-icon" style="font-size: 1.4rem;"></i>
+                        <h4>Module Lessons</h4>
+                        <div class="ms-auto">
+                            <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-success btn-modern">
+                                <i class="fas fa-plus"></i> Add Lesson
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% if lessons %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-book" style="margin-right: 8px;"></i>Title</th>
+                                        <th><i class="fas fa-tag" style="margin-right: 8px;"></i>Type</th>
+                                        <th><i class="fas fa-sort" style="margin-right: 8px;"></i>Order</th>
+                                        <th><i class="fas fa-power-off" style="margin-right: 8px;"></i>Status</th>
+                                        <th><i class="fas fa-cogs" style="margin-right: 8px;"></i>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for lesson in lessons %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <strong class="text-white">{{ lesson.title }}</strong>
+                                                {% if lesson.description %}
+                                                    <small class="text-muted">{{ lesson.description[:100] }}{% if lesson.description|length > 100 %}...{% endif %}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ lesson.type or 'Lesson' }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ lesson.order_index or 0 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if lesson.is_active %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Active
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-pause"></i> Inactive
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" title="Edit Lesson">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{{ url_for('lesson.view_lesson', lesson_id=lesson.id) }}" 
+                                                   class="btn btn-outline-info btn-sm" title="View Lesson">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <h5>No lessons found for this module</h5>
+                            <p class="text-muted">Create your first lesson to get started with this module.</p>
+                            <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-success btn-modern">
+                                <i class="fas fa-plus"></i> Create First Lesson
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Module Information Sidebar (Right Column) -->
+            <div class="col-lg-4">
+                <!-- Module Stats -->
+                <div class="stat-card-modern">
+                    <div class="section-header" style="border: none; padding-bottom: 0;">
+                        <i class="fas fa-chart-bar section-icon" style="font-size: 1.4rem;"></i>
+                        <h5>Module Statistics</h5>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2.5rem; font-weight: 700; color: var(--cyber-glow); font-family: 'Orbitron';">
+                                    {{ lessons|length }}
+                                </div>
+                                <small class="text-muted">Lessons</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div style="font-size: 2.5rem; font-weight: 700; color: var(--neon-green); font-family: 'Orbitron';">
+                                    {{ module.order_index or 0 }}
+                                </div>
+                                <small class="text-muted">Order</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="modern-card">
+                    <div class="section-header">
+                        <i class="fas fa-bolt section-icon" style="font-size: 1.4rem;"></i>
+                        <h5>Quick Actions</h5>
+                    </div>
+                    
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-success btn-modern">
+                            <i class="fas fa-plus"></i> Add New Lesson
+                        </a>
+                        <a href="{{ url_for('class_content_controller_old.preview_module_page', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-primary btn-modern">
+                            <i class="fas fa-eye"></i> Preview Module
+                        </a>
+                        <button type="button" class="btn btn-danger btn-modern" onclick="confirmDelete()">
+                            <i class="fas fa-trash"></i> Delete Module
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Module Information -->
+                <div class="modern-card">
+                    <div class="section-header">
+                        <i class="fas fa-info-circle section-icon" style="font-size: 1.4rem;"></i>
+                        <h5>Module Information</h5>
+                    </div>
+                    
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-plus" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Created:
+                            </small>
+                            <small class="text-white">{{ module.created_at.strftime('%Y-%m-%d %H:%M') if module.created_at else 'N/A' }}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-edit" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Updated:
+                            </small>
+                            <small class="text-white">{{ module.updated_at.strftime('%Y-%m-%d %H:%M') if module.updated_at else 'N/A' }}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-toggle-on" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                Status:
+                            </small>
+                            {% if module.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-pause"></i> Inactive
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+function confirmDelete() {
+    if (confirm('⚠️ Are you sure you want to delete this module?\n\nThis action cannot be undone and will remove all lessons associated with this module.')) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("enhanced_module.delete_module", class_id=class_obj.id, module_id=module.id) }}';
+        
+        // Add CSRF token if needed
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Add some interactive effects
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to form controls
+    const formControls = document.querySelectorAll('.form-control, .form-select');
+    formControls.forEach(control => {
+        control.addEventListener('focus', function() {
+            this.style.transform = 'translateY(-1px)';
+            this.style.boxShadow = '0 4px 15px rgba(0, 217, 255, 0.2)';
+        });
+        
+        control.addEventListener('blur', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+    
+    // Add cyber-style typing effect for textareas
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.borderColor = 'var(--neon-green)';
+            setTimeout(() => {
+                this.style.borderColor = 'var(--glass-border)';
+            }, 300);
+        });
+    });
+});
+</script>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="content" class="form-label">Module Content</label>
+                                    <textarea class="form-control" id="content" name="content" rows="10">{{ module.content or '' }}</textarea>
+                                    <div class="form-text">Supports HTML and markdown formatting</div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="order_index" class="form-label">Order Index</label>
+                                            <input type="number" class="form-control" id="order_index" name="order_index" value="{{ module.order_index or 0 }}" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if module.is_active %}checked{% endif %}>
+                                                <label class="form-check-label" for="is_active">
+                                                    Active Module
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">Update Module</button>
+                                    <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lessons Section -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Module Lessons</h5>
+                            <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i> Add Lesson
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if lessons %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Type</th>
+                                                <th>Order</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for lesson in lessons %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ lesson.title }}</strong>
+                                                    {% if lesson.description %}
+                                                        <br><small class="text-muted">{{ lesson.description[:100] }}{% if lesson.description|length > 100 %}...{% endif %}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ lesson.type or 'Lesson' }}</span>
+                                                </td>
+                                                <td>{{ lesson.order_index or 0 }}</td>
+                                                <td>
+                                                    {% if lesson.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" 
+                                                           class="btn btn-outline-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="{{ url_for('lesson.view_lesson', lesson_id=lesson.id) }}" 
+                                                           class="btn btn-outline-info" title="View">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-book-open fa-3x text-muted"></i>
+                                    </div>
+                                    <p class="text-muted">No lessons found for this module.</p>
+                                    <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create First Lesson
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Information Sidebar (Right Column) -->
+                <div class="col-lg-4">
+                    <!-- Module Stats -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Module Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="h4 mb-0 text-primary">{{ lessons|length }}</div>
+                                        <small class="text-muted">Lessons</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="h4 mb-0 text-success">{{ module.order_index or 0 }}</div>
+                                        <small class="text-muted">Order</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add New Lesson
+                                </a>
+                                <a href="{{ url_for('class_content_controller_old.preview_module_page', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-eye"></i> Preview Module
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
+                                    <i class="fas fa-trash"></i> Delete Module
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module Info -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Module Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted d-block mb-2">Created: {{ module.created_at.strftime('%Y-%m-%d %H:%M') if module.created_at else 'N/A' }}</small>
+                            <small class="text-muted d-block mb-2">Updated: {{ module.updated_at.strftime('%Y-%m-%d %H:%M') if module.updated_at else 'N/A' }}</small>
+                            <small class="text-muted d-block">Status: 
+                                {% if module.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete this module? This action cannot be undone.')) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("enhanced_module.delete_module", class_id=class_obj.id, module_id=module.id) }}';
+        
+        // Add CSRF token if needed
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

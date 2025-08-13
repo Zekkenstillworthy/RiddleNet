@@ -16,7 +16,10 @@ socketio = SocketIO(
     ping_interval=25,
     max_http_buffer_size=1024 * 1024 * 10,
     logger=False,  # Disable verbose logging
-    engineio_logger=False  # Disable engine.io logging
+    engineio_logger=False,  # Disable engine.io logging
+    transports=['polling', 'websocket'],  # Allow both transports
+    allow_upgrades=True,  # Allow transport upgrades
+    cookie=None  # Disable cookies for better compatibility
 )
 
 # Store active user connections

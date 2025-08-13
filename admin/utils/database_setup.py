@@ -117,6 +117,42 @@ def migrate_existing_tables():
                 print(f"Table {table_name} might not exist yet: {e}")
                 continue
         
+        # Fix module_progress table missing columns
+        try:
+            cursor.execute("PRAGMA table_info(module_progress)")
+            module_progress_columns = [column[1] for column in cursor.fetchall()]
+            
+            if module_progress_columns:  # Table exists
+                # Check for missing columns and add them
+                missing_columns = []
+                expected_columns = {
+                    'total_time_spent': 'INTEGER DEFAULT 0',
+                    'session_count': 'INTEGER DEFAULT 0',
+                    'last_session_id': 'VARCHAR(255)',
+                    'started_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+                    'completed_at': 'TIMESTAMP',
+                    'last_accessed': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+                }
+                
+                for col_name, col_type in expected_columns.items():
+                    if col_name not in module_progress_columns:
+                        missing_columns.append((col_name, col_type))
+                
+                if missing_columns:
+                    print(f"Adding missing columns to module_progress table: {[col[0] for col in missing_columns]}")
+                    for col_name, col_type in missing_columns:
+                        try:
+                            cursor.execute(f"ALTER TABLE module_progress ADD COLUMN {col_name} {col_type}")
+                            print(f"  ✅ Added {col_name} column")
+                        except Exception as e:
+                            print(f"  ❌ Error adding {col_name} column: {e}")
+                    connection.commit()
+                    print("Successfully updated module_progress table schema")
+                else:
+                    print("module_progress table schema is up to date")
+        except Exception as e:
+            print(f"Error checking/updating module_progress table: {e}")
+        
         connection.close()
         print("Database migration completed successfully")
         

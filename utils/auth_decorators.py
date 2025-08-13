@@ -11,18 +11,22 @@ def admin_required(f):
     """
     Decorator to ensure only authenticated admin users can access endpoints
     Supports multiple admin validation methods for flexibility
+    ENHANCED: No longer relies on session namespace for admin validation
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             if request.is_json:
                 return jsonify({'error': 'Authentication required'}), 401
-            return current_app.login_manager.unauthorized()
+            # For admin routes, redirect to admin login instead of user login
+            from flask import redirect, url_for, session
+            session['admin_login_redirect'] = request.url
+            return redirect(url_for('auth.login'))
         
         # Check multiple admin validation methods
         is_admin = False
         
-        # Method 1: Check Admin model instance
+        # Method 1: Check Admin model instance (MOST RELIABLE)
         try:
             from admin.models.user import Admin
             if isinstance(current_user, Admin):
@@ -41,7 +45,7 @@ def admin_required(f):
             is_admin = True
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (role={current_user.role})")
         
-        # Method 4: Check if user ID is in admin table
+        # Method 4: Check if user ID is in admin table (FALLBACK)
         if not is_admin:
             try:
                 from admin.models.user import Admin
@@ -56,7 +60,10 @@ def admin_required(f):
             current_app.logger.warning(f"Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             if request.is_json:
                 return jsonify({'error': 'Admin access required'}), 403
-            return current_app.login_manager.unauthorized()
+            # For admin routes, redirect to admin login instead of user login
+            from flask import redirect, url_for, session
+            session['admin_login_redirect'] = request.url
+            return redirect(url_for('auth.login'))
         
         return f(*args, **kwargs)
     return decorated_function

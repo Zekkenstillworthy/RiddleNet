@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>{{ module.title }} - Google Classroom Style</title>
+    
+<style>
+    :root {
+        /* Modern Gaming Network Theme - Learning Version - From learning_base.html */
+        --primary-color: #0B1426;
+        --secondary-color: #1A2B47;
+        --accent-color: #00D4FF;
+        --success-color: #00FF88;
+        --warning-color: #FF8C42;
+        --danger-color: #FF4757;
+        --cyber-glow: #00D4FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #0B1426;
+        --surface: #1A2B47;
+        --surface-hover: #243B5C;
+        --border-color: rgba(0, 212, 255, 0.2);
+        --glass-bg: rgba(30, 41, 71, 0.8);
+        
+        /* Text Colors */
+        --text-primary: #FFFFFF;
+        --text-secondary: #B3E5FC;
+        --text-muted: #7DD3FC;
+        
+        /* Layout */
+        --transition-speed: 0.4s;
+        --border-radius: 16px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+        --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+        --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+        
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --card-bg: linear-gradient(135deg, #1E3A5F, #243B5C);
+
+        /* Google Classroom compatibility colors */
+        --primary-blue: #1a73e8;
+        --primary-blue-hover: #1557b0;
+        --secondary-blue: #e8f0fe;
+        --green-accent: #1e8e3e;
+        --red-accent: #d93025;
+        --orange-accent: #f9ab00;
+        --purple-accent: #9c27b0;
+        --radius: 8px;
+        --radius-large: 12px;
+        --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        --shadow-light: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+        --shadow-medium: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15);
+        --shadow-heavy: 0 2px 6px 2px rgba(60,64,67,.15), 0 8px 24px 4px rgba(60,64,67,.15);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--background);
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* Network Grid Background Animation - From learning_base.html */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: 
+            linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: -1;
+        animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(50px, 50px); }
+    }
+
+    /* Top navigation bar for learning pages - From learning_base.html */
+    .learning-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border-bottom: 2px solid var(--border-color);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .learning-nav::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+
+    .nav-brand .logo-icon {
+        height: 40px;
+        width: 40px;
+        border-radius: 12px;
+        padding: 6px;
+        background: var(--gradient-primary);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .nav-brand .logo-icon:hover {
+        box-shadow: var(--shadow-glow);
+        transform: scale(1.1);
+    }
+
+    .nav-brand .logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .nav-btn {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: var(--cyber-glow);
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-btn:hover {
+        background: rgba(0, 212, 255, 0.2);
+        border-color: var(--cyber-glow);
+        color: white;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .nav-btn.primary {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+    }
+
+    .nav-btn.primary:hover {
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-2px);
+    }
+
+    .user-profile-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .user-profile-nav:hover {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .profile-avatar-nav {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        overflow: hidden;
+        border: 2px solid rgba(0, 212, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .profile-avatar-nav:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+
+    .profile-avatar-nav img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .profile-name-nav {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    /* Main Content */
+    .main-container {
+        margin-top: 70px;  /* Account for fixed learning-nav height */
+        min-height: calc(100vh - 70px);
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 24px;
+    }
+
+    /* Module Card */
+    .module-card {
+        background: var(--surface);
+        border-radius: var(--radius-large);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 24px;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .module-card:hover {
+        box-shadow: var(--shadow-medium);
+    }
+
+    .module-card-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .module-title-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .module-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--secondary-blue);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-blue);
+        font-size: 20px;
+    }
+
+    .module-title-info h1 {
+        font-size: 1.5rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .module-subtitle {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .module-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    /* Google-style Buttons */
+    .btn {
+        padding: 8px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: var(--transition);
+        min-height: 36px;
+    }
+
+    .btn:hover {
+        background: var(--surface-hover);
+        box-shadow: var(--shadow-light);
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+        color: var(--text-light);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 255, 255, 0.4);
+        color: var(--text-light);
+        text-decoration: none;
+    }
+
+    .btn-danger {
+        color: var(--red-accent);
+        border-color: var(--red-accent);
+    }
+
+    .btn-danger:hover {
+        background: #fce8e6;
+    }
+
+    .btn-text {
+        background: transparent;
+        border: none;
+        color: var(--primary-blue);
+        padding: 8px;
+    }
+
+    .btn-text:hover {
+        background: var(--secondary-blue);
+    }
+
+    /* Form Sections */
+    .form-section {
+        padding: 24px;
+    }
+
+    .form-section:not(:last-child) {
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-primary);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: var(--text-light);
+        font-size: 14px;
+        font-family: 'Roboto', sans-serif;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: var(--text-muted);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .checkbox {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Lessons Section */
+    .lessons-section {
+        margin-top: 24px;
+    }
+
+    .lessons-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding: 0 24px;
+    }
+
+    .lessons-title {
+        font-size: 1.25rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lesson-item {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 12px;
+        transition: var(--transition);
+    }
+
+    .lesson-item:hover {
+        box-shadow: var(--shadow-medium);
+    }
+
+    .lesson-content {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: between;
+        gap: 16px;
+    }
+
+    .lesson-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--secondary-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-blue);
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .lesson-info {
+        flex: 1;
+    }
+
+    .lesson-title {
+        font-size: 16px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .lesson-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .lesson-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .lesson-status.active {
+        background: #e8f5e8;
+        color: var(--green-accent);
+    }
+
+    .lesson-status.inactive {
+        background: #f1f3f4;
+        color: var(--text-muted);
+    }
+
+    .lesson-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: var(--text-light);
+    }
+
+    .action-btn:hover {
+        background: rgba(0, 255, 255, 0.2);
+        border-color: var(--neon-cyan);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 255, 255, 0.3);
+        color: var(--neon-cyan);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-secondary);
+    }
+
+    .empty-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .empty-title {
+        font-size: 20px;
+        font-weight: 400;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    /* Floating Action Button */
+    .fab {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+        color: var(--text-light);
+        border: none;
+        border-radius: 50%;
+        box-shadow: 0 4px 16px rgba(0, 255, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 90;
+    }
+
+    .fab:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 255, 255, 0.6);
+    }
+
+    /* Responsive Design - From learning_base.html */
+    @media (max-width: 768px) {
+        .learning-nav {
+            padding: 0 16px;
+        }
+        
+        .nav-brand .logo-text {
+            display: none;
+        }
+        
+        .nav-actions {
+            gap: 8px;
+        }
+        
+        .nav-btn {
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+        
+        .main-container {
+            padding: 16px;
+        }
+        
+        .module-card-header {
+            padding: 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .form-section {
+            padding: 16px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .lessons-header {
+            padding: 0 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .lesson-content {
+            padding: 12px 16px;
+        }
+
+        .lesson-actions {
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .learning-nav {
+            height: 60px;
+        }
+        
+        .main-container {
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            padding: 12px;
+        }
+        
+        .user-profile-nav .profile-name-nav {
+            display: none;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .module-card {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Toast notifications */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-medium);
+        padding: 16px 20px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--green-accent);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--red-accent);
+    }
+
+    /* Multimedia Upload Styles */
+    .media-upload-section {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .upload-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        font-weight: 500;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .tab-btn:last-child {
+        border-right: none;
+    }
+
+    .tab-btn.active {
+        background: var(--surface);
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--cyber-glow);
+    }
+
+    .upload-panel {
+        display: none;
+        padding: 20px;
+    }
+
+    .upload-panel.active {
+        display: block;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: var(--transition);
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .file-upload-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .file-upload-btn .material-icons {
+        font-size: 20px;
+    }
+
+    /* Tools Grid */
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 12px;
+    }
+
+    .tool-option {
+        display: flex;
+        align-items: center;
+    }
+
+    .tool-option input[type="checkbox"] {
+        display: none;
+    }
+
+    .tool-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: var(--transition);
+        width: 100%;
+    }
+
+    .tool-option input[type="checkbox"]:checked + .tool-label {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    .tool-label:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .tool-label .material-icons {
+        font-size: 20px;
+        color: var(--cyber-glow);
+    }
+
+    /* Link Input Groups */
+    .link-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+    }
+
+    .link-input-group:last-child {
+        margin-bottom: 0;
+    }
+
+    /* File Preview */
+    .file-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .file-preview-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: var(--radius);
+        font-size: 12px;
+        color: var(--cyber-glow);
+    }
+
+    .file-preview-item .remove-btn {
+        background: none;
+        border: none;
+        color: var(--red-accent);
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+    }
+
+    .file-preview-item .remove-btn:hover {
+        background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Responsive adjustments for multimedia section */
+    @media (max-width: 768px) {
+        .tools-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .upload-tabs {
+            flex-direction: column;
+        }
+        
+        .tab-btn {
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab-btn:last-child {
+            border-bottom: none;
+        }
+    }
+</style>
+</head>
+
+<body>
+    <!-- Top Navigation for Learning Pages - Using learning_base.html styling -->
+    <nav class="learning-nav">
+        <a href="{{ url_for('class_controller.index') }}" class="nav-brand">
+            <div class="logo-icon">
+                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
+            </div>
+            <div class="logo-text">RiddleNet</div>
+        </a>
+        
+        <div class="nav-actions">
+            <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="nav-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Content Manager
+            </a>
+            
+            <a class="user-profile-nav" href="{{ url_for('class_controller.index') }}">
+                <div class="profile-avatar-nav">
+                    {% if current_user and current_user.is_authenticated %}
+                        {{ (current_user.first_name or current_user.username or 'A')[0].upper() }}
+                    {% else %}
+                        A
+                    {% endif %}
+                </div>
+                <div class="profile-name-nav">
+                    {% if current_user and current_user.is_authenticated %}
+                        {{ current_user.first_name or current_user.username or 'Admin' }}
+                    {% else %}
+                        Admin
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="main-container">
+        <!-- Module Edit Card -->
+        <div class="module-card">
+            <!-- Module Header -->
+            <div class="module-card-header">
+                <div class="module-title-section">
+                    <div class="module-icon">
+                        <span class="material-icons">school</span>
+                    </div>
+                    <div class="module-title-info">
+                        <h1>Edit Module: {{ module.title }}</h1>
+                        <div class="module-subtitle">Module {{ module.order_index or 1 }} • {{ lessons|length }} lessons • {{ module.estimated_duration or 140 }} minutes</div>
+                    </div>
+                </div>
+                
+                <div class="module-actions">
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <span class="material-icons">delete</span>
+                        Delete Module
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Section -->
+            <form method="POST" action="{{ url_for('enhanced_module.update_module', class_id=class_obj.id, module_id=module.id) }}" enctype="multipart/form-data">>
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="material-icons">info</span>
+                        Basic Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="title" class="form-label">Module Title</label>
+                        <input type="text" id="title" name="title" class="form-control" 
+                               value="{{ module.title }}" 
+                               placeholder="Enter module title..."
+                               required>
+                        <div class="form-text">This will be displayed as the main module heading</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Module Description</label>
+                        <textarea id="description" name="description" class="form-control" 
+                                  placeholder="Describe what students will learn in this module...">{{ module.description or '' }}</textarea>
+                        <div class="form-text">A brief overview of the module content and learning objectives</div>
+                    </div>
+                </div>
+
+                <!-- Content Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="material-icons">article</span>
+                        Module Content
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="content" class="form-label">Content</label>
+                        <textarea id="content" name="content" class="form-control" 
+                                  style="min-height: 200px;"
+                                  placeholder="Enter the main content for this module...">{{ module.content or '' }}</textarea>
+                        <div class="form-text">Supports HTML and Markdown formatting</div>
+                    </div>
+                </div>
+
+                <!-- Multimedia & Resources Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="material-icons">perm_media</span>
+                        Multimedia & Resources
+                    </h3>
+                    
+                    <!-- Video Upload/URL -->
+                    <div class="form-group">
+                        <label class="form-label">Videos</label>
+                        <div class="media-upload-section">
+                            <div class="upload-tabs">
+                                <button type="button" class="tab-btn active" onclick="switchMediaTab('video-upload')">Upload Video</button>
+                                <button type="button" class="tab-btn" onclick="switchMediaTab('video-url')">Video URL</button>
+                            </div>
+                            
+                            <div id="video-upload" class="upload-panel active">
+                                <input type="file" id="video_file" name="video_file" class="file-input" accept="video/*" multiple>
+                                <label for="video_file" class="file-upload-btn">
+                                    <span class="material-icons">video_library</span>
+                                    Choose Video Files
+                                </label>
+                                <div class="form-text">Supported formats: MP4, WebM, AVI (max 500MB each)</div>
+                            </div>
+                            
+                            <div id="video-url" class="upload-panel">
+                                <input type="url" name="video_url" class="form-control" placeholder="Enter YouTube, Vimeo, or direct video URL">
+                                <div class="form-text">Supports YouTube, Vimeo, and direct video links</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label for="images" class="form-label">Images & Diagrams</label>
+                        <input type="file" id="images" name="images" class="file-input" accept="image/*" multiple>
+                        <label for="images" class="file-upload-btn">
+                            <span class="material-icons">photo_library</span>
+                            Choose Images
+                        </label>
+                        <div class="form-text">Supported formats: JPG, PNG, GIF, SVG (max 10MB each)</div>
+                    </div>
+
+                    <!-- Document Upload -->
+                    <div class="form-group">
+                        <label for="documents" class="form-label">Documents & Files</label>
+                        <input type="file" id="documents" name="documents" class="file-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" multiple>
+                        <label for="documents" class="file-upload-btn">
+                            <span class="material-icons">folder</span>
+                            Choose Documents
+                        </label>
+                        <div class="form-text">Supported formats: PDF, Word, PowerPoint, Excel, Text files (max 50MB each)</div>
+                    </div>
+
+                    <!-- Educational Tools -->
+                    <div class="form-group">
+                        <label class="form-label">Educational Tools</label>
+                        <div class="tools-grid">
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_whiteboard" name="tools[]" value="whiteboard">
+                                <label for="enable_whiteboard" class="tool-label">
+                                    <span class="material-icons">draw</span>
+                                    Interactive Whiteboard
+                                </label>
+                            </div>
+                            
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_quiz" name="tools[]" value="quiz">
+                                <label for="enable_quiz" class="tool-label">
+                                    <span class="material-icons">quiz</span>
+                                    Interactive Quiz
+                                </label>
+                            </div>
+                            
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_simulator" name="tools[]" value="network_simulator">
+                                <label for="enable_simulator" class="tool-label">
+                                    <span class="material-icons">router</span>
+                                    Network Simulator
+                                </label>
+                            </div>
+                            
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_code" name="tools[]" value="code_editor">
+                                <label for="enable_code" class="tool-label">
+                                    <span class="material-icons">code</span>
+                                    Code Editor
+                                </label>
+                            </div>
+                            
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_3d" name="tools[]" value="3d_models">
+                                <label for="enable_3d" class="tool-label">
+                                    <span class="material-icons">view_in_ar</span>
+                                    3D Models
+                                </label>
+                            </div>
+                            
+                            <div class="tool-option">
+                                <input type="checkbox" id="enable_timeline" name="tools[]" value="timeline">
+                                <label for="enable_timeline" class="tool-label">
+                                    <span class="material-icons">timeline</span>
+                                    Interactive Timeline
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-text">Select educational tools to include in this module</div>
+                    </div>
+
+                    <!-- External Links -->
+                    <div class="form-group">
+                        <label for="external_links" class="form-label">External Resources</label>
+                        <div id="external-links-container">
+                            <div class="link-input-group">
+                                <input type="text" name="link_title[]" class="form-control" placeholder="Resource title" style="margin-bottom: 8px;">
+                                <input type="url" name="external_links[]" class="form-control" placeholder="https://example.com">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-text" onclick="addLinkInput()">
+                            <span class="material-icons">add</span>
+                            Add Another Link
+                        </button>
+                        <div class="form-text">Add links to external resources, websites, or reference materials</div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <span class="material-icons">settings</span>
+                        Module Settings
+                    </h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="order_index" class="form-label">Order Index</label>
+                            <input type="number" id="order_index" name="order_index" class="form-control" 
+                                   value="{{ module.order_index or 0 }}" min="0">
+                            <div class="form-text">Determines the order of modules in the course</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="estimated_duration" class="form-label">Estimated Duration (minutes)</label>
+                            <input type="number" id="estimated_duration" name="estimated_duration" class="form-control" 
+                                   value="{{ module.estimated_duration or 140 }}" min="1">
+                            <div class="form-text">Expected time to complete this module</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is_active" name="is_active" class="checkbox" 
+                                   {% if module.is_active %}checked{% endif %}>
+                            <label for="is_active" class="form-label">Active Module</label>
+                        </div>
+                        <div class="form-text">Only active modules are visible to students</div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is_published" name="is_published" class="checkbox" 
+                                   {% if module.is_published %}checked{% endif %}>
+                            <label for="is_published" class="form-label">Publish Module</label>
+                        </div>
+                        <div class="form-text">Published modules are live and ready for students</div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-icons">save</span>
+                            Update Module
+                        </button>
+                        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_obj.id) }}" class="btn">
+                            <span class="material-icons">cancel</span>
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lessons Section -->
+        <div class="lessons-section">
+            <div class="lessons-header">
+                <h2 class="lessons-title">
+                    <span class="material-icons">list_alt</span>
+                    Module Lessons
+                </h2>
+                <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-primary">
+                    <span class="material-icons">add</span>
+                    Add Lesson
+                </a>
+            </div>
+
+            {% if lessons %}
+                {% for lesson in lessons %}
+                <div class="lesson-item">
+                    <div class="lesson-content">
+                        <div class="lesson-icon">
+                            <span class="material-icons">
+                                {% if lesson.type == 'video' %}play_circle_filled{% elif lesson.type == 'quiz' %}quiz{% else %}article{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="lesson-info">
+                            <div class="lesson-title">{{ lesson.title }}</div>
+                            <div class="lesson-meta">
+                                <span class="lesson-status {{ 'active' if lesson.is_active else 'inactive' }}">
+                                    {{ 'Published' if lesson.is_active else 'Draft' }}
+                                </span>
+                                <span>•</span>
+                                <span>Order: {{ lesson.order_index or 0 }}</span>
+                                <span>•</span>
+                                <span>{{ lesson.type or 'Lesson' }}</span>
+                                {% if lesson.description %}
+                                    <span>•</span>
+                                    <span>{{ lesson.description[:50] }}{% if lesson.description|length > 50 %}...{% endif %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="lesson-actions">
+                            <a class="action-btn" href="{{ url_for('lesson.edit_lesson', lesson_id=lesson.id) }}" title="Edit Lesson">
+                                <span class="material-icons">edit</span>
+                            </a>
+                            <a class="action-btn" href="{{ url_for('lesson.view_lesson', lesson_id=lesson.id) }}" title="View Lesson">
+                                <span class="material-icons">visibility</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <span class="material-icons">library_books</span>
+                    </div>
+                    <h3 class="empty-title">No lessons yet</h3>
+                    <p class="empty-text">Create your first lesson to get started with this module</p>
+                    <a href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" class="btn btn-primary">
+                        <span class="material-icons">add</span>
+                        Create First Lesson
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <a class="fab" href="{{ url_for('lesson.new_lesson', class_id=class_obj.id, module_id=module.id) }}" title="Add New Lesson">
+        <span class="material-icons">add</span>
+    </a>
+
+    <!-- Toast Notification Template -->
+    <div id="toast" class="toast">
+        <span class="material-icons" id="toast-icon">check_circle</span>
+        <span id="toast-message">Changes saved successfully!</span>
+    </div>
+
+    <script>
+    // classId bootstrap removed; not needed here
+        
+        // Google Classroom-style functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form enhancement
+            const form = document.querySelector('form');
+            const inputs = form.querySelectorAll('input, textarea');
+            
+            // Auto-save functionality
+            let saveTimeout;
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        showToast('Draft saved automatically', 'info');
+                    }, 3000);
+                });
+            });
+
+            // Form validation
+            form.addEventListener('submit', function(e) {
+                const title = document.getElementById('title');
+                if (!title.value.trim()) {
+                    e.preventDefault();
+                    showToast('Please enter a module title', 'error');
+                    title.focus();
+                    return;
+                }
+                
+                showToast('Updating module...', 'info');
+            });
+
+            // Enhanced interactions
+            const moduleCard = document.querySelector('.module-card');
+            moduleCard.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            moduleCard.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Delete confirmation with Google-style dialog
+        function confirmDelete() {
+            if (confirm('Delete this module?\n\nThis will permanently delete the module and all its lessons. This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("enhanced_module.delete_module", class_id=class_obj.id, module_id=module.id) }}';
+                
+                const csrfToken = document.querySelector('meta[name=csrf-token]');
+                if (csrfToken) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'csrf_token';
+                    input.value = csrfToken.getAttribute('content');
+                    form.appendChild(input);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const messageEl = document.getElementById('toast-message');
+            
+            messageEl.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            switch(type) {
+                case 'success':
+                    icon.textContent = 'check_circle';
+                    break;
+                case 'error':
+                    icon.textContent = 'error';
+                    break;
+                case 'info':
+                    icon.textContent = 'info';
+                    break;
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Enhanced form interactions
+        document.querySelectorAll('.form-control').forEach(control => {
+            control.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-1px)';
+            });
+            
+            control.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Initialize multimedia functionality
+        initializeMultimedia();
+    </script>
+
+    <script>
+        // Multimedia functionality
+        function initializeMultimedia() {
+            // File upload preview functionality
+            initializeFilePreview();
+            
+            // Initialize drag and drop
+            initializeDragDrop();
+        }
+
+        // Switch between upload tabs
+        function switchMediaTab(tabId) {
+            // Hide all panels
+            document.querySelectorAll('.upload-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Remove active from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected panel
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Add external link input
+        function addLinkInput() {
+            const container = document.getElementById('external-links-container');
+            const newLinkGroup = document.createElement('div');
+            newLinkGroup.className = 'link-input-group';
+            newLinkGroup.innerHTML = `
+                <input type="text" name="link_title[]" class="form-control" placeholder="Resource title" style="margin-bottom: 8px;">
+                <input type="url" name="external_links[]" class="form-control" placeholder="https://example.com">
+                <button type="button" class="btn btn-text" onclick="removeLinkInput(this)" style="color: var(--red-accent); margin-top: 8px;">
+                    <span class="material-icons">remove</span>
+                    Remove Link
+                </button>
+            `;
+            container.appendChild(newLinkGroup);
+        }
+
+        // Remove external link input
+        function removeLinkInput(button) {
+            button.parentElement.remove();
+        }
+
+        // Initialize file preview functionality
+        function initializeFilePreview() {
+            const fileInputs = document.querySelectorAll('.file-input');
+            
+            fileInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    showFilePreview(this);
+                });
+            });
+        }
+
+        // Show file preview
+        function showFilePreview(input) {
+            const files = input.files;
+            if (!files.length) return;
+            
+            // Remove existing preview
+            const existingPreview = input.parentElement.querySelector('.file-preview');
+            if (existingPreview) {
+                existingPreview.remove();
+            }
+            
+            // Create new preview container
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'file-preview';
+            
+            Array.from(files).forEach((file, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'file-preview-item';
+                previewItem.innerHTML = `
+                    <span class="material-icons">${getFileIcon(file.type)}</span>
+                    <span>${file.name}</span>
+                    <span>(${formatFileSize(file.size)})</span>
+                    <button type="button" class="remove-btn" onclick="removeFileFromPreview(this, ${index})">
+                        <span class="material-icons">close</span>
+                    </button>
+                `;
+                previewContainer.appendChild(previewItem);
+            });
+            
+            // Insert after the label
+            const label = input.parentElement.querySelector('.file-upload-btn');
+            label.after(previewContainer);
+        }
+
+        // Get appropriate icon for file type
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return 'image';
+            if (fileType.startsWith('video/')) return 'video_file';
+            if (fileType.includes('pdf')) return 'picture_as_pdf';
+            if (fileType.includes('word') || fileType.includes('document')) return 'description';
+            if (fileType.includes('presentation') || fileType.includes('powerpoint')) return 'slideshow';
+            if (fileType.includes('spreadsheet') || fileType.includes('excel')) return 'table_chart';
+            return 'insert_drive_file';
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Remove file from preview
+        function removeFileFromPreview(button, fileIndex) {
+            const previewItem = button.parentElement;
+            const preview = previewItem.parentElement;
+            const input = preview.parentElement.querySelector('.file-input');
+            
+            // Create new FileList without the removed file
+            const dt = new DataTransfer();
+            const files = Array.from(input.files);
+            files.splice(fileIndex, 1);
+            files.forEach(file => dt.items.add(file));
+            input.files = dt.files;
+            
+            // Remove the preview item
+            previewItem.remove();
+            
+            // If no files left, remove entire preview
+            if (preview.children.length === 0) {
+                preview.remove();
+            }
+        }
+
+        // Initialize drag and drop functionality
+        function initializeDragDrop() {
+            const uploadPanels = document.querySelectorAll('.upload-panel');
+            
+            uploadPanels.forEach(panel => {
+                panel.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.background = 'rgba(0, 212, 255, 0.05)';
+                    this.style.borderColor = 'var(--cyber-glow)';
+                });
+                
+                panel.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.background = '';
+                    this.style.borderColor = '';
+                });
+                
+                panel.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.background = '';
+                    this.style.borderColor = '';
+                    
+                    const files = e.dataTransfer.files;
+                    const input = this.querySelector('.file-input');
+                    if (input && files.length) {
+                        input.files = files;
+                        showFilePreview(input);
+                        showToast(`${files.length} file(s) added successfully`, 'success');
+                    }
+                });
+            });
+        }
+
+        // Validate file uploads before submit
+        function validateUploads() {
+            let isValid = true;
+            const fileInputs = document.querySelectorAll('.file-input');
+            
+            fileInputs.forEach(input => {
+                const files = input.files;
+                Array.from(files).forEach(file => {
+                    // Check file size limits
+                    const maxSizes = {
+                        'video': 500 * 1024 * 1024, // 500MB
+                        'image': 10 * 1024 * 1024,  // 10MB
+                        'document': 50 * 1024 * 1024 // 50MB
+                    };
+                    
+                    let maxSize = maxSizes.document; // default
+                    if (file.type.startsWith('video/')) maxSize = maxSizes.video;
+                    else if (file.type.startsWith('image/')) maxSize = maxSizes.image;
+                    
+                    if (file.size > maxSize) {
+                        showToast(`File ${file.name} is too large. Maximum size: ${formatFileSize(maxSize)}`, 'error');
+                        isValid = false;
+                    }
+                });
+            });
+            
+            return isValid;
+        }
+
+        // Add validation to form submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!validateUploads()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

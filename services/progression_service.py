@@ -92,6 +92,56 @@ class ProgressionService:
             print(f"Error marking simulation completed: {e}")
             return None
     
+    def update_module_progress(self, user_id, module_id):
+        """Update module progress based on completed lessons"""
+        try:
+            from admin.models.module import Module, ModuleProgress, LessonProgress, Lesson
+            
+            # Get the module
+            module = Module.query.get(module_id)
+            if not module:
+                return None
+            
+            # Count completed lessons
+            completed_lessons = LessonProgress.query.join(
+                Lesson, LessonProgress.lesson_id == Lesson.id
+            ).filter(
+                LessonProgress.user_id == user_id,
+                LessonProgress.is_completed == True,
+                Lesson.module_id == module_id
+            ).count()
+            
+            # Get or create module progress
+            module_progress = ModuleProgress.query.filter_by(
+                user_id=user_id,
+                module_id=module_id
+            ).first()
+            
+            if not module_progress:
+                module_progress = ModuleProgress(
+                    user_id=user_id,
+                    module_id=module_id
+                )
+                self.db.session.add(module_progress)
+            
+            # Update progress
+            total_lessons = module.total_lessons
+            if total_lessons > 0:
+                module_progress.completed_lessons = completed_lessons
+                module_progress.progress_percentage = (completed_lessons / total_lessons) * 100
+                module_progress.is_completed = completed_lessons >= total_lessons
+                
+                if module_progress.is_completed and not module_progress.completed_at:
+                    module_progress.completed_at = datetime.utcnow()
+            
+            self.db.session.commit()
+            return module_progress
+            
+        except Exception as e:
+            self.db.session.rollback()
+            print(f"Error updating module progress: {e}")
+            return None
+    
     def get_next_unlocked_simulation(self, user_id, learning_path_id):
         """Get the next unlocked simulation in a learning path - Learning Paths removed"""
         # Learning Paths feature has been completely removed

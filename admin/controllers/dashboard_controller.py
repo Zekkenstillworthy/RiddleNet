@@ -15,6 +15,11 @@ from admin.models.question import Question
 from admin.models.essay_response import EssayResponse
 from admin.models.class_model import Class  # Import Class model
 from admin.models.activity_log import ActivityLog
+from admin.models.module import Module, Lesson  # Import Module and Lesson models globally
+from admin.models.simulation import Simulation
+from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+from admin.models.simulation_assignment import SimulationAssignment
+from admin.models.question_group import QuestionGroup  # Import QuestionGroup model globally
 from utils.render_utils import render_safe_template
 
 # Import analytics service
@@ -379,6 +384,13 @@ def websocket_panel():
     return render_safe_template('admin/websocket_panel.html', 
                                active_page='websocket')
 
+@dashboard_bp.route('/websocket-test')
+@login_required
+def websocket_test():
+    """Simple WebSocket connection test page"""
+    return render_safe_template('admin/websocket_test_simple.html', 
+                               active_page='websocket_test')
+
 @dashboard_bp.route('/simulation-builder')
 @login_required
 def simulation_builder():
@@ -481,15 +493,14 @@ def class_content_manager():
         # Get available content types for the selected class
         class_content = {}
         class_statistics = {}
+        class_modules = []  # Initialize with empty list
+        
         if selected_class:
             current_app.logger.info(f"Module Builder: Processing content for class {selected_class.name} (ID: {selected_class.id})")
             # Get dynamic class content from database
-            from admin.models.simulation import Simulation
-            from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
-            from admin.models.module import Module, Lesson
+            # All models imported globally
             
             # Get simulations for this class via SimulationAssignment
-            from admin.models.simulation_assignment import SimulationAssignment
             class_simulation_assignments = SimulationAssignment.query.filter_by(
                 class_id=selected_class.id,
                 is_active=True
@@ -504,147 +515,178 @@ def class_content_manager():
             # Get question groups assigned to this class
             question_groups = selected_class.question_groups.all() if selected_class.question_groups else []
             
-        # Get class modules
-        try:
-            class_modules = Module.query.filter_by(
-                class_id=selected_class.id,
-                is_active=True
-            ).order_by(Module.order_index.asc()).all()
-            current_app.logger.info(f"Found {len(class_modules)} modules for class {selected_class.id}")
-            for module in class_modules:
-                current_app.logger.info(f"  - Module: {module.title} (ID: {module.id})")
-        except Exception as e:
-            current_app.logger.error(f"Error querying class modules: {e}")
-            # Always ensure we have an empty list rather than None
-            class_modules = []
+            # Get class modules
+            try:
+                class_modules = Module.query.filter_by(
+                    class_id=selected_class.id,
+                    is_active=True
+                ).order_by(Module.order_index.asc()).all()
+                current_app.logger.info(f"Found {len(class_modules)} modules for class {selected_class.id}")
+                for module_item in class_modules:
+                    current_app.logger.info(f"  - Module: {module_item.title} (ID: {module_item.id})")
+            except Exception as e:
+                current_app.logger.error(f"Error querying class modules: {e}")
+                # Always ensure we have an empty list rather than None
+                class_modules = []
+                
+            # Always log module loading status for debugging
+            current_app.logger.info(f"🔍 Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")
             
-        # Always log module loading status for debugging
-        current_app.logger.info(f"🔍 Module loading status: {len(class_modules)} modules loaded for class {selected_class.id}")
-        
-        # Get class-specific content (NEW: Dynamic content from database)
-        try:
-            class_announcements = ClassAnnouncement.query.filter_by(
-                class_id=selected_class.id,
-                is_published=True
-            ).order_by(ClassAnnouncement.created_at.desc()).all()
-        except Exception as e:
-            current_app.logger.error(f"Error querying announcements with is_published filter: {e}")
-            # Fallback: Get all announcements for this class without the is_published filter
-            class_announcements = ClassAnnouncement.query.filter_by(
-                class_id=selected_class.id
-            ).order_by(ClassAnnouncement.created_at.desc()).all()
-        
-        try:
-            class_assignments = ClassAssignment.query.filter_by(
-                class_id=selected_class.id,
-                is_published=True
-            ).order_by(ClassAssignment.due_date.asc()).all()
-        except Exception as e:
-            current_app.logger.error(f"Error querying assignments with is_published filter: {e}")
-            # Fallback: Get all assignments for this class
-            class_assignments = ClassAssignment.query.filter_by(
-                class_id=selected_class.id
-            ).order_by(ClassAssignment.created_at.desc()).all()
-        
-        try:
-            class_materials = ClassMaterial.query.filter_by(
-                class_id=selected_class.id,
-                is_published=True
-            ).order_by(ClassMaterial.created_at.desc()).all()
-        except Exception as e:
-            current_app.logger.error(f"Error querying materials with is_published filter: {e}")
-            # Fallback: Get all materials for this class
-            class_materials = ClassMaterial.query.filter_by(
-                class_id=selected_class.id
-            ).order_by(ClassMaterial.created_at.desc()).all()
-        
-        # Get class topics with error handling
-        try:
-            class_topics = ClassTopic.query.filter_by(
-                class_id=selected_class.id
-            ).order_by(ClassTopic.sort_order.asc()).all()
-        except Exception as e:
-            current_app.logger.error(f"Error querying class topics: {e}")
-            # Create empty list if query fails
-            class_topics = []
-        
-        # Get enrolled students and their details
-        enrolled_students = selected_class.students.all() if selected_class.students else []
-        student_count = len(enrolled_students)
+            # Get class-specific content (NEW: Dynamic content from database)
+            try:
+                class_announcements = ClassAnnouncement.query.filter_by(
+                    class_id=selected_class.id,
+                    is_published=True
+                ).order_by(ClassAnnouncement.created_at.desc()).all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying announcements with is_published filter: {e}")
+                # Fallback: Get all announcements for this class without the is_published filter
+                class_announcements = ClassAnnouncement.query.filter_by(
+                    class_id=selected_class.id
+                ).order_by(ClassAnnouncement.created_at.desc()).all()
             
-        # Build comprehensive class content dictionary
-        class_content = {
-            'simulations': [sim.to_dict() if hasattr(sim, 'to_dict') else {
-                'id': sim.id,
-                'title': sim.title,
-                'description': sim.description
-            } for sim in class_simulations],
-            'question_groups': [qg.to_dict() if hasattr(qg, 'to_dict') else {
-                'id': qg.id,
-                'title': qg.title,
-                'description': qg.description
-            } for qg in question_groups],
-            'modules': [module.to_dict() if hasattr(module, 'to_dict') else {
-                'id': module.id,
-                'title': module.title,
-                'description': module.description,
-                'module_number': getattr(module, 'module_number', ''),
-                'order_index': getattr(module, 'order_index', 0),
-                'is_published': getattr(module, 'is_published', False),
-                'is_active': getattr(module, 'is_active', True),
-                'objectives': getattr(module, 'objectives', []),
-                'content': getattr(module, 'content', ''),
-                'estimated_duration': getattr(module, 'estimated_duration', 60),
-                'level': getattr(module, 'level', 'Beginner')
-            } for module in class_modules],
-            'announcements': [ann.to_dict() if hasattr(ann, 'to_dict') else {
-                'id': ann.id,
-                'title': ann.title,
-                'message': ann.message,
-                'created_at': ann.created_at.isoformat() if ann.created_at else None
-            } for ann in class_announcements],
-            'assignments': [assign.to_dict() if hasattr(assign, 'to_dict') else {
-                'id': assign.id,
-                'title': assign.title,
-                'description': assign.description,
-                'due_date': assign.due_date.isoformat() if hasattr(assign, 'due_date') and assign.due_date else None
-            } for assign in class_assignments],
-            'materials': [mat.to_dict() if hasattr(mat, 'to_dict') else {
-                'id': mat.id,
-                'title': mat.title,
-                'description': mat.description,
-                'file_url': getattr(mat, 'file_url', '')
-            } for mat in class_materials],
-            'topics': [topic.to_dict() if hasattr(topic, 'to_dict') else {
-                'id': topic.id,
-                'title': topic.title,
-                'description': topic.description,
-                'sort_order': topic.sort_order
-            } for topic in class_topics],
-            'student_count': student_count,
-            'students': [{'id': student.id, 'username': student.username, 'email': student.email, 'first_name': getattr(student, 'first_name', ''), 'last_name': getattr(student, 'last_name', '')} for student in enrolled_students]
-        }
+            try:
+                class_assignments = ClassAssignment.query.filter_by(
+                    class_id=selected_class.id,
+                    is_published=True
+                ).order_by(ClassAssignment.due_date.asc()).all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying assignments with is_published filter: {e}")
+                # Fallback: Get all assignments for this class
+                class_assignments = ClassAssignment.query.filter_by(
+                    class_id=selected_class.id
+                ).order_by(ClassAssignment.created_at.desc()).all()
+            
+            try:
+                class_materials = ClassMaterial.query.filter_by(
+                    class_id=selected_class.id,
+                    is_published=True
+                ).order_by(ClassMaterial.created_at.desc()).all()
+            except Exception as e:
+                current_app.logger.error(f"Error querying materials with is_published filter: {e}")
+                # Fallback: Get all materials for this class
+                class_materials = ClassMaterial.query.filter_by(
+                    class_id=selected_class.id
+                ).order_by(ClassMaterial.created_at.desc()).all()
+            
+            # Get class topics with error handling
+            try:
+                # ClassTopic deprecated - content now organized under modules
+                class_topics = []
+            except Exception as e:
+                current_app.logger.error(f"Error querying class topics: {e}")
+                # Create empty list if query fails
+                class_topics = []
+            
+            # Get enrolled students and their details
+            enrolled_students = selected_class.students.all() if selected_class.students else []
+            student_count = len(enrolled_students)
+                
+            # Build comprehensive class content dictionary
+            class_content = {
+                'simulations': [sim.to_dict() if hasattr(sim, 'to_dict') else {
+                    'id': sim.id,
+                    'title': sim.title,
+                    'description': sim.description
+                } for sim in class_simulations],
+                'question_groups': [qg.to_dict() if hasattr(qg, 'to_dict') else {
+                    'id': qg.id,
+                    'title': qg.title,
+                    'description': qg.description
+                } for qg in question_groups],
+                'modules': [module_item.to_dict(include_lessons=True) if hasattr(module_item, 'to_dict') else {
+                    'id': module_item.id,
+                    'title': module_item.title,
+                    'description': module_item.description,
+                    'module_number': getattr(module_item, 'module_number', ''),
+                    'order_index': getattr(module_item, 'order_index', 0),
+                    'is_published': getattr(module_item, 'is_published', False),
+                    'is_active': getattr(module_item, 'is_active', True),
+                    'objectives': getattr(module_item, 'objectives', []),
+                    'content': getattr(module_item, 'content', ''),
+                    'estimated_duration': getattr(module_item, 'estimated_duration', 60),
+                    'level': getattr(module_item, 'level', 'Beginner'),
+                    'lessons': [lesson.to_dict() for lesson in getattr(module_item, 'lessons', []) if getattr(lesson, 'is_active', True)]
+                } for module_item in class_modules],
+                'announcements': [ann.to_dict() if hasattr(ann, 'to_dict') else {
+                    'id': ann.id,
+                    'title': ann.title,
+                    'message': ann.message,
+                    'created_at': ann.created_at.isoformat() if ann.created_at else None
+                } for ann in class_announcements],
+                'assignments': [assign.to_dict() if hasattr(assign, 'to_dict') else {
+                    'id': assign.id,
+                    'title': assign.title,
+                    'description': assign.description,
+                    'due_date': assign.due_date.isoformat() if hasattr(assign, 'due_date') and assign.due_date else None
+                } for assign in class_assignments],
+                'materials': [mat.to_dict() if hasattr(mat, 'to_dict') else {
+                    'id': mat.id,
+                    'title': mat.title,
+                    'description': mat.description,
+                    'file_url': getattr(mat, 'file_url', '')
+                } for mat in class_materials],
+                'topics': [topic.to_dict() if hasattr(topic, 'to_dict') else {
+                    'id': topic.id,
+                    'title': topic.title,
+                    'description': topic.description,
+                    'sort_order': topic.sort_order
+                } for topic in class_topics],
+                'student_count': student_count,
+                'students': [{'id': student.id, 'username': student.username, 'email': student.email, 'first_name': getattr(student, 'first_name', ''), 'last_name': getattr(student, 'last_name', '')} for student in enrolled_students]
+            }
+            
+            # Log module count for debugging
+            current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")
+            
+            # Build comprehensive statistics
+            class_statistics = {
+                'total_students': student_count,
+                'total_simulations': len(class_simulations),
+                'total_question_groups': len(question_groups),
+                'total_modules': len(class_modules),
+                'total_announcements': len(class_announcements),
+                'total_assignments': len(class_assignments),
+                'total_materials': len(class_materials),
+                'total_topics': len(class_topics),
+                'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
+                'completion_rate': 85.5,  # Calculate actual completion rate from database
+                'average_score': 78.2     # Calculate actual average score from database
+            }
+            
+            current_app.logger.info(f"Class content for {selected_class.name}: {class_statistics}")
+            current_app.logger.info(f"*** Updated with modules support ***")
+        else:
+            # No class selected - provide empty data
+            class_content = {
+                'simulations': [],
+                'question_groups': [],
+                'modules': [],
+                'announcements': [],
+                'assignments': [],
+                'materials': [],
+                'topics': [],
+                'student_count': 0,
+                'students': []
+            }
+            
+            # Empty statistics for no class selected
+            class_statistics = {
+                'total_students': 0,
+                'total_simulations': 0,
+                'total_question_groups': 0,
+                'total_modules': 0,
+                'total_announcements': 0,
+                'total_assignments': 0,
+                'total_materials': 0,
+                'total_topics': 0,
+                'total_content': 0,
+                'completion_rate': 0,
+                'average_score': 0
+            }
         
         # Log module count for debugging
         current_app.logger.info(f"🔧 Built class_content with {len(class_content['modules'])} modules")
-        
-        # Build comprehensive statistics
-        class_statistics = {
-            'total_students': student_count,
-            'total_simulations': len(class_simulations),
-            'total_question_groups': len(question_groups),
-            'total_modules': len(class_modules),
-            'total_announcements': len(class_announcements),
-            'total_assignments': len(class_assignments),
-            'total_materials': len(class_materials),
-            'total_topics': len(class_topics),
-            'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
-            'completion_rate': 85.5,  # Calculate actual completion rate from database
-            'average_score': 78.2     # Calculate actual average score from database
-        }
-        
-        current_app.logger.info(f"Class content for {selected_class.name}: {class_statistics}")
-        current_app.logger.info(f"*** Updated with modules support ***")
         
         # Debug what we're passing to template
         current_app.logger.info(f"Template context: all_classes={len(all_classes)}, selected_class={'Yes' if selected_class else 'No'}")
@@ -741,8 +783,9 @@ def get_class_content(class_id):
         from admin.models.class_model import Class
         from admin.models.simulation import Simulation
         from admin.models.simulation_assignment import SimulationAssignment
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
-        from admin.models.module import Module
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
+        # Module already imported globally
         
         cls = Class.query.get_or_404(class_id)
         
@@ -792,9 +835,8 @@ def get_class_content(class_id):
             ).order_by(ClassMaterial.created_at.desc()).all()
         
         try:
-            topics = ClassTopic.query.filter_by(
-                class_id=class_id
-            ).order_by(ClassTopic.sort_order.asc()).all()
+            # ClassTopic deprecated - content now organized under modules
+            topics = []
         except:
             topics = []
         
@@ -805,8 +847,8 @@ def get_class_content(class_id):
                 is_active=True
             ).order_by(Module.order_index.asc()).all()
             current_app.logger.info(f"API: Found {len(modules)} modules for class {class_id}")
-            for module in modules:
-                current_app.logger.info(f"  - Module: {module.title} (ID: {module.id})")
+            for module_item in modules:
+                current_app.logger.info(f"  - Module: {module_item.title} (ID: {module_item.id})")
         except Exception as e:
             current_app.logger.error(f"Error querying modules for API: {e}")
             modules = []
@@ -828,17 +870,18 @@ def get_class_content(class_id):
                 'assignments': [assign.to_dict() for assign in assignments],
                 'materials': [mat.to_dict() for mat in materials],
                 'topics': [topic.to_dict() for topic in topics],
-                'modules': [module.to_dict() if hasattr(module, 'to_dict') else {
-                    'id': module.id,
-                    'title': module.title,
-                    'description': module.description,
-                    'module_number': getattr(module, 'module_number', ''),
-                    'order_index': getattr(module, 'order_index', 0),
-                    'is_published': getattr(module, 'is_published', False),
-                    'is_active': getattr(module, 'is_active', True),
-                    'estimated_duration': getattr(module, 'estimated_duration', 60),
-                    'level': getattr(module, 'level', 'Beginner')
-                } for module in modules],
+                'modules': [module_item.to_dict(include_lessons=True) if hasattr(module_item, 'to_dict') else {
+                    'id': module_item.id,
+                    'title': module_item.title,
+                    'description': module_item.description,
+                    'module_number': getattr(module_item, 'module_number', ''),
+                    'order_index': getattr(module_item, 'order_index', 0),
+                    'is_published': getattr(module_item, 'is_published', False),
+                    'is_active': getattr(module_item, 'is_active', True),
+                    'estimated_duration': getattr(module_item, 'estimated_duration', 60),
+                    'level': getattr(module_item, 'level', 'Beginner'),
+                    'lessons': [lesson.to_dict() for lesson in getattr(module_item, 'lessons', []) if getattr(lesson, 'is_active', True)]
+                } for module_item in modules],
                 'student_count': student_count
             },
             'statistics': {
@@ -866,7 +909,8 @@ def create_class_content(class_id):
     
     try:
         from admin.models.class_model import Class
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
         from admin import db
         
         # Handle both JSON and form data (for file uploads)
@@ -891,7 +935,6 @@ def create_class_content(class_id):
                 message=data.get('message', ''),
                 priority=data.get('priority', 'normal'),
                 is_published=data.get('is_published', False),
-                topic_id=data.get('topic_id'),
                 created_by=current_user.id
             )
             db.session.add(announcement)
@@ -913,7 +956,6 @@ def create_class_content(class_id):
                 points=data.get('points', 100),
                 assignment_type=data.get('assignment_type', 'assignment'),
                 is_published=data.get('is_published', False),
-                topic_id=data.get('topic_id'),
                 question_group_id=data.get('question_group_id'),
                 simulation_id=data.get('simulation_id'),
                 created_by=current_user.id
@@ -964,7 +1006,6 @@ def create_class_content(class_id):
                 external_url=data.get('url') if not file_url else None,  # Use external URL if no file uploaded
                 file_size=file_size,
                 is_published=data.get('is_published', False),
-                topic_id=data.get('topic_id'),
                 created_by=current_user.id
             )
             db.session.add(material)
@@ -977,16 +1018,12 @@ def create_class_content(class_id):
             })
             
         elif content_type == 'topic':
-            topic = ClassTopic(
-                class_id=class_id,
-                name=data.get('name', ''),
-                description=data.get('description', ''),
-                color=data.get('color', '#3B82F6'),
-                sort_order=data.get('sort_order', 0),
-                created_by=current_user.id
-            )
-            db.session.add(topic)
-            db.session.commit()
+            # ClassTopic deprecated - content now organized under modules
+            return jsonify({
+                'success': False,
+                'message': 'Topics are deprecated. Please create modules instead.',
+                'error': 'ClassTopic is no longer supported'
+            }), 400
             
             return jsonify({
                 'success': True,
@@ -1007,7 +1044,8 @@ def create_class_content(class_id):
 def get_class_content_item(class_id, content_type, content_id):
     """Get a specific content item for editing"""
     try:
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
         
         if content_type == 'announcement':
             content = ClassAnnouncement.query.get_or_404(content_id)
@@ -1016,7 +1054,8 @@ def get_class_content_item(class_id, content_type, content_id):
         elif content_type == 'material':
             content = ClassMaterial.query.get_or_404(content_id)
         elif content_type == 'topic':
-            content = ClassTopic.query.get_or_404(content_id)
+            # ClassTopic deprecated - content now organized under modules
+            return jsonify({'success': False, 'error': 'Topics are no longer supported'}), 400
         else:
             return jsonify({'success': False, 'error': f'Unknown content type: {content_type}'}), 400
         
@@ -1038,7 +1077,8 @@ def get_class_content_item(class_id, content_type, content_id):
 def update_class_content(class_id, content_type, content_id):
     """Update existing class content"""
     try:
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
         from admin import db
         
         data = request.json
@@ -1050,7 +1090,8 @@ def update_class_content(class_id, content_type, content_id):
         elif content_type == 'material':
             content = ClassMaterial.query.get_or_404(content_id)
         elif content_type == 'topic':
-            content = ClassTopic.query.get_or_404(content_id)
+            # ClassTopic deprecated - content now organized under modules
+            return jsonify({'success': False, 'error': 'Topics are no longer supported'}), 400
         else:
             return jsonify({'success': False, 'error': f'Unknown content type: {content_type}'}), 400
         
@@ -1084,7 +1125,8 @@ def delete_class_content(class_id, content_type, content_id):
         print(f"🔥 DELETE request received - class_id: {class_id}, content_type: {content_type}, content_id: {content_id}")
         current_app.logger.info(f"DELETE request received - class_id: {class_id}, content_type: {content_type}, content_id: {content_id}")
         
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
         from admin.models.simulation import Simulation
         from admin.models.question_group import QuestionGroup
         from admin import db
@@ -1109,11 +1151,26 @@ def delete_class_content(class_id, content_type, content_id):
             db.session.commit()
             message = f'{content_type.title()} deleted successfully!'
             
-        elif content_type == 'topic':
-            content = ClassTopic.query.get_or_404(content_id)
-            db.session.delete(content)
+        elif content_type == 'module':
+            # Module already imported globally
+            module = Module.query.get_or_404(content_id)
+            module_title = module.title
+            
+            # Delete the module and its content
+            db.session.delete(module)
             db.session.commit()
-            message = f'{content_type.title()} deleted successfully!'
+            message = f'Module "{module_title}" deleted successfully!'
+            
+        elif content_type == 'topic':
+            # DEPRECATED: Topics are now modules
+            # Module already imported globally
+            module = Module.query.get_or_404(content_id)
+            module_title = module.title
+            
+            # Delete the module (what used to be a topic)
+            db.session.delete(module)
+            db.session.commit()
+            message = f'Module "{module_title}" deleted successfully!'
             
         elif content_type == 'simulation':
             print(f"Processing simulation deletion for simulation ID: {content_id}")
@@ -1211,7 +1268,8 @@ def delete_class_content(class_id, content_type, content_id):
 def delete_class_content_legacy(content_id):
     """Legacy delete endpoint for backwards compatibility - redirects to proper endpoint"""
     try:
-        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+        from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+        # ClassTopic removed - content now organized under Modules
         from admin import db
         
         # Try to find the content item to get its type and class_id
@@ -1239,10 +1297,8 @@ def delete_class_content_legacy(content_id):
                 class_id = content.class_id
         
         if not content:
-            content = ClassTopic.query.get(content_id)
-            if content:
-                content_type = 'topic'
-                class_id = content.class_id
+            # ClassTopic deprecated - skip checking for topics
+            pass
         
         if not content:
             return jsonify({'success': False, 'error': 'Content not found'}), 404

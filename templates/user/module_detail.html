@@ -858,9 +858,15 @@ html {
 
 <script>
 function startLesson(lessonId) {
-    alert('Lesson functionality will be implemented next!');
-    // TODO: Redirect to lesson detail page
-    // window.location.href = `/class/{{ class_data.id }}/lesson/${lessonId}`;
+    // Debug logging
+    console.log('startLesson called with lessonId:', lessonId);
+    console.log('Class ID:', {{ class_data.id }});
+    console.log('Full URL will be:', `/lesson/class/{{ class_data.id }}/lesson/${lessonId}`);
+    
+    // Redirect to lesson detail page
+    const url = `/lesson/class/{{ class_data.id }}/lesson/${lessonId}`;
+    console.log('Navigating to:', url);
+    window.location.href = url;
 }
 
 function openMaterial(fileUrl) {
@@ -872,15 +878,22 @@ function openMaterial(fileUrl) {
 }
 
 function startLearning() {
-    {% if lessons|length > 0 %}
-        startLesson({{ lessons[0].id }});
+    console.log('startLearning() called');
+    console.log('Lessons available:', {{ lessons|length if lessons else 0 }});
+    
+    {% if lessons and lessons|length > 0 %}
+        // Navigate to the first lesson
+        const firstLessonId = {{ lessons[0].id }};
+        console.log('Starting first lesson with ID:', firstLessonId);
+        startLesson(firstLessonId);
     {% else %}
-        alert('No lessons available in this module');
+        console.error('No lessons available in this module');
+        alert('No lessons available in this module yet. Please contact your instructor.');
     {% endif %}
 }
 
 function viewProgress() {
-    alert('Progress tracking functionality coming soon!');
+    window.location.href = `{{ url_for('universal_class.dynamic_class_detail', class_id=class_data.id) }}#progress-tab`;
 }
 
 function continueToNext() {

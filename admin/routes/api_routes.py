@@ -231,6 +231,14 @@ def render_module_preview():
 @api_bp.route('/classes/<int:class_id>/modules/<int:module_id>/preview', methods=['GET'])
 def get_module_preview_data(class_id, module_id):
     """Get detailed module data for preview"""
+    print("=" * 60)
+    print("🔍 API PREVIEW ROUTE CALLED")
+    print(f"Route: /admin/api/classes/{class_id}/modules/{module_id}/preview")
+    print(f"This is the API route, not the template route!")
+    print(f"Method: {request.method}")
+    print(f"Referrer: {request.referrer}")
+    print("=" * 60)
+    
     try:
         # Get the module with all related data
         module = Module.query.filter_by(id=module_id, class_id=class_id).first()

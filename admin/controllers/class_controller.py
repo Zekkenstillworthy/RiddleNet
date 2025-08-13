@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, make_response
 from flask_login import login_required, current_user
+from utils.auth_decorators import admin_required
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
 from user.models.user import User  # Import User model for the relationship
@@ -23,7 +24,7 @@ template_generator = ClassTemplateGenerator()
 enhanced_generator = enhanced_template_generator
 
 @class_controller.route('/classes')
-@login_required
+@admin_required
 def index():
     """Display the class management page"""
     # Add debug print to verify authentication status
@@ -33,7 +34,7 @@ def index():
     return render_template('admin/class.html', active_page='classes')
 
 @class_controller.route('/class/<int:class_id>/content-manager')
-@login_required
+@admin_required
 def content_manager(class_id):
     """Redirect to the class content manager"""
     # Import here to avoid circular imports

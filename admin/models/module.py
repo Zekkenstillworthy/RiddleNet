@@ -37,7 +37,8 @@ class Module(db.Model):
     
     # Class Integration
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
-    learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=True)
+    class_obj = db.relationship('Class', backref=db.backref('modules', lazy='dynamic', order_by='Module.order_index'))
+    # learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=True)  # Disabled - table doesn't exist
     
     # Status and Settings
     is_active = db.Column(db.Boolean, default=True)
@@ -56,6 +57,12 @@ class Module(db.Model):
                              lazy='dynamic', order_by='Module.order_index')
     user_progress = db.relationship('ModuleProgress', backref='module', lazy='dynamic')
     
+    # Content relationships - moving content from Topics to Modules
+    announcements = db.relationship('ClassAnnouncement', backref='module', lazy='dynamic')
+    assignments = db.relationship('ClassAssignment', backref='module', lazy='dynamic')
+    materials = db.relationship('ClassMaterial', backref='module', lazy='dynamic')
+    simulations = db.relationship('SimulationAssignment', backref='module', lazy='dynamic')
+    
     def __repr__(self):
         return f"Module('{self.module_number}', '{self.title}', '{self.course_type}')"
     
@@ -71,8 +78,29 @@ class Module(db.Model):
     
     @property
     def total_simulations(self):
-        """Get total number of simulations across all lessons"""
-        return sum(lesson.simulation_count for lesson in self.lessons if lesson.is_active)
+        """Get total number of simulations across all lessons and direct assignments"""
+        lesson_sims = sum(lesson.simulation_count for lesson in self.lessons.filter_by(is_active=True).all())
+        direct_sims = self.simulations.filter_by(is_active=True).count()
+        return lesson_sims + direct_sims
+    
+    @property
+    def total_content_items(self):
+        """Get total number of content items in this module"""
+        return (self.announcements.count() + 
+                self.assignments.count() + 
+                self.materials.count() + 
+                self.simulations.count() + 
+                self.total_lessons)
+    
+    def get_all_content(self):
+        """Get all content items in this module organized by type"""
+        return {
+            'announcements': list(self.announcements.filter_by(is_published=True).order_by('sort_order')),
+            'assignments': list(self.assignments.filter_by(is_published=True).order_by('sort_order')),
+            'materials': list(self.materials.filter_by(is_published=True).order_by('sort_order')),
+            'simulations': list(self.simulations.filter_by(is_active=True).order_by('created_at')),
+            'lessons': list(self.lessons.filter_by(is_active=True).order_by('order_index'))
+        }
     
     def get_user_progress(self, user_id):
         """Get user's progress in this module"""
@@ -119,7 +147,7 @@ class Module(db.Model):
         
         return True
     
-    def to_dict(self, include_lessons=False, user_id=None):
+    def to_dict(self, include_lessons=False, include_content=False, user_id=None):
         """Convert module to dictionary"""
         data = {
             'id': self.id,
@@ -134,6 +162,7 @@ class Module(db.Model):
             'level': self.level,
             'total_lessons': self.total_lessons,
             'total_simulations': self.total_simulations,
+            'total_content_items': self.total_content_items,
             'is_active': self.is_active,
             'is_published': self.is_published,
             'requires_sequential_completion': self.requires_sequential_completion
@@ -144,7 +173,14 @@ class Module(db.Model):
             data['is_unlocked'] = self.is_unlocked_for_user(user_id)
         
         if include_lessons:
-            data['lessons'] = [lesson.to_dict(user_id=user_id) for lesson in self.lessons if lesson.is_active]
+            data['lessons'] = [lesson.to_dict(user_id=user_id) for lesson in self.lessons.filter_by(is_active=True).all()]
+        
+        if include_content:
+            content = self.get_all_content()
+            data['announcements'] = [item.to_dict() for item in content['announcements']]
+            data['assignments'] = [item.to_dict() for item in content['assignments']]
+            data['materials'] = [item.to_dict() for item in content['materials']]
+            data['simulations'] = [item.to_dict() for item in content['simulations']]
         
         return data
 

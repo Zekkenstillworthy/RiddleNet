@@ -97,6 +97,12 @@ class SocketClient {
      * Connect to the WebSocket server
      */
     connect() {
+        // Check if WebSocket is explicitly disabled
+        if (window.DISABLE_WEBSOCKET) {
+            console.log('🔌 WebSocket initialization disabled for this page');
+            return;
+        }
+
         if (this.socket && this.connected) {
             console.log('Already connected to WebSocket server');
             return;
@@ -888,28 +894,40 @@ if (typeof window !== 'undefined' && typeof window.SocketClient === 'undefined')
 }
 
 if (typeof window !== 'undefined' && typeof window.socketClient === 'undefined') {
-    window.socketClient = new window.SocketClient();
-    
-    // Connect with better timing and error handling
-    const connectWhenReady = () => {
-        try {
-            // Wait for DOM and other critical scripts to load
-            setTimeout(() => {
-                console.log('🔌 Initiating WebSocket connection...');
-                window.socketClient.connect();
-            }, 1000); // Reduced delay but still sufficient
-        } catch (error) {
-            console.error('Error during WebSocket initialization:', error);
-        }
-    };
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', connectWhenReady);
+    // Check if WebSocket is disabled before creating the client
+    if (window.DISABLE_WEBSOCKET) {
+        console.log('🔌 WebSocket creation disabled for this page');
+        window.socketClient = {
+            connected: false,
+            connect: () => console.log('WebSocket disabled'),
+            emit: () => {},
+            on: () => {},
+            off: () => {}
+        };
     } else {
-        connectWhenReady();
+        window.socketClient = new window.SocketClient();
+        
+        // Connect with better timing and error handling
+        const connectWhenReady = () => {
+            try {
+                // Wait for DOM and other critical scripts to load
+                setTimeout(() => {
+                    console.log('🔌 Initiating WebSocket connection...');
+                    window.socketClient.connect();
+                }, 1000); // Reduced delay but still sufficient
+            } catch (error) {
+                console.error('Error during WebSocket initialization:', error);
+            }
+        };
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', connectWhenReady);
+        } else {
+            connectWhenReady();
+        }
+        
+        console.log('✅ SocketClient initialized and ready');
     }
-    
-    console.log('✅ SocketClient initialized and ready');
 } else if (typeof window !== 'undefined') {
     console.log('ℹ️ SocketClient already exists, skipping initialization');
 }

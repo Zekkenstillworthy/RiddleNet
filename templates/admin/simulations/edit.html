@@ -1,0 +1,662 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Edit Simulation - {{ simulation.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .edit-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .form-section {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-control-small {
+        max-width: 200px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-grid-thirds {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+    }
+
+    .steps-editor {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        background: #f9fafb;
+    }
+
+    .step-item {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        position: relative;
+    }
+
+    .step-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .step-number {
+        background: var(--primary-color);
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 15px;
+    }
+
+    .step-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .btn-danger-small {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-secondary-small {
+        background: #6b7280;
+        color: white;
+    }
+
+    .step-type-selector {
+        margin-bottom: 20px;
+    }
+
+    .type-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .type-btn {
+        padding: 10px 16px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .type-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .step-details {
+        display: none;
+        margin-top: 20px;
+    }
+
+    .step-details.active {
+        display: block;
+    }
+
+    .question-options {
+        margin-top: 15px;
+    }
+
+    .option-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .option-input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+    }
+
+    .checkbox-input {
+        margin-right: 5px;
+    }
+
+    .add-option-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+
+    .objectives-list {
+        margin-top: 15px;
+    }
+
+    .objective-item {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .objective-input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+    }
+
+    .remove-objective-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+    .add-objective-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 30px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .add-step-btn {
+        background: var(--primary-color);
+        color: white;
+        border: 2px dashed transparent;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 20px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .validation-error {
+        color: #ef4444;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .form-help {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form id="editSimulationForm" method="POST">
+    <div class="edit-header">
+        <h1 class="edit-title">Edit Simulation</h1>
+        <p>Modify simulation settings, steps, and content</p>
+    </div>
+
+    <!-- Basic Information -->
+    <div class="form-container">
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i> Basic Information
+            </h2>
+            
+            <div class="form-group">
+                <label class="form-label">Simulation Title</label>
+                <input type="text" name="title" class="form-control" 
+                       value="{{ simulation.title }}" required>
+                <div class="form-help">Choose a clear, descriptive title for your simulation</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="3" required>{{ simulation.description }}</textarea>
+                <div class="form-help">Provide a detailed description of what students will learn</div>
+            </div>
+
+            <div class="form-grid-thirds">
+                <div class="form-group">
+                    <label class="form-label">Simulation Type</label>
+                    <select name="simulation_type" class="form-control" required>
+                        <option value="network" {{ 'selected' if simulation.simulation_type == 'network' else '' }}>Network Simulation</option>
+                        <option value="security" {{ 'selected' if simulation.simulation_type == 'security' else '' }}>Security Simulation</option>
+                        <option value="troubleshooting" {{ 'selected' if simulation.simulation_type == 'troubleshooting' else '' }}>Troubleshooting</option>
+                        <option value="configuration" {{ 'selected' if simulation.simulation_type == 'configuration' else '' }}>Configuration</option>
+                        <option value="mixed" {{ 'selected' if simulation.simulation_type == 'mixed' else '' }}>Mixed</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Difficulty Level</label>
+                    <select name="difficulty" class="form-control" required>
+                        <option value="beginner" {{ 'selected' if simulation.difficulty == 'beginner' else '' }}>Beginner</option>
+                        <option value="intermediate" {{ 'selected' if simulation.difficulty == 'intermediate' else '' }}>Intermediate</option>
+                        <option value="advanced" {{ 'selected' if simulation.difficulty == 'advanced' else '' }}>Advanced</option>
+                        <option value="expert" {{ 'selected' if simulation.difficulty == 'expert' else '' }}>Expert</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Estimated Duration (minutes)</label>
+                    <input type="number" name="estimated_duration" class="form-control" 
+                           value="{{ simulation.estimated_duration }}" min="5" max="180" required>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" name="category" class="form-control" 
+                           value="{{ simulation.category }}">
+                    <div class="form-help">e.g., Networking, Security, System Administration</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tags (comma-separated)</label>
+                    <input type="text" name="tags" class="form-control" 
+                           value="{{ simulation.tags|join(', ') if simulation.tags else '' }}">
+                    <div class="form-help">Help users find this simulation with relevant keywords</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Objectives -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-bullseye"></i> Learning Objectives
+            </h2>
+            
+            <div class="objectives-list" id="objectivesList">
+                {% if simulation.learning_objectives %}
+                    {% for objective in simulation.learning_objectives %}
+                        <div class="objective-item">
+                            <input type="text" name="learning_objectives" class="objective-input" 
+                                   value="{{ objective }}" placeholder="Enter learning objective">
+                            <button type="button" class="remove-objective-btn" onclick="removeObjective(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <button type="button" class="add-objective-btn" onclick="addObjective()">
+                <i class="fas fa-plus"></i> Add Objective
+            </button>
+        </div>
+
+        <!-- Simulation Steps -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i class="fas fa-list-ol"></i> Simulation Steps
+            </h2>
+            
+            <div class="steps-editor" id="stepsEditor">
+                {% if simulation.step_definitions %}
+                    {% for step in simulation.step_definitions %}
+                        <div class="step-item" data-step-index="{{ loop.index0 }}">
+                            <div class="step-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="step-number">{{ loop.index }}</div>
+                                    <span style="font-weight: 600;">Step {{ loop.index }}</span>
+                                </div>
+                                <div class="step-actions">
+                                    <button type="button" class="btn-small btn-secondary-small" onclick="moveStepUp(this)">↑</button>
+                                    <button type="button" class="btn-small btn-secondary-small" onclick="moveStepDown(this)">↓</button>
+                                    <button type="button" class="btn-small btn-danger-small" onclick="removeStep(this)">Delete</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Step Title</label>
+                                <input type="text" name="step_titles" class="form-control" 
+                                       value="{{ step.title }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Step Description</label>
+                                <textarea name="step_descriptions" class="form-control" rows="2" required>{{ step.description }}</textarea>
+                            </div>
+
+                            <div class="step-type-selector">
+                                <label class="form-label">Step Type</label>
+                                <div class="type-buttons">
+                                    <button type="button" class="type-btn {{ 'active' if step.type == 'instruction' else '' }}" 
+                                            data-type="instruction" onclick="selectStepType(this)">Instruction</button>
+                                    <button type="button" class="type-btn {{ 'active' if step.type == 'question' else '' }}" 
+                                            data-type="question" onclick="selectStepType(this)">Question</button>
+                                    <button type="button" class="type-btn {{ 'active' if step.type == 'configuration' else '' }}" 
+                                            data-type="configuration" onclick="selectStepType(this)">Configuration</button>
+                                    <button type="button" class="type-btn {{ 'active' if step.type == 'troubleshooting' else '' }}" 
+                                            data-type="troubleshooting" onclick="selectStepType(this)">Troubleshooting</button>
+                                </div>
+                                <input type="hidden" name="step_types" value="{{ step.type }}">
+                            </div>
+
+                            <!-- Step-specific details would be rendered here based on type -->
+                            <!-- This is a simplified version - in practice you'd have different form fields for each step type -->
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <button type="button" class="add-step-btn" onclick="addStep()">
+                <i class="fas fa-plus"></i> Add Step
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Save Changes
+        </button>
+        <button type="button" class="btn btn-success" onclick="previewSimulation()">
+            <i class="fas fa-eye"></i> Preview
+        </button>
+        <a href="{{ url_for('admin_simulation.view_simulation', simulation_id=simulation.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </a>
+    </div>
+</form>
+
+<script>
+function addObjective() {
+    const objectivesList = document.getElementById('objectivesList');
+    const objectiveItem = document.createElement('div');
+    objectiveItem.className = 'objective-item';
+    objectiveItem.innerHTML = `
+        <input type="text" name="learning_objectives" class="objective-input" 
+               placeholder="Enter learning objective">
+        <button type="button" class="remove-objective-btn" onclick="removeObjective(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    objectivesList.appendChild(objectiveItem);
+}
+
+function removeObjective(button) {
+    button.parentElement.remove();
+}
+
+function addStep() {
+    const stepsEditor = document.getElementById('stepsEditor');
+    const stepCount = stepsEditor.children.length + 1;
+    
+    const stepItem = document.createElement('div');
+    stepItem.className = 'step-item';
+    stepItem.setAttribute('data-step-index', stepCount - 1);
+    
+    stepItem.innerHTML = `
+        <div class="step-header">
+            <div style="display: flex; align-items: center;">
+                <div class="step-number">${stepCount}</div>
+                <span style="font-weight: 600;">Step ${stepCount}</span>
+            </div>
+            <div class="step-actions">
+                <button type="button" class="btn-small btn-secondary-small" onclick="moveStepUp(this)">↑</button>
+                <button type="button" class="btn-small btn-secondary-small" onclick="moveStepDown(this)">↓</button>
+                <button type="button" class="btn-small btn-danger-small" onclick="removeStep(this)">Delete</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Step Title</label>
+            <input type="text" name="step_titles" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Step Description</label>
+            <textarea name="step_descriptions" class="form-control" rows="2" required></textarea>
+        </div>
+
+        <div class="step-type-selector">
+            <label class="form-label">Step Type</label>
+            <div class="type-buttons">
+                <button type="button" class="type-btn active" data-type="instruction" onclick="selectStepType(this)">Instruction</button>
+                <button type="button" class="type-btn" data-type="question" onclick="selectStepType(this)">Question</button>
+                <button type="button" class="type-btn" data-type="configuration" onclick="selectStepType(this)">Configuration</button>
+                <button type="button" class="type-btn" data-type="troubleshooting" onclick="selectStepType(this)">Troubleshooting</button>
+            </div>
+            <input type="hidden" name="step_types" value="instruction">
+        </div>
+    `;
+    
+    stepsEditor.appendChild(stepItem);
+    updateStepNumbers();
+}
+
+function removeStep(button) {
+    const stepItem = button.closest('.step-item');
+    stepItem.remove();
+    updateStepNumbers();
+}
+
+function moveStepUp(button) {
+    const stepItem = button.closest('.step-item');
+    const prevStep = stepItem.previousElementSibling;
+    if (prevStep) {
+        stepItem.parentNode.insertBefore(stepItem, prevStep);
+        updateStepNumbers();
+    }
+}
+
+function moveStepDown(button) {
+    const stepItem = button.closest('.step-item');
+    const nextStep = stepItem.nextElementSibling;
+    if (nextStep) {
+        stepItem.parentNode.insertBefore(nextStep, stepItem);
+        updateStepNumbers();
+    }
+}
+
+function selectStepType(button) {
+    // Remove active class from siblings
+    const siblings = button.parentNode.querySelectorAll('.type-btn');
+    siblings.forEach(btn => btn.classList.remove('active'));
+    
+    // Add active class to clicked button
+    button.classList.add('active');
+    
+    // Update hidden input
+    const hiddenInput = button.closest('.step-item').querySelector('input[name="step_types"]');
+    hiddenInput.value = button.dataset.type;
+}
+
+function updateStepNumbers() {
+    const steps = document.querySelectorAll('.step-item');
+    steps.forEach((step, index) => {
+        const stepNumber = step.querySelector('.step-number');
+        const stepLabel = step.querySelector('.step-header span');
+        stepNumber.textContent = index + 1;
+        stepLabel.textContent = `Step ${index + 1}`;
+        step.setAttribute('data-step-index', index);
+    });
+}
+
+function previewSimulation() {
+    // Create a temporary form to submit for preview
+    const form = document.getElementById('editSimulationForm');
+    const originalAction = form.action;
+    const originalTarget = form.target;
+    
+    form.action = '{{ url_for("admin_simulation.preview_simulation", simulation_id=simulation.id) }}';
+    form.target = '_blank';
+    form.submit();
+    
+    // Restore original form attributes
+    form.action = originalAction;
+    form.target = originalTarget;
+}
+
+// Form submission handling
+document.getElementById('editSimulationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate form
+    const requiredFields = this.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            isValid = false;
+            field.style.borderColor = '#ef4444';
+        } else {
+            field.style.borderColor = '#e5e7eb';
+        }
+    });
+    
+    if (!isValid) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    // Submit form
+    this.submit();
+});
+</script>
+{% endblock %}

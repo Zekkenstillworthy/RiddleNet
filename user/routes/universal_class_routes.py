@@ -12,7 +12,8 @@ from admin.models.question_group import QuestionGroup
 from admin.models.simulation import Simulation
 from admin.models.simulation_assignment import SimulationAssignment
 from admin.models.module import Module, Lesson
-from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+# ClassTopic removed - content now organized under Modules
 from utils.auth_utils import flexible_login_required, get_current_user_context
 from admin import db
 from sqlalchemy import and_
@@ -119,18 +120,17 @@ def dynamic_class_detail(class_id):
                 'is_unlocked': True  # Default to unlocked to avoid database issues
             })
         
-        # If no modules exist, try to get content from topics as fallback organization
+        # If no modules exist, create a default module structure
         if not class_modules:
-            topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
-            for topic in topics:
-                class_modules.append({
-                    'id': topic.id,
-                    'title': topic.name,
-                    'name': topic.name,  # For compatibility
-                    'description': topic.description,
-                    'type': 'topic',
-                    'completion_percentage': 0  # TODO: Calculate from user progress
-                })
+            # Create a placeholder module to hold unorganized content
+            class_modules.append({
+                'id': 0,
+                'title': 'General Content',
+                'name': 'General Content',  # For compatibility
+                'description': 'Content not yet organized into modules',
+                'type': 'general',
+                'completion_percentage': 0  # TODO: Calculate from user progress
+            })
         
         # Get class simulations from database
         class_simulations = []
@@ -253,9 +253,9 @@ def api_get_content(class_id):
     try:
         class_obj = Class.query.get_or_404(class_id)
         
-        # Get topics/modules
-        topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
-        modules = [{'id': t.id, 'name': t.name, 'description': t.description} for t in topics]
+        # Get modules (replacing topics)
+        modules_query = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
+        modules = [{'id': m.id, 'name': m.title, 'description': m.description} for m in modules_query]
         
         # Get simulations
         simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()

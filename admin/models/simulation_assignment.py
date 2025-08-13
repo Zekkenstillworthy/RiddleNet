@@ -31,6 +31,7 @@ class SimulationAssignment(db.Model):
     
     # Assignment targets (one of these should be set)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)  # New: Module organization
     group_id = db.Column(db.Integer, nullable=True)  # Optional for future group assignments
     individual_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     

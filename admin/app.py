@@ -99,6 +99,10 @@ class AdminApp:
         from admin.controllers.class_controller import class_controller
         from admin.controllers.class_content_controller import class_content_controller
         from admin.controllers.notification_controller import notification_controller
+        from admin.controllers.enhanced_module_controller import enhanced_module_bp
+        from admin.controllers.lesson_editor_controller import lesson_editor_bp
+        from admin.controllers.module_lesson_editor_controller import module_lesson_editor_bp
+        from simple_test_bp import simple_test_bp
         # from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
         from admin.routes.topology_routes import topology_bp
@@ -119,6 +123,10 @@ class AdminApp:
         self.app.register_blueprint(question_group_bp)        
         self.app.register_blueprint(class_controller)
         self.app.register_blueprint(class_content_controller)
+        self.app.register_blueprint(enhanced_module_bp)
+        self.app.register_blueprint(lesson_editor_bp)
+        self.app.register_blueprint(module_lesson_editor_bp)
+        self.app.register_blueprint(simple_test_bp)
         self.app.register_blueprint(notification_controller)
         # self.app.register_blueprint(scenario_bp)
         self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)

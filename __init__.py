@@ -183,7 +183,7 @@ def create_app(config=None):
     # Add global user context processor
     @app.context_processor
     def inject_user():
-        """Inject user information into all templates - CRITICAL FIX: Complete admin/user separation"""
+        """CRITICAL FIX: Inject user information with proper namespace isolation"""
         from flask_login import current_user
         from flask import session, request
         
@@ -193,60 +193,59 @@ def create_app(config=None):
         except:
             path = "unknown"
         
-        # CRITICAL FIX: Strict admin route isolation
+        auth_namespace = session.get('auth_namespace', 'none')
+        
+        # CRITICAL FIX: Strict namespace-based isolation
         if path.startswith('/admin'):
-            # Admin routes: ONLY use Flask-Login admin authentication
-            if current_user.is_authenticated:
+            # Admin routes: ONLY allow admin namespace
+            if current_user.is_authenticated and auth_namespace == 'admin':
                 from admin.models.user import Admin
                 if isinstance(current_user, Admin):
-                    print(f"Context processor [{path}]: Admin route - authenticated admin: {current_user.username}")
+                    print(f"Context processor [{path}]: Admin route - authenticated admin: {current_user.username} (namespace: {auth_namespace})")
                     return dict(user=current_user)
-                else:
-                    print(f"Context processor [{path}]: Admin route - non-admin user BLOCKED")
-                    return dict(user=None)
-            else:
-                print(f"Context processor [{path}]: Admin route - no authentication")
-                return dict(user=None)
+            
+            print(f"Context processor [{path}]: Admin route - no admin authentication (namespace: {auth_namespace})")
+            return dict(user=None)
         
-        # ENHANCED FIX: User routes with proper admin support for class routes
+        # User routes: Support both user and admin access with namespace checking
         if current_user.is_authenticated:
             from user.models.user import User
             from admin.models.user import Admin
             
-            if isinstance(current_user, User):
-                print(f"Context processor [{path}]: User route - authenticated user: {current_user.username}")
+            if isinstance(current_user, User) and auth_namespace == 'user':
+                print(f"Context processor [{path}]: User route - authenticated user: {current_user.username} (namespace: {auth_namespace})")
                 return dict(user=current_user)
-            elif isinstance(current_user, Admin):
-                # FIXED: Allow admin access to class routes with proper admin context
+            elif isinstance(current_user, Admin) and auth_namespace == 'admin':
+                # Allow admin to access class routes but maintain admin context
                 if '/class/' in path:
-                    print(f"Context processor [{path}]: Admin {current_user.username} accessing class route - allowed")
-                    # Return admin as user for proper template rendering in class views
+                    print(f"Context processor [{path}]: Admin {current_user.username} accessing class route (namespace: {auth_namespace})")
                     return dict(user=current_user)
-                
-                # Allow admin access to other user routes
-                print(f"Context processor [{path}]: Admin {current_user.username} accessing user route - allowed with admin context")
-                return dict(user=current_user)
+                else:
+                    print(f"Context processor [{path}]: Admin {current_user.username} blocked from user route (namespace: {auth_namespace})")
+                    return dict(user=None)
             else:
-                print(f"Context processor [{path}]: User route - unknown user type BLOCKED")
+                print(f"Context processor [{path}]: Authentication type/namespace mismatch - user type: {type(current_user)}, namespace: {auth_namespace}")
                 return dict(user=None)
         
-        # Session-based authentication for user routes only (no admin fallback)
-        if 'user_id' in session:
+        # Session-based authentication ONLY for user namespace
+        if 'user_id' in session and auth_namespace == 'user':
             try:
                 from user.models.user import User
                 user = User.query.get(session['user_id'])
                 if user:
-                    print(f"Context processor [{path}]: Found user via session: {user.username}")
+                    print(f"Context processor [{path}]: Found user via session: {user.username} (namespace: {auth_namespace})")
                     return dict(user=user)
                 else:
                     print(f"Context processor [{path}]: User ID {session['user_id']} not found - clearing session")
                     session.pop('user_id', None)
+                    session.pop('auth_namespace', None)
             except Exception as e:
                 print(f"Context processor [{path}]: Error getting user from session: {e}")
                 session.pop('user_id', None)
+                session.pop('auth_namespace', None)
         
         # No user found
-        print(f"Context processor [{path}]: No user found")
+        print(f"Context processor [{path}]: No user found (namespace: {auth_namespace})")
         return dict(user=None)
     
     # Register template helpers

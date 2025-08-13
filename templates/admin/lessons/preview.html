@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ lesson.title }} - Preview</title>
+    <style>
+        /* Student View Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8fafc;
+            padding: 20px;
+        }
+
+    .lesson-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .lesson-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+
+        .lesson-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .lesson-meta {
+            display: flex;
+            gap: 20px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .lesson-content {
+            padding: 30px;
+        }
+
+        .content-block {
+            margin-bottom: 30px;
+        }
+
+        .content-block:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Text Blocks */
+        .block-text {
+            line-height: 1.8;
+        }
+
+        .block-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #1a202c;
+        }
+
+        .block-text h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #2d3748;
+        }
+
+        .block-text h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #4a5568;
+        }
+
+        .block-text p {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+
+        .block-text ul, .block-text ol {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .block-text li {
+            margin-bottom: 8px;
+        }
+
+        .block-text blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #4a5568;
+        }
+
+        /* Image Blocks */
+        .block-image {
+            text-align: center;
+        }
+
+        .block-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .block-image .caption {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        /* Video Blocks */
+        .block-video {
+            text-align: center;
+        }
+
+    .block-video video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .block-video .video-title {
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .block-video .video-description {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Audio Blocks */
+        .block-audio {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .block-audio .audio-title {
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .block-audio audio {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .block-audio .audio-description {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* File Blocks */
+        .block-file {
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .block-file:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+
+        .block-file .file-icon {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .block-file .file-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        .block-file .file-size {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .block-file .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .block-file .download-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        /* Quiz Blocks */
+        .block-quiz {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .block-quiz .quiz-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .block-quiz .quiz-question {
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .quiz-options {
+            list-style: none;
+        }
+
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        /* Simulation Blocks */
+        .block-simulation {
+            background: #1a202c;
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .block-simulation .simulation-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .block-simulation .simulation-description {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .block-simulation .launch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #48bb78;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .block-simulation .launch-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        /* Separator Blocks */
+        .block-separator {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .block-separator hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #cbd5e0, transparent);
+            margin: 20px 0;
+        }
+
+        /* Progress Bar */
+        .lesson-progress {
+            background: #e2e8f0;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .lesson-header {
+                padding: 20px;
+            }
+
+            .lesson-title {
+                font-size: 24px;
+            }
+
+            .lesson-content {
+                padding: 20px;
+            }
+
+            .lesson-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="lesson-container">
+        <!-- Lesson Header -->
+        <div class="lesson-header fade-in">
+            <h1 class="lesson-title">{{ lesson.title }}</h1>
+            <div class="lesson-meta">
+                <div><i class="fas fa-clock"></i> {{ lesson.estimated_duration }} minutes</div>
+                <div><i class="fas fa-book"></i> {{ lesson.module.title }}</div>
+                {% if lesson.learning_objectives %}
+                    <div><i class="fas fa-list"></i> {{ lesson.learning_objectives|length }} objectives</div>
+                {% endif %}
+            </div>
+    </div>
+
+        <!-- Progress Bar -->
+        <div class="lesson-progress">
+            <div class="progress-fill" style="width: 0%;"></div>
+        </div>
+
+        <!-- Lesson Content -->
+    <div class="lesson-content" id="lesson-content-root">
+            <!-- Learning Objectives -->
+            {% if lesson.learning_objectives %}
+            <div class="content-block block-text slide-in">
+                <h2>🎯 Learning Objectives</h2>
+                <ul>
+                    {% for objective in lesson.learning_objectives %}
+                        <li>{{ objective }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Content Blocks -->
+            {% for block in content_blocks %}
+                <div class="content-block block-{{ block.type }} fade-in" data-block-id="{{ block.id }}" style="animation-delay: {{ loop.index0 * 0.1 }}s;">
+                    {% if block.type == 'text' %}
+                        <div class="block-text">
+                            {{ block.content.html|safe }}
+                        </div>
+                    
+                    {% elif block.type == 'image' %}
+                        <div class="block-image">
+                            {% if block.content.src %}
+                                <img src="{{ block.content.src }}" alt="{{ block.content.alt or 'Lesson Image' }}">
+                                {% if block.content.caption %}
+                                    <div class="caption">{{ block.content.caption }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    
+                    {% elif block.type == 'video' %}
+                        <div class="block-video">
+                            {% if block.content.title %}
+                                <div class="video-title">{{ block.content.title }}</div>
+                            {% endif %}
+                            {% if block.content.src %}
+                                <video controls>
+                                    <source src="{{ block.content.src }}" type="{{ block.content.type or 'video/mp4' }}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% endif %}
+                            {% if block.content.description %}
+                                <div class="video-description">{{ block.content.description }}</div>
+                            {% endif %}
+                        </div>
+                    
+                    {% elif block.type == 'audio' %}
+                        <div class="block-audio">
+                            {% if block.content.title %}
+                                <div class="audio-title">🎵 {{ block.content.title }}</div>
+                            {% endif %}
+                            {% if block.content.src %}
+                                <audio controls>
+                                    <source src="{{ block.content.src }}" type="{{ block.content.type or 'audio/mp3' }}">
+                                    Your browser does not support the audio tag.
+                                </audio>
+                            {% endif %}
+                            {% if block.content.description %}
+                                <div class="audio-description">{{ block.content.description }}</div>
+                            {% endif %}
+                        </div>
+                    
+                    {% elif block.type == 'file' %}
+                        <div class="block-file">
+                            <div class="file-icon">📄</div>
+                            {% if block.content.filename %}
+                                <div class="file-name">{{ block.content.filename }}</div>
+                            {% endif %}
+                            {% if block.content.size %}
+                                <div class="file-size">{{ (block.content.size / 1024 / 1024)|round(2) }} MB</div>
+                            {% endif %}
+                            {% if block.content.url %}
+                                <a href="{{ block.content.url }}" class="download-btn" download>
+                                    <i class="fas fa-download"></i>
+                                    Download File
+                                </a>
+                            {% endif %}
+                        </div>
+                    
+                    {% elif block.type == 'quiz' %}
+                        <div class="block-quiz">
+                            <div class="quiz-title">📝 Knowledge Check</div>
+                            {% if block.content.question %}
+                                <div class="quiz-question">{{ block.content.question }}</div>
+                            {% endif %}
+                            {% if block.content.options %}
+                                <ul class="quiz-options">
+                                    {% for option in block.content.options %}
+                                        <li class="quiz-option">{{ option }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    
+                    {% elif block.type == 'simulation' %}
+                        <div class="block-simulation">
+                            <div class="simulation-title">⚡ Interactive Simulation</div>
+                            {% if block.content.instructions %}
+                                <div class="simulation-description">{{ block.content.instructions }}</div>
+                            {% endif %}
+                            <a href="#" class="launch-btn" onclick="launchSimulation('{{ block.content.simulation_id }}')">
+                                <i class="fas fa-play"></i>
+                                Launch Simulation
+                            </a>
+                        </div>
+                    
+                    {% elif block.type == 'separator' %}
+                        <div class="block-separator">
+                            <hr>
+                        </div>
+                    
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <!-- Fallback content if no blocks exist -->
+            {% if not content_blocks %}
+                <div class="content-block block-text">
+                    {% if lesson.content %}
+                        {{ lesson.content|safe }}
+                    {% else %}
+                        <p>This lesson is currently being prepared. Please check back later.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Key Concepts -->
+            {% if lesson.key_concepts %}
+            <div class="content-block block-text slide-in">
+                <h2>🔑 Key Concepts</h2>
+                <ul>
+                    {% for concept in lesson.key_concepts %}
+                        <li><strong>{{ concept }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+    
+    <script>
+        // Live update support from editor via postMessage
+        window.addEventListener('message', function(event) {
+            const data = event.data || {};
+            if (data.type === 'lesson_preview_update' && data.lessonId == {{ lesson.id }}) {
+                try {
+                    renderBlocks(data.blocks || []);
+                } catch (e) {
+                    console.error('Live preview render error:', e);
+                }
+            }
+            if (data.type === 'lesson_preview_device') {
+                const container = document.querySelector('.lesson-container');
+                if (container) container.style.maxWidth = data.width || '800px';
+            }
+        });
+
+        function renderBlocks(blocks) {
+            const root = document.getElementById('lesson-content-root');
+            if (!root) return;
+            // Build HTML for blocks
+            const frag = document.createDocumentFragment();
+            blocks.forEach((block, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = `content-block block-${block.type} fade-in`;
+                wrapper.dataset.blockId = block.id || '';
+                wrapper.style.animationDelay = (idx * 0.1) + 's';
+
+                let html = '';
+                switch (block.type) {
+                    case 'text':
+                        html = `<div class="block-text">${(block.content && block.content.html) || ''}</div>`;
+                        break;
+                    case 'image':
+                        if (block.content && block.content.src) {
+                            html = `<div class="block-image">
+                                        <img src="${block.content.src}" alt="${block.content.alt || 'Lesson Image'}">
+                                        ${block.content.caption ? `<div class=\"caption\">${block.content.caption}</div>` : ''}
+                                    </div>`;
+                        }
+                        break;
+                    case 'video':
+                        if (block.content && block.content.src) {
+                            html = `<div class="block-video">
+                                        ${block.content.title ? `<div class=\"video-title\">${block.content.title}</div>` : ''}
+                                        <video controls>
+                                            <source src="${block.content.src}" type="${block.content.type || 'video/mp4'}">
+                                        </video>
+                                        ${block.content.description ? `<div class=\"video-description\">${block.content.description}</div>` : ''}
+                                    </div>`;
+                        }
+                        break;
+                    case 'file':
+                        html = `<div class="block-file">
+                                    <div class="file-icon">📄</div>
+                                    ${block.content && block.content.filename ? `<div class=\"file-name\">${block.content.filename}</div>` : ''}
+                                    ${block.content && block.content.size ? `<div class=\"file-size\">${(block.content.size / 1024 / 1024).toFixed(2)} MB</div>` : ''}
+                                    ${block.content && block.content.url ? `<a href=\"${block.content.url}\" class=\"download-btn\" download><i class=\"fas fa-download\"></i> Download File</a>` : ''}
+                                </div>`;
+                        break;
+                    case 'separator':
+                        html = `<div class="block-separator"><hr></div>`;
+                        break;
+                }
+                wrapper.innerHTML = html;
+                frag.appendChild(wrapper);
+            });
+
+            // Replace content
+            root.innerHTML = '';
+            root.appendChild(frag);
+            hookAnimations();
+        }
+
+        function hookAnimations() {
+            const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+            document.querySelectorAll('.content-block').forEach(block => {
+                block.style.opacity = '0';
+                block.style.transform = 'translateY(20px)';
+                block.style.transition = 'all 0.6s ease';
+                observer.observe(block);
+            });
+        }
+
+        // Simulate progress as user scrolls
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset;
+            const docHeight = document.body.offsetHeight - window.innerHeight;
+            const scrollPercent = scrollTop / docHeight;
+            
+            const progressFill = document.querySelector('.progress-fill');
+            if (progressFill) {
+                progressFill.style.width = Math.min(scrollPercent * 100, 100) + '%';
+            }
+        });
+
+        // Simulate quiz interactions
+        document.querySelectorAll('.quiz-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selected class from siblings
+                const siblings = this.parentNode.querySelectorAll('.quiz-option');
+                siblings.forEach(sibling => sibling.style.background = 'rgba(255, 255, 255, 0.1)');
+                
+                // Add selected style
+                this.style.background = 'rgba(255, 255, 255, 0.3)';
+                this.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            });
+        });
+
+        // Function for launching simulations (placeholder)
+        function launchSimulation(simulationId) {
+            alert('Launching simulation: ' + simulationId);
+            // In a real implementation, this would open the simulation in a new window/modal
+        }
+
+        // Add intersection observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all content blocks for animations on initial load
+        document.querySelectorAll('.content-block').forEach(block => {
+            block.style.opacity = '0';
+            block.style.transform = 'translateY(20px)';
+            block.style.transition = 'all 0.6s ease';
+            observer.observe(block);
+        });
+    </script>
+</body>
+</html>

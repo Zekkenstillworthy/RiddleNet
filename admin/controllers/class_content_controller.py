@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+from utils.auth_decorators import admin_required
 from admin.models.class_model import Class
 from admin.models.simulation import Simulation
 from admin.models.question_group import QuestionGroup
 from admin.models.module import Module, Lesson
-from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial, ClassTopic
+from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+# ClassTopic removed - content now organized under Modules
 from admin import db
 from datetime import datetime
 
@@ -36,16 +38,16 @@ def manage_content(class_id):
         # Get class modules
         class_modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
         
-        # Get class topics (content organization)
-        class_topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
+        # Get class modules (replacing topics)
+        class_modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
         
-        # Get class assignments
+        # Get class assignments (now organized by module instead of topic)
         class_assignments = ClassAssignment.query.filter_by(class_id=class_id).order_by(ClassAssignment.sort_order).all()
         
-        # Get class materials
+        # Get class materials (now organized by module instead of topic)
         class_materials = ClassMaterial.query.filter_by(class_id=class_id).order_by(ClassMaterial.sort_order).all()
         
-        # Get class announcements
+        # Get class announcements (now organized by module instead of topic)
         class_announcements = ClassAnnouncement.query.filter_by(class_id=class_id).order_by(ClassAnnouncement.created_at.desc()).all()
         
         # Get assigned simulations for this class
@@ -62,33 +64,37 @@ def manage_content(class_id):
         
         # Prepare class content data structure for the template
         class_content = {
-            'modules': [module.to_dict() if hasattr(module, 'to_dict') else {
+            'modules': [module.to_dict(include_content=True) if hasattr(module, 'to_dict') else {
                 'id': module.id,
                 'title': module.title,
                 'description': module.description,
                 'order_index': module.order_index,
                 'is_published': module.is_published,
-                'objectives': module.objectives,
-                'content': module.content
+                'learning_objectives': getattr(module, 'learning_objectives', []),
+                'content': getattr(module, 'content', '')
             } for module in class_modules],
-            'topics': [topic.to_dict() if hasattr(topic, 'to_dict') else {
-                'id': topic.id,
-                'title': topic.title,
-                'description': topic.description,
-                'sort_order': topic.sort_order
-            } for topic in class_topics],
+            # Removed topics - content now organized under modules
             'assignments': [assignment.to_dict() if hasattr(assignment, 'to_dict') else {
                 'id': assignment.id,
                 'title': assignment.title,
                 'description': assignment.description,
-                'sort_order': assignment.sort_order
+                'sort_order': assignment.sort_order,
+                'module_id': assignment.module_id
             } for assignment in class_assignments],
             'materials': [material.to_dict() if hasattr(material, 'to_dict') else {
                 'id': material.id,
                 'title': material.title,
                 'description': material.description,
-                'sort_order': material.sort_order
+                'sort_order': material.sort_order,
+                'module_id': material.module_id
             } for material in class_materials],
+            'announcements': [announcement.to_dict() if hasattr(announcement, 'to_dict') else {
+                'id': announcement.id,
+                'title': announcement.title,
+                'message': announcement.message,
+                'created_at': announcement.created_at,
+                'module_id': announcement.module_id
+            } for announcement in class_announcements],
             'simulations': [sim.to_dict() if hasattr(sim, 'to_dict') else {
                 'id': sim.id,
                 'title': sim.title,
@@ -102,7 +108,7 @@ def manage_content(class_id):
                              selected_class=cls,
                              class_content=class_content,
                              class_modules=class_modules,
-                             class_topics=class_topics,
+                             # class_topics removed - content now organized under modules
                              class_assignments=class_assignments,
                              class_materials=class_materials,
                              class_announcements=class_announcements,
@@ -117,7 +123,7 @@ def manage_content(class_id):
                                  'total_announcements': len(class_announcements),
                                  'total_assignments': len(class_assignments),
                                  'total_materials': len(class_materials),
-                                 'total_topics': len(class_topics),
+                                 # 'total_topics': 0,  # Topics removed
                                  'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
                                  'completion_rate': 0,
                                  'average_score': 0
@@ -491,7 +497,7 @@ def get_module_preview(class_id, module_id):
         }), 404
 
 @class_content_controller_old.route('/classes/<int:class_id>/modules/<int:module_id>/preview', methods=['GET'])
-@login_required
+@admin_required
 def preview_module_page(class_id, module_id):
     """Direct module preview page - identical to student view"""
     try:
@@ -507,7 +513,7 @@ def preview_module_page(class_id, module_id):
             materials = ClassMaterial.query.filter_by(class_id=class_id).all()
             # Filter materials that might be associated with this module
             module_materials = [mat for mat in materials if str(module_id) in (mat.content or '')]
-        except:
+        except Exception as e:
             module_materials = []
         
         # Calculate module progress (for preview, show as 0%)
@@ -517,20 +523,58 @@ def preview_module_page(class_id, module_id):
             'percentage': 0
         }
         
-        return render_template('admin/module_preview_template.html',
+        template_name = 'admin/module_preview.html'
+        
+        # Get all class modules for sidebar navigation
+        all_class_modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        class_modules_data = []
+        for mod in all_class_modules:
+            try:
+                # For preview, show 0% completion
+                completion_percentage = 0
+                
+                class_modules_data.append({
+                    'id': mod.id,
+                    'title': mod.title,
+                    'module_number': mod.module_number,
+                    'estimated_duration': mod.estimated_duration,
+                    'total_lessons': mod.total_lessons,
+                    'completion_percentage': completion_percentage
+                })
+            except Exception as e:
+                pass
+        
+        # Create a copy of the module object with lessons as a list to avoid template errors
+        module_data = {
+            'id': module.id,
+            'title': module.title,
+            'description': module.description,
+            'module_number': module.module_number,
+            'estimated_duration': module.estimated_duration or 60,
+            'level': module.level,
+            'learning_objectives': module.learning_objectives or [],
+            'is_published': module.is_published,
+            'lessons': lessons,  # Pass lessons as a proper list
+            'class_id': module.class_id
+        }
+        
+        result = render_template(template_name,
                              class_data=cls,
-                             module=module,
+                             module=module_data,  # Use the dictionary instead of the SQLAlchemy object
                              lessons=lessons,
                              materials=module_materials,
                              progress=module_progress,
+                             class_modules=class_modules_data,  # Add sidebar navigation data
                              is_preview=True)
+        
+        return result
         
     except Exception as e:
         flash(f'Error loading module preview: {str(e)}', 'error')
         return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id))
 
 @class_content_controller_old.route('/classes/<int:class_id>/modules/<int:module_id>/student-view', methods=['GET'])
-@login_required
+@admin_required
 def admin_student_view(class_id, module_id):
     """Admin-accessible student view of module - redirects to universal student route"""
     try:
@@ -593,7 +637,6 @@ def get_module_preview_html(class_id, module_id):
         })
         
     except Exception as e:
-        print(f"Error in get_module_preview_html: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
@@ -605,14 +648,23 @@ def get_module_preview_html(class_id, module_id):
 @login_required
 def get_module_lessons(class_id, module_id):
     """Get all lessons for a module"""
+    print(f"DEBUG MODULE_LESSONS: get_module_lessons called with class_id={class_id}, module_id={module_id}")
     try:
+        print(f"DEBUG MODULE_LESSONS: Looking for class with id={class_id}")
         cls = Class.query.get_or_404(class_id)
-        module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
+        print(f"DEBUG MODULE_LESSONS: Found class: {cls.name if cls else 'None'}")
         
+        print(f"DEBUG MODULE_LESSONS: Looking for module with id={module_id} in class_id={class_id}")
+        module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
+        print(f"DEBUG MODULE_LESSONS: Found module: {module.title if module else 'None'}")
+        
+        print(f"DEBUG MODULE_LESSONS: Looking for lessons in module_id={module_id}")
         lessons = Lesson.query.filter_by(module_id=module_id, is_active=True).order_by(Lesson.order_index).all()
+        print(f"DEBUG MODULE_LESSONS: Found {len(lessons)} lessons")
         
         lessons_data = []
         for lesson in lessons:
+            print(f"DEBUG MODULE_LESSONS: Processing lesson: {lesson.title} (id={lesson.id})")
             lessons_data.append({
                 'id': lesson.id,
                 'title': lesson.title,
@@ -629,9 +681,13 @@ def get_module_lessons(class_id, module_id):
                 'created_at': lesson.created_at.isoformat() if lesson.created_at else None
             })
         
+        print(f"DEBUG MODULE_LESSONS: Returning {len(lessons_data)} lessons in response")
         return jsonify({'lessons': lessons_data})
         
     except Exception as e:
+        print(f"DEBUG MODULE_LESSONS: ERROR in get_module_lessons: {str(e)}")
+        import traceback
+        print(f"DEBUG MODULE_LESSONS: Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/lessons', methods=['POST'])
@@ -745,118 +801,6 @@ def delete_module_lesson(class_id, module_id, lesson_id):
         return jsonify({
             'success': True,
             'message': f'Lesson "{lesson_title}" deleted successfully!'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-# ========================================
-# CONTENT TOPIC MANAGEMENT ENDPOINTS
-# ========================================
-
-@class_content_controller_old.route('/api/classes/<int:class_id>/topics', methods=['GET'])
-@login_required
-def get_class_topics(class_id):
-    """Get all topics for a class"""
-    try:
-        cls = Class.query.get_or_404(class_id)
-        topics = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order).all()
-        
-        topics_data = []
-        for topic in topics:
-            topics_data.append(topic.to_dict())
-        
-        return jsonify({'topics': topics_data})
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@class_content_controller_old.route('/api/classes/<int:class_id>/topics', methods=['POST'])
-@login_required
-def create_class_topic(class_id):
-    """Create a new topic for a class"""
-    try:
-        data = request.json
-        cls = Class.query.get_or_404(class_id)
-        
-        # Get the next sort order
-        last_topic = ClassTopic.query.filter_by(class_id=class_id).order_by(ClassTopic.sort_order.desc()).first()
-        next_order = (last_topic.sort_order + 1) if last_topic else 1
-        
-        # Create new topic
-        new_topic = ClassTopic(
-            name=data.get('name'),
-            description=data.get('description'),
-            color=data.get('color', '#3B82F6'),
-            is_collapsed=data.get('is_collapsed', False),
-            sort_order=next_order,
-            class_id=class_id,
-            created_by=current_user.id
-        )
-        
-        db.session.add(new_topic)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Topic "{new_topic.name}" created successfully!',
-            'topic': new_topic.to_dict()
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@class_content_controller_old.route('/api/classes/<int:class_id>/topics/<int:topic_id>', methods=['PUT'])
-@login_required
-def update_class_topic(class_id, topic_id):
-    """Update a class topic"""
-    try:
-        data = request.json
-        cls = Class.query.get_or_404(class_id)
-        topic = ClassTopic.query.filter_by(id=topic_id, class_id=class_id).first_or_404()
-        
-        # Update topic fields
-        if 'name' in data:
-            topic.name = data['name']
-        if 'description' in data:
-            topic.description = data['description']
-        if 'color' in data:
-            topic.color = data['color']
-        if 'is_collapsed' in data:
-            topic.is_collapsed = data['is_collapsed']
-        
-        topic.updated_at = datetime.utcnow()
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Topic "{topic.name}" updated successfully!'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@class_content_controller_old.route('/api/classes/<int:class_id>/topics/<int:topic_id>', methods=['DELETE'])
-@login_required
-def delete_class_topic(class_id, topic_id):
-    """Delete a class topic"""
-    try:
-        cls = Class.query.get_or_404(class_id)
-        topic = ClassTopic.query.filter_by(id=topic_id, class_id=class_id).first_or_404()
-        
-        topic_name = topic.name
-        
-        # Delete the topic and its content
-        db.session.delete(topic)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Topic "{topic_name}" deleted successfully!'
         })
         
     except Exception as e:

@@ -1,0 +1,2697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Sortable.js for drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <title>Enhanced Lesson Editor - RiddleNet Admin</title>
+    
+<style>
+    :root {
+        /* Modern Gaming Network Theme - Learning Version - From module_preview.html */
+        --primary-color: #0B1426;
+        --secondary-color: #1A2B47;
+        --accent-color: #00D4FF;
+        --success-color: #00FF88;
+        --warning-color: #FF8C42;
+        --danger-color: #FF4757;
+        --cyber-glow: #00D4FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #0B1426;
+        --surface: #1A2B47;
+        --surface-hover: #243B5C;
+        --border-color: rgba(0, 212, 255, 0.2);
+        --glass-bg: rgba(30, 41, 71, 0.8);
+        
+        /* Text Colors */
+        --text-primary: #FFFFFF;
+        --text-secondary: #B3E5FC;
+        --text-muted: #7DD3FC;
+        
+        /* Layout */
+        --transition-speed: 0.4s;
+        --border-radius: 16px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+        --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+        --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+        
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --card-bg: linear-gradient(135deg, #1E3A5F, #243B5C);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--background);
+        background-image: 
+            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* Network Grid Background Animation - From module_preview.html */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image: 
+            linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: -1;
+        animation: gridMove 20s linear infinite;
+    }
+
+    @keyframes gridMove {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(50px, 50px); }
+    }
+
+    /* Admin Actions Banner - Exact match from module_preview.html */
+    .learning-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border-bottom: 2px solid var(--border-color);
+        padding: 0 24px;
+        box-shadow: var(--shadow-lg);
+        z-index: 1000;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .learning-nav::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+
+    /* Navigation Components - Exact match from module_preview.html */
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+
+    .nav-brand .logo-icon {
+        height: 40px;
+        width: 40px;
+        border-radius: 12px;
+        padding: 6px;
+        background: var(--gradient-primary);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        transition: all var(--transition-speed) ease;
+        overflow: hidden;
+    }
+
+    .nav-brand .logo-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .nav-brand .logo-icon:hover {
+        box-shadow: var(--shadow-glow);
+        transform: scale(1.1);
+    }
+
+    .nav-brand .logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .nav-btn {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: var(--cyber-glow);
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    .nav-btn:hover {
+        background: rgba(0, 212, 255, 0.2);
+        border-color: var(--cyber-glow);
+        color: white;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .nav-btn.primary {
+        background: var(--gradient-primary);
+        border: none;
+        color: white;
+    }
+
+    .nav-btn.primary:hover {
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-2px);
+    }
+
+    .user-profile-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .user-profile-nav:hover {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .profile-avatar-nav {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        overflow: hidden;
+        border: 2px solid rgba(0, 212, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .profile-avatar-nav:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+
+    .profile-avatar-nav img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .profile-name-nav {
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    /* Learning Container - Exact match from module_preview.html */
+    .learning-container {
+        display: flex;
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        min-height: calc(100vh - 70px);
+        padding-top: 110px; /* Account for fixed navbar */
+    }
+
+    /* Class Sidebar - Exact match from module_preview.html */
+    .class-sidebar {
+        width: 320px;
+        background: var(--glass-bg);
+        border-radius: 20px;
+        border: 2px solid var(--border-color);
+        box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(20px);
+        padding: 1.5rem;
+        height: fit-content;
+        max-height: calc(100vh - 140px);
+        position: sticky;
+        top: 2rem;
+        overflow-y: auto;
+    }
+
+    .sidebar-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .class-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        margin-bottom: 0.5rem;
+    }
+
+    .class-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .nav-section-title {
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-section-title i {
+        color: var(--cyber-glow);
+    }
+
+    /* Module Container - Main Content Area */
+    .module-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Module Header - Match module preview style */
+    .module-header {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 24px;
+        text-align: center;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .module-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        margin: 0 0 12px 0;
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .module-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin: 16px 0 0 0;
+    }
+
+    .module-meta {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .meta-item i {
+        color: var(--cyber-glow);
+    }
+
+    /* Media Categories */
+    .media-category {
+        background: rgba(26, 35, 126, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .category-header {
+        background: rgba(0, 212, 255, 0.1);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+
+    .category-title {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .category-count {
+        background: rgba(0, 212, 255, 0.2);
+        color: var(--cyber-glow);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        margin-left: 8px;
+    }
+
+    .media-items {
+        padding: 12px;
+        min-height: 80px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .media-items.empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-align: center;
+    }
+
+    .media-items.empty i {
+        font-size: 1.5rem;
+        color: var(--border-color);
+        margin-bottom: 8px;
+    }
+
+    .media-item {
+        background: var(--surface-hover);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 8px;
+        margin-bottom: 8px;
+        cursor: move;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .media-item:hover {
+        border-color: var(--cyber-glow);
+        background: rgba(0, 212, 255, 0.1);
+    }
+
+    .media-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .media-icon.video {
+        background: linear-gradient(135deg, #FF4757, #FF6B7A);
+    }
+
+    .media-icon.image {
+        background: linear-gradient(135deg, #00D4FF, #39FF14);
+    }
+
+    .media-icon.document {
+        background: linear-gradient(135deg, #8B5CF6, #A855F7);
+    }
+
+    .media-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .media-title {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    .media-meta {
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .action-btn {
+        background: rgba(26, 35, 126, 0.4);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 10px 16px;
+        border-radius: 8px;
+        width: 100%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .action-btn:hover {
+        background: var(--cyber-glow);
+        color: white;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .action-btn i {
+        color: var(--cyber-glow);
+        font-size: 0.9rem;
+    }
+
+    .action-btn:hover i {
+        color: white;
+    }
+
+    /* Content Cards */
+    .content-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-title {
+        color: var(--text-primary);
+        font-size: 1.3rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .card-title i {
+        color: var(--cyber-glow);
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: rgba(0, 212, 255, 0.05);
+        margin-bottom: 24px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+        border-color: var(--cyber-glow);
+        background: rgba(0, 212, 255, 0.1);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    .upload-zone.dragover {
+        border-color: var(--success-color);
+        background: rgba(0, 255, 136, 0.1);
+        transform: scale(1.02);
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: var(--cyber-glow);
+        margin-bottom: 16px;
+    }
+
+    .upload-text {
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .upload-subtext {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Content Editor */
+    .content-editor {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        min-height: 400px;
+        padding: 20px;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--text-primary);
+        margin-top: 20px;
+    }
+
+    .content-editor[contenteditable="true"] {
+        outline: none;
+    }
+
+    .content-editor[contenteditable="true"]:focus {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Editor Toolbar */
+    .editor-toolbar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 0 12px;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: var(--surface-hover);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .toolbar-btn:hover {
+        background: var(--cyber-glow);
+        border-color: var(--cyber-glow);
+        color: white;
+    }
+
+    .toolbar-btn.active {
+        background: var(--cyber-glow);
+        border-color: var(--cyber-glow);
+        color: white;
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Navigation Footer */
+    .module-navigation {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 24px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .nav-btn-editor {
+        background: var(--cyber-glow);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .nav-btn-editor:hover {
+        background: var(--network-purple);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .nav-btn-editor.secondary {
+        background: var(--surface);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    .nav-btn-editor.secondary:hover {
+        background: var(--surface-hover);
+        color: var(--cyber-glow);
+    }
+
+    .nav-info {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .nav-info-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+    }
+
+    .nav-info-subtitle {
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    .nav-info-meta {
+        font-size: 0.8rem;
+        margin-top: 4px;
+        color: var(--text-muted);
+    }
+
+    /* Form Controls */
+    .form-select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Toast notifications */
+    .toast {
+        position: fixed;
+        top: 90px;
+        right: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        padding: 16px 20px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        min-width: 300px;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .toast i {
+        font-size: 1.2rem;
+    }
+
+    .toast.success i {
+        color: var(--success-color);
+    }
+
+    .toast.error i {
+        color: var(--danger-color);
+    }
+
+    /* Layout Designer Styles */
+    .layout-designer {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 16px;
+    }
+
+    .layout-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+    }
+
+    .layout-section {
+        background: var(--surface-hover);
+        border-radius: 8px;
+        padding: 16px;
+    }
+
+    .layout-section h4 {
+        color: var(--cyber-glow);
+        margin-bottom: 12px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .layout-templates {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .layout-template {
+        background: var(--surface);
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .layout-template:hover {
+        border-color: var(--cyber-glow);
+        background: rgba(0, 212, 255, 0.1);
+    }
+
+    .layout-template.active {
+        border-color: var(--cyber-glow);
+        background: rgba(0, 212, 255, 0.15);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    .template-preview {
+        height: 40px;
+        margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .preview-row {
+        display: flex;
+        gap: 2px;
+        flex: 1;
+    }
+
+    .preview-block {
+        background: var(--cyber-glow);
+        border-radius: 2px;
+        opacity: 0.6;
+    }
+
+    .preview-block.full {
+        flex: 1;
+        height: 8px;
+        margin-bottom: 2px;
+    }
+
+    .preview-block.half {
+        flex: 1;
+        height: 100%;
+    }
+
+    .preview-block.third {
+        flex: 1;
+        height: 100%;
+    }
+
+    .preview-block.media-left {
+        width: 35%;
+        height: 100%;
+        background: var(--warning-color);
+    }
+
+    .preview-block.content-right {
+        flex: 1;
+        height: 100%;
+    }
+
+    .preview-block.content-left {
+        flex: 1;
+        height: 100%;
+    }
+
+    .preview-block.media-right {
+        width: 35%;
+        height: 100%;
+        background: var(--warning-color);
+    }
+
+    .preview-block.media-top {
+        height: 12px;
+        margin-bottom: 2px;
+        background: var(--warning-color);
+    }
+
+    .layout-template span {
+        color: var(--text-primary);
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .layout-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .control-btn {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+    }
+
+    .control-btn:hover {
+        background: var(--cyber-glow);
+        border-color: var(--cyber-glow);
+        color: white;
+    }
+
+    .control-btn i {
+        color: var(--cyber-glow);
+        font-size: 0.9rem;
+    }
+
+    .control-btn:hover i {
+        color: white;
+    }
+
+    .style-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .style-controls label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: var(--text-primary);
+        font-size: 0.85rem;
+    }
+
+    .style-controls label span:first-child {
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .style-controls input[type="range"] {
+        background: var(--surface);
+        border-radius: 4px;
+        height: 6px;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    .style-controls input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        background: var(--cyber-glow);
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .style-controls select {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 6px;
+        color: var(--text-primary);
+        font-size: 0.85rem;
+    }
+
+    .style-controls select:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+    }
+
+    /* Layout Mode Content Editor */
+    .content-editor.layout-mode {
+        background: repeating-linear-gradient(
+            45deg,
+            rgba(0, 212, 255, 0.05),
+            rgba(0, 212, 255, 0.05) 10px,
+            transparent 10px,
+            transparent 20px
+        );
+        border: 2px dashed var(--cyber-glow);
+    }
+
+    .layout-block {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+        min-height: 80px;
+        position: relative;
+        background: rgba(0, 212, 255, 0.02);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .layout-block:hover {
+        border-color: var(--cyber-glow);
+        background: rgba(0, 212, 255, 0.05);
+    }
+
+    .layout-block.selected {
+        border-color: var(--success-color);
+        background: rgba(0, 255, 136, 0.05);
+        box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+    }
+
+    .layout-block .block-controls {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .layout-block:hover .block-controls {
+        opacity: 1;
+    }
+
+    .block-control-btn {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.7rem;
+        transition: all 0.3s ease;
+    }
+
+    .block-control-btn:hover {
+        background: var(--cyber-glow);
+        border-color: var(--cyber-glow);
+        color: white;
+    }
+
+    .layout-block .block-label {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: var(--surface);
+        color: var(--cyber-glow);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border: 1px solid var(--border-color);
+    }
+
+    /* Layout Grid System */
+    .layout-grid {
+        display: grid;
+        gap: var(--block-spacing, 20px);
+        margin: 16px 0;
+    }
+
+    .layout-grid.single-column {
+        grid-template-columns: 1fr;
+    }
+
+    .layout-grid.two-column {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .layout-grid.media-left {
+        grid-template-columns: 1fr 2fr;
+    }
+
+    .layout-grid.media-right {
+        grid-template-columns: 2fr 1fr;
+    }
+
+    .layout-grid.custom-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Media Block Styles */
+    .media-block {
+        background: rgba(255, 140, 66, 0.1);
+        border: 2px dashed var(--warning-color);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        color: var(--warning-color);
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .media-block:hover {
+        background: rgba(255, 140, 66, 0.15);
+        transform: scale(1.02);
+    }
+
+    .media-block.has-media {
+        border-style: solid;
+        background: rgba(255, 140, 66, 0.05);
+    }
+
+    .media-block i {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .text-block {
+        background: rgba(0, 212, 255, 0.05);
+        border: 2px dashed var(--cyber-glow);
+        border-radius: 8px;
+        padding: 20px;
+        min-height: 80px;
+        cursor: text;
+        color: var(--text-primary);
+    }
+
+    .text-block[contenteditable="true"] {
+        outline: none;
+    }
+
+    .text-block[contenteditable="true"]:focus {
+        border-style: solid;
+        background: rgba(0, 212, 255, 0.08);
+        box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    }
+
+    .video-block {
+        background: rgba(255, 71, 87, 0.1);
+        border: 2px dashed var(--danger-color);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        color: var(--danger-color);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .video-block:hover {
+        background: rgba(255, 71, 87, 0.15);
+        transform: scale(1.02);
+    }
+
+    .video-block.has-video {
+        border-style: solid;
+        background: rgba(255, 71, 87, 0.05);
+    }
+
+    .video-block i {
+        font-size: 3rem;
+        margin-bottom: 12px;
+    }
+
+    /* Responsive Layout Designer */
+    @media (max-width: 1200px) {
+        .layout-options {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .layout-templates {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .layout-templates {
+            grid-template-columns: 1fr;
+        }
+
+        .layout-grid.two-column,
+        .layout-grid.media-left,
+        .layout-grid.media-right,
+        .layout-grid.custom-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Loading States */
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border-color);
+        border-radius: 50%;
+        border-top-color: var(--cyber-glow);
+        animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .learning-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .class-sidebar {
+            width: 100%;
+            position: relative;
+            top: 0;
+            max-height: none;
+            order: -1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .learning-nav {
+            padding: 0 16px;
+        }
+        
+        .nav-brand .logo-text {
+            display: none;
+        }
+        
+        .nav-actions {
+            gap: 8px;
+        }
+        
+        .nav-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .learning-container {
+            padding: 16px;
+            padding-top: 90px;
+        }
+        
+        .module-title {
+            font-size: 2rem;
+        }
+        
+        .module-meta {
+            gap: 16px;
+        }
+        
+        .module-navigation {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .editor-toolbar {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .toolbar-group {
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 0;
+        }
+        
+        .toolbar-group:last-child {
+            border-bottom: none;
+        }
+    }
+</style>
+</head>
+
+<body>
+    <!-- Learning Navigation - Exact match from module_preview.html -->
+    <nav class="learning-nav">
+        <a href="/admin/classes" class="nav-brand">
+            <div class="logo-icon">
+                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo">
+            </div>
+            <div class="logo-text">RiddleNet</div>
+        </a>
+        
+        <div class="nav-actions">
+            <a href="/admin/classes" class="nav-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Classes
+            </a>
+            
+            <div class="user-profile-nav" onclick="window.location.href='/admin'">
+                <div class="profile-avatar-nav">
+                    A
+                </div>
+                <div class="profile-name-nav">
+                    Admin
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Learning Container - Main Layout -->
+    <div class="learning-container">
+        <!-- Class Sidebar -->
+        <div class="class-sidebar">
+            <!-- Lesson Editor Header -->
+            <div class="sidebar-header">
+                <h2 class="class-title">Enhanced Lesson Editor</h2>
+                <p class="class-subtitle">Edit content and organize media</p>
+            </div>
+
+            <!-- Lesson Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <div class="nav-section-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Select Lesson
+                </div>
+                <form method="GET" style="margin-bottom: 1rem;">
+                    <select name="selected_lesson_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Choose a lesson...</option>
+                        {% for lesson in lessons %}
+                        <option value="{{ lesson.id }}" {{ 'selected' if selected_lesson and selected_lesson.id == lesson.id else '' }}>
+                            {{ lesson.title }} ({{ lesson.module.class_obj.name }} - Module {{ lesson.module.module_number }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            {% if selected_lesson %}
+            <!-- Lesson Details -->
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div class="nav-section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Lesson Details
+                </div>
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <h3 style="color: var(--cyber-glow); font-size: 1.1rem; margin-bottom: 4px;">{{ selected_lesson.title }}</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem;">{{ selected_lesson.module.class_obj.name }}</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary);">
+                    <span>Module {{ selected_lesson.module.module_number }}</span>
+                    <span>{{ selected_lesson.estimated_duration or 30 }} min</span>
+                </div>
+            </div>
+
+            <!-- Media Organization -->
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div class="nav-section-title">
+                    <i class="fas fa-video"></i>
+                    Videos
+                    <span class="category-count" id="videoCount">0</span>
+                </div>
+                <div class="media-category">
+                    <div class="media-items empty" id="videosContainer">
+                        <i class="fas fa-video"></i>
+                        No videos yet
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div class="nav-section-title">
+                    <i class="fas fa-images"></i>
+                    Images
+                    <span class="category-count" id="imageCount">0</span>
+                </div>
+                <div class="media-category">
+                    <div class="media-items empty" id="imagesContainer">
+                        <i class="fas fa-images"></i>
+                        No images yet
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div class="nav-section-title">
+                    <i class="fas fa-file-alt"></i>
+                    Documents
+                    <span class="category-count" id="documentCount">0</span>
+                </div>
+                <div class="media-category">
+                    <div class="media-items empty" id="documentsContainer">
+                        <i class="fas fa-file-alt"></i>
+                        No documents yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="nav-section-title">
+                <i class="fas fa-bolt"></i>
+                Actions
+            </div>
+            <div class="quick-actions">
+                <button class="action-btn" onclick="saveLessonContent()">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+                <button class="action-btn" onclick="togglePreview()">
+                    <i class="fas fa-eye"></i>
+                    Toggle Preview
+                </button>
+                <a href="/admin/classes/{{ selected_lesson.module.class_id }}/modules/{{ selected_lesson.module.id }}/preview" class="action-btn">
+                    <i class="fas fa-external-link-alt"></i>
+                    Preview Module
+                </a>
+            </div>
+            {% else %}
+            <!-- Empty State in Sidebar -->
+            <div style="text-align: center; color: var(--text-muted); margin-top: 2rem;">
+                <i class="fas fa-graduation-cap" style="font-size: 3rem; margin-bottom: 1rem; color: var(--border-color);"></i>
+                <p>Select a lesson from the dropdown above to start editing</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="module-container">
+            {% if selected_lesson %}
+            <!-- Module Header -->
+            <div class="module-header">
+                <div style="margin-bottom: 16px; text-align: left;">
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        <i class="fas fa-home"></i> {{ selected_lesson.module.class_obj.name }}
+                        <span style="margin: 0 8px;">></span>
+                        <span style="color: var(--cyber-glow);">{{ selected_lesson.title }}</span>
+                    </div>
+                </div>
+                
+                <h1 class="module-title">{{ selected_lesson.title }}</h1>
+                
+                {% if selected_lesson.description %}
+                <p class="module-subtitle">{{ selected_lesson.description }}</p>
+                {% endif %}
+                
+                <div class="module-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-layer-group"></i>
+                        Module {{ selected_lesson.module.module_number }}
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        {{ selected_lesson.estimated_duration or 30 }} minutes
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-edit"></i>
+                        Editor Mode
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media Upload Section -->
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Media Upload & Organization
+                    </div>
+                </div>
+                
+                <div id="uploadZone" class="upload-zone">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Drag and drop files here</div>
+                    <div class="upload-subtext">or click to browse • Supports videos, images, and documents</div>
+                    <input type="file" id="fileInput" multiple accept="video/*,image/*,.pdf,.doc,.docx,.ppt,.pptx" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Layout Designer Section -->
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-th-large"></i>
+                        Layout Designer
+                    </div>
+                    <button class="toolbar-btn" onclick="toggleLayoutMode()" id="layoutModeBtn">
+                        <i class="fas fa-paint-brush"></i>
+                        Enable Layout Mode
+                    </button>
+                </div>
+
+                <div id="layoutDesigner" class="layout-designer" style="display: none;">
+                    <div class="layout-options">
+                        <div class="layout-section">
+                            <h4><i class="fas fa-columns"></i> Layout Templates</h4>
+                            <div class="layout-templates">
+                                <div class="layout-template" onclick="applyLayout('single-column')" data-layout="single-column">
+                                    <div class="template-preview">
+                                        <div class="preview-block full"></div>
+                                        <div class="preview-block full"></div>
+                                    </div>
+                                    <span>Single Column</span>
+                                </div>
+                                <div class="layout-template" onclick="applyLayout('two-column')" data-layout="two-column">
+                                    <div class="template-preview">
+                                        <div class="preview-row">
+                                            <div class="preview-block half"></div>
+                                            <div class="preview-block half"></div>
+                                        </div>
+                                    </div>
+                                    <span>Two Column</span>
+                                </div>
+                                <div class="layout-template" onclick="applyLayout('media-left')" data-layout="media-left">
+                                    <div class="template-preview">
+                                        <div class="preview-row">
+                                            <div class="preview-block media-left"></div>
+                                            <div class="preview-block content-right"></div>
+                                        </div>
+                                    </div>
+                                    <span>Media Left</span>
+                                </div>
+                                <div class="layout-template" onclick="applyLayout('media-right')" data-layout="media-right">
+                                    <div class="template-preview">
+                                        <div class="preview-row">
+                                            <div class="preview-block content-left"></div>
+                                            <div class="preview-block media-right"></div>
+                                        </div>
+                                    </div>
+                                    <span>Media Right</span>
+                                </div>
+                                <div class="layout-template" onclick="applyLayout('media-top')" data-layout="media-top">
+                                    <div class="template-preview">
+                                        <div class="preview-block media-top"></div>
+                                        <div class="preview-block full"></div>
+                                    </div>
+                                    <span>Media Top</span>
+                                </div>
+                                <div class="layout-template" onclick="applyLayout('custom-grid')" data-layout="custom-grid">
+                                    <div class="template-preview">
+                                        <div class="preview-row">
+                                            <div class="preview-block third"></div>
+                                            <div class="preview-block third"></div>
+                                            <div class="preview-block third"></div>
+                                        </div>
+                                    </div>
+                                    <span>Grid Layout</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="layout-section">
+                            <h4><i class="fas fa-cogs"></i> Layout Controls</h4>
+                            <div class="layout-controls">
+                                <button class="control-btn" onclick="addContentBlock()">
+                                    <i class="fas fa-plus"></i> Add Content Block
+                                </button>
+                                <button class="control-btn" onclick="addMediaBlock()">
+                                    <i class="fas fa-image"></i> Add Media Block
+                                </button>
+                                <button class="control-btn" onclick="addTextBlock()">
+                                    <i class="fas fa-font"></i> Add Text Block
+                                </button>
+                                <button class="control-btn" onclick="addVideoBlock()">
+                                    <i class="fas fa-video"></i> Add Video Block
+                                </button>
+                                <button class="control-btn" onclick="clearLayout()">
+                                    <i class="fas fa-trash"></i> Clear Layout
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="layout-section">
+                            <h4><i class="fas fa-palette"></i> Styling Options</h4>
+                            <div class="style-controls">
+                                <label>
+                                    <span>Block Spacing:</span>
+                                    <input type="range" id="blockSpacing" min="8" max="40" value="20" onchange="updateBlockSpacing(this.value)">
+                                    <span id="spacingValue">20px</span>
+                                </label>
+                                <label>
+                                    <span>Media Size:</span>
+                                    <select id="mediaSize" onchange="updateMediaSize(this.value)">
+                                        <option value="small">Small</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="large">Large</option>
+                                        <option value="full">Full Width</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>Text Alignment:</span>
+                                    <select id="textAlign" onchange="updateTextAlignment(this.value)">
+                                        <option value="left" selected>Left</option>
+                                        <option value="center">Center</option>
+                                        <option value="right">Right</option>
+                                        <option value="justify">Justify</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Editor Section -->
+            <div class="content-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-edit"></i>
+                        Lesson Content Editor
+                    </div>
+                </div>
+
+                <!-- Editor Toolbar -->
+                <div class="editor-toolbar">
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" onclick="insertMedia('video')">
+                            <i class="fas fa-video"></i>
+                            Insert Video
+                        </button>
+                        <button class="toolbar-btn" onclick="insertMedia('image')">
+                            <i class="fas fa-image"></i>
+                            Insert Image
+                        </button>
+                        <button class="toolbar-btn" onclick="insertMedia('document')">
+                            <i class="fas fa-file"></i>
+                            Insert Document
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" onclick="formatText('bold')">
+                            <i class="fas fa-bold"></i>
+                            Bold
+                        </button>
+                        <button class="toolbar-btn" onclick="formatText('italic')">
+                            <i class="fas fa-italic"></i>
+                            Italic
+                        </button>
+                        <button class="toolbar-btn" onclick="formatText('underline')">
+                            <i class="fas fa-underline"></i>
+                            Underline
+                        </button>
+                    </div>
+                    
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" onclick="insertHeading()">
+                            <i class="fas fa-heading"></i>
+                            Heading
+                        </button>
+                        <button class="toolbar-btn" onclick="insertList()">
+                            <i class="fas fa-list-ul"></i>
+                            List
+                        </button>
+                        <button class="toolbar-btn" onclick="insertLink()">
+                            <i class="fas fa-link"></i>
+                            Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Editor -->
+                <div id="contentEditor" class="content-editor" contenteditable="true">
+                    {% if selected_lesson.content %}
+                        {{ selected_lesson.content|safe }}
+                    {% else %}
+                    <h2>{{ selected_lesson.title }}</h2>
+                    <p>{{ selected_lesson.description or 'Start editing your lesson content here...' }}</p>
+                    
+                    <h3>Learning Objectives</h3>
+                    <ul>
+                        <li>Add your learning objectives here</li>
+                        <li>Use the toolbar above to format text and insert media</li>
+                        <li>Drag and drop media items from the sidebar</li>
+                    </ul>
+                    
+                    <h3>Content</h3>
+                    <p>Begin writing your lesson content. You can insert videos, images, and documents using the toolbar or by dragging them from the sidebar.</p>
+                    
+                    <div style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 40px; text-align: center; margin: 20px 0; background: rgba(0, 212, 255, 0.05);">
+                        <i class="fas fa-plus" style="font-size: 2rem; color: var(--cyber-glow); margin-bottom: 12px;"></i>
+                        <p style="color: var(--text-secondary); margin: 0;">Drop media files here or use the toolbar to insert content</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Navigation Footer -->
+            <div class="module-navigation">
+                <a href="/admin/lessons" class="nav-btn-editor secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Lessons
+                </a>
+                
+                <div class="nav-info">
+                    <div class="nav-info-title">{{ selected_lesson.title }}</div>
+                    <div class="nav-info-subtitle">{{ selected_lesson.module.class_obj.name }} - Module {{ selected_lesson.module.module_number }}</div>
+                    <div class="nav-info-meta">Enhanced Editor Mode</div>
+                </div>
+                
+                <button onclick="saveLessonContent()" class="nav-btn-editor">
+                    <i class="fas fa-save"></i>
+                    Save & Publish
+                </button>
+            </div>
+
+            {% else %}
+            <!-- Empty State - No Lesson Selected -->
+            <div class="content-card" style="text-align: center; padding: 60px;">
+                <div style="font-size: 4rem; color: var(--border-color); margin-bottom: 24px;">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h2 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 16px;">Select a Lesson to Edit</h2>
+                <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 32px;">Choose a lesson from the sidebar to start editing its content and organizing media files.</p>
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                    <a href="/admin/classes" class="nav-btn primary">
+                        <i class="fas fa-plus"></i>
+                        Create New Lesson
+                    </a>
+                    <a href="/admin/lessons?selected_lesson_id={{ lessons[0].id if lessons else '' }}" class="nav-btn">
+                        <i class="fas fa-edit"></i>
+                        Edit First Lesson
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-info-circle"></i>
+        <span>Notification message</span>
+    </div>
+
+    <script>
+    // Global variables
+    let currentLessonId = {% if selected_lesson %}{{ selected_lesson.id }}{% else %}null{% endif %};
+    let mediaItems = {
+        videos: [],
+        images: [],
+        documents: []
+    };
+    let isUploading = false;
+    let layoutModeEnabled = false;
+    let currentLayout = 'single-column';
+    let selectedBlock = null;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEditor();
+    });
+
+    // Initialize editor functionality
+    function initializeEditor() {
+        if (currentLessonId) {
+            initializeDragAndDrop();
+            initializeSortable();
+            setupFileUpload();
+            loadExistingMedia();
+            initializeLayoutDesigner();
+            loadLayoutConfiguration();
+        }
+    }
+
+    // Layout Designer Functions
+    function initializeLayoutDesigner() {
+        // Set default layout template as active
+        const defaultTemplate = document.querySelector('.layout-template[data-layout="single-column"]');
+        if (defaultTemplate) {
+            defaultTemplate.classList.add('active');
+        }
+    }
+
+    function toggleLayoutMode() {
+        layoutModeEnabled = !layoutModeEnabled;
+        const layoutDesigner = document.getElementById('layoutDesigner');
+        const layoutModeBtn = document.getElementById('layoutModeBtn');
+        const contentEditor = document.getElementById('contentEditor');
+        
+        if (layoutModeEnabled) {
+            layoutDesigner.style.display = 'block';
+            layoutModeBtn.innerHTML = '<i class="fas fa-eye"></i> Disable Layout Mode';
+            contentEditor.classList.add('layout-mode');
+            showToast('Layout mode enabled - Click elements to position them', 'success');
+        } else {
+            layoutDesigner.style.display = 'none';
+            layoutModeBtn.innerHTML = '<i class="fas fa-paint-brush"></i> Enable Layout Mode';
+            contentEditor.classList.remove('layout-mode');
+            showToast('Layout mode disabled', 'success');
+        }
+    }
+
+    function applyLayout(layoutType) {
+        currentLayout = layoutType;
+        
+        // Update active template
+        document.querySelectorAll('.layout-template').forEach(template => {
+            template.classList.remove('active');
+        });
+        document.querySelector(`[data-layout="${layoutType}"]`).classList.add('active');
+        
+        // Apply layout to content
+        const contentEditor = document.getElementById('contentEditor');
+        const existingGrid = contentEditor.querySelector('.layout-grid');
+        
+        let layoutGrid;
+        if (existingGrid) {
+            layoutGrid = existingGrid;
+            layoutGrid.className = `layout-grid ${layoutType}`;
+        } else {
+            layoutGrid = document.createElement('div');
+            layoutGrid.className = `layout-grid ${layoutType}`;
+            
+            // Move existing content to layout grid
+            const existingContent = contentEditor.innerHTML;
+            contentEditor.innerHTML = '';
+            contentEditor.appendChild(layoutGrid);
+            
+            // Add default blocks based on layout
+            addDefaultBlocksForLayout(layoutGrid, layoutType);
+        }
+        
+        showToast(`${layoutType.replace('-', ' ')} layout applied`, 'success');
+    }
+
+    function addDefaultBlocksForLayout(container, layoutType) {
+        container.innerHTML = '';
+        
+        switch(layoutType) {
+            case 'single-column':
+                container.appendChild(createTextBlock('Main content goes here...'));
+                break;
+            case 'two-column':
+                container.appendChild(createTextBlock('Left column content...'));
+                container.appendChild(createTextBlock('Right column content...'));
+                break;
+            case 'media-left':
+                container.appendChild(createMediaBlock('Click to add media'));
+                container.appendChild(createTextBlock('Content goes here...'));
+                break;
+            case 'media-right':
+                container.appendChild(createTextBlock('Content goes here...'));
+                container.appendChild(createMediaBlock('Click to add media'));
+                break;
+            case 'media-top':
+                container.appendChild(createMediaBlock('Click to add media'));
+                container.appendChild(createTextBlock('Content goes here...'));
+                break;
+            case 'custom-grid':
+                container.appendChild(createTextBlock('Block 1'));
+                container.appendChild(createTextBlock('Block 2'));
+                container.appendChild(createTextBlock('Block 3'));
+                break;
+        }
+    }
+
+    function createTextBlock(content) {
+        const block = document.createElement('div');
+        block.className = 'layout-block text-block';
+        block.contentEditable = true;
+        block.innerHTML = content || 'Click to edit text...';
+        
+        addBlockControls(block);
+        
+        block.addEventListener('click', () => selectBlock(block));
+        
+        return block;
+    }
+
+    function createMediaBlock(placeholder) {
+        const block = document.createElement('div');
+        block.className = 'layout-block media-block';
+        block.innerHTML = `
+            <i class="fas fa-image"></i>
+            <div>${placeholder || 'Click to add media'}</div>
+        `;
+        
+        addBlockControls(block);
+        
+        block.addEventListener('click', () => {
+            selectBlock(block);
+            showMediaSelector(block);
+        });
+        
+        return block;
+    }
+
+    function createVideoBlock(placeholder) {
+        const block = document.createElement('div');
+        block.className = 'layout-block video-block';
+        block.innerHTML = `
+            <i class="fas fa-video"></i>
+            <div>${placeholder || 'Click to add video'}</div>
+        `;
+        
+        addBlockControls(block);
+        
+        block.addEventListener('click', () => {
+            selectBlock(block);
+            showVideoSelector(block);
+        });
+        
+        return block;
+    }
+
+    function addBlockControls(block) {
+        const controls = document.createElement('div');
+        controls.className = 'block-controls';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'block-control-btn';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editBlock(block);
+        };
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'block-control-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteBlock(block);
+        };
+        
+        const moveUpBtn = document.createElement('button');
+        moveUpBtn.className = 'block-control-btn';
+        moveUpBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+        moveUpBtn.onclick = (e) => {
+            e.stopPropagation();
+            moveBlock(block, 'up');
+        };
+        
+        const moveDownBtn = document.createElement('button');
+        moveDownBtn.className = 'block-control-btn';
+        moveDownBtn.innerHTML = '<i class="fas fa-arrow-down"></i>';
+        moveDownBtn.onclick = (e) => {
+            e.stopPropagation();
+            moveBlock(block, 'down');
+        };
+        
+        controls.appendChild(editBtn);
+        controls.appendChild(deleteBtn);
+        controls.appendChild(moveUpBtn);
+        controls.appendChild(moveDownBtn);
+        
+        block.appendChild(controls);
+    }
+
+    function selectBlock(block) {
+        // Remove previous selection
+        document.querySelectorAll('.layout-block.selected').forEach(b => {
+            b.classList.remove('selected');
+        });
+        
+        // Select new block
+        block.classList.add('selected');
+        selectedBlock = block;
+    }
+
+    function addContentBlock() {
+        const layoutGrid = document.querySelector('.layout-grid') || createLayoutGrid();
+        const textBlock = createTextBlock('New content block...');
+        layoutGrid.appendChild(textBlock);
+        selectBlock(textBlock);
+        showToast('Content block added', 'success');
+    }
+
+    function addMediaBlock() {
+        const layoutGrid = document.querySelector('.layout-grid') || createLayoutGrid();
+        const mediaBlock = createMediaBlock('Click to add media');
+        layoutGrid.appendChild(mediaBlock);
+        selectBlock(mediaBlock);
+        showToast('Media block added', 'success');
+    }
+
+    function addTextBlock() {
+        const layoutGrid = document.querySelector('.layout-grid') || createLayoutGrid();
+        const textBlock = createTextBlock('New text block...');
+        layoutGrid.appendChild(textBlock);
+        selectBlock(textBlock);
+        showToast('Text block added', 'success');
+    }
+
+    function addVideoBlock() {
+        const layoutGrid = document.querySelector('.layout-grid') || createLayoutGrid();
+        const videoBlock = createVideoBlock('Click to add video');
+        layoutGrid.appendChild(videoBlock);
+        selectBlock(videoBlock);
+        showToast('Video block added', 'success');
+    }
+
+    function createLayoutGrid() {
+        const contentEditor = document.getElementById('contentEditor');
+        const layoutGrid = document.createElement('div');
+        layoutGrid.className = `layout-grid ${currentLayout}`;
+        contentEditor.appendChild(layoutGrid);
+        return layoutGrid;
+    }
+
+    function clearLayout() {
+        if (confirm('Are you sure you want to clear the current layout?')) {
+            const layoutGrid = document.querySelector('.layout-grid');
+            if (layoutGrid) {
+                layoutGrid.innerHTML = '';
+            }
+            selectedBlock = null;
+            showToast('Layout cleared', 'success');
+        }
+    }
+
+    function editBlock(block) {
+        if (block.classList.contains('text-block')) {
+            block.focus();
+        } else {
+            // For media blocks, show media selector
+            if (block.classList.contains('media-block')) {
+                showMediaSelector(block);
+            } else if (block.classList.contains('video-block')) {
+                showVideoSelector(block);
+            }
+        }
+    }
+
+    function deleteBlock(block) {
+        if (confirm('Delete this block?')) {
+            block.remove();
+            if (selectedBlock === block) {
+                selectedBlock = null;
+            }
+            showToast('Block deleted', 'success');
+        }
+    }
+
+    function moveBlock(block, direction) {
+        const parent = block.parentNode;
+        const blocks = Array.from(parent.children);
+        const currentIndex = blocks.indexOf(block);
+        
+        if (direction === 'up' && currentIndex > 0) {
+            parent.insertBefore(block, blocks[currentIndex - 1]);
+        } else if (direction === 'down' && currentIndex < blocks.length - 1) {
+            parent.insertBefore(blocks[currentIndex + 1], block);
+        }
+    }
+
+    function showMediaSelector(block) {
+        // Show available media items
+        const availableMedia = [...mediaItems.images, ...mediaItems.documents];
+        
+        if (availableMedia.length === 0) {
+            showToast('No media available. Upload files first!', 'error');
+            return;
+        }
+        
+        // For simplicity, use the first available media
+        // In a full implementation, you'd show a selection modal
+        const media = availableMedia[0];
+        insertMediaIntoBlock(block, media);
+    }
+
+    function showVideoSelector(block) {
+        const availableVideos = mediaItems.videos;
+        
+        if (availableVideos.length === 0) {
+            showToast('No videos available. Upload videos first!', 'error');
+            return;
+        }
+        
+        // For simplicity, use the first available video
+        const video = availableVideos[0];
+        insertVideoIntoBlock(block, video);
+    }
+
+    function insertMediaIntoBlock(block, media) {
+        const mediaSize = document.getElementById('mediaSize').value;
+        let sizeClass = '';
+        
+        switch(mediaSize) {
+            case 'small': sizeClass = 'max-width: 200px;'; break;
+            case 'medium': sizeClass = 'max-width: 400px;'; break;
+            case 'large': sizeClass = 'max-width: 600px;'; break;
+            case 'full': sizeClass = 'max-width: 100%;'; break;
+        }
+        
+        if (media.file_type === 'image') {
+            block.innerHTML = `<img src="${media.url}" alt="${media.filename}" style="${sizeClass} height: auto;">`;
+        } else {
+            block.innerHTML = `
+                <div class="document-embed" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; background: var(--surface-hover);">
+                    <i class="fas fa-file-alt"></i> <strong>${media.filename}</strong>
+                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Document - ${formatFileSize(media.size)}</p>
+                </div>
+            `;
+        }
+        
+        block.classList.add('has-media');
+        block.classList.remove('media-block');
+        showToast(`${media.file_type} added to block`, 'success');
+    }
+
+    function insertVideoIntoBlock(block, video) {
+        const mediaSize = document.getElementById('mediaSize').value;
+        let sizeClass = '';
+        
+        switch(mediaSize) {
+            case 'small': sizeClass = 'max-width: 300px;'; break;
+            case 'medium': sizeClass = 'max-width: 500px;'; break;
+            case 'large': sizeClass = 'max-width: 700px;'; break;
+            case 'full': sizeClass = 'max-width: 100%;'; break;
+        }
+        
+        block.innerHTML = `
+            <video controls style="${sizeClass} height: auto;">
+                <source src="${video.url}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        `;
+        
+        block.classList.add('has-video');
+        block.classList.remove('video-block');
+        showToast('Video added to block', 'success');
+    }
+
+    function updateBlockSpacing(value) {
+        document.getElementById('spacingValue').textContent = value + 'px';
+        document.documentElement.style.setProperty('--block-spacing', value + 'px');
+        
+        const layoutGrids = document.querySelectorAll('.layout-grid');
+        layoutGrids.forEach(grid => {
+            grid.style.gap = value + 'px';
+        });
+    }
+
+    function updateMediaSize(value) {
+        // This will be applied to newly inserted media
+        showToast(`Media size set to ${value}`, 'success');
+    }
+
+    function updateTextAlignment(value) {
+        if (selectedBlock && selectedBlock.classList.contains('text-block')) {
+            selectedBlock.style.textAlign = value;
+            showToast(`Text alignment set to ${value}`, 'success');
+        } else {
+            // Apply to all text blocks
+            document.querySelectorAll('.text-block').forEach(block => {
+                block.style.textAlign = value;
+            });
+            showToast(`Text alignment set to ${value} for all text blocks`, 'success');
+        }
+    }
+
+    // Initialize drag and drop for file upload
+    function initializeDragAndDrop() {
+        const uploadZone = document.getElementById('uploadZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        uploadZone.addEventListener('drop', handleDrop, false);
+        uploadZone.addEventListener('click', () => document.getElementById('fileInput').click());
+    }
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        document.getElementById('uploadZone').classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        document.getElementById('uploadZone').classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    // Setup file input
+    function setupFileUpload() {
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+    }
+
+    // Handle uploaded files
+    function handleFiles(files) {
+        if (isUploading) {
+            showToast('Upload already in progress...', 'error');
+            return;
+        }
+
+        if (files.length === 0) return;
+
+        isUploading = true;
+        const uploadZone = document.getElementById('uploadZone');
+        const originalHTML = uploadZone.innerHTML;
+        
+        // Show uploading state
+        uploadZone.innerHTML = `
+            <div class="upload-icon">
+                <div class="spinner"></div>
+            </div>
+            <div class="upload-text">Uploading ${files.length} file(s)...</div>
+            <div class="upload-subtext">Please wait while we process your files</div>
+        `;
+
+        // Upload files via API
+        const formData = new FormData();
+        for (let file of files) {
+            formData.append('files', file);
+        }
+
+        fetch(`/admin/api/lessons/${currentLessonId}/media/upload`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Add files to local storage and update UI
+                data.files.forEach(file => {
+                    addMediaItemToUI(file);
+                });
+            } else {
+                showToast(data.message || 'Upload failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            showToast('Upload failed: ' + error.message, 'error');
+        })
+        .finally(() => {
+            isUploading = false;
+            // Restore original upload zone
+            uploadZone.innerHTML = originalHTML;
+        });
+    }
+
+    // Add media item to UI
+    function addMediaItemToUI(fileData) {
+        const type = fileData.file_type;
+        const category = type + 's';
+        
+        // Add to local storage
+        mediaItems[category].push(fileData);
+        
+        // Update UI
+        renderMediaItem(fileData, category);
+        updateCategoryCount(category);
+    }
+
+    // Render media item in sidebar
+    function renderMediaItem(item, category) {
+        const container = document.getElementById(category + 'Container');
+        
+        // Remove empty state
+        if (container.classList.contains('empty')) {
+            container.classList.remove('empty');
+            container.innerHTML = '';
+        }
+        
+        const iconClass = {
+            video: 'fas fa-play',
+            image: 'fas fa-image',
+            document: 'fas fa-file-alt'
+        };
+
+        const mediaElement = document.createElement('div');
+        mediaElement.className = 'media-item';
+        mediaElement.draggable = true;
+        mediaElement.dataset.id = item.id;
+        mediaElement.dataset.type = item.file_type;
+
+        mediaElement.innerHTML = `
+            <div class="media-icon ${item.file_type}">
+                <i class="${iconClass[item.file_type]}"></i>
+            </div>
+            <div class="media-info">
+                <div class="media-title">${item.filename}</div>
+                <div class="media-meta">${formatFileSize(item.size)}</div>
+            </div>
+        `;
+
+        // Add click to insert
+        mediaElement.addEventListener('click', () => {
+            insertIntoContent(item.id, item.file_type);
+        });
+
+        container.appendChild(mediaElement);
+    }
+
+    // Update category count
+    function updateCategoryCount(category) {
+        const count = mediaItems[category].length;
+        const countElement = document.getElementById(category.slice(0, -1) + 'Count'); // Remove 's' from end
+        
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    // Initialize sortable
+    function initializeSortable() {
+        ['videosContainer', 'imagesContainer', 'documentsContainer'].forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container && typeof Sortable !== 'undefined') {
+                new Sortable(container, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function(evt) {
+                        // Handle reordering
+                        console.log('Media item reordered');
+                    }
+                });
+            }
+        });
+    }
+
+    // Load existing media for lesson
+    function loadExistingMedia() {
+        if (!currentLessonId) return;
+
+        fetch(`/admin/api/lessons/${currentLessonId}/media`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Load existing media into UI
+                Object.keys(data.media).forEach(category => {
+                    data.media[category].forEach(item => {
+                        addMediaItemToUI(item);
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading media:', error);
+        });
+    }
+
+    // Content editing functions
+    function formatText(command) {
+        document.execCommand(command);
+        document.getElementById('contentEditor').focus();
+    }
+
+    function insertHeading() {
+        const text = prompt('Enter heading text:');
+        if (text) {
+            document.execCommand('insertHTML', false, `<h3>${text}</h3>`);
+        }
+    }
+
+    function insertList() {
+        document.execCommand('insertUnorderedList');
+        document.getElementById('contentEditor').focus();
+    }
+
+    function insertLink() {
+        const url = prompt('Enter URL:');
+        if (url) {
+            const text = prompt('Enter link text:') || url;
+            document.execCommand('createLink', false, url);
+        }
+    }
+
+    function insertMedia(type) {
+        const category = type + 's';
+        const availableItems = mediaItems[category];
+        
+        if (availableItems.length === 0) {
+            showToast(`No ${type} files available. Upload some first!`, 'error');
+            return;
+        }
+
+        // For simplicity, insert the first available item
+        // In a full implementation, you'd show a selection modal
+        const item = availableItems[0];
+        insertIntoContent(item.id, type);
+    }
+
+    function insertIntoContent(itemId, type) {
+        const item = findMediaItem(itemId);
+        if (!item) return;
+
+        const editor = document.getElementById('contentEditor');
+        const selection = window.getSelection();
+        
+        let insertHTML = '';
+        switch(type) {
+            case 'video':
+                insertHTML = `<video controls style="max-width: 100%; margin: 10px 0;">
+                    <source src="${item.url}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>`;
+                break;
+            case 'image':
+                insertHTML = `<img src="${item.url}" alt="${item.filename}" style="max-width: 100%; margin: 10px 0;">`;
+                break;
+            case 'document':
+                insertHTML = `<div class="document-embed" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin: 10px 0;">
+                    <i class="fas fa-file-alt"></i> <strong>${item.filename}</strong>
+                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Document - ${formatFileSize(item.size)}</p>
+                </div>`;
+                break;
+        }
+
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(range.createContextualFragment(insertHTML));
+        } else {
+            editor.innerHTML += insertHTML;
+        }
+        
+        showToast(`${type} inserted into content`, 'success');
+    }
+
+    function findMediaItem(itemId) {
+        for (const category in mediaItems) {
+            const item = mediaItems[category].find(item => item.id === itemId);
+            if (item) return item;
+        }
+        return null;
+    }
+
+    // Save lesson content
+    function saveLessonContent() {
+        if (!currentLessonId) {
+            showToast('No lesson selected', 'error');
+            return;
+        }
+
+        const contentEditor = document.getElementById('contentEditor');
+        const content = contentEditor.innerHTML;
+        
+        // Gather layout configuration if layout mode is enabled
+        let layoutConfig = null;
+        if (layoutModeEnabled) {
+            const layoutGrid = document.querySelector('.layout-grid');
+            const blocks = [];
+            
+            if (layoutGrid) {
+                const blockElements = layoutGrid.querySelectorAll('.layout-block');
+                blockElements.forEach((block, index) => {
+                    const blockData = {
+                        id: `block_${index}`,
+                        type: getBlockType(block),
+                        content: getBlockContent(block),
+                        position: index,
+                        styles: getBlockStyles(block)
+                    };
+                    blocks.push(blockData);
+                });
+            }
+            
+            layoutConfig = {
+                layout_type: currentLayout,
+                blocks: blocks,
+                settings: {
+                    block_spacing: document.getElementById('blockSpacing')?.value || 20,
+                    media_size: document.getElementById('mediaSize')?.value || 'medium',
+                    text_alignment: document.getElementById('textAlign')?.value || 'left'
+                }
+            };
+        }
+        
+        // Show saving state
+        const saveButton = document.querySelector('.nav-btn-editor:not(.secondary)');
+        const originalText = saveButton.innerHTML;
+        saveButton.innerHTML = '<div class="spinner"></div> Saving...';
+        saveButton.disabled = true;
+
+        const payload = {
+            content: content
+        };
+        
+        if (layoutConfig) {
+            payload.layout_config = layoutConfig;
+        }
+
+        fetch(`/admin/api/lessons/${currentLessonId}/content`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message || 'Save failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            showToast('Save failed: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Restore button state
+            saveButton.innerHTML = originalText;
+            saveButton.disabled = false;
+        });
+    }
+
+    function getBlockType(block) {
+        if (block.classList.contains('text-block')) {
+            return 'text';
+        } else if (block.classList.contains('media-block') || block.classList.contains('has-media')) {
+            return 'media';
+        } else if (block.classList.contains('video-block') || block.classList.contains('has-video')) {
+            return 'video';
+        }
+        return 'content';
+    }
+
+    function getBlockContent(block) {
+        // Remove control elements before getting content
+        const tempBlock = block.cloneNode(true);
+        const controls = tempBlock.querySelector('.block-controls');
+        if (controls) {
+            controls.remove();
+        }
+        const label = tempBlock.querySelector('.block-label');
+        if (label) {
+            label.remove();
+        }
+        return tempBlock.innerHTML;
+    }
+
+    function getBlockStyles(block) {
+        return {
+            textAlign: block.style.textAlign || 'left',
+            backgroundColor: block.style.backgroundColor || '',
+            padding: block.style.padding || '',
+            margin: block.style.margin || ''
+        };
+    }
+
+    // Load layout configuration when editing
+    function loadLayoutConfiguration() {
+        if (!currentLessonId) return;
+
+        fetch(`/admin/api/lessons/${currentLessonId}/layout`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.layout_config) {
+                const config = data.layout_config;
+                
+                // Apply saved layout settings
+                if (config.layout_type) {
+                    currentLayout = config.layout_type;
+                    // Update active template in UI
+                    document.querySelectorAll('.layout-template').forEach(template => {
+                        template.classList.remove('active');
+                    });
+                    const activeTemplate = document.querySelector(`[data-layout="${config.layout_type}"]`);
+                    if (activeTemplate) {
+                        activeTemplate.classList.add('active');
+                    }
+                }
+                
+                // Apply saved settings
+                if (config.settings) {
+                    const settings = config.settings;
+                    if (settings.block_spacing) {
+                        const spacingSlider = document.getElementById('blockSpacing');
+                        if (spacingSlider) {
+                            spacingSlider.value = settings.block_spacing;
+                            updateBlockSpacing(settings.block_spacing);
+                        }
+                    }
+                    if (settings.media_size) {
+                        const mediaSizeSelect = document.getElementById('mediaSize');
+                        if (mediaSizeSelect) {
+                            mediaSizeSelect.value = settings.media_size;
+                        }
+                    }
+                    if (settings.text_alignment) {
+                        const textAlignSelect = document.getElementById('textAlign');
+                        if (textAlignSelect) {
+                            textAlignSelect.value = settings.text_alignment;
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading layout configuration:', error);
+        });
+    }
+
+    function togglePreview() {
+        const editor = document.getElementById('contentEditor');
+        const isEditable = editor.contentEditable === 'true';
+        
+        if (isEditable) {
+            editor.contentEditable = 'false';
+            editor.style.background = 'var(--surface-hover)';
+            showToast('Preview mode enabled', 'success');
+        } else {
+            editor.contentEditable = 'true';
+            editor.style.background = 'rgba(255, 255, 255, 0.02)';
+            showToast('Edit mode enabled', 'success');
+        }
+    }
+
+    // Utility functions
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const icon = toast.querySelector('i');
+        const text = toast.querySelector('span');
+        
+        text.textContent = message;
+        
+        // Update icon based on type
+        icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        
+        // Update classes
+        toast.className = `toast ${type}`;
+        
+        // Show toast
+        toast.classList.add('show');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+    </script>
+</body>
+</html>

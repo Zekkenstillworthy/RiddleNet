@@ -20,8 +20,8 @@ class ClassAnnouncement(db.Model):
     priority = db.Column(db.String(20), default='normal')  # low, normal, high, urgent
     is_published = db.Column(db.Boolean, default=False)
     
-    # Organization
-    topic_id = db.Column(db.Integer, db.ForeignKey('class_topics.id'), nullable=True)
+    # Organization - moved from topic to module
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)
     sort_order = db.Column(db.Integer, default=0)
     
     # Timestamps
@@ -31,7 +31,7 @@ class ClassAnnouncement(db.Model):
     
     # Relationships
     class_obj = db.relationship('Class', backref='announcements')
-    topic = db.relationship('ClassTopic', backref='announcements')
+    # Removed topic relationship - now using module relationship
     
     def to_dict(self):
         """Convert announcement to dictionary"""
@@ -42,7 +42,7 @@ class ClassAnnouncement(db.Model):
             'message': self.message,
             'priority': self.priority,
             'is_published': self.is_published,
-            'topic_id': self.topic_id,
+            'module_id': self.module_id,
             'sort_order': self.sort_order,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
@@ -67,8 +67,8 @@ class ClassAssignment(db.Model):
     assignment_type = db.Column(db.String(50), default='assignment')  # assignment, quiz, project
     is_published = db.Column(db.Boolean, default=False)
     
-    # Organization
-    topic_id = db.Column(db.Integer, db.ForeignKey('class_topics.id'), nullable=True)
+    # Organization - moved from topic to module
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)
     sort_order = db.Column(db.Integer, default=0)
     
     # Related Content
@@ -82,7 +82,7 @@ class ClassAssignment(db.Model):
     
     # Relationships
     class_obj = db.relationship('Class', backref='assignments')
-    topic = db.relationship('ClassTopic', backref='assignments')
+    # Removed topic relationship - now using module relationship
     question_group = db.relationship('QuestionGroup', backref='class_assignments')
     
     def to_dict(self):
@@ -97,7 +97,7 @@ class ClassAssignment(db.Model):
             'points': self.points,
             'assignment_type': self.assignment_type,
             'is_published': self.is_published,
-            'topic_id': self.topic_id,
+            'module_id': self.module_id,
             'sort_order': self.sort_order,
             'question_group_id': self.question_group_id,
             'simulation_id': self.simulation_id,
@@ -125,8 +125,8 @@ class ClassMaterial(db.Model):
     mime_type = db.Column(db.String(100), nullable=True)
     is_published = db.Column(db.Boolean, default=False)
     
-    # Organization
-    topic_id = db.Column(db.Integer, db.ForeignKey('class_topics.id'), nullable=True)
+    # Organization - moved from topic to module
+    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)
     sort_order = db.Column(db.Integer, default=0)
     
     # Timestamps
@@ -136,7 +136,7 @@ class ClassMaterial(db.Model):
     
     # Relationships
     class_obj = db.relationship('Class', backref='materials')
-    topic = db.relationship('ClassTopic', backref='materials')
+    # Removed topic relationship - now using module relationship
     
     def to_dict(self):
         """Convert material to dictionary"""
@@ -152,17 +152,23 @@ class ClassMaterial(db.Model):
             'file_size': self.file_size,
             'mime_type': self.mime_type,
             'is_published': self.is_published,
-            'topic_id': self.topic_id,
+            'module_id': self.module_id,
             'sort_order': self.sort_order,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'created_by': self.created_by
         }
 
+"""
+DEPRECATED: ClassTopic model - content is now organized under Modules instead of Topics
+Keeping this commented out for migration purposes
+"""
+"""
 class ClassTopic(db.Model):
-    """
-    Model for organizing class content into topics
-    """
+    \"\"\"
+    DEPRECATED: Model for organizing class content into topics
+    Content is now organized under Modules instead of Topics
+    \"\"\"
     __tablename__ = 'class_topics'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -182,7 +188,7 @@ class ClassTopic(db.Model):
     class_obj = db.relationship('Class', backref='topics')
     
     def to_dict(self):
-        """Convert topic to dictionary"""
+        \"\"\"Convert topic to dictionary\"\"\"
         # Calculate content count safely
         content_count = 0
         try:
@@ -207,3 +213,4 @@ class ClassTopic(db.Model):
             'created_by': self.created_by,
             'content_count': content_count
         }
+"""

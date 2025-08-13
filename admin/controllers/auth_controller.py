@@ -27,14 +27,18 @@ class AuthController:
             admin = Admin.query.filter_by(username=username).first()
             
             if admin and admin.check_password(password):
+                # CRITICAL FIX: Set admin namespace BEFORE login_user
+                session['auth_namespace'] = 'admin'
+                
                 # Use Flask-Login to log in the user with remember=True
                 login_user(admin, remember=True)
+                
                 # Update last login
                 admin.last_login = datetime.utcnow()
                 db.session.commit()
                 
                 # Debug logging
-                print(f"Login successful: {admin.username}, ID: {admin.id}, is_authenticated: {current_user.is_authenticated}")
+                print(f"Login successful: {admin.username}, ID: {admin.id}, namespace: {session.get('auth_namespace')}")
                 
                 flash('Welcome to Admin Dashboard', 'success')
                 
@@ -45,29 +49,11 @@ class AuthController:
                     return redirect(next_url)
                 return redirect(url_for('dashboard.index'))
             else:
-                flash('Invalid admin credentials', 'error')        # Debug template discovery
-        from utils.template_utils import debug_template_paths
-        debug_template_paths('admin/login.html')
-        
-        # Check if the login template exists
-        template_exists = False
-        for path in current_app.jinja_loader.searchpath:
-            template_path = os.path.join(path, 'admin', 'login.html')
-            if os.path.exists(template_path):
-                print(f"Login template found at: {template_path}")
-                template_exists = True
-            # Also check for direct path
-            direct_path = os.path.join(path, 'admin/login.html')
-            if os.path.exists(direct_path):
-                print(f"Login template found at direct path: {direct_path}")
-                template_exists = True
-        
-        if not template_exists:
-            print("WARNING: Login template not found in any template path!")
+                flash('Invalid admin credentials', 'error')
         
         # Use the custom render_template function with debugging
         return render_safe_template('admin/login.html')
-        
+
     @staticmethod
     @auth_bp.route('/signup', methods=['GET', 'POST'])
     def signup():
@@ -161,9 +147,9 @@ class AuthController:
     @auth_bp.route('/logout')
     @login_required
     def logout():
-        # Clear any admin-specific session data
+        # CRITICAL FIX: Clear admin-specific session data and namespace
         session.pop('admin_id', None)
-        session.pop('auth_namespace', None)
+        session.pop('auth_namespace', None)  # Clear the namespace
         
         logout_user()  # Use Flask-Login's logout_user
         flash('Logged out successfully', 'success')

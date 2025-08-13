@@ -1,182 +1,1137 @@
-{% extends "admin/base.html" %}
+{% extends "user/learning_base.html" %}
 
 {% block head %}
-<title>Module Preview - {{ module.title }} | RiddleNet Admin</title>
+<title>{{ module.title }} - {{ class_data.name }} | RiddleNet Preview</title>
 <style>
-/* Admin Module Preview Styling */
-.preview-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+:root {
+  /* Using the exact variables from learning_base.html */
+  --primary-color: #0B1426;
+  --secondary-color: #1A2B47;
+  --accent-color: #00D4FF;
+  --success-color: #00FF88;
+  --warning-color: #FFD700;
+  --danger-color: #FF4757;
+  --cyber-glow: #00D4FF;
+  --neon-green: #39FF14;
+  --network-purple: #8B5CF6;
+  
+  /* Background & Surface Colors */
+  --background: #0B1426;
+  --surface: #1A2B47;
+  --surface-hover: #243B5C;
+  --border-color: rgba(0, 212, 255, 0.2);
+  --glass-bg: rgba(30, 41, 71, 0.8);
+  
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B3E5FC;
+  --text-muted: #7DD3FC;
+  
+  /* Layout variables */
+  --transition-speed: 0.4s;
+  --border-radius: 16px;
+  --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+  --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+  --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+  --card-bg: linear-gradient(135deg, #1E3A5F, #243B5C);
+  
+  /* Compatibility with existing styles */
+  --sidebar-bg: rgba(26, 35, 126, 0.8);
+  --border-glow: rgba(0, 212, 255, 0.3);
 }
 
-.preview-header {
-    background: var(--card-bg);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
-    border-left: 4px solid var(--neon-green);
-}
-
-.preview-title {
-    color: var(--text-primary);
-    font-size: 2rem;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.preview-badge {
-    background: linear-gradient(135deg, #FF9800, #FF5722);
+/* Preview Mode Indicator */
+.preview-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #FFD700, #FF4757);
     color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 0.75rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(255, 140, 66, 0.3);
+    animation: pulse 2s infinite;
+    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.module-meta {
-    color: var(--text-muted);
-    display: flex;
-    gap: 20px;
-    margin-bottom: 16px;
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
-.student-view-frame {
-    background: #f0f0f0;
-    border-radius: 12px;
-    padding: 20px;
-    margin-top: 24px;
-    border: 2px solid var(--border-light);
-}
-
-.frame-header {
+/* Admin Actions Banner */
+.admin-actions-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0 24px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    height: 70px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-light);
-}
-
-.frame-controls {
-    display: flex;
-    gap: 6px;
-}
-
-.frame-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-.frame-dot.red { background: #ff5f57; }
-.frame-dot.yellow { background: #ffbd2e; }
-.frame-dot.green { background: #28ca42; }
-
-.frame-url {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-family: monospace;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-left: 12px;
-}
-
-.navigation-bar {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
 }
 
-.nav-buttons {
+.admin-actions-banner::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    animation: pulse 2s ease-in-out infinite alternate;
+}
+
+.nav-brand {
     display: flex;
+    align-items: center;
     gap: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
 }
 
-.btn {
-    padding: 12px 24px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
+.nav-brand .logo-icon {
+    height: 40px;
+    width: 40px;
+    border-radius: 12px;
+    padding: 6px;
+    background: var(--gradient-primary);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    transition: all var(--transition-speed) ease;
+}
+
+.nav-brand .logo-icon:hover {
+    box-shadow: var(--shadow-glow);
+    transform: scale(1.1);
+}
+
+.nav-brand .logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-profile-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.btn-primary {
-    background: var(--neon-green);
-    color: var(--bg-primary);
+.user-profile-nav:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
 }
 
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
+.profile-avatar-nav {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    overflow: hidden;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.profile-avatar-nav:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+.profile-name-nav {
+    font-weight: 500;
     color: var(--text-primary);
 }
 
-.btn:hover {
+.admin-actions-banner::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
+    animation: adminPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes adminPulse {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* Main Layout with Persistent Sidebar */
+.learning-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  min-height: 100vh;
+  gap: 2rem;
+}
+
+/* Persistent Class Sidebar */
+.class-sidebar {
+  width: 320px;
+  background: var(--sidebar-bg);
+  border-radius: 20px;
+  border: 2px solid var(--border-glow);
+  box-shadow: var(--glow-cyan), 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  padding: 1.5rem;
+  height: fit-content;
+  max-height: calc(100vh - 120px);
+  position: sticky;
+  top: 2rem;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.class-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--cyber-glow);
+  margin-bottom: 0.5rem;
+}
+
+.class-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Module Navigation in Sidebar */
+.module-navigation {
+  margin-bottom: 1.5rem;
+}
+
+.nav-section-title {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-section-title i {
+  color: var(--cyber-glow);
+}
+
+.module-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.module-nav-item {
+  background: rgba(26, 35, 126, 0.4);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.module-nav-item:hover {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: var(--cyber-glow);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.2);
+}
+
+.module-nav-item.active {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(139, 92, 246, 0.2));
+  border-color: var(--cyber-glow);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  transform: translateX(8px);
+}
+
+.module-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, var(--cyber-glow), var(--neon-green));
+  border-radius: 0 2px 2px 0;
+}
+
+.module-nav-item.active .module-nav-title {
+  color: var(--cyber-glow);
+  font-weight: 700;
+}
+
+.module-nav-item.active .module-nav-number {
+  background: var(--cyber-glow);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+.module-nav-number {
+  font-size: 0.8rem;
+  color: var(--cyber-glow);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.module-nav-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.module-nav-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.module-nav-progress {
+  background: var(--surface-secondary);
+  border-radius: 10px;
+  height: 4px;
+  width: 100%;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.module-nav-progress-fill {
+  background: linear-gradient(90deg, var(--cyber-glow), var(--neon-green));
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* Quick Actions */
+.quick-actions {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-glow);
+}
+
+.quick-action-btn {
+  background: rgba(26, 35, 126, 0.4);
+  border: 1px solid var(--border-glow);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-radius: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.quick-action-btn:hover {
+  background: var(--cyber-glow);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.quick-action-btn i {
+  color: var(--cyber-glow);
+}
+
+.quick-action-btn:hover i {
+  color: white;
+}
+
+/* Main Module Content */
+.module-container {
+    flex: 1;
+    padding: 24px;
+    min-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.module-header {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 24px;
+    text-align: center;
+    border: 1px solid var(--border-glow);
+}
+
+.module-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--cyber-glow);
+    margin: 0 0 12px 0;
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.module-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.meta-item i {
+    color: var(--cyber-glow);
+}
+
+.progress-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-glow);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.progress-bar {
+    background: var(--surface-secondary);
+    border-radius: 50px;
+    height: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--cyber-glow), var(--neon-green));
+    height: 100%;
+    border-radius: 50px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.main-content {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    border: 1px solid var(--border-glow);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.sidebar-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border-glow);
+}
+
+.section-title {
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title i {
+    color: var(--cyber-glow);
+}
+
+.lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lesson-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.lesson-item:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.lesson-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.lesson-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.lesson-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-complete {
+    color: var(--neon-green);
+}
+
+.status-incomplete {
+    color: var(--text-muted);
+}
+
+.material-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.material-item:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.material-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cyber-glow);
+    color: white;
+    font-size: 1.2rem;
+}
+
+.material-info {
+    flex: 1;
+}
+
+.material-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.material-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.navigation-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border-glow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-btn {
+    background: var(--cyber-glow);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.nav-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.nav-btn.secondary {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.nav-btn.secondary:hover {
+    background: var(--surface-tertiary);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .learning-container {
+        flex-direction: column;
+        gap: 1rem;
+        padding-top: 90px;
+    }
+    
+    .class-sidebar {
+        width: 100%;
+        position: relative;
+        top: 0;
+        max-height: none;
+        order: -1;
+    }
+    
+    .module-navigation .module-nav-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+    }
+    
+    .quick-action-btn {
+        margin-bottom: 0;
+    }
+    
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .navigation-section {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .nav-actions {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .learning-container {
+        padding: 90px 16px 0 16px;
+    }
+    
+    .class-sidebar {
+        padding: 1rem;
+    }
+    
+    .module-navigation .module-nav-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .class-title {
+        font-size: 1.1rem;
+    }
+    
+    .module-nav-item {
+        padding: 10px 12px;
+    }
+    
+    .module-meta {
+        gap: 16px;
+    }
+
+    .admin-actions-banner {
+        padding: 12px 16px;
+        height: 60px;
+    }
+
+    .nav-actions {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .nav-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .user-profile-nav .profile-name-nav {
+        display: none;
+    }
+
+    .preview-indicator {
+        top: 75px;
+        right: 12px;
+        font-size: 0.7rem;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .nav-brand .logo-text {
+        display: none;
+    }
+}
+
+/* Smooth scrolling for the entire page */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for sidebar */
+.class-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.class-sidebar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.class-sidebar::-webkit-scrollbar-thumb {
+    background: var(--cyber-glow);
+    border-radius: 3px;
+}
+
+.class-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
 }
 </style>
 {% endblock %}
 
 {% block body %}
-<div class="preview-container">
-    <!-- Header Section -->
-    <div class="preview-header">
-        <h1 class="preview-title">
-            <i class="fas fa-eye"></i>
-            Module Preview
-            <span class="preview-badge">Admin View</span>
-        </h1>
-        <div class="module-meta">
-            <span><i class="fas fa-book"></i> {{ module.title }}</span>
-            <span><i class="fas fa-layer-group"></i> Module {{ module.module_number or 'N/A' }}</span>
-            <span><i class="fas fa-clock"></i> {{ module.estimated_duration or 60 }} minutes</span>
-        </div>
-        <p style="color: var(--text-secondary); margin: 0;">
-            This is exactly how students will see this module when they access it.
-        </p>
-    </div>
+<!-- Override the body block to remove the learning navigation -->
+<main class="learning-main" style="padding-top: 0;">
+    {% block content %}
+   
 
-    <!-- Navigation -->
-    <div class="navigation-bar">
-        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Content Manager
+<!-- Admin Actions Banner - Fixed Top Bar -->
+<nav class="admin-actions-banner">
+    <a href="/admin/classes" class="nav-brand">
+        <div class="logo-icon">
+            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
+        </div>
+        <div class="logo-text">RiddleNet</div>
+    </a>
+    
+    <div class="nav-actions">
+        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="nav-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Content Manager
         </a>
         
-        <div class="nav-buttons">
-            <a href="/class/{{ class_data.id }}/module/{{ module.id }}" class="btn btn-primary">
-                <i class="fas fa-eye"></i> Open Full Student View
+        <div class="user-profile-nav" onclick="window.location.href='/admin/classes'">
+            <div class="profile-avatar-nav">
+                {% if current_user and current_user.is_authenticated %}
+                    {{ (current_user.first_name or current_user.username or 'A')[0].upper() }}
+                {% else %}
+                    A
+                {% endif %}
+            </div>
+            <div class="profile-name-nav">
+                {% if current_user and current_user.is_authenticated %}
+                    {{ current_user.first_name or current_user.username or 'Admin' }}
+                {% else %}
+                    Admin
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="learning-container" style="padding-top: 90px;">
+    <!-- Persistent Class Sidebar -->
+    <div class="class-sidebar">
+        <!-- Class Header -->
+        <div class="sidebar-header">
+            <h2 class="class-title">{{ class_data.name }}</h2>
+            <p class="class-subtitle">{{ class_data.description or 'Course Preview' }}</p>
+        </div>
+
+        <!-- Module Navigation -->
+        <div class="module-navigation">
+            <div class="nav-section-title">
+                <i class="fas fa-book"></i>
+                Course Modules
+            </div>
+            <div class="module-nav-list">
+                {% if class_modules and class_modules|length > 0 %}
+                    {% for nav_module in class_modules %}
+                    <div class="module-nav-item {{ 'active' if module.id == nav_module.id else '' }}">
+                        <div class="module-nav-number">Module {{ nav_module.module_number or loop.index }}</div>
+                        <div class="module-nav-title">{{ nav_module.title }}</div>
+                        <div class="module-nav-meta">
+                            <span>{{ nav_module.total_lessons or 4 }} lessons • {{ nav_module.estimated_duration or 120 }} min</span>
+                            <span>{{ nav_module.completion_percentage or 0 }}% Complete</span>
+                        </div>
+                        <div class="module-nav-progress">
+                            <div class="module-nav-progress-fill" style="width: {{ nav_module.completion_percentage or 0 }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Fallback: Basic module navigation when database modules aren't available -->
+                    {% for i in range(1, 5) %}
+                    <div class="module-nav-item {{ 'active' if module.id == i else '' }}">
+                        <div class="module-nav-number">Module {{ i }}</div>
+                        <div class="module-nav-title">
+                            {% if i == 1 %}Computer Network Fundamentals
+                            {% elif i == 2 %}OSI Model and Network Layers  
+                            {% elif i == 3 %}Network Protocols and Standards
+                            {% elif i == 4 %}Advanced Networking Concepts
+                            {% endif %}
+                        </div>
+                        <div class="module-nav-meta">
+                            <span>4 lessons • 120 min</span>
+                            <span>{{ '0' if module.id != i else '0' }}% Complete</span>
+                        </div>
+                        <div class="module-nav-progress">
+                            <div class="module-nav-progress-fill" style="width: {{ '0' if module.id != i else '0' }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="nav-section-title">
+                <i class="fas fa-bolt"></i>
+                Quick Actions
+            </div>
+            <a href="/class/{{ class_data.id }}" class="quick-action-btn">
+                <i class="fas fa-home"></i>
+                Class Overview
+            </a>
+            <a href="/class/{{ class_data.id }}#simulations-tab" class="quick-action-btn">
+                <i class="fas fa-flask"></i>
+                Simulations
+            </a>
+            <a href="/class/{{ class_data.id }}#progress-tab" class="quick-action-btn">
+                <i class="fas fa-chart-line"></i>
+                View Progress
             </a>
         </div>
     </div>
 
-    <!-- Student View Frame -->
-    <div class="student-view-frame">
-        <div class="frame-header">
-            <div class="frame-controls">
-                <div class="frame-dot red"></div>
-                <div class="frame-dot yellow"></div>
-                <div class="frame-dot green"></div>
+    <!-- Main Module Content -->
+    <div class="module-container">
+        <!-- Module Header -->
+        <div class="module-header">
+            <div class="breadcrumb" style="margin-bottom: 16px; text-align: left;">
+                <a href="/class/{{ class_data.id }}" style="color: var(--text-secondary); text-decoration: none;">
+                    <i class="fas fa-home"></i> {{ class_data.name }}
+                </a>
+                <span style="color: var(--text-muted); margin: 0 8px;">></span>
+                <span style="color: var(--cyber-glow);">{{ module.title }}</span>
             </div>
-            <div class="frame-url">
-                student-view://class/{{ class_data.id }}/module/{{ module.id }}
+            
+            <h1 class="module-title">{{ module.title }}</h1>
+            
+            {% if module.description %}
+            <p style="color: var(--text-secondary); font-size: 1.1rem; margin: 16px 0 0 0;">
+                {{ module.description }}
+            </p>
+            {% endif %}
+            
+            <div class="module-meta">
+                <div class="meta-item">
+                    <i class="fas fa-layer-group"></i>
+                    Module {{ module.module_number or 'N/A' }}
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    {{ module.estimated_duration or 60 }} minutes
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-list"></i>
+                    {{ lessons|length }} lessons
+                </div>
             </div>
         </div>
 
-        <!-- Embed the actual student template content -->
-        <div style="background: white; border-radius: 8px; min-height: 600px;">
-            {% include 'admin/module_preview_template.html' %}
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <h3 style="margin: 0; color: var(--text-primary);">Your Progress</h3>
+                <span style="color: var(--cyber-glow); font-weight: 600;">0% Complete (Preview Mode)</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.9rem; color: var(--text-secondary);">
+                <span>0 of {{ lessons|length }} lessons completed</span>
+                <span>Ready to start! 🚀</span>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Main Content -->
+            <div class="main-content">
+                {% if module.learning_objectives and module.learning_objectives|length > 0 %}
+                <div style="margin-bottom: 32px;">
+                    <h3 class="section-title">
+                        <i class="fas fa-bullseye"></i>
+                        Learning Objectives
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                        By the end of this module, you will be able to:
+                    </p>
+                    <ul style="color: var(--text-primary); line-height: 1.6;">
+                        {% for objective in module.learning_objectives %}
+                        <li style="margin-bottom: 8px;">{{ objective }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div>
+                    <h3 class="section-title">
+                        <i class="fas fa-book-open"></i>
+                        Module Overview
+                    </h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        {% if module.description %}
+                            {{ module.description }}
+                        {% else %}
+                            This module contains {{ lessons|length }} lessons covering essential concepts and practical applications.
+                            Complete each lesson in order to build your understanding progressively.
+                        {% endif %}
+                    </p>
+                    
+                    {% if lessons|length > 0 %}
+                    <div style="margin-top: 24px;">
+                        <h4 style="color: var(--text-primary); margin-bottom: 16px;">What You'll Learn:</h4>
+                        <ul style="color: var(--text-secondary); line-height: 1.6;">
+                            {% for lesson in lessons %}
+                            <li style="margin-bottom: 8px;">{{ lesson.title }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Lessons Section -->
+                {% if lessons|length > 0 %}
+                <div class="sidebar-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-list"></i>
+                        Lessons ({{ lessons|length }})
+                    </h3>
+                    <div class="lesson-list">
+                        {% for lesson in lessons %}
+                        <div class="lesson-item" onclick="previewLesson({{ lesson.id }})">
+                            <div class="lesson-title">{{ lesson.title }}</div>
+                            <div class="lesson-meta">
+                                <span>
+                                    {% if lesson.estimated_duration %}
+                                        <i class="fas fa-clock"></i> {{ lesson.estimated_duration }} min
+                                    {% else %}
+                                        <i class="fas fa-book"></i> Lesson
+                                    {% endif %}
+                                </span>
+                                <div class="lesson-status status-incomplete">
+                                    <i class="fas fa-circle"></i>
+                                    Preview Mode
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Materials Section -->
+                {% if materials|length > 0 %}
+                <div class="sidebar-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-folder"></i>
+                        Materials ({{ materials|length }})
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        {% for material in materials %}
+                        <div class="material-item" onclick="previewMaterial('{{ material.title }}')">
+                            <div class="material-icon">
+                                {% if material.type == 'video' %}
+                                    <i class="fas fa-play"></i>
+                                {% elif material.type == 'document' %}
+                                    <i class="fas fa-file-alt"></i>
+                                {% elif material.type == 'link' %}
+                                    <i class="fas fa-external-link-alt"></i>
+                                {% else %}
+                                    <i class="fas fa-file"></i>
+                                {% endif %}
+                            </div>
+                            <div class="material-info">
+                                <div class="material-title">{{ material.title }}</div>
+                                <div class="material-description">{{ material.description or 'Study material' }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-bolt"></i>
+                        Student Actions
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <button class="nav-btn" onclick="previewStartLearning()" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-play"></i>
+                            Start Learning
+                        </button>
+                        <button class="nav-btn secondary" onclick="previewViewProgress()" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-chart-line"></i>
+                            View Progress
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation-section">
+            <!-- Previous Module Button -->
+            <div class="nav-btn secondary" onclick="previewNavigation('previous')">
+                <i class="fas fa-arrow-left"></i>
+                Previous Module
+            </div>
+            
+            <div style="text-align: center; color: var(--text-secondary);">
+                <div style="font-size: 1rem; font-weight: 600; color: var(--cyber-glow);">{{ module.title }}</div>
+                <div style="font-size: 0.9rem; margin-top: 4px;">Module {{ module.module_number or module.id }} of {{ class_data.name }}</div>
+                <div style="font-size: 0.8rem; margin-top: 4px; color: var(--text-muted);">Preview Mode - Ready to begin</div>
+            </div>
+            
+            <!-- Next Module Button -->
+            <button class="nav-btn" onclick="previewNavigation('next')">
+                Start Learning
+                <i class="fas fa-arrow-right"></i>
+            </button>
         </div>
     </div>
 </div>
-{% endblock %}
+
+<script>
+function previewLesson(lessonId) {
+    alert('🎓 This is a preview! In student view, this would open lesson ' + lessonId);
+}
+
+function previewMaterial(materialTitle) {
+    alert('📚 This is a preview! In student view, this would open: ' + materialTitle);
+}
+
+function previewStartLearning() {
+    alert('🚀 This is a preview! In student view, this would start the first lesson');
+}
+
+function previewViewProgress() {
+    alert('📊 This is a preview! In student view, this would show detailed progress tracking');
+}
+
+function previewNavigation(direction) {
+    if (direction === 'previous') {
+        alert('⬅️ This is a preview! In student view, this would navigate to the previous module or class overview');
+    } else {
+        alert('➡️ This is a preview! In student view, this would continue to the next module or start learning');
+    }
+}
+</script>
+    {% endblock %} <!-- End content block -->
+</main>
+
+<!-- Socket.IO for real-time features -->
+<script src="{{ url_for('static', filename='js/socket-client.js') }}"></script>
+
+{% block scripts %}{% endblock %}
+{% endblock %} <!-- End body block -->

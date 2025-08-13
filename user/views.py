@@ -528,8 +528,8 @@ def logout():
     from flask_login import logout_user
     logout_user()
     
-    # Clear the user's session
-    session.clear()
+    # CRITICAL FIX: Clear the user's session and namespace
+    session.clear()  # This will clear auth_namespace too
     flash('You have been logged out successfully', 'success')
     return redirect(url_for('user.index'))
 
@@ -721,7 +721,8 @@ def login():
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
       # Set user in session
     session['user_id'] = user.id
-    print(f"Login successful for user: {username}, user_id: {user.id}")
+    session['auth_namespace'] = 'user'  # CRITICAL FIX: Set user namespace
+    print(f"Login successful for user: {username}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")
     
     # Use Flask-Login for proper login and authentication
     # Remember=True ensures the user stays logged in for the session
@@ -1385,7 +1386,6 @@ def register_user_websocket_events():
         try:
             category = data.get('category', 'general')
             score = data.get('score', 0)
-            topic_id = data.get('topic_id')
             
             # Save score to database
             try:

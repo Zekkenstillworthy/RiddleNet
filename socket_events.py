@@ -3177,3 +3177,229 @@ def handle_sync_collaborative_timer(data):
         print(f"❌ Error syncing collaborative timer: {str(e)}")
 
 print("✅ Socket events module loaded successfully with live leaderboard and timer systems")
+
+# ===== MODULE MANAGEMENT WEBSOCKET EVENTS =====
+
+@socketio.on('join_admin_room')
+@admin_only
+def handle_join_admin_room(data=None):
+    """Join admin room for real-time admin updates"""
+    try:
+        join_room('admin_room')
+        emit('joined_admin_room', {'success': True, 'message': 'Connected to admin updates'})
+        print(f"👑 Admin {current_user.username} joined admin room")
+        
+    except Exception as e:
+        print(f"❌ Error joining admin room: {str(e)}")
+        emit('admin_room_error', {'error': str(e)})
+
+@socketio.on('join_module_builder')
+@admin_only
+def handle_join_module_builder(data):
+    """Join module builder room for real-time module updates"""
+    try:
+        class_id = data.get('class_id')
+        
+        # Join general module builder room
+        join_room('module_builder')
+        
+        # Join class-specific room if class_id provided
+        if class_id:
+            join_room(f'class_{class_id}')
+            emit('joined_module_builder', {
+                'success': True, 
+                'class_id': class_id,
+                'rooms': ['module_builder', f'class_{class_id}']
+            })
+        else:
+            emit('joined_module_builder', {
+                'success': True,
+                'rooms': ['module_builder']
+            })
+        
+        print(f"🏗️ Admin {current_user.username} joined module builder room")
+        
+    except Exception as e:
+        print(f"❌ Error joining module builder: {str(e)}")
+        emit('module_builder_error', {'error': str(e)})
+
+@socketio.on('leave_module_builder')
+@authenticated_only
+def handle_leave_module_builder(data=None):
+    """Leave module builder room"""
+    try:
+        class_id = data.get('class_id') if data else None
+        
+        leave_room('module_builder')
+        if class_id:
+            leave_room(f'class_{class_id}')
+        
+        emit('left_module_builder', {'success': True})
+        print(f"🏗️ User {current_user.username} left module builder room")
+        
+    except Exception as e:
+        print(f"❌ Error leaving module builder: {str(e)}")
+
+@socketio.on('module_created')
+@admin_only
+def handle_module_created(data):
+    """Handle module creation event and broadcast to other admins"""
+    try:
+        module_data = data.get('module')
+        class_id = data.get('class_id')
+        
+        if not module_data or not class_id:
+            emit('module_creation_error', {'error': 'Module data and class_id required'})
+            return
+        
+        # Broadcast to admin room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_room')
+        
+        # Broadcast to module builder room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='module_builder')
+        
+        # Broadcast to class-specific room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=f'class_{class_id}')
+        
+        emit('module_creation_success', {'message': 'Module creation broadcasted'})
+        print(f"📝 Module creation broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting module creation: {str(e)}")
+        emit('module_creation_error', {'error': str(e)})
+
+@socketio.on('module_updated')
+@admin_only
+def handle_module_updated(data):
+    """Handle module update event and broadcast to other admins"""
+    try:
+        module_data = data.get('module')
+        class_id = data.get('class_id')
+        
+        if not module_data or not class_id:
+            emit('module_update_error', {'error': 'Module data and class_id required'})
+            return
+        
+        # Broadcast to admin room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_room')
+        
+        # Broadcast to module builder room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='module_builder')
+        
+        # Broadcast to class-specific room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=f'class_{class_id}')
+        
+        emit('module_update_success', {'message': 'Module update broadcasted'})
+        print(f"📝 Module update broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting module update: {str(e)}")
+        emit('module_update_error', {'error': str(e)})
+
+# Helper functions for module WebSocket events
+def emit_module_deleted(module_data, class_id):
+    """Helper function to emit module deletion events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module deletion events emitted for module {module_data.get('id')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module deletion events: {str(e)}")
+
+def emit_module_created(module_data, class_id, created_by):
+    """Helper function to emit module creation events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': created_by,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_created_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_created_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_created_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module creation events emitted for module {module_data.get('title')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module creation events: {str(e)}")
+
+def emit_module_updated(module_data, class_id, updated_by):
+    """Helper function to emit module update events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': updated_by,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_updated_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_updated_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_updated_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module update events emitted for module {module_data.get('title')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module update events: {str(e)}")
