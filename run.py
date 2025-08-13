@@ -401,8 +401,15 @@ if __name__ == "__main__":
     import logging
     from flask import send_from_directory
     
+    # Get port from environment variable (Railway sets PORT env var)
+    port = int(os.environ.get('PORT', 5001))
+    host = '0.0.0.0'  # Listen on all interfaces for Railway
+    
+    # Check if we're in production
+    is_production = os.environ.get('RAILWAY_ENVIRONMENT') == 'production' or os.environ.get('FLASK_ENV') == 'production'
+    
     # Setup logging
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO if is_production else logging.DEBUG)
     logger = logging.getLogger(__name__)
     
     # Define static folder path
@@ -555,9 +562,9 @@ if __name__ == "__main__":
     # Start the Flask-SocketIO server
     socketio.run(
         app, 
-        debug=True, 
-        host='127.0.0.1',
-        port=5001,
+        debug=not is_production, 
+        host=host,
+        port=port,
         use_reloader=False,  # Disable reloader to prevent threading issues
         allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
     )
