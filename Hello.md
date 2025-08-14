@@ -1,1 +1,0 @@
-Yokoso Watashi no Soul Society
