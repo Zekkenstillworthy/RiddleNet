@@ -1,7 +1,8 @@
 from flask import current_app, request, jsonify
 from admin import db
 from admin.models.simulation import Simulation, SimulationAttempt
-from admin.models.learning_path import LearningPath, UserLearningProgress
+# Learning Path models removed - feature deprecated
+# from admin.models.learning_path import LearningPath, UserLearningProgress
 from datetime import datetime
 import json
 
@@ -18,8 +19,9 @@ class SimulationController:
             stats = Simulation.get_dashboard_stats()
             
             # Learning paths statistics
-            total_paths = LearningPath.query.filter_by(is_active=True).count()
-            published_paths = LearningPath.query.filter_by(is_active=True, is_published=True).count()
+            # Learning paths feature removed - returning 0 counts
+            total_paths = 0
+            published_paths = 0
             
             # Recent activity
             recent_attempts = SimulationAttempt.query.order_by(
@@ -340,6 +342,12 @@ class SimulationController:
             
             simulations = query.order_by(Simulation.created_at.desc()).all()
             
+            # If no simulations exist, create sample data
+            if not simulations:
+                print("🔄 No simulations found, creating sample data...")
+                self._create_sample_simulations()
+                simulations = query.order_by(Simulation.created_at.desc()).all()
+            
             return {
                 'simulations': [sim.to_dict(include_analytics=True) for sim in simulations],
                 'total_count': len(simulations)
@@ -440,6 +448,122 @@ class SimulationController:
         except Exception as e:
             current_app.logger.error(f"Error searching simulations: {str(e)}")
             return {'error': 'Failed to search simulations'}
+    
+    def _create_sample_simulations(self):
+        """Create sample simulations for testing"""
+        try:
+            sample_simulations = [
+                {
+                    'title': 'Basic IPv4 Subnetting',
+                    'description': 'Learn fundamental subnetting concepts with hands-on practice calculating subnet masks and network ranges.',
+                    'simulation_type': 'Networking 1',
+                    'category': 'Subnetting',
+                    'difficulty': 'Beginner',
+                    'learning_objectives': ['Understand CIDR notation', 'Calculate subnet masks', 'Determine network ranges'],
+                    'estimated_duration': 30,
+                    'is_published': True,
+                    'tags': ['ipv4', 'subnetting', 'networking', 'basics'],
+                    'step_definitions': [
+                        {
+                            'title': 'Understanding CIDR Notation',
+                            'type': 'instruction',
+                            'description': 'Learn about CIDR notation and subnet masks',
+                            'order': 1
+                        },
+                        {
+                            'title': 'Calculate Subnet Mask',
+                            'type': 'question',
+                            'description': 'Calculate the subnet mask for /24 network',
+                            'order': 2
+                        }
+                    ]
+                },
+                {
+                    'title': 'VLAN Configuration',
+                    'description': 'Configure VLANs on Cisco switches including VLAN creation, port assignment, and trunk configuration.',
+                    'simulation_type': 'Networking 1', 
+                    'category': 'Switching',
+                    'difficulty': 'Intermediate',
+                    'learning_objectives': ['Create VLANs', 'Configure switch ports', 'Setup trunk ports'],
+                    'estimated_duration': 45,
+                    'is_published': True,
+                    'tags': ['vlan', 'switching', 'cisco', 'configuration'],
+                    'step_definitions': [
+                        {
+                            'title': 'Create VLAN',
+                            'type': 'configuration',
+                            'description': 'Create a new VLAN with ID 10',
+                            'order': 1
+                        }
+                    ]
+                },
+                {
+                    'title': 'OSPF Routing Protocol',
+                    'description': 'Configure OSPF dynamic routing protocol with multiple areas and verify neighbor adjacencies.',
+                    'simulation_type': 'Networking 2',
+                    'category': 'Routing',
+                    'difficulty': 'Advanced',
+                    'learning_objectives': ['Configure OSPF areas', 'Set router IDs', 'Verify OSPF adjacencies'],
+                    'estimated_duration': 60,
+                    'is_published': True,
+                    'tags': ['ospf', 'routing', 'dynamic', 'protocol'],
+                    'step_definitions': [
+                        {
+                            'title': 'Enable OSPF Process',
+                            'type': 'configuration',
+                            'description': 'Enable OSPF routing process on router',
+                            'order': 1
+                        }
+                    ]
+                },
+                {
+                    'title': 'Network Troubleshooting',
+                    'description': 'Diagnose and fix common network connectivity issues using systematic troubleshooting methodology.',
+                    'simulation_type': 'Troubleshooting',
+                    'category': 'Troubleshooting',
+                    'difficulty': 'Intermediate',
+                    'learning_objectives': ['Identify network problems', 'Use troubleshooting tools', 'Implement solutions'],
+                    'estimated_duration': 40,
+                    'is_published': False,  # Draft simulation
+                    'tags': ['troubleshooting', 'connectivity', 'ping', 'traceroute'],
+                    'step_definitions': [
+                        {
+                            'title': 'Identify Problem',
+                            'type': 'troubleshooting',
+                            'description': 'Analyze connectivity issue symptoms',
+                            'order': 1
+                        }
+                    ]
+                }
+            ]
+            
+            for sim_data in sample_simulations:
+                simulation = Simulation(
+                    title=sim_data['title'],
+                    description=sim_data['description'],
+                    simulation_type=sim_data['simulation_type'],
+                    category=sim_data['category'],
+                    difficulty=sim_data['difficulty'],
+                    learning_objectives=sim_data['learning_objectives'],
+                    estimated_duration=sim_data['estimated_duration'],
+                    is_published=sim_data['is_published'],
+                    tags=sim_data['tags'],
+                    step_definitions=sim_data['step_definitions'],
+                    created_by=1,  # Assume admin user ID 1
+                    is_active=True,
+                    total_attempts=0,
+                    successful_completions=0,
+                    average_score=0.0
+                )
+                db.session.add(simulation)
+            
+            db.session.commit()
+            print("✅ Sample simulations created successfully")
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error creating sample simulations: {str(e)}")
+            print(f"❌ Error creating sample simulations: {str(e)}")
     
     def get_simulation_analytics(self, simulation_id):
         """Get detailed analytics for a specific simulation"""

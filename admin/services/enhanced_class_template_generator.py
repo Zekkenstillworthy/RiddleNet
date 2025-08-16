@@ -1,17 +1,20 @@
 """
 Enhanced Class Template Generation Service
 
-Extends the existing template generator with improved static template integration
-and more sophisticated classroom automation logic.
+Extends the existing template generator with improved static template integration,
+simulation assignment management, and more sophisticated classroom automation logic.
 """
 
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
+from admin import db
 from flask import current_app, url_for
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
+from admin.models.simulation import Simulation
+from admin.models.simulation_assignment import SimulationAssignment
 from admin.services.class_template_generator import ClassTemplateGenerator
 
 
@@ -27,6 +30,73 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
             self.routes_dir = None
         self.static_templates_map = self._build_static_templates_map()
         self.simulation_routes_map = self._build_simulation_routes_map()
+        self.assignment_templates = self._build_assignment_templates()
+    
+    def _build_assignment_templates(self) -> Dict[str, Dict]:
+        """Build templates for automatic simulation assignments"""
+        return {
+            'networking1': {
+                'week_1': [
+                    {
+                        'simulation_title': 'OSI Model Interactive Simulation',
+                        'due_days': 7,
+                        'max_attempts': 3,
+                        'passing_score': 70,
+                        'instructions': 'Complete this simulation to understand the seven layers of the OSI model.'
+                    },
+                    {
+                        'simulation_title': 'Network Components Overview',
+                        'due_days': 5,
+                        'max_attempts': 2,
+                        'passing_score': 75,
+                        'instructions': 'Learn about network components and their functions.'
+                    }
+                ],
+                'week_2': [
+                    {
+                        'simulation_title': 'TCP/IP Protocol Stack Simulation',
+                        'due_days': 7,
+                        'max_attempts': 3,
+                        'passing_score': 70,
+                        'instructions': 'Master TCP/IP protocols and network communication.'
+                    },
+                    {
+                        'simulation_title': 'Ethernet Technology Simulation',
+                        'due_days': 10,
+                        'max_attempts': 3,
+                        'passing_score': 80,
+                        'instructions': 'Understand Ethernet standards and collision domains.'
+                    }
+                ]
+            },
+            'networking2': {
+                'week_1': [
+                    {
+                        'simulation_title': 'Advanced Routing Protocols',
+                        'due_days': 10,
+                        'max_attempts': 3,
+                        'passing_score': 75,
+                        'instructions': 'Configure and troubleshoot OSPF, EIGRP, and BGP protocols.'
+                    }
+                ],
+                'week_2': [
+                    {
+                        'simulation_title': 'VLAN Configuration Lab',
+                        'due_days': 7,
+                        'max_attempts': 3,
+                        'passing_score': 80,
+                        'instructions': 'Create and manage VLANs in enterprise environments.'
+                    },
+                    {
+                        'simulation_title': 'Network Security Fundamentals',
+                        'due_days': 14,
+                        'max_attempts': 3,
+                        'passing_score': 85,
+                        'instructions': 'Implement firewalls, ACLs, and security measures.'
+                    }
+                ]
+            }
+        }
     
     def _build_static_templates_map(self) -> Dict[str, Dict]:
         """Map class types to existing static templates and simulations"""
@@ -34,6 +104,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
             'networking1': {
                 'learning_template': 'user/learning_networking1.html',
                 'simulations_template': 'user/networking1_simulations.html',
+                'dynamic_simulations_route': '/dynamic/my-simulations?filter=networking1',
                 'simulations': [
                     {
                         'id': 'components',
@@ -86,6 +157,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
             'networking2': {
                 'learning_template': 'user/learning_networking2.html',
                 'simulations_template': 'user/networking2_simulations.html',
+                'dynamic_simulations_route': '/dynamic/my-simulations?filter=networking2',
                 'simulations': [
                     {
                         'id': 'routing-fundamentals',
@@ -1538,14 +1610,23 @@ def simulation_{sim['id']}():
         """Create integration points for the class dashboard"""
         class_type = self._detect_class_type(class_obj)
         
+        # Get dynamic simulations for this class
+        dynamic_simulations = self._get_dynamic_simulations_for_class(class_obj)
+        # Learning paths feature removed
+        
         integration = {
             'class_id': class_obj.id,
             'class_type': class_type,
             'dashboard_url': f'/class/{class_obj.id}/',
+            'dynamic_content': {
+                'simulations': dynamic_simulations,
+                'has_dynamic_content': len(dynamic_simulations) > 0
+            },
             'api_endpoints': {
                 'progress': f'/class/{class_obj.id}/api/progress',
                 'lessons': f'/class/{class_obj.id}/api/lessons',
                 'simulations': f'/class/{class_obj.id}/api/simulations',
+                'dynamic_simulations': f'/dynamic/my-simulations?class_id={class_obj.id}',
                 'assessments': f'/class/{class_obj.id}/api/assessments'
             },
             'static_integrations': []
@@ -1575,6 +1656,275 @@ def simulation_{sim['id']}():
                 })
         
         return integration
+    
+    def _get_dynamic_simulations_for_class(self, class_obj: Class) -> List[Dict]:
+        """
+        Week 2 Enhancement: Multi-level assignment logic
+        1. Lesson-based assignments
+        2. Category matching  
+        3. Explicit assignments
+        """
+        try:
+            from admin.models.simulation import Simulation
+            from admin.models.simulation_assignment import SimulationAssignment
+            
+            class_type = self._detect_class_type(class_obj).lower()
+            simulations = []
+            
+            # 1. LESSON-BASED ASSIGNMENTS
+            lesson_assignments = db.session.query(Simulation).join(SimulationAssignment).filter(
+                SimulationAssignment.class_id == class_obj.id,
+                SimulationAssignment.assignment_type == 'lesson',
+                SimulationAssignment.is_active == True,
+                Simulation.is_published == True,
+                Simulation.is_active == True
+            ).all()
+            
+            # 2. CATEGORY MATCHING
+            category_simulations = Simulation.query.filter_by(
+                is_published=True,
+                is_active=True
+            ).filter(
+                Simulation.category.ilike(f'%{class_type}%')
+            ).all()
+            
+            # 3. EXPLICIT ASSIGNMENTS  
+            explicit_assignments = db.session.query(Simulation).join(SimulationAssignment).filter(
+                SimulationAssignment.class_id == class_obj.id,
+                SimulationAssignment.assignment_type == 'explicit',
+                SimulationAssignment.is_active == True,
+                Simulation.is_published == True,
+                Simulation.is_active == True
+            ).all()
+            
+            # 4. AUTO-ASSIGNED CATEGORY MATCHES
+            auto_category_assignments = db.session.query(Simulation).join(SimulationAssignment).filter(
+                SimulationAssignment.class_id == class_obj.id,
+                SimulationAssignment.assignment_type == 'category',
+                SimulationAssignment.auto_assign == True,
+                SimulationAssignment.is_active == True,
+                Simulation.is_published == True,
+                Simulation.is_active == True
+            ).all()
+            
+            # Combine and deduplicate simulations
+            all_simulations = list(set(lesson_assignments + category_simulations + explicit_assignments + auto_category_assignments))
+            
+            # Convert to dictionary format with assignment metadata
+            simulation_data = []
+            for sim in all_simulations:
+                sim_dict = sim.to_dict()
+                
+                # Add assignment metadata
+                assignment = SimulationAssignment.query.filter_by(
+                    simulation_id=sim.id,
+                    class_id=class_obj.id
+                ).first()
+                
+                if assignment:
+                    sim_dict['assignment'] = {
+                        'type': assignment.assignment_type,
+                        'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                        'max_attempts': assignment.max_attempts,
+                        'lesson_name': assignment.lesson_name
+                    }
+                else:
+                    # Category-matched simulation without explicit assignment
+                    sim_dict['assignment'] = {
+                        'type': 'category',
+                        'due_date': None,
+                        'max_attempts': 3,
+                        'lesson_name': None
+                    }
+                
+                simulation_data.append(sim_dict)
+            
+            return simulation_data
+            
+        except Exception as e:
+            print(f"Error getting dynamic simulations with Week 2 logic: {e}")
+            # Fallback to basic category matching
+            try:
+                from admin.models.simulation import Simulation
+                simulations = Simulation.query.filter_by(
+                    is_published=True,
+                    is_active=True
+                ).filter(
+                    Simulation.category.ilike(f'%{class_type}%')
+                ).all()
+                return [sim.to_dict() for sim in simulations]
+            except:
+                return []
+    
+    def _get_dynamic_learning_paths_for_class(self, class_obj: Class) -> List[Dict]:
+        """Learning paths feature removed - return empty list"""
+        return []
+    
+    def create_simulation_assignments_for_class(self, class_obj: Class, week: str = 'week_1', assigned_by_id: int = 1) -> List[SimulationAssignment]:
+        """Create simulation assignments for a class based on templates"""
+        from admin import db
+        
+        class_type = self._detect_class_type(class_obj).lower()
+        assignments_created = []
+        
+        if class_type not in self.assignment_templates:
+            print(f"No assignment templates found for class type: {class_type}")
+            return assignments_created
+        
+        if week not in self.assignment_templates[class_type]:
+            print(f"No assignments found for {class_type} {week}")
+            return assignments_created
+        
+        assignment_configs = self.assignment_templates[class_type][week]
+        
+        for config in assignment_configs:
+            # Find the simulation
+            simulation = Simulation.query.filter_by(
+                title=config['simulation_title'],
+                is_active=True
+            ).first()
+            
+            if not simulation:
+                print(f"Simulation not found: {config['simulation_title']}")
+                continue
+            
+            # Check if assignment already exists
+            existing = SimulationAssignment.query.filter_by(
+                simulation_id=simulation.id,
+                class_id=class_obj.id,
+                assignment_type='class'
+            ).first()
+            
+            if existing:
+                print(f"Assignment already exists for {simulation.title} in class {class_obj.id}")
+                continue
+            
+            # Create new assignment
+            due_date = datetime.utcnow() + timedelta(days=config['due_days'])
+            
+            assignment = SimulationAssignment(
+                title=f"{simulation.title} - {class_obj.name}",
+                description=config['instructions'],
+                simulation_id=simulation.id,
+                assigned_by=assigned_by_id,
+                class_id=class_obj.id,
+                assignment_type='class',
+                due_date=due_date,
+                max_attempts=config['max_attempts'],
+                passing_score=config['passing_score'],
+                total_points=100,
+                instructions=config['instructions'],
+                allow_late_submission=True,
+                late_penalty_percent=10,
+                show_correct_answers=True,
+                show_results_immediately=True,
+                is_active=True,
+                is_published=True
+            )
+            
+            try:
+                db.session.add(assignment)
+                db.session.commit()
+                assignments_created.append(assignment)
+                print(f"✅ Created assignment: {assignment.title}")
+                
+                # Notify students about new assignment (WebSocket integration point)
+                self._notify_students_about_assignment(assignment)
+                
+            except Exception as e:
+                db.session.rollback()
+                print(f"❌ Error creating assignment for {simulation.title}: {str(e)}")
+        
+        return assignments_created
+    
+    def _notify_students_about_assignment(self, assignment: SimulationAssignment):
+        """Send real-time notifications to students about new assignments"""
+        try:
+            from socket_events import emit_assignment_notification
+            
+            # Get all students in the class
+            students = assignment.get_target_users()
+            
+            notification_data = {
+                'assignment_id': assignment.id,
+                'title': assignment.title,
+                'simulation_title': assignment.simulation.title if assignment.simulation else 'Unknown',
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'class_name': assignment.assigned_class.name if assignment.assigned_class else 'Unknown',
+                'message': f"New simulation assignment: {assignment.title}",
+                'type': 'assignment_created',
+                'priority': 'normal'
+            }
+            
+            for student in students:
+                emit_assignment_notification(student.id, notification_data)
+                
+        except Exception as e:
+            print(f"Warning: Could not send notifications for assignment {assignment.id}: {str(e)}")
+    
+    def auto_assign_simulations_for_new_class(self, class_obj: Class, assigned_by_id: int = 1) -> Dict[str, List]:
+        """Automatically create simulation assignments when a new class is created"""
+        results = {
+            'week_1': [],
+            'week_2': [],
+            'errors': []
+        }
+        
+        try:
+            # Create Week 1 assignments
+            week_1_assignments = self.create_simulation_assignments_for_class(
+                class_obj, 'week_1', assigned_by_id
+            )
+            results['week_1'] = [a.to_dict() for a in week_1_assignments]
+            
+            # Create Week 2 assignments (with longer due dates)
+            week_2_assignments = self.create_simulation_assignments_for_class(
+                class_obj, 'week_2', assigned_by_id
+            )
+            results['week_2'] = [a.to_dict() for a in week_2_assignments]
+            
+            print(f"🎉 Auto-assigned {len(week_1_assignments + week_2_assignments)} simulations to class {class_obj.name}")
+            
+        except Exception as e:
+            error_msg = f"Error auto-assigning simulations: {str(e)}"
+            results['errors'].append(error_msg)
+            print(f"❌ {error_msg}")
+        
+        return results
+    
+    def get_class_assignment_summary(self, class_obj: Class) -> Dict[str, Any]:
+        """Get summary of all assignments for a class"""
+        assignments = list(SimulationAssignment.query.filter_by(
+            class_id=class_obj.id,
+            assignment_type='class',
+            is_active=True
+        ).all())
+        
+        summary = {
+            'total_assignments': len(assignments),
+            'published_assignments': len([a for a in assignments if a.is_published]),
+            'assignments_due_soon': len([a for a in assignments if a.days_until_due is not None and 0 <= a.days_until_due <= 3]),
+            'overdue_assignments': len([a for a in assignments if a.is_overdue]),
+            'assignments': [a.to_dict() for a in assignments],
+            'class_stats': {}
+        }
+        
+        # Calculate class-wide statistics
+        if assignments:
+            all_attempts = []
+            for assignment in assignments:
+                all_attempts.extend(assignment.attempts)
+            
+            completed_attempts = [a for a in all_attempts if a.is_completed]
+            
+            summary['class_stats'] = {
+                'total_attempts': len(all_attempts),
+                'completed_attempts': len(completed_attempts),
+                'average_score': sum(a.final_score for a in completed_attempts) / len(completed_attempts) if completed_attempts else 0,
+                'completion_rate': len(completed_attempts) / (len(assignments) * class_obj.students.count()) if assignments and class_obj.students.count() > 0 else 0
+            }
+        
+        return summary
     
     def generate_all_class_resources(self, class_id: int) -> Dict[str, str]:
         """Generate all resources for a class (enhanced version)"""
@@ -1636,3 +1986,24 @@ def simulation_{sim['id']}():
 
 # Export the enhanced generator
 enhanced_template_generator = EnhancedClassTemplateGenerator()
+
+def regenerate_class_templates():
+    """Convenience function to regenerate all class templates"""
+    try:
+        from admin.models.class_model import Class
+        classes = Class.query.all()
+        generated_count = 0
+        
+        for class_obj in classes:
+            try:
+                generator = EnhancedClassTemplateGenerator()
+                result = generator.generate_class_resources_from_object(class_obj)
+                print(f"✅ Generated template for {class_obj.name}: {result['template']}")
+                generated_count += 1
+            except Exception as e:
+                print(f"❌ Failed to generate template for {class_obj.name}: {e}")
+        
+        return generated_count
+    except Exception as e:
+        print(f"❌ Error in regenerate_class_templates: {e}")
+        return 0

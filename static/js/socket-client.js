@@ -97,6 +97,12 @@ class SocketClient {
      * Connect to the WebSocket server
      */
     connect() {
+        // Check if WebSocket is explicitly disabled
+        if (window.DISABLE_WEBSOCKET) {
+            console.log('🔌 WebSocket initialization disabled for this page');
+            return;
+        }
+
         if (this.socket && this.connected) {
             console.log('Already connected to WebSocket server');
             return;
@@ -141,9 +147,10 @@ class SocketClient {
         
         const url = getHostUrl();
         
+        // Enhanced configuration for admin authentication
         this.socket = io(url, {
             transports: ['websocket', 'polling'],
-            withCredentials: true,
+            withCredentials: true, // This is crucial for admin sessions
             reconnection: true,
             reconnectionDelay: this.reconnectDelay,
             reconnectionDelayMax: 10000,
@@ -151,7 +158,16 @@ class SocketClient {
             forceNew: false,
             autoConnect: true,
             upgrade: true,
-            rememberUpgrade: false
+            rememberUpgrade: false,
+            auth: {
+                // Include any additional auth data if needed
+                userAgent: navigator.userAgent,
+                timestamp: Date.now()
+            },
+            extraHeaders: {
+                // Include CSRF token if available
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
 
         // Set up event handlers with better error handling
@@ -164,6 +180,14 @@ class SocketClient {
             
             // Start health check
             this.startHealthCheck();
+            
+            // For admin pages, automatically test authentication
+            if (window.location.pathname.includes('/admin') && window.AdminSocketDebug) {
+                setTimeout(() => {
+                    console.log('🔍 Admin page detected - running authentication check...');
+                    window.AdminSocketDebug.testAuthentication();
+                }, 1000);
+            }
         });
 
         this.socket.on('disconnect', (reason) => {
@@ -189,7 +213,12 @@ class SocketClient {
 
         // Handle general errors more gracefully
         this.socket.on('error', (error) => {
-            console.warn('⚠️ WebSocket general error:', error);
+            // Improved error logging for debugging
+            if (error && (error.message || error.msg)) {
+                console.warn('⚠️ WebSocket general error:', error.message || error.msg, error);
+            } else {
+                console.warn('⚠️ WebSocket general error:', error);
+            }
             // Don't trigger disconnect for general errors, just log them
             this.trigger('socket_error', error);
         });
@@ -865,28 +894,40 @@ if (typeof window !== 'undefined' && typeof window.SocketClient === 'undefined')
 }
 
 if (typeof window !== 'undefined' && typeof window.socketClient === 'undefined') {
-    window.socketClient = new window.SocketClient();
-    
-    // Connect with better timing and error handling
-    const connectWhenReady = () => {
-        try {
-            // Wait for DOM and other critical scripts to load
-            setTimeout(() => {
-                console.log('🔌 Initiating WebSocket connection...');
-                window.socketClient.connect();
-            }, 1000); // Reduced delay but still sufficient
-        } catch (error) {
-            console.error('Error during WebSocket initialization:', error);
-        }
-    };
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', connectWhenReady);
+    // Check if WebSocket is disabled before creating the client
+    if (window.DISABLE_WEBSOCKET) {
+        console.log('🔌 WebSocket creation disabled for this page');
+        window.socketClient = {
+            connected: false,
+            connect: () => console.log('WebSocket disabled'),
+            emit: () => {},
+            on: () => {},
+            off: () => {}
+        };
     } else {
-        connectWhenReady();
+        window.socketClient = new window.SocketClient();
+        
+        // Connect with better timing and error handling
+        const connectWhenReady = () => {
+            try {
+                // Wait for DOM and other critical scripts to load
+                setTimeout(() => {
+                    console.log('🔌 Initiating WebSocket connection...');
+                    window.socketClient.connect();
+                }, 1000); // Reduced delay but still sufficient
+            } catch (error) {
+                console.error('Error during WebSocket initialization:', error);
+            }
+        };
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', connectWhenReady);
+        } else {
+            connectWhenReady();
+        }
+        
+        console.log('✅ SocketClient initialized and ready');
     }
-    
-    console.log('✅ SocketClient initialized and ready');
 } else if (typeof window !== 'undefined') {
     console.log('ℹ️ SocketClient already exists, skipping initialization');
 }

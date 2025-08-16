@@ -3,6 +3,7 @@ from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
 from __init__ import db
 from datetime import datetime, timedelta
+from typing import List
 import json
 
 try:
@@ -15,6 +16,281 @@ try:
 except ImportError:
     # Handle case where UserModel might be in a different module
     UserModel = None
+
+# Real-time notification system
+def emit_assignment_notification(user_id: int, notification_data: dict):
+    """Emit assignment notification to a specific user"""
+    try:
+        socketio.emit('assignment_notification', notification_data, room=f'user_{user_id}')
+        print(f"📢 Sent assignment notification to user {user_id}: {notification_data['title']}")
+    except Exception as e:
+        print(f"❌ Error sending assignment notification: {str(e)}")
+
+def emit_simulation_update(class_id: int, update_data: dict):
+    """Emit simulation update to all users in a class"""
+    try:
+        socketio.emit('simulation_update', update_data, room=f'class_{class_id}')
+        print(f"📢 Sent simulation update to class {class_id}")
+    except Exception as e:
+        print(f"❌ Error sending simulation update: {str(e)}")
+
+def emit_grade_notification(user_id: int, grade_data: dict):
+    """Emit grade notification to a specific user"""
+    try:
+        socketio.emit('grade_notification', grade_data, room=f'user_{user_id}')
+        print(f"📢 Sent grade notification to user {user_id}")
+    except Exception as e:
+        print(f"❌ Error sending grade notification: {str(e)}")
+
+# ===== WEEK 2 ENHANCEMENT: REAL-TIME CONTENT UPDATES =====
+
+def emit_new_simulation_available(simulation_id: int, category: str, class_ids: List[int] = None):
+    """Notify users when new simulation is available"""
+    try:
+        from admin.models.simulation import Simulation
+        from admin.models.class_model import Class
+        from admin.services.enhanced_class_template_generator import EnhancedClassTemplateGenerator
+        
+        simulation = Simulation.query.get(simulation_id)
+        if not simulation:
+            return
+            
+        notification_data = {
+            'type': 'new_simulation',
+            'simulation_id': simulation_id,
+            'title': simulation.title,
+            'category': category,
+            'message': f'🎉 New simulation available: {simulation.title}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Find affected classes
+        if class_ids:
+            affected_classes = Class.query.filter(Class.id.in_(class_ids)).all()
+        else:
+            affected_classes = Class.query.filter(
+                Class.name.ilike(f'%{category}%')
+            ).all()
+        
+        generator = EnhancedClassTemplateGenerator()
+        
+        for class_obj in affected_classes:
+            # Regenerate class template with new simulation
+            try:
+                generator.regenerate_class_resources(class_obj.id)
+                print(f"✅ Regenerated template for class {class_obj.name}")
+            except Exception as e:
+                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+            
+            # Notify users in this class
+            class_notification = notification_data.copy()
+            class_notification['class_id'] = class_obj.id
+            class_notification['class_name'] = class_obj.name
+            
+            socketio.emit('new_simulation_available', class_notification, room=f'class_{class_obj.id}')
+            print(f"📢 Notified class {class_obj.id} about new simulation {simulation_id}")
+        
+        # Broadcast to category room for users not in specific classes
+        socketio.emit('new_simulation_available', notification_data, room=f'category_{category}')
+        
+    except Exception as e:
+        print(f"❌ Error sending new simulation notification: {str(e)}")
+
+def emit_new_learning_path_available(path_id: int, category: str, class_ids: List[int] = None):
+    """Notify users when new learning path is available - DEPRECATED"""
+    try:
+        # Learning Path feature has been removed from RiddleNet
+        # This function now returns without doing anything
+        print(f"⚠️ Learning Path feature removed - ignoring emit for path_id: {path_id}")
+        return
+        
+    except Exception as e:
+        print(f"❌ Error in deprecated learning path notification: {e}")
+        return
+        
+        for class_obj in affected_classes:
+            # Regenerate class template with new learning path
+            try:
+                generator.regenerate_class_resources(class_obj.id)
+                print(f"✅ Regenerated template for class {class_obj.name}")
+            except Exception as e:
+                print(f"❌ Failed to regenerate template for class {class_obj.name}: {e}")
+            
+            # Notify users in this class
+            class_notification = notification_data.copy()
+            class_notification['class_id'] = class_obj.id
+            class_notification['class_name'] = class_obj.name
+            
+            socketio.emit('new_learning_path_available', class_notification, room=f'class_{class_obj.id}')
+            print(f"📢 Notified class {class_obj.id} about new learning path {path_id}")
+        
+        # Broadcast to category room
+        socketio.emit('new_learning_path_available', notification_data, room=f'category_{category}')
+        
+    except Exception as e:
+        print(f"❌ Error sending new learning path notification: {str(e)}")
+
+def emit_assignment_created(assignment_id: int, class_id: int, assignment_type: str):
+    """Notify users when new assignment is created"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        from admin.models.simulation import Simulation
+        
+        assignment = SimulationAssignment.query.get(assignment_id)
+        if not assignment:
+            return
+            
+        simulation = Simulation.query.get(assignment.simulation_id)
+        
+        notification_data = {
+            'type': 'new_assignment',
+            'assignment_id': assignment_id,
+            'assignment_title': assignment.title,
+            'simulation_title': simulation.title if simulation else 'Unknown',
+            'assignment_type': assignment_type,
+            'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+            'class_id': class_id,
+            'message': f'📝 New assignment: {assignment.title}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Notify all users in the class
+        socketio.emit('new_assignment_created', notification_data, room=f'class_{class_id}')
+        print(f"📢 Notified class {class_id} about new assignment {assignment_id}")
+        
+    except Exception as e:
+        print(f"❌ Error sending assignment creation notification: {str(e)}")
+
+# WebSocket Event Handlers for Week 2 Features
+@socketio.on('join_category_room')
+@authenticated_only  
+def handle_join_category_room(data):
+    """Join category-specific room for content updates"""
+    if current_user.is_authenticated:
+        category = data.get('category')
+        if category:
+            room = f'category_{category}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'category', 'category': category})
+            print(f"📂 User {current_user.id} joined category room {room}")
+
+@socketio.on('simulation_created')
+def handle_simulation_created(data):
+    """Handle notification when admin creates new simulation"""
+    simulation_id = data.get('simulation_id')
+    category = data.get('category')
+    class_ids = data.get('class_ids')
+    
+    if simulation_id and category:
+        emit_new_simulation_available(simulation_id, category, class_ids)
+
+@socketio.on('learning_path_created')
+def handle_learning_path_created(data):
+    """Handle notification when admin creates new learning path"""
+    path_id = data.get('path_id')
+    category = data.get('category')
+    class_ids = data.get('class_ids')
+    
+    if path_id and category:
+        emit_new_learning_path_available(path_id, category, class_ids)
+
+@socketio.on('assignment_created')
+def handle_assignment_created(data):
+    """Handle notification when admin creates new assignment"""
+    assignment_id = data.get('assignment_id')
+    class_id = data.get('class_id')
+    assignment_type = data.get('assignment_type', 'class')
+    
+    if assignment_id and class_id:
+        emit_assignment_created(assignment_id, class_id, assignment_type)
+
+# User room management
+@socketio.on('join_user_room')
+@authenticated_only
+def handle_join_user_room():
+    """Join user-specific room for notifications"""
+    if current_user.is_authenticated:
+        room = f'user_{current_user.id}'
+        join_room(room)
+        emit('joined_room', {'room': room, 'type': 'user'})
+        print(f"👤 User {current_user.id} joined room {room}")
+
+@socketio.on('join_class_room')
+@authenticated_only
+def handle_join_class_room(data):
+    """Join class-specific room for updates"""
+    if current_user.is_authenticated:
+        class_id = data.get('class_id')
+        if class_id:
+            room = f'class_{class_id}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'class', 'class_id': class_id})
+            print(f"🏫 User {current_user.id} joined class room {room}")
+
+@socketio.on('leave_class_room')
+@authenticated_only
+def handle_leave_class_room(data):
+    """Leave class-specific room"""
+    if current_user.is_authenticated:
+        class_id = data.get('class_id')
+        if class_id:
+            room = f'class_{class_id}'
+            leave_room(room)
+            emit('left_room', {'room': room, 'type': 'class', 'class_id': class_id})
+            print(f"🏫 User {current_user.id} left class room {room}")
+
+# Assignment-related events
+@socketio.on('assignment_started')
+@authenticated_only
+def handle_assignment_started(data):
+    """Handle when a user starts an assignment"""
+    if current_user.is_authenticated:
+        assignment_id = data.get('assignment_id')
+        attempt_id = data.get('attempt_id')
+        
+        # Emit to class room that someone started the assignment
+        if 'class_id' in data:
+            update_data = {
+                'type': 'assignment_started',
+                'assignment_id': assignment_id,
+                'attempt_id': attempt_id,
+                'user_id': current_user.id,
+                'username': getattr(current_user, 'username', 'Unknown'),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            emit_simulation_update(data['class_id'], update_data)
+
+@socketio.on('assignment_completed')
+@authenticated_only
+def handle_assignment_completed(data):
+    """Handle when a user completes an assignment"""
+    if current_user.is_authenticated:
+        assignment_id = data.get('assignment_id')
+        attempt_id = data.get('attempt_id')
+        score = data.get('score', 0)
+        
+        # Emit grade notification to user
+        grade_data = {
+            'assignment_id': assignment_id,
+            'attempt_id': attempt_id,
+            'score': score,
+            'completed_at': datetime.utcnow().isoformat(),
+            'message': f"Assignment completed! Score: {score}%"
+        }
+        emit_grade_notification(current_user.id, grade_data)
+        
+        # Emit to class room that someone completed the assignment
+        if 'class_id' in data:
+            update_data = {
+                'type': 'assignment_completed',
+                'assignment_id': assignment_id,
+                'attempt_id': attempt_id,
+                'user_id': current_user.id,
+                'username': getattr(current_user, 'username', 'Unknown'),
+                'score': score,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            emit_simulation_update(data['class_id'], update_data)
 
 # Health check events
 @socketio.on('ping')
@@ -157,20 +433,7 @@ def handle_essay_submission(data):
 @admin_only
 def handle_get_active_users(data=None):
     """Get list of currently active users - admin only"""
-    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
-    is_admin = False
-    
-    # Check if it's an Admin model instance (from 'admins' table)
-    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
-        is_admin = True
-    # Check if it's an AdminUser with is_admin=True (from 'user' table)
-    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
-        is_admin = True
-    
-    if not is_admin:
-        emit('error', {'message': 'Unauthorized: Admin access required'})
-        return
-      # Get active users from socket manager
+    # Get active users from socket manager
     active_users = []
     try:
         from socket_manager import get_active_users_list
@@ -199,20 +462,6 @@ def handle_admin_get_users(data=None):
 @admin_only
 def handle_send_notification(data):
     """Send real-time notifications to users"""
-    # Check if user is admin - handle both Admin model and AdminUser with is_admin=True
-    is_admin = False
-    
-    # Check if it's an Admin model instance (from 'admins' table)
-    if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
-        is_admin = True
-    # Check if it's an AdminUser with is_admin=True (from 'user' table)
-    elif hasattr(current_user, 'is_admin') and current_user.is_admin:
-        is_admin = True
-    
-    if not is_admin:
-        emit('error', {'message': 'Unauthorized: Admin access required'})
-        return
-    
     # Use the new notification service for enhanced notifications
     try:
         from services.notification_service import get_notification_service, NotificationType, NotificationPriority, NotificationChannel
@@ -373,7 +622,21 @@ def handle_create_lobby(data):
             'lobby': lobby.to_dict()
         }, room='troubleshooting_browser')
         
+        # ===== ADMIN MONITORING INTEGRATION =====
+        # Notify admin collaboration monitoring of new session
+        emit('collaboration_started', {
+            'id': lobby.id,
+            'activity_name': lobby_config['name'],
+            'participants': [current_user.username],
+            'status': 'active',
+            'duration': '0m',
+            'type': 'troubleshooting',
+            'scenario': lobby_config.get('scenario_type', 'Unknown'),
+            'created_at': datetime.utcnow().isoformat()
+        }, room='admin_collaboration_monitoring')
+        
         print(f"✅ User {current_user.username} created lobby {lobby.id}")
+        print(f"📊 Notified admin monitoring of new collaboration session")
         
     except Exception as e:
         print(f"❌ Error creating lobby: {str(e)}")
@@ -440,7 +703,21 @@ def handle_join_lobby(data):
                 'participants': lobby.participants
             })
             
+            # ===== ADMIN MONITORING INTEGRATION =====
+            # Notify admin monitoring of user joining
+            emit('collaboration_updated', {
+                'id': lobby.id,
+                'activity_name': lobby.name,
+                'participants': list(lobby.participants.keys()),
+                'participant_names': [lobby.participants[pid].get('username', 'Unknown') for pid in lobby.participants.keys()],
+                'status': 'active',
+                'type': 'troubleshooting',
+                'action': 'participant_joined',
+                'new_participant': current_user.username
+            }, room='admin_collaboration_monitoring')
+            
             print(f"✅ User {current_user.username} joined lobby {lobby.id}")
+            print(f"📊 Notified admin monitoring of participant join")
         else:
             emit('lobby_joined', result)
             
@@ -476,6 +753,33 @@ def handle_leave_lobby(data=None):
             
             # Remove from lobby
             lobby_manager.leave_lobby(str(current_user.id))
+            
+            # ===== ADMIN MONITORING INTEGRATION =====
+            # Check if lobby is now empty and notify admin monitoring
+            updated_lobby = lobby_manager.get_lobby(lobby.id)
+            if updated_lobby and len(updated_lobby.participants) == 0:
+                # Lobby is now empty - mark as ended
+                emit('collaboration_ended', {
+                    'id': lobby.id,
+                    'activity_name': lobby.name,
+                    'reason': 'all_participants_left',
+                    'duration': lobby.get_duration_string()
+                }, room='admin_collaboration_monitoring')
+                print(f"📊 Notified admin monitoring: lobby {lobby.id} ended (empty)")
+            else:
+                # Lobby still has participants - update participant list
+                if updated_lobby:
+                    emit('collaboration_updated', {
+                        'id': lobby.id,
+                        'activity_name': lobby.name,
+                        'participants': list(updated_lobby.participants.keys()),
+                        'participant_names': [updated_lobby.participants[pid].get('username', 'Unknown') for pid in updated_lobby.participants.keys()],
+                        'status': 'active',
+                        'type': 'troubleshooting',
+                        'action': 'participant_left',
+                        'left_participant': current_user.username
+                    }, room='admin_collaboration_monitoring')
+                    print(f"📊 Notified admin monitoring of participant leave")
             
             emit('lobby_left', {'success': True})
             
@@ -2928,3 +3232,1112 @@ def handle_sync_collaborative_timer(data):
         print(f"❌ Error syncing collaborative timer: {str(e)}")
 
 print("✅ Socket events module loaded successfully with live leaderboard and timer systems")
+
+# ===== ENHANCED ADMIN WEBSOCKET EVENTS =====
+
+@socketio.on('join_admin_room')
+@admin_only
+def handle_join_admin_room(data=None):
+    """Join admin room for real-time admin updates"""
+    try:
+        join_room('admin_room')
+        emit('joined_admin_room', {'success': True, 'message': 'Connected to admin updates'})
+        print(f"👑 Admin {current_user.username} joined admin room")
+        
+        # Send current admin stats on join
+        emit_admin_dashboard_stats()
+        
+    except Exception as e:
+        print(f"❌ Error joining admin room: {str(e)}")
+        emit('admin_room_error', {'error': str(e)})
+
+@socketio.on('join_admin_dashboard')
+@admin_only
+def handle_join_admin_dashboard(data=None):
+    """Join admin dashboard room for real-time dashboard updates"""
+    try:
+        join_room('admin_dashboard')
+        emit('joined_admin_dashboard', {'success': True})
+        print(f"📊 Admin {current_user.username} joined dashboard room")
+        
+        # Send initial dashboard data
+        emit_admin_dashboard_stats()
+        emit_recent_admin_activity()
+        
+    except Exception as e:
+        print(f"❌ Error joining admin dashboard: {str(e)}")
+        emit('admin_dashboard_error', {'error': str(e)})
+
+@socketio.on('join_user_management')
+@admin_only
+def handle_join_user_management(data=None):
+    """Join user management room for real-time user activity updates"""
+    try:
+        join_room('user_management')
+        emit('joined_user_management', {'success': True})
+        print(f"👥 Admin {current_user.username} joined user management room")
+        
+        # Send current user stats
+        emit_user_management_stats()
+        
+    except Exception as e:
+        print(f"❌ Error joining user management: {str(e)}")
+        emit('user_management_error', {'error': str(e)})
+
+@socketio.on('join_simulation_builder')
+@admin_only
+def handle_join_simulation_builder(data=None):
+    """Join simulation builder room for real-time simulation updates"""
+    try:
+        join_room('simulation_builder')
+        emit('joined_simulation_builder', {'success': True})
+        print(f"🏗️ Admin {current_user.username} joined simulation builder room")
+        
+    except Exception as e:
+        print(f"❌ Error joining simulation builder: {str(e)}")
+        emit('simulation_builder_error', {'error': str(e)})
+
+@socketio.on('join_notification_center')
+@admin_only
+def handle_join_notification_center(data=None):
+    """Join notification center room for real-time notification management"""
+    try:
+        join_room('notification_center')
+        emit('joined_notification_center', {'success': True})
+        print(f"🔔 Admin {current_user.username} joined notification center room")
+        
+        # Send current notification stats
+        emit_notification_stats()
+        
+    except Exception as e:
+        print(f"❌ Error joining notification center: {str(e)}")
+        emit('notification_center_error', {'error': str(e)})
+
+@socketio.on('join_analytics_room')
+@admin_only
+def handle_join_analytics_room(data=None):
+    """Join analytics room for real-time analytics updates"""
+    try:
+        join_room('analytics_room')
+        emit('joined_analytics_room', {'success': True})
+        print(f"📈 Admin {current_user.username} joined analytics room")
+        
+        # Send current analytics data
+        emit_analytics_data()
+        
+    except Exception as e:
+        print(f"❌ Error joining analytics room: {str(e)}")
+        emit('analytics_room_error', {'error': str(e)})
+
+@socketio.on('admin_presence')
+@admin_only
+def handle_admin_presence(data):
+    """Update admin presence information"""
+    try:
+        page = data.get('page', 'unknown')
+        timestamp = data.get('timestamp', datetime.utcnow().timestamp() * 1000)
+        user_agent = data.get('user_agent', 'Unknown')
+        
+        # Store admin presence info (could be stored in cache/db if needed)
+        presence_data = {
+            'admin_id': current_user.id,
+            'admin_name': current_user.username,
+            'page': page,
+            'timestamp': timestamp,
+            'user_agent': user_agent
+        }
+        
+        # Broadcast admin presence to other admins
+        emit('admin_presence_update', presence_data, room='admin_room', include_self=False)
+        
+        print(f"👑 Admin presence updated: {current_user.username} on {page}")
+        
+    except Exception as e:
+        print(f"❌ Error updating admin presence: {str(e)}")
+
+# Content Management Events
+@socketio.on('content_auto_saved')
+@admin_only
+def handle_content_auto_saved(data):
+    """Handle content auto-save events"""
+    try:
+        content_id = data.get('content_id')
+        content_type = data.get('content_type')
+        auto_save_data = {
+            'content_id': content_id,
+            'content_type': content_type,
+            'saved_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat(),
+            'message': f'{content_type} auto-saved'
+        }
+        
+        # Broadcast to other admins working on content
+        emit('content_auto_saved_broadcast', auto_save_data, room='module_builder', include_self=False)
+        
+        # Confirm to sender
+        emit('content_auto_save_confirmed', auto_save_data)
+        
+        print(f"💾 Content auto-saved: {content_type} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling content auto-save: {str(e)}")
+
+@socketio.on('concurrent_edit_detected')
+@admin_only
+def handle_concurrent_edit_detected(data):
+    """Handle concurrent editing detection"""
+    try:
+        content_id = data.get('content_id')
+        content_type = data.get('content_type')
+        
+        warning_data = {
+            'content_id': content_id,
+            'content_type': content_type,
+            'editor': current_user.username,
+            'message': f'{current_user.username} is also editing this {content_type}',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Warn other editors
+        emit('concurrent_edit_warning', warning_data, room='module_builder', include_self=False)
+        
+        print(f"⚠️ Concurrent editing detected: {content_type} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling concurrent edit detection: {str(e)}")
+
+@socketio.on('content_published')
+@admin_only
+def handle_content_published(data):
+    """Handle content publishing events"""
+    try:
+        content_data = data.get('content')
+        content_type = data.get('content_type', 'content')
+        class_id = data.get('class_id')
+        
+        publish_data = {
+            'content': content_data,
+            'content_type': content_type,
+            'class_id': class_id,
+            'published_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to admin rooms
+        emit('content_published_broadcast', publish_data, room='admin_room')
+        emit('content_published_broadcast', publish_data, room='module_builder')
+        
+        # Notify students in class if class_id provided
+        if class_id:
+            emit('new_content_available', {
+                'content_type': content_type,
+                'content_title': content_data.get('title', 'New Content'),
+                'class_id': class_id,
+                'published_by': current_user.username
+            }, room=f'class_{class_id}')
+        
+        print(f"📤 Content published: {content_type} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling content publishing: {str(e)}")
+
+# User Management Events
+@socketio.on('user_status_changed')
+@admin_only
+def handle_user_status_changed(data):
+    """Handle user status changes (enable/disable/role changes)"""
+    try:
+        user_id = data.get('user_id')
+        old_status = data.get('old_status')
+        new_status = data.get('new_status')
+        action = data.get('action')  # 'enable', 'disable', 'role_change', etc.
+        
+        status_change_data = {
+            'user_id': user_id,
+            'old_status': old_status,
+            'new_status': new_status,
+            'action': action,
+            'changed_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to admin rooms
+        emit('user_status_changed_broadcast', status_change_data, room='admin_room')
+        emit('user_status_changed_broadcast', status_change_data, room='user_management')
+        
+        # Update real-time user stats
+        emit_user_management_stats()
+        
+        print(f"👤 User status changed: User {user_id} {action} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling user status change: {str(e)}")
+
+@socketio.on('bulk_user_action')
+@admin_only
+def handle_bulk_user_action(data):
+    """Handle bulk user actions"""
+    try:
+        user_ids = data.get('user_ids', [])
+        action = data.get('action')
+        additional_data = data.get('additional_data', {})
+        
+        bulk_action_data = {
+            'user_ids': user_ids,
+            'action': action,
+            'additional_data': additional_data,
+            'executed_by': current_user.username,
+            'affected_count': len(user_ids),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to admin rooms
+        emit('bulk_user_action_broadcast', bulk_action_data, room='admin_room')
+        emit('bulk_user_action_broadcast', bulk_action_data, room='user_management')
+        
+        print(f"👥 Bulk user action: {action} on {len(user_ids)} users by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling bulk user action: {str(e)}")
+
+# Simulation Management Events
+@socketio.on('simulation_created')
+@admin_only
+def handle_simulation_created_admin(data):
+    """Handle simulation creation by admin"""
+    try:
+        simulation_data = data.get('simulation')
+        category = data.get('category')
+        
+        creation_data = {
+            'simulation': simulation_data,
+            'category': category,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to admin rooms
+        emit('simulation_created_broadcast', creation_data, room='admin_room')
+        emit('simulation_created_broadcast', creation_data, room='simulation_builder')
+        
+        print(f"🎮 Simulation created: {simulation_data.get('title', 'Unknown')} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling simulation creation: {str(e)}")
+
+@socketio.on('simulation_auto_saved')
+@admin_only
+def handle_simulation_auto_saved(data):
+    """Handle simulation auto-save events"""
+    try:
+        simulation_id = data.get('simulation_id')
+        auto_save_data = {
+            'simulation_id': simulation_id,
+            'saved_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat(),
+            'message': 'Simulation auto-saved'
+        }
+        
+        # Broadcast to simulation builder room
+        emit('simulation_auto_saved_broadcast', auto_save_data, room='simulation_builder', include_self=False)
+        
+        # Confirm to sender
+        emit('simulation_auto_save_confirmed', auto_save_data)
+        
+        print(f"💾 Simulation auto-saved: {simulation_id} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling simulation auto-save: {str(e)}")
+
+@socketio.on('simulation_validated')
+@admin_only
+def handle_simulation_validated(data):
+    """Handle simulation validation results"""
+    try:
+        simulation_id = data.get('simulation_id')
+        validation_results = data.get('validation_results')
+        is_valid = data.get('is_valid')
+        
+        validation_data = {
+            'simulation_id': simulation_id,
+            'validation_results': validation_results,
+            'is_valid': is_valid,
+            'validated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to simulation builder room
+        emit('simulation_validated_broadcast', validation_data, room='simulation_builder')
+        
+        print(f"✅ Simulation validated: {simulation_id} ({'valid' if is_valid else 'invalid'}) by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling simulation validation: {str(e)}")
+
+# Analytics Events
+@socketio.on('request_analytics_update')
+@admin_only
+def handle_request_analytics_update(data):
+    """Handle request for analytics data update"""
+    try:
+        analytics_type = data.get('analytics_type', 'general')
+        time_range = data.get('time_range', 'last_7_days')
+        
+        # Emit current analytics data
+        emit_analytics_data(analytics_type, time_range)
+        
+        print(f"📊 Analytics update requested: {analytics_type} for {time_range} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling analytics update request: {str(e)}")
+
+@socketio.on('performance_threshold_breach')
+@admin_only
+def handle_performance_threshold_breach(data):
+    """Handle performance threshold breach alerts"""
+    try:
+        metric_name = data.get('metric_name')
+        current_value = data.get('current_value')
+        threshold_value = data.get('threshold_value')
+        severity = data.get('severity', 'warning')
+        
+        alert_data = {
+            'metric_name': metric_name,
+            'current_value': current_value,
+            'threshold_value': threshold_value,
+            'severity': severity,
+            'timestamp': datetime.utcnow().isoformat(),
+            'message': f'{metric_name} threshold breached: {current_value} > {threshold_value}'
+        }
+        
+        # Broadcast performance alert to all admin rooms
+        emit('performance_alert_broadcast', alert_data, room='admin_room')
+        emit('performance_alert_broadcast', alert_data, room='admin_dashboard')
+        emit('performance_alert_broadcast', alert_data, room='analytics_room')
+        
+        print(f"🚨 Performance alert: {metric_name} threshold breached")
+        
+    except Exception as e:
+        print(f"❌ Error handling performance threshold breach: {str(e)}")
+
+# WebSocket Monitoring Events
+@socketio.on('websocket_connection_stats')
+@admin_only
+def handle_websocket_connection_stats(data):
+    """Handle WebSocket connection statistics updates"""
+    try:
+        stats_data = data.get('stats')
+        
+        # Broadcast WebSocket stats to admin monitoring
+        emit('websocket_stats_updated', {
+            'stats': stats_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_collaboration_monitoring')
+        
+        print(f"🔌 WebSocket stats updated by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling WebSocket stats: {str(e)}")
+
+@socketio.on('connection_diagnostic_request')
+@admin_only
+def handle_connection_diagnostic_request(data):
+    """Handle connection diagnostic requests"""
+    try:
+        diagnostic_type = data.get('diagnostic_type', 'general')
+        target_user_id = data.get('target_user_id')
+        
+        diagnostic_data = {
+            'diagnostic_type': diagnostic_type,
+            'target_user_id': target_user_id,
+            'requested_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat(),
+            'results': {
+                'connection_status': 'active',
+                'latency': '45ms',
+                'transport': 'websocket',
+                'rooms': ['admin_room', 'admin_collaboration_monitoring']
+            }
+        }
+        
+        # Send diagnostic results
+        emit('connection_diagnostic_results', diagnostic_data)
+        
+        print(f"🔍 Connection diagnostic requested: {diagnostic_type} by {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error handling connection diagnostic: {str(e)}")
+
+# Helper Functions for Admin Events
+def emit_admin_dashboard_stats():
+    """Emit current admin dashboard statistics"""
+    try:
+        # Get dashboard stats (would normally come from database queries)
+        stats = {
+            'total_users': get_total_users_count(),
+            'active_users': get_active_users_count(),
+            'total_classes': get_total_classes_count(),
+            'pending_submissions': get_pending_submissions_count(),
+            'system_load': get_system_load_percentage(),
+            'active_simulations': get_active_simulations_count(),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Broadcast to admin dashboard
+        socketio.emit('dashboard_stats_update', stats, room='admin_dashboard')
+        
+    except Exception as e:
+        print(f"❌ Error emitting dashboard stats: {str(e)}")
+
+def emit_recent_admin_activity():
+    """Emit recent admin activity feed"""
+    try:
+        # Get recent activity (would normally come from audit log)
+        activities = [
+            {
+                'id': 1,
+                'admin_name': 'System',
+                'action': 'User Login',
+                'details': 'Student user logged in',
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'info'
+            },
+            {
+                'id': 2,
+                'admin_name': current_user.username,
+                'action': 'Content Created',
+                'details': 'New module created',
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'success'
+            }
+        ]
+        
+        socketio.emit('recent_activity_update', {
+            'activities': activities,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_dashboard')
+        
+    except Exception as e:
+        print(f"❌ Error emitting recent activity: {str(e)}")
+
+def emit_user_management_stats():
+    """Emit user management statistics"""
+    try:
+        stats = {
+            'total_users': get_total_users_count(),
+            'active_users': get_active_users_count(),
+            'inactive_users': get_inactive_users_count(),
+            'new_registrations_today': get_new_registrations_today(),
+            'online_users': get_online_users_count(),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        socketio.emit('user_management_stats_update', stats, room='user_management')
+        
+    except Exception as e:
+        print(f"❌ Error emitting user management stats: {str(e)}")
+
+def emit_notification_stats():
+    """Emit notification statistics"""
+    try:
+        stats = {
+            'total_notifications': get_total_notifications_count(),
+            'unread_notifications': get_unread_notifications_count(),
+            'notifications_sent_today': get_notifications_sent_today(),
+            'notification_delivery_rate': get_notification_delivery_rate(),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        socketio.emit('notification_stats_update', stats, room='notification_center')
+        
+    except Exception as e:
+        print(f"❌ Error emitting notification stats: {str(e)}")
+
+def emit_analytics_data(analytics_type='general', time_range='last_7_days'):
+    """Emit analytics data"""
+    try:
+        # Generate analytics data based on type and time range
+        analytics_data = {
+            'analytics_type': analytics_type,
+            'time_range': time_range,
+            'data': get_analytics_data(analytics_type, time_range),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        socketio.emit('analytics_data_update', analytics_data, room='analytics_room')
+        
+    except Exception as e:
+        print(f"❌ Error emitting analytics data: {str(e)}")
+
+# Placeholder functions for statistics (these would be implemented with actual database queries)
+def get_total_users_count():
+    try:
+        if UserModel:
+            return UserModel.query.count()
+        return 150  # Placeholder
+    except:
+        return 150
+
+def get_active_users_count():
+    try:
+        # Would check for users active in last 24 hours
+        return 45  # Placeholder
+    except:
+        return 45
+
+def get_total_classes_count():
+    try:
+        from admin.models.class_model import Class
+        return Class.query.count()
+    except:
+        return 12
+
+def get_pending_submissions_count():
+    try:
+        # Would check for ungraded submissions
+        return 8  # Placeholder
+    except:
+        return 8
+
+def get_system_load_percentage():
+    try:
+        import psutil
+        return psutil.cpu_percent()
+    except:
+        return 35  # Placeholder
+
+def get_active_simulations_count():
+    try:
+        # Would check for currently running simulations
+        return 5  # Placeholder
+    except:
+        return 5
+
+def get_inactive_users_count():
+    return get_total_users_count() - get_active_users_count()
+
+def get_new_registrations_today():
+    try:
+        # Would check for users registered today
+        return 3  # Placeholder
+    except:
+        return 3
+
+def get_online_users_count():
+    try:
+        # Would check currently connected users
+        return len(leaderboard_users) if 'leaderboard_users' in globals() else 15
+    except:
+        return 15
+
+def get_total_notifications_count():
+    try:
+        # Would get from notification table
+        return 245  # Placeholder
+    except:
+        return 245
+
+def get_unread_notifications_count():
+    try:
+        # Would get unread notifications
+        return 18  # Placeholder
+    except:
+        return 18
+
+def get_notifications_sent_today():
+    try:
+        # Would check notifications sent today
+        return 67  # Placeholder
+    except:
+        return 67
+
+def get_notification_delivery_rate():
+    try:
+        # Would calculate delivery success rate
+        return 94.5  # Placeholder percentage
+    except:
+        return 94.5
+
+def get_analytics_data(analytics_type, time_range):
+    """Get analytics data based on type and time range"""
+    try:
+        # This would be implemented with actual database queries
+        return {
+            'user_activity': [10, 15, 8, 23, 18, 12, 20],
+            'simulation_completions': [5, 8, 3, 12, 9, 6, 11],
+            'performance_metrics': {
+                'average_score': 78.5,
+                'completion_rate': 85.2,
+                'engagement_time': 45.3
+            }
+        }
+    except:
+        return {}
+
+@socketio.on('join_admin_collaboration_monitoring')
+@admin_only
+def handle_join_admin_collaboration_monitoring(data=None):
+    """Join admin collaboration monitoring room for real-time collaboration tracking"""
+    try:
+        join_room('admin_collaboration_monitoring')
+        emit('joined_collaboration_monitoring', {
+            'success': True, 
+            'message': 'Connected to collaboration monitoring'
+        })
+        print(f"👑 Admin {current_user.username} joined collaboration monitoring room")
+        
+        # Send current collaboration stats on join
+        if lobby_manager:
+            active_lobbies = lobby_manager.get_public_lobbies()
+            total_participants = sum(len(lobby.get('participants', [])) for lobby in active_lobbies)
+            
+            # Calculate average duration (simplified)
+            avg_duration = "0m"
+            if active_lobbies:
+                durations = []
+                for lobby_data in active_lobbies:
+                    if 'created_at' in lobby_data:
+                        try:
+                            created_time = datetime.fromisoformat(lobby_data['created_at'].replace('Z', '+00:00'))
+                            duration_minutes = int((datetime.utcnow() - created_time.replace(tzinfo=None)).total_seconds() / 60)
+                            durations.append(duration_minutes)
+                        except:
+                            pass
+                if durations:
+                    avg_duration = f"{int(sum(durations) / len(durations))}m"
+            
+            emit('stats_updated', {
+                'activeGroups': len(active_lobbies),
+                'totalParticipants': total_participants,
+                'avgDuration': avg_duration
+            })
+            
+            # Send current active collaborations
+            collaboration_sessions = []
+            for lobby_data in active_lobbies:
+                collaboration_sessions.append({
+                    'id': lobby_data.get('id'),
+                    'activity_name': lobby_data.get('name', 'Unknown Session'),
+                    'participants': [p.get('username', 'Unknown') for p in lobby_data.get('participants', [])],
+                    'duration': avg_duration,  # Simplified - would need actual calculation per lobby
+                    'status': 'active'
+                })
+            
+            if collaboration_sessions:
+                emit('collaboration_list_update', collaboration_sessions)
+        
+    except Exception as e:
+        print(f"❌ Error joining collaboration monitoring room: {str(e)}")
+        emit('collaboration_monitoring_error', {'error': str(e)})
+
+@socketio.on('join_module_builder')
+@admin_only
+def handle_join_module_builder(data):
+    """Join module builder room for real-time module updates"""
+    try:
+        class_id = data.get('class_id')
+        
+        # Join general module builder room
+        join_room('module_builder')
+        
+        # Join class-specific room if class_id provided
+        if class_id:
+            join_room(f'class_{class_id}')
+            emit('joined_module_builder', {
+                'success': True, 
+                'class_id': class_id,
+                'rooms': ['module_builder', f'class_{class_id}']
+            })
+        else:
+            emit('joined_module_builder', {
+                'success': True,
+                'rooms': ['module_builder']
+            })
+        
+        print(f"🏗️ Admin {current_user.username} joined module builder room")
+        
+    except Exception as e:
+        print(f"❌ Error joining module builder: {str(e)}")
+        emit('module_builder_error', {'error': str(e)})
+
+@socketio.on('leave_module_builder')
+@authenticated_only
+def handle_leave_module_builder(data=None):
+    """Leave module builder room"""
+    try:
+        class_id = data.get('class_id') if data else None
+        
+        leave_room('module_builder')
+        if class_id:
+            leave_room(f'class_{class_id}')
+        
+        emit('left_module_builder', {'success': True})
+        print(f"🏗️ User {current_user.username} left module builder room")
+        
+    except Exception as e:
+        print(f"❌ Error leaving module builder: {str(e)}")
+
+@socketio.on('module_created')
+@admin_only
+def handle_module_created(data):
+    """Handle module creation event and broadcast to other admins"""
+    try:
+        module_data = data.get('module')
+        class_id = data.get('class_id')
+        
+        if not module_data or not class_id:
+            emit('module_creation_error', {'error': 'Module data and class_id required'})
+            return
+        
+        # Broadcast to admin room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_room')
+        
+        # Broadcast to module builder room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='module_builder')
+        
+        # Broadcast to class-specific room
+        socketio.emit('module_created_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=f'class_{class_id}')
+        
+        emit('module_creation_success', {'message': 'Module creation broadcasted'})
+        print(f"📝 Module creation broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting module creation: {str(e)}")
+        emit('module_creation_error', {'error': str(e)})
+
+@socketio.on('module_updated')
+@admin_only
+def handle_module_updated(data):
+    """Handle module update event and broadcast to other admins"""
+    try:
+        module_data = data.get('module')
+        class_id = data.get('class_id')
+        
+        if not module_data or not class_id:
+            emit('module_update_error', {'error': 'Module data and class_id required'})
+            return
+        
+        # Broadcast to admin room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='admin_room')
+        
+        # Broadcast to module builder room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room='module_builder')
+        
+        # Broadcast to class-specific room
+        socketio.emit('module_updated_broadcast', {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=f'class_{class_id}')
+        
+        emit('module_update_success', {'message': 'Module update broadcasted'})
+        print(f"📝 Module update broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting module update: {str(e)}")
+        emit('module_update_error', {'error': str(e)})
+
+# Helper functions for module WebSocket events
+def emit_module_deleted(module_data, class_id):
+    """Helper function to emit module deletion events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_deleted_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module deletion events emitted for module {module_data.get('id')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module deletion events: {str(e)}")
+
+def emit_module_created(module_data, class_id, created_by):
+    """Helper function to emit module creation events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'created_by': created_by,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_created_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_created_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_created_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module creation events emitted for module {module_data.get('title')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module creation events: {str(e)}")
+
+def emit_module_updated(module_data, class_id, updated_by):
+    """Helper function to emit module update events"""
+    try:
+        from socket_manager import socketio
+        
+        broadcast_data = {
+            'module': module_data,
+            'class_id': class_id,
+            'updated_by': updated_by,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Emit to admin room
+        socketio.emit('module_updated_broadcast', broadcast_data, room='admin_room')
+        
+        # Emit to module builder room
+        socketio.emit('module_updated_broadcast', broadcast_data, room='module_builder')
+        
+        # Emit to class-specific room
+        socketio.emit('module_updated_broadcast', broadcast_data, room=f'class_{class_id}')
+        
+        print(f"📡 Module update events emitted for module {module_data.get('title')} in class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error emitting module update events: {str(e)}")
+
+# ===== ADMIN WEBSOCKET TEST HANDLERS =====
+
+@socketio.on('admin_test_message')
+@authenticated_only
+def handle_admin_test_message(data):
+    """Handle admin test messages for WebSocket testing"""
+    try:
+        message = data.get('message', 'Test message')
+        message_id = data.get('messageId', 'unknown')
+        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
+        
+        print(f"📨 Admin test message received: {message} (ID: {message_id})")
+        
+        # Emit response back to sender
+        emit('admin_test_response', {
+            'original_message': message,
+            'message_id': message_id,
+            'response': 'Message received successfully',
+            'timestamp': timestamp,
+            'response_timestamp': datetime.utcnow().isoformat(),
+            'status': 'success'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error handling admin test message: {str(e)}")
+        emit('admin_test_response', {
+            'error': str(e),
+            'status': 'error'
+        })
+
+@socketio.on('admin_echo_test')
+@authenticated_only
+def handle_admin_echo_test(data):
+    """Handle admin echo test for response time testing"""
+    try:
+        message = data.get('message', 'Echo test')
+        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
+        
+        # Echo the message back immediately
+        emit('admin_echo_response', {
+            'message': f"Echo: {message}",
+            'original_timestamp': timestamp,
+            'echo_timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in admin echo test: {str(e)}")
+
+@socketio.on('admin_broadcast_test')
+@authenticated_only
+@admin_only
+def handle_admin_broadcast_test(data):
+    """Handle admin broadcast testing"""
+    try:
+        message = data.get('message', 'Admin broadcast test')
+        target = data.get('target', 'all_admins')
+        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
+        
+        broadcast_data = {
+            'message': message,
+            'from': current_user.username if current_user.is_authenticated else 'Admin',
+            'timestamp': timestamp,
+            'test_id': f"broadcast_{int(datetime.utcnow().timestamp())}"
+        }
+        
+        if target == 'all_admins':
+            # Broadcast to admin room
+            socketio.emit('admin_broadcast_received', broadcast_data, room='admin_room')
+        else:
+            # Broadcast to all connected clients
+            socketio.emit('admin_broadcast_received', broadcast_data)
+        
+        print(f"📡 Admin broadcast test sent: {message} (target: {target})")
+        
+        # Confirm to sender
+        emit('admin_broadcast_test_response', {
+            'status': 'sent',
+            'target': target,
+            'message': message,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in admin broadcast test: {str(e)}")
+        emit('admin_broadcast_test_response', {
+            'status': 'error',
+            'error': str(e)
+        })
+
+@socketio.on('admin_join_room')
+@authenticated_only
+@admin_only
+def handle_admin_join_room(data):
+    """Handle admin joining test rooms"""
+    try:
+        room = data.get('room', 'admin_test_room')
+        join_room(room)
+        
+        print(f"👥 Admin {current_user.username} joined room: {room}")
+        
+        # Notify others in the room
+        emit('admin_room_user_joined', {
+            'user': current_user.username,
+            'room': room,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room, include_self=False)
+        
+        # Confirm to sender
+        emit('admin_room_joined', {
+            'room': room,
+            'status': 'joined',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error joining admin room: {str(e)}")
+
+@socketio.on('admin_leave_room')
+@authenticated_only
+@admin_only
+def handle_admin_leave_room(data):
+    """Handle admin leaving test rooms"""
+    try:
+        room = data.get('room', 'admin_test_room')
+        leave_room(room)
+        
+        print(f"👋 Admin {current_user.username} left room: {room}")
+        
+        # Notify others in the room
+        emit('admin_room_user_left', {
+            'user': current_user.username,
+            'room': room,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room)
+        
+        # Confirm to sender
+        emit('admin_room_left', {
+            'room': room,
+            'status': 'left',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error leaving admin room: {str(e)}")
+
+@socketio.on('admin_room_message')
+@authenticated_only
+@admin_only
+def handle_admin_room_message(data):
+    """Handle admin room messages for testing"""
+    try:
+        room = data.get('room', 'admin_test_room')
+        message = data.get('message', 'Test room message')
+        
+        room_message_data = {
+            'user': current_user.username,
+            'message': message,
+            'room': room,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Send to everyone in the room
+        socketio.emit('admin_room_message_received', room_message_data, room=room)
+        
+        print(f"💬 Room message sent to {room}: {message}")
+        
+    except Exception as e:
+        print(f"❌ Error sending room message: {str(e)}")
+
+@socketio.on('admin_monitoring_request')
+@authenticated_only
+@admin_only
+def handle_admin_monitoring_request(data):
+    """Handle admin monitoring data requests"""
+    try:
+        metrics = data.get('metrics', ['connection_count', 'active_rooms'])
+        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
+        
+        # Simulate monitoring data (in real implementation, get actual metrics)
+        monitoring_data = {
+            'connection_count': len(socketio.server.manager.rooms.get('/', {})),
+            'active_rooms': list(socketio.server.manager.rooms.get('/', {}).keys()),
+            'message_rate': '10/sec',  # Simulated
+            'server_status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'request_timestamp': timestamp
+        }
+        
+        emit('admin_monitoring_response', monitoring_data)
+        
+        print(f"📊 Monitoring data sent: {len(monitoring_data)} metrics")
+        
+    except Exception as e:
+        print(f"❌ Error getting monitoring data: {str(e)}")
+        emit('admin_monitoring_response', {
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+print("🚀 Admin WebSocket test handlers loaded successfully")

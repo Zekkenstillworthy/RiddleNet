@@ -42,7 +42,7 @@ def create_app(config=None):
     
     # Set sensible defaults if config file doesn't exist
     if 'SQLALCHEMY_DATABASE_URI' not in app.config:
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "test.db")}'
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "riddlenet.db")}'
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
@@ -78,32 +78,52 @@ def create_app(config=None):
     app.config["MAIL_MAX_EMAILS"] = None
     mail.init_app(app)
     
-    # Define the user loader function
-    @login_manager.user_loader
-    def load_user(user_id):
-        # Make sure we're in an application context
-        if not current_app:
-            return None
-            
-        # Try different import paths to find User model
-        try:
-            # Import as UserModel to avoid conflicts
-            from user.models import User as UserModel
-            with app.app_context():
-                return UserModel.query.get(int(user_id))
-        except (ImportError, AttributeError):
-            try:
-                # Import as UserModel to avoid conflicts
-                from user.models.user import User as UserModel
-                with app.app_context():
-                    return UserModel.query.get(int(user_id))
-            except (ImportError, AttributeError):
-                return None
+    # Define the user loader function - DISABLED: Using main user_loader in run.py
+    # @login_manager.user_loader
+    # def load_user(user_id):
+    #     # Make sure we're in an application context
+    #     if not current_app:
+    #         return None
+    #         
+    #     # Try different import paths to find User model
+    #     try:
+    #         # Import as UserModel to avoid conflicts
+    #         from user.models import User as UserModel
+    #         with app.app_context():
+    #             return UserModel.query.get(int(user_id))
+    #     except (ImportError, AttributeError):
+    #         try:
+    #             # Import as UserModel to avoid conflicts
+    #             from user.models.user import User as UserModel
+    #             with app.app_context():
+    #                 return UserModel.query.get(int(user_id))
+    #         except (ImportError, AttributeError):
+    #             return None
 
     # Register blueprints
     try:
         from user.views import user_bp
         app.register_blueprint(user_bp)
+        
+        # Register universal class routes
+        print("🔍 Attempting to register universal class routes...")
+        try:
+            from user.routes.universal_class_routes import universal_class_bp
+            print("🔍 Universal class blueprint imported successfully")
+            app.register_blueprint(universal_class_bp)
+            print("✅ Universal class routes registered successfully")
+        except Exception as e:
+            print(f"⚠️ Error registering universal class blueprint: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Register dynamic simulation routes blueprint
+        try:
+            from user.dynamic_simulation_routes import dynamic_sim_bp
+            app.register_blueprint(dynamic_sim_bp)
+            print("✅ Dynamic simulation routes registered successfully")
+        except Exception as e:
+            print(f"⚠️ Error registering dynamic simulation blueprint: {e}")
         
         # Register the API blueprint with explicit url_prefix
         # Commented out to avoid conflicts with QuizController routes
@@ -115,6 +135,29 @@ def create_app(config=None):
         except Exception as e:
             print(f"Error registering API blueprint: {e}")
             # Continue without the API if it fails to load
+            
+        # Register admin blueprints
+        try:
+            from admin.controllers.auth_controller import auth_bp
+            app.register_blueprint(auth_bp, url_prefix='/admin')
+            print("✅ Admin auth blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin auth blueprint: {e}")
+            
+        try:
+            from admin.controllers.dashboard_controller import dashboard_bp
+            app.register_blueprint(dashboard_bp, url_prefix='/admin')
+            print("✅ Admin dashboard blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin dashboard blueprint: {e}")
+            
+        try:
+            from admin.controllers.class_content_controller import class_content_controller_old
+            app.register_blueprint(class_content_controller_old, url_prefix='/admin')
+            print("✅ Admin class content controller blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin class content controller blueprint: {e}")
+            
         '''
         
         # Print registered rules for debugging        print("Registered URL rules:")
@@ -136,5 +179,80 @@ def create_app(config=None):
             return f"http://localhost:5001/media/{type}/{path}"
             
         return dict(static_url=static_url, media_url=media_url)
+    
+    # Add global user context processor
+    @app.context_processor
+    def inject_user():
+        """CRITICAL FIX: Inject user information with proper namespace isolation"""
+        from flask_login import current_user
+        from flask import session, request
+        
+        # Debug: Print current request info
+        try:
+            path = request.path if request else "unknown"
+        except:
+            path = "unknown"
+        
+        auth_namespace = session.get('auth_namespace', 'none')
+        
+        # CRITICAL FIX: Strict namespace-based isolation
+        if path.startswith('/admin'):
+            # Admin routes: ONLY allow admin namespace
+            if current_user.is_authenticated and auth_namespace == 'admin':
+                from admin.models.user import Admin
+                if isinstance(current_user, Admin):
+                    print(f"Context processor [{path}]: Admin route - authenticated admin: {current_user.username} (namespace: {auth_namespace})")
+                    return dict(user=current_user)
+            
+            print(f"Context processor [{path}]: Admin route - no admin authentication (namespace: {auth_namespace})")
+            return dict(user=None)
+        
+        # User routes: Support both user and admin access with namespace checking
+        if current_user.is_authenticated:
+            from user.models.user import User
+            from admin.models.user import Admin
+            
+            if isinstance(current_user, User) and auth_namespace == 'user':
+                print(f"Context processor [{path}]: User route - authenticated user: {current_user.username} (namespace: {auth_namespace})")
+                return dict(user=current_user)
+            elif isinstance(current_user, Admin) and auth_namespace == 'admin':
+                # Allow admin to access class routes but maintain admin context
+                if '/class/' in path:
+                    print(f"Context processor [{path}]: Admin {current_user.username} accessing class route (namespace: {auth_namespace})")
+                    return dict(user=current_user)
+                else:
+                    print(f"Context processor [{path}]: Admin {current_user.username} blocked from user route (namespace: {auth_namespace})")
+                    return dict(user=None)
+            else:
+                print(f"Context processor [{path}]: Authentication type/namespace mismatch - user type: {type(current_user)}, namespace: {auth_namespace}")
+                return dict(user=None)
+        
+        # Session-based authentication ONLY for user namespace
+        if 'user_id' in session and auth_namespace == 'user':
+            try:
+                from user.models.user import User
+                user = User.query.get(session['user_id'])
+                if user:
+                    print(f"Context processor [{path}]: Found user via session: {user.username} (namespace: {auth_namespace})")
+                    return dict(user=user)
+                else:
+                    print(f"Context processor [{path}]: User ID {session['user_id']} not found - clearing session")
+                    session.pop('user_id', None)
+                    session.pop('auth_namespace', None)
+            except Exception as e:
+                print(f"Context processor [{path}]: Error getting user from session: {e}")
+                session.pop('user_id', None)
+                session.pop('auth_namespace', None)
+        
+        # No user found
+        print(f"Context processor [{path}]: No user found (namespace: {auth_namespace})")
+        return dict(user=None)
+    
+    # Register template helpers
+    try:
+        from user.template_helpers import register_template_helpers
+        register_template_helpers(app)
+    except ImportError:
+        pass  # Template helpers not available yet
     
     return app

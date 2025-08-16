@@ -1,0 +1,811 @@
+{% extends "user/base.html" %}
+
+{% block title %}{{ lesson.title }} - {{ class_obj.name }}{% endblock %}
+
+{% block head %}
+<style>
+:root {
+    --primary-blue: #3b82f6;
+    --secondary-blue: #1e40af;
+    --accent-cyan: #06b6d4;
+    --success-green: #10b981;
+    --warning-orange: #f59e0b;
+    --danger-red: #ef4444;
+    --dark-bg: #1e1e2e;
+    --surface: #2a2a3e;
+    --surface-light: #35354a;
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --border: #3f3f52;
+}
+
+.lesson-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 30px;
+    min-height: calc(100vh - 100px);
+}
+
+.lesson-content {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 32px;
+    border: 1px solid var(--border);
+}
+
+.lesson-header {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.lesson-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+.lesson-breadcrumb a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+}
+
+.lesson-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.lesson-title {
+    color: var(--text-primary);
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    line-height: 1.2;
+}
+
+.lesson-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.meta-item i {
+    color: var(--accent-cyan);
+}
+
+.lesson-description {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--surface-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-cyan);
+}
+
+.content-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title i {
+    color: var(--accent-cyan);
+    font-size: 1.25rem;
+}
+
+.objectives-list, .concepts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.objectives-list li, .concepts-list li {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    padding-left: 24px;
+    position: relative;
+}
+
+.objectives-list li::before {
+    content: '🎯';
+    position: absolute;
+    left: 0;
+}
+
+.concepts-list li::before {
+    content: '🔑';
+    position: absolute;
+    left: 0;
+}
+
+.lesson-main-content {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+    background: var(--surface-light);
+    padding: 24px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.lesson-main-content h1, .lesson-main-content h2, .lesson-main-content h3,
+.lesson-main-content h4, .lesson-main-content h5, .lesson-main-content h6 {
+    color: var(--text-primary);
+    margin: 24px 0 16px 0;
+}
+
+.lesson-main-content p {
+    margin-bottom: 16px;
+}
+
+.lesson-main-content code {
+    background: var(--dark-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: var(--accent-cyan);
+}
+
+.lesson-main-content pre {
+    background: var(--dark-bg);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.simulations-section {
+    background: var(--surface-light);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+}
+
+.simulation-card {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.simulation-card:last-child {
+    margin-bottom: 0;
+}
+
+.simulation-card:hover {
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+}
+
+.simulation-header {
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.simulation-title {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.simulation-status {
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-green);
+}
+
+.status-not-started {
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--text-secondary);
+}
+
+.simulation-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.simulation-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.simulation-score {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background: var(--primary-blue);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--secondary-blue);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: var(--success-green);
+    color: white;
+}
+
+/* Sidebar */
+.lesson-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+}
+
+.sidebar-title {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-title i {
+    color: var(--accent-cyan);
+}
+
+.progress-display {
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    background: var(--dark-bg);
+    border-radius: 8px;
+    height: 12px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--accent-cyan), var(--primary-blue));
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.lesson-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.nav-lesson {
+    padding: 12px;
+    background: var(--surface-light);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-lesson:hover {
+    border-color: var(--accent-cyan);
+    color: var(--text-primary);
+}
+
+.nav-lesson.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.nav-lesson-icon {
+    color: var(--accent-cyan);
+    font-size: 1.1rem;
+}
+
+.nav-lesson-content {
+    flex: 1;
+}
+
+.nav-lesson-title {
+    font-weight: 500;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.lesson-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.lesson-actions .btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.completion-card {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--success-green);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.completion-card h4 {
+    color: var(--success-green);
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+}
+
+.completion-card p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .lesson-container {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 20px;
+    }
+    
+    .lesson-content {
+        padding: 20px;
+    }
+    
+    .lesson-title {
+        font-size: 1.75rem;
+    }
+    
+    .lesson-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* Reading progress tracking */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--dark-bg);
+    z-index: 1000;
+}
+
+.reading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--primary-blue));
+    width: 0%;
+    transition: width 0.1s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Reading progress indicator -->
+<div class="reading-progress">
+    <div class="reading-progress-bar" id="reading-progress"></div>
+</div>
+
+<div class="lesson-container">
+    <!-- Main Content -->
+    <div class="lesson-content">
+        <!-- Header -->
+        <div class="lesson-header">
+            <div class="lesson-breadcrumb">
+                <a href="{{ url_for('user.dashboard') }}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="{{ url_for('universal_class.dynamic_class_detail', class_id=class_obj.id) }}">
+                    {{ class_obj.name }}
+                </a>
+                <i class="fas fa-chevron-right"></i>
+                <span>{{ lesson.module.title }}</span>
+                <i class="fas fa-chevron-right"></i>
+                <span>{{ lesson.title }}</span>
+            </div>
+            
+            <h1 class="lesson-title">{{ lesson.title }}</h1>
+            
+            <div class="lesson-meta">
+                <div class="meta-item">
+                    <i class="fas fa-book"></i>
+                    <span>Module {{ lesson.module.module_number }}</span>
+                </div>
+                {% if lesson.lesson_number %}
+                <div class="meta-item">
+                    <i class="fas fa-list-ol"></i>
+                    <span>Lesson {{ lesson.lesson_number }}</span>
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ lesson.estimated_duration }} minutes</span>
+                </div>
+                {% if lesson.simulations %}
+                <div class="meta-item">
+                    <i class="fas fa-flask"></i>
+                    <span>{{ lesson.simulations|length }} Simulation{{ 's' if lesson.simulations|length > 1 else '' }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Description -->
+        {% if lesson.description %}
+        <div class="lesson-description">
+            {{ lesson.description }}
+        </div>
+        {% endif %}
+
+        <!-- Learning Objectives -->
+        {% if lesson.learning_objectives %}
+        <div class="content-section">
+            <h3 class="section-title">
+                <i class="fas fa-bullseye"></i>
+                Learning Objectives
+            </h3>
+            <ul class="objectives-list">
+                {% for objective in lesson.learning_objectives %}
+                <li>{{ objective }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Key Concepts -->
+        {% if lesson.key_concepts %}
+        <div class="content-section">
+            <h3 class="section-title">
+                <i class="fas fa-key"></i>
+                Key Concepts
+            </h3>
+            <ul class="concepts-list">
+                {% for concept in lesson.key_concepts %}
+                <li>{{ concept }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Main Lesson Content -->
+        {% if lesson.content %}
+        <div class="content-section">
+            <h3 class="section-title">
+                <i class="fas fa-book-open"></i>
+                Lesson Content
+            </h3>
+            <div class="lesson-main-content">
+                {{ lesson.content|safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Attached Simulations -->
+        {% if lesson.simulations %}
+        <div class="content-section">
+            <div class="simulations-section">
+                <h3 class="section-title">
+                    <i class="fas fa-flask"></i>
+                    Practice Simulations
+                </h3>
+                
+                {% for simulation in lesson.simulations %}
+                <div class="simulation-card">
+                    <div class="simulation-header">
+                        <h4 class="simulation-title">{{ simulation.title }}</h4>
+                        <span class="simulation-status {{ 'status-completed' if simulation_progress[simulation.id].completed else 'status-not-started' }}">
+                            {{ 'Completed' if simulation_progress[simulation.id].completed else 'Not Started' }}
+                        </span>
+                    </div>
+                    
+                    <p class="simulation-description">{{ simulation.description }}</p>
+                    
+                    <div class="simulation-actions">
+                        <div class="simulation-score">
+                            {% if simulation_progress[simulation.id].completed %}
+                                <i class="fas fa-trophy"></i> Best Score: {{ simulation_progress[simulation.id].score }}
+                                <span style="margin-left: 16px;">
+                                    <i class="fas fa-redo"></i> {{ simulation_progress[simulation.id].attempts }} Attempt{{ 's' if simulation_progress[simulation.id].attempts != 1 else '' }}
+                                </span>
+                            {% else %}
+                                <i class="fas fa-play"></i> Ready to start
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{{ url_for('user_lesson.start_simulation', class_id=class_obj.id, lesson_id=lesson.id, simulation_id=simulation.id) }}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-{{ 'redo' if simulation_progress[simulation.id].completed else 'play' }}"></i>
+                            {{ 'Retry' if simulation_progress[simulation.id].completed else 'Start' }} Simulation
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="lesson-sidebar">
+        <!-- Progress Card -->
+        <div class="sidebar-card">
+            <h3 class="sidebar-title">
+                <i class="fas fa-chart-line"></i>
+                Progress
+            </h3>
+            
+            <div class="progress-display">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="lesson-progress" style="width: {{ lesson_progress.progress_percentage if lesson_progress else 0 }}%"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progress-text">{{ lesson_progress.progress_percentage if lesson_progress else 0 }}% Complete</span>
+                </div>
+            </div>
+            
+            {% if lesson_progress and lesson_progress.is_completed %}
+            <div class="completion-card">
+                <h4><i class="fas fa-check-circle"></i> Completed!</h4>
+                <p>Completed on {{ lesson_progress.completed_at.strftime('%B %d, %Y at %I:%M %p') if lesson_progress.completed_at else 'Unknown' }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Navigation Card -->
+        <div class="sidebar-card">
+            <h3 class="sidebar-title">
+                <i class="fas fa-map"></i>
+                Navigation
+            </h3>
+            
+            <div class="lesson-navigation">
+                {% if previous_lesson %}
+                <a href="{{ url_for('user_lesson.view_lesson', class_id=class_obj.id, lesson_id=previous_lesson.id) }}" class="nav-lesson">
+                    <i class="fas fa-chevron-left nav-lesson-icon"></i>
+                    <div class="nav-lesson-content">
+                        <h4 class="nav-lesson-title">Previous: {{ previous_lesson.title }}</h4>
+                    </div>
+                </a>
+                {% endif %}
+                
+                {% if next_lesson %}
+                <a href="{{ url_for('user_lesson.view_lesson', class_id=class_obj.id, lesson_id=next_lesson.id) }}" class="nav-lesson">
+                    <i class="fas fa-chevron-right nav-lesson-icon"></i>
+                    <div class="nav-lesson-content">
+                        <h4 class="nav-lesson-title">Next: {{ next_lesson.title }}</h4>
+                    </div>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="sidebar-card">
+            <h3 class="sidebar-title">
+                <i class="fas fa-tools"></i>
+                Actions
+            </h3>
+            
+            <div class="lesson-actions">
+                {% if not (lesson_progress and lesson_progress.is_completed) %}
+                <button id="complete-lesson-btn" class="btn btn-success" onclick="completeLesson()">
+                    <i class="fas fa-check"></i>
+                    Mark as Complete
+                </button>
+                {% endif %}
+                
+                <a href="{{ url_for('universal_class.dynamic_class_detail', class_id=class_obj.id) }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Class
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Reading progress tracking
+    let lastScrollTime = Date.now();
+    let timeSpent = 0;
+    const startTime = Date.now();
+    
+    function updateReadingProgress() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = Math.min(100, (scrollTop / scrollHeight) * 100);
+        
+        document.getElementById('reading-progress').style.width = progress + '%';
+        
+        // Update lesson progress if user has scrolled significantly
+        if (progress > {{ lesson_progress.progress_percentage if lesson_progress else 0 }}) {
+            updateLessonProgress(progress);
+        }
+    }
+    
+    function updateLessonProgress(progressPercent) {
+        const currentTime = Date.now();
+        const timeDelta = (currentTime - lastScrollTime) / 1000 / 60; // Convert to minutes
+        timeSpent += timeDelta;
+        lastScrollTime = currentTime;
+        
+        // Only update if significant progress or time has passed
+        if (timeDelta > 0.1 || progressPercent % 10 === 0) {
+            fetch(`{{ url_for('user_lesson.update_progress', class_id=class_obj.id, lesson_id=lesson.id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    progress_percentage: Math.round(progressPercent),
+                    time_spent_minutes: timeSpent
+                })
+            }).catch(error => {
+                console.error('Error updating lesson progress:', error);
+            });
+        }
+    }
+    
+    // Track reading progress
+    window.addEventListener('scroll', updateReadingProgress);
+    
+    // Track time spent
+    setInterval(() => {
+        timeSpent += 0.25; // Add 15 seconds every 15 seconds
+    }, 15000);
+    
+    // Initial progress update
+    updateReadingProgress();
+});
+
+function completeLesson() {
+    const btn = document.getElementById('complete-lesson-btn');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Completing...';
+    btn.disabled = true;
+    
+    fetch(`{{ url_for('user_lesson.complete_lesson', class_id=class_obj.id, lesson_id=lesson.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update progress bar to 100%
+            document.getElementById('lesson-progress').style.width = '100%';
+            document.getElementById('progress-text').textContent = '100% Complete';
+            
+            // Hide the complete button and show success message
+            btn.style.display = 'none';
+            
+            // Show completion card
+            const progressCard = document.querySelector('.sidebar-card');
+            const completionCard = document.createElement('div');
+            completionCard.className = 'completion-card';
+            completionCard.innerHTML = `
+                <h4><i class="fas fa-check-circle"></i> Completed!</h4>
+                <p>Just completed - Great work!</p>
+            `;
+            progressCard.appendChild(completionCard);
+            
+            // Show success notification
+            showNotification('Lesson completed successfully!', 'success');
+        } else {
+            showNotification(data.message || 'Error completing lesson', 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error completing lesson:', error);
+        showNotification('Error completing lesson', 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        animation: slideInRight 0.3s ease;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

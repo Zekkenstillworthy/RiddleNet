@@ -31,14 +31,23 @@ def protect_admin_routes(app):
     """
     @app.before_request
     def check_admin_auth():
+        # Debug output
+        print(f"🔍 Protection check for path: {request.path}")
+        
         # List of routes that don't require authentication (login/static files)
         exempt_routes = [
             '/static/', 
             '/admin/login',
+            '/admin/signup',  # Add admin signup route
             '/admin/auth/login',
+            '/admin/auth/signup',  # Add admin auth signup route
             '/admin/logout',
             '/admin/auth/logout'
         ]
+        
+        # Debug: show which routes are exempt
+        is_exempt = any(request.path.startswith(route) for route in exempt_routes)
+        print(f"🛡️ Path '{request.path}' is exempt: {is_exempt}")
         
         # Skip check for exempt routes
         if any(request.path.startswith(route) for route in exempt_routes):
@@ -47,5 +56,6 @@ def protect_admin_routes(app):
         # Check if user is authenticated
         if not current_user.is_authenticated:
             if request.path.startswith('/admin'):
+                print(f"🚫 Blocking unauthenticated access to: {request.path}")
                 flash('Please log in to access the admin area', 'warning')
                 return redirect(url_for('auth.login', next=request.url))

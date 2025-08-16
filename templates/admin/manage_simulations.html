@@ -110,6 +110,14 @@
         gap: 12px;
     }
 
+    .results-info {
+        margin-top: 16px;
+        padding: 12px 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        border-top: 1px solid var(--border-color);
+    }
+
     .btn {
         padding: 10px 20px;
         border: none;
@@ -300,6 +308,17 @@
         color: var(--danger-color);
     }
 
+    .simulation-type-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success-color);
+        text-transform: capitalize;
+        margin-right: 8px;
+    }
+
     .category-badge {
         padding: 4px 8px;
         border-radius: 6px;
@@ -418,10 +437,12 @@
                 <label class="filter-label">Category:</label>
                 <select class="filter-select" id="categoryFilter">
                     <option value="">All Categories</option>
-                    <option value="networking1">Networking 1</option>
-                    <option value="networking2">Networking 2</option>
-                    <option value="security">Security</option>
-                    <option value="troubleshooting">Troubleshooting</option>
+                    {% set categories = simulations|map(attribute='category')|unique|list %}
+                    {% for category in categories %}
+                        {% if category %}
+                            <option value="{{ category|lower|replace(' ', '') }}">{{ category }}</option>
+                        {% endif %}
+                    {% endfor %}
                 </select>
             </div>
             <div class="filter-group">
@@ -448,201 +469,102 @@
                 Bulk Actions
             </button>
         </div>
+        <div class="results-info">
+            <span id="simulationCount">{{ total_count }} simulations found</span>
+        </div>
     </div>
 
     <div class="simulations-grid" id="simulationsGrid">
-        <!-- Sample simulations for demonstration -->
-        <div class="simulation-card" data-category="networking1" data-status="active">
-            <div class="status-badge status-active">Active</div>
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-network-wired"></i>
-                    OSI Model Visualization
-                </h3>
-                <div class="card-meta">
-                    <span class="category-badge category-networking1">Networking 1</span>
-                    <span class="difficulty-badge difficulty-beginner">Beginner</span>
-                    <span><i class="fas fa-calendar"></i> Created: 2024-12-01</span>
+        {% if simulations %}
+            {% for simulation in simulations %}
+            <div class="simulation-card" data-category="{{ simulation.category|lower|replace(' ', '')|default('general') }}" 
+                 data-status="{% if simulation.is_published %}active{% elif simulation.is_active %}testing{% else %}draft{% endif %}">
+                <div class="status-badge status-{% if simulation.is_published %}active{% elif simulation.is_active %}testing{% else %}draft{% endif %}">
+                    {% if simulation.is_published %}Active{% elif simulation.is_active %}Testing{% else %}Draft{% endif %}
+                </div>
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-{{ 'network-wired' if 'networking' in (simulation.simulation_type|lower) else 'cogs' }}"></i>
+                        {{ simulation.title }}
+                    </h3>
+                    <div class="card-meta">
+                        <span class="simulation-type-badge">
+                            <i class="fas fa-layer-group"></i> {{ simulation.simulation_type or 'General' }}
+                        </span>
+                        <span class="category-badge category-{{ simulation.category|lower|replace(' ', '')|default('general') }}">
+                            {{ simulation.category or 'General' }}
+                        </span>
+                        <span class="difficulty-badge difficulty-{{ simulation.difficulty|lower|default('beginner') }}">
+                            {{ simulation.difficulty or 'Beginner' }}
+                        </span>
+                        <span><i class="fas fa-calendar"></i> Created: {{ simulation.created_at[:10] if simulation.created_at else 'Unknown' }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        {{ (simulation.description|striptags|truncate(150)) if simulation.description else 'No description available.' }}
+                    </p>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">{{ simulation.total_attempts or 0 }}</span>
+                            <div class="stat-label">Total Runs</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ "%.1f"|format(simulation.average_rating or 0) if simulation.average_rating else '-' }}</span>
+                            <div class="stat-label">Avg Rating</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ "%.0f"|format(simulation.completion_rate or 0) }}%</span>
+                            <div class="stat-label">Completion</div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" onclick="editSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-edit"></i>
+                            Edit
+                        </button>
+                        {% if simulation.is_published %}
+                        <button class="btn btn-success" onclick="viewAnalytics('{{ simulation.id }}')">
+                            <i class="fas fa-chart-bar"></i>
+                            Analytics
+                        </button>
+                        <button class="btn btn-warning" onclick="unpublishSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-eye-slash"></i>
+                            Unpublish
+                        </button>
+                        <button class="btn btn-danger" onclick="archiveSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-archive"></i>
+                            Archive
+                        </button>
+                        {% else %}
+                        <button class="btn btn-warning" onclick="publishSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-rocket"></i>
+                            Publish
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-trash"></i>
+                            Delete
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-secondary" onclick="duplicateSimulation('{{ simulation.id }}')">
+                            <i class="fas fa-copy"></i>
+                            Duplicate
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="card-body">
-                <p class="card-description">
-                    Interactive simulation demonstrating data encapsulation and decapsulation through the OSI model layers.
-                </p>
-                <div class="card-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">1,247</span>
-                        <div class="stat-label">Total Runs</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">4.8</span>
-                        <div class="stat-label">Avg Rating</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">89%</span>
-                        <div class="stat-label">Completion</div>
-                    </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn btn-primary" onclick="editSimulation('osi-model')">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-success" onclick="viewAnalytics('osi-model')">
-                        <i class="fas fa-chart-bar"></i>
-                        Analytics
-                    </button>
-                    <button class="btn btn-secondary" onclick="duplicateSimulation('osi-model')">
-                        <i class="fas fa-copy"></i>
-                        Duplicate
-                    </button>
-                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-flask"></i>
+                <h3>No simulations found</h3>
+                <p>Create your first simulation to get started</p>
+                <button class="btn btn-primary" onclick="createNewSimulation()">
+                    <i class="fas fa-plus"></i>
+                    Create Simulation
+                </button>
             </div>
-        </div>
-
-        <div class="simulation-card" data-category="networking1" data-status="testing">
-            <div class="status-badge status-testing">Testing</div>
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-ethernet"></i>
-                    Ethernet Frame Analysis
-                </h3>
-                <div class="card-meta">
-                    <span class="category-badge category-networking1">Networking 1</span>
-                    <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
-                    <span><i class="fas fa-calendar"></i> Created: 2024-12-15</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <p class="card-description">
-                    Deep dive into Ethernet frame structure, CSMA/CD, and collision detection mechanisms.
-                </p>
-                <div class="card-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">23</span>
-                        <div class="stat-label">Test Runs</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">-</span>
-                        <div class="stat-label">Rating</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">67%</span>
-                        <div class="stat-label">Completion</div>
-                    </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn btn-primary" onclick="editSimulation('ethernet-frame')">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-warning" onclick="publishSimulation('ethernet-frame')">
-                        <i class="fas fa-rocket"></i>
-                        Publish
-                    </button>
-                    <button class="btn btn-danger" onclick="deleteSimulation('ethernet-frame')">
-                        <i class="fas fa-trash"></i>
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="simulation-card" data-category="networking2" data-status="active">
-            <div class="status-badge status-active">Active</div>
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-route"></i>
-                    EIGRP Configuration
-                </h3>
-                <div class="card-meta">
-                    <span class="category-badge category-networking2">Networking 2</span>
-                    <span class="difficulty-badge difficulty-advanced">Advanced</span>
-                    <span><i class="fas fa-calendar"></i> Created: 2024-11-20</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <p class="card-description">
-                    Advanced routing protocol simulation with DUAL algorithm implementation and metric calculations.
-                </p>
-                <div class="card-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">892</span>
-                        <div class="stat-label">Total Runs</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">4.6</span>
-                        <div class="stat-label">Avg Rating</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">74%</span>
-                        <div class="stat-label">Completion</div>
-                    </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn btn-primary" onclick="editSimulation('eigrp-config')">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-success" onclick="viewAnalytics('eigrp-config')">
-                        <i class="fas fa-chart-bar"></i>
-                        Analytics
-                    </button>
-                    <button class="btn btn-warning" onclick="archiveSimulation('eigrp-config')">
-                        <i class="fas fa-archive"></i>
-                        Archive
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="simulation-card" data-category="troubleshooting" data-status="draft">
-            <div class="status-badge status-draft">Draft</div>
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-bug"></i>
-                    Network Troubleshooting Lab
-                </h3>
-                <div class="card-meta">
-                    <span class="category-badge category-troubleshooting">Troubleshooting</span>
-                    <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
-                    <span><i class="fas fa-calendar"></i> Created: 2024-12-18</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <p class="card-description">
-                    Comprehensive troubleshooting scenarios including routing loops, convergence issues, and protocol misconfigurations.
-                </p>
-                <div class="card-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">0</span>
-                        <div class="stat-label">Total Runs</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">-</span>
-                        <div class="stat-label">Rating</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">-</span>
-                        <div class="stat-label">Completion</div>
-                    </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn btn-primary" onclick="editSimulation('troubleshooting-lab')">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-warning" onclick="publishSimulation('troubleshooting-lab')">
-                        <i class="fas fa-rocket"></i>
-                        Publish
-                    </button>
-                    <button class="btn btn-danger" onclick="deleteSimulation('troubleshooting-lab')">
-                        <i class="fas fa-trash"></i>
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 
     <div class="pagination" id="pagination">
@@ -700,6 +622,16 @@
         });
 
         updateEmptyState();
+        updateSimulationCount();
+    }
+
+    function updateSimulationCount() {
+        const visibleCards = document.querySelectorAll('.simulation-card[style="display: block;"], .simulation-card:not([style*="display: none"])');
+        const countElement = document.getElementById('simulationCount');
+        if (countElement) {
+            const count = visibleCards.length;
+            countElement.textContent = `${count} simulation${count !== 1 ? 's' : ''} found`;
+        }
     }
 
     function updateEmptyState() {
@@ -727,58 +659,288 @@
 
     // Simulation management functions
     function createNewSimulation() {
-        window.location.href = '/admin/simulation-builder';
+        window.location.href = '/admin/simulation/builder';
     }
 
     function editSimulation(simulationId) {
-        window.location.href = `/admin/simulation-builder?edit=${simulationId}`;
+        console.log('Editing simulation:', simulationId);
+        window.location.href = `/admin/simulation/edit/${simulationId}`;
     }
 
     function viewAnalytics(simulationId) {
-        // Open analytics modal or navigate to analytics page
-        alert(`Opening analytics for simulation: ${simulationId}`);
+        console.log('Viewing analytics for simulation:', simulationId);
+        window.location.href = `/admin/simulation/analytics/${simulationId}`;
+    }
+
+    function createNewSimulation() {
+        console.log('Creating new simulation');
+        window.location.href = '/admin/simulation/builder';
     }
 
     function duplicateSimulation(simulationId) {
+        console.log('Duplicating simulation:', simulationId);
         if (confirm('Are you sure you want to duplicate this simulation?')) {
-            // Implementation for duplication
-            alert(`Duplicating simulation: ${simulationId}`);
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Duplicating...';
+            button.disabled = true;
+            
+            // Send AJAX request to duplicate
+            fetch(`/admin/simulation/api/${simulationId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Duplicate response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Simulation data received:', data);
+                if (data.simulation) {
+                    // Create duplicate with modified title
+                    const duplicateData = {
+                        ...data.simulation,
+                        title: data.simulation.title + ' (Copy)',
+                        is_published: false
+                    };
+                    delete duplicateData.id;
+                    
+                    fetch('/admin/simulation/api/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(duplicateData)
+                    })
+                    .then(response => {
+                        console.log('Create response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(result => {
+                        console.log('Create result:', result);
+                        if (result.success) {
+                            alert('Simulation duplicated successfully!');
+                            location.reload();
+                        } else {
+                            alert('Error duplicating simulation: ' + (result.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Create error:', error);
+                        alert('Error creating duplicate: ' + error.message);
+                    });
+                } else {
+                    throw new Error('No simulation data received');
+                }
+            })
+            .catch(error => {
+                console.error('Duplicate error:', error);
+                alert('Error duplicating simulation: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
         }
     }
 
     function publishSimulation(simulationId) {
+        console.log('Publishing simulation:', simulationId);
         if (confirm('Are you sure you want to publish this simulation? It will become available to students.')) {
-            // Update status to active
-            const card = document.querySelector(`[data-status="testing"]`);
-            if (card) {
-                card.dataset.status = 'active';
-                const badge = card.querySelector('.status-badge');
-                badge.className = 'status-badge status-active';
-                badge.textContent = 'Active';
-            }
-            alert(`Simulation ${simulationId} has been published!`);
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+            button.disabled = true;
+            
+            fetch(`/admin/simulation/api/${simulationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    is_published: true,
+                    is_active: true
+                })
+            })
+            .then(response => {
+                console.log('Publish response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('Publish result:', result);
+                if (result.success) {
+                    alert('Simulation published successfully!');
+                    location.reload();
+                } else {
+                    alert('Error publishing simulation: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Publish error:', error);
+                alert('Error publishing simulation: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+    }
+
+    function unpublishSimulation(simulationId) {
+        console.log('Unpublishing simulation:', simulationId);
+        if (confirm('Are you sure you want to unpublish this simulation? This will remove it from public access, but you can then edit or delete it.')) {
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Unpublishing...';
+            button.disabled = true;
+            
+            fetch(`/admin/simulation/api/${simulationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    is_published: false,
+                    is_active: true
+                })
+            })
+            .then(response => {
+                console.log('Unpublish response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('Unpublish result:', result);
+                if (result.success) {
+                    alert('Simulation unpublished successfully! You can now edit or delete it.');
+                    location.reload();
+                } else {
+                    alert('Error unpublishing simulation: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Unpublish error:', error);
+                alert('Error unpublishing simulation: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
         }
     }
 
     function archiveSimulation(simulationId) {
+        console.log('Archiving simulation:', simulationId);
         if (confirm('Are you sure you want to archive this simulation? It will no longer be available to students.')) {
-            // Update status to archived
-            alert(`Simulation ${simulationId} has been archived.`);
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...';
+            button.disabled = true;
+            
+            fetch(`/admin/simulation/api/${simulationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    is_published: false,
+                    is_active: false
+                })
+            })
+            .then(response => {
+                console.log('Archive response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                console.log('Archive result:', result);
+                if (result.success) {
+                    alert('Simulation archived successfully!');
+                    location.reload();
+                } else {
+                    alert('Error archiving simulation: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Archive error:', error);
+                alert('Error archiving simulation: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
         }
     }
 
     function deleteSimulation(simulationId) {
+        console.log('Deleting simulation:', simulationId);
         if (confirm('Are you sure you want to delete this simulation? This action cannot be undone.')) {
-            // Remove the card from DOM
-            const cards = document.querySelectorAll('.simulation-card');
-            cards.forEach(card => {
-                const titleElement = card.querySelector('.card-title');
-                if (titleElement && titleElement.textContent.toLowerCase().includes(simulationId.replace('-', ' '))) {
-                    card.remove();
+            // Show loading state
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            button.disabled = true;
+            
+            fetch(`/admin/simulation/api/${simulationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Delete response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                return response.json();
+            })
+            .then(result => {
+                console.log('Delete result:', result);
+                if (result.success) {
+                    alert('Simulation deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('Error deleting simulation: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                alert('Error deleting simulation: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
             });
-            alert(`Simulation ${simulationId} has been deleted.`);
-            updateEmptyState();
         }
     }
 

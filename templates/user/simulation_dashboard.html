@@ -1,0 +1,393 @@
+{% extends "user/base.html" %}
+
+{% block title %}Simulation Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .dashboard-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .category-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .category-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .simulations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .simulation-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .simulation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #667eea;
+    }
+
+    .simulation-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 10px;
+    }
+
+    .simulation-description {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+
+    .simulation-meta {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .meta-badge {
+        background: #667eea;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .meta-badge.difficulty-beginner { background: #10b981; }
+    .meta-badge.difficulty-intermediate { background: #f59e0b; }
+    .meta-badge.difficulty-advanced { background: #ef4444; }
+
+    .simulation-progress {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    .progress-info {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .progress-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .completed { background: #dcfce7; color: #166534; }
+    .not-attempted { background: #f3f4f6; color: #374151; }
+
+    .simulation-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .recent-attempts {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+
+    .attempts-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .attempts-table th,
+    .attempts-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .attempts-table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .attempts-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Simulation Dashboard</h1>
+    <p>Practice your skills with interactive networking simulations</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="dashboard-stats">
+    {% set total_sims = simulations_by_category.values() | list | sum(attribute='__len__') or 0 %}
+    {% set completed_sims = simulations_by_category.values() | list | sum(attribute='__len__') or 0 %}
+    {% set total_attempts = recent_attempts | length %}
+    
+    <div class="stat-card">
+        <span class="stat-value">{{ total_sims }}</span>
+        <span class="stat-label">Available Simulations</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-value">{{ completed_sims }}</span>
+        <span class="stat-label">Completed</span>
+    </div>
+    
+    <div class="stat-card">
+        <span class="stat-value">{{ total_attempts }}</span>
+        <span class="stat-label">Total Attempts</span>
+    </div>
+    
+    <div class="stat-card">
+        {% if recent_attempts %}
+            {% set latest_score = recent_attempts[0].total_score %}
+            <span class="stat-value">{{ latest_score }}</span>
+        {% else %}
+            <span class="stat-value">-</span>
+        {% endif %}
+        <span class="stat-label">Latest Score</span>
+    </div>
+</div>
+
+<!-- Simulations by Category -->
+{% if simulations_by_category %}
+    {% for category, simulations in simulations_by_category.items() %}
+        <div class="category-section">
+            <h2 class="category-title">
+                <i class="fas fa-folder"></i> {{ category }}
+            </h2>
+            
+            <div class="simulations-grid">
+                {% for sim_data in simulations %}
+                    {% set simulation = sim_data.simulation %}
+                    <div class="simulation-card" onclick="location.href='{{ url_for('user_simulation.run_simulation', simulation_id=simulation.id) }}'">
+                        <h3 class="simulation-title">{{ simulation.title }}</h3>
+                        <p class="simulation-description">{{ simulation.description[:100] }}{% if simulation.description|length > 100 %}...{% endif %}</p>
+                        
+                        <div class="simulation-meta">
+                            <span class="meta-badge difficulty-{{ simulation.difficulty or 'intermediate' }}">
+                                {{ (simulation.difficulty or 'Intermediate')|title }}
+                            </span>
+                            <span class="meta-badge">
+                                <i class="fas fa-clock"></i> {{ simulation.estimated_duration or 30 }} min
+                            </span>
+                            <span class="meta-badge">
+                                {{ simulation.simulation_type or 'General' }}
+                            </span>
+                        </div>
+                        
+                        <div class="simulation-progress">
+                            <div class="progress-info">
+                                Attempts: {{ sim_data.attempts or 0 }}
+                                {% if sim_data.best_score > 0 %}
+                                    | Best Score: {{ sim_data.best_score }}
+                                {% endif %}
+                            </div>
+                            <span class="progress-badge {{ 'completed' if sim_data.completed else 'not-attempted' }}">
+                                {{ 'Completed' if sim_data.completed else 'Not Attempted' }}
+                            </span>
+                        </div>
+                        
+                        <div class="simulation-actions">
+                            <a href="{{ url_for('user_simulation.run_simulation', simulation_id=simulation.id) }}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-play"></i> Start Simulation
+                            </a>
+                            {% if sim_data.completed %}
+                                <button class="btn btn-secondary" onclick="viewResults({{ simulation.id }}, event)">
+                                    <i class="fas fa-chart-bar"></i> View Results
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="category-section">
+        <div class="empty-state">
+            <i class="fas fa-laptop-code" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+            <h3>No Simulations Available</h3>
+            <p>You don't have access to any simulations yet. Contact your instructor for access to course simulations.</p>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Recent Attempts -->
+{% if recent_attempts %}
+    <div class="recent-attempts">
+        <h2 class="category-title">
+            <i class="fas fa-history"></i> Recent Attempts
+        </h2>
+        
+        <table class="attempts-table">
+            <thead>
+                <tr>
+                    <th>Simulation</th>
+                    <th>Started</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                    <th>Duration</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in recent_attempts %}
+                    <tr>
+                        <td>{{ attempt.simulation.title if attempt.simulation else 'Unknown' }}</td>
+                        <td>{{ attempt.started_at.strftime('%m/%d/%Y %H:%M') if attempt.started_at else 'N/A' }}</td>
+                        <td>
+                            <span class="progress-badge {{ 'completed' if attempt.is_completed else 'not-attempted' }}">
+                                {{ 'Completed' if attempt.is_completed else 'In Progress' }}
+                            </span>
+                        </td>
+                        <td>{{ attempt.total_score or 0 }}</td>
+                        <td>{{ "%.1f"|format(attempt.duration_minutes or 0) }} min</td>
+                        <td>
+                            {% if attempt.is_completed %}
+                                <a href="{{ url_for('user_simulation.simulation_results', 
+                                                  simulation_id=attempt.simulation_id, 
+                                                  attempt_id=attempt.id) }}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('user_simulation.run_simulation', 
+                                                  simulation_id=attempt.simulation_id) }}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-play"></i> Continue
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<script>
+function viewResults(simulationId, event) {
+    event.stopPropagation(); // Prevent card click
+    
+    // Find the most recent completed attempt for this simulation
+    fetch(`/simulation/api/${simulationId}/latest-result`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.results_url;
+            } else {
+                alert('No completed attempts found for this simulation.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading simulation results.');
+        });
+}
+</script>
+{% endblock %}

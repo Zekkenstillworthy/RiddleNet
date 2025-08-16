@@ -1,0 +1,1237 @@
+{% extends "user/base.html" %}
+
+{% block title %}{{ course_title or 'Simulations' }}{% endblock %}
+
+{% block content %}
+<style>
+/* User Dashboard Styling - Standardized Variables */
+:root {
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+
+    --background: #020617;
+    --surface: #0F172A;
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-bg-light: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(0, 212, 255, 0.2);
+
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    
+    --border-radius: 16px;
+    --border-radius-lg: 20px;
+    --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    --shadow-glow: 0 0 20px rgba(0, 217, 255, 0.3);
+
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--success-color));
+}
+
+html {
+    min-height: 100vh;
+}
+
+body {
+    background: linear-gradient(135deg, var(--background), var(--surface));
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: 'Inter', 'Orbitron', 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Container and Bootstrap overrides */
+.container, .container-fluid, .row, .col, [class*="col-"] {
+    background-color: transparent;
+    background: none;
+}
+
+/* Main content area */
+#main-content, .main-content, .content {
+    background-color: transparent !important;
+    background: none !important;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Page Header - Standardized Style */
+.page-header {
+    text-align: center;
+    padding: 2rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+}
+
+.dashboard-title, .page-title {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.dashboard-subtitle, .page-description {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Stats Badge */
+.stats-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.stats-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4);
+}
+
+/* Back Navigation */
+.back-navigation {
+    margin-bottom: 2rem;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+}
+
+.back-btn:hover {
+    color: var(--cyber-glow);
+    border-color: var(--cyber-glow);
+    transform: translateY(-2px);
+}
+
+.back-btn i {
+    transition: transform 0.3s ease;
+}
+
+.back-btn:hover i {
+    transform: translateX(-3px);
+}
+
+/* Section Headers */
+.section {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-title i {
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--glass-border);
+    position: relative;
+}
+
+.section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.section-header .section-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+}
+
+/* Cards Grid Layout */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.simulations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+}
+
+/* Learning Path Cards */
+.learning-path-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    padding: 32px 24px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.learning-path-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-secondary);
+}
+
+.learning-path-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(57, 255, 20, 0.25);
+}
+
+.learning-path-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.learning-path-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.learning-path-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.learning-path-meta i {
+    color: var(--neon-green);
+}
+
+/* Modern Card System - User Dashboard Style */
+.modern-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+}
+
+.modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+    border-color: var(--cyber-glow);
+}
+
+/* Page Header - User Dashboard Style */
+.page-header {
+    text-align: center;
+    padding: 2rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+}
+
+.page-title {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.stats-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.stats-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4);
+}
+
+.page-description p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--glass-border);
+    position: relative;
+}
+
+.section-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.section-header .section-icon {
+    font-size: 1.8rem;
+    color: var(--cyber-glow);
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+}
+
+/* Learning Path Cards */
+.learning-path-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    padding: 32px 24px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.learning-path-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-secondary);
+}
+
+.learning-path-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(57, 255, 20, 0.25);
+}
+
+.learning-path-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+}
+
+.learning-path-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.learning-path-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.learning-path-meta i {
+    color: var(--success-color);
+    margin-right: 0.5rem;
+}
+
+/* Simulation Grid */
+.simulations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+    margin-bottom: 3rem;
+}
+
+/* Simulation Cards - User Dashboard Style */
+.simulation-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.simulation-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.simulation-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--cyber-glow);
+}
+
+.simulation-item:hover::before {
+    opacity: 1;
+}
+
+.simulation-item.locked {
+    opacity: 0.6;
+    filter: grayscale(30%);
+}
+
+/* Simulation Header */
+.simulation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px 24px 0;
+}
+
+.simulation-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.type-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-badge.enhanced {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.type-badge.core {
+    background: var(--gradient-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(57, 255, 20, 0.3);
+}
+
+.difficulty-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.difficulty-badge.beginner {
+    background: linear-gradient(135deg, #10B981, #34D399);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.difficulty-badge.intermediate {
+    background: linear-gradient(135deg, #F59E0B, #FBBF24);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.difficulty-badge.advanced {
+    background: linear-gradient(135deg, #EF4444, #F87171);
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+/* Simulation Content */
+.simulation-content {
+    padding: 1rem 24px 24px;
+}
+
+.simulation-name {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.simulation-desc {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.simulation-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.stat-item i {
+    color: var(--cyber-glow);
+    font-size: 0.9rem;
+}
+
+/* Action Buttons */
+.simulation-actions {
+    padding: 0 24px 24px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn.primary {
+    background: var(--gradient-primary);
+    color: var(--text-primary);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+}
+
+.action-btn.primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(0, 217, 255, 0.4);
+    color: white;
+}
+
+.action-btn.primary:hover::before {
+    left: 100%;
+}
+
+.action-btn.locked {
+    background: linear-gradient(135deg, #64748B, #94A3B8);
+    color: white;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-start-path {
+    background: var(--gradient-secondary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(57, 255, 20, 0.3);
+}
+
+.btn-start-path:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(57, 255, 20, 0.4);
+    color: white;
+}
+
+/* Admin Dashboard Button Styling */
+.btn-modern {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gradient-primary);
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+/* Animation on Load */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.simulation-item, .learning-path-card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.simulation-item:nth-child(2) { animation-delay: 0.1s; }
+.simulation-item:nth-child(3) { animation-delay: 0.2s; }
+.simulation-item:nth-child(4) { animation-delay: 0.3s; }
+.simulation-item:nth-child(5) { animation-delay: 0.4s; }
+.simulation-item:nth-child(6) { animation-delay: 0.5s; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .simulations-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .simulation-content, .simulation-header, .simulation-actions {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .page-header {
+        padding: 2rem 1rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* Enhanced Stats Cards similar to Admin Dashboard */
+.stat-card-modern {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.stat-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+}
+
+.stat-card-modern:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(0, 217, 255, 0.25);
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 12px 0;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    color: var(--cyber-glow);
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+}
+
+/* Page Statistics Summary matching Admin Dashboard KPI Cards */
+.page-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin: 2rem 0;
+}
+
+.stats-summary-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+.stats-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+}
+
+.stats-summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--cyber-glow);
+}
+
+.stats-summary-icon {
+    font-size: 2rem;
+    color: var(--neon-green);
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 10px var(--neon-green));
+}
+
+.stats-summary-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.stats-summary-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stats-summary-description {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Real-time indicator badges like admin dashboard */
+.real-time-badge {
+    background: var(--success-color);
+    color: var(--background);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+/* Admin Dashboard Animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes dataFlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+.data-flow {
+    animation: dataFlow 2s ease-in-out infinite;
+}
+
+/* Enhanced Page Statistics Grid */
+.page-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+/* Text Visibility Fixes */
+.stats-summary-label,
+.stats-summary-description,
+.page-title,
+.section-header h2,
+.simulation-item h3,
+.simulation-item p,
+.learning-path-card h3,
+.learning-path-card p,
+.page-description p,
+.simulation-title,
+.simulation-description,
+.action-btn,
+.btn-start-path {
+    color: var(--text-primary) !important;
+}
+
+.stats-summary-value {
+    color: var(--neon-green) !important;
+    font-weight: 700;
+}
+
+/* Ensure all buttons have proper white text */
+.action-btn.primary,
+.btn-start-path,
+.btn-modern {
+    color: white !important;
+}
+
+/* Dashboard Structure Matching User Dashboard */
+.dashboard-container {
+    padding: 0;
+    margin: 0;
+}
+</style>
+
+<div class="page-container">
+  <div class="dashboard-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">{{ course_title }}</h1>
+        <div class="stats-badge">
+            <i class="fas fa-chart-bar"></i>
+            <span class="stats-text">Total: {{ content.database|length + content.learning_paths|length }} items</span>
+        </div>
+        <div class="page-description">
+            <p>Explore interactive simulations designed to enhance your networking skills through hands-on practice and real-world scenarios.</p>
+        </div>
+    </div>
+
+            <!-- Admin Dashboard Style Statistics Grid -->
+            <div class="page-stats-grid">
+                <div class="stats-summary-card">
+                    <div class="real-time-badge">LIVE</div>
+                    <div class="stats-summary-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div class="stats-summary-value">{{ content.learning_paths|length }}</div>
+                    <div class="stats-summary-label">Learning Paths</div>
+                    <div class="stats-summary-description">Structured learning journeys</div>
+                </div>
+                <div class="stats-summary-card">
+                    <div class="real-time-badge">LIVE</div>
+                    <div class="stats-summary-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stats-summary-value">{{ content.database|length }}</div>
+                    <div class="stats-summary-label">Enhanced Simulations</div>
+                    <div class="stats-summary-description">Advanced interactive content</div>
+                </div>
+                <div class="stats-summary-card">
+                    <div class="real-time-badge">LIVE</div>
+                    <div class="stats-summary-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stats-summary-value">{{ content.database|length }}</div>
+                    <div class="stats-summary-label">Core Simulations</div>
+                    <div class="stats-summary-description">Essential skill building</div>
+                </div>
+                <div class="stats-summary-card">
+                    <div class="real-time-badge">LIVE</div>
+                    <div class="stats-summary-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stats-summary-value">{{ (content.database|length) * 100 if content.database else 0 }}%</div>
+                    <div class="stats-summary-label">Completion Available</div>
+                    <div class="stats-summary-description">Progress tracking enabled</div>
+                </div>
+            </div>
+
+            <!-- Learning Paths Section -->
+            <!-- Enhanced Simulations Section -->  
+            {% if content.database %}
+            <div class="section-header">
+                <i class="fas fa-database section-icon"></i>
+                <h2>Enhanced Simulations</h2>
+            </div>
+            <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 2rem;">Advanced interactive experiences with dynamic content</p>
+                <div class="simulations-grid">
+                    {% for sim in content.database %}
+                    <div class="simulation-item {% if sim.is_locked %}locked{% endif %}">
+                        <div class="simulation-header">
+                            <div class="simulation-badges">
+                                <span class="type-badge enhanced">Enhanced</span>
+                                {% if sim.difficulty %}
+                                <span class="difficulty-badge {{ sim.difficulty.lower() }}">{{ sim.difficulty }}</span>
+                                {% endif %}
+                            </div>
+                            {% if sim.is_locked %}
+                            <div class="lock-indicator">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="simulation-content">
+                            <h3 class="simulation-name">{{ sim.title }}</h3>
+                            <p class="simulation-desc">{{ sim.description[:120] }}{% if sim.description|length > 120 %}...{% endif %}</p>
+                            <div class="simulation-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ sim.estimated_duration }} min</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-users"></i>
+                                    <span>Individual</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="simulation-actions">
+                            {% if not sim.is_locked %}
+                            <a href="{{ sim.url }}" class="action-btn primary">
+                                <i class="fas fa-play"></i>
+                                <span>Start Simulation</span>
+                            </a>
+                            {% else %}
+                            <button class="action-btn locked" disabled>
+                                <i class="fas fa-lock"></i>
+                                <span>Locked</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+
+
+            <!-- Empty state -->
+            {% if not content.database and not content.learning_paths %}
+            <div class="modern-card text-center">
+                <i class="fas fa-inbox fa-3x mb-3" style="color: var(--cyber-glow);"></i>
+                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">No simulations available</h4>
+                <p style="color: var(--text-muted);">Check back later for new content!</p>
+            </div>
+            {% endif %}
+        </div>
+  </div>
+</div>
+
+<script>
+// Enhanced Interactive Features with Admin Dashboard Styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading animation to simulation items and learning path cards
+    const items = document.querySelectorAll('.simulation-item, .learning-path-card');
+    items.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            item.style.transition = 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Enhanced hover effects for modern cards
+    document.querySelectorAll('.modern-card, .learning-path-card, .simulation-item').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.borderColor = 'var(--cyber-glow)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.borderColor = 'var(--glass-border)';
+        });
+    });
+    
+    // Add click effects to action buttons
+    const actionButtons = document.querySelectorAll('.action-btn.primary, .btn-start-path');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Create ripple effect
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+            
+            button.style.position = 'relative';
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Add hover effects for simulation items
+    items.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            // Add subtle vibration effect
+            this.style.animation = 'subtle-pulse 0.3s ease-out';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.animation = '';
+        });
+    });
+    
+    // Stats counter animation
+    const statsText = document.querySelector('.stats-text');
+    if (statsText) {
+        const text = statsText.textContent;
+        const number = text.match(/\d+/);
+        if (number) {
+            const targetNum = parseInt(number[0]);
+            let currentNum = 0;
+            const increment = targetNum / 30;
+            
+            const counter = setInterval(() => {
+                currentNum += increment;
+                if (currentNum >= targetNum) {
+                    currentNum = targetNum;
+                    clearInterval(counter);
+                }
+                statsText.textContent = text.replace(/\d+/, Math.floor(currentNum));
+            }, 50);
+        }
+    }
+    
+    // Add dynamic background particles effect
+    function createParticle() {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+            position: fixed;
+            width: 2px;
+            height: 2px;
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            left: ${Math.random() * window.innerWidth}px;
+            top: ${window.innerHeight}px;
+            animation: float-up 8s linear forwards;
+        `;
+        
+        document.body.appendChild(particle);
+        
+        setTimeout(() => {
+            particle.remove();
+        }, 8000);
+    }
+    
+    // Create particles periodically
+    setInterval(createParticle, 2000);
+});
+
+// CSS animations for JavaScript effects
+const dynamicStyles = `
+@keyframes ripple {
+    to {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes subtle-pulse {
+    0% { transform: translateY(-12px) scale(1.02); }
+    50% { transform: translateY(-14px) scale(1.025); }
+    100% { transform: translateY(-12px) scale(1.02); }
+}
+
+@keyframes float-up {
+    to {
+        transform: translateY(-100vh);
+        opacity: 0;
+    }
+}
+`;
+
+// Inject dynamic styles
+const styleSheet = document.createElement('style');
+styleSheet.textContent = dynamicStyles;
+document.head.appendChild(styleSheet);
+</script>
+{% endblock %}

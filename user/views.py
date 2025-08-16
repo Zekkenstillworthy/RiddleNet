@@ -17,9 +17,7 @@ from flask_login import login_user, logout_user, current_user
 from .utils import user_login_required
 # Import media utilities
 from utils.media_utils import serve_optimized_video, serve_optimized_audio
-# Import networking content
-from networking1_corrected_content import get_networking1_content
-from networking2_updated_content import get_networking2_content
+# Static content imports removed - using database-driven content
 # Create blueprint as expected by main __init__.py
 user_bp = Blueprint('user', __name__)
 
@@ -77,121 +75,27 @@ def networking_1():
 
 @user_bp.route('/learning/networking-2')
 def networking_2():
-    if 'user_id' not in session:
-        return redirect(url_for('user.index', message='You need to log in first!'))
-    
-    user_id = session['user_id']
-    user = UserModel.query.get(user_id)
-    
-    # Import Networking2Progress model 
-    from user.models.networking2_progress import Networking2Progress
-    
-    # Get user's progress for all networking 2 lessons
-    progress = Networking2Progress.query.filter_by(user_id=user_id).all()
-    
-    # Format progress data for the template
-    progress_data = {}
-    for item in progress:
-        # Module format: "1" for module 1
-        # Lesson format: "1.1" for module 1, lesson 1
-        if item.module_id not in progress_data:
-            progress_data[item.module_id] = {
-                "lessons": {},
-                "completed_count": 0,
-                "total_lessons": 0
-            }
-        
-        progress_data[item.module_id]["lessons"][item.lesson_id] = {
-            "completed": item.completed,
-            "progress": item.progress_percent
-        }
-        
-        # Update module completion stats
-        progress_data[item.module_id]["total_lessons"] += 1
-        if item.completed:
-            progress_data[item.module_id]["completed_count"] += 1
-    
-    # Calculate overall module progress percentages
-    for module_id, module_data in progress_data.items():
-        if module_data["total_lessons"] > 0:
-            module_data["progress_percent"] = int((module_data["completed_count"] / module_data["total_lessons"]) * 100)
-        else:
-            module_data["progress_percent"] = 0
-    
-    return render_template('user/learning_networking2.html', 
-                          user=user, 
-                          progress_data=progress_data)
+    # Redirect to class 9 instead of the old learning page
+    return redirect('/class/9/')
 
+# Use universal dynamic class route
+# UNIVERSAL CLASS ROUTE - Using direct import since blueprint registration has issues
 @user_bp.route('/class/<int:class_id>')
-def class_detail(class_id):
-    if 'user_id' not in session:
-        return redirect(url_for('user.index', message='You need to log in first!'))
-    
-    user_id = session['user_id']
-    user = UserModel.query.get(user_id)
-    
-    # Find the class
-    class_obj = Class.query.get_or_404(class_id)
-    
-    # Check if user is enrolled in this class using direct query
-    from user.models import class_students
-    enrollment = db.session.query(class_students).filter(
-        class_students.c.class_id == class_id,
-        class_students.c.user_id == user_id
-    ).first()
-    
-    if not enrollment:
-        flash('You are not enrolled in this class', 'error')
-        return redirect(url_for('user.classes'))
-    
-    # Check if dynamic class route exists for this class
-    print(f"DEBUG: Class name is: '{class_obj.name}'")  # Debug line
-    print("DEBUG: Checking for dynamic class route")  # Debug line
-    
-    # Try to redirect to dynamic class route if it exists
+@user_bp.route('/class/<int:class_id>/')  # Handle trailing slash
+def class_detail_universal(class_id):
+    """Universal class route - imports the dynamic class detail function directly"""
     try:
-        from flask import current_app
-        template_dir = os.path.join(current_app.root_path, 'templates', 'user', 'classes')
-        template_file = f'class_{class_id}_{class_obj.code.lower().replace(" ", "_")}.html'
-        
-        if os.path.exists(os.path.join(template_dir, template_file)):
-            print(f"DEBUG: Found dynamic template: {template_file}")
-            # Redirect to dynamic class route
-            return redirect(f'/class/{class_id}/')
-        else:
-            print(f"DEBUG: No dynamic template found, using generic template")
+        # Import the universal class detail function
+        from user.routes.universal_class_routes import dynamic_class_detail
+        # Call it directly with the same parameters it expects
+        return dynamic_class_detail(class_id)
     except Exception as e:
-        print(f"DEBUG: Error checking for dynamic template: {e}")
-    
-    print("DEBUG: Using generic class template")  # Debug line
-    
-    # Format student data for template - use direct query
-    # We already imported class_students above
-    from sqlalchemy import select
-    
-    # Get student IDs enrolled in this class
-    student_ids = db.session.query(class_students.c.user_id).filter(
-        class_students.c.class_id == class_id
-    ).all()
-    
-    # Get student details
-    student_ids = [student_id[0] for student_id in student_ids]  # Extract IDs from result tuples
-    students = UserModel.query.filter(UserModel.id.in_(student_ids)).all()
-    
-    # Format for template
-    students_data = []
-    for student in students:
-        students_data.append({
-            'id': student.id,
-            'name': student.username,
-            'email': student.email if hasattr(student, 'email') else None
-        })
-    
-    return render_template(
-        'user/class_detail.html', 
-        class_data=class_obj.to_dict_with_question_groups(),
-        students=students_data
-    )
+        # Provide helpful error information for debugging
+        flash(f'Error loading class {class_id}: {str(e)}', 'error')
+        return redirect(url_for('user.classes'))
+
+# CLASS ROUTING NOW HANDLED BY UNIVERSAL TEMPLATE SYSTEM
+# All class details are handled by the dynamic universal template system in universal_class_routes.py
 
 @user_bp.route('/dashboard')
 def dashboard():
@@ -272,22 +176,24 @@ def leaderboard():
             if highest_score_entry:
                 # Create a simple object-like structure for the template
                 class LeaderboardEntry:
-                    def __init__(self, username, score, category, date_attempted, profile_image):
+                    def __init__(self, user_id, username, score, category, date_attempted, profile_img):
+                        self.user_id = user_id
                         self.username = username
                         self.score = score
                         self.category = category
                         self.date_attempted = date_attempted
-                        self.profile_image = profile_image
+                        self.profile_img = profile_img
                 
                 entry = LeaderboardEntry(
+                    user_id=user_id,
                     username=username,
                     score=highest_score_entry.score,
                     category=highest_score_entry.category,
                     date_attempted=highest_score_entry.date_attempted,
-                    profile_image=profile_img
+                    profile_img=profile_img
                 )
                 user_best_scores.append(entry)
-                print(f"DEBUG: Created entry for {username}: score={entry.score}, category={entry.category}, profile_img={profile_img}")
+                print(f"DEBUG: Created entry for {username}: score={entry.score}, category={entry.category}, profile_img='{profile_img}'")
         
         # Sort by score (highest first)
         leaderboard_data = sorted(user_best_scores, key=lambda x: x.score, reverse=True)
@@ -304,12 +210,13 @@ def leaderboard():
             category_leaderboards[f"{category}_leaderboard"] = (
                 db.session.query(
                     UserModel.username, 
+                    UserModel.profile_img,
                     func.max(UserScore.score).label('highest_score'), 
                     func.max(UserScore.date_attempted).label('latest_attempt')
                 )
                 .join(UserScore)
                 .filter(UserScore.category == category)
-                .group_by(UserModel.id, UserModel.username)
+                .group_by(UserModel.id, UserModel.username, UserModel.profile_img)
                 .order_by(func.max(UserScore.score).desc())
                 .all()
             )
@@ -621,8 +528,8 @@ def logout():
     from flask_login import logout_user
     logout_user()
     
-    # Clear the user's session
-    session.clear()
+    # CRITICAL FIX: Clear the user's session and namespace
+    session.clear()  # This will clear auth_namespace too
     flash('You have been logged out successfully', 'success')
     return redirect(url_for('user.index'))
 
@@ -814,7 +721,8 @@ def login():
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
       # Set user in session
     session['user_id'] = user.id
-    print(f"Login successful for user: {username}, user_id: {user.id}")
+    session['auth_namespace'] = 'user'  # CRITICAL FIX: Set user namespace
+    print(f"Login successful for user: {username}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")
     
     # Use Flask-Login for proper login and authentication
     # Remember=True ensures the user stays logged in for the session
@@ -1478,7 +1386,6 @@ def register_user_websocket_events():
         try:
             category = data.get('category', 'general')
             score = data.get('score', 0)
-            topic_id = data.get('topic_id')
             
             # Save score to database
             try:
@@ -1657,522 +1564,70 @@ def send_otp_email_direct(recipient_email, username, otp):
 
 @user_bp.route('/api/networking/track-progress', methods=['POST'])
 def track_networking_progress():
-    """Track user progress in networking lessons"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    
-    user_id = session['user_id']
-    data = request.json
-    
-    if not data or 'lesson_id' not in data or 'module_id' not in data:
-        return jsonify({"error": "Invalid data"}), 400
-    
-    lesson_id = data['lesson_id']
-    module_id = data['module_id']
-    completed = data.get('completed', False)
-    progress_percent = data.get('progress_percent', 0)
-    
-    # Import NetworkingProgress model
-    from user.models.networking_progress import NetworkingProgress
-    
-    # Check if progress record exists
-    progress = NetworkingProgress.query.filter_by(
-        user_id=user_id,
-        module_id=module_id,
-        lesson_id=lesson_id
-    ).first()
-    
-    if progress:
-        # Update existing record
-        progress.completed = completed
-        progress.progress_percent = progress_percent
-        progress.last_accessed = datetime.utcnow()
-    else:
-        # Create new record
-        progress = NetworkingProgress(
-            user_id=user_id,
-            module_id=module_id,
-            lesson_id=lesson_id,
-            completed=completed,
-            progress_percent=progress_percent
-        )
-        db.session.add(progress)
-    
-    try:
-        db.session.commit()
-        return jsonify({
-            "success": True,
-            "message": "Progress updated",
-            "data": {
-                "lesson_id": lesson_id,
-                "completed": completed,
-                "progress_percent": progress_percent
-            }
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+    """DEPRECATED: Track user progress in networking lessons - use progression API instead"""
+    return jsonify({"error": "This endpoint is deprecated. Use progression API instead."}), 404
 
 @user_bp.route('/api/networking/lesson/<lesson_id>')
 def get_networking_lesson(lesson_id):
-    """Get content for a specific networking lesson"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-      # Load lesson content from unified networking 1 module system
-    try:
-        import sys
-        import os
-        # Add the root directory to Python path
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
-        from networking1_corrected_content import get_networking1_content
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        return jsonify({"error": f"Networking 1 unified loader import failed: {str(e)}"}), 500
-      # Get specific lesson content
-    content = get_networking1_content()
-    lesson_data = content.get(lesson_id)
-    
-    # Check if the requested lesson exists
-    if lesson_data:
-        # Update user's progress for this lesson (assuming module is first digit)
-        from user.models.networking_progress import NetworkingProgress
-        
-        user_id = session['user_id']
-        module_id = lesson_id.split('.')[0]  # "1.2" -> "1"
-        
-        # Check if progress record exists
-        progress = NetworkingProgress.query.filter_by(
-            user_id=user_id,
-            module_id=module_id,
-            lesson_id=lesson_id
-        ).first()
-        
-        if not progress:
-            # Create new record with 50% progress (viewed but not completed)
-            progress = NetworkingProgress(
-                user_id=user_id,
-                module_id=module_id,
-                lesson_id=lesson_id,
-                completed=False,
-                progress_percent=50
-            )
-            db.session.add(progress)
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print(f"Error updating progress: {str(e)}")
-        
-        return jsonify({
-            "title": lesson_data["title"],
-            "content": lesson_data["content"]
-        })
-    else:
-        return jsonify({"error": "Lesson not found"}), 404
+    """DEPRECATED: Get content for a specific networking lesson - use dynamic class routes"""
+    return jsonify({"error": "Networking content now managed through database. Please use dynamic class routes."}), 404
+# =============================================================================
+# DYNAMIC SYSTEM REDIRECTS - All networking simulations now use database content
+# =============================================================================
 
-@user_bp.route('/api/networking2/lessons')
-def get_networking2_lessons():
-    """Get all networking 2 lesson content"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    
-    try:
-        lesson_content = get_networking2_content()
-        return jsonify(lesson_content)
-    except Exception as e:
-        print(f"Error loading networking2 content: {e}")
-        return jsonify({"error": f"Failed to load lessons: {str(e)}"}), 500
+@user_bp.route('/networking1-simulations')
+def networking1_simulations_redirect():
+    """Redirect to dynamic simulations dashboard"""
+    return redirect(url_for('dynamic_simulations.simulations_dashboard') + '?filter=networking1')
 
-@user_bp.route('/api/networking2/lesson/<lesson_id>')
-def get_networking2_lesson(lesson_id):
-    """Get content for a specific networking 2 lesson"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    
-    # Load lesson content from extracted module files
-    try:
-        import sys
-        import os
-        # Add the root directory to Python path
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
-        from networking2_updated_content import get_networking2_content
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        return jsonify({"error": f"Module loader import failed: {str(e)}"}), 500
-    
-    lesson_content = get_networking2_content()
-    
-    # Check if the requested lesson exists
-    if lesson_id in lesson_content:
-        # Update user's progress for this lesson (assuming module is first digit)
-        from user.models.networking2_progress import Networking2Progress
-        
-        user_id = session['user_id']
-        module_id = lesson_id.split('.')[0]  # "1.2" -> "1"
-        
-        # Check if progress record exists
-        progress = Networking2Progress.query.filter_by(
-            user_id=user_id,
-            module_id=module_id,
-            lesson_id=lesson_id
-        ).first()
-        
-        if not progress:
-            # Create new record with 50% progress (viewed but not completed)
-            progress = Networking2Progress(
-                user_id=user_id,
-                module_id=module_id,
-                lesson_id=lesson_id,
-                completed=False,
-                progress_percent=50
-            )
-            db.session.add(progress)
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print(f"Error updating progress: {str(e)}")
-        
-        return jsonify({
-            "title": lesson_content[lesson_id]["title"],
-            "content": lesson_content[lesson_id]["content"]
-        })
-    else:
-        return jsonify({"error": "Lesson not found"}), 404
+@user_bp.route('/networking2-simulations') 
+def networking2_simulations_redirect():
+    """Redirect to dynamic simulations dashboard"""
+    return redirect(url_for('dynamic_simulations.simulations_dashboard') + '?filter=networking2')
 
-@user_bp.route('/api/networking2/progress', methods=['POST'])
-def track_networking2_progress():
-    """Track user progress in networking 2 lessons"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    
-    user_id = session['user_id']
-    data = request.json
-    
-    if not data or 'lesson_id' not in data:
-        return jsonify({"error": "Invalid data"}), 400
-    
-    lesson_id = data['lesson_id']
-    # For Networking 2, derive module_id from lesson_id (e.g., "1.1" -> "1")
-    module_id = lesson_id.split('.')[0] if '.' in lesson_id else lesson_id
-    completed = data.get('completed', False)
-    progress_percent = data.get('progress_percent', 0)
-    
-    # Import Networking2Progress model
-    from user.models.networking2_progress import Networking2Progress
-    
-    # Check if progress record exists
-    progress = Networking2Progress.query.filter_by(
-        user_id=user_id,
-        module_id=module_id,
-        lesson_id=lesson_id
+@user_bp.route('/networking1-<simulation_name>-simulation')
+def networking1_simulation_redirect(simulation_name):
+    """Redirect networking1 simulations to dynamic system"""
+    # Find simulation by name
+    from admin.models.simulation import Simulation
+    sim = Simulation.query.filter(
+        Simulation.title.contains(simulation_name.replace('-', ' ').title()),
+        Simulation.simulation_type == 'Networking 1'
     ).first()
     
-    if progress:
-        # Update existing record
-        progress.completed = completed
-        progress.progress_percent = progress_percent
-        progress.last_accessed = datetime.utcnow()
+    if sim:
+        return redirect(url_for('dynamic_simulations.run_simulation', simulation_id=sim.id))
     else:
-        # Create new record
-        progress = Networking2Progress(
-            user_id=user_id,
-            module_id=module_id,
-            lesson_id=lesson_id,
-            completed=completed,
-            progress_percent=progress_percent
-        )
-        db.session.add(progress)
+        return redirect(url_for('dynamic_simulations.simulations_dashboard'))
+
+@user_bp.route('/networking2-<simulation_name>-simulation')
+def networking2_simulation_redirect(simulation_name):
+    """Redirect networking2 simulations to dynamic system"""
+    # Find simulation by name
+    from admin.models.simulation import Simulation
+    sim = Simulation.query.filter(
+        Simulation.title.contains(simulation_name.replace('-', ' ').title()),
+        Simulation.simulation_type == 'Networking 2'
+    ).first()
     
-    try:
-        db.session.commit()
-        return jsonify({
-            "success": True,
-            "message": "Progress updated",
-            "data": {
-                "lesson_id": lesson_id,
-                "completed": completed,
-                "progress_percent": progress_percent
-            }
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+    if sim:
+        return redirect(url_for('dynamic_simulations.run_simulation', simulation_id=sim.id))
+    else:
+        return redirect(url_for('dynamic_simulations.simulations_dashboard'))
 
-@user_bp.route('/api/networking1/structure')
-def get_networking1_structure():
-    """Get the complete structure of Networking 1 course with all 5 modules"""
-    if 'user_id' not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    try:
-        import sys
-        import os
-        # Add the root directory to Python path
-        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
-        from networking1_corrected_content import get_networking1_content
-    except ImportError as e:
-        return jsonify({"error": f"Networking content import failed: {str(e)}"}), 500
+
+@user_bp.route('/debug-auth')
+def debug_auth():
+    """Temporary debug route to test authentication"""
+    from utils.auth_utils import get_current_user_context
     
-    try:
-        # Get content directly from the function
-        content = get_networking1_content()
-        
-        # Build modules structure from content
-        modules_structure = {}
-        module_lessons = {}
-        
-        # Group lessons by module
-        for lesson_id, lesson_data in content.items():
-            module_id = lesson_id.split('.')[0]  # "1.1" -> "1"
-            module_key = f"module{module_id}"
-            
-            if module_key not in module_lessons:
-                module_lessons[module_key] = []
-            
-            module_lessons[module_key].append({
-                "id": lesson_id,
-                "title": lesson_data["title"]
-            })
-        
-        # Define module names
-        module_names = {
-            "module1": "Introduction to Computer Networks",
-            "module2": "Ethernet Technology", 
-            "module3": "Transport Layer and Network Services",
-            "module4": "Application Layer and Advanced Concepts"
-        }
-        
-        # Build structure
-        for module_key, lessons in module_lessons.items():
-            modules_structure[module_key] = {
-                "name": module_names.get(module_key, f"Module {module_key[6:]}"),
-                "lesson_count": len(lessons),
-                "lessons": lessons
-            }
-        
-        course_summary = {
-            "title": "Networking 1",
-            "total_modules": len(modules_structure),
-            "total_lessons": len(content)
-        }
-        
-        # Get user's progress for each module
-        from user.models.networking_progress import NetworkingProgress
-        user_id = session['user_id']
-        
-        user_progress = NetworkingProgress.query.filter_by(user_id=user_id).all()
-        progress_by_module = {}
-        
-        for progress in user_progress:
-            module_id = f"module{progress.module_id}"
-            if module_id not in progress_by_module:
-                progress_by_module[module_id] = {
-                    "completed_lessons": 0,
-                    "total_progress": 0,
-                    "lessons": {}
-                }
-            
-            progress_by_module[module_id]["lessons"][progress.lesson_id] = {
-                "completed": progress.completed,
-                "progress_percent": progress.progress_percent,
-                "last_accessed": progress.last_accessed.isoformat() if progress.last_accessed else None
-            }
-            
-            if progress.completed:
-                progress_by_module[module_id]["completed_lessons"] += 1
-        
-        # Calculate module completion percentages
-        for module_id, module_info in modules_structure.items():
-            if module_id in progress_by_module:
-                total_lessons = module_info["lesson_count"]
-                completed = progress_by_module[module_id]["completed_lessons"]
-                progress_by_module[module_id]["completion_percentage"] = round((completed / total_lessons) * 100, 1)
-            else:
-                progress_by_module[module_id] = {
-                    "completed_lessons": 0,
-                    "completion_percentage": 0.0,
-                    "lessons": {}
-                }
-        
-        return jsonify({
-            "status": "success",
-            "course_summary": course_summary,
-            "modules": modules_structure,
-            "user_progress": progress_by_module
-        })
-        
-    except Exception as e:
-        return jsonify({"error": f"Failed to get course structure: {str(e)}"}), 500
-
-# =============================================================================
-# Helper function for simulation routes
-# =============================================================================
-
-def get_user_from_session():
-    """Helper function to get user information from session"""
-    user = None
-    if 'user_id' in session:
-        user = UserModel.query.get(session['user_id'])
-    return user
-
-# NETWORKING 1 SIMULATION ROUTES
-@user_bp.route('/networking1-simulations')
-@user_login_required
-def networking1_simulations():
-    """Main Networking 1 simulations hub"""
-    user = get_user_from_session()
-    return render_template('user/networking1_simulations.html', user=user)
-
-@user_bp.route('/networking1-components-simulation')
-@user_login_required
-def networking1_components_simulation():
-    """Network Components Builder Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-components-simulation.html', user=user)
-
-@user_bp.route('/networking1-osi-simulation')
-@user_login_required
-def networking1_osi_simulation():
-    """OSI Model Interactive Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-osi-simulation.html', user=user)
-
-@user_bp.route('/networking1-tcpip-simulation')
-@user_login_required
-def networking1_tcpip_simulation():
-    """TCP/IP Protocol Stack Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-tcpip-simulation.html', user=user)
-
-@user_bp.route('/networking1-ethernet-simulation')
-@user_login_required
-def networking1_ethernet_simulation():
-    """Ethernet Technology Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-ethernet-simulation.html', user=user)
-
-@user_bp.route('/networking1-application-simulation')
-@user_login_required
-def networking1_application_simulation():
-    """Application Layer Protocols Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-application-simulation.html', user=user)
-
-@user_bp.route('/networking1-datalink-simulation')
-@user_login_required
-def networking1_datalink_simulation():
-    """Data Link Layer Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking1-datalink-simulation.html', user=user)
-
-# NETWORKING 2 SIMULATION ROUTES
-@user_bp.route('/networking2-simulations')
-@user_login_required
-def networking2_simulations():
-    """Main Networking 2 simulations hub"""
-    user = get_user_from_session()
-    return render_template('user/networking2_simulations.html', user=user)
-
-# Core Module Simulations
-@user_bp.route('/networking2-routing-fundamentals-simulation')
-@user_login_required
-def networking2_routing_fundamentals_simulation():
-    """Module 1: Routing Fundamentals Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-routing-fundamentals-simulation.html', user=user)
-
-@user_bp.route('/networking2-dynamic-routing-simulation')
-@user_login_required
-def networking2_dynamic_routing_simulation():
-    """Module 2: Dynamic Routing Protocols Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-dynamic-routing-simulation.html', user=user)
-
-@user_bp.route('/networking2-rip-simulation')
-@user_login_required
-def networking2_rip_simulation():
-    """Module 3: Routing Information Protocol (RIP) Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-rip-simulation.html', user=user)
-
-@user_bp.route('/networking2-eigrp-simulation')
-@user_login_required
-def networking2_eigrp_simulation():
-    """Module 4: Enhanced Interior Gateway Routing Protocol (EIGRP) Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-eigrp-simulation.html', user=user)
-
-@user_bp.route('/networking2-ospf-simulation')
-@user_login_required
-def networking2_ospf_simulation():
-    """Module 5: Open Shortest Path First (OSPF) Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-ospf-simulation.html', user=user)
-
-@user_bp.route('/networking2-security-simulation')
-@user_login_required
-def networking2_security_simulation():
-    """Module 6: Network Security and VPN Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-security-simulation.html', user=user)
-
-@user_bp.route('/networking2-vlan-simulation')
-@user_login_required
-def networking2_vlan_simulation():
-    """Module 7: VLAN Trunking Protocol Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-vlan-simulation.html', user=user)
-
-# Additional Specialized Simulations
-@user_bp.route('/networking2-routing-simulation')
-@user_login_required
-def networking2_routing_simulation():
-    """Advanced Routing Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-routing-simulation.html', user=user)
-
-@user_bp.route('/networking2-wireless-simulation')
-@user_login_required
-def networking2_wireless_simulation():
-    """Wireless Networks Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-wireless-simulation.html', user=user)
-
-@user_bp.route('/networking2-management-simulation')
-@user_login_required
-def networking2_management_simulation():
-    """Network Management Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-management-simulation.html', user=user)
-
-@user_bp.route('/networking2-vpn-simulation')
-@user_login_required
-def networking2_vpn_simulation():
-    """VPN Technologies Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-vpn-simulation.html', user=user)
-
-@user_bp.route('/networking2-troubleshooting-simulation')
-@user_login_required
-def networking2_troubleshooting_simulation():
-    """Network Troubleshooting Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-troubleshooting-simulation.html', user=user)
-
-@user_bp.route('/networking2-qos-simulation')
-@user_login_required
-def networking2_qos_simulation():
-    """QoS & Network Performance Analysis Simulation"""
-    user = get_user_from_session()
-    return render_template('user/networking2-qos-simulation.html', user=user)
-
+    # Manually set Gilbert in session for testing
+    user = UserModel.query.filter_by(username='Gilbert').first()
+    if user:
+        session['user_id'] = user.id
+        login_user(user)
+        print(f"[DEBUG] Manually logged in Gilbert (ID: {user.id})")
+    
+    # Test our debug function
+    context = get_current_user_context()
+    return f"<h2>Debug Authentication Results:</h2><pre>{context}</pre>"

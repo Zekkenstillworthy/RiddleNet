@@ -1,5 +1,5 @@
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
-from flask import request
+from flask import request, session
 from flask_login import current_user
 import functools
 import eventlet
@@ -16,7 +16,10 @@ socketio = SocketIO(
     ping_interval=25,
     max_http_buffer_size=1024 * 1024 * 10,
     logger=False,  # Disable verbose logging
-    engineio_logger=False  # Disable engine.io logging
+    engineio_logger=False,  # Disable engine.io logging
+    transports=['polling', 'websocket'],  # Allow both transports
+    allow_upgrades=True,  # Allow transport upgrades
+    cookie=None  # Disable cookies for better compatibility
 )
 
 # Store active user connections
@@ -43,48 +46,82 @@ def admin_only(f):
         
         # Enhanced admin check with multiple validation methods
         is_admin = False
+        admin_check_results = []
         
-        # Method 1: Check if user is instance of Admin model
+        # Method 1: Check if user is instance of Admin model (from admins table)
         try:
             from admin.models.user import Admin
             if isinstance(current_user, Admin):
                 is_admin = True
-                print(f"✅ Admin validation successful: {current_user.username} (Admin model instance)")
+                admin_check_results.append(f"✅ Admin model instance ({current_user.__tablename__})")
         except ImportError as e:
-            print(f"⚠️ Admin model import failed: {e}")
+            admin_check_results.append(f"⚠️ Admin model import failed: {e}")
         
-        # Method 2: Check for is_admin attribute
-        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
-            is_admin = True
-            print(f"✅ Admin validation successful: {current_user.username} (is_admin=True)")
-        
-        # Method 3: Check for role attribute
-        if not is_admin and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
-            is_admin = True
-            print(f"✅ Admin validation successful: {current_user.username} (role={current_user.role})")
-        
-        # Method 4: Check if user ID is in admin table
+        # Method 2: Check if user is instance of AdminUser model (from admin_users table)
         if not is_admin:
             try:
-                from admin.models.user import Admin
+                from admin.models.user import AdminUser
+                if isinstance(current_user, AdminUser):
+                    is_admin = True
+                    admin_check_results.append(f"✅ AdminUser model instance ({current_user.__tablename__})")
+            except ImportError:
+                admin_check_results.append("⚠️ AdminUser model not available")
+        
+        # Method 3: Check for is_admin attribute
+        if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
+            is_admin = True
+            admin_check_results.append(f"✅ is_admin=True")
+        
+        # Method 4: Check for admin role
+        if not is_admin and hasattr(current_user, 'role'):
+            role = getattr(current_user, 'role', '').lower()
+            if role in ['admin', 'super_admin', 'administrator']:
+                is_admin = True
+                admin_check_results.append(f"✅ Admin role: {current_user.role}")
+        
+        # Method 5: Check table name directly
+        if not is_admin and hasattr(current_user, '__tablename__'):
+            if current_user.__tablename__ in ['admins', 'admin_users']:
+                is_admin = True
+                admin_check_results.append(f"✅ Admin table: {current_user.__tablename__}")
+        
+        # Method 6: Check if user exists in admin tables by username
+        if not is_admin and hasattr(current_user, 'username'):
+            try:
+                from admin.models.user import Admin, AdminUser
+                # Check admins table
                 admin_user = Admin.query.filter_by(username=current_user.username).first()
                 if admin_user:
                     is_admin = True
-                    print(f"✅ Admin validation successful: {current_user.username} (found in admin table)")
+                    admin_check_results.append(f"✅ Found in admins table (ID: {admin_user.id})")
+                else:
+                    # Check admin_users table
+                    admin_user = AdminUser.query.filter_by(username=current_user.username).first()
+                    if admin_user and admin_user.is_admin:
+                        is_admin = True
+                        admin_check_results.append(f"✅ Found in admin_users table (ID: {admin_user.id})")
             except Exception as e:
-                print(f"⚠️ Admin table lookup failed: {e}")
+                admin_check_results.append(f"⚠️ Admin table lookup failed: {e}")
+        
+        # Log all validation results for debugging
+        print(f"🔍 Admin validation for user: {getattr(current_user, 'username', 'unknown')}")
+        print(f"   - User type: {type(current_user)}")
+        print(f"   - User ID: {getattr(current_user, 'id', 'N/A')}")
+        print(f"   - Table name: {getattr(current_user, '__tablename__', 'N/A')}")
+        print(f"   - Has is_admin: {hasattr(current_user, 'is_admin')}")
+        print(f"   - is_admin value: {getattr(current_user, 'is_admin', 'N/A')}")
+        print(f"   - Has role: {hasattr(current_user, 'role')}")
+        print(f"   - Role value: {getattr(current_user, 'role', 'N/A')}")
+        for result in admin_check_results:
+            print(f"   {result}")
         
         # Final validation
         if not is_admin:
-            print(f"❌ Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
-            print(f"   - User type: {type(current_user)}")
-            print(f"   - Has is_admin: {hasattr(current_user, 'is_admin')}")
-            print(f"   - is_admin value: {getattr(current_user, 'is_admin', 'N/A')}")
-            print(f"   - Has role: {hasattr(current_user, 'role')}")
-            print(f"   - Role value: {getattr(current_user, 'role', 'N/A')}")
+            print(f"❌ Admin validation failed - all methods returned false")
             emit('error', {'message': 'Unauthorized: Admin access required'})
             return
         
+        print(f"✅ Admin validation successful for: {current_user.username}")
         return f(*args, **kwargs)
     return wrapped
 
@@ -103,9 +140,21 @@ def register_handlers():
     def handle_connect():
         """Handle user connection"""
         try:
+            print(f"\n🔌 WebSocket Connection Attempt - Session ID: {request.sid}")
+            print(f"📍 Remote Address: {request.remote_addr}")
+            print(f"🔍 Request headers: {dict(request.headers)}")
+            print(f"🍪 Session data: {dict(session) if session else 'No session'}")
+            print(f"👤 Current user: {current_user}")
+            print(f"🔐 Is authenticated: {current_user.is_authenticated}")
+            print(f"🧩 User type: {type(current_user)}")
+            
             if current_user.is_authenticated:
                 user_id = current_user.id
                 username = getattr(current_user, 'username', f'User{user_id}')
+                
+                print(f"✅ Authenticated user detected: {username} (ID: {user_id})")
+                print(f"📋 User type: {type(current_user)}")
+                print(f"📋 User table: {getattr(current_user, '__tablename__', 'unknown')}")
                 
                 # Register with monitor
                 socket_monitor.register_connection(request.sid, user_id)
@@ -121,22 +170,85 @@ def register_handlers():
                 join_room(f'user_{user_id}')
                 join_room('all_users')
                 
-                # Check if user is admin and join admin room
+                # ENHANCED admin detection - support both Admin and AdminUser models
                 is_admin = False
-                if hasattr(current_user, 'is_admin') and current_user.is_admin:
-                    is_admin = True
-                else:
-                    # Alternative check for Admin model
-                    try:
-                        from admin.models.user import Admin
-                        if isinstance(current_user, Admin):
+                admin_detection_log = []
+                
+                # Method 1: Check if user is instance of Admin model (from admins table)
+                try:
+                    from admin.models.user import Admin
+                    if isinstance(current_user, Admin):
+                        is_admin = True
+                        admin_detection_log.append("✅ Admin model instance detected")
+                        print(f"🔐 Admin detected: {username} (instance of Admin model)")
+                except ImportError:
+                    admin_detection_log.append("⚠️ Admin model import failed")
+                
+                # Method 2: Check if user is instance of AdminUser model (from admin_users table)
+                try:
+                    from admin.models.user import AdminUser
+                    if isinstance(current_user, AdminUser):
+                        is_admin = True
+                        admin_detection_log.append("✅ AdminUser model instance detected")
+                        print(f"🔐 AdminUser detected: {username} (instance of AdminUser model)")
+                    else:
+                        # Check if user exists in AdminUser table by ID or username
+                        admin_by_id = AdminUser.query.filter_by(id=user_id).first()
+                        admin_by_username = AdminUser.query.filter_by(username=username).first()
+                        
+                        if admin_by_id and admin_by_id.is_admin:
                             is_admin = True
-                    except ImportError:
-                        pass
+                            admin_detection_log.append(f"✅ Found in AdminUser table by ID (Admin: {admin_by_id.is_admin})")
+                            print(f"🔐 Admin found in AdminUser table by ID: {username}")
+                        elif admin_by_username and admin_by_username.is_admin:
+                            is_admin = True
+                            admin_detection_log.append(f"✅ Found in AdminUser table by username (Admin: {admin_by_username.is_admin})")
+                            print(f"🔐 Admin found in AdminUser table by username: {username}")
+                        else:
+                            admin_detection_log.append("❌ Not found in AdminUser table or not admin")
+                except ImportError:
+                    admin_detection_log.append("⚠️ AdminUser model import failed")
+                except Exception as e:
+                    admin_detection_log.append(f"❌ AdminUser check error: {e}")
+                
+                # Method 3: Check if regular User has admin privileges (is_admin field)
+                try:
+                    if hasattr(current_user, 'is_admin') and current_user.is_admin:
+                        is_admin = True
+                        admin_detection_log.append("✅ is_admin=True on current_user")
+                        print(f"🔐 Admin privileges detected: {username} (is_admin=True)")
+                except:
+                    admin_detection_log.append("❌ is_admin check failed")
+                
+                # Method 4: Check if user_type indicates admin role
+                try:
+                    if hasattr(current_user, 'user_type') and current_user.user_type in ['admin', 'instructor']:
+                        is_admin = True
+                        admin_detection_log.append(f"✅ Admin user_type: {current_user.user_type}")
+                        print(f"🔐 Admin role detected: {username} (user_type={getattr(current_user, 'user_type', 'unknown')})")
+                except:
+                    admin_detection_log.append("❌ user_type check failed")
+                
+                # Method 5: Check tablename for admin tables
+                try:
+                    if hasattr(current_user, '__tablename__') and current_user.__tablename__ in ['admin_users', 'admins']:
+                        is_admin = True
+                        admin_detection_log.append(f"✅ Admin table: {current_user.__tablename__}")
+                        print(f"🔐 Admin table detected: {username} (table: {current_user.__tablename__})")
+                except:
+                    admin_detection_log.append("❌ tablename check failed")
+                
+                # Log all admin detection results
+                print(f"🔍 Admin detection results for {username}:")
+                for log_entry in admin_detection_log:
+                    print(f"   {log_entry}")
+                print(f"🎯 Final admin status: {'ADMIN' if is_admin else 'USER'}")
                 
                 if is_admin:
                     join_room('admin_room')
                     print(f"✅ Admin {username} joined admin room")
+                else:
+                    print(f"🔍 Regular user {username} - not joining admin room")
                 
                 print(f"✅ User {username} (ID: {user_id}) connected via WebSocket")
                 
@@ -144,14 +256,20 @@ def register_handlers():
                 emit('user_connected', {
                     'user_id': user_id,
                     'username': username,
-                    'timestamp': datetime.utcnow().isoformat()
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'is_admin': is_admin
                 }, room='admin_room')
                 
             else:
                 print("❌ Unauthenticated user attempted WebSocket connection")
+                print(f"📋 Anonymous user: {current_user.is_anonymous}")
+                print(f"📋 Session keys: {list(session.keys()) if 'session' in globals() else 'No session'}")
                 disconnect()
         except Exception as e:
             print(f"❌ Error in connect handler: {str(e)}")
+            import traceback
+            print(f"📋 Traceback: {traceback.format_exc()}")
+            disconnect()
             socket_monitor.register_error(request.sid, e)
 
     @socketio.on('disconnect')

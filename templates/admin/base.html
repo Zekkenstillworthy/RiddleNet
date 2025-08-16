@@ -6,9 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    {% block head %}{% endblock %}
-</head>
-<style>
+    
+    <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
     @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
 
@@ -245,8 +244,7 @@
     #sidebar li:nth-child(4),
     #sidebar li:nth-child(5),
     #sidebar li:nth-child(6),    #sidebar li:nth-child(7),
-    #sidebar li:nth-child(8),
-    #sidebar li:nth-child(9) {
+    #sidebar li:nth-child(8) {
         display: none;
         margin-left: 12px;
         border-left: 2px solid rgba(59, 130, 246, 0.3);
@@ -257,8 +255,7 @@
     #sidebar li:nth-child(5) a,
     #sidebar li:nth-child(6) a,
     #sidebar li:nth-child(7) a,
-    #sidebar li:nth-child(8) a,
-    #sidebar li:nth-child(9) a {
+    #sidebar li:nth-child(8) a {
         padding-left: 24px;
         font-size: 13px;
         color: var(--text-muted);
@@ -270,8 +267,7 @@
     #sidebar li:nth-child(5) a:hover,
     #sidebar li:nth-child(6) a:hover,
     #sidebar li:nth-child(7) a:hover,
-    #sidebar li:nth-child(8) a:hover,
-    #sidebar li:nth-child(9) a:hover {
+    #sidebar li:nth-child(8) a:hover {
         color: var(--text-secondary);
         background: rgba(59, 130, 246, 0.05);
     }
@@ -446,12 +442,15 @@
     }
 </style>
 
+{% block head %}{% endblock %}
+</head>
+
 <body>
     {% block body %}
     <nav id="sidebar">
         <div class="logo-details">
             <div class="logo-icon">
-            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; , height: 60px;">
+            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
             </div>
             <div class="logo-name">
                 <span>RiddleNet</span>
@@ -490,15 +489,9 @@
                 </a>
             </li>
             <li {% if active_page=='module_builder' %}class="active" {% endif %}>
-                <a href="{{ url_for('dashboard.module_builder') }}">
+                <a href="{{ url_for('dashboard.class_content_manager') }}">
                     <i class='bx bx-layer'></i>
-                    <span>Module Builder</span>
-                </a>
-            </li>
-            <li {% if active_page=='learning_path_builder' %}class="active" {% endif %}>
-                <a href="{{ url_for('learning_path.learning_path_builder') }}">
-                    <i class='bx bx-sitemap'></i>
-                    <span>Learning Path Builder</span>
+                    <span>Class Content Manager</span>
                 </a>
             </li>
             <li {% if active_page=='questions' %}class="active" {% endif %}>
@@ -542,6 +535,12 @@
                     <span>Real-Time</span>
                 </a>
             </li>
+            <li {% if active_page=='websocket_test_center' %}class="active" {% endif %}>
+                <a href="{{ url_for('dashboard.websocket_test_center') }}">
+                    <i class='bx bx-test-tube'></i>
+                    <span>WebSocket Test</span>
+                </a>
+            </li>
             <li>
                 <a href="{{ url_for('auth.logout') }}">
                     <i class='bx bx-log-out'></i>
@@ -560,9 +559,8 @@
             document.querySelector('#sidebar li:nth-child(4)'), // Simulation Builder
             document.querySelector('#sidebar li:nth-child(5)'), // Manage Simulations
             document.querySelector('#sidebar li:nth-child(6)'), // Module Builder
-            document.querySelector('#sidebar li:nth-child(7)'), // Path Designer
-            document.querySelector('#sidebar li:nth-child(8)'), // Questions
-            document.querySelector('#sidebar li:nth-child(9)')  // Essay Responses
+            document.querySelector('#sidebar li:nth-child(7)'), // Questions
+            document.querySelector('#sidebar li:nth-child(8)')  // Essay Responses
         ];
 
         function toggleDropdown(element) {
@@ -666,6 +664,13 @@
             }
         });
     </script>
+    
+    <!-- Admin WebSocket Enabler - Load First -->
+    <script src="{{ url_for('static', filename='js/admin-websocket-enabler.js') }}"></script>
+    
+    <!-- Admin WebSocket Debug Utilities -->
+    <script src="{{ url_for('static', filename='js/admin-socket-debug.js') }}"></script>
+    
     {% endblock %}
 </body>
 

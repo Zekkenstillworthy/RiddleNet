@@ -1,0 +1,483 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit' if lesson else 'Create' }} Lesson - {{ module.title }}{% endblock %}
+
+{% block head %}
+<style>
+.lesson-form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 32px;
+    border: 1px solid var(--border);
+}
+
+.form-section {
+    margin-bottom: 32px;
+}
+
+.section-title {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title i {
+    color: var(--cyber-glow);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--cyber-glow);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.form-textarea.large {
+    min-height: 200px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.form-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--cyber-glow);
+}
+
+.checkbox-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.simulation-selector {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.simulation-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.simulation-item:last-child {
+    border-bottom: none;
+}
+
+.simulation-item:hover {
+    background: var(--bg-primary);
+}
+
+.simulation-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--cyber-glow);
+}
+
+.simulation-info {
+    flex: 1;
+}
+
+.simulation-title {
+    color: var(--text-primary);
+    font-weight: 500;
+    margin: 0 0 4px 0;
+}
+
+.simulation-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.form-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.btn-primary {
+    background: var(--cyber-glow);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.form-help {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.breadcrumb-link {
+    color: var(--cyber-glow);
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    text-decoration: underline;
+}
+
+.objectives-input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.objective-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.objective-item:last-child {
+    margin-bottom: 0;
+}
+
+.objective-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.remove-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.add-btn {
+    background: var(--cyber-glow);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .lesson-form-container {
+        padding: 20px;
+        margin: 0 16px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div class="breadcrumb">
+                <a href="{{ url_for('class_controller.class_overview', class_id=class_obj.id) }}" class="breadcrumb-link">
+                    <i class="fas fa-book"></i> {{ class_obj.name }}
+                </a>
+                <i class="fas fa-chevron-right"></i>
+                <span>{{ module.title }}</span>
+                <i class="fas fa-chevron-right"></i>
+                <span>{{ action }} Lesson</span>
+            </div>
+            <h1 class="page-title">
+                <i class="fas fa-graduation-cap"></i>
+                {{ action }} Lesson
+            </h1>
+            <p class="page-description">
+                {{ action }} lesson for Module {{ module.module_number }}: {{ module.title }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="lesson-form-container">
+        <form method="POST" action="{{ url_for('lesson.update_lesson', lesson_id=lesson.id) if lesson else url_for('lesson.create_lesson', class_id=class_obj.id, module_id=module.id) }}">
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    Basic Information
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Lesson Title *</label>
+                        <input type="text" name="title" class="form-input" 
+                               value="{{ lesson.title if lesson else '' }}" 
+                               placeholder="Enter lesson title" required>
+                        <div class="form-help">A clear, descriptive title for this lesson</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lesson Number</label>
+                        <input type="text" name="lesson_number" class="form-input" 
+                               value="{{ lesson.lesson_number if lesson else suggested_number }}" 
+                               placeholder="e.g. 1.1">
+                        <div class="form-help">Optional lesson numbering (e.g. 1.1, 1.2)</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <textarea name="description" class="form-textarea" 
+                              placeholder="Describe what students will learn in this lesson" required>{{ lesson.description if lesson else '' }}</textarea>
+                    <div class="form-help">Brief overview of the lesson content and goals</div>
+                </div>
+            </div>
+
+            <!-- Learning Content -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-book-open"></i>
+                    Learning Content
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Learning Objectives</label>
+                    <textarea name="learning_objectives" class="form-textarea" 
+                              placeholder="Enter each learning objective on a new line">{{ lesson.learning_objectives|join('\n') if lesson and lesson.learning_objectives else '' }}</textarea>
+                    <div class="form-help">One objective per line. What will students be able to do after this lesson?</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Key Concepts</label>
+                    <textarea name="key_concepts" class="form-textarea" 
+                              placeholder="Enter each key concept on a new line">{{ lesson.key_concepts|join('\n') if lesson and lesson.key_concepts else '' }}</textarea>
+                    <div class="form-help">One concept per line. Important terms and ideas covered in this lesson</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Lesson Content</label>
+                    <textarea name="content" class="form-textarea large" 
+                              placeholder="Enter the main lesson content (HTML supported)">{{ lesson.content if lesson else '' }}</textarea>
+                    <div class="form-help">Main lesson content. HTML tags are supported for formatting</div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Estimated Duration (minutes)</label>
+                        <input type="number" name="estimated_duration" class="form-input" 
+                               value="{{ lesson.estimated_duration if lesson else 30 }}" 
+                               min="1" max="300">
+                        <div class="form-help">Expected time for students to complete this lesson</div>
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="requires_simulation" name="requires_simulation_completion" 
+                           class="form-checkbox" {{ 'checked' if lesson and lesson.requires_simulation_completion else '' }}>
+                    <label for="requires_simulation" class="checkbox-label">
+                        Require simulation completion to mark lesson as complete
+                    </label>
+                </div>
+            </div>
+
+            <!-- Attached Simulations -->
+            {% if simulations %}
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-flask"></i>
+                    Attached Simulations
+                </h3>
+                
+                <div class="simulation-selector">
+                    {% for simulation in simulations %}
+                    <div class="simulation-item">
+                        <input type="checkbox" name="simulation_ids" value="{{ simulation.id }}" 
+                               class="simulation-checkbox"
+                               {{ 'checked' if lesson and simulation.id in (lesson.simulation_ids or []) else '' }}>
+                        <div class="simulation-info">
+                            <h4 class="simulation-title">{{ simulation.title }}</h4>
+                            <p class="simulation-description">
+                                {{ simulation.description[:100] }}{{ '...' if simulation.description|length > 100 else '' }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-help">Select simulations that students should complete as part of this lesson</div>
+            </div>
+            {% endif %}
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{{ url_for('class_controller.class_overview', class_id=class_obj.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </a>
+                
+                {% if lesson %}
+                <a href="{{ url_for('lesson_editor.advanced_editor', lesson_id=lesson.id) }}" class="btn btn-primary">
+                    <i class="fas fa-magic"></i>
+                    Advanced Editor
+                </a>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    {{ action }} Lesson
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus title field
+    const titleInput = document.querySelector('input[name="title"]');
+    if (titleInput && !titleInput.value) {
+        titleInput.focus();
+    }
+    
+    // Auto-resize textareas
+    const textareas = document.querySelectorAll('.form-textarea');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        
+        // Initial resize
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const title = document.querySelector('input[name="title"]').value.trim();
+        const description = document.querySelector('textarea[name="description"]').value.trim();
+        
+        if (!title) {
+            alert('Please enter a lesson title');
+            e.preventDefault();
+            return;
+        }
+        
+        if (!description) {
+            alert('Please enter a lesson description');
+            e.preventDefault();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -17,6 +17,7 @@ class QuestionGroup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -36,5 +37,5 @@ class QuestionGroup(db.Model):
             'name': self.name,
             'description': self.description,
             'question_count': len(self.questions),
-            'class_count': len(self.classes) if hasattr(self, 'classes') else 0
+            'class_count': self.classes.count() if hasattr(self, 'classes') else 0
         }
