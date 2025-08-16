@@ -1,10 +1,8 @@
-# This file provides backward compatibility for user model imports
-# All models are now properly organized in their respective modules
+# Backward compatibility module for user model imports
+# All models are organized in user.models.* - use direct imports when possible
 
-# Import db instance first to avoid circular imports
 from __init__ import db
 
-# For backward compatibility, provide access to commonly used models
 def __getattr__(name):
     """Dynamically import models to avoid circular imports"""
     if name == 'User':
@@ -19,8 +17,5 @@ def __getattr__(name):
     elif name == 'class_students':
         from admin.models.class_model import class_students
         return class_students
-    elif name == 'Class':
-        from admin.models.class_model import Class
-        return Class
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

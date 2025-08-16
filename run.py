@@ -79,31 +79,46 @@ def load_user(user_id):
         print(f"❌ Invalid user_id: {user_id}")
         return None
     
-    # CRITICAL FIX: Check session namespace first to prevent cross-contamination
+    # CRITICAL FIX: Check session namespace FIRST - this works for both HTTP and WebSocket
     auth_namespace = session.get('auth_namespace', 'unknown')
+    request_path = getattr(request, 'path', '') if request else ''
     
-    # If we're on an admin route, ONLY load admin users
-    if request and request.path.startswith('/admin'):
-        # Admin routes: ONLY load from admin table
-        if auth_namespace == 'admin':
-            admin = db.session.get(Admin, user_id_int)
-            if admin:
-                print(f"🔐 Admin route: Loaded admin {admin.username} (ID: {user_id_int})")
-                return admin
-        
-        print(f"❌ Admin route: No admin found for ID {user_id_int} or wrong namespace: {auth_namespace}")
+    print(f"🔍 User loader: ID={user_id_int}, namespace={auth_namespace}, path={request_path}")
+    
+    # PRIORITY 1: Load admin user if session indicates admin auth (works for WebSocket + HTTP)
+    if auth_namespace == 'admin':
+        admin = db.session.get(Admin, user_id_int)
+        if admin:
+            print(f"🔐 Admin session: Loaded admin {admin.username} (ID: {user_id_int})")
+            return admin
+        print(f"❌ Admin session: No admin found for ID {user_id_int}")
         return None
     
-    # If we're on a user route, ONLY load user accounts
+    # PRIORITY 2: Load user if session indicates user auth
+    elif auth_namespace == 'user':
+        user = db.session.get(User, user_id_int)
+        if user:
+            print(f"👤 User session: Loaded user {user.username} (ID: {user_id_int})")
+            return user
+        print(f"❌ User session: No user found for ID {user_id_int}")
+        return None
+    
+    # FALLBACK: Use path-based detection if no namespace in session (legacy support)
+    elif request_path.startswith('/admin'):
+        admin = db.session.get(Admin, user_id_int)
+        if admin:
+            print(f"🔐 Admin path fallback: Loaded admin {admin.username} (ID: {user_id_int})")
+            return admin
+        print(f"❌ Admin path fallback: No admin found for ID {user_id_int}")
+        return None
+    
     else:
-        # User routes: ONLY load from user table
-        if auth_namespace == 'user':
-            user = db.session.get(User, user_id_int)
-            if user:
-                print(f"👤 User route: Loaded user {user.username} (ID: {user_id_int})")
-                return user
-        
-        print(f"❌ User route: No user found for ID {user_id_int} or wrong namespace: {auth_namespace}")
+        # Try user table as final fallback
+        user = db.session.get(User, user_id_int)
+        if user:
+            print(f"👤 User path fallback: Loaded user {user.username} (ID: {user_id_int})")
+            return user
+        print(f"❌ No user found in any table for ID {user_id_int}")
         return None
 
 @app.before_request
@@ -330,6 +345,22 @@ try:
     print("   • /simulation/api/<id>/restart - Restart simulation")
 except Exception as e:
     print(f"❌ Error registering enhanced user simulation routes: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Register Simulation Template Routes
+print("\n=== Registering Simulation Template Routes ===")
+try:
+    from user.routes.simulation_template_routes import simulation_template_bp
+    app.register_blueprint(simulation_template_bp)
+    print("✅ Simulation template routes registered successfully")
+    print("   • /simulation-template/ - Interactive simulation template")
+    print("   • /simulation-template/api/progress - Update simulation progress")
+    print("   • /simulation-template/api/hint - Get contextual hints")
+    print("   • /simulation-template/api/validate - Validate user actions")
+    print("   • /simulation-template/api/achievements - Get available achievements")
+except Exception as e:
+    print(f"❌ Error registering simulation template routes: {e}")
     import traceback
     traceback.print_exc()
 

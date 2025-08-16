@@ -167,6 +167,17 @@ def get_class_students(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/classes/<int:class_id>/assignments', methods=['GET'])
+def get_class_assignments(class_id):
+    """Get assignments for a specific class"""
+    try:
+        cls = Class.query.get_or_404(class_id)
+        # TODO: Query actual assignments from database when assignment model is created
+        # For now, return empty array
+        return jsonify([])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @api_bp.route('/generate-class-code', methods=['GET'])
 def generate_class_code():
     """Generate a unique class code"""
@@ -303,4 +314,344 @@ def get_module_preview_data(class_id, module_id):
         return jsonify({
             'success': False,
             'error': f'Failed to fetch module data: {str(e)}'
+        }), 500
+
+# Enhanced UI Components API Endpoints
+@api_bp.route('/deadlines', methods=['GET'])
+def get_deadlines():
+    """Get all deadlines for enhanced deadline management"""
+    try:
+        # For now, return empty array since we don't have deadline models yet
+        return jsonify({
+            'success': True,
+            'deadlines': []
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/settings', methods=['GET'])
+def get_collaboration_settings():
+    """Get collaboration settings for enhanced collaboration management"""
+    try:
+        # For now, return empty array since we don't have collaboration models yet
+        return jsonify({
+            'success': True,
+            'settings': []
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/settings', methods=['POST'])
+def save_collaboration_settings():
+    """Save collaboration settings"""
+    try:
+        data = request.get_json()
+        # For now, just return success
+        return jsonify({
+            'success': True,
+            'message': 'Collaboration settings saved'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Live Collaboration Monitoring API Endpoints
+@api_bp.route('/collaboration/stats', methods=['GET'])
+def get_collaboration_stats():
+    """Get real-time collaboration statistics"""
+    try:
+        # Import lobby manager to get real stats
+        try:
+            from services.troubleshooting_lobbies import lobby_manager
+            active_lobbies = lobby_manager.get_public_lobbies()
+            
+            active_groups = len(active_lobbies)
+            total_participants = sum(len(lobby.get('participants', [])) for lobby in active_lobbies)
+            
+            # Calculate average duration
+            avg_duration = "0m"
+            if active_lobbies:
+                durations = []
+                for lobby_data in active_lobbies:
+                    if 'created_at' in lobby_data:
+                        try:
+                            from datetime import datetime
+                            created_time = datetime.fromisoformat(lobby_data['created_at'].replace('Z', '+00:00'))
+                            duration_minutes = int((datetime.utcnow() - created_time.replace(tzinfo=None)).total_seconds() / 60)
+                            durations.append(duration_minutes)
+                        except:
+                            pass
+                if durations:
+                    avg_duration = f"{int(sum(durations) / len(durations))}m"
+                    
+            return jsonify({
+                'success': True,
+                'activeGroups': active_groups,
+                'totalParticipants': total_participants,
+                'avgDuration': avg_duration
+            })
+            
+        except ImportError:
+            # Lobby manager not available - return zero stats
+            return jsonify({
+                'success': True,
+                'activeGroups': 0,
+                'totalParticipants': 0,
+                'avgDuration': '0m'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/active', methods=['GET'])
+def get_active_collaborations():
+    """Get list of active collaboration sessions"""
+    try:
+        # Import lobby manager to get real active collaborations
+        try:
+            from services.troubleshooting_lobbies import lobby_manager
+            active_lobbies = lobby_manager.get_public_lobbies()
+            
+            collaborations = []
+            for lobby_data in active_lobbies:
+                # Calculate duration
+                duration = "0m"
+                if 'created_at' in lobby_data:
+                    try:
+                        from datetime import datetime
+                        created_time = datetime.fromisoformat(lobby_data['created_at'].replace('Z', '+00:00'))
+                        duration_minutes = int((datetime.utcnow() - created_time.replace(tzinfo=None)).total_seconds() / 60)
+                        duration = f"{duration_minutes}m"
+                    except:
+                        pass
+                
+                collaborations.append({
+                    'id': lobby_data.get('id'),
+                    'activity_name': lobby_data.get('name', 'Unknown Session'),
+                    'participants': [p.get('username', 'Unknown') for p in lobby_data.get('participants', [])],
+                    'duration': duration,
+                    'status': 'active',
+                    'type': 'troubleshooting',
+                    'scenario': lobby_data.get('scenario_type', 'Unknown')
+                })
+            
+            return jsonify(collaborations)
+            
+        except ImportError:
+            # Lobby manager not available - return empty array
+            return jsonify([])
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/details', methods=['GET'])
+def get_collaboration_details(collaboration_id):
+    """Get detailed information about a specific collaboration session"""
+    try:
+        # Import lobby manager to get real collaboration details
+        try:
+            from services.troubleshooting_lobbies import lobby_manager
+            lobby = lobby_manager.get_lobby(collaboration_id)
+            
+            if not lobby:
+                return jsonify({
+                    'success': False,
+                    'error': 'Collaboration session not found'
+                }), 404
+            
+            # Convert lobby to detailed format
+            collaboration_details = {
+                'id': lobby.id,
+                'activity_name': lobby.name,
+                'participants': [
+                    {
+                        'id': pid,
+                        'username': pdata.get('username', 'Unknown'),
+                        'profile_image': pdata.get('profile_image')
+                    }
+                    for pid, pdata in lobby.participants.items()
+                ],
+                'status': 'active',
+                'type': 'troubleshooting',
+                'scenario': lobby.scenario_type,
+                'created_at': lobby.created_at.isoformat() if hasattr(lobby, 'created_at') else None,
+                'max_participants': lobby.max_participants
+            }
+            
+            return jsonify(collaboration_details)
+            
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Collaboration system not available'
+            }), 503
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/chat', methods=['GET'])
+def get_collaboration_chat(collaboration_id):
+    """Get chat history for a collaboration session"""
+    try:
+        # Import lobby manager to get real chat history
+        try:
+            from services.troubleshooting_lobbies import lobby_manager
+            lobby = lobby_manager.get_lobby(collaboration_id)
+            
+            if not lobby:
+                return jsonify({
+                    'success': False,
+                    'error': 'Collaboration session not found'
+                }), 404
+            
+            # Get chat history from lobby
+            chat_messages = []
+            if hasattr(lobby, 'chat_history') and lobby.chat_history:
+                chat_messages = [
+                    {
+                        'timestamp': msg.get('timestamp'),
+                        'user_name': msg.get('username', 'Unknown'),
+                        'message': msg.get('message', ''),
+                        'user_id': msg.get('user_id')
+                    }
+                    for msg in lobby.chat_history
+                ]
+            
+            return jsonify(chat_messages)
+            
+        except ImportError:
+            return jsonify([])
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/screen', methods=['GET'])
+def get_collaboration_screen(collaboration_id):
+    """Get screen sharing information for a collaboration session"""
+    try:
+        # TODO: Query screen sharing data from database
+        return jsonify({
+            'active': False
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/files', methods=['GET'])
+def get_collaboration_files(collaboration_id):
+    """Get shared files for a collaboration session"""
+    try:
+        # TODO: Query shared files from database
+        return jsonify([])
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/progress', methods=['GET'])
+def get_collaboration_progress(collaboration_id):
+    """Get progress tracking for a collaboration session"""
+    try:
+        # TODO: Query progress data from database
+        return jsonify({
+            'participants': []
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/join', methods=['POST'])
+def join_collaboration(collaboration_id):
+    """Allow admin to join a collaboration session"""
+    try:
+        # TODO: Implement admin join functionality
+        return jsonify({
+            'success': False,
+            'error': 'Collaboration session not found or not active'
+        }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/<int:collaboration_id>/end', methods=['POST'])
+def end_collaboration(collaboration_id):
+    """End a collaboration session"""
+    try:
+        # Import lobby manager to end the collaboration
+        try:
+            from services.troubleshooting_lobbies import lobby_manager
+            lobby = lobby_manager.get_lobby(collaboration_id)
+            
+            if not lobby:
+                return jsonify({
+                    'success': False,
+                    'error': 'Collaboration session not found or already ended'
+                }), 404
+            
+            # Close the lobby (this will kick out all participants)
+            result = lobby_manager.close_lobby(collaboration_id)
+            
+            if result:
+                return jsonify({
+                    'success': True,
+                    'message': 'Collaboration session ended successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to end collaboration session'
+                }), 500
+            
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Collaboration system not available'
+            }), 503
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/files/<int:file_id>/download', methods=['GET'])
+def download_collaboration_file(file_id):
+    """Download a shared collaboration file"""
+    try:
+        # TODO: Implement file download functionality
+        return jsonify({
+            'success': False,
+            'error': 'File not found'
+        }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500

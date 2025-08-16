@@ -78,27 +78,27 @@ def create_app(config=None):
     app.config["MAIL_MAX_EMAILS"] = None
     mail.init_app(app)
     
-    # Define the user loader function
-    @login_manager.user_loader
-    def load_user(user_id):
-        # Make sure we're in an application context
-        if not current_app:
-            return None
-            
-        # Try different import paths to find User model
-        try:
-            # Import as UserModel to avoid conflicts
-            from user.models import User as UserModel
-            with app.app_context():
-                return UserModel.query.get(int(user_id))
-        except (ImportError, AttributeError):
-            try:
-                # Import as UserModel to avoid conflicts
-                from user.models.user import User as UserModel
-                with app.app_context():
-                    return UserModel.query.get(int(user_id))
-            except (ImportError, AttributeError):
-                return None
+    # Define the user loader function - DISABLED: Using main user_loader in run.py
+    # @login_manager.user_loader
+    # def load_user(user_id):
+    #     # Make sure we're in an application context
+    #     if not current_app:
+    #         return None
+    #         
+    #     # Try different import paths to find User model
+    #     try:
+    #         # Import as UserModel to avoid conflicts
+    #         from user.models import User as UserModel
+    #         with app.app_context():
+    #             return UserModel.query.get(int(user_id))
+    #     except (ImportError, AttributeError):
+    #         try:
+    #             # Import as UserModel to avoid conflicts
+    #             from user.models.user import User as UserModel
+    #             with app.app_context():
+    #                 return UserModel.query.get(int(user_id))
+    #         except (ImportError, AttributeError):
+    #             return None
 
     # Register blueprints
     try:

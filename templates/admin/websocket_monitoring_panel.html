@@ -1,0 +1,898 @@
+<!-- Admin WebSocket Monitoring Panel -->
+<!-- This provides a comprehensive real-time monitoring interface for admins -->
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-broadcast-tower me-2"></i>
+                        Real-Time WebSocket Monitoring
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <span id="websocket-connection-status" class="badge bg-secondary">Connecting...</span>
+                        <button class="btn btn-sm btn-primary" onclick="refreshMonitoring()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Connection Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-users text-primary fa-2x mb-2"></i>
+                                <h5>Connected Users</h5>
+                                <div id="connected-users-count" class="stat-value">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-home text-success fa-2x mb-2"></i>
+                                <h5>Active Rooms</h5>
+                                <div id="active-rooms-count" class="stat-value">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-comments text-info fa-2x mb-2"></i>
+                                <h5>Messages/Min</h5>
+                                <div id="messages-per-minute" class="stat-value">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card text-center">
+                                <i class="fas fa-clock text-warning fa-2x mb-2"></i>
+                                <h5>Avg Latency</h5>
+                                <div id="average-latency" class="stat-value">0ms</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Real-Time Activity Tabs -->
+                    <ul class="nav nav-tabs" id="monitoringTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="live-events-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#live-events" type="button" role="tab">
+                                <i class="fas fa-stream me-1"></i> Live Events
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="active-users-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#active-users" type="button" role="tab">
+                                <i class="fas fa-users me-1"></i> Active Users
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="collaboration-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#collaboration" type="button" role="tab">
+                                <i class="fas fa-users-cog me-1"></i> Collaboration Sessions
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="performance-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#performance" type="button" role="tab">
+                                <i class="fas fa-chart-line me-1"></i> Performance
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="debug-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#debug" type="button" role="tab">
+                                <i class="fas fa-bug me-1"></i> Debug
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="monitoringTabsContent">
+                        
+                        <!-- Live Events Tab -->
+                        <div class="tab-pane fade show active" id="live-events" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                                <h5>Real-Time Event Stream</h5>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="clearEventStream()">
+                                        <i class="fas fa-trash"></i> Clear
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="toggleEventStream()" id="toggle-stream-btn">
+                                        <i class="fas fa-pause"></i> Pause
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="live-event-stream" class="event-stream">
+                                <div class="text-muted text-center py-4">
+                                    <i class="fas fa-stream fa-2x mb-2"></i>
+                                    <p>Waiting for real-time events...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Users Tab -->
+                        <div class="tab-pane fade" id="active-users" role="tabpanel">
+                            <div class="mt-3">
+                                <h5>Currently Active Users</h5>
+                                <div id="active-users-list" class="user-list">
+                                    <div class="text-muted text-center py-4">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>Loading active users...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Collaboration Sessions Tab -->
+                        <div class="tab-pane fade" id="collaboration" role="tabpanel">
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>Active Collaboration Sessions</h5>
+                                    <div class="collaboration-stats">
+                                        <span class="badge bg-primary" id="active-groups-count">0 Groups</span>
+                                        <span class="badge bg-success" id="total-participants-count">0 Participants</span>
+                                    </div>
+                                </div>
+                                <div id="collaboration-sessions-list" class="collaboration-list">
+                                    <div class="text-muted text-center py-4">
+                                        <i class="fas fa-users-cog fa-2x mb-2"></i>
+                                        <p>No active collaboration sessions</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Tab -->
+                        <div class="tab-pane fade" id="performance" role="tabpanel">
+                            <div class="mt-3">
+                                <h5>WebSocket Performance Metrics</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <canvas id="latencyChart" width="400" height="200"></canvas>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <canvas id="messageRateChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h6>System Alerts</h6>
+                                    <div id="performance-alerts" class="alert-list">
+                                        <div class="text-muted text-center py-3">
+                                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                            <p>All systems operating normally</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Debug Tab -->
+                        <div class="tab-pane fade" id="debug" role="tabpanel">
+                            <div class="mt-3">
+                                <h5>WebSocket Debug Information</h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Connection Details</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="connection-details">
+                                                    <div class="loading text-center">
+                                                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Room Information</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="room-information">
+                                                    <div class="loading text-center">
+                                                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Manual Testing</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <div class="mb-3">
+                                                        <label for="test-event" class="form-label">Event Name</label>
+                                                        <input type="text" class="form-control" id="test-event" 
+                                                               placeholder="e.g., test_ping" value="ping">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="test-data" class="form-label">Event Data (JSON)</label>
+                                                        <textarea class="form-control" id="test-data" rows="3" 
+                                                                  placeholder='{"timestamp": 1234567890}'>{}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Actions</label>
+                                                    <div class="d-grid gap-2">
+                                                        <button class="btn btn-primary" onclick="sendTestEvent()">
+                                                            <i class="fas fa-paper-plane"></i> Send Event
+                                                        </button>
+                                                        <button class="btn btn-secondary" onclick="pingServer()">
+                                                            <i class="fas fa-satellite-dish"></i> Ping Server
+                                                        </button>
+                                                        <button class="btn btn-info" onclick="checkConnection()">
+                                                            <i class="fas fa-stethoscope"></i> Check Connection
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-3">
+                                                <h6>Test Results</h6>
+                                                <div id="test-results" class="bg-light p-3 rounded">
+                                                    <div class="text-muted">No tests run yet</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WebSocket Monitoring JavaScript -->
+<script>
+class AdminWebSocketMonitor {
+    constructor() {
+        this.adminWS = window.adminWebSocketManager;
+        this.eventStreamPaused = false;
+        this.latencyData = [];
+        this.messageRateData = [];
+        this.maxDataPoints = 50;
+        this.charts = {};
+        
+        this.init();
+    }
+    
+    init() {
+        console.log('🔍 Initializing Admin WebSocket Monitor');
+        
+        if (!this.adminWS) {
+            console.error('❌ AdminWebSocketManager not found');
+            this.showError('WebSocket manager not available');
+            return;
+        }
+        
+        this.setupEventListeners();
+        this.initializeCharts();
+        this.startMonitoring();
+        this.updateConnectionStatus();
+    }
+    
+    setupEventListeners() {
+        // Listen for WebSocket events
+        this.adminWS.on('websocket_stats_updated', (data) => {
+            this.updateStatistics(data.stats);
+        });
+        
+        this.adminWS.on('connection_diagnostic_results', (data) => {
+            this.updateConnectionDetails(data);
+        });
+        
+        this.adminWS.on('performance_alert_broadcast', (data) => {
+            this.addPerformanceAlert(data);
+        });
+        
+        this.adminWS.on('collaboration_started', (data) => {
+            this.addCollaborationSession(data);
+        });
+        
+        this.adminWS.on('collaboration_ended', (data) => {
+            this.removeCollaborationSession(data.id);
+        });
+        
+        this.adminWS.on('collaboration_updated', (data) => {
+            this.updateCollaborationSession(data);
+        });
+        
+        // Listen for stats updates
+        this.adminWS.on('stats_updated', (data) => {
+            this.updateCollaborationStats(data);
+        });
+        
+        // Listen for user activity
+        this.adminWS.on('user_activity_update', (data) => {
+            this.updateUserInList(data);
+        });
+        
+        // Listen for active users
+        this.adminWS.on('active_users_update', (data) => {
+            this.updateActiveUsersList(data.users);
+        });
+        
+        // Listen for all events for the live stream
+        this.setupLiveEventStream();
+    }
+    
+    setupLiveEventStream() {
+        const originalEmit = this.adminWS.socket.emit.bind(this.adminWS.socket);
+        const originalOn = this.adminWS.socket.on.bind(this.adminWS.socket);
+        
+        // Intercept incoming events
+        const eventTypes = [
+            'user_login', 'user_logout', 'simulation_started', 'simulation_completed',
+            'assignment_submitted', 'content_created', 'collaboration_started',
+            'module_created', 'notification_sent', 'admin_notification'
+        ];
+        
+        eventTypes.forEach(eventType => {
+            this.adminWS.on(eventType, (data) => {
+                this.addLiveEvent(eventType, data, 'incoming');
+            });
+        });
+    }
+    
+    updateConnectionStatus() {
+        const statusElement = document.getElementById('websocket-connection-status');
+        if (this.adminWS && this.adminWS.connected) {
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'badge bg-success';
+        } else {
+            statusElement.textContent = 'Disconnected';
+            statusElement.className = 'badge bg-danger';
+        }
+    }
+    
+    updateStatistics(stats) {
+        document.getElementById('connected-users-count').textContent = stats.connected_users || 0;
+        document.getElementById('active-rooms-count').textContent = stats.active_rooms || 0;
+        document.getElementById('messages-per-minute').textContent = stats.messages_per_minute || 0;
+        document.getElementById('average-latency').textContent = (stats.avg_latency || 0) + 'ms';
+        
+        // Update charts
+        this.updateLatencyChart(stats.avg_latency || 0);
+        this.updateMessageRateChart(stats.messages_per_minute || 0);
+    }
+    
+    addLiveEvent(eventType, data, direction = 'incoming') {
+        if (this.eventStreamPaused) return;
+        
+        const eventStream = document.getElementById('live-event-stream');
+        
+        // Clear the placeholder if it exists
+        const placeholder = eventStream.querySelector('.text-muted');
+        if (placeholder) {
+            eventStream.innerHTML = '';
+        }
+        
+        const timestamp = new Date().toLocaleTimeString();
+        const eventElement = document.createElement('div');
+        eventElement.className = `event-item border-start border-4 border-${direction === 'incoming' ? 'primary' : 'success'} ps-3 mb-2`;
+        
+        eventElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-bold text-${direction === 'incoming' ? 'primary' : 'success'}">
+                        <i class="fas fa-${direction === 'incoming' ? 'arrow-down' : 'arrow-up'} me-1"></i>
+                        ${eventType}
+                    </div>
+                    <div class="text-muted small">${JSON.stringify(data, null, 2).substring(0, 100)}${JSON.stringify(data, null, 2).length > 100 ? '...' : ''}</div>
+                </div>
+                <small class="text-muted">${timestamp}</small>
+            </div>
+        `;
+        
+        eventStream.insertBefore(eventElement, eventStream.firstChild);
+        
+        // Keep only the latest 50 events
+        while (eventStream.children.length > 50) {
+            eventStream.removeChild(eventStream.lastChild);
+        }
+    }
+    
+    updateActiveUsersList(users) {
+        const usersList = document.getElementById('active-users-list');
+        
+        if (!users || users.length === 0) {
+            usersList.innerHTML = `
+                <div class="text-muted text-center py-4">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <p>No active users</p>
+                </div>
+            `;
+            return;
+        }
+        
+        usersList.innerHTML = users.map(user => `
+            <div class="user-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div class="d-flex align-items-center">
+                    <img src="${user.profile_img || '/static/img/default-avatar.png'}" 
+                         class="rounded-circle me-3" width="40" height="40" alt="${user.username}">
+                    <div>
+                        <div class="fw-bold">${user.username}</div>
+                        <div class="text-muted small">${user.current_activity || 'Dashboard'}</div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-success">Online</span>
+                    <div class="text-muted small">${user.connected_at ? formatTimeAgo(user.connected_at) : 'Recently'}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    updateCollaborationStats(stats) {
+        document.getElementById('active-groups-count').textContent = `${stats.activeGroups || 0} Groups`;
+        document.getElementById('total-participants-count').textContent = `${stats.totalParticipants || 0} Participants`;
+    }
+    
+    addCollaborationSession(session) {
+        const sessionsList = document.getElementById('collaboration-sessions-list');
+        
+        // Clear placeholder if it exists
+        const placeholder = sessionsList.querySelector('.text-muted');
+        if (placeholder) {
+            sessionsList.innerHTML = '';
+        }
+        
+        const sessionElement = document.createElement('div');
+        sessionElement.className = 'collaboration-session p-3 border rounded mb-2';
+        sessionElement.id = `session-${session.id}`;
+        
+        sessionElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-bold">${session.activity_name}</div>
+                    <div class="text-muted small">
+                        <i class="fas fa-users me-1"></i>
+                        ${Array.isArray(session.participants) ? session.participants.join(', ') : 'No participants'}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="fas fa-clock me-1"></i>
+                        Duration: ${session.duration || '0m'}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-${session.status === 'active' ? 'success' : 'secondary'}">${session.status}</span>
+                    <div class="text-muted small">${session.type || 'Unknown'}</div>
+                </div>
+            </div>
+        `;
+        
+        sessionsList.appendChild(sessionElement);
+    }
+    
+    updateCollaborationSession(session) {
+        const sessionElement = document.getElementById(`session-${session.id}`);
+        if (sessionElement) {
+            // Update the session content
+            sessionElement.querySelector('.fw-bold').textContent = session.activity_name;
+            const participantsList = sessionElement.querySelector('.fa-users').parentElement;
+            participantsList.innerHTML = `
+                <i class="fas fa-users me-1"></i>
+                ${Array.isArray(session.participant_names) ? session.participant_names.join(', ') : 'No participants'}
+            `;
+        } else {
+            // Session doesn't exist, add it
+            this.addCollaborationSession(session);
+        }
+    }
+    
+    removeCollaborationSession(sessionId) {
+        const sessionElement = document.getElementById(`session-${sessionId}`);
+        if (sessionElement) {
+            sessionElement.remove();
+        }
+        
+        // Check if we need to show placeholder
+        const sessionsList = document.getElementById('collaboration-sessions-list');
+        if (sessionsList.children.length === 0) {
+            sessionsList.innerHTML = `
+                <div class="text-muted text-center py-4">
+                    <i class="fas fa-users-cog fa-2x mb-2"></i>
+                    <p>No active collaboration sessions</p>
+                </div>
+            `;
+        }
+    }
+    
+    addPerformanceAlert(alert) {
+        const alertsList = document.getElementById('performance-alerts');
+        
+        // Clear placeholder if it exists
+        const placeholder = alertsList.querySelector('.text-muted');
+        if (placeholder) {
+            alertsList.innerHTML = '';
+        }
+        
+        const alertElement = document.createElement('div');
+        alertElement.className = `alert alert-${alert.severity === 'critical' ? 'danger' : 'warning'} d-flex align-items-center`;
+        
+        alertElement.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div class="flex-grow-1">
+                <strong>${alert.metric_name}:</strong> ${alert.message}
+            </div>
+            <small class="text-muted">${formatTimeAgo(alert.timestamp)}</small>
+        `;
+        
+        alertsList.insertBefore(alertElement, alertsList.firstChild);
+        
+        // Keep only the latest 10 alerts
+        while (alertsList.children.length > 10) {
+            alertsList.removeChild(alertsList.lastChild);
+        }
+    }
+    
+    initializeCharts() {
+        // Initialize Chart.js charts
+        if (typeof Chart !== 'undefined') {
+            this.initLatencyChart();
+            this.initMessageRateChart();
+        }
+    }
+    
+    initLatencyChart() {
+        const ctx = document.getElementById('latencyChart').getContext('2d');
+        this.charts.latency = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Latency (ms)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Latency (ms)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    initMessageRateChart() {
+        const ctx = document.getElementById('messageRateChart').getContext('2d');
+        this.charts.messageRate = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Messages per Minute',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Messages/min'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    updateLatencyChart(latency) {
+        if (!this.charts.latency) return;
+        
+        const now = new Date().toLocaleTimeString();
+        const chart = this.charts.latency;
+        
+        chart.data.labels.push(now);
+        chart.data.datasets[0].data.push(latency);
+        
+        // Keep only the latest data points
+        if (chart.data.labels.length > this.maxDataPoints) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+        }
+        
+        chart.update('none');
+    }
+    
+    updateMessageRateChart(messageRate) {
+        if (!this.charts.messageRate) return;
+        
+        const now = new Date().toLocaleTimeString();
+        const chart = this.charts.messageRate;
+        
+        chart.data.labels.push(now);
+        chart.data.datasets[0].data.push(messageRate);
+        
+        // Keep only the latest data points
+        if (chart.data.labels.length > this.maxDataPoints) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+        }
+        
+        chart.update('none');
+    }
+    
+    updateConnectionDetails(data) {
+        const connectionDetails = document.getElementById('connection-details');
+        connectionDetails.innerHTML = `
+            <div class="connection-detail">
+                <strong>Status:</strong> <span class="badge bg-${data.results.connection_status === 'active' ? 'success' : 'danger'}">${data.results.connection_status}</span>
+            </div>
+            <div class="connection-detail">
+                <strong>Transport:</strong> ${data.results.transport}
+            </div>
+            <div class="connection-detail">
+                <strong>Latency:</strong> ${data.results.latency}
+            </div>
+            <div class="connection-detail">
+                <strong>Rooms:</strong> ${data.results.rooms.join(', ')}
+            </div>
+        `;
+    }
+    
+    startMonitoring() {
+        // Start periodic updates
+        setInterval(() => {
+            this.updateConnectionStatus();
+            this.requestStatsUpdate();
+        }, 5000); // Update every 5 seconds
+    }
+    
+    requestStatsUpdate() {
+        if (this.adminWS && this.adminWS.connected) {
+            this.adminWS.emit('websocket_connection_stats', {
+                request_time: Date.now()
+            });
+        }
+    }
+    
+    showError(message) {
+        const statusElement = document.getElementById('websocket-connection-status');
+        statusElement.textContent = 'Error';
+        statusElement.className = 'badge bg-danger';
+        statusElement.title = message;
+    }
+}
+
+// Utility functions for the monitoring panel
+function refreshMonitoring() {
+    console.log('🔄 Refreshing monitoring data');
+    
+    if (window.adminWebSocketMonitor) {
+        window.adminWebSocketMonitor.requestStatsUpdate();
+        window.adminWebSocketMonitor.updateConnectionStatus();
+    }
+}
+
+function clearEventStream() {
+    const eventStream = document.getElementById('live-event-stream');
+    eventStream.innerHTML = `
+        <div class="text-muted text-center py-4">
+            <i class="fas fa-stream fa-2x mb-2"></i>
+            <p>Event stream cleared</p>
+        </div>
+    `;
+}
+
+function toggleEventStream() {
+    const button = document.getElementById('toggle-stream-btn');
+    
+    if (window.adminWebSocketMonitor) {
+        window.adminWebSocketMonitor.eventStreamPaused = !window.adminWebSocketMonitor.eventStreamPaused;
+        
+        if (window.adminWebSocketMonitor.eventStreamPaused) {
+            button.innerHTML = '<i class="fas fa-play"></i> Resume';
+            button.className = 'btn btn-sm btn-outline-success';
+        } else {
+            button.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            button.className = 'btn btn-sm btn-outline-primary';
+        }
+    }
+}
+
+function sendTestEvent() {
+    const eventName = document.getElementById('test-event').value;
+    const eventData = document.getElementById('test-data').value;
+    
+    try {
+        const data = JSON.parse(eventData);
+        
+        if (window.adminWebSocketManager) {
+            window.adminWebSocketManager.emit(eventName, data);
+            
+            document.getElementById('test-results').innerHTML = `
+                <div class="text-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Event "${eventName}" sent successfully at ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+        } else {
+            throw new Error('WebSocket manager not available');
+        }
+    } catch (error) {
+        document.getElementById('test-results').innerHTML = `
+            <div class="text-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function pingServer() {
+    if (window.adminWebSocketManager && window.adminWebSocketManager.connected) {
+        const startTime = Date.now();
+        
+        window.adminWebSocketManager.emit('ping', { timestamp: startTime });
+        
+        window.adminWebSocketManager.socket.once('pong', (data) => {
+            const endTime = Date.now();
+            const latency = endTime - startTime;
+            
+            document.getElementById('test-results').innerHTML = `
+                <div class="text-success">
+                    <i class="fas fa-satellite-dish me-2"></i>
+                    Ping successful! Latency: ${latency}ms
+                </div>
+            `;
+        });
+    } else {
+        document.getElementById('test-results').innerHTML = `
+            <div class="text-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                WebSocket not connected
+            </div>
+        `;
+    }
+}
+
+function checkConnection() {
+    if (window.adminWebSocketManager) {
+        const connectionInfo = {
+            connected: window.adminWebSocketManager.connected,
+            currentPage: window.adminWebSocketManager.currentPage,
+            adminRooms: Array.from(window.adminWebSocketManager.adminRooms),
+            reconnectAttempts: window.adminWebSocketManager.reconnectAttempts
+        };
+        
+        document.getElementById('test-results').innerHTML = `
+            <div class="text-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Connection Status:</strong><br>
+                Connected: ${connectionInfo.connected}<br>
+                Current Page: ${connectionInfo.currentPage}<br>
+                Admin Rooms: ${connectionInfo.adminRooms.join(', ')}<br>
+                Reconnect Attempts: ${connectionInfo.reconnectAttempts}
+            </div>
+        `;
+    }
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return `${Math.floor(diffMins / 1440)}d ago`;
+}
+
+// Initialize the monitoring system
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for AdminWebSocketManager to be available
+    setTimeout(() => {
+        if (window.adminWebSocketManager) {
+            window.adminWebSocketMonitor = new AdminWebSocketMonitor();
+            console.log('✅ Admin WebSocket Monitor initialized');
+        } else {
+            console.warn('⚠️ AdminWebSocketManager not available for monitoring');
+        }
+    }, 2000);
+});
+</script>
+
+<style>
+.event-stream {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.event-item {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.collaboration-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.collaboration-session {
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.collaboration-session:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.connection-detail {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.connection-detail:last-child {
+    border-bottom: none;
+}
+
+.alert-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.loading {
+    padding: 2rem;
+    color: #6c757d;
+}
+</style>

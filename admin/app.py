@@ -45,23 +45,24 @@ class AdminApp:
         login_manager.login_view = '/admin/login'
         login_manager.login_message_category = 'info'
         
-        @login_manager.user_loader
-        def load_user(user_id):
-            # Try to load from Admin model first (since admin login is being used)
-            from admin.models.user import Admin, User
-              # Check if the ID starts with 'admin-' which would indicate it's an admin
-            if isinstance(user_id, str) and user_id.startswith('admin-'):
-                admin_id = int(user_id.replace('admin-', ''))
-                return db.session.get(Admin, admin_id)
-            
-            # Try Admin table first
-            admin = db.session.get(Admin, int(user_id))
-            if admin:
-                return admin
-                
-                # If not found in Admin, try User table
-                user = db.session.get(User, int(user_id))
-                return user
+        # DISABLED: Using main user_loader in run.py to avoid conflicts
+        # @login_manager.user_loader
+        # def load_user(user_id):
+        #     # Try to load from Admin model first (since admin login is being used)
+        #     from admin.models.user import Admin, User
+        #       # Check if the ID starts with 'admin-' which would indicate it's an admin
+        #     if isinstance(user_id, str) and user_id.startswith('admin-'):
+        #         admin_id = int(user_id.replace('admin-', ''))
+        #         return db.session.get(Admin, admin_id)
+        #     
+        #     # Try Admin table first
+        #     admin = db.session.get(Admin, int(user_id))
+        #     if admin:
+        #         return admin
+        #         
+        #         # If not found in Admin, try User table
+        #         user = db.session.get(User, int(user_id))
+        #         return user
                 
     def register_template_filters(self):
         """Register custom template filters."""

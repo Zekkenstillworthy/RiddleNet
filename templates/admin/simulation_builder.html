@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/simulation-builder.css') }}">
+<!-- Enhanced UI Components -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/enhanced-dropdowns.css') }}">
+<script src="{{ url_for('static', filename='js/enhanced-tooltip-system.js') }}"></script>
 <style>
     .builder-container {
         max-width: 1400px;
@@ -695,28 +699,42 @@
                         Simulation Settings
                     </h3>
                     <div class="form-group">
-                        <label class="form-label">Simulation Name</label>
+                        <label class="form-label form-label-with-tooltip">
+                            Simulation Name
+                            <span class="help-icon" data-tooltip="Give your simulation a clear, descriptive name that students will understand" data-tooltip-position="top">?</span>
+                        </label>
                         <input type="text" class="form-input" placeholder="Enter simulation name" id="simName">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" id="simCategory">
-                            <option value="networking1">Networking 1</option>
-                            <option value="networking2">Networking 2</option>
-                            <option value="security">Security</option>
-                            <option value="troubleshooting">Troubleshooting</option>
+                        <label class="form-label form-label-with-tooltip">
+                            Category
+                            <span class="help-icon" data-tooltip="Choose the subject area this simulation covers - affects how it's organized and displayed" data-tooltip-position="top">?</span>
+                        </label>
+                        <select class="form-select" id="simCategory" data-enhance="true">
+                            <option value="networking1" data-category="networking1">Networking 1</option>
+                            <option value="networking2" data-category="networking2">Networking 2</option>
+                            <option value="subnetting" data-category="networking1">Subnetting</option>
+                            <option value="switching" data-category="networking1">Switching</option>
+                            <option value="routing" data-category="networking2">Routing</option>
+                            <option value="troubleshooting" data-category="troubleshooting">Troubleshooting</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Difficulty Level</label>
-                        <select class="form-select" id="simDifficulty">
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
+                        <label class="form-label form-label-with-tooltip">
+                            Difficulty Level
+                            <span class="help-icon" data-tooltip="Set appropriate difficulty - beginners see simpler interfaces, advanced users get more complex scenarios" data-tooltip-position="top">?</span>
+                        </label>
+                        <select class="form-select" id="simDifficulty" data-enhance="true">
+                            <option value="beginner" data-difficulty="beginner">Beginner</option>
+                            <option value="intermediate" data-difficulty="intermediate">Intermediate</option>
+                            <option value="advanced" data-difficulty="advanced">Advanced</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Description</label>
+                        <label class="form-label form-label-with-tooltip">
+                            Description
+                            <span class="help-icon" data-tooltip="Explain what students will learn and do in this simulation - appears on simulation cards" data-tooltip-position="top">?</span>
+                        </label>
                         <textarea class="form-textarea" placeholder="Describe the simulation objectives and learning goals" id="simDescription"></textarea>
                     </div>
                 </div>
@@ -1095,9 +1113,9 @@
         const simulationData = {
             basic: {
                 title: simName,
-                type: 'interactive',
+                simulation_type: simCategory.charAt(0).toUpperCase() + simCategory.slice(1).replace(/(\d+)/, ' $1'), // Convert "networking1" to "Networking 1"
                 category: simCategory,
-                difficulty: simDifficulty,
+                difficulty: simDifficulty.charAt(0).toUpperCase() + simDifficulty.slice(1), // Capitalize difficulty
                 description: simDescription,
                 duration: 30
             },
@@ -1119,6 +1137,8 @@
             }
         };
 
+        console.log('Sending simulation data:', simulationData);
+
         // Save to database via API
         fetch('/admin/simulation/api/create', {
             method: 'POST',
@@ -1135,12 +1155,20 @@
                 // Notify via WebSocket for real-time updates
                 if (typeof io !== 'undefined') {
                     io.emit('simulation_created', {
-                        simulation_id: data.simulation.id,
+                        simulation_id: data.simulation?.id || 'new',
                         category: simCategory
                     });
                 }
                 
-                alert('✅ Simulation created and immediately available to users!');
+                alert('✅ Simulation created successfully and available to users!');
+                
+                // Show success message with simulation details
+                if (data.simulation) {
+                    console.log('Created simulation:', data.simulation);
+                    alert(`✅ Simulation "${data.simulation.title}" created successfully!\n\nID: ${data.simulation.id}\nType: ${data.simulation.simulation_type}\nDifficulty: ${data.simulation.difficulty}`);
+                }
+                
+                // Redirect to manage simulations page
                 window.location.href = '/admin/manage-simulations';
             }
         })
@@ -1275,4 +1303,9 @@
         initializeDragAndDrop();
     });
 </script>
+
+<!-- Enhanced UI Components Scripts -->
+<script src="{{ url_for('static', filename='js/tooltips.js') }}"></script>
+<script src="{{ url_for('static', filename='js/enhanced-dropdowns.js') }}"></script>
+
 {% endblock %}

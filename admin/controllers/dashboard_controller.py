@@ -391,6 +391,13 @@ def websocket_test():
     return render_safe_template('admin/websocket_test_simple.html', 
                                active_page='websocket_test')
 
+@dashboard_bp.route('/websocket-test-center')
+@login_required
+def websocket_test_center():
+    """Comprehensive WebSocket test center for admin functionality"""
+    return render_safe_template('admin/websocket_test_center.html', 
+                               active_page='websocket_test_center')
+
 @dashboard_bp.route('/simulation-builder')
 @login_required
 def simulation_builder():

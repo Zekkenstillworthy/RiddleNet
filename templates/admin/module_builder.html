@@ -8,8 +8,14 @@
 <title>Class Content Manager - RiddleNet Admin</title>
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+
+<!-- Enhanced UI Components -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/enhanced-dropdowns.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/deadline-manager.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/collaboration-manager.css') }}">
+<script src="{{ url_for('static', filename='js/enhanced-tooltip-system.js') }}"></script>
 
 <style>
 :root {
@@ -79,18 +85,259 @@ body {
     }
 }
 
-/* Desktop Layout */
-@media (min-width: 769px) {
-    .content-grid {
-        width: 100%;
-    }
+/* Pure CSS Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 }
 
-/* Tablet adjustments */
-@media (max-width: 1024px) and (min-width: 769px) {
-    .content-grid {
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9) translateY(-20px);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.form-label-with-tooltip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.help-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(0, 217, 255, 0.2);
+    color: var(--cyber-glow);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: help;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.help-icon:hover {
+    background: rgba(0, 217, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.form-control, .form-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-control:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.2);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+    background: var(--cyber-glow);
+    border-color: var(--cyber-glow);
+}
+
+.form-check-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* Button Styles */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+}
+
+.btn-secondary {
+    background: var(--surface-hover);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    background: var(--surface);
+    border-color: var(--cyber-glow);
+    color: var(--text-primary);
+}
+
+/* Row and Column Layout */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.col-md-6 {
+    flex: 1;
+    min-width: 250px;
+}
+
+@media (max-width: 768px) {
+    .row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .col-md-6 {
         width: 100%;
-        max-width: none;
+        min-width: auto;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .modal-header, .modal-body, .modal-footer {
+        padding: 16px;
     }
 }
 .action-btn {
@@ -1951,13 +2198,108 @@ body {
     </div>
 </div>
 
+<!-- Assignment Creation Modal -->
+<div class="modal-overlay" id="createAssignmentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Create Assignment</h5>
+            <button type="button" class="modal-close" onclick="closeModal('createAssignmentModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="createAssignmentForm">
+                <div class="form-group">
+                    <label for="assignmentTitle" class="form-label">Assignment Title *</label>
+                    <input type="text" class="form-control" id="assignmentTitle" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentDescription" class="form-label">Description *</label>
+                    <textarea class="form-control" id="assignmentDescription" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentInstructions" class="form-label">Instructions</label>
+                    <textarea class="form-control" id="assignmentInstructions" rows="4" 
+                              placeholder="Detailed instructions for students"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="assignmentDueDate" class="form-label-with-tooltip">
+                                Due Date
+                                <span class="help-icon" data-tooltip="When this assignment is due. Students will receive reminder notifications." data-tooltip-position="top">?</span>
+                            </label>
+                            <input type="datetime-local" class="form-control" id="assignmentDueDate" data-enhance="true">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="assignmentPoints" class="form-label-with-tooltip">
+                                Points
+                                <span class="help-icon" data-tooltip="Maximum points students can earn for this assignment" data-tooltip-position="top">?</span>
+                            </label>
+                            <input type="number" class="form-control" id="assignmentPoints" min="0" placeholder="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="assignmentPriority" class="form-label-with-tooltip">
+                                Priority Level
+                                <span class="help-icon" data-tooltip="High priority assignments get more prominent notifications" data-tooltip-position="top">?</span>
+                            </label>
+                            <select class="form-select" id="assignmentPriority" data-enhance="true">
+                                <option value="medium" data-priority="medium">Medium Priority</option>
+                                <option value="high" data-priority="high">High Priority</option>
+                                <option value="low" data-priority="low">Low Priority</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="assignmentCategory" class="form-label-with-tooltip">
+                                Category
+                                <span class="help-icon" data-tooltip="Helps organize assignments by subject area" data-tooltip-position="top">?</span>
+                            </label>
+                            <select class="form-select" id="assignmentCategory" data-enhance="true">
+                                <option value="general" data-category="general">General</option>
+                                <option value="networking1" data-category="networking1">Networking 1</option>
+                                <option value="networking2" data-category="networking2">Networking 2</option>
+                                <option value="security" data-category="security">Security</option>
+                                <option value="troubleshooting" data-category="troubleshooting">Troubleshooting</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="assignmentPublished" checked>
+                    <label class="form-check-label form-label-with-tooltip" for="assignmentPublished">
+                        Publish immediately
+                        <span class="help-icon" data-tooltip="Published assignments are visible to students. Unpublished assignments are saved as drafts." data-tooltip-position="top">?</span>
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('createAssignmentModal')">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="createAssignment()">Create Assignment</button>
+        </div>
+    </div>
+</div>
+
 <!-- Socket.IO for real-time WebSocket updates -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
 
-<!-- Disable WebSocket for this page -->
+<!-- Enable WebSocket for admin real-time functionality -->
 <script>
-    window.DISABLE_WEBSOCKET = true;
-    console.log('🚫 WebSocket disabled for module builder page');
+    window.ENABLE_ADMIN_WEBSOCKET = true;
+    window.isAdmin = true;
+    window.currentUserRole = 'admin';
+    console.log('� WebSocket enabled for admin module builder page');
 </script>
 
 <script>
@@ -2134,15 +2476,46 @@ function switchTab(tabName) {
     
     if (targetTabLink) targetTabLink.classList.add('active');
     if (targetContent) targetContent.classList.add('active');
+    
+    // Load content based on tab
+    if (tabName === 'classwork' && moduleBuilder.currentClass) {
+        loadClassworkContent();
+    } else if (tabName === 'stream' && moduleBuilder.currentClass) {
+        // Reload modules if needed
+        moduleBuilder.populateModules();
+    } else if (tabName === 'people' && moduleBuilder.currentClass) {
+        // People tab is static for now
+    }
 }
 
 function toggleCreateDropdown() {
-    moduleBuilder.toggleCreateDropdown();
+    const dropdown = document.getElementById('createDropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('show');
+    }
 }
 
 function createContent(type) {
+    // Close the dropdown first
+    const dropdown = document.getElementById('createDropdown');
+    if (dropdown) {
+        dropdown.classList.remove('show');
+    }
+    
     if (type === 'module') {
         createModule();
+    } else if (type === 'assignment') {
+        showCreateAssignmentModal();
+    } else if (type === 'material') {
+        moduleBuilder.showToast('Material upload coming soon!', 'info');
+    } else if (type === 'quiz') {
+        moduleBuilder.showToast('Quiz creation coming soon!', 'info');
+    } else if (type === 'simulation') {
+        if (moduleBuilder.currentClass) {
+            window.location.href = '/admin/simulation-builder';
+        } else {
+            moduleBuilder.showToast('Please select a class first', 'warning');
+        }
     } else {
         moduleBuilder.showToast(`${type} creation coming soon!`, 'info');
     }
@@ -2233,6 +2606,316 @@ function removeStudent(studentId) {
     }
 }
 
+// Assignment creation functions
+function showCreateAssignmentModal() {
+    const modal = document.getElementById('createAssignmentModal');
+    if (modal) {
+        modal.classList.add('show');
+        // Reset form
+        document.getElementById('createAssignmentForm').reset();
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Close modal when clicking on overlay
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('show');
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const openModal = document.querySelector('.modal-overlay.show');
+        if (openModal) {
+            openModal.classList.remove('show');
+        }
+    }
+});
+
+function createAssignment() {
+    const title = document.getElementById('assignmentTitle').value.trim();
+    const description = document.getElementById('assignmentDescription').value.trim();
+    const instructions = document.getElementById('assignmentInstructions').value.trim();
+    const dueDate = document.getElementById('assignmentDueDate').value;
+    const points = document.getElementById('assignmentPoints').value;
+    const priority = document.getElementById('assignmentPriority').value;
+    const category = document.getElementById('assignmentCategory').value;
+    const published = document.getElementById('assignmentPublished').checked;
+    
+    if (!title || !description) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    if (!moduleBuilder.currentClass) {
+        moduleBuilder.showToast('Please select a class first', 'warning');
+        return;
+    }
+    
+    const assignmentData = {
+        title: title,
+        description: description,
+        instructions: instructions,
+        due_date: dueDate || null,
+        points: points ? parseInt(points) : null,
+        priority: priority,
+        category: category,
+        is_published: published
+    };
+    
+    fetch(`/admin/api/classes/${moduleBuilder.currentClass.id}/assignments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(assignmentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            moduleBuilder.showToast('Assignment created successfully!', 'success');
+            closeModal('createAssignmentModal');
+            document.getElementById('createAssignmentForm').reset();
+            // Reload the classwork tab content if active
+            if (document.getElementById('classwork-content').classList.contains('active')) {
+                loadClassworkContent();
+            }
+        } else {
+            moduleBuilder.showToast('Error: ' + (data.error || 'Failed to create assignment'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error creating assignment:', error);
+        moduleBuilder.showToast('Failed to create assignment. Please try again.', 'error');
+    });
+}
+
+function loadClassworkContent() {
+    // Prevent multiple concurrent loads
+    if (loadClassworkContent.isLoading) {
+        console.log('📍 Content loading already in progress, skipping...');
+        return;
+    }
+    
+    loadClassworkContent.isLoading = true;
+    
+    // This function loads assignments and other classwork content
+    const classworkContent = document.getElementById('classworkContent');
+    
+    if (!moduleBuilder.currentClass) {
+        classworkContent.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>No Class Selected</h3>
+                <p>Please select a class to view classwork content.</p>
+            </div>
+        `;
+        loadClassworkContent.isLoading = false;
+        return;
+    }
+    
+    console.log('Loading classwork content for class:', moduleBuilder.currentClass.id);
+    
+    // Show loading state
+    classworkContent.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading assignments and activities...</p>
+        </div>
+    `;
+    
+    // Load assignments
+    fetch(`/admin/api/classes/${moduleBuilder.currentClass.id}/assignments`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Assignments loaded:', data);
+            loadClassworkContent.isLoading = false; // Reset loading flag
+            
+            let assignmentsHTML = '';
+            let materialsHTML = '';
+            let quizzesHTML = '';
+            
+            // Process assignments
+            if (data.success && data.assignments && data.assignments.length > 0) {
+                assignmentsHTML = `
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-file-alt"></i>
+                                Assignments
+                                <span class="item-counter">(${data.assignments.length})</span>
+                            </h2>
+                            <button class="action-btn primary" onclick="showCreateAssignmentModal()">
+                                <i class="fas fa-plus"></i>
+                                Add Assignment
+                            </button>
+                        </div>
+                        <div class="content-grid">
+                            ${data.assignments.map(assignment => `
+                                <div class="unified-card" data-assignment-id="${assignment.id}">
+                                    <div class="module-header">
+                                        <div class="module-info">
+                                            <h4 class="lesson-title">${assignment.title}</h4>
+                                            <p class="lesson-description">${assignment.description || 'No description'}</p>
+                                            <div class="lesson-meta">
+                                                <span class="status-badge ${assignment.is_published ? 'status-published' : 'status-draft'}">
+                                                    <i class="fas fa-${assignment.is_published ? 'check-circle' : 'clock'}"></i>
+                                                    ${assignment.is_published ? 'Published' : 'Draft'}
+                                                </span>
+                                                ${assignment.due_date ? `<span><i class="fas fa-calendar"></i> Due: ${new Date(assignment.due_date).toLocaleDateString()}</span>` : ''}
+                                                ${assignment.points ? `<span><i class="fas fa-star"></i> ${assignment.points} pts</span>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="module-actions">
+                                            <button class="action-btn" onclick="editAssignment(${assignment.id})" title="Edit Assignment">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="action-btn" onclick="viewAssignment(${assignment.id})" title="View Assignment">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-btn danger" onclick="deleteAssignment(${assignment.id})" title="Delete Assignment">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                assignmentsHTML = `
+                    <div class="content-section">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-file-alt"></i>
+                                Assignments
+                                <span class="item-counter">(0)</span>
+                            </h2>
+                            <button class="action-btn primary" onclick="showCreateAssignmentModal()">
+                                <i class="fas fa-plus"></i>
+                                Add Assignment
+                            </button>
+                        </div>
+                        <div class="empty-state">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>No Assignments Yet</h3>
+                            <p>Create your first assignment to get started.</p>
+                            <button class="action-btn primary" onclick="showCreateAssignmentModal()" style="margin-top: 16px;">
+                                <i class="fas fa-plus"></i>
+                                Create First Assignment
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Materials section (stub for now)
+            materialsHTML = `
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-folder"></i>
+                            Materials
+                            <span class="item-counter">(0)</span>
+                        </h2>
+                        <button class="action-btn primary" onclick="createContent('material')">
+                            <i class="fas fa-plus"></i>
+                            Add Material
+                        </button>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-folder"></i>
+                        <h3>No Materials Yet</h3>
+                        <p>Upload files, links, and resources for students.</p>
+                    </div>
+                </div>
+            `;
+            
+            // Quizzes section (stub for now)
+            quizzesHTML = `
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-question-circle"></i>
+                            Quizzes
+                            <span class="item-counter">(0)</span>
+                        </h2>
+                        <button class="action-btn primary" onclick="createContent('quiz')">
+                            <i class="fas fa-plus"></i>
+                            Add Quiz
+                        </button>
+                    </div>
+                    <div class="empty-state">
+                        <i class="fas fa-question-circle"></i>
+                        <h3>No Quizzes Yet</h3>
+                        <p>Create interactive quizzes for assessment.</p>
+                    </div>
+                </div>
+            `;
+            
+            // Update the content
+            classworkContent.innerHTML = assignmentsHTML + materialsHTML + quizzesHTML;
+            
+        })
+        .catch(error => {
+            console.error('Error loading classwork content:', error);
+            loadClassworkContent.isLoading = false; // Reset loading flag on error
+            classworkContent.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error Loading Content</h3>
+                    <p>Failed to load classwork content. Please try again.</p>
+                    <button class="action-btn primary" onclick="loadClassworkContent()" style="margin-top: 16px;">
+                        <i class="fas fa-refresh"></i>
+                        Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Assignment management functions
+function editAssignment(assignmentId) {
+    window.location.href = `/admin/assignments/${assignmentId}/edit`;
+}
+
+function viewAssignment(assignmentId) {
+    window.location.href = `/admin/assignments/${assignmentId}`;
+}
+
+function deleteAssignment(assignmentId) {
+    if (confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) {
+        fetch(`/admin/api/assignments/${assignmentId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                moduleBuilder.showToast('Assignment deleted successfully!', 'success');
+                // Reload classwork content
+                if (document.getElementById('classwork-content').classList.contains('active')) {
+                    loadClassworkContent();
+                }
+            } else {
+                moduleBuilder.showToast('Error: ' + (data.error || 'Failed to delete assignment'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting assignment:', error);
+            moduleBuilder.showToast('Failed to delete assignment. Please try again.', 'error');
+        });
+    }
+}
+
 // Simple initialization function for buttons
 function initializeActionButtons() {
     // Add smooth animations to action buttons
@@ -2253,13 +2936,21 @@ let socket; // WebSocket connection
 
 // WebSocket connection and real-time updates
 function initializeWebSocket() {
-    // Check if WebSocket is disabled
-    if (window.DISABLE_WEBSOCKET) {
-        console.log('🚫 WebSocket initialization skipped - DISABLE_WEBSOCKET flag is set');
+    // Check if WebSocket is disabled, but allow admin override
+    if (window.DISABLE_WEBSOCKET && !window.ENABLE_ADMIN_WEBSOCKET) {
+        console.log('🚫 WebSocket initialization skipped - disabled for non-admin functionality');
         return;
     }
     
-    console.log('🔌 Initializing WebSocket connection for module builder...');
+    // Check if AdminWebSocketManager can enable for admin
+    if (window.adminWebSocketManager && typeof window.adminWebSocketManager.shouldEnableForAdmin === 'function') {
+        if (window.adminWebSocketManager.shouldEnableForAdmin()) {
+            console.log('🔓 Admin WebSocket enablement confirmed');
+            window.ENABLE_ADMIN_WEBSOCKET = true;
+        }
+    }
+    
+    console.log('🔌 Initializing WebSocket connection for admin module builder...');
     
     // Initialize socket.io connection with explicit configuration
     socket = io({
@@ -2477,6 +3168,62 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize action buttons
     setTimeout(initializeActionButtons, 100);
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('createDropdown');
+        const createButton = document.getElementById('createButton');
+        
+        if (dropdown && !dropdown.contains(event.target) && !createButton?.contains(event.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // Initialize enhanced UI components only when needed
+    setTimeout(() => {
+        try {
+            if (typeof window.RiddleNetTooltips !== 'undefined') {
+                window.RiddleNetTooltips.init();
+                console.log('✅ Tooltips initialized');
+            }
+        } catch (error) {
+            console.warn('⚠️ Tooltips initialization failed:', error.message);
+        }
+        
+        try {
+            if (typeof window.RiddleNetDropdowns !== 'undefined') {
+                window.RiddleNetDropdowns.initStyles();
+                console.log('✅ Enhanced dropdowns initialized');
+            }
+        } catch (error) {
+            console.warn('⚠️ Enhanced dropdowns initialization failed:', error.message);
+        }
+        
+        try {
+            if (typeof window.DeadlineManager !== 'undefined') {
+                window.DeadlineManager.init();
+                console.log('✅ Deadline manager initialized');
+            }
+        } catch (error) {
+            console.warn('⚠️ Deadline manager initialization failed:', error.message);
+        }
+        
+        try {
+            if (typeof window.CollaborationManager !== 'undefined') {
+                window.CollaborationManager.init();
+                console.log('✅ Collaboration manager initialized');
+            }
+        } catch (error) {
+            console.warn('⚠️ Collaboration manager initialization failed:', error.message);
+        }
+    }, 500);
 });
+
+// Enhanced UI Components Scripts
+</script>
+<script src="{{ url_for('static', filename='js/tooltips.js') }}"></script>
+<script src="{{ url_for('static', filename='js/enhanced-dropdowns.js') }}"></script>
+<script src="{{ url_for('static', filename='js/deadline-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/collaboration-manager.js') }}"></script>
 </script>
 {% endblock %}

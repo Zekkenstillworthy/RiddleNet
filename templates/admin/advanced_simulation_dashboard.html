@@ -1,0 +1,714 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Advanced Simulation Dashboard{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/advanced-simulation.css') }}">
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .dashboard-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--border-radius-lg);
+        padding: var(--spacing-lg);
+        backdrop-filter: blur(10px);
+    }
+    
+    .dashboard-card h3 {
+        color: var(--accent-primary);
+        margin-bottom: var(--spacing-md);
+        font-family: var(--font-heading);
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-value {
+        color: var(--accent-secondary);
+        font-weight: var(--font-weight-bold);
+        font-size: 1.2em;
+    }
+    
+    .recent-activity-item {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--border-radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .activity-user {
+        color: var(--accent-primary);
+        font-weight: var(--font-weight-bold);
+    }
+    
+    .activity-action {
+        color: var(--text-primary);
+        margin: var(--spacing-xs) 0;
+    }
+    
+    .activity-meta {
+        color: var(--text-secondary);
+        font-size: 0.9em;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .activity-score {
+        color: var(--accent-secondary);
+        font-weight: var(--font-weight-bold);
+    }
+    
+    .controls-bar {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        flex-wrap: wrap;
+    }
+    
+    .btn-dashboard {
+        background: var(--accent-primary);
+        color: var(--bg-primary);
+        border: none;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--border-radius-md);
+        cursor: pointer;
+        font-family: var(--font-body);
+        font-weight: var(--font-weight-bold);
+        transition: all var(--transition-default);
+    }
+    
+    .btn-dashboard:hover {
+        background: var(--accent-secondary);
+        transform: translateY(-2px);
+    }
+    
+    .btn-dashboard.secondary {
+        background: transparent;
+        color: var(--accent-primary);
+        border: 1px solid var(--accent-primary);
+    }
+    
+    .btn-dashboard.secondary:hover {
+        background: var(--accent-primary);
+        color: var(--bg-primary);
+    }
+    
+    .error-message {
+        background: var(--error-bg);
+        border: 1px solid var(--error-color);
+        color: var(--error-color);
+        padding: var(--spacing-md);
+        border-radius: var(--border-radius-md);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .chart-container {
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px dashed var(--accent-primary);
+        border-radius: var(--border-radius-md);
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+    
+    .progress-ring {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+    }
+    
+    .progress-ring circle {
+        fill: transparent;
+        stroke: var(--accent-primary);
+        stroke-width: 4;
+        stroke-dasharray: 251;
+        stroke-dashoffset: 0;
+        transform-origin: 50% 50%;
+        transform: rotate(-90deg);
+        transition: stroke-dashoffset 0.5s ease;
+    }
+    
+    .progress-text {
+        text-align: center;
+        margin-top: var(--spacing-sm);
+        font-weight: var(--font-weight-bold);
+        color: var(--accent-secondary);
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .controls-bar {
+            flex-direction: column;
+        }
+        
+        .btn-dashboard {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="admin-header">
+        <h1><i class="fas fa-tachometer-alt"></i> Advanced Simulation Dashboard</h1>
+        <p>Monitor simulation performance, user engagement, and system health</p>
+    </div>
+
+    {% if error %}
+    <div class="error-message">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="controls-bar">
+        <button class="btn-dashboard" onclick="refreshDashboard()">
+            <i class="fas fa-refresh"></i> Refresh Data
+        </button>
+        <button class="btn-dashboard secondary" onclick="exportData()">
+            <i class="fas fa-download"></i> Export Analytics
+        </button>
+        <button class="btn-dashboard secondary" onclick="viewDetailedAnalytics()">
+            <i class="fas fa-chart-line"></i> Detailed Analytics
+        </button>
+        <button class="btn-dashboard secondary" onclick="manageScenarios()">
+            <i class="fas fa-cogs"></i> Manage Scenarios
+        </button>
+        <button class="btn-dashboard secondary" onclick="systemHealth()">
+            <i class="fas fa-heartbeat"></i> System Health
+        </button>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Overview Statistics -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-chart-bar"></i> Overview Statistics</h3>
+            <div class="stat-item">
+                <span>Total Simulations</span>
+                <span class="stat-value">{{ stats.total_simulations or 0 }}</span>
+            </div>
+            <div class="stat-item">
+                <span>Active Users</span>
+                <span class="stat-value">{{ stats.active_users or 0 }}</span>
+            </div>
+            <div class="stat-item">
+                <span>Completion Rate</span>
+                <span class="stat-value">{{ "%.1f"|format(stats.completion_rate or 0) }}%</span>
+            </div>
+            <div class="stat-item">
+                <span>Average Score</span>
+                <span class="stat-value">{{ "%.1f"|format(stats.average_score or 0) }}</span>
+            </div>
+            <div class="stat-item">
+                <span>Achievements Unlocked</span>
+                <span class="stat-value">{{ stats.total_achievements_unlocked or 0 }}</span>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-tachometer-alt"></i> Performance Metrics</h3>
+            <div class="progress-ring">
+                <svg width="80" height="80">
+                    <circle cx="40" cy="40" r="35"></circle>
+                </svg>
+            </div>
+            <div class="progress-text">{{ "%.1f"|format(stats.completion_rate or 0) }}% Completion</div>
+            
+            <div class="stat-item" style="margin-top: var(--spacing-md);">
+                <span>System Response</span>
+                <span class="stat-value">Fast</span>
+            </div>
+            <div class="stat-item">
+                <span>Error Rate</span>
+                <span class="stat-value">0.02%</span>
+            </div>
+            <div class="stat-item">
+                <span>Uptime</span>
+                <span class="stat-value">99.8%</span>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-clock"></i> Recent Activity</h3>
+            {% if stats.recent_activity %}
+                {% for activity in stats.recent_activity %}
+                <div class="recent-activity-item">
+                    <div class="activity-user">{{ activity.user }}</div>
+                    <div class="activity-action">{{ activity.action }}</div>
+                    <div class="activity-meta">
+                        <span>{{ activity.timestamp }}</span>
+                        <span class="activity-score">+{{ activity.score }} pts</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="recent-activity-item">
+                    <div class="activity-action">No recent activity available</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Usage Analytics -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-chart-line"></i> Usage Analytics</h3>
+            <div class="chart-container">
+                <div>
+                    <i class="fas fa-chart-area fa-3x"></i><br>
+                    Interactive usage charts will be displayed here
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenario Performance -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-puzzle-piece"></i> Scenario Performance</h3>
+            <div class="stat-item">
+                <span>Basic Network</span>
+                <span class="stat-value">92.3%</span>
+            </div>
+            <div class="stat-item">
+                <span>Troubleshooting</span>
+                <span class="stat-value">78.8%</span>
+            </div>
+            <div class="stat-item">
+                <span>Advanced Topology</span>
+                <span class="stat-value">65.2%</span>
+            </div>
+            <div class="stat-item">
+                <span>Average Attempts</span>
+                <span class="stat-value">2.4</span>
+            </div>
+        </div>
+
+        <!-- Achievement Stats -->
+        <div class="dashboard-card">
+            <h3><i class="fas fa-trophy"></i> Achievement Stats</h3>
+            <div class="stat-item">
+                <span>Most Popular</span>
+                <span class="stat-value">First Device</span>
+            </div>
+            <div class="stat-item">
+                <span>Rarest</span>
+                <span class="stat-value">Network Architect</span>
+            </div>
+            <div class="stat-item">
+                <span>Average per User</span>
+                <span class="stat-value">3.2</span>
+            </div>
+            <div class="stat-item">
+                <span>Total Unlocked Today</span>
+                <span class="stat-value">8</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-card">
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <div class="controls-bar">
+            <button class="btn-dashboard secondary" onclick="viewUserProgress()">
+                <i class="fas fa-users"></i> View User Progress
+            </button>
+            <button class="btn-dashboard secondary" onclick="manageDeviceLibrary()">
+                <i class="fas fa-cubes"></i> Manage Device Library
+            </button>
+            <button class="btn-dashboard secondary" onclick="configureSettings()">
+                <i class="fas fa-sliders-h"></i> Configure Settings
+            </button>
+            <button class="btn-dashboard secondary" onclick="generateReports()">
+                <i class="fas fa-file-alt"></i> Generate Reports
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Modal -->
+<div id="analyticsModal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3><i class="fas fa-chart-line"></i> Detailed Analytics</h3>
+            <span class="close" onclick="closeModal('analyticsModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h4>Usage Metrics</h4>
+                    <div id="usageMetrics">Loading...</div>
+                </div>
+                <div class="dashboard-card">
+                    <h4>Performance Data</h4>
+                    <div id="performanceData">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Progress Modal -->
+<div id="userProgressModal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3><i class="fas fa-users"></i> User Progress</h3>
+            <span class="close" onclick="closeModal('userProgressModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="controls-bar">
+                <input type="text" id="userSearch" placeholder="Search users..." style="flex: 1; padding: var(--spacing-sm); background: var(--glass-bg); border: 1px solid var(--accent-primary); color: var(--text-primary); border-radius: var(--border-radius-sm);">
+                <button class="btn-dashboard" onclick="searchUsers()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            <div id="userProgressList">Loading user progress...</div>
+        </div>
+    </div>
+</div>
+
+<!-- System Health Modal -->
+<div id="systemHealthModal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3><i class="fas fa-heartbeat"></i> System Health</h3>
+            <span class="close" onclick="closeModal('systemHealthModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="systemHealthData">Loading system health...</div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/advanced-simulation-engine.js') }}"></script>
+<script>
+    // Dashboard functionality
+    async function refreshDashboard() {
+        try {
+            showLoading('Refreshing dashboard data...');
+            // Simulate refresh delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            location.reload();
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+            showError('Failed to refresh dashboard');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function exportData() {
+        try {
+            showLoading('Preparing export...');
+            
+            const response = await fetch('/admin/advanced-simulation/api/export-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: 'all',
+                    format: 'json'
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Create and download file
+                const blob = new Blob([JSON.stringify(result.export_data, null, 2)], 
+                    { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showSuccess('Export completed successfully');
+            } else {
+                showError(result.error || 'Export failed');
+            }
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            showError('Failed to export data');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function viewDetailedAnalytics() {
+        try {
+            showModal('analyticsModal');
+            showLoading('Loading analytics...');
+            
+            const response = await fetch('/admin/advanced-simulation/api/analytics?range=7d');
+            const result = await response.json();
+            
+            if (result.success) {
+                displayAnalytics(result.analytics);
+                showSuccess('Analytics loaded successfully');
+            } else {
+                showError(result.error || 'Failed to load analytics');
+            }
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            showError('Failed to load analytics');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function displayAnalytics(analytics) {
+        const usageMetrics = document.getElementById('usageMetrics');
+        const performanceData = document.getElementById('performanceData');
+        
+        // Display usage metrics
+        usageMetrics.innerHTML = `
+            <div class="stat-item">
+                <span>Total Sessions</span>
+                <span class="stat-value">${analytics.usage_metrics.total_sessions}</span>
+            </div>
+            <div class="stat-item">
+                <span>Unique Users</span>
+                <span class="stat-value">${analytics.usage_metrics.unique_users}</span>
+            </div>
+            <div class="stat-item">
+                <span>Avg Session Duration</span>
+                <span class="stat-value">${analytics.usage_metrics.average_session_duration}</span>
+            </div>
+            <div class="stat-item">
+                <span>Completion Rate</span>
+                <span class="stat-value">${analytics.usage_metrics.completion_rate}</span>
+            </div>
+        `;
+        
+        // Display performance data
+        performanceData.innerHTML = `
+            <div class="stat-item">
+                <span>Average Score</span>
+                <span class="stat-value">${analytics.performance_metrics.average_score}</span>
+            </div>
+            <div class="stat-item">
+                <span>Median Score</span>
+                <span class="stat-value">${analytics.performance_metrics.median_score}</span>
+            </div>
+            <div class="stat-item">
+                <span>Highest Score</span>
+                <span class="stat-value">${analytics.performance_metrics.highest_score}</span>
+            </div>
+        `;
+    }
+
+    async function viewUserProgress() {
+        try {
+            showModal('userProgressModal');
+            showLoading('Loading user progress...');
+            
+            // Load sample user data
+            const sampleUsers = [
+                { id: 1, username: 'student_001', sessions: 24, avg_score: 87.3, achievements: 8 },
+                { id: 2, username: 'student_002', sessions: 18, avg_score: 92.1, achievements: 12 },
+                { id: 3, username: 'student_003', sessions: 15, avg_score: 76.8, achievements: 5 }
+            ];
+            
+            displayUserProgress(sampleUsers);
+            showSuccess('User progress loaded');
+        } catch (error) {
+            console.error('Error loading user progress:', error);
+            showError('Failed to load user progress');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function displayUserProgress(users) {
+        const userList = document.getElementById('userProgressList');
+        userList.innerHTML = users.map(user => `
+            <div class="recent-activity-item">
+                <div class="activity-user">${user.username}</div>
+                <div class="activity-meta">
+                    <span>Sessions: ${user.sessions}</span>
+                    <span>Avg Score: ${user.avg_score}</span>
+                    <span>Achievements: ${user.achievements}</span>
+                    <button class="btn-dashboard" onclick="viewUserDetail(${user.id})">
+                        <i class="fas fa-eye"></i> Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function systemHealth() {
+        try {
+            showModal('systemHealthModal');
+            showLoading('Loading system health...');
+            
+            const response = await fetch('/admin/advanced-simulation/api/system-health');
+            const result = await response.json();
+            
+            if (result.success) {
+                displaySystemHealth(result.health_data);
+                showSuccess('System health loaded');
+            } else {
+                showError(result.error || 'Failed to load system health');
+            }
+        } catch (error) {
+            console.error('Error loading system health:', error);
+            showError('Failed to load system health');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function displaySystemHealth(healthData) {
+        const healthContainer = document.getElementById('systemHealthData');
+        healthContainer.innerHTML = `
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h4>System Status</h4>
+                    <div class="stat-item">
+                        <span>Status</span>
+                        <span class="stat-value" style="color: var(--accent-secondary);">${healthData.status}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Uptime</span>
+                        <span class="stat-value">${healthData.uptime}</span>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h4>Performance</h4>
+                    <div class="stat-item">
+                        <span>CPU Usage</span>
+                        <span class="stat-value">${healthData.performance_metrics.cpu_usage}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Memory Usage</span>
+                        <span class="stat-value">${healthData.performance_metrics.memory_usage}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Response Time</span>
+                        <span class="stat-value">${healthData.performance_metrics.response_time}</span>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h4>Active Sessions</h4>
+                    <div class="stat-item">
+                        <span>Total Sessions</span>
+                        <span class="stat-value">${healthData.active_sessions.total}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Simulation Sessions</span>
+                        <span class="stat-value">${healthData.active_sessions.simulation_sessions}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function manageScenarios() {
+        showInfo('Scenario management interface will open here');
+    }
+
+    function manageDeviceLibrary() {
+        showInfo('Device library management interface will open here');
+    }
+
+    function configureSettings() {
+        showInfo('Settings configuration interface will open here');
+    }
+
+    function generateReports() {
+        showInfo('Report generation interface will open here');
+    }
+
+    function searchUsers() {
+        const searchTerm = document.getElementById('userSearch').value;
+        showInfo(`Searching for users: ${searchTerm}`);
+    }
+
+    function viewUserDetail(userId) {
+        showInfo(`Loading detailed view for user ID: ${userId}`);
+    }
+
+    // Modal functions
+    function showModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Utility functions for notifications
+    function showSuccess(message) {
+        // Implement success notification
+        console.log('Success:', message);
+    }
+
+    function showError(message) {
+        // Implement error notification
+        console.error('Error:', message);
+    }
+
+    function showInfo(message) {
+        // Implement info notification
+        console.info('Info:', message);
+    }
+
+    function showLoading(message) {
+        // Implement loading indicator
+        console.log('Loading:', message);
+    }
+
+    function hideLoading() {
+        // Hide loading indicator
+        console.log('Loading complete');
+    }
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Advanced Simulation Dashboard initialized');
+        
+        // Set up progress ring animation
+        const completionRate = parseFloat('{{ stats.completion_rate or 0 }}') || 0;
+        const progressRing = document.querySelector('.progress-ring circle');
+        if (progressRing) {
+            const offset = ((100 - completionRate) / 100) * 251;
+            progressRing.style.strokeDashoffset = offset;
+        }
+    });
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}
