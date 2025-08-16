@@ -276,6 +276,28 @@ class TroubleshootingLobby:
     def _generate_user_color(self, user_id: str) -> str:
         """Generate a unique color for each user"""
         colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
+            '#FFEAA7', '#DDA0DD', '#98D8C8', '#FFB6C1',
+            '#F7DC6F', '#BB8FCE', '#85C1E9', '#82E0AA'
+        ]
+        # Simple hash to assign colors consistently
+        color_index = hash(user_id) % len(colors)
+        return colors[color_index]
+    
+    def get_duration_string(self) -> str:
+        """Get formatted duration string for the lobby"""
+        duration = datetime.utcnow() - self.created_at
+        minutes = int(duration.total_seconds() / 60)
+        if minutes < 60:
+            return f"{minutes}m"
+        else:
+            hours = minutes // 60
+            remaining_minutes = minutes % 60
+            return f"{hours}h {remaining_minutes}m" if remaining_minutes > 0 else f"{hours}h"
+    
+    def _generate_user_color(self, user_id: str) -> str:
+        """Generate a unique color for each user"""
+        colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
             '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD',
             '#FD79A8', '#E17055', '#00B894', '#0984E3'
@@ -556,6 +578,32 @@ class LobbyManager:
                 'total_participants': total_participants,
                 'avg_participants_per_lobby': total_participants / max(active_lobbies, 1)
             }
+    
+    def get_lobby(self, lobby_id: str) -> Optional[TroubleshootingLobby]:
+        """Get lobby by ID (alias for get_lobby_by_id)"""
+        return self.get_lobby_by_id(lobby_id)
+    
+    def close_lobby(self, lobby_id: str) -> bool:
+        """Close and remove a lobby"""
+        with self._lock:
+            if lobby_id not in self.lobbies:
+                return False
+            
+            lobby = self.lobbies[lobby_id]
+            
+            # Mark as inactive
+            lobby.is_active = False
+            
+            # Remove all participants from the user mapping
+            for user_id in list(lobby.participants.keys()):
+                if user_id in self.user_lobby_map:
+                    del self.user_lobby_map[user_id]
+            
+            # Remove the lobby
+            del self.lobbies[lobby_id]
+            
+            current_app.logger.info(f"Admin closed lobby {lobby_id}")
+            return True
 
 
 # Global lobby manager instance

@@ -1,0 +1,1525 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>{{ simulation.title if simulation else 'Interactive Simulation' }} | RiddleNet</title>
+<!-- Include Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+
+<!-- Enhanced Simulation Styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulation-enhancements.css') }}">
+
+<style>
+    :root {
+        /* Core Colors - Exact from troubleshoot.html */
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+
+        /* Backgrounds */
+        --background: #020617;
+        --surface: #0F172A;
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-bg-light: rgba(255, 255, 255, 0.05);
+        --glass-bg-hover: rgba(255, 255, 255, 0.08);
+        --glass-border: rgba(255, 255, 255, 0.1);
+
+        /* Typography */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        --contrast-high: #FFFFFF;
+        --contrast-medium: #E2E8F0;
+        --contrast-low: #94A3B8;
+
+        /* Spacing System */
+        --space-xs: 4px;
+        --space-sm: 8px;
+        --space-md: 16px;
+        --space-lg: 24px;
+        --space-xl: 32px;
+        --space-2xl: 48px;
+
+        /* Component Sizes */
+        --touch-target-min: 44px;
+        --touch-target-optimal: 48px;
+        --device-size-sm: 64px;
+        --device-size-md: 72px;
+        --device-size-lg: 80px;
+
+        /* Typography Scale */
+        --font-size-xs: 10px;
+        --font-size-sm: 12px;
+        --font-size-base: 14px;
+        --font-size-lg: 16px;
+        --font-size-xl: 18px;
+
+        /* Effects */
+        --border-radius: 16px;
+        --border-radius-lg: 20px;
+        --border-radius-xl: 24px;
+        --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+        --transition-speed: 0.3s;
+
+        /* Gradients */
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+        --gradient-text: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+
+        /* Z-index System */
+        --z-palette: 1002;
+        --z-modal: 2000;
+        --z-tooltip: 3000;
+    }
+
+    /* Critical device palette positioning */
+    #device-palette {
+        position: fixed !important;
+        left: 280px !important;
+        bottom: 0 !important;
+        width: calc(100vw - 280px) !important;
+        min-height: 88px !important;
+        background: rgba(30, 41, 71, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-top: 2px solid rgba(0, 217, 255, 0.3) !important;
+        color: var(--contrast-high) !important;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.1) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        z-index: var(--z-palette) !important;
+        padding: var(--space-md) var(--space-lg) !important;
+        gap: 0 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+    }
+
+    /* Performance Feedback Sidebar */
+    .performance-sidebar {
+        position: fixed;
+        top: 5%;
+        right: 0;
+        transform: translateY(-5%);
+        width: 350px;
+        height: 80vh;
+        max-height: 800px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        z-index: 1500;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(-5%) translateX(320px);
+        opacity: 0;
+        overflow: hidden;
+    }
+
+    .performance-sidebar.active {
+        transform: translateY(-5%) translateX(0);
+        opacity: 1;
+    }
+
+    .performance-toggle {
+        position: absolute;
+        left: -60px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 120px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .performance-toggle:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: translateY(-50%) translateX(-5px);
+    }
+
+    .performance-toggle i {
+        font-size: 24px;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+        transform: rotate(90deg);
+    }
+
+    .toggle-text {
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .sidebar-content {
+        height: 100%;
+        overflow-y: auto;
+        padding: 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-glow) rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 24px 16px;
+        border-bottom: 1px solid var(--glass-border);
+        background: rgba(0, 217, 255, 0.05);
+    }
+
+    .sidebar-header h3 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .close-sidebar {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .close-sidebar:hover {
+        color: var(--danger-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .feedback-section {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feedback-section:last-child {
+        border-bottom: none;
+    }
+
+    .feedback-section h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .feedback-section h4 i {
+        color: var(--cyber-glow);
+        font-size: 16px;
+    }
+
+    /* Score Display */
+    .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-bottom: 16px;
+    }
+
+    .score-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .score-unit {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    /* Progress Meter */
+    .progress-meter {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .progress-circle {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .progress-details {
+        flex: 1;
+    }
+
+    .progress-status {
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    /* Hints Container */
+    .hints-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .hint-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(0, 217, 255, 0.05);
+        border-left: 3px solid var(--cyber-glow);
+        border-radius: 8px;
+        animation: slideInFromRight 0.3s ease;
+    }
+
+    @keyframes slideInFromRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .hint-icon {
+        color: var(--cyber-glow);
+        font-size: 16px;
+        margin-top: 2px;
+    }
+
+    .hint-text {
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .metric-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .metric-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--cyber-glow);
+    }
+
+    .metric-icon {
+        color: var(--cyber-glow);
+        font-size: 18px;
+    }
+
+    .metric-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .metric-value {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 16px;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .metric-label {
+        color: var(--text-secondary);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Mobile Performance Toggle Button */
+    .mobile-performance-toggle {
+        display: none;
+        position: fixed;
+        bottom: 160px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1600;
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3), 0 0 20px rgba(0, 217, 255, 0.2);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .mobile-performance-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.3);
+    }
+
+    .mobile-performance-toggle i {
+        color: var(--cyber-glow);
+        font-size: 24px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        #device-palette {
+            left: 80px !important;
+            width: calc(100vw - 80px) !important;
+            padding: var(--space-sm) var(--space-md) !important;
+            min-height: 84px !important;
+        }
+
+        .performance-sidebar {
+            width: 300px;
+            transform: translateY(-5%) translateX(270px);
+        }
+        
+        .performance-sidebar.active {
+            transform: translateY(-5%) translateX(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        #device-palette {
+            left: 0 !important;
+            width: 100vw !important;
+            padding: var(--space-sm) var(--space-sm) !important;
+            min-height: 80px !important;
+        }
+
+        .mobile-performance-toggle {
+            display: flex !important;
+        }
+        
+        .performance-sidebar {
+            width: 280px;
+            height: 70vh;
+            top: auto;
+            bottom: 140px;
+            right: 10px;
+            transform: translateX(300px);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .performance-sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .performance-toggle {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* Main app container */
+    #app {
+        margin-left: 0;
+        padding: 20px;
+        min-height: calc(100vh - 110px);
+        box-sizing: border-box;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* Canvas container */
+    #canvas-container {
+        flex: 1 1 auto;
+        position: relative;
+        background: var(--glass-bg-light);
+        backdrop-filter: blur(20px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid var(--glass-border);
+        margin: 16px;
+        margin-bottom: 140px;
+        border-radius: var(--border-radius-lg);
+        overflow: hidden;
+        min-height: 0;
+        height: calc(100vh - 220px);
+        isolation: isolate;
+    }
+
+    #Canvas {
+        width: 100%;
+        height: 100%;
+        max-width: calc(100% - 20px);
+        max-height: calc(100% - 20px);
+        border-radius: var(--border-radius);
+        background: var(--background);
+        border: 2px solid var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        cursor: crosshair;
+    }
+
+    /* Palette sections */
+    .palette-section {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-md);
+        padding: 0 var(--space-md);
+        min-height: var(--device-size-md);
+    }
+
+    .left-section {
+        justify-content: flex-start;
+        min-width: 240px;
+        flex-shrink: 0;
+    }
+
+    .center-section {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-width: 280px;
+        max-width: 400px;
+    }
+
+    .right-section {
+        justify-content: flex-end;
+        min-width: 280px;
+        flex-shrink: 0;
+    }
+
+    .palette-separator {
+        width: 2px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), var(--cyber-glow), rgba(255, 255, 255, 0.1));
+        margin: 0 var(--space-lg);
+        border-radius: 2px;
+        align-self: stretch;
+        opacity: 0.8;
+        min-height: 60px;
+    }
+
+    /* Action buttons and devices */
+    .action-btn, .device {
+        margin: 0 var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        background: rgba(255, 255, 255, 0.08);
+        cursor: pointer;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        color: var(--contrast-high);
+        text-align: center;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: var(--font-size-base);
+        font-family: 'Orbitron', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        min-width: 100px;
+        min-height: var(--touch-target-optimal);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-xs);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .action-btn i, .device i {
+        font-size: var(--font-size-xl);
+        margin-bottom: 0;
+        display: block;
+        line-height: 1;
+    }
+
+    .action-btn .label, .device span {
+        display: block;
+        font-size: var(--font-size-xs);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 90px;
+        color: inherit;
+    }
+
+    .action-btn:hover, .device:hover {
+        background: rgba(0, 217, 255, 0.15);
+        border-color: var(--cyber-glow);
+        color: #FFFFFF;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 217, 255, 0.4);
+    }
+
+    .action-btn:focus, .device:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.3);
+    }
+
+    .action-btn:active, .device:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+    }
+
+    /* Mode states */
+    .action-btn.mode-active {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        border: 2px solid var(--cyber-glow);
+        box-shadow: 0 0 25px rgba(0, 217, 255, 0.7), 0 4px 16px rgba(0, 0, 0, 0.3);
+        transform: scale(1.05) translateY(-2px);
+        color: #FFFFFF;
+        font-weight: 700;
+    }
+
+    .action-btn.mode-inactive {
+        opacity: 0.5;
+        filter: grayscale(0.6);
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Device specific styling */
+    .device-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        transition: all 0.3s ease;
+    }
+
+    .device:hover .device-icon {
+        filter: drop-shadow(0 4px 8px rgba(0, 217, 255, 0.5));
+        transform: scale(1.1);
+    }
+
+    /* Selected device state */
+    .selected-device {
+        border: 3px solid var(--neon-green);
+        box-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(57, 255, 20, 0.5);
+        border-radius: 50%;
+        animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% {
+            box-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(57, 255, 20, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 30px var(--neon-green), 0 0 60px rgba(57, 255, 20, 0.7);
+        }
+    }
+
+    /* Modal System */
+    .simulation-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.9);
+        width: 500px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: var(--z-modal);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
+        overflow: hidden;
+    }
+
+    .simulation-modal::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+
+    .simulation-modal.active {
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .modal-header h2 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .profile-exit-btn {
+        height: 32px;
+        width: 32px;
+        background: var(--danger-color);
+        border: 2px solid var(--glass-border);
+        font-size: 18px;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-speed) ease;
+        border-radius: 50%;
+        backdrop-filter: blur(10px);
+    }
+
+    .profile-exit-btn:hover {
+        background: #dc2626;
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        border-color: var(--danger-color);
+    }
+
+    .modal-content {
+        flex: 1;
+        padding: 16px 0;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .modal-buttons .action-btn {
+        width: 120px;
+        height: 44px;
+        margin: 0;
+    }
+
+    /* Scenario Selection */
+    .scenario-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .scenario-card {
+        background: var(--glass-bg-light);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        padding: 24px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .scenario-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease;
+    }
+
+    .scenario-card:hover {
+        background: var(--gradient-card);
+        border-color: var(--cyber-glow);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 32px rgba(0, 217, 255, 0.25);
+    }
+
+    .scenario-card:hover::before {
+        opacity: 1;
+    }
+
+    .scenario-card h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .scenario-card p {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .select-btn {
+        background: var(--glass-bg-light);
+        backdrop-filter: blur(10px);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+        padding: 14px 24px;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        margin-top: 20px;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Orbitron', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .select-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: var(--gradient-primary);
+        transition: left var(--transition-speed) ease;
+        z-index: -1;
+    }
+
+    .select-btn:hover {
+        color: var(--background);
+        border-color: var(--cyber-glow);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+    }
+
+    .select-btn:hover::before {
+        left: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+        .palette-section {
+            gap: var(--space-sm);
+            padding: 0 var(--space-sm);
+        }
+        
+        .left-section {
+            min-width: 200px;
+        }
+        
+        .center-section {
+            min-width: 240px;
+        }
+        
+        .right-section {
+            min-width: 240px;
+        }
+        
+        .action-btn, .device {
+            min-width: 90px;
+            min-height: var(--touch-target-optimal);
+            margin: 0 var(--space-xs);
+            padding: var(--space-sm) var(--space-sm);
+        }
+    }
+
+    @media (max-width: 768px) {
+        #app {
+            padding: 10px;
+            margin-left: 0;
+            min-height: calc(100vh - 90px);
+        }
+
+        .palette-section {
+            gap: var(--space-xs);
+            padding: 0 var(--space-xs);
+        }
+        
+        .left-section {
+            min-width: 140px;
+        }
+        
+        .center-section {
+            min-width: 160px;
+            max-width: 220px;
+        }
+        
+        .right-section {
+            min-width: 180px;
+        }
+        
+        .action-btn, .device {
+            min-width: 80px;
+            min-height: var(--touch-target-min);
+            margin: 0 2px;
+            padding: var(--space-xs) var(--space-sm);
+        }
+
+        .simulation-modal {
+            width: 90%;
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div id="app">
+    <!-- Primary Interactive Workspace -->
+    <div id="canvas-container">
+        <canvas id="Canvas"></canvas>
+    </div>
+    
+    <!-- Fixed Bottom Device/Tool Palette -->
+    <div id="device-palette">
+        <div class="palette-section left-section">
+            <!-- Mode toggles, primary actions -->
+            <div class="action-btn mode-neutral" onclick="toggleMode('select')" title="Select Mode">
+                <i class="fas fa-mouse-pointer"></i>
+                <span class="label">Select</span>
+            </div>
+            <div class="action-btn mode-neutral" onclick="toggleMode('draw')" title="Draw Mode">
+                <i class="fas fa-pencil-alt"></i>
+                <span class="label">Draw</span>
+            </div>
+            <div class="action-btn mode-neutral" onclick="toggleMode('connect')" title="Connect Mode">
+                <i class="fas fa-link"></i>
+                <span class="label">Connect</span>
+            </div>
+        </div>
+        
+        <div class="palette-separator"></div>
+        
+        <div class="palette-section center-section">
+            <!-- Interactive elements (tools, components) -->
+            <div class="device" onclick="selectTool('tool1')" title="Tool 1">
+                <i class="fas fa-cog device-icon"></i>
+                <span>Tool 1</span>
+            </div>
+            <div class="device" onclick="selectTool('tool2')" title="Tool 2">
+                <i class="fas fa-wrench device-icon"></i>
+                <span>Tool 2</span>
+            </div>
+            <div class="device" onclick="selectTool('tool3')" title="Tool 3">
+                <i class="fas fa-hammer device-icon"></i>
+                <span>Tool 3</span>
+            </div>
+            <div class="device" onclick="selectTool('tool4')" title="Tool 4">
+                <i class="fas fa-screwdriver device-icon"></i>
+                <span>Tool 4</span>
+            </div>
+        </div>
+        
+        <div class="palette-separator"></div>
+        
+        <div class="palette-section right-section">
+            <!-- Utility functions, settings, help -->
+            <div class="action-btn" onclick="saveSimulation()" title="Save Progress">
+                <i class="fas fa-save"></i>
+                <span class="label">Save</span>
+            </div>
+            <div class="action-btn" onclick="loadSimulation()" title="Load Simulation">
+                <i class="fas fa-folder-open"></i>
+                <span class="label">Load</span>
+            </div>
+            <div class="action-btn" onclick="showSettings()" title="Settings">
+                <i class="fas fa-cog"></i>
+                <span class="label">Settings</span>
+            </div>
+            <div class="action-btn" onclick="showHelp()" title="Help & Tutorials">
+                <i class="fas fa-question-circle"></i>
+                <span class="label">Help</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Collapsible Performance Feedback Sidebar -->
+    <div class="performance-sidebar" id="performanceSidebar">
+        <div class="performance-toggle" onclick="togglePerformanceSidebar()">
+            <i class="fas fa-chart-line"></i>
+            <span class="toggle-text">Performance</span>
+        </div>
+        
+        <div class="sidebar-header">
+            <h3><i class="fas fa-chart-line"></i>Performance</h3>
+            <button class="close-sidebar" onclick="togglePerformanceSidebar()">×</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Score Display -->
+            <div class="feedback-section">
+                <h4><i class="fas fa-trophy"></i>Score</h4>
+                <div class="score-display">
+                    <span class="score-value" id="currentScore">0</span>
+                    <span class="score-unit">pts</span>
+                </div>
+                <div class="score-breakdown">
+                    <div class="score-item">
+                        <span>Accuracy</span>
+                        <span id="accuracyScore">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Speed</span>
+                        <span id="speedScore">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Efficiency</span>
+                        <span id="efficiencyScore">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Tracking -->
+            <div class="feedback-section">
+                <h4><i class="fas fa-tasks"></i>Progress</h4>
+                <div class="progress-meter">
+                    <div class="progress-circle">
+                        <svg width="80" height="80">
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="#00D9FF" stroke-width="4" 
+                                    stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220" 
+                                    class="progress-ring-fill" id="progressRing"/>
+                        </svg>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-status" id="progressStatus">Getting Started</div>
+                        <div class="estimated-time">
+                            <i class="fas fa-clock"></i>
+                            <span id="estimatedTime">-- min remaining</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hints System -->
+            <div class="feedback-section">
+                <h4><i class="fas fa-lightbulb"></i>Hints</h4>
+                <div class="hints-container" id="hintsContainer">
+                    <div class="hint-item">
+                        <i class="fas fa-info-circle hint-icon"></i>
+                        <div class="hint-text">Start by selecting a tool from the center palette.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="feedback-section">
+                <h4><i class="fas fa-clock"></i>Metrics</h4>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <i class="fas fa-stopwatch metric-icon"></i>
+                        <div class="metric-content">
+                            <div class="metric-value" id="elapsedTime">00:00</div>
+                            <div class="metric-label">Time</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-mouse-pointer metric-icon"></i>
+                        <div class="metric-content">
+                            <div class="metric-value" id="actionCount">0</div>
+                            <div class="metric-label">Actions</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-bullseye metric-icon"></i>
+                        <div class="metric-content">
+                            <div class="metric-value" id="accuracyPercent">100%</div>
+                            <div class="metric-label">Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <i class="fas fa-lightbulb metric-icon"></i>
+                        <div class="metric-content">
+                            <div class="metric-value" id="hintsUsed">0</div>
+                            <div class="metric-label">Hints</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Performance Toggle -->
+    <div class="mobile-performance-toggle" onclick="togglePerformanceSidebar()">
+        <i class="fas fa-chart-line"></i>
+    </div>
+</div>
+
+<!-- Scenario Selection Modal -->
+<div class="simulation-modal" id="scenarioModal">
+    <div class="modal-header">
+        <h2>Select Scenario</h2>
+        <button class="profile-exit-btn" onclick="closeModal('scenarioModal')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="modal-content">
+        <div class="scenario-grid">
+            <div class="scenario-card" onclick="selectScenario('beginner')">
+                <h3>Beginner Challenge</h3>
+                <p>Learn the basics with step-by-step guidance and helpful hints throughout your journey.</p>
+                <button class="select-btn">Start Beginner</button>
+            </div>
+            <div class="scenario-card" onclick="selectScenario('intermediate')">
+                <h3>Intermediate Challenge</h3>
+                <p>Apply your knowledge with moderate complexity and contextual hints when needed.</p>
+                <button class="select-btn">Start Intermediate</button>
+            </div>
+            <div class="scenario-card" onclick="selectScenario('advanced')">
+                <h3>Advanced Challenge</h3>
+                <p>Master complex scenarios with minimal guidance and independent problem-solving.</p>
+                <button class="select-btn">Start Advanced</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-buttons">
+        <button class="action-btn" onclick="closeModal('scenarioModal')">Cancel</button>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="simulation-modal" id="settingsModal">
+    <div class="modal-header">
+        <h2>Simulation Settings</h2>
+        <button class="profile-exit-btn" onclick="closeModal('settingsModal')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="modal-content">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <label style="color: var(--text-primary);">
+                <input type="checkbox" id="enableHints" checked> Enable Hints
+            </label>
+            <label style="color: var(--text-primary);">
+                <input type="checkbox" id="enableTimer" checked> Show Timer
+            </label>
+            <label style="color: var(--text-primary);">
+                <input type="checkbox" id="enableSound" checked> Sound Effects
+            </label>
+            <label style="color: var(--text-primary);">
+                Difficulty Level:
+                <select id="difficultyLevel" style="margin-left: 8px; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--glass-border); padding: 4px 8px; border-radius: 4px;">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </label>
+        </div>
+    </div>
+    <div class="modal-buttons">
+        <button class="action-btn" onclick="saveSettings()">Save</button>
+        <button class="action-btn" onclick="closeModal('settingsModal')">Cancel</button>
+    </div>
+</div>
+
+<script>
+// Simulation State Management
+let simulationState = {
+    currentMode: 'select',
+    selectedTool: null,
+    score: 0,
+    progress: 0,
+    startTime: Date.now(),
+    actionCount: 0,
+    hintsUsed: 0,
+    accuracy: 100
+};
+
+// Performance tracking
+function updatePerformanceMetrics() {
+    const elapsedSeconds = Math.floor((Date.now() - simulationState.startTime) / 1000);
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    
+    document.getElementById('elapsedTime').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    document.getElementById('currentScore').textContent = simulationState.score;
+    document.getElementById('actionCount').textContent = simulationState.actionCount;
+    document.getElementById('accuracyPercent').textContent = `${simulationState.accuracy}%`;
+    document.getElementById('hintsUsed').textContent = simulationState.hintsUsed;
+    
+    // Update progress ring
+    const progress = Math.min(simulationState.progress, 100);
+    const circumference = 2 * Math.PI * 35;
+    const offset = circumference - (progress / 100) * circumference;
+    document.getElementById('progressRing').style.strokeDashoffset = offset;
+    document.getElementById('progressText').textContent = `${progress}%`;
+    
+    // Update progress status
+    let status = 'Getting Started';
+    if (progress > 75) status = 'Almost Complete';
+    else if (progress > 50) status = 'Making Progress';
+    else if (progress > 25) status = 'Getting Started';
+    document.getElementById('progressStatus').textContent = status;
+}
+
+// Mode management
+function toggleMode(mode) {
+    // Reset all mode buttons
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.classList.remove('mode-active', 'mode-inactive');
+        btn.classList.add('mode-neutral');
+    });
+    
+    // Set active mode
+    simulationState.currentMode = mode;
+    event.target.closest('.action-btn').classList.remove('mode-neutral');
+    event.target.closest('.action-btn').classList.add('mode-active');
+    
+    // Set other mode buttons to inactive
+    document.querySelectorAll('.left-section .action-btn').forEach(btn => {
+        if (!btn.classList.contains('mode-active')) {
+            btn.classList.remove('mode-neutral');
+            btn.classList.add('mode-inactive');
+        }
+    });
+    
+    simulationState.actionCount++;
+    addHint(`Switched to ${mode} mode. ${getModeInstructions(mode)}`);
+}
+
+function getModeInstructions(mode) {
+    const instructions = {
+        select: 'Click on elements to select and manipulate them.',
+        draw: 'Click and drag to draw new elements on the canvas.',
+        connect: 'Click on elements to create connections between them.'
+    };
+    return instructions[mode] || '';
+}
+
+// Tool selection
+function selectTool(toolId) {
+    // Reset all tool selections
+    document.querySelectorAll('.device').forEach(device => {
+        device.classList.remove('selected-device');
+    });
+    
+    // Select current tool
+    event.target.closest('.device').classList.add('selected-device');
+    simulationState.selectedTool = toolId;
+    simulationState.actionCount++;
+    
+    addHint(`Selected ${toolId}. Use it with the current ${simulationState.currentMode} mode.`);
+}
+
+// Performance sidebar toggle
+function togglePerformanceSidebar() {
+    const sidebar = document.getElementById('performanceSidebar');
+    sidebar.classList.toggle('active');
+}
+
+// Hints system
+function addHint(text, type = 'info') {
+    const hintsContainer = document.getElementById('hintsContainer');
+    const hintItem = document.createElement('div');
+    hintItem.className = 'hint-item';
+    hintItem.innerHTML = `
+        <i class="fas fa-${type === 'warning' ? 'exclamation-triangle' : 'info-circle'} hint-icon"></i>
+        <div class="hint-text">${text}</div>
+    `;
+    
+    hintsContainer.appendChild(hintItem);
+    
+    // Keep only last 5 hints
+    while (hintsContainer.children.length > 5) {
+        hintsContainer.removeChild(hintsContainer.firstChild);
+    }
+    
+    // Scroll to bottom
+    hintsContainer.scrollTop = hintsContainer.scrollHeight;
+    
+    if (type !== 'auto') {
+        simulationState.hintsUsed++;
+    }
+}
+
+// Modal management
+function showModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Scenario selection
+function selectScenario(difficulty) {
+    closeModal('scenarioModal');
+    addHint(`Starting ${difficulty} scenario. Good luck!`);
+    simulationState.progress = 5; // Initial progress
+}
+
+// Utility functions
+function saveSimulation() {
+    addHint('Simulation progress saved successfully!');
+    simulationState.actionCount++;
+}
+
+function loadSimulation() {
+    addHint('Select a saved simulation to load.');
+    simulationState.actionCount++;
+}
+
+function showSettings() {
+    showModal('settingsModal');
+}
+
+function showHelp() {
+    showModal('scenarioModal');
+}
+
+function saveSettings() {
+    const enableHints = document.getElementById('enableHints').checked;
+    const enableTimer = document.getElementById('enableTimer').checked;
+    const enableSound = document.getElementById('enableSound').checked;
+    const difficulty = document.getElementById('difficultyLevel').value;
+    
+    addHint(`Settings saved: Hints ${enableHints ? 'on' : 'off'}, Timer ${enableTimer ? 'on' : 'off'}, Sound ${enableSound ? 'on' : 'off'}, Difficulty: ${difficulty}`);
+    closeModal('settingsModal');
+}
+
+// Canvas interaction
+document.getElementById('Canvas').addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    simulationState.actionCount++;
+    simulationState.progress = Math.min(simulationState.progress + 2, 100);
+    
+    if (simulationState.currentMode === 'draw' && simulationState.selectedTool) {
+        addHint(`Drew with ${simulationState.selectedTool} at position (${Math.round(x)}, ${Math.round(y)})`, 'auto');
+        simulationState.score += 10;
+    } else if (simulationState.currentMode === 'select') {
+        addHint(`Selected area at (${Math.round(x)}, ${Math.round(y)})`, 'auto');
+        simulationState.score += 5;
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        // Close any open modals
+        document.querySelectorAll('.simulation-modal.active').forEach(modal => {
+            modal.classList.remove('active');
+        });
+    } else if (e.key === '1') {
+        toggleMode('select');
+    } else if (e.key === '2') {
+        toggleMode('draw');
+    } else if (e.key === '3') {
+        toggleMode('connect');
+    } else if (e.key === 'p' || e.key === 'P') {
+        togglePerformanceSidebar();
+    }
+});
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', function() {
+    // Start with scenario selection
+    setTimeout(() => showModal('scenarioModal'), 500);
+    
+    // Start performance updates
+    setInterval(updatePerformanceMetrics, 1000);
+    
+    // Initial hints
+    setTimeout(() => {
+        addHint('Welcome to the simulation! Select a scenario to begin.');
+    }, 1000);
+    
+    // Auto-show performance sidebar on desktop
+    if (window.innerWidth > 768) {
+        setTimeout(() => {
+            document.getElementById('performanceSidebar').classList.add('active');
+        }, 2000);
+    }
+});
+
+<script src="{{ url_for('static', filename='js/simulation-engine.js') }}"></script>
+
+<!-- Fallback Scripts for older functionality -->
+<script>
+// Enhanced Integration Layer
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for simulation engine to load
+    if (typeof SimulationEngine !== 'undefined') {
+        console.log('✅ Enhanced Simulation Engine loaded successfully');
+        
+        // Override basic functions with enhanced versions
+        window.toggleMode = function(mode) {
+            if (window.simulationEngine) {
+                window.simulationEngine.setMode(mode);
+            }
+        };
+        
+        window.selectTool = function(toolId) {
+            if (window.simulationEngine) {
+                window.simulationEngine.setTool(toolId);
+            }
+        };
+        
+        window.togglePerformanceSidebar = function() {
+            if (window.simulationEngine) {
+                window.simulationEngine.togglePerformanceSidebar();
+            }
+        };
+        
+        window.saveSimulation = function() {
+            if (window.simulationEngine) {
+                window.simulationEngine.saveSimulation();
+            }
+        };
+        
+        window.loadSimulation = function() {
+            if (window.simulationEngine) {
+                window.simulationEngine.loadSimulation();
+            }
+        };
+        
+        window.showSettings = function() {
+            if (window.simulationEngine) {
+                window.simulationEngine.showSettings();
+            }
+        };
+        
+        window.showHelp = function() {
+            if (window.simulationEngine) {
+                window.simulationEngine.showHelp();
+            }
+        };
+        
+        window.selectScenario = function(difficulty) {
+            if (window.simulationEngine) {
+                window.simulationEngine.selectScenario(difficulty);
+            }
+        };
+        
+        window.closeModal = function(modalId) {
+            if (window.simulationEngine) {
+                window.simulationEngine.closeModal(modalId);
+            }
+        };
+        
+        window.showModal = function(modalId) {
+            if (window.simulationEngine) {
+                window.simulationEngine.showModal(modalId);
+            }
+        };
+        
+        window.saveSettings = function() {
+            if (window.simulationEngine) {
+                const enableHints = document.getElementById('enableHints').checked;
+                const enableTimer = document.getElementById('enableTimer').checked;
+                const enableSound = document.getElementById('enableSound').checked;
+                const difficulty = document.getElementById('difficultyLevel').value;
+                
+                window.simulationEngine.addHint(`Settings saved: Hints ${enableHints ? 'on' : 'off'}, Timer ${enableTimer ? 'on' : 'off'}, Sound ${enableSound ? 'on' : 'off'}, Difficulty: ${difficulty}`);
+                window.simulationEngine.closeModal('settingsModal');
+            }
+        };
+        
+    } else {
+        console.log('⚠️ Simulation Engine not found, using fallback functions');
+    }
+});
+</script>
+{% endblock %}

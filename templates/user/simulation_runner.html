@@ -1,0 +1,858 @@
+{% extends "user/base.html" %}
+
+{% block title %}{{ simulation.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .simulation-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .simulation-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .simulation-meta {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    .meta-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .simulation-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 30px;
+        height: calc(100vh - 200px);
+    }
+
+    .simulation-sidebar {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 25px;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+    }
+
+    .sidebar-section {
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .sidebar-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .sidebar-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 12px;
+    }
+
+    .progress-bar {
+        background: #e2e8f0;
+        border-radius: 10px;
+        height: 8px;
+        margin-bottom: 8px;
+    }
+
+    .progress-fill {
+        background: #667eea;
+        border-radius: 10px;
+        height: 100%;
+        transition: width 0.3s;
+    }
+
+    .progress-text {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .step-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .step-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .step-number {
+        background: #e2e8f0;
+        color: #666;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .step-number.current {
+        background: #667eea;
+        color: white;
+    }
+
+    .step-number.completed {
+        background: #10b981;
+        color: white;
+    }
+
+    .step-title {
+        font-size: 14px;
+        color: #374151;
+    }
+
+    .simulation-main {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .step-header {
+        background: #f8fafc;
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .step-title-main {
+        font-size: 20px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 5px;
+    }
+
+    .step-type {
+        background: #667eea;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        text-transform: uppercase;
+        font-weight: 500;
+    }
+
+    .step-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    .step-description {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #374151;
+        margin-bottom: 20px;
+    }
+
+    .learning-objectives {
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .objectives-title {
+        font-weight: 600;
+        color: #0369a1;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .objectives-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .objectives-list li {
+        padding: 5px 0;
+        padding-left: 20px;
+        position: relative;
+        color: #374151;
+        font-size: 14px;
+    }
+
+    .objectives-list li:before {
+        content: "✓";
+        color: #10b981;
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+    }
+
+    .question-container {
+        background: #fffbeb;
+        border: 1px solid #fed7aa;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .question-title {
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 15px;
+    }
+
+    .question-text {
+        font-size: 16px;
+        color: #374151;
+        margin-bottom: 20px;
+    }
+
+    .answer-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.2s;
+    }
+
+    .answer-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .multiple-choice {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .choice-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .choice-option:hover {
+        border-color: #667eea;
+        background: #f8fafc;
+    }
+
+    .choice-option.selected {
+        border-color: #667eea;
+        background: #f0f9ff;
+    }
+
+    .choice-radio {
+        margin: 0;
+    }
+
+    .choice-text {
+        font-size: 16px;
+        color: #374151;
+    }
+
+    .configuration-container {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .config-title {
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 15px;
+    }
+
+    .command-textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        background: #1a1a1a;
+        color: #00ff00;
+        resize: vertical;
+    }
+
+    .command-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .step-actions {
+        background: #f8fafc;
+        padding: 20px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .feedback-container {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .feedback-correct {
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .feedback-incorrect {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .score-display {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .simulation-container {
+            grid-template-columns: 1fr;
+            gap: 20px;
+            height: auto;
+        }
+
+        .simulation-sidebar {
+            position: static;
+            order: 2;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Simulation Header -->
+<div class="simulation-header">
+    <h1 class="simulation-title">{{ simulation.title }}</h1>
+    <p>{{ simulation.description }}</p>
+    
+    <div class="simulation-meta">
+        <span class="meta-badge">{{ simulation.simulation_type }}</span>
+        <span class="meta-badge">{{ simulation.difficulty|title }}</span>
+        <span class="meta-badge">
+            <i class="fas fa-clock"></i> {{ simulation.estimated_duration }} min
+        </span>
+        <span class="meta-badge">
+            <i class="fas fa-layer-group"></i> {{ simulation.step_definitions|length }} steps
+        </span>
+    </div>
+</div>
+
+<!-- Simulation Container -->
+<div class="simulation-container">
+    <!-- Sidebar -->
+    <div class="simulation-sidebar">
+        <!-- Progress Section -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-title">Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: {{ (attempt.current_step / simulation.step_definitions|length * 100)|round(1) }}%"></div>
+            </div>
+            <div class="progress-text">
+                Step <span id="currentStepNum">{{ attempt.current_step + 1 }}</span> of {{ simulation.step_definitions|length }}
+            </div>
+        </div>
+
+        <!-- Score Section -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-title">Score</h3>
+            <div class="score-display" id="scoreDisplay">
+                <i class="fas fa-star"></i> <span id="currentScore">{{ attempt.total_score }}</span> points
+            </div>
+        </div>
+
+        <!-- Learning Objectives -->
+        {% if simulation.learning_objectives %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-title">Learning Objectives</h3>
+            <ul class="objectives-list">
+                {% for objective in simulation.learning_objectives %}
+                    <li>{{ objective }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Steps Overview -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-title">Steps</h3>
+            <ul class="step-list" id="stepsList">
+                {% for step in simulation.step_definitions %}
+                    <li class="step-item">
+                        <div class="step-number {% if loop.index0 == attempt.current_step %}current{% elif loop.index0 < attempt.current_step %}completed{% endif %}" 
+                             id="stepNum{{ loop.index0 }}">
+                            {{ loop.index }}
+                        </div>
+                        <div class="step-title">{{ step.title }}</div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="simulation-main">
+        <div class="step-header">
+            <h2 class="step-title-main" id="stepTitle">Loading...</h2>
+            <span class="step-type" id="stepType">instruction</span>
+        </div>
+
+        <div class="step-content" id="stepContent">
+            <div id="loadingMessage">
+                <p>Loading simulation...</p>
+                <div class="loading-spinner" style="display: block;"></div>
+            </div>
+        </div>
+
+        <div class="step-actions">
+            <button class="btn btn-secondary" id="prevBtn" onclick="previousStep()" disabled>
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="loading-spinner" id="submitSpinner"></div>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+                    <i class="fas fa-arrow-right"></i> Next
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script type="application/json" id="simulationData">
+{{ simulation | tojson }}
+</script>
+
+<script type="application/json" id="attemptData">
+{{ attempt | tojson }}
+</script>
+
+<script>
+// Global variables
+let simulationData = JSON.parse(document.getElementById('simulationData').textContent);
+let attemptData = JSON.parse(document.getElementById('attemptData').textContent);
+let currentStep = attemptData.current_step;
+let totalSteps = simulationData.step_definitions.length;
+let userResponses = attemptData.step_responses || [];
+
+// Initialize simulation
+document.addEventListener('DOMContentLoaded', function() {
+    loadStep(currentStep);
+});
+
+function loadStep(stepIndex) {
+    if (stepIndex >= totalSteps) {
+        completeSimulation();
+        return;
+    }
+
+    const step = simulationData.step_definitions[stepIndex];
+    
+    // Update step header
+    document.getElementById('stepTitle').textContent = step.title;
+    document.getElementById('stepType').textContent = step.type;
+    
+    // Update progress
+    updateProgress(stepIndex);
+    
+    // Load step content
+    loadStepContent(step, stepIndex);
+    
+    // Update navigation buttons
+    updateNavigationButtons(stepIndex);
+}
+
+function loadStepContent(step, stepIndex) {
+    const contentDiv = document.getElementById('stepContent');
+    let html = `<div class="step-description">${step.description}</div>`;
+    
+    // Add feedback container
+    html += '<div class="feedback-container" id="feedbackContainer"></div>';
+    
+    if (step.type === 'instruction') {
+        // For instruction steps, just show the content
+        html += '<p><em>Read the information above and click Next to continue.</em></p>';
+        
+    } else if (step.type === 'question') {
+        html += '<div class="question-container">';
+        html += '<h4 class="question-title">Question</h4>';
+        html += `<div class="question-text">${step.question_text || step.description}</div>`;
+        
+        if (step.question_type === 'multiple_choice' && step.choices) {
+            html += '<div class="multiple-choice" id="choiceContainer">';
+            step.choices.forEach((choice, index) => {
+                html += `
+                    <div class="choice-option" onclick="selectChoice(${index})">
+                        <input type="radio" class="choice-radio" name="answer" value="${index}" id="choice${index}">
+                        <label class="choice-text" for="choice${index}">${choice}</label>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += '<textarea class="answer-input" id="answerInput" placeholder="Enter your answer here..." rows="4"></textarea>';
+        }
+        html += '</div>';
+        
+    } else if (step.type === 'configuration') {
+        html += '<div class="configuration-container">';
+        html += '<h4 class="config-title">Configuration Task</h4>';
+        html += `<p>${step.configuration_task || 'Enter the required configuration commands:'}</p>`;
+        html += '<textarea class="command-textarea" id="commandInput" placeholder="Enter your configuration commands here..."></textarea>';
+        html += '</div>';
+        
+    } else if (step.type === 'troubleshooting') {
+        html += '<div class="configuration-container">';
+        html += '<h4 class="config-title">Troubleshooting Scenario</h4>';
+        html += `<p>${step.problem_scenario || 'Analyze the problem and provide your solution:'}</p>`;
+        html += '<textarea class="answer-input" id="troubleshootingInput" placeholder="Describe your troubleshooting approach and solution..." rows="6"></textarea>';
+        html += '</div>';
+    }
+    
+    contentDiv.innerHTML = html;
+    
+    // Pre-fill response if user has already answered
+    if (userResponses[stepIndex]) {
+        const response = userResponses[stepIndex];
+        fillPreviousResponse(step, response);
+    }
+}
+
+function fillPreviousResponse(step, response) {
+    if (step.type === 'question' && step.question_type === 'multiple_choice') {
+        const choiceIndex = parseInt(response.response);
+        if (!isNaN(choiceIndex)) {
+            selectChoice(choiceIndex);
+        }
+    } else if (step.type === 'question') {
+        const input = document.getElementById('answerInput');
+        if (input) input.value = response.response;
+    } else if (step.type === 'configuration') {
+        const input = document.getElementById('commandInput');
+        if (input) input.value = response.response;
+    } else if (step.type === 'troubleshooting') {
+        const input = document.getElementById('troubleshootingInput');
+        if (input) input.value = response.response;
+    }
+    
+    // Show previous feedback
+    if (response.feedback) {
+        showFeedback(response.correct, response.feedback, response.score);
+    }
+}
+
+function selectChoice(index) {
+    // Remove previous selections
+    document.querySelectorAll('.choice-option').forEach(opt => opt.classList.remove('selected'));
+    
+    // Select new choice
+    const choice = document.querySelector(`#choice${index}`);
+    const option = choice.closest('.choice-option');
+    
+    choice.checked = true;
+    option.classList.add('selected');
+}
+
+function updateProgress(stepIndex) {
+    const progressPercent = ((stepIndex + 1) / totalSteps) * 100;
+    document.getElementById('progressFill').style.width = progressPercent + '%';
+    document.getElementById('currentStepNum').textContent = stepIndex + 1;
+    
+    // Update step numbers
+    document.querySelectorAll('.step-number').forEach((num, index) => {
+        num.classList.remove('current', 'completed');
+        
+        if (index === stepIndex) {
+            num.classList.add('current');
+        } else if (index < stepIndex) {
+            num.classList.add('completed');
+        }
+    });
+}
+
+function updateNavigationButtons(stepIndex) {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    prevBtn.disabled = stepIndex === 0;
+    
+    if (stepIndex === totalSteps - 1) {
+        nextBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> Complete Simulation';
+    } else {
+        nextBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Next';
+    }
+}
+
+function getUserResponse(step) {
+    if (step.type === 'instruction') {
+        return { response: 'completed', type: 'instruction' };
+    } else if (step.type === 'question') {
+        if (step.question_type === 'multiple_choice') {
+            const selected = document.querySelector('input[name="answer"]:checked');
+            return selected ? { response: selected.value, type: 'multiple_choice' } : null;
+        } else {
+            const input = document.getElementById('answerInput');
+            return input && input.value.trim() ? { response: input.value.trim(), type: 'text' } : null;
+        }
+    } else if (step.type === 'configuration') {
+        const input = document.getElementById('commandInput');
+        return input && input.value.trim() ? { response: input.value.trim(), type: 'configuration' } : null;
+    } else if (step.type === 'troubleshooting') {
+        const input = document.getElementById('troubleshootingInput');
+        return input && input.value.trim() ? { response: input.value.trim(), type: 'troubleshooting' } : null;
+    }
+    
+    return null;
+}
+
+function nextStep() {
+    const step = simulationData.step_definitions[currentStep];
+    const response = getUserResponse(step);
+    
+    // For non-instruction steps, require a response
+    if (step.type !== 'instruction' && !response) {
+        alert('Please provide an answer before continuing.');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('submitSpinner').style.display = 'block';
+    document.getElementById('nextBtn').disabled = true;
+    
+    // Submit step if it's not an instruction or if we haven't submitted this step yet
+    if (step.type !== 'instruction' && !userResponses[currentStep]) {
+        submitStep(response);
+    } else {
+        // Move to next step immediately for instructions or already submitted steps
+        proceedToNextStep();
+    }
+}
+
+function submitStep(response) {
+    fetch(`/simulation/api/${simulationData.id}/submit-step`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            attempt_id: attemptData.id,
+            step_number: currentStep,
+            response: response.response
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('submitSpinner').style.display = 'none';
+        document.getElementById('nextBtn').disabled = false;
+        
+        if (data.success) {
+            // Store response
+            userResponses[currentStep] = {
+                response: response.response,
+                correct: data.correct,
+                score: data.score,
+                feedback: data.feedback
+            };
+            
+            // Update score
+            updateScore(data.total_score);
+            
+            // Show feedback
+            showFeedback(data.correct, data.feedback, data.score);
+            
+            // Auto-proceed after showing feedback
+            setTimeout(proceedToNextStep, 2000);
+            
+        } else {
+            alert('Error submitting response: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('submitSpinner').style.display = 'none';
+        document.getElementById('nextBtn').disabled = false;
+        alert('Error submitting response. Please try again.');
+    });
+}
+
+function proceedToNextStep() {
+    currentStep++;
+    loadStep(currentStep);
+}
+
+function previousStep() {
+    if (currentStep > 0) {
+        currentStep--;
+        loadStep(currentStep);
+    }
+}
+
+function updateScore(newScore) {
+    document.getElementById('currentScore').textContent = newScore;
+}
+
+function showFeedback(isCorrect, feedback, score) {
+    const container = document.getElementById('feedbackContainer');
+    container.className = `feedback-container ${isCorrect ? 'feedback-correct' : 'feedback-incorrect'}`;
+    container.innerHTML = `
+        <strong>${isCorrect ? 'Correct!' : 'Incorrect'}</strong> (+${score} points)<br>
+        ${feedback}
+    `;
+    container.style.display = 'block';
+}
+
+function completeSimulation() {
+    // Show completion message
+    document.getElementById('stepContent').innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <i class="fas fa-trophy" style="font-size: 64px; color: #fbbf24; margin-bottom: 20px;"></i>
+            <h2>Simulation Complete!</h2>
+            <p>Congratulations on completing the simulation. Your results are being processed...</p>
+            <div class="loading-spinner" style="display: inline-block; margin: 20px;"></div>
+        </div>
+    `;
+    
+    // Hide navigation buttons
+    document.querySelector('.step-actions').style.display = 'none';
+    
+    // Submit completion
+    fetch(`/simulation/api/${simulationData.id}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            attempt_id: attemptData.id
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to results
+            window.location.href = data.results_url;
+        } else {
+            alert('Error completing simulation: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error completing simulation. Please contact support.');
+    });
+}
+
+// Handle browser back button
+window.addEventListener('beforeunload', function(event) {
+    if (currentStep < totalSteps - 1) {
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
+    }
+});
+</script>
+{% endblock %}

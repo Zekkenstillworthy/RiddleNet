@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/simulation-builder.css') }}">
+<!-- Enhanced UI Components -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/enhanced-dropdowns.css') }}">
+<script src="{{ url_for('static', filename='js/enhanced-tooltip-system.js') }}"></script>
 <style>
     .builder-container {
         max-width: 1400px;
@@ -695,28 +699,42 @@
                         Simulation Settings
                     </h3>
                     <div class="form-group">
-                        <label class="form-label">Simulation Name</label>
+                        <label class="form-label form-label-with-tooltip">
+                            Simulation Name
+                            <span class="help-icon" data-tooltip="Give your simulation a clear, descriptive name that students will understand" data-tooltip-position="top">?</span>
+                        </label>
                         <input type="text" class="form-input" placeholder="Enter simulation name" id="simName">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" id="simCategory">
-                            <option value="networking1">Networking 1</option>
-                            <option value="networking2">Networking 2</option>
-                            <option value="security">Security</option>
-                            <option value="troubleshooting">Troubleshooting</option>
+                        <label class="form-label form-label-with-tooltip">
+                            Category
+                            <span class="help-icon" data-tooltip="Choose the subject area this simulation covers - affects how it's organized and displayed" data-tooltip-position="top">?</span>
+                        </label>
+                        <select class="form-select" id="simCategory" data-enhance="true">
+                            <option value="networking1" data-category="networking1">Networking 1</option>
+                            <option value="networking2" data-category="networking2">Networking 2</option>
+                            <option value="subnetting" data-category="networking1">Subnetting</option>
+                            <option value="switching" data-category="networking1">Switching</option>
+                            <option value="routing" data-category="networking2">Routing</option>
+                            <option value="troubleshooting" data-category="troubleshooting">Troubleshooting</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Difficulty Level</label>
-                        <select class="form-select" id="simDifficulty">
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
+                        <label class="form-label form-label-with-tooltip">
+                            Difficulty Level
+                            <span class="help-icon" data-tooltip="Set appropriate difficulty - beginners see simpler interfaces, advanced users get more complex scenarios" data-tooltip-position="top">?</span>
+                        </label>
+                        <select class="form-select" id="simDifficulty" data-enhance="true">
+                            <option value="beginner" data-difficulty="beginner">Beginner</option>
+                            <option value="intermediate" data-difficulty="intermediate">Intermediate</option>
+                            <option value="advanced" data-difficulty="advanced">Advanced</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Description</label>
+                        <label class="form-label form-label-with-tooltip">
+                            Description
+                            <span class="help-icon" data-tooltip="Explain what students will learn and do in this simulation - appears on simulation cards" data-tooltip-position="top">?</span>
+                        </label>
                         <textarea class="form-textarea" placeholder="Describe the simulation objectives and learning goals" id="simDescription"></textarea>
                     </div>
                 </div>
@@ -1091,22 +1109,184 @@
             return;
         }
 
+        // Create simulation data for database storage
         const simulationData = {
-            name: simName,
-            category: simCategory,
-            difficulty: simDifficulty,
-            description: simDescription,
-            components: canvasComponents.map(comp => ({
-                type: comp.type,
-                x: comp.x,
-                y: comp.y
-            })),
-            created: new Date().toISOString()
+            basic: {
+                title: simName,
+                simulation_type: simCategory.charAt(0).toUpperCase() + simCategory.slice(1).replace(/(\d+)/, ' $1'), // Convert "networking1" to "Networking 1"
+                category: simCategory,
+                difficulty: simDifficulty.charAt(0).toUpperCase() + simDifficulty.slice(1), // Capitalize difficulty
+                description: simDescription,
+                duration: 30
+            },
+            objectives: [`Learn ${simCategory} concepts`, 'Practice network troubleshooting'],
+            steps: generateStepsFromComponents(canvasComponents),
+            scoring: {
+                timeBonus: 20,
+                perfectBonus: 30,
+                isActive: true,
+                isPublished: true  // Immediately visible to users
+            },
+            template: {
+                selectedTemplate: 'interactive-simulation',
+                networkTopology: generateTopologyFromComponents(canvasComponents),
+                devices: canvasComponents.map(comp => ({
+                    type: comp.type,
+                    position: { x: comp.x, y: comp.y }
+                }))
+            }
         };
 
-        // Here you would typically send this data to your backend
-        console.log('Saving simulation:', simulationData);
-        alert('Simulation saved successfully!');
+        console.log('Sending simulation data:', simulationData);
+
+        // Save to database via API
+        fetch('/admin/simulation/api/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(simulationData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error saving simulation: ' + data.error);
+            } else {
+                // Notify via WebSocket for real-time updates
+                if (typeof io !== 'undefined') {
+                    io.emit('simulation_created', {
+                        simulation_id: data.simulation?.id || 'new',
+                        category: simCategory
+                    });
+                }
+                
+                alert('✅ Simulation created successfully and available to users!');
+                
+                // Show success message with simulation details
+                if (data.simulation) {
+                    console.log('Created simulation:', data.simulation);
+                    alert(`✅ Simulation "${data.simulation.title}" created successfully!\n\nID: ${data.simulation.id}\nType: ${data.simulation.simulation_type}\nDifficulty: ${data.simulation.difficulty}`);
+                }
+                
+                // Redirect to manage simulations page
+                window.location.href = '/admin/manage-simulations';
+            }
+        })
+        .catch(error => {
+            console.error('Error saving simulation:', error);
+            alert('Error saving simulation. Please try again.');
+        });
+    }
+
+    // Helper function to generate simulation steps from canvas components
+    function generateStepsFromComponents(components) {
+        const steps = [];
+        
+        // Add intro step
+        steps.push({
+            title: 'Network Overview',
+            type: 'instruction',
+            description: 'Study the network topology and understand the components.',
+            content: {
+                text: 'In this simulation, you will work with the following network components.'
+            },
+            validation: {
+                score: 0
+            }
+        });
+
+        // Add steps for each component type
+        const componentTypes = [...new Set(components.map(c => c.type))];
+        componentTypes.forEach((type, index) => {
+            const componentName = getComponentName(type);
+            steps.push({
+                title: `Configure ${componentName}`,
+                type: 'configuration',
+                description: `Configure the ${componentName} device in the network.`,
+                deviceType: type,
+                configTask: `Set up basic configuration for the ${componentName}`,
+                expectedCommands: getExpectedCommands(type),
+                validation: {
+                    expectedAnswer: getExpectedAnswer(type),
+                    score: 10
+                },
+                hint: `Remember to configure the ${componentName} according to network best practices.`
+            });
+        });
+
+        // Add final verification step
+        steps.push({
+            title: 'Network Verification',
+            type: 'troubleshooting',
+            description: 'Verify that all components are working correctly.',
+            problemScenario: 'Test network connectivity and verify configurations.',
+            troubleshootingSteps: 'Use ping and traceroute to verify connectivity.',
+            validation: {
+                expectedAnswer: 'Network is fully operational',
+                score: 15
+            }
+        });
+
+        return steps;
+    }
+
+    // Helper function to generate network topology
+    function generateTopologyFromComponents(components) {
+        return {
+            components: components.map(comp => ({
+                id: comp.id,
+                type: comp.type,
+                name: getComponentName(comp.type),
+                position: { x: comp.x, y: comp.y }
+            })),
+            connections: generateConnections(components)
+        };
+    }
+
+    // Helper function to generate connections between components
+    function generateConnections(components) {
+        const connections = [];
+        // Simple logic: connect network devices to end devices
+        const networkDevices = components.filter(c => ['router', 'switch', 'hub'].includes(c.type));
+        const endDevices = components.filter(c => ['computer', 'server', 'printer'].includes(c.type));
+        
+        networkDevices.forEach(netDevice => {
+            endDevices.forEach(endDevice => {
+                connections.push({
+                    from: netDevice.id,
+                    to: endDevice.id,
+                    type: 'ethernet'
+                });
+            });
+        });
+        
+        return connections;
+    }
+
+    // Helper function to get expected commands for device types
+    function getExpectedCommands(deviceType) {
+        const commands = {
+            router: 'configure terminal\ninterface gigabitethernet0/0\nip address 192.168.1.1 255.255.255.0\nno shutdown',
+            switch: 'configure terminal\nvlan 10\nname Production\ninterface vlan 10\nip address 192.168.10.1 255.255.255.0',
+            hub: 'No configuration required for hub',
+            computer: 'ipconfig /all\nping 192.168.1.1',
+            server: 'Configure network services and verify connectivity',
+            printer: 'Configure network printer settings'
+        };
+        return commands[deviceType] || 'Basic configuration required';
+    }
+
+    // Helper function to get expected answers for validation
+    function getExpectedAnswer(deviceType) {
+        const answers = {
+            router: 'Interface configured with IP address',
+            switch: 'VLAN created and configured',
+            hub: 'Hub connected to network',
+            computer: 'Network connectivity verified',
+            server: 'Server services running',
+            printer: 'Printer accessible on network'
+        };
+        return answers[deviceType] || 'Configuration completed';
     }
 
     function clearCanvas() {
@@ -1123,4 +1303,9 @@
         initializeDragAndDrop();
     });
 </script>
+
+<!-- Enhanced UI Components Scripts -->
+<script src="{{ url_for('static', filename='js/tooltips.js') }}"></script>
+<script src="{{ url_for('static', filename='js/enhanced-dropdowns.js') }}"></script>
+
 {% endblock %}

@@ -1,0 +1,135 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>Access Denied | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+
+<style>
+    :root {
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --network-purple: #8B5CF6;
+
+        --background: #020617;
+        --surface: #0F172A;
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(255, 255, 255, 0.1);
+
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        
+        --border-radius: 16px;
+        --border-radius-lg: 20px;
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--background), var(--surface));
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .access-denied-container {
+        max-width: 600px;
+        padding: 3rem;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        text-align: center;
+        backdrop-filter: blur(20px);
+    }
+
+    .access-icon {
+        font-size: 4rem;
+        color: var(--danger-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .access-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .access-message {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+        margin-left: 1rem;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--cyber-glow);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="access-denied-container">
+    <div class="access-icon">
+        <i class="fas fa-lock"></i>
+    </div>
+    
+    <h1 class="access-title">Access Denied</h1>
+    
+    <p class="access-message">
+        {{ message or "You don't have permission to access this content." }}
+    </p>
+    
+    <div>
+        <a href="{{ url_for('dynamic_simulations.my_simulations') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+        </a>
+        
+        <a href="{{ url_for('user.index') }}" class="btn btn-secondary">
+            <i class="fas fa-home"></i>
+            Home
+        </a>
+    </div>
+</div>
+{% endblock %}

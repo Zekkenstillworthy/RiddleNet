@@ -19,7 +19,7 @@ class AdminApp:
 
     def configure_app(self):
         """Configure the Flask application."""
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///riddlenet.db'
         self.app.config['SECRET_KEY'] = 'your_secret_key'
         self.app.config['ADMIN_PORT'] = 5001
         
@@ -45,23 +45,24 @@ class AdminApp:
         login_manager.login_view = '/admin/login'
         login_manager.login_message_category = 'info'
         
-        @login_manager.user_loader
-        def load_user(user_id):
-            # Try to load from Admin model first (since admin login is being used)
-            from admin.models.user import Admin, User
-              # Check if the ID starts with 'admin-' which would indicate it's an admin
-            if isinstance(user_id, str) and user_id.startswith('admin-'):
-                admin_id = int(user_id.replace('admin-', ''))
-                return db.session.get(Admin, admin_id)
-            
-            # Try Admin table first
-            admin = db.session.get(Admin, int(user_id))
-            if admin:
-                return admin
-                
-                # If not found in Admin, try User table
-                user = db.session.get(User, int(user_id))
-                return user
+        # DISABLED: Using main user_loader in run.py to avoid conflicts
+        # @login_manager.user_loader
+        # def load_user(user_id):
+        #     # Try to load from Admin model first (since admin login is being used)
+        #     from admin.models.user import Admin, User
+        #       # Check if the ID starts with 'admin-' which would indicate it's an admin
+        #     if isinstance(user_id, str) and user_id.startswith('admin-'):
+        #         admin_id = int(user_id.replace('admin-', ''))
+        #         return db.session.get(Admin, admin_id)
+        #     
+        #     # Try Admin table first
+        #     admin = db.session.get(Admin, int(user_id))
+        #     if admin:
+        #         return admin
+        #         
+        #         # If not found in Admin, try User table
+        #         user = db.session.get(User, int(user_id))
+        #         return user
                 
     def register_template_filters(self):
         """Register custom template filters."""
@@ -97,13 +98,21 @@ class AdminApp:
         from admin.controllers.dashboard_controller import dashboard_bp
         from admin.controllers.question_group_controller import question_group_bp
         from admin.controllers.class_controller import class_controller
+        from admin.controllers.class_content_controller import class_content_controller
         from admin.controllers.notification_controller import notification_controller
+        from admin.controllers.enhanced_module_controller import enhanced_module_bp
+        from admin.controllers.lesson_editor_controller import lesson_editor_bp
+        from admin.controllers.module_lesson_editor_controller import module_lesson_editor_bp
+        from simple_test_bp import simple_test_bp
         # from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
         from admin.routes.topology_routes import topology_bp
         from admin.routes.topology_api_routes import topology_api_bp
         from admin.routes.troubleshooting_routes import troubleshooting_bp
-        from admin.routes.learning_routes import learning_path_bp
+        from user.routes.universal_class_routes import universal_class_bp
+        from admin.routes.api_routes import api_bp
+        
+        print("📝 Registering universal_class_bp blueprint...")
         
         # Register only available blueprints
         self.app.register_blueprint(auth_bp)
@@ -114,13 +123,20 @@ class AdminApp:
         self.app.register_blueprint(dashboard_bp)
         self.app.register_blueprint(question_group_bp)        
         self.app.register_blueprint(class_controller)
+        self.app.register_blueprint(class_content_controller)
+        self.app.register_blueprint(enhanced_module_bp)
+        self.app.register_blueprint(lesson_editor_bp)
+        self.app.register_blueprint(module_lesson_editor_bp)
+        self.app.register_blueprint(simple_test_bp)
         self.app.register_blueprint(notification_controller)
         # self.app.register_blueprint(scenario_bp)
         self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)
         self.app.register_blueprint(topology_bp)
         self.app.register_blueprint(topology_api_bp)
         self.app.register_blueprint(troubleshooting_bp)
-        self.app.register_blueprint(learning_path_bp)
+        self.app.register_blueprint(universal_class_bp)
+        print("✅ universal_class_bp registered successfully!")
+        self.app.register_blueprint(api_bp)
         
         # Add root route to redirect to admin dashboard
         @self.app.route('/')
@@ -132,21 +148,34 @@ class AdminApp:
         # Implement app-level protection for all admin routes
         @self.app.before_request
         def check_admin_auth():
+            # Debug output
+            print(f"🔍 ADMIN APP Protection check for path: {request.path}")
+            
             # List of paths that don't require authentication
             exempt_routes = [
                 '/static/', 
                 '/login',
+                '/signup',  # Add signup to exempt routes
+                '/admin/login',  # Add admin login with prefix
+                '/admin/signup',  # Add admin signup with prefix
                 '/auth/login',
+                '/auth/signup',  # Add auth/signup to exempt routes
                 '/logout',
                 '/auth/logout'
             ]
             
+            # Debug: show which routes are exempt
+            is_exempt = any(request.path.startswith(route) for route in exempt_routes)
+            print(f"🛡️ ADMIN APP - Path '{request.path}' is exempt: {is_exempt}")
+            
             # Skip check for exempt routes
             if any(request.path.startswith(route) for route in exempt_routes):
+                print("✅ ADMIN APP - Route is exempt, allowing access")
                 return None
             
             # Check if user is authenticated
             if not current_user.is_authenticated:
+                print(f"🚫 ADMIN APP - Blocking unauthenticated access to: {request.path}")
                 flash('Please log in to access the admin area', 'warning')
                 return redirect(url_for('auth.login', next=request.url))
 

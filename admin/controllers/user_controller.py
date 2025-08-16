@@ -11,7 +11,7 @@ from ..models.user import AdminUser, Admin  # Import the correct models
 from ..models.score import AdminScore  # Use renamed model
 from ..models.essay_response import EssayResponse
 
-user_bp = Blueprint('admin_user', __name__, url_prefix='/users')
+user_bp = Blueprint('admin_user', __name__)
 
 class UserController:
     @staticmethod
@@ -88,8 +88,6 @@ class UserController:
             AdminScore.query.filter_by(user_id=user.id).delete()
             
             # Handle essay responses - either delete them or handle differently
-            from admin.models.essay import EssayResponse
-            # Option 1: Delete associated essay responses (preferred approach)
             essay_responses = EssayResponse.query.filter_by(user_id=user.id).all()
             for essay in essay_responses:
                 db.session.delete(essay)
@@ -375,3 +373,277 @@ class UserController:
             'username': user.username,
             'essays': essays_data
         })
+
+    @staticmethod
+    @user_bp.route('/create-new-user')
+    @login_required
+    def create_new_user_form():
+        """Display the new dynamic user creation form"""
+        return render_template('admin/create_new_user.html', active_page='users')
+
+    @staticmethod
+    @user_bp.route('/create-new-user', methods=['POST'])
+    @login_required
+    def create_new_user():
+        """Handle the new dynamic user creation form submission"""
+        try:
+            # Get form data
+            user_type = request.form.get('user_type')
+            username = request.form.get('username')
+            email = request.form.get('email')
+            first_name = request.form.get('first_name')
+            last_name = request.form.get('last_name')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            status = request.form.get('status', 'active')
+            enable_2fa = request.form.get('enable_2fa') == 'on'
+            send_welcome_email = request.form.get('send_welcome_email') == 'on'
+            force_password_change = request.form.get('force_password_change') == 'on'
+            assigned_classes = request.form.getlist('assigned_classes')
+            notes = request.form.get('notes', '')
+
+            # Validate required fields
+            if not all([user_type, username, email, first_name, last_name, password]):
+                flash('All required fields must be filled', 'error')
+                return redirect(url_for('admin_user.create_new_user_form'))
+
+            # Validate password confirmation
+            if password != confirm_password:
+                flash('Passwords do not match', 'error')
+                return redirect(url_for('admin_user.create_new_user_form'))
+
+            # Check if username already exists
+            existing_user = AdminUser.query.filter_by(username=username).first()
+            existing_admin = Admin.query.filter_by(username=username).first()
+            if existing_user or existing_admin:
+                flash('Username already exists', 'error')
+                return redirect(url_for('admin_user.create_new_user_form'))
+
+            # Check if email already exists
+            existing_email_user = AdminUser.query.filter_by(email=email).first()
+            existing_email_admin = Admin.query.filter_by(email=email).first()
+            if existing_email_user or existing_email_admin:
+                flash('Email address already exists', 'error')
+                return redirect(url_for('admin_user.create_new_user_form'))
+
+            # Create user based on type
+            if user_type == 'admin':
+                # Create admin user
+                new_user = Admin(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    password_hash=generate_password_hash(password),
+                    role='admin',
+                    created_at=datetime.utcnow(),
+                    notes=notes
+                )
+                
+                # Add 2FA if enabled
+                if enable_2fa:
+                    import pyotp
+                    new_user.totp_key = pyotp.random_base32()
+
+                db.session.add(new_user)
+                db.session.commit()
+                
+                flash(f'Administrator "{username}" created successfully', 'success')
+                
+            elif user_type in ['student', 'instructor']:
+                # Create regular user
+                new_user = AdminUser(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    status=status,
+                    created_at=datetime.utcnow(),
+                    force_password_change=force_password_change,
+                    notes=notes
+                )
+                
+                # Set user type (you may need to add a user_type field to your model)
+                if hasattr(new_user, 'user_type'):
+                    new_user.user_type = user_type
+                
+                # Set instructor privileges if needed
+                if user_type == 'instructor':
+                    new_user.is_instructor = True
+                
+                new_user.set_password(password)
+                
+                # Add 2FA if enabled
+                if enable_2fa:
+                    import pyotp
+                    new_user.totp_key = pyotp.random_base32()
+
+                db.session.add(new_user)
+                db.session.commit()
+                
+                # Handle class assignments for instructors
+                if user_type == 'instructor' and assigned_classes:
+                    # You'll need to implement class assignment logic here
+                    # This would typically involve a many-to-many relationship
+                    pass
+                
+                flash(f'{user_type.title()} user "{username}" created successfully', 'success')
+            
+            # Send welcome email if requested
+            if send_welcome_email:
+                try:
+                    # Import and use your email service
+                    from flask_mail import Message
+                    from __init__ import mail
+                    
+                    msg = Message(
+                        'Welcome to RiddleNet',
+                        recipients=[email],
+                        html=f'''
+                        <h2>Welcome to RiddleNet, {first_name}!</h2>
+                        <p>Your account has been created successfully.</p>
+                        <p><strong>Username:</strong> {username}</p>
+                        <p><strong>Account Type:</strong> {user_type.title()}</p>
+                        <p>Please log in to get started.</p>
+                        '''
+                    )
+                    mail.send(msg)
+                    flash('Welcome email sent successfully', 'success')
+                except Exception as e:
+                    flash(f'User created but welcome email failed to send: {str(e)}', 'warning')
+
+            return jsonify({
+                'status': 'success',
+                'message': f'User "{username}" created successfully',
+                'redirect': url_for('admin_user.index')
+            })
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating user: {str(e)}', 'error')
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 500
+
+    @staticmethod
+    @user_bp.route('/check-username', methods=['POST'])
+    @login_required
+    def check_username_availability():
+        """Check if username is available"""
+        try:
+            data = request.get_json()
+            username = data.get('username', '').strip()
+            
+            if not username:
+                return jsonify({'available': False, 'message': 'Username is required'})
+            
+            # Check in both user tables
+            existing_user = AdminUser.query.filter_by(username=username).first()
+            existing_admin = Admin.query.filter_by(username=username).first()
+            
+            available = not (existing_user or existing_admin)
+            
+            return jsonify({
+                'available': available,
+                'message': 'Username is available' if available else 'Username already exists'
+            })
+            
+        except Exception as e:
+            return jsonify({'available': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @user_bp.route('/check-email', methods=['POST'])
+    @login_required
+    def check_email_availability():
+        """Check if email is available"""
+        try:
+            data = request.get_json()
+            email = data.get('email', '').strip()
+            
+            if not email:
+                return jsonify({'available': False, 'message': 'Email is required'})
+            
+            # Check in both user tables
+            existing_user = AdminUser.query.filter_by(email=email).first()
+            existing_admin = Admin.query.filter_by(email=email).first()
+            
+            available = not (existing_user or existing_admin)
+            
+            return jsonify({
+                'available': available,
+                'message': 'Email is available' if available else 'Email already exists'
+            })
+            
+        except Exception as e:
+            return jsonify({'available': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @user_bp.route('/generate-totp-secret', methods=['POST'])
+    @login_required
+    def generate_totp_secret():
+        """Generate TOTP secret and QR code for new user"""
+        try:
+            import pyotp
+            import qrcode
+            import io
+            import base64
+            
+            # Generate random secret
+            secret = pyotp.random_base32()
+            
+            # Create TOTP URL for QR code
+            totp_url = pyotp.totp.TOTP(secret).provisioning_uri(
+                name="New User",
+                issuer_name="RiddleNet"
+            )
+            
+            # Generate QR code
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L)
+            qr.add_data(totp_url)
+            qr.make(fit=True)
+            
+            # Create QR code image
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convert to base64 for web display
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
+            
+            return jsonify({
+                'success': True,
+                'secret': secret,
+                'qr_code_url': f'data:image/png;base64,{img_base64}'
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    @staticmethod
+    @user_bp.route('/available-classes')
+    @login_required
+    def get_available_classes():
+        """Get list of available classes for instructor assignment"""
+        try:
+            # Import your class model here
+            # from admin.models.class import Class
+            # classes = Class.query.filter_by(active=True).all()
+            
+            # For now, return sample data
+            sample_classes = [
+                {'id': 1, 'name': 'Networking Fundamentals', 'code': 'NET101'},
+                {'id': 2, 'name': 'Advanced Routing', 'code': 'NET201'},
+                {'id': 3, 'name': 'Network Security', 'code': 'SEC101'},
+                {'id': 4, 'name': 'Wireless Technologies', 'code': 'WIR101'},
+                {'id': 5, 'name': 'Network Management', 'code': 'NET301'}
+            ]
+            
+            return jsonify({
+                'success': True,
+                'classes': sample_classes
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500

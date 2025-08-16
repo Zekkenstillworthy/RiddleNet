@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, Response, make_response
 from flask_login import login_required, current_user
+from utils.auth_decorators import admin_required
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
 from user.models.user import User  # Import User model for the relationship
@@ -23,7 +24,7 @@ template_generator = ClassTemplateGenerator()
 enhanced_generator = enhanced_template_generator
 
 @class_controller.route('/classes')
-@login_required
+@admin_required
 def index():
     """Display the class management page"""
     # Add debug print to verify authentication status
@@ -31,6 +32,14 @@ def index():
     print(f"Current user: {current_user}")
     
     return render_template('admin/class.html', active_page='classes')
+
+@class_controller.route('/class/<int:class_id>/content-manager')
+@admin_required
+def content_manager(class_id):
+    """Redirect to the class content manager"""
+    # Import here to avoid circular imports
+    from admin.controllers.class_content_controller import class_content_controller_old
+    return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id))
 
 @class_controller.route('/api/classes/<int:class_id>/export/csv', methods=['GET'])
 @login_required
@@ -234,28 +243,49 @@ def create_class():
         db.session.add(new_class)
         db.session.commit()
         
-        # Generate dynamic template and routes for the new class
-        try:
-            # Use enhanced generator for better static template integration
-            generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
-            
-            # Register routes dynamically
-            route_registry.register_class_routes(new_class.id)
-            
-            # Create dashboard integration
-            integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
-            
-            flash(f"Class created successfully! Enhanced template generated: {generation_result['template']}", 'success')
-        except Exception as e:
-            flash(f"Class created but enhanced template generation failed: {str(e)}", 'warning')
+        # CHECK TEMPLATE CONFIGURATION
+        from admin.config.class_template_config import should_use_universal_template, get_template_config
+        
+        config = get_template_config()
+        
+        if should_use_universal_template():
+            # UNIVERSAL TEMPLATE SYSTEM - No need to generate class-specific templates
+            # All classes now use the dynamic universal template (dynamic_class_universal.html)
+            try:
+                print(f"✅ Class {new_class.id} created - using universal template system")
+                print(f"   Template: {config['universal_template']}")
+                print(f"   Route: /class/{new_class.id} (handled by universal_class_routes.py)")
+                print(f"   Mode: Universal template only (configured)")
+                
+                # Optional: Create dashboard integration for admin features only
+                try:
+                    integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
+                except Exception as e:
+                    print(f"   Dashboard integration skipped: {e}")
+                
+                flash(f"Class created successfully! Using universal dynamic template system.", 'success')
+            except Exception as e:
+                flash(f"Class created successfully! Universal template system active.", 'success')
+        else:
+            # LEGACY SYSTEM - Generate class-specific templates (if configured)
+            try:
+                print(f"⚠️ Class {new_class.id} created - using legacy template generation")
+                generation_result = enhanced_generator.generate_all_class_resources(new_class.id)
+                route_registry.register_class_routes(new_class.id)
+                integration_info = enhanced_generator.create_class_dashboard_integration(new_class)
+                
+                flash(f"Class created successfully! Class-specific template generated: {generation_result['template']}", 'success')
+            except Exception as e:
+                flash(f"Class created but template generation failed: {str(e)}", 'warning')
         
         return jsonify({
             "success": True, 
-            "message": "Class created successfully with enhanced dynamic template!",
+            "message": "Class created successfully with universal dynamic template!",
             "classId": new_class.id,
-            "templateGenerated": True,
-            "enhancedFeatures": True,
-            "dashboardUrl": f"/class/{new_class.id}/"
+            "templateSystem": "universal",
+            "templateFile": "dynamic_class_universal.html",
+            "dashboardUrl": f"/class/{new_class.id}/",
+            "universalFeatures": True
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -344,28 +374,54 @@ def update_class(class_id):
 @class_controller.route('/api/classes/<int:class_id>/regenerate-template', methods=['POST'])
 @login_required
 def regenerate_class_template(class_id):
-    """API endpoint to regenerate enhanced template for a class"""
+    """API endpoint to regenerate template for a class - respects configuration"""
     try:
         class_obj = Class.query.get_or_404(class_id)
         
-        # Regenerate enhanced template and routes
-        generation_result = enhanced_generator.regenerate_class_resources(class_id)
+        # CHECK TEMPLATE CONFIGURATION
+        from admin.config.class_template_config import should_use_universal_template, get_template_config
         
-        # Refresh route registration
-        route_registry.refresh_class_routes(class_id)
+        config = get_template_config()
         
-        # Update dashboard integration
-        integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
-        
-        return jsonify({
-            "success": True, 
-            "message": "Enhanced template regenerated successfully!",
-            "template": generation_result['template'],
-            "routes": generation_result['routes'],
-            "enhancedFeatures": True,
-            "dashboardUrl": f"/class/{class_id}/",
-            "staticIntegrations": integration_info.get('static_integrations', [])
-        })
+        if should_use_universal_template():
+            # UNIVERSAL TEMPLATE SYSTEM - No regeneration needed
+            # All classes use dynamic_class_universal.html which adapts automatically
+            print(f"✅ Class {class_id} template refresh requested")
+            print(f"   Using universal template: {config['universal_template']}")
+            print(f"   No regeneration needed - template adapts dynamically")
+            print(f"   Mode: Universal template only (configured)")
+            
+            # Optional: Update dashboard integration for admin features
+            try:
+                integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
+            except Exception as e:
+                integration_info = {"status": "universal_system_active"}
+            
+            return jsonify({
+                "success": True, 
+                "message": "Using universal template system - no regeneration needed!",
+                "templateSystem": "universal",
+                "templateFile": config['universal_template'],
+                "universalFeatures": True,
+                "dashboardUrl": f"/class/{class_id}/",
+                "note": "All classes automatically use the dynamic universal template"
+            })
+        else:
+            # LEGACY SYSTEM - Regenerate class-specific templates
+            print(f"⚠️ Class {class_id} using legacy template regeneration")
+            generation_result = enhanced_generator.regenerate_class_resources(class_id)
+            route_registry.refresh_class_routes(class_id)
+            integration_info = enhanced_generator.create_class_dashboard_integration(class_obj)
+            
+            return jsonify({
+                "success": True, 
+                "message": "Class-specific template regenerated successfully!",
+                "template": generation_result['template'],
+                "routes": generation_result['routes'],
+                "enhancedFeatures": True,
+                "dashboardUrl": f"/class/{class_id}/",
+                "staticIntegrations": integration_info.get('static_integrations', [])
+            })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -510,6 +566,159 @@ def remove_student_from_class(class_id, student_id):
         return jsonify({
             "success": True,
             "message": f"Student {student.username} removed from class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/class/<int:class_id>/overview')
+@login_required
+def class_overview(class_id):
+    """Display class overview and content editing page for admin"""
+    try:
+        print(f"Loading class overview for class ID: {class_id}")
+        
+        # Get the class details
+        cls = Class.query.get_or_404(class_id)
+        print(f"Found class: {cls.name}")
+        
+        # Get enrolled students
+        students = cls.students.all() if cls.students else []
+        print(f"Found {len(students)} students")
+        
+        # Get question groups assigned to this class
+        question_groups = cls.question_groups.all() if cls.question_groups else []
+        print(f"Found {len(question_groups)} question groups")
+        
+        # Get class performance data
+        performance_data = []
+        if students:
+            for student in students:
+                student_scores = Score.query.filter_by(user_id=student.id).all()
+                if student_scores:
+                    scores_values = [score.score for score in student_scores if score.score is not None]
+                    avg_score = sum(scores_values) / len(scores_values) if scores_values else 0
+                    best_score = max(scores_values) if scores_values else 0
+                    total_assessments = len(scores_values)
+                else:
+                    avg_score = 0
+                    best_score = 0
+                    total_assessments = 0
+                
+                performance_data.append({
+                    'student': student,
+                    'avg_score': avg_score,
+                    'best_score': best_score,
+                    'total_assessments': total_assessments
+                })
+        
+        # Get available question groups for assignment
+        all_question_groups = QuestionGroup.query.all()
+        available_question_groups = [qg for qg in all_question_groups if qg not in question_groups]
+        
+        print(f"Rendering template with class data")
+        return render_template('admin/class_overview.html',
+                             class_data=cls,
+                             students=students,
+                             question_groups=question_groups,
+                             available_question_groups=available_question_groups,
+                             performance_data=performance_data,
+                             active_page='classes')
+                             
+    except Exception as e:
+        error_msg = f'Error loading class overview for class {class_id}: {str(e)}'
+        print(error_msg)
+        import traceback
+        traceback.print_exc()
+        
+        # Add error to flash messages
+        flash(error_msg, 'error')
+        
+        # Return JSON response if it's an AJAX request
+        if request.is_json or 'application/json' in request.headers.get('Accept', ''):
+            return jsonify({"error": error_msg}), 500
+            
+        return redirect(url_for('class_controller.index'))
+
+@class_controller.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
+@login_required
+def add_question_group_to_class(class_id):
+    """Add a question group to a class"""
+    try:
+        data = request.json
+        question_group_id = data.get('question_group_id')
+        
+        cls = Class.query.get_or_404(class_id)
+        question_group = QuestionGroup.query.get_or_404(question_group_id)
+        
+        # Check if already assigned
+        if question_group in cls.question_groups:
+            return jsonify({"error": "Question group is already assigned to this class"}), 400
+        
+        # Add the question group to the class
+        cls.question_groups.append(question_group)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Question group '{question_group.name}' added to class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def remove_question_group_from_class(class_id, group_id):
+    """Remove a question group from a class"""
+    try:
+        cls = Class.query.get_or_404(class_id)
+        question_group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Check if assigned
+        if question_group not in cls.question_groups:
+            return jsonify({"error": "Question group is not assigned to this class"}), 400
+        
+        # Remove the question group from the class
+        cls.question_groups.remove(question_group)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Question group '{question_group.name}' removed from class successfully!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@class_controller.route('/api/classes/<int:class_id>/students', methods=['POST'])
+@login_required
+def add_student_to_class_by_username(class_id):
+    """Add a student to a class by username"""
+    try:
+        data = request.json
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        cls = Class.query.get_or_404(class_id)
+        student = User.query.filter_by(username=username).first()
+        
+        if not student:
+            return jsonify({"error": f"Student with username '{username}' not found"}), 404
+        
+        # Check if already enrolled
+        if student in cls.students:
+            return jsonify({"error": f"Student '{username}' is already enrolled in this class"}), 400
+        
+        # Add the student to the class
+        cls.students.append(student)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Student '{username}' added to class successfully!"
         })
     except Exception as e:
         db.session.rollback()

@@ -18,7 +18,6 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(128), nullable=False)
     profile_img = db.Column(db.String(128))
     totp_key = db.Column(db.String(32))
-    is_admin = db.Column(db.Boolean, default=False)
     email = db.Column(db.String(120))
     status = db.Column(db.String(20))
     created_at = db.Column(db.DateTime)
@@ -31,6 +30,9 @@ class User(db.Model, UserMixin):
     # Define relationship with scores - let SQLAlchemy figure out the join automatically
     scores = db.relationship('Score', backref='user', lazy=True, cascade='all, delete-orphan')
     
+    # Session tracking relationship - temporarily commented out due to missing UserSession model
+    # sessions = db.relationship('UserSession', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    
     # The relationship with classes is defined in the Class model
     # It will be available as 'enrolled_classes' attribute due to the backref
     
@@ -41,3 +43,42 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         """Check if the password matches the stored hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def get_current_session(self):
+        """Get the user's current active session"""
+        # Temporarily disabled due to missing UserSession model
+        return None
+        # from user.models.user_session import UserSession
+        # return UserSession.get_current_session(self.id)
+    
+    def create_session(self, session_id, request=None):
+        """Create a new session for this user"""
+        # Temporarily disabled due to missing UserSession model
+        return None
+        # from user.models.user_session import UserSession
+        # return UserSession.create_session(self.id, session_id, request)
+    
+    def end_current_session(self):
+        """End the user's current active session"""
+        # Temporarily disabled due to missing UserSession model
+        return None
+        # current_session = self.get_current_session()
+        # if current_session:
+        #     current_session.end_session()
+        # return current_session
+    
+    def get_session_history(self, limit=10):
+        """Get user's session history"""
+        # Temporarily disabled due to missing UserSession model
+        return []
+        # from user.models.user_session import UserSession
+        # return UserSession.get_user_sessions(self.id, limit=limit)
+    
+    def update_session_activity(self, page=None, module_id=None, lesson_id=None, activity_type=None, details=None):
+        """Update current session activity"""
+        # Temporarily disabled due to missing UserSession model
+        return None
+        # current_session = self.get_current_session()
+        # if current_session:
+        #     current_session.update_activity(page, module_id, lesson_id, activity_type, details)
+        # return current_session

@@ -65,23 +65,15 @@ def send_notification():
             'sender_id': current_user.id,
             'sender_type': 'admin' if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins' else 'user',
             'sender_username': current_user.username,
-            'recipient_type': data.get('recipient_type', 'all_users'),
+            'recipient_type': data.get('recipient_type', 'all_admins'),
             'specific_user': data.get('specific_user'),
             'channel': data.get('channel', 'both')
         }
         
         # Determine recipients
-        recipient_type = data.get('recipient_type', 'all_users')
+        recipient_type = data.get('recipient_type', 'all_admins')
         
-        if recipient_type == 'all_users':
-            # Send to all users - system announcements appear as real-time announcements
-            result = notification_service.send_system_announcement(
-                title=data['title'],
-                message=data['message'],
-                priority=priority,
-                sender_info=sender_info
-            )
-        elif recipient_type == 'all_admins':
+        if recipient_type == 'all_admins':
             # Send to all admins
             result = notification_service.send_admin_notification(
                 notification_type=notification_type,
@@ -445,14 +437,7 @@ def setup_notification_websocket_events(socketio):
                 'timestamp': datetime.now().isoformat()
             }
             
-            if data.get('target') == 'all_users':
-                result = notification_service.send_system_announcement(
-                    title=data['title'],
-                    message=data['message'],
-                    priority=priority,
-                    sender_info=sender_info
-                )
-            elif data.get('target') == 'all_admins':
+            if data.get('target') == 'all_admins':
                 result = notification_service.send_admin_notification(
                     notification_type=notification_type,
                     title=data['title'],

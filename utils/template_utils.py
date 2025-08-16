@@ -21,6 +21,11 @@ def debug_template_paths(template_name):
     search_paths = []
     if hasattr(app.jinja_loader, 'searchpath'):
         search_paths.extend(app.jinja_loader.searchpath)
+    elif hasattr(app.jinja_loader, 'loaders'):
+        # Handle ChoiceLoader
+        for loader in app.jinja_loader.loaders:
+            if hasattr(loader, 'searchpath'):
+                search_paths.extend(loader.searchpath)
     
     print(f"Search paths: {search_paths}")
     

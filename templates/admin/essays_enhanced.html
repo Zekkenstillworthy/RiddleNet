@@ -1,0 +1,902 @@
+{% extends 'admin/base.html' %} 
+{% block head %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essay Responses | RiddleNet Admin</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/essay.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/essay.js') }}" defer></script>
+    <style>
+        /* Gamified enhancements */
+        .achievement-badge {
+            background: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+            color: var(--dark-navy);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(57, 255, 20, 0.6); }
+        }
+        
+        .xp-bar {
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 20px;
+            height: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .xp-fill {
+            background: var(--gradient-secondary);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .xp-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .level-indicator {
+            background: var(--gradient-primary);
+            color: var(--dark-navy);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-cyber);
+        }
+        
+        .quest-card {
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition-normal);
+        }
+        
+        .quest-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-secondary);
+        }
+        
+        .quest-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--neon-green);
+            box-shadow: 0 12px 40px rgba(57, 255, 20, 0.2);
+        }
+        
+        .power-up-btn {
+            background: var(--gradient-primary);
+            border: none;
+            color: var(--dark-navy);
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-cyber);
+        }
+        
+        .power-up-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+        }
+        
+        .completion-meter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+        
+        .completion-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(var(--neon-green) 0deg, var(--cyber-glow) var(--progress, 0deg), rgba(139, 92, 246, 0.2) var(--progress, 0deg));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            position: relative;
+        }
+        
+        .completion-circle::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background: var(--dark-navy);
+        }
+        
+        .completion-circle span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .streak-counter {
+            background: var(--gradient-dark);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--cyber-glow);
+        }
+        
+        .streak-counter .fire-icon {
+            color: #ff6b35;
+            filter: drop-shadow(0 0 8px #ff6b35);
+            animation: flicker 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .rank-badge {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: var(--dark-navy);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .mission-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .mission-status.active {
+            background: rgba(57, 255, 20, 0.2);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+        }
+        
+        .mission-status.completed {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--cyber-glow);
+            border: 1px solid var(--cyber-glow);
+        }
+        
+        .mission-status.pending {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--network-purple);
+            border: 1px solid var(--network-purple);
+        }
+        
+        .cyber-grid {
+            background-image: 
+                linear-gradient(rgba(0, 217, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+        }
+        
+        .neural-connection {
+            position: absolute;
+            width: 2px;
+            background: var(--gradient-primary);
+            opacity: 0.3;
+            animation: dataFlow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+{% endblock %}
+
+{% block body %}
+{{ super() }}
+
+<body class="cyber-grid">
+    <div class="main-content">
+        <!-- Mobile sidebar toggle button -->
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle navigation menu">
+            <i class='bx bx-menu'></i>
+        </button>
+        
+        <!-- Neural connections for visual flair -->
+        <div class="neural-connection" style="top: 10%; left: 5%; height: 100px; animation-delay: 0s;"></div>
+        <div class="neural-connection" style="top: 30%; right: 8%; height: 80px; animation-delay: 1s;"></div>
+        <div class="neural-connection" style="bottom: 20%; left: 15%; height: 120px; animation-delay: 2s;"></div>
+        
+        <!-- Header with Gamified Elements -->
+        <header>
+            <div>
+                <h2>🎮 Essay Quest Central</h2>
+                {% if step == 'classes' %}
+                    <p class="header-subtitle">🏆 Select a guild (class) to begin your reviewing adventure</p>
+                {% elif step == 'students' %}
+                    <p class="header-subtitle">👥 Guild: {{ selected_class.name }} - Choose your apprentice scholar</p>
+                {% elif step == 'essays' %}
+                    <p class="header-subtitle">📝 Scholar: {{ selected_student.username }} - Review their knowledge scrolls</p>
+                {% endif %}
+            </div>
+            <div class="admin-info">
+                <div class="level-indicator">
+                    <i class='bx bx-trophy'></i>
+                    <span>Admin Lvl 99</span>
+                </div>
+                <div class="streak-counter">
+                    <i class='bx bx-flame fire-icon'></i>
+                    <span>7 Day Streak</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages with Gaming Style -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="quest-card">
+            <div class="achievement-badge">Quest {{ 'Complete' if category == 'success' else 'Update' }}</div>
+            <p style="margin: 8px 0 0 0; color: var(--text-primary);">{{ message }}</p>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Navigation Breadcrumb with Gaming Theme -->
+        <div class="breadcrumb">
+            <a href="{{ url_for('essay.index', step='classes') }}" class="power-up-btn" style="padding: 8px 16px; font-size: 0.8rem;">
+                🏰 Guild Hall
+            </a>
+            {% if step in ['students', 'essays'] %}
+            <span class="breadcrumb-separator" style="color: var(--cyber-glow); margin: 0 12px;">⚡</span>
+            <a href="{{ url_for('essay.index', step='students', class_id=selected_class.id) }}" class="power-up-btn" style="padding: 8px 16px; font-size: 0.8rem;">
+                👥 {{ selected_class.name }}
+            </a>
+            {% endif %}
+            {% if step == 'essays' %}
+            <span class="breadcrumb-separator" style="color: var(--cyber-glow); margin: 0 12px;">⚡</span>
+            <span class="rank-badge" style="padding: 8px 16px;">
+                📜 {{ selected_student.username }}'s Scrolls
+            </span>
+            {% endif %}
+        </div>
+
+        {% if step == 'classes' %}
+        <!-- Classes View with Gamified Stats -->
+        <div class="stats-summary">
+            <div class="stats-card modern-card" data-stat="total">
+                <div class="stat-icon" style="background: var(--gradient-primary);">
+                    <i class='bx bx-building'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.total_classes or 0 }}</h3>
+                    <p>Active Guilds</p>
+                    <div class="achievement-badge" style="margin-top: 8px;">Guild Master</div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="students">
+                <div class="stat-icon" style="background: var(--gradient-secondary);">
+                    <i class='bx bx-user-circle'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.total_students or 0 }}</h3>
+                    <p>Scholar Apprentices</p>
+                    <div class="xp-bar" style="margin-top: 8px;">
+                        <div class="xp-fill" style="width: {{ ((stats.total_students or 0) / 100 * 100) if stats.total_students else 0 }}%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="essays">
+                <div class="stat-icon" style="background: var(--gradient-dark);">
+                    <i class='bx bx-edit'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.total_essays or 0 }}</h3>
+                    <p>Knowledge Scrolls</p>
+                    <div class="mission-status completed">
+                        <i class='bx bx-check'></i>
+                        <span>Epic Loot</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="completion">
+                <div class="completion-meter">
+                    <div class="completion-circle" style="--progress: {{ (stats.completion_rate or 0) * 3.6 }}deg;">
+                        <span>{{ stats.completion_rate or 0 }}%</span>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-primary); margin: 0; font-weight: 600;">Quest Progress</p>
+                        <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 0.85rem;">Review completion rate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive modern-card">
+            <h3 style="color: var(--cyber-glow); margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <i class='bx bx-castle'></i>
+                Guild Directory
+            </h3>
+            <table role="table" aria-label="Classes table">
+                <thead>
+                    <tr>
+                        <th>🏰 Guild Name</th>
+                        <th>⚔️ Section</th>
+                        <th>🔮 Guild Code</th>
+                        <th>👥 Apprentices</th>
+                        <th>📜 Total Scrolls</th>
+                        <th>⏳ Pending Reviews</th>
+                        <th>📊 Progress</th>
+                        <th>🎯 Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in classes_data %}
+                    <tr onclick="location.href='{{ url_for('essay.index', step='students', class_id=data.id) }}'" style="cursor: pointer;">
+                        <td>
+                            <strong style="color: var(--cyber-glow);">{{ data.name }}</strong>
+                            {% if data.essay_count > 50 %}
+                            <div class="achievement-badge" style="margin-top: 4px;">Legendary</div>
+                            {% elif data.essay_count > 20 %}
+                            <div class="rank-badge" style="margin-top: 4px;">Elite</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ data.section or 'General' }}</td>
+                        <td>
+                            <code style="background: rgba(0, 217, 255, 0.2); color: var(--cyber-glow); padding: 4px 8px; border-radius: 6px;">
+                                {{ data.code }}
+                            </code>
+                        </td>
+                        <td>
+                            <span class="mission-status {% if data.student_count > 0 %}active{% else %}pending{% endif %}">
+                                <i class='bx bx-group'></i>
+                                {{ data.student_count or 0 }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="mission-status {% if data.essay_count > 0 %}completed{% else %}pending{% endif %}">
+                                <i class='bx bx-scroll'></i>
+                                {{ data.essay_count or 0 }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="mission-status {% if data.pending_count > 0 %}active{% else %}completed{% endif %}">
+                                <i class='bx bx-time'></i>
+                                {{ data.pending_count or 0 }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="xp-bar">
+                                <div class="xp-fill" style="width: {{ data.completion_rate or 0 }}%;"></div>
+                            </div>
+                            <small style="color: var(--text-secondary);">{{ data.completion_rate or 0 }}% complete</small>
+                        </td>
+                        <td>
+                            <div class="actions-column">
+                                <button class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="event.stopPropagation(); location.href='{{ url_for('essay.index', step='students', class_id=data.id) }}'">
+                                    <i class='bx bx-right-arrow-alt'></i>
+                                    Enter Guild
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="quest-card" style="text-align: center; margin: 0;">
+                                <i class='bx bx-castle' style="font-size: 3rem; color: var(--network-purple); margin-bottom: 16px;"></i>
+                                <h3 style="color: var(--text-primary); margin-bottom: 8px;">No Guilds Discovered</h3>
+                                <p style="color: var(--text-secondary);">The realm awaits the creation of new guilds!</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% elif step == 'students' %}
+        <!-- Students View with Gaming Elements -->
+        <div class="stats-summary">
+            <div class="stats-card modern-card" data-stat="total">
+                <div class="stat-icon" style="background: var(--gradient-primary);">
+                    <i class='bx bx-group'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.total_students or 0 }}</h3>
+                    <p>Guild Members</p>
+                    <div class="rank-badge" style="margin-top: 8px;">Active Scholars</div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="essays">
+                <div class="stat-icon" style="background: var(--gradient-secondary);">
+                    <i class='bx bx-scroll'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.total_essays or 0 }}</h3>
+                    <p>Knowledge Scrolls</p>
+                    <div class="mission-status completed">
+                        <i class='bx bx-check-circle'></i>
+                        <span>Collected</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="pending">
+                <div class="stat-icon" style="background: var(--gradient-dark);">
+                    <i class='bx bx-time-five'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.pending_reviews or 0 }}</h3>
+                    <p>Awaiting Review</p>
+                    <div class="mission-status {% if stats.pending_reviews > 0 %}active{% else %}completed{% endif %}">
+                        <i class='bx bx-hourglass'></i>
+                        <span>Quest Items</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="average">
+                <div class="completion-meter">
+                    <div class="completion-circle" style="--progress: {{ (stats.average_score or 0) * 3.6 }}deg;">
+                        <span>{{ stats.average_score or 0 }}%</span>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-primary); margin: 0; font-weight: 600;">Guild Average</p>
+                        <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 0.85rem;">Scholar performance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive modern-card">
+            <h3 style="color: var(--cyber-glow); margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <i class='bx bx-user-voice'></i>
+                Scholar Roster - {{ selected_class.name }}
+            </h3>
+            <table role="table" aria-label="Students table">
+                <thead>
+                    <tr>
+                        <th>🎭 Scholar Name</th>
+                        <th>📧 Communication Crystal</th>
+                        <th>📜 Scroll Count</th>
+                        <th>⏳ Pending Quests</th>
+                        <th>⭐ Scholar Rank</th>
+                        <th>📊 Progress</th>
+                        <th>🎯 Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in students_data %}
+                    <tr onclick="location.href='{{ url_for('essay.index', step='essays', class_id=selected_class.id, student_id=data.id) }}'" style="cursor: pointer;">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="user-profile-pic" style="width: 40px; height: 40px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: var(--dark-navy); font-weight: 700;">
+                                    {{ data.username[0].upper() }}
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-primary);">{{ data.username }}</strong>
+                                    {% if data.essay_count > 10 %}
+                                    <div class="achievement-badge" style="margin-top: 4px;">Scholar Elite</div>
+                                    {% elif data.essay_count > 5 %}
+                                    <div class="rank-badge" style="margin-top: 4px;">Apprentice</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-secondary);">{{ data.email }}</td>
+                        <td>
+                            <span class="mission-status {% if data.essay_count > 0 %}completed{% else %}pending{% endif %}">
+                                <i class='bx bx-scroll'></i>
+                                {{ data.essay_count or 0 }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="mission-status {% if data.pending_count > 0 %}active{% else %}completed{% endif %}">
+                                <i class='bx bx-time'></i>
+                                {{ data.pending_count or 0 }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if data.average_score >= 90 %}
+                            <div class="achievement-badge">Legendary</div>
+                            {% elif data.average_score >= 80 %}
+                            <div class="rank-badge">Master</div>
+                            {% elif data.average_score >= 70 %}
+                            <div class="mission-status completed">Scholar</div>
+                            {% else %}
+                            <div class="mission-status pending">Novice</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="xp-bar">
+                                <div class="xp-fill" style="width: {{ data.completion_rate or 0 }}%;"></div>
+                            </div>
+                            <small style="color: var(--text-secondary);">{{ data.completion_rate or 0 }}% mastery</small>
+                        </td>
+                        <td>
+                            <div class="actions-column">
+                                <button class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem;" onclick="event.stopPropagation(); location.href='{{ url_for('essay.index', step='essays', class_id=selected_class.id, student_id=data.id) }}'">
+                                    <i class='bx bx-search'></i>
+                                    Review Scrolls
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="quest-card" style="text-align: center; margin: 0;">
+                                <i class='bx bx-user-plus' style="font-size: 3rem; color: var(--network-purple); margin-bottom: 16px;"></i>
+                                <h3 style="color: var(--text-primary); margin-bottom: 8px;">No Scholars Found</h3>
+                                <p style="color: var(--text-secondary);">This guild awaits brave apprentices to join!</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% elif step == 'essays' %}
+        <!-- Essays View with Full Gaming Experience -->
+        <div class="stats-summary">
+            <div class="stats-card modern-card" data-stat="total">
+                <div class="stat-icon" style="background: var(--gradient-primary);">
+                    <i class='bx bx-library'></i>
+                </div>
+                <div>
+                    <h3>{{ essays_pagination.total if essays_pagination else 0 }}</h3>
+                    <p>Knowledge Scrolls</p>
+                    <div class="achievement-badge" style="margin-top: 8px;">Collector</div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="pending">
+                <div class="stat-icon" style="background: var(--gradient-secondary);">
+                    <i class='bx bx-hourglass'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.pending_count or 0 }}</h3>
+                    <p>Pending Quests</p>
+                    <div class="mission-status {% if stats.pending_count > 0 %}active{% else %}completed{% endif %}">
+                        <i class='bx bx-clock'></i>
+                        <span>Review Needed</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="reviewed">
+                <div class="stat-icon" style="background: var(--gradient-dark);">
+                    <i class='bx bx-check-double'></i>
+                </div>
+                <div>
+                    <h3>{{ stats.reviewed_count or 0 }}</h3>
+                    <p>Completed Reviews</p>
+                    <div class="mission-status completed">
+                        <i class='bx bx-trophy'></i>
+                        <span>Achievement</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card modern-card" data-stat="average">
+                <div class="completion-meter">
+                    <div class="completion-circle" style="--progress: {{ (stats.average_grade or 0) * 3.6 }}deg;">
+                        <span>{{ stats.average_grade or 0 }}%</span>
+                    </div>
+                    <div>
+                        <p style="color: var(--text-primary); margin: 0; font-weight: 600;">Scholar Rating</p>
+                        <p style="color: var(--text-secondary); margin: 4px 0 0 0; font-size: 0.85rem;">Knowledge mastery</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section with Gaming Theme -->
+        <div class="filters-row modern-card">
+            <h3 style="color: var(--cyber-glow); display: flex; align-items: center; gap: 12px;">
+                <i class='bx bx-filter-alt'></i>
+                Quest Filters
+            </h3>
+            <form action="{{ url_for('essay.index') }}" method="GET" id="filter-form">
+                <input type="hidden" name="step" value="essays">
+                <input type="hidden" name="class_id" value="{{ current_filters.class_id or selected_class.id }}">
+                <input type="hidden" name="student_id" value="{{ current_filters.student_id or selected_student.id }}">
+                
+                <div class="filter-group">
+                    <label>🏆 Quest Status:</label>
+                    <select name="reviewed" class="filter-select">
+                        <option value="">All Scrolls</option>
+                        <option value="false" {% if current_filters.reviewed == 'false' %}selected{% endif %}>Awaiting Review</option>
+                        <option value="true" {% if current_filters.reviewed == 'true' %}selected{% endif %}>Reviewed</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>📚 Knowledge Domain:</label>
+                    <select name="category" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="networking" {% if current_filters.category == 'networking' %}selected{% endif %}>🌐 Networking</option>
+                        <option value="security" {% if current_filters.category == 'security' %}selected{% endif %}>🛡️ Security</option>
+                        <option value="troubleshooting" {% if current_filters.category == 'troubleshooting' %}selected{% endif %}>🔧 Troubleshooting</option>
+                        <option value="general" {% if current_filters.category == 'general' %}selected{% endif %}>📖 General</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>🎯 Sort Quest Log:</label>
+                    <select name="sort_by" class="filter-select">
+                        <option value="newest" {% if current_filters.sort_by == 'newest' %}selected{% endif %}>🆕 Newest First</option>
+                        <option value="oldest" {% if current_filters.sort_by == 'oldest' %}selected{% endif %}>📅 Oldest First</option>
+                        <option value="grade_high" {% if current_filters.sort_by == 'grade_high' %}selected{% endif %}>🏆 Highest Grade</option>
+                        <option value="grade_low" {% if current_filters.sort_by == 'grade_low' %}selected{% endif %}>📈 Lowest Grade</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="power-up-btn">
+                    <i class='bx bx-search'></i>
+                    Apply Filters
+                </button>
+            </form>
+        </div>
+
+        <div class="table-responsive modern-card">
+            <h3 style="color: var(--cyber-glow); margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <i class='bx bx-scroll'></i>
+                {{ selected_student.username }}'s Knowledge Scrolls
+            </h3>
+            <table role="table" aria-label="Essay responses table">
+                <thead>
+                    <tr>
+                        <th>📜 Scroll Content</th>
+                        <th>🏷️ Knowledge Domain</th>
+                        <th>📅 Creation Date</th>
+                        <th>🎯 Quest Status</th>
+                        <th>⭐ Scholar Rating</th>
+                        <th>🎮 Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if essays_pagination and essays_pagination.items %}
+                    {% for essay in essays_pagination.items %}
+                    <tr>
+                        <td>
+                            <div class="essay-excerpt">
+                                {{ essay.response_text[:100] }}{% if essay.response_text|length > 100 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-badge" style="background: rgba(0, 217, 255, 0.2); color: var(--cyber-glow); padding: 4px 12px; border-radius: 15px; font-size: 0.8rem;">
+                                🌐 {{ essay.category or 'General' }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-secondary);">
+                            {{ essay.submission_date.strftime('%m/%d %H:%M') if essay.submission_date else 'Unknown' }}
+                        </td>
+                        <td>
+                            <span class="mission-status {% if essay.is_graded %}completed{% else %}active{% endif %}">
+                                {% if essay.is_graded %}
+                                <i class='bx bx-check-circle'></i>
+                                <span>Reviewed</span>
+                                {% else %}
+                                <i class='bx bx-time'></i>
+                                <span>Pending</span>
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if essay.graded_score %}
+                            <div class="completion-circle" style="width: 40px; height: 40px; --progress: {{ essay.graded_score * 3.6 }}deg;">
+                                <span style="font-size: 0.7rem;">{{ essay.graded_score }}%</span>
+                            </div>
+                            {% else %}
+                            <div class="mission-status pending">
+                                <i class='bx bx-question-mark'></i>
+                                <span>Ungraded</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="actions-column">
+                                <button class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 8px;" onclick="viewEssay({{ essay.id }})">
+                                    <i class='bx bx-show'></i>
+                                    Inspect
+                                </button>
+                                <form method="POST" action="{{ url_for('essay.delete', essay_id=essay.id) }}" style="display: inline;" onsubmit="return confirm('🗑️ Delete this knowledge scroll permanently?')">
+                                    <button type="submit" class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem; background: linear-gradient(135deg, #ff4757, #ff3742);">
+                                        <i class='bx bx-trash'></i>
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <div class="quest-card" style="text-align: center; margin: 0;">
+                                <i class='bx bx-scroll' style="font-size: 3rem; color: var(--network-purple); margin-bottom: 16px;"></i>
+                                <h3 style="color: var(--text-primary); margin-bottom: 8px;">No Knowledge Scrolls Found</h3>
+                                <p style="color: var(--text-secondary);">This scholar's knowledge vault is empty... for now!</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Gamified Pagination Info -->
+        {% if pagination %}
+        <div class="pagination-info modern-card">
+            <div class="pagination-summary" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span class="level-indicator">
+                        <i class='bx bx-data'></i>
+                        Page {{ pagination.page }} of {{ pagination.pages }}
+                    </span>
+                    <span style="margin-left: 16px; color: var(--text-secondary);">
+                        Showing {{ pagination.per_page * (pagination.page - 1) + 1 }} - 
+                        {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} 
+                        of {{ pagination.total }} items
+                    </span>
+                </div>
+                <div class="xp-bar" style="width: 200px;">
+                    <div class="xp-fill" style="width: {{ (pagination.page / pagination.pages * 100) if pagination.pages > 0 else 0 }}%;"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Gamified Pagination Controls -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('essay.index', step=step, class_id=current_filters.class_id, student_id=current_filters.student_id, page=pagination.prev_num, reviewed=current_filters.reviewed, category=current_filters.category, sort_by=current_filters.sort_by) }}" 
+               class="power-up-btn">
+                <i class='bx bx-left-arrow-alt'></i>
+                Previous Quest
+            </a>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages() %}
+            {% if page_num %}
+            {% if page_num != pagination.page %}
+            <a href="{{ url_for('essay.index', step=step, class_id=current_filters.class_id, student_id=current_filters.student_id, page=page_num, reviewed=current_filters.reviewed, category=current_filters.category, sort_by=current_filters.sort_by) }}" 
+               class="power-up-btn" style="min-width: 40px;">
+                {{ page_num }}
+            </a>
+            {% else %}
+            <span class="level-indicator" style="min-width: 40px; text-align: center;">{{ page_num }}</span>
+            {% endif %}
+            {% else %}
+            <span style="color: var(--text-secondary); padding: 8px;">...</span>
+            {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <a href="{{ url_for('essay.index', step=step, class_id=current_filters.class_id, student_id=current_filters.student_id, page=pagination.next_num, reviewed=current_filters.reviewed, category=current_filters.category, sort_by=current_filters.sort_by) }}" 
+               class="power-up-btn">
+                Next Quest
+                <i class='bx bx-right-arrow-alt'></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Enhanced Modals (keeping existing functionality) -->
+        <div id="essayModal" class="modal">
+            <div class="modal-content modern-card">
+                <div class="modal-header">
+                    <h3 style="color: var(--cyber-glow);">🔍 Knowledge Scroll Inspector</h3>
+                    <button class="close-modal power-up-btn" style="padding: 8px 12px;">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Modal content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div id="editEssayModal" class="modal">
+            <div class="modal-content modern-card">
+                <div class="modal-header">
+                    <h3 style="color: var(--cyber-glow);">✏️ Edit Knowledge Scroll</h3>
+                    <button class="close-modal power-up-btn" style="padding: 8px 12px;">
+                        <i class='bx bx-x'></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Modal content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gaming-themed JavaScript enhancements
+        function viewEssay(essayId) {
+            // Implementation for viewing essays with gaming theme
+            const modal = document.getElementById('essayModal');
+            modal.style.display = 'block';
+            // Add more gaming elements as needed
+        }
+        
+        // Add sound effects (optional)
+        function playSound(soundType) {
+            // Implement sound effects for button clicks, achievements, etc.
+        }
+        
+        // Achievement system (could be expanded)
+        function checkAchievements() {
+            // Check for review milestones and show achievement notifications
+        }
+        
+        // Initialize gaming features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover sound effects to buttons
+            document.querySelectorAll('.power-up-btn').forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.transform = 'translateY(-2px) scale(1.02)';
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Animate completion circles
+            document.querySelectorAll('.completion-circle').forEach(circle => {
+                const progress = circle.style.getPropertyValue('--progress');
+                circle.style.setProperty('--progress', '0deg');
+                setTimeout(() => {
+                    circle.style.setProperty('--progress', progress);
+                }, 500);
+            });
+        });
+    </script>
+</body>
+{% endblock %}

@@ -13,21 +13,226 @@
     
 </head>
 <style>    :root {
+        /* Modern Gaming Network Theme - Matching User Management */
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
         --cyber-glow: #00D9FF;
         --neon-green: #39FF14;
         --network-purple: #8B5CF6;
-        --dark-bg: rgba(26, 35, 126, 0.85);        --glass-bg: rgba(139, 92, 246, 0.08);
+        
+        /* Background & Surface Colors */
+        --background: #020617;
+        --surface: #0F172A;
+        --surface-hover: #1E293B;
+        --border-color: rgba(59, 130, 246, 0.2);
+        --glass-bg: rgba(15, 23, 42, 0.8);
         --glass-border: rgba(0, 217, 255, 0.15);
+        
+        /* Text Colors */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        --text-inverse: #ffffff;
+        
+        --dark-bg: rgba(26, 35, 126, 0.85);
         --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
         --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
     }
 
     body {
-        background: url("{{ url_for('static', filename='img/Bg.jpg') }}") no-repeat center center fixed;
-        background-size: cover;
-        color: #fff;
+        background: #020617;
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        color: #F8FAFC;
         min-height: 100vh;
-        font-family: 'Orbitron', 'Poppins', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Enhanced Analytics Dashboard Styles */
+    .btn-modern {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .dropdown-modern {
+        position: relative;
+        display: inline-block;
+    }
+
+    .export-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        min-width: 160px;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .export-menu a {
+        display: block;
+        padding: 12px 16px;
+        color: white;
+        text-decoration: none;
+        transition: background 0.3s ease;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .export-menu a:last-child {
+        border-bottom: none;
+    }
+
+    .export-menu a:hover {
+        background: rgba(0, 217, 255, 0.2);
+    }
+
+    .kpi-card {
+        padding: 24px;
+        text-align: center;
+        position: relative;
+        transition: transform 0.3s ease;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .real-time-badge {
+        background: var(--neon-green);
+        color: black;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        transition: transform 0.2s ease;
+    }
+
+    .kpi-label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .chart-controls select {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 6px;
+        padding: 6px 12px;
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .chart-info {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+    }
+
+    .activity-feed {
+        max-height: 400px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-glow) transparent;
+    }
+
+    .activity-feed::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .activity-feed::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .activity-feed::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
+    }
+
+    .activity-controls {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .auto-refresh-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .auto-refresh-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--neon-green);
+    }
+
+    .auto-refresh-toggle label {
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 20px;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Animation for value changes */
+    .value-update {
+        animation: valueChange 0.3s ease;
+    }
+
+    @keyframes valueChange {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); color: var(--neon-green); }
+        100% { transform: scale(1); }
     }
 
     /* Enhanced glassmorphism effects */
@@ -173,9 +378,7 @@
 </style>
 {% endblock %}
 
-{% block body %}
-{{ super() }}
-<body>
+{% block content %}
         <!-- Main Content -->
         <main>
             
@@ -312,6 +515,125 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Enhanced Analytics Dashboard Section -->
+                <div class="modern-card" style="margin-bottom: 32px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-chart-line"></i>
+                            Advanced Analytics Dashboard
+                        </h2>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="refreshAnalytics()" class="btn-modern" style="background: var(--gradient-primary); padding: 8px 16px; border: none; border-radius: 8px; color: white; cursor: pointer;">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <div class="dropdown-modern" style="position: relative;">
+                                <button class="btn-modern" style="background: var(--gradient-secondary); padding: 8px 16px; border: none; border-radius: 8px; color: white; cursor: pointer;" onclick="toggleExportMenu()">
+                                    <i class="fas fa-download"></i> Export
+                                    <i class="fas fa-chevron-down" style="margin-left: 8px;"></i>
+                                </button>
+                                <div class="export-menu" id="exportMenu" style="display: none; position: absolute; top: 100%; right: 0; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; min-width: 160px; z-index: 1000; backdrop-filter: blur(10px);">
+                                    <a onclick="exportAnalytics('pdf')" href="#" style="display: block; padding: 12px 16px; color: white; text-decoration: none; border-bottom: 1px solid var(--glass-border);"><i class="fas fa-file-pdf"></i> Export as PDF</a>
+                                    <a onclick="exportAnalytics('csv')" href="#" style="display: block; padding: 12px 16px; color: white; text-decoration: none;"><i class="fas fa-file-csv"></i> Export as CSV</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Real-time KPIs -->
+                    <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
+                        <div class="kpi-card modern-card" style="text-align: center; position: relative;">
+                            <div class="kpi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <i class="fas fa-users" style="color: var(--cyber-glow); font-size: 1.5rem;"></i>
+                                <div class="real-time-badge" style="background: var(--neon-green); color: black; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">LIVE</div>
+                            </div>
+                            <div class="kpi-value" id="active-users-today" style="font-size: 2rem; font-weight: bold; color: var(--cyber-glow); margin-bottom: 8px;">0</div>
+                            <div class="kpi-label" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Active Users Today</div>
+                        </div>
+                        <div class="kpi-card modern-card" style="text-align: center; position: relative;">
+                            <div class="kpi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <i class="fas fa-chart-bar" style="color: var(--network-purple); font-size: 1.5rem;"></i>
+                                <div class="real-time-badge" style="background: var(--neon-green); color: black; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">LIVE</div>
+                            </div>
+                            <div class="kpi-value" id="total-attempts-today" style="font-size: 2rem; font-weight: bold; color: var(--network-purple); margin-bottom: 8px;">0</div>
+                            <div class="kpi-label" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Attempts Today</div>
+                        </div>
+                        <div class="kpi-card modern-card" style="text-align: center; position: relative;">
+                            <div class="kpi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <i class="fas fa-trophy" style="color: var(--neon-green); font-size: 1.5rem;"></i>
+                                <div class="real-time-badge" style="background: var(--neon-green); color: black; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">LIVE</div>
+                            </div>
+                            <div class="kpi-value" id="avg-score-today" style="font-size: 2rem; font-weight: bold; color: var(--neon-green); margin-bottom: 8px;">0%</div>
+                            <div class="kpi-label" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Average Score Today</div>
+                        </div>
+                        <div class="kpi-card modern-card" style="text-align: center; position: relative;">
+                            <div class="kpi-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <i class="fas fa-eye" style="color: #ff6b6b; font-size: 1.5rem;"></i>
+                                <div class="real-time-badge" style="background: var(--neon-green); color: black; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">LIVE</div>
+                            </div>
+                            <div class="kpi-value" id="online-users" style="font-size: 2rem; font-weight: bold; color: #ff6b6b; margin-bottom: 8px;">0</div>
+                            <div class="kpi-label" style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Estimated Online</div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Analytics Charts Grid -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <!-- Performance Trend Chart -->
+                        <div class="modern-card">
+                            <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-trending-up"></i> Performance Trend
+                                </h3>
+                                <div class="chart-controls">
+                                    <select id="trend-period" onchange="updatePerformanceTrend()" style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; padding: 4px 8px; color: white;">
+                                        <option value="7">7 Days</option>
+                                        <option value="30" selected>30 Days</option>
+                                        <option value="90">90 Days</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="height: 350px; position: relative;">
+                                <canvas id="performanceTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Score Distribution -->
+                        <div class="modern-card">
+                            <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="color: var(--neon-green); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-chart-pie"></i> Enhanced Score Distribution
+                                </h3>
+                                <div class="chart-info">
+                                    <span style="color: rgba(255, 255, 255, 0.7); font-size: 0.8rem;">Real-time</span>
+                                </div>
+                            </div>
+                            <div style="height: 350px; position: relative;">
+                                <canvas id="enhancedScoreDistChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Real-time Activity Feed -->
+                    <div class="modern-card">
+                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-rss"></i> Real-time Activity Feed
+                            </h3>
+                            <div class="activity-controls" style="display: flex; align-items: center; gap: 16px;">
+                                <div class="auto-refresh-toggle" style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()">
+                                    <label for="auto-refresh" style="color: rgba(255, 255, 255, 0.8); cursor: pointer;">Auto-refresh</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-feed" id="activity-feed" style="max-height: 400px; overflow-y: auto;">
+                            <div class="loading-spinner" style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
+                                <i class="fas fa-spinner fa-spin"></i> Loading activity...
+                            </div>
+                        </div>
+                    </div>
+                </div>
                  
                 <!-- Enhanced Activity Log -->
                 <div class="section-header">
@@ -356,6 +678,30 @@
                 </div>
                 
     <script>
+        // Global connection status update function
+        function updateConnectionStatus(connected) {
+            const statusIndicator = document.querySelector('.websocket-status');
+            if (statusIndicator) {
+                if (connected) {
+                    statusIndicator.classList.add('connected');
+                    statusIndicator.classList.remove('disconnected');
+                    statusIndicator.innerHTML = '<i class="fas fa-wifi"></i> Connected';
+                } else {
+                    statusIndicator.classList.add('disconnected');
+                    statusIndicator.classList.remove('connected');
+                    statusIndicator.innerHTML = '<i class="fas fa-wifi-slash"></i> Disconnected';
+                }
+            }
+        }
+
+        // Cache-busting fetch utility
+        function fetchWithCacheBuster(url) {
+            const separator = url.includes('?') ? '&' : '?';
+            const cacheBustUrl = `${url}${separator}_t=${Date.now()}`;
+            console.log(`🔍 Fetching: ${cacheBustUrl}`);
+            return fetch(cacheBustUrl);
+        }
+
         // Audio feedback system
         function playClickSound() {
             const clickSound = document.getElementById('clickSound');
@@ -408,7 +754,9 @@
                 audio.currentTime = 0;
                 audio.play().catch(e => console.log('Audio play failed:', e));
             }
-        }        // Function to request active users from server
+        }
+
+        // Function to request active users from server
         function requestActiveUsers() {
             if (socketClient && socketClient.connected) {
                 console.log('📊 Requesting active users...');
@@ -499,8 +847,13 @@
                 });
 
                 socketClient.on('socket_error', function(data) {
-                    console.error('❌ Socket error:', data);
-                    logActivity(`WebSocket error: ${data.message || 'Unknown error'}`, 'error');
+                    if (data && (data.message || data.msg)) {
+                        console.error('❌ Socket error:', data.message || data.msg, data);
+                        logActivity(`WebSocket error: ${data.message || data.msg}`, 'error');
+                    } else {
+                        console.error('❌ Socket error:', data);
+                        logActivity('WebSocket error: Unknown error', 'error');
+                    }
                 });
 
                 // The socket client will connect automatically when ready
@@ -1008,6 +1361,396 @@
             logActivity(message, type);
         }
 
+        // ==================== ENHANCED ANALYTICS FUNCTIONS ====================
+        
+        let analyticsCharts = {};
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = true;
+
+        // Real-time metrics update
+        function updateRealTimeMetrics() {
+            fetchWithCacheBuster('/admin/api/analytics/real-time')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const metrics = data.data;
+                        document.getElementById('active-users-today').textContent = metrics.active_users_today || 0;
+                        document.getElementById('total-attempts-today').textContent = metrics.total_attempts_today || 0;
+                        document.getElementById('avg-score-today').textContent = `${metrics.avg_score_today || 0}%`;
+                        document.getElementById('online-users').textContent = metrics.estimated_online || 0;
+                        
+                        // Add visual indicators for changes
+                        animateValueChange('active-users-today');
+                        animateValueChange('total-attempts-today');
+                    }
+                })
+                .catch(error => console.error('Error updating real-time metrics:', error));
+        }
+
+        // Initialize performance trend chart
+        function initializePerformanceTrendChart() {
+            const ctx = document.getElementById('performanceTrendChart');
+            if (!ctx) return;
+
+            fetchWithCacheBuster('/admin/api/analytics/chart-data/performance-trend?date_range=30')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        analyticsCharts.performanceTrend = new Chart(ctx, {
+                            type: 'line',
+                            data: data.data,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Average Score (%)',
+                                            color: '#fff'
+                                        },
+                                        ticks: { color: '#fff' },
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                    },
+                                    y1: {
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'right',
+                                        title: {
+                                            display: true,
+                                            text: 'Submissions',
+                                            color: '#39FF14'
+                                        },
+                                        ticks: { color: '#39FF14' },
+                                        grid: { drawOnChartArea: false }
+                                    },
+                                    x: {
+                                        ticks: { color: '#fff' },
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: { color: '#fff' }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                        titleColor: '#fff',
+                                        bodyColor: '#fff'
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading performance trend chart:', error));
+        }
+
+        // Initialize enhanced score distribution chart
+        function initializeEnhancedScoreDistChart() {
+            const ctx = document.getElementById('enhancedScoreDistChart');
+            if (!ctx) return;
+
+            fetchWithCacheBuster('/admin/api/analytics/chart-data/score-distribution?date_range=30')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        analyticsCharts.enhancedScoreDist = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: data.data,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { 
+                                            color: '#fff',
+                                            padding: 20,
+                                            usePointStyle: true
+                                        }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                        titleColor: '#fff',
+                                        bodyColor: '#fff',
+                                        callbacks: {
+                                            label: function(context) {
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading enhanced score distribution chart:', error));
+        }
+
+        // Update performance trend based on selected period
+        function updatePerformanceTrend() {
+            const period = document.getElementById('trend-period').value;
+            
+            if (analyticsCharts.performanceTrend) {
+                analyticsCharts.performanceTrend.destroy();
+            }
+
+            fetch(`/admin/api/analytics/chart-data/performance-trend?date_range=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const ctx = document.getElementById('performanceTrendChart');
+                        analyticsCharts.performanceTrend = new Chart(ctx, {
+                            type: 'line',
+                            data: data.data,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Average Score (%)',
+                                            color: '#fff'
+                                        },
+                                        ticks: { color: '#fff' },
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                    },
+                                    y1: {
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'right',
+                                        title: {
+                                            display: true,
+                                            text: 'Submissions',
+                                            color: '#39FF14'
+                                        },
+                                        ticks: { color: '#39FF14' },
+                                        grid: { drawOnChartArea: false }
+                                    },
+                                    x: {
+                                        ticks: { color: '#fff' },
+                                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        labels: { color: '#fff' }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                        titleColor: '#fff',
+                                        bodyColor: '#fff'
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error updating performance trend:', error));
+        }
+
+        // Load and display real-time activity feed
+        function loadActivityFeed() {
+            fetchWithCacheBuster('/admin/api/analytics/activity-feed?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const feed = document.getElementById('activity-feed');
+                        
+                        if (data.data.length === 0) {
+                            feed.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">No recent activity</div>';
+                            return;
+                        }
+
+                        // Helper function to safely display percentage
+                        function safePercentage(score) {
+                            // Handle missing scores (like for essays)
+                            if (score === null || score === undefined || score === '' || isNaN(score)) {
+                                return null; // Return null to indicate no score
+                            }
+                            
+                            const numScore = parseFloat(score);
+                            
+                            // Ensure it's within bounds and formatted correctly
+                            if (isNaN(numScore) || numScore < 0) {
+                                return 0.0;
+                            } else if (numScore > 100) {
+                                return 100.0;
+                            } else {
+                                return Math.round(numScore * 10) / 10; // Round to 1 decimal
+                            }
+                        }
+
+                        feed.innerHTML = data.data.map(activity => {
+                            const percentage = safePercentage(activity.score);
+                            const hasScore = percentage !== null;
+                            
+                            return `
+                            <div style="display: flex; align-items: start; gap: 16px; padding: 16px; background: var(--glass-bg); border-radius: 8px; margin-bottom: 12px; border-left: 4px solid var(--cyber-glow);">
+                                <div style="width: 40px; height: 40px; background: var(--network-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                    ${activity.username.charAt(0).toUpperCase()}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="color: white; font-weight: 500; margin-bottom: 4px;">
+                                        ${activity.username}
+                                    </div>
+                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 8px;">
+                                        ${activity.message || activity.action}
+                                    </div>
+                                    <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+                                        ${activity.time_ago}
+                                    </div>
+                                </div>
+                                ${hasScore ? `<div style="color: var(--neon-green); font-weight: bold; font-size: 1.1rem;">
+                                    ${percentage}%
+                                </div>` : '<div style="color: rgba(255, 255, 255, 0.4); font-weight: bold; font-size: 0.9rem;">N/A</div>'}
+                            </div>
+                        `}).join('');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading activity feed:', error);
+                    document.getElementById('activity-feed').innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;">Error loading activity feed</div>';
+                });
+        }
+
+        // Toggle auto-refresh functionality
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('auto-refresh');
+            isAutoRefreshEnabled = checkbox.checked;
+            
+            if (isAutoRefreshEnabled) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            autoRefreshInterval = setInterval(() => {
+                updateRealTimeMetrics();
+                loadActivityFeed();
+            }, 30000); // Update every 30 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Refresh all analytics data
+        function refreshAnalytics() {
+            updateRealTimeMetrics();
+            loadActivityFeed();
+            updatePerformanceTrend();
+            
+            // Refresh enhanced score distribution
+            if (analyticsCharts.enhancedScoreDist) {
+                analyticsCharts.enhancedScoreDist.destroy();
+            }
+            initializeEnhancedScoreDistChart();
+            
+            // Show refresh indication
+            const refreshBtn = document.querySelector('[onclick="refreshAnalytics()"]');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            refreshBtn.disabled = true;
+            
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }, 2000);
+        }
+
+        // Toggle export menu
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Export analytics data
+        function exportAnalytics(format) {
+            const dateRange = document.getElementById('date-range')?.value || '30';
+            
+            // Show loading state
+            const exportBtn = document.querySelector('[onclick="toggleExportMenu()"]');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            exportBtn.disabled = true;
+            
+            // Create download link
+            const url = `/admin/api/analytics/export/${format}?date_range=${dateRange}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics_report_${new Date().toISOString().slice(0, 10)}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Hide export menu
+            document.getElementById('exportMenu').style.display = 'none';
+            
+            // Reset button after delay
+            setTimeout(() => {
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+            }, 2000);
+        }
+
+        // Animate value changes
+        function animateValueChange(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.style.transform = 'scale(1.1)';
+                element.style.transition = 'transform 0.2s ease';
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        // Close export menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const exportMenu = document.getElementById('exportMenu');
+            const exportBtn = document.querySelector('[onclick="toggleExportMenu()"]');
+            
+            if (exportMenu && !exportMenu.contains(event.target) && !exportBtn.contains(event.target)) {
+                exportMenu.style.display = 'none';
+            }
+        });
+
+        // Initialize enhanced analytics on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize enhanced analytics charts
+            setTimeout(() => {
+                initializePerformanceTrendChart();
+                initializeEnhancedScoreDistChart();
+                
+                // Load initial data
+                updateRealTimeMetrics();
+                loadActivityFeed();
+                
+                // Start auto-refresh
+                if (isAutoRefreshEnabled) {
+                    startAutoRefresh();
+                }
+                
+                console.log('✅ Enhanced Analytics Dashboard initialized');
+            }, 1000);
+        });
+
         function initializeKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
                 // Ctrl+R for refresh users
@@ -1123,5 +1866,4 @@
     
             </div>
         </main>
-    </body>
 {% endblock %}
