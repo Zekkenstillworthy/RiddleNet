@@ -28,9 +28,24 @@ class SimulationController:
                 SimulationAttempt.started_at.desc()
             ).limit(10).all()
             
-            # Performance metrics
+            # Convert attempts to dict safely
+            recent_attempts_data = []
+            for attempt in recent_attempts:
+                try:
+                    recent_attempts_data.append(attempt.to_dict())
+                except Exception as e:
+                    current_app.logger.warning(f"Error converting attempt to dict: {e}")
+                    continue
+            
+            # Performance metrics - calculate completion rate directly in SQL
             avg_completion_rate = db.session.query(
-                db.func.avg(Simulation.completion_rate)
+                db.func.avg(
+                    db.case(
+                        (Simulation.total_attempts > 0, 
+                         (Simulation.successful_completions * 100.0) / Simulation.total_attempts),
+                        else_=0.0
+                    )
+                )
             ).filter(Simulation.is_published == True).scalar() or 0
             
             return {
@@ -39,7 +54,7 @@ class SimulationController:
                     'total_paths': total_paths,
                     'published_paths': published_paths
                 },
-                'recent_attempts': [attempt.to_dict() for attempt in recent_attempts],
+                'recent_attempts': recent_attempts_data,
                 'metrics': {
                     'average_completion_rate': round(avg_completion_rate, 2),
                     'total_user_attempts': SimulationAttempt.query.count()
@@ -157,6 +172,153 @@ class SimulationController:
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating simulation: {str(e)}")
+            return {'error': f'Failed to create simulation: {str(e)}'}
+
+    def _sanitize_html(self, html: str) -> str:
+        """Basic HTML sanitizer to strip script tags and dangerous attributes.
+        Note: Prefer bleach if available; keeping lightweight and dependency-free here.
+        """
+        try:
+            if not html:
+                return ''
+            import re
+            # Remove script/style tags and their content
+            html = re.sub(r'<\s*(script|style)[^>]*>.*?<\s*/\s*\1\s*>', '', html, flags=re.I | re.S)
+            # Remove on* event handler attributes (onclick, onload, etc.)
+            html = re.sub(r'on[a-zA-Z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)', '', html, flags=re.I)
+            # Remove javascript: URLs
+            html = re.sub(r'href\s*=\s*("|\')\s*javascript:[^\1]*\1', 'href="#"', html, flags=re.I)
+            html = re.sub(r'src\s*=\s*("|\')\s*javascript:[^\1]*\1', '', html, flags=re.I)
+            return html
+        except Exception:
+            return html or ''
+
+    def _validate_enums(self, difficulty: str, sim_type: str):
+        allowed_difficulties = {'Easy', 'Medium', 'Hard', 'Beginner', 'Intermediate', 'Advanced', 'Expert'}
+        allowed_types = {'Standard', 'Guided', 'Assessment'}
+        if difficulty not in allowed_difficulties:
+            return False, f"Invalid difficulty: {difficulty}"
+        if sim_type and sim_type not in allowed_types:
+            # allow arbitrary but recommend allowed types; don't block if other strings exist
+            pass
+        return True, None
+
+    def create_simulation_from_payload(self, payload, admin_user_id):
+        """Create simulation from flat JSON payload per admin editor UI.
+        Expected keys: title, description (HTML), difficulty, type, estimated_duration, max_score, is_active,
+        learning_objectives (list[str]), step_definitions (list[{title, description, media?}])
+        """
+        try:
+            required = ['title', 'difficulty', 'type']
+            for k in required:
+                if not payload.get(k):
+                    return {'error': f'Missing required field: {k}'}
+
+            title = str(payload.get('title')).strip()
+            description = self._sanitize_html(payload.get('description', '') or '')
+            difficulty = str(payload.get('difficulty')).strip()
+            sim_type = str(payload.get('type')).strip()
+            ok, err = self._validate_enums(difficulty, sim_type)
+            if not ok:
+                return {'error': err}
+
+            try:
+                est = int(payload.get('estimated_duration') or 30)
+                if est < 1: est = 1
+            except Exception:
+                est = 30
+            try:
+                max_score = int(payload.get('max_score') or 100)
+                if max_score < 1: max_score = 1
+            except Exception:
+                max_score = 100
+            is_active = bool(payload.get('is_active', True))
+
+            # Objectives
+            objectives = payload.get('learning_objectives') or []
+            if not isinstance(objectives, list):
+                objectives = []
+            objectives = [str(o) for o in objectives if str(o).strip()]
+
+            # Steps
+            raw_steps = payload.get('step_definitions') or []
+            steps = []
+            if isinstance(raw_steps, list):
+                for i, s in enumerate(raw_steps):
+                    try:
+                        title_s = str(s.get('title', '')).strip()
+                        if not title_s:
+                            continue
+                        desc_s = self._sanitize_html(s.get('description', '') or '')
+                        step_obj = {
+                            'title': title_s,
+                            'description': desc_s,
+                            'order': i + 1
+                        }
+                        # Preserve optional fields (type, media, etc.)
+                        if s.get('type'):
+                            step_obj['type'] = str(s.get('type'))
+                        media = s.get('media')
+                        if media:
+                            step_obj['media'] = str(media)
+                        steps.append(step_obj)
+                    except Exception:
+                        continue
+
+            # Optional validation rules
+            validation_rules = payload.get('validation_rules')
+            if isinstance(validation_rules, dict):
+                # lightly sanitize strings
+                for key, rule in list(validation_rules.items()):
+                    if not isinstance(rule, dict):
+                        continue
+                    for rk in ['expected_answer', 'validation_type', 'hint', 'success_message', 'error_message']:
+                        if rk in rule and isinstance(rule[rk], str):
+                            rule[rk] = rule[rk].strip()
+
+            # Optional simulation config (devices, protocols, topology)
+            simulation_config = payload.get('simulation_config') or {}
+            if not isinstance(simulation_config, dict):
+                simulation_config = {}
+
+            # Optional tags
+            tags = payload.get('tags') or []
+            if isinstance(tags, str):
+                tags = [t.strip() for t in tags.split(',') if t.strip()]
+            elif isinstance(tags, list):
+                tags = [str(t).strip() for t in tags if str(t).strip()]
+            else:
+                tags = []
+
+            simulation = Simulation(
+                title=title,
+                description=description,
+                simulation_type=sim_type,
+                category='General',
+                difficulty=difficulty,
+                learning_objectives=objectives,
+                estimated_duration=est,
+                step_definitions=steps,
+                validation_rules=validation_rules if isinstance(validation_rules, dict) else {},
+                simulation_config=simulation_config,
+                base_score=max_score,  # treat as total base for now
+                time_bonus=0,
+                perfect_completion_bonus=0,
+                tags=tags,
+                is_active=is_active,
+                is_published=False,
+                created_by=admin_user_id,
+            )
+            db.session.add(simulation)
+            db.session.commit()
+            return {
+                'success': True,
+                'simulation': simulation.to_dict(include_steps=True),
+                'simulation_id': simulation.id
+            }
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error creating simulation from payload: {str(e)}")
             return {'error': f'Failed to create simulation: {str(e)}'}
     
     def _process_step_content(self, step):
@@ -379,15 +541,174 @@ class SimulationController:
             if not simulation:
                 return {'error': 'Simulation not found'}
             
-            # Update allowed fields
-            allowed_fields = [
-                'title', 'description', 'difficulty', 'learning_objectives',
-                'estimated_duration', 'tags', 'is_active', 'is_published'
-            ]
-            
-            for field in allowed_fields:
-                if field in update_data:
-                    setattr(simulation, field, update_data[field])
+            # Map incoming fields and sanitize
+            if 'title' in update_data:
+                simulation.title = str(update_data['title']).strip()
+            if 'description' in update_data:
+                simulation.description = self._sanitize_html(update_data.get('description') or '')
+            if 'difficulty' in update_data:
+                diff = str(update_data['difficulty']).strip()
+                ok, err = self._validate_enums(diff, update_data.get('type') or simulation.simulation_type)
+                if not ok:
+                    return {'error': err}
+                simulation.difficulty = diff
+            if 'type' in update_data:
+                simulation.simulation_type = str(update_data['type']).strip()
+            if 'estimated_duration' in update_data:
+                try:
+                    est = int(update_data['estimated_duration'])
+                    simulation.estimated_duration = max(1, est)
+                except Exception:
+                    pass
+            if 'max_score' in update_data:
+                try:
+                    ms = int(update_data['max_score'])
+                    simulation.base_score = max(1, ms)
+                    simulation.time_bonus = 0
+                    simulation.perfect_completion_bonus = 0
+                except Exception:
+                    pass
+            if 'is_active' in update_data:
+                simulation.is_active = bool(update_data['is_active'])
+            if 'is_published' in update_data:
+                simulation.is_published = bool(update_data['is_published'])
+            if 'learning_objectives' in update_data:
+                lo = update_data.get('learning_objectives') or []
+                if isinstance(lo, list):
+                    simulation.learning_objectives = [str(o) for o in lo if str(o).strip()]
+            if 'step_definitions' in update_data:
+                sd = update_data.get('step_definitions') or []
+                if isinstance(sd, list):
+                    cleaned = []
+                    for i, s in enumerate(sd):
+                        try:
+                            t = str(s.get('title', '')).strip()
+                            if not t: continue
+                            d = self._sanitize_html(s.get('description', '') or '')
+                            obj = {'title': t, 'description': d, 'order': i+1}
+                            if s.get('type'):
+                                obj['type'] = str(s.get('type')).strip()
+                            if s.get('media'):
+                                obj['media'] = str(s['media'])
+                            cleaned.append(obj)
+                        except Exception:
+                            continue
+                    simulation.step_definitions = cleaned
+            # Optional validation rules update with enhanced validation support
+            if 'validation_rules' in update_data and isinstance(update_data['validation_rules'], dict):
+                vr = update_data['validation_rules']
+                # sanitize standard validation rules
+                for key, rule in list(vr.items()):
+                    if not isinstance(rule, dict):
+                        continue
+                    for rk in ['expected_answer', 'validation_type', 'hint', 'success_message', 'error_message']:
+                        if rk in rule and isinstance(rule[rk], str):
+                            rule[rk] = rule[rk].strip()
+                
+                # Handle enhanced validation state requirements
+                if 'enhanced_validation_states' in vr:
+                    enhanced_states = vr['enhanced_validation_states']
+                    if isinstance(enhanced_states, dict):
+                        # Sanitize validation state requirements
+                        for state_name in ['CONFIGURED', 'CONNECTED', 'VALIDATED', 'WORKING']:
+                            if state_name in enhanced_states:
+                                state_config = enhanced_states[state_name]
+                                if isinstance(state_config, dict):
+                                    # Sanitize requirements for each state
+                                    if 'requirements' in state_config and isinstance(state_config['requirements'], list):
+                                        cleaned_reqs = []
+                                        for req in state_config['requirements']:
+                                            if isinstance(req, str):
+                                                cleaned_reqs.append(req.strip())
+                                        state_config['requirements'] = cleaned_reqs
+                                    
+                                    # Sanitize validation criteria
+                                    if 'validation_criteria' in state_config and isinstance(state_config['validation_criteria'], dict):
+                                        criteria = state_config['validation_criteria']
+                                        for key in ['min_devices_configured', 'min_connections_validated', 'min_tests_passed']:
+                                            if key in criteria:
+                                                try:
+                                                    criteria[key] = int(criteria[key])
+                                                except (ValueError, TypeError):
+                                                    criteria[key] = 0
+                
+                simulation.validation_rules = vr
+            # Optional simulation config update with enhanced validation support
+            if 'simulation_config' in update_data and isinstance(update_data['simulation_config'], dict):
+                config = update_data['simulation_config']
+                
+                # Handle enhanced validation configuration
+                if 'enhanced_validation' in config:
+                    enhanced_config = config['enhanced_validation']
+                    # Validate and sanitize enhanced validation config
+                    if isinstance(enhanced_config, dict):
+                        # Sanitize configuration requirements
+                        if 'configuration_requirements' in enhanced_config:
+                            config_req = enhanced_config['configuration_requirements']
+                            if isinstance(config_req, dict):
+                                # Ensure boolean values for requirement flags
+                                for key in ['require_ip_assignment', 'require_device_modes', 'require_cable_configuration']:
+                                    if key in config_req:
+                                        config_req[key] = bool(config_req[key])
+                        
+                        # Sanitize physical validation rules
+                        if 'physical_validation' in enhanced_config:
+                            phys_val = enhanced_config['physical_validation']
+                            if isinstance(phys_val, dict):
+                                # Ensure boolean values for validation flags
+                                for key in ['enforce_compatible_connections', 'validate_device_capabilities', 'check_cable_types']:
+                                    if key in phys_val:
+                                        phys_val[key] = bool(phys_val[key])
+                                        
+                                # Sanitize connection rules
+                                if 'connection_rules' in phys_val and isinstance(phys_val['connection_rules'], list):
+                                    cleaned_rules = []
+                                    for rule in phys_val['connection_rules']:
+                                        if isinstance(rule, dict) and 'from_type' in rule and 'to_type' in rule:
+                                            cleaned_rule = {
+                                                'from_type': str(rule['from_type']).strip(),
+                                                'to_type': str(rule['to_type']).strip(),
+                                                'allowed_cables': rule.get('allowed_cables', []),
+                                                'description': str(rule.get('description', '')).strip()
+                                            }
+                                            cleaned_rules.append(cleaned_rule)
+                                    phys_val['connection_rules'] = cleaned_rules
+                        
+                        # Sanitize connectivity test configuration
+                        if 'connectivity_tests' in enhanced_config:
+                            conn_tests = enhanced_config['connectivity_tests']
+                            if isinstance(conn_tests, dict):
+                                # Ensure boolean values for test flags
+                                for key in ['require_ping_tests', 'require_route_validation', 'require_connectivity_matrix']:
+                                    if key in conn_tests:
+                                        conn_tests[key] = bool(conn_tests[key])
+                                        
+                                # Sanitize required test cases
+                                if 'required_tests' in conn_tests and isinstance(conn_tests['required_tests'], list):
+                                    cleaned_tests = []
+                                    for test in conn_tests['required_tests']:
+                                        if isinstance(test, dict) and 'source' in test and 'target' in test:
+                                            cleaned_test = {
+                                                'source': str(test['source']).strip(),
+                                                'target': str(test['target']).strip(),
+                                                'test_type': str(test.get('test_type', 'ping')).strip(),
+                                                'expected_result': test.get('expected_result', True),
+                                                'description': str(test.get('description', '')).strip()
+                                            }
+                                            cleaned_tests.append(cleaned_test)
+                                    conn_tests['required_tests'] = cleaned_tests
+                
+                simulation.simulation_config = config
+            # Optional tags update
+            if 'tags' in update_data:
+                tags = update_data.get('tags') or []
+                if isinstance(tags, str):
+                    tags = [t.strip() for t in tags.split(',') if t.strip()]
+                elif isinstance(tags, list):
+                    tags = [str(t).strip() for t in tags if str(t).strip()]
+                else:
+                    tags = []
+                simulation.tags = tags
             
             simulation.updated_at = datetime.utcnow()
             db.session.commit()
@@ -615,3 +936,133 @@ class SimulationController:
             }
         
         return step_analytics
+    
+    def create_simulation(self, simulation_data):
+        """Create a new simulation with basic data"""
+        try:
+            # Validate required fields
+            required_fields = ['title', 'description', 'simulation_type']
+            for field in required_fields:
+                if field not in simulation_data or not simulation_data[field]:
+                    return {'error': f'Missing required field: {field}'}
+            
+            # Create new simulation
+            simulation = Simulation(
+                title=simulation_data['title'],
+                description=simulation_data['description'],
+                simulation_type=simulation_data['simulation_type'],
+                category=simulation_data.get('category', 'General'),
+                difficulty=simulation_data.get('difficulty', 'Beginner'),
+                learning_objectives=simulation_data.get('learning_objectives', []),
+                estimated_duration=simulation_data.get('estimated_duration', 30),
+                tags=simulation_data.get('tags', []),
+                step_definitions=simulation_data.get('step_definitions', []),
+                created_by=simulation_data.get('created_by', 1),
+                is_active=simulation_data.get('is_active', True),
+                is_published=simulation_data.get('is_published', False),
+                total_attempts=0,
+                successful_completions=0,
+                average_score=0.0
+            )
+            
+            db.session.add(simulation)
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'simulation_id': simulation.id,
+                'simulation': simulation.to_dict(),
+                'message': 'Simulation created successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error creating simulation: {str(e)}")
+            return {'error': f'Failed to create simulation: {str(e)}'}
+
+    def toggle_simulation_status(self, simulation_id, is_published):
+        """Toggle simulation publish status"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            simulation.is_published = is_published
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'simulation_id': simulation_id,
+                'is_published': is_published,
+                'message': f'Simulation {"published" if is_published else "unpublished"} successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error toggling simulation status: {str(e)}")
+            return {'error': f'Failed to update simulation status: {str(e)}'}
+
+    def duplicate_simulation(self, simulation_id):
+        """Create a copy of an existing simulation"""
+        try:
+            original = Simulation.query.get(simulation_id)
+            if not original:
+                return {'error': 'Simulation not found'}
+            
+            # Create duplicate with modified title
+            duplicate = Simulation(
+                title=f"{original.title} (Copy)",
+                description=original.description,
+                simulation_type=original.simulation_type,
+                category=original.category,
+                difficulty=original.difficulty,
+                learning_objectives=original.learning_objectives.copy() if original.learning_objectives else [],
+                estimated_duration=original.estimated_duration,
+                tags=original.tags.copy() if original.tags else [],
+                step_definitions=original.step_definitions.copy() if original.step_definitions else [],
+                created_by=original.created_by,
+                is_active=True,
+                is_published=False,  # Duplicates start as unpublished
+                total_attempts=0,
+                successful_completions=0,
+                average_score=0.0
+            )
+            
+            db.session.add(duplicate)
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'original_id': simulation_id,
+                'duplicate_id': duplicate.id,
+                'duplicate': duplicate.to_dict(),
+                'message': 'Simulation duplicated successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error duplicating simulation: {str(e)}")
+            return {'error': f'Failed to duplicate simulation: {str(e)}'}
+
+    def delete_simulation(self, simulation_id):
+        """Delete a simulation (soft delete by setting is_active to False)"""
+        try:
+            simulation = Simulation.query.get(simulation_id)
+            if not simulation:
+                return {'error': 'Simulation not found'}
+            
+            # Soft delete - just mark as inactive
+            simulation.is_active = False
+            simulation.is_published = False
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'simulation_id': simulation_id,
+                'message': 'Simulation deleted successfully'
+            }
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error deleting simulation: {str(e)}")
+            return {'error': f'Failed to delete simulation: {str(e)}'}

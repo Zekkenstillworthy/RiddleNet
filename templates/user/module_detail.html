@@ -460,6 +460,132 @@ html {
     color: var(--text-muted);
 }
 
+/* Assignment Styles */
+.assignment-item {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.assignment-item:hover {
+    border-color: var(--cyber-glow);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.assignment-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
+}
+
+.assignment-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.assignment-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.assignment-status.submitted {
+    color: var(--neon-green);
+}
+
+.assignment-status.pending {
+    color: var(--warning);
+}
+
+.assignment-status.overdue {
+    color: var(--neon-red);
+}
+
+.assignment-status.graded {
+    color: var(--neon-blue);
+}
+
+.status-not_submitted {
+    color: var(--text-muted);
+}
+
+.status-submitted {
+    color: var(--neon-green);
+}
+
+.status-graded {
+    color: var(--neon-blue);
+}
+
+.status-overdue {
+    color: var(--neon-red);
+}
+
+.status-resubmitted {
+    color: var(--warning);
+}
+
+.assignment-grade {
+    background: var(--neon-blue);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.assignment-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.assignment-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.assignment-btn-primary {
+    background: var(--cyber-glow);
+    color: white;
+}
+
+.assignment-btn-primary:hover {
+    background: var(--cyber-glow-hover);
+    transform: translateY(-1px);
+}
+
+.assignment-btn-secondary {
+    background: var(--surface-light);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+}
+
+.assignment-btn-secondary:hover {
+    background: var(--border-light);
+    color: var(--text-primary);
+}
+
 .material-item {
     background: var(--surface);
     border-radius: 12px;
@@ -765,6 +891,75 @@ html {
                                 <i class="fas fa-circle"></i>
                                 Not Started
                             </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Assignments Section -->
+            {% if assignments|length > 0 %}
+            <div class="sidebar-section">
+                <h3 class="section-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Assignments ({{ assignments|length }})
+                </h3>
+                <div class="assignment-list">
+                    {% for item in assignments %}
+                    {% set assignment = item.assignment %}
+                    {% set submission = item.submission %}
+                    {% set status = item.status %}
+                    
+                    <div class="assignment-item">
+                        <div class="assignment-header">
+                            <div class="assignment-title">{{ assignment.title }}</div>
+                            <div class="assignment-status status-{{ status }}">
+                                {% if status == 'not_submitted' %}
+                                    <i class="fas fa-circle"></i> Not Submitted
+                                {% elif status == 'submitted' %}
+                                    <i class="fas fa-check-circle"></i> Submitted
+                                {% elif status == 'graded' %}
+                                    <i class="fas fa-star"></i> Graded
+                                {% elif status == 'overdue' %}
+                                    <i class="fas fa-exclamation-triangle"></i> Overdue
+                                {% elif status == 'resubmitted' %}
+                                    <i class="fas fa-redo"></i> Resubmitted
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="assignment-meta">
+                            {% if assignment.due_date %}
+                                <span>
+                                    <i class="fas fa-clock"></i> 
+                                    Due: {{ assignment.due_date.strftime('%b %d, %Y') }}
+                                </span>
+                            {% endif %}
+                            <span>
+                                <i class="fas fa-award"></i> 
+                                {{ assignment.points }} points
+                            </span>
+                            {% if submission and submission.grade is not none %}
+                                <span class="assignment-grade">
+                                    {{ submission.grade }}/{{ assignment.points }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Assignment Actions -->
+                        <div class="assignment-actions">
+                            <a href="{{ url_for('user_assignments.view_assignment', assignment_id=assignment.id) }}" 
+                               class="assignment-btn assignment-btn-primary">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                            {% if status in ['not_submitted', 'submitted'] and (not assignment.due_date or assignment.due_date > now) %}
+                                <a href="{{ url_for('user_assignments.submit_assignment_form', assignment_id=assignment.id) }}" 
+                                   class="assignment-btn assignment-btn-secondary">
+                                    <i class="fas fa-upload"></i>
+                                    {% if status == 'submitted' %}Re-submit{% else %}Submit{% endif %}
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}

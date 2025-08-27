@@ -1,0 +1,141 @@
+<style>
+.modal-body { max-height: 70vh; overflow-y: auto; }
+.modal-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 12px; }
+.close-btn { background: transparent; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+/* Reuse minimal styles from full page */
+.submission-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.form-section { margin-bottom: 20px; padding: 16px; border: 1px solid #dee2e6; border-radius: 8px; }
+.file-upload-area { border: 2px dashed #dee2e6; border-radius: 8px; padding: 24px; text-align: center; background: #f8f9fa; cursor: pointer; }
+.file-upload-area.dragover { border-color: #0984e3; background: #e3f2fd; transform: scale(1.01); }
+.file-list { margin-top: 12px; }
+.file-item { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:#fff; border:1px solid #dee2e6; border-radius:6px; margin-bottom:6px; }
+.remove-file { background:#e17055; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer; }
+</style>
+
+<div class="modal-header">
+  <h3 style="margin:0; color:#fff;">Submit: {{ assignment.title }}</h3>
+  <button class="close-btn" onclick="closeAssignmentModal()">&times;</button>
+  </div>
+<div class="modal-body">
+  <div class="submission-requirements" style="background:#e3f2fd; border:1px solid #bbdefb; border-radius:6px; padding:12px; margin-bottom:12px;">
+    <div class="requirements-title" style="font-weight:bold; color:#1976d2; margin-bottom:8px;">
+      Submission Requirements
+    </div>
+    <ul class="requirements-list" style="margin:0; padding-left:20px; color:#424242;">
+      {% if assignment.allow_text_submission %}
+      <li>Text submission is allowed</li>
+      {% endif %}
+      {% if assignment.allow_file_uploads %}
+      <li>File uploads are allowed</li>
+      {% if assignment.allowed_file_types %}
+      <li>Allowed file types: {{ assignment.allowed_file_types }}</li>
+      {% endif %}
+      <li>Maximum {{ assignment.max_files }} file(s)</li>
+      <li>Maximum file size: {{ assignment.max_file_size_mb }}MB per file</li>
+      {% endif %}
+    </ul>
+  </div>
+
+  {% if is_past_due %}
+  <div class="warning-panel" style="background:#fff3cd; border:1px solid #ffeaa7; border-radius:6px; padding:12px; margin:12px 0; color:#856404;">
+    <strong>Late Submission:</strong> This assignment is past due. Late submissions may receive reduced credit.
+  </div>
+  {% endif %}
+
+  <form id="submissionForm" class="submission-form" enctype="multipart/form-data">
+    {% if assignment.allow_text_submission %}
+    <div class="form-section">
+      <h4 style="margin:0 0 8px 0; color:#495057;"><i class="fas fa-edit"></i> Text Submission</h4>
+      <textarea id="submissionText" name="submission_text" class="form-control" rows="6" placeholder="Enter your assignment submission here...">{% if existing_submission %}{{ existing_submission.submission_text }}{% endif %}</textarea>
+      <div class="character-count" style="font-size:12px; color:#666; text-align:right; margin-top:4px;">
+        <span id="charCount">0</span> characters
+      </div>
+    </div>
+    {% endif %}
+
+    {% if assignment.allow_file_uploads %}
+    <div class="form-section">
+      <h4 style="margin:0 0 8px 0; color:#495057;"><i class="fas fa-upload"></i> File Upload</h4>
+      <div class="file-upload-area" id="fileUploadArea">
+        <div class="upload-icon" style="font-size:36px; color:#0984e3; margin-bottom:8px;">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <div>Drop files here or click to browse</div>
+        <p class="text-muted" style="margin:8px 0 0 0;">
+          Maximum {{ assignment.max_files }} files, {{ assignment.max_file_size_mb }}MB each
+          {% if assignment.allowed_file_types %}<br>Allowed types: {{ assignment.allowed_file_types }}{% endif %}
+        </p>
+        <input type="file" id="fileInput" name="files" multiple style="display:none;"
+          {% if assignment.allowed_file_types %}
+            accept="{{ '.' ~ (assignment.allowed_file_types.split(',') | map('trim') | join(',.')) }}"
+          {% endif %}>
+      </div>
+      <div id="fileList" class="file-list"></div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex" style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
+      <button type="button" class="btn btn-secondary" onclick="closeAssignmentModal()">Cancel</button>
+      <button type="submit" id="submitBtn" class="btn btn-primary" style="background:#0984e3; color:#fff;">
+        <i class="fas fa-paper-plane"></i> {% if existing_submission %}Resubmit{% else %}Submit{% endif %}
+      </button>
+    </div>
+  </form>
+
+  <div id="submissionProgress" class="submission-progress" style="display:none; text-align:center; padding:12px;">
+    <div class="spinner" style="border:3px solid #f3f3f3; border-top:3px solid #0984e3; border-radius:50%; width:28px; height:28px; animation: spin 1s linear infinite; margin:0 auto 10px;"></div>
+    <p>Submitting your assignment...</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  class AssignmentSubmissionForm {
+    constructor() {
+      this.maxFiles = {{ assignment.max_files or 1 }};
+      this.maxFileSize = {{ assignment.max_file_size_mb or 10 }} * 1024 * 1024;
+      this.allowedTypes = {% if assignment.allowed_file_types %}{{ assignment.allowed_file_types.split(',') | map('trim') | list | tojson | safe }}{% else %}[]{% endif %};
+      this.selectedFiles = [];
+      this.initializeForm();
+    }
+    initializeForm() {
+      const uploadArea = document.getElementById('fileUploadArea');
+      const fileInput = document.getElementById('fileInput');
+      if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
+        uploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        uploadArea.addEventListener('drop', this.handleDrop.bind(this));
+        fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+      }
+      const textArea = document.getElementById('submissionText');
+      if (textArea) {
+        textArea.addEventListener('input', this.updateCharCount.bind(this));
+        this.updateCharCount();
+      }
+      const form = document.getElementById('submissionForm');
+      form.addEventListener('submit', this.handleSubmit.bind(this));
+    }
+    handleDragOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+    handleDragLeave(e){ e.preventDefault(); e.currentTarget.classList.remove('dragover'); }
+    handleDrop(e){ e.preventDefault(); e.currentTarget.classList.remove('dragover'); const files = Array.from(e.dataTransfer.files); this.addFiles(files); }
+    handleFileSelect(e){ const files = Array.from(e.target.files); this.addFiles(files); e.target.value=''; }
+    addFiles(files){ for (const file of files){ if (this.selectedFiles.length >= this.maxFiles){ alert(`Maximum ${this.maxFiles} files allowed`); break; } if(!this.validateFile(file)) continue; this.selectedFiles.push(file);} this.updateFileList(); }
+    validateFile(file){ if (file.size > this.maxFileSize){ alert(`File "${file.name}" is too large. Maximum size is ${Math.round(this.maxFileSize/1024/1024)}MB`); return false;} if (this.allowedTypes.length>0){ const ext = file.name.split('.').pop().toLowerCase(); if (!this.allowedTypes.includes(ext)){ alert(`File type "${ext}" is not allowed. Allowed: ${this.allowedTypes.join(', ')}`); return false; } } return true; }
+    removeFile(index){ this.selectedFiles.splice(index,1); this.updateFileList(); }
+    updateFileList(){ const list = document.getElementById('fileList'); if(!list) return; list.innerHTML=''; this.selectedFiles.forEach((file, idx)=>{ const div=document.createElement('div'); div.className='file-item'; div.innerHTML=`<div class="file-info"><i class="fas fa-file file-icon"></i><span class="file-name">${file.name}</span><span class="file-size">${this.formatFileSize(file.size)}</span></div><button type="button" class="remove-file" onclick="window.__submissionForm.removeFile(${idx})"><i class=\"fas fa-times\"></i></button>`; list.appendChild(div); }); }
+    formatFileSize(bytes){ if(bytes===0) return '0 Bytes'; const k=1024; const sizes=['Bytes','KB','MB','GB']; const i=Math.floor(Math.log(bytes)/Math.log(k)); return parseFloat((bytes/Math.pow(k,i)).toFixed(2)) + ' ' + sizes[i]; }
+    updateCharCount(){ const t=document.getElementById('submissionText'); const c=document.getElementById('charCount'); if(t && c){ c.textContent = t.value.length.toLocaleString(); } }
+    async handleSubmit(e){ e.preventDefault(); const fd=new FormData(); const t=document.getElementById('submissionText'); if(t){ fd.append('submission_text', t.value); } this.selectedFiles.forEach(f=>fd.append('files', f)); if(!(t?.value) && this.selectedFiles.length===0){ alert('Please provide either a text submission or upload files'); return; }
+      document.getElementById('submissionForm').style.display='none'; document.getElementById('submissionProgress').style.display='block';
+      try{
+        const res = await fetch(`/api/assignments/{{ assignment.id }}/submit`, { method:'POST', body: fd });
+        const result = await res.json();
+        if(result.success){ alert('Assignment submitted successfully!'); closeAssignmentModal(true); }
+        else { throw new Error(result.error || 'Submission failed'); }
+      } catch(err){ alert('Error submitting assignment: ' + err.message); document.getElementById('submissionProgress').style.display='none'; document.getElementById('submissionForm').style.display='block'; }
+    }
+  }
+  window.__submissionForm = new AssignmentSubmissionForm();
+})();
+</script>

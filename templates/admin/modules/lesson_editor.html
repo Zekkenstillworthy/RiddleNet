@@ -1,6 +1,7 @@
-{% extends 'admin/base_admin.html' %}
+{% extends 'admin/base.html' %}
 
 {% block title %}Module Lesson Editor - {{ module.title }}{% endblock %}
+
 
 {% block content %}
 <style>
@@ -19,6 +20,18 @@
     --text-muted: rgba(255, 255, 255, 0.5);
     --cyber-glow: #00d9ff;
     --editor-highlight: #4f46e5;
+}
+
+/* Force dark theme throughout the page */
+body, html {
+    background: var(--dark-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Ensure all containers maintain dark theme */
+.container, .content, main, section, article {
+    background: transparent !important;
+    color: var(--text-primary) !important;
 }
 
 .editor-mode-indicator {
@@ -132,6 +145,28 @@
     overflow: hidden;
 }
 
+/* Ensure no white backgrounds anywhere */
+.main-editor-content * {
+    background-color: transparent !important;
+    color: inherit;
+}
+
+.main-editor-content textarea,
+.main-editor-content input,
+.main-editor-content div[contenteditable="true"] {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.main-editor-content textarea:focus,
+.main-editor-content input:focus,
+.main-editor-content div[contenteditable="true"]:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--cyber-glow) !important;
+}
+
 .editor-header {
     padding: 20px;
     border-bottom: 1px solid var(--border-color);
@@ -221,27 +256,50 @@
 }
 
 .editable-description {
-    background: transparent;
-    border: 2px dashed transparent;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px dashed var(--border-color);
     border-radius: 6px;
     padding: 8px 12px;
     min-height: 60px;
     resize: vertical;
     transition: all 0.2s ease;
-    color: var(--text-secondary);
+    color: var(--text-primary) !important;
     line-height: 1.6;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .editable-description:hover {
     border-color: var(--editor-highlight);
-    background: rgba(79, 70, 229, 0.1);
+    background: rgba(79, 70, 229, 0.1) !important;
 }
 
 .editable-description.editing {
     border-color: var(--editor-highlight);
-    background: rgba(79, 70, 229, 0.2);
+    background: rgba(79, 70, 229, 0.2) !important;
     outline: none;
+    color: var(--text-primary) !important;
+}
+
+.editable-description::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Dropdown (details/summary) preview styles for inserted content */
+details.lesson-dropdown {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 12px 0;
+    background: rgba(255,255,255,0.03);
+}
+details.lesson-dropdown summary {
+    cursor: pointer;
     color: var(--text-primary);
+}
+details.lesson-dropdown .dropdown-body {
+    margin-top: 8px;
+    color: var(--text-secondary);
 }
 
 .objectives-container {
@@ -713,6 +771,10 @@
                         <i class="fas fa-file-alt"></i>
                         Lesson Content
                     </div>
+                    <button class="edit-btn" onclick="insertDropdown()" title="Insert collapsible dropdown section">
+                        <i class="fas fa-square-caret-down"></i>
+                        Insert Dropdown
+                    </button>
                 </div>
                 <textarea class="editable-description" 
                           style="min-height: 200px;" 
@@ -1022,7 +1084,7 @@ function displayMediaFiles(mediaFiles) {
     if (imageContainer) imageContainer.innerHTML = '';
     if (documentContainer) documentContainer.innerHTML = '';
     
-    let videoCoun = 0, imageCount = 0, documentCount = 0;
+    let videoCount = 0, imageCount = 0, documentCount = 0;
     
     mediaFiles.forEach(media => {
         const mediaElement = createMediaElement(media);
@@ -1160,6 +1222,27 @@ function insertMediaIntoContent(fileUrl, mediaType) {
         hasUnsavedChanges = true;
         showToast('Media reference added to content', 'success');
     }
+}
+
+// Insert a collapsible dropdown (details/summary) into lesson content
+function insertDropdown() {
+    const contentTextarea = document.querySelector('[data-field="content"]');
+    if (!contentTextarea) return;
+
+    const snippet = `\n<details class="lesson-dropdown">\n  <summary><strong>New Section</strong> — click to expand</summary>\n  <div class="dropdown-body">\n    <p>Write details here. You can add lists, images, and code snippets.</p>\n  </div>\n</details>\n`;
+
+    const start = contentTextarea.selectionStart ?? contentTextarea.value.length;
+    const end = contentTextarea.selectionEnd ?? contentTextarea.value.length;
+    const before = contentTextarea.value.slice(0, start);
+    const after = contentTextarea.value.slice(end);
+    contentTextarea.value = before + snippet + after;
+    contentTextarea.focus();
+    // place cursor after inserted block
+    const pos = (before + snippet).length;
+    contentTextarea.setSelectionRange(pos, pos);
+
+    hasUnsavedChanges = true;
+    showToast('Dropdown section inserted', 'success');
 }
 
 // Delete media

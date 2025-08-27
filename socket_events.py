@@ -3284,19 +3284,6 @@ def handle_join_user_management(data=None):
         print(f"❌ Error joining user management: {str(e)}")
         emit('user_management_error', {'error': str(e)})
 
-@socketio.on('join_simulation_builder')
-@admin_only
-def handle_join_simulation_builder(data=None):
-    """Join simulation builder room for real-time simulation updates"""
-    try:
-        join_room('simulation_builder')
-        emit('joined_simulation_builder', {'success': True})
-        print(f"🏗️ Admin {current_user.username} joined simulation builder room")
-        
-    except Exception as e:
-        print(f"❌ Error joining simulation builder: {str(e)}")
-        emit('simulation_builder_error', {'error': str(e)})
-
 @socketio.on('join_notification_center')
 @admin_only
 def handle_join_notification_center(data=None):
@@ -3539,7 +3526,7 @@ def handle_simulation_auto_saved(data):
         }
         
         # Broadcast to simulation builder room
-        emit('simulation_auto_saved_broadcast', auto_save_data, room='simulation_builder', include_self=False)
+        emit('simulation_auto_saved_broadcast', auto_save_data, room='admin_room', include_self=False)
         
         # Confirm to sender
         emit('simulation_auto_save_confirmed', auto_save_data)
@@ -3566,8 +3553,8 @@ def handle_simulation_validated(data):
             'timestamp': datetime.utcnow().isoformat()
         }
         
-        # Broadcast to simulation builder room
-        emit('simulation_validated_broadcast', validation_data, room='simulation_builder')
+        # Broadcast to admin room
+        emit('simulation_validated_broadcast', validation_data, room='admin_room')
         
         print(f"✅ Simulation validated: {simulation_id} ({'valid' if is_valid else 'invalid'}) by {current_user.username}")
         

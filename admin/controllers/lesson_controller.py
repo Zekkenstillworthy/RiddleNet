@@ -1,4 +1,6 @@
 """
+
+
 Lesson Controller for Admin Interface
 Provides comprehensive lesson management functionality
 """
@@ -32,8 +34,11 @@ def index():
         
         print(f"DEBUG LESSON_INDEX: Found {len(lessons)} lessons")
         
-        # Get class filter options
-        classes = Class.query.filter_by(status='active').order_by(Class.name).all()
+        # Get class filter options (filter by ownership)
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            classes = Class.query.filter_by(status='active').order_by(Class.name).all()
+        else:
+            classes = Class.query.filter_by(status='active', created_by=getattr(current_user, 'id', None)).order_by(Class.name).all()
         print(f"DEBUG LESSON_INDEX: Found {len(classes)} active classes")
         
         # Get selected lesson for editing

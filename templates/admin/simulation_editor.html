@@ -1,0 +1,1396 @@
+{% extends "admin/base.html" %}
+{% block title %}Simulation Editor - {{ simulation.title if simulation else 'New Simulation' }}{% endblock %}
+
+{% block content %}
+{% block sidebar %}{% endblock %}
+<style>
+    /* Expand content to full width when base sidebar is hidden */
+    :root { --sidebar-width: 0px; }
+    .main-content { margin-left: 0 !important; width: 100% !important; }
+    #sidebar { display: none !important; }
+</style>
+<!-- Admin Actions Banner - Unified Top Bar -->
+<nav class="admin-actions-banner">
+    <div class="admin-nav-left">
+        <a href="/admin/classes" class="admin-nav-brand">
+            <div class="logo-icon">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <span class="logo-text">RiddleNet</span>
+        </a>
+        <a href="/admin/classes" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Classes
+        </a>
+    </div>
+    
+    <div class="admin-nav-right">
+        {% if simulation %}
+            <a href="{{ url_for('admin_simulation.view_simulation', simulation_id=simulation.id) }}" class="action-btn">
+                <i class="fas fa-eye"></i>
+                Preview
+            </a>
+            <button type="submit" form="simulationForm" class="action-btn primary">
+                <i class="fas fa-save"></i>
+                Save Changes
+            </button>
+        {% else %}
+            <button type="submit" form="simulationForm" class="action-btn primary">
+                <i class="fas fa-plus"></i>
+                Create Simulation
+            </button>
+        {% endif %}
+        <div class="user-profile">
+            <div class="user-avatar">
+                {{ current_user.username[0].upper() if current_user.username else 'A' }}
+            </div>
+            <span class="user-name">{{ current_user.username or 'Admin' }}</span>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Simulation Editor Styles - Based on module lesson editor */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #f3f4f6;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --dark-bg: #0a0a0a;
+    --card-bg: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --cyber-glow: #00d9ff;
+    --editor-highlight: #4f46e5;
+}
+
+/* Force dark theme throughout the page */
+body, html {
+    background: var(--dark-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Ensure all containers maintain dark theme */
+.container, .content, main, section, article {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+/* Hide the large editor banner to reduce vertical clutter */
+.editor-mode-indicator { display: none; }
+
+.editor-container {
+    display: grid;
+    grid-template-columns: 300px 1fr 320px;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 70px auto 0 auto; /* Add top margin for fixed header */
+    padding: 24px;
+    min-height: calc(100vh - 140px); /* Adjust for header height */
+}
+
+/* Left Sidebar - Simulation Navigation */
+.simulation-nav-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    backdrop-filter: blur(10px);
+}
+
+.nav-sidebar-header {
+    margin-bottom: 20px;
+}
+
+.nav-sidebar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.nav-sidebar-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Main Content Area */
+.main-editor-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+}
+
+/* Ensure no white backgrounds anywhere */
+.main-editor-content * {
+    background-color: transparent !important;
+    color: inherit;
+}
+
+.main-editor-content textarea,
+.main-editor-content input,
+.main-editor-content select,
+.main-editor-content div[contenteditable="true"] {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.main-editor-content textarea:focus,
+.main-editor-content input:focus,
+.main-editor-content select:focus,
+.main-editor-content div[contenteditable="true"]:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--cyber-glow) !important;
+}
+
+.editor-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.editor-breadcrumb {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.editor-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.editable-title {
+    background: transparent;
+    border: 2px dashed transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+    color: var(--text-primary) !important;
+}
+
+.editable-title:hover {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.editable-title.editing {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.2);
+    outline: none;
+}
+
+.editor-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.editor-content {
+    padding: 20px;
+}
+
+.content-section {
+    margin-bottom: 32px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-btn {
+    background: var(--editor-highlight);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.edit-btn:hover {
+    background: #3730a3;
+    transform: translateY(-1px);
+    color: white;
+}
+
+.editable-description {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 60px;
+    resize: vertical;
+    transition: all 0.2s ease;
+    color: var(--text-primary) !important;
+    line-height: 1.6;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.editable-description:hover {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.1) !important;
+}
+
+.editable-description.editing {
+    border-color: var(--editor-highlight);
+    background: rgba(79, 70, 229, 0.2) !important;
+    outline: none;
+    color: var(--text-primary) !important;
+}
+
+.editable-description::placeholder {
+    color: var(--text-muted) !important;
+}
+
+.form-control, .form-select {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--cyber-glow) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 217, 255, 0.25) !important;
+}
+
+/* Right Sidebar - Content Management */
+.content-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+    backdrop-filter: blur(10px);
+}
+
+.content-sidebar-header {
+    margin-bottom: 20px;
+}
+
+.content-sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* Tutorials modal (compact) */
+.tutorialModal { display:none; position:fixed; inset:0; background:rgba(2,6,23,.8); backdrop-filter: blur(4px); z-index:1200; align-items:center; justify-content:center; }
+.tutorialmodal-content { width:min(720px,92vw); max-height:80vh; overflow:auto; background:rgba(15,23,42,.95); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:20px; }
+.tutorialmodal-content h2 { margin:0 0 12px 0; font-size:1.25rem; color:#cbd5e1; }
+.tutorial-buttons { display:flex; justify-content:space-between; gap:12px; margin-top:16px; }
+.tutorial-buttons button { background:rgba(79,70,229,.15); color:var(--text-primary); border:1px solid var(--editor-highlight); padding:8px 12px; border-radius:8px; cursor:pointer; }
+.tutorial-buttons button:hover:not(:disabled){ background: rgba(79,70,229,.25); }
+.tutorial-close { position:absolute; top:10px; right:14px; color:var(--text-secondary); cursor:pointer; }
+
+/* Removed floating action bar and button classes duplication. Buttons remain in the top bar and sections. */
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 1001;
+    animation: slideInRight 0.3s ease;
+}
+
+.toast.show {
+    display: flex;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .editor-container {
+        grid-template-columns: 280px 1fr 300px;
+        gap: 16px;
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .editor-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .simulation-nav-sidebar,
+    .content-sidebar {
+        order: 2;
+    }
+    
+    .main-editor-content {
+        order: 1;
+    }
+    
+    .editor-action-bar {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        margin-top: 20px;
+        justify-content: center;
+    }
+}
+</style>
+
+<!-- Large editor banner removed for a cleaner layout -->
+
+<div class="editor-container" id="editor-root"
+    data-has-simulation="{{ '1' if simulation else '0' }}"
+    data-simulation-id="{{ simulation.id if simulation else '' }}"
+    data-edit-url-base="{{ url_for('admin_simulation.edit_simulation', simulation_id=0) }}">
+    <!-- Left Sidebar - Simulation Navigation -->
+    <div class="simulation-nav-sidebar">
+        <div class="nav-sidebar-header">
+            <div class="nav-sidebar-title">{{ simulation.title if simulation else 'New Simulation' }}</div>
+            <div class="nav-sidebar-subtitle">Network Simulation Editor</div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <a href="/admin/classes" class="edit-btn" style="width: 100%; justify-content: center;">
+                <i class="fas fa-th-large"></i>
+                Choose Simulation
+            </a>
+        </div>
+        
+        {% if simulation %}
+        <div style="margin-bottom: 20px;">
+            <a href="{{ url_for('admin_simulation.view_simulation', simulation_id=simulation.id) }}" class="edit-btn secondary" style="width: 100%; justify-content: center;">
+                <i class="fas fa-eye"></i>
+                Preview Simulation
+            </a>
+        </div>
+        {% endif %}
+        <div style="margin-bottom: 20px;">
+            <button type="button" class="edit-btn" style="width: 100%; justify-content: center;" onclick="openTutorialFromForm()">
+                <i class="fas fa-graduation-cap"></i>
+                Preview Tutorial
+            </button>
+        </div>
+        
+        <div style="padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <div class="nav-sidebar-subtitle" style="margin-bottom: 12px;">Quick Actions</div>
+            <div style="display: grid; gap: 8px;">
+                <button class="edit-btn" style="width: 100%; justify-content: center;" onclick="duplicateSimulation()">
+                    <i class="fas fa-copy"></i>
+                    Duplicate
+                </button>
+                {% if simulation %}
+                <button class="edit-btn danger" style="width: 100%; justify-content: center;" onclick="deleteSimulation()">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-editor-content">
+        <div class="editor-header">
+        <div class="editor-breadcrumb">
+            <a href="/admin/simulations" style="color: var(--text-secondary); text-decoration: none;">Simulations</a>
+            <span> > </span>
+            <a href="/admin/classes" style="color: var(--text-secondary); text-decoration: none;">Select</a>
+            <span> > </span>
+            <span>{{ 'Edit' if simulation else 'Create' }}</span>
+        </div>            <div class="editor-title editable-title" contenteditable="true" data-field="name">
+                {{ simulation.title if simulation else 'New Simulation' }}
+            </div>
+            
+            <div class="editor-meta">
+                <span><i class="fas fa-signal"></i> {{ simulation.difficulty if simulation else 'Easy' }}</span>
+                <span><i class="fas fa-clock"></i> {{ simulation.estimated_duration if simulation else 30 }} minutes</span>
+                <span><i class="fas fa-users"></i> {{ simulation.simulation_type if simulation else 'Standard' }}</span>
+            </div>
+        </div>
+        
+        <div class="editor-content">
+            <form id="simulationForm" method="POST" data-is-update="{{ 'true' if simulation else 'false' }}" action="{{ url_for('admin_simulation.update_simulation_api', simulation_id=simulation.id) if simulation else url_for('admin_simulation.create_simulation_api') }}">
+                
+                <!-- Basic Information Section -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Basic Information
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Simulation Name</label>
+                            <input type="text" class="form-control" name="title" 
+                                   value="{{ simulation.title if simulation else '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Difficulty</label>
+                            <select class="form-select" name="difficulty">
+                                <option value="Easy" {{ 'selected' if simulation and simulation.difficulty == 'Easy' }}>Easy</option>
+                                <option value="Medium" {{ 'selected' if simulation and simulation.difficulty == 'Medium' }}>Medium</option>
+                                <option value="Hard" {{ 'selected' if simulation and simulation.difficulty == 'Hard' }}>Hard</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="editable-description" name="description" 
+                                      placeholder="Enter simulation description...">{{ simulation.description if simulation else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-cogs"></i>
+                            Configuration
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+            <div class="col-md-4">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" name="type">
+                <option value="Standard" {{ 'selected' if simulation and simulation.simulation_type == 'Standard' }}>Standard</option>
+                <option value="Guided" {{ 'selected' if simulation and simulation.simulation_type == 'Guided' }}>Guided</option>
+                <option value="Assessment" {{ 'selected' if simulation and simulation.simulation_type == 'Assessment' }}>Assessment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Estimated Duration (minutes)</label>
+                            <input type="number" class="form-control" name="estimated_duration" 
+                                   value="{{ simulation.estimated_duration if simulation else 30 }}" min="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Score</label>
+                            <input type="number" class="form-control" name="max_score" 
+                                   value="{{ simulation.max_score if simulation else 100 }}" min="1">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
+                                       {{ 'checked' if simulation and simulation.is_active }}>
+                                <label class="form-check-label" for="is_active">
+                                    Active (visible to students)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Tags (comma-separated)</label>
+                            <input type="text" class="form-control" name="tags" placeholder="e.g. troubleshooting, vlan"
+                                   value="{{ (simulation.tags | join(', ')) if simulation and simulation.tags else '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting Configuration (based on troubleshoot.html data model) -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-network-wired"></i>
+                            Troubleshooting Setup
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                                <!-- Devices Builder -->
+                                <div style="flex:1; min-width:320px; background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                                        <label class="form-label" style="margin:0;">Devices</label>
+                                        <button type="button" class="edit-btn" onclick="addDeviceRow()"><i class="fas fa-plus"></i> Add Device</button>
+                                    </div>
+                                    <div id="devicesList" style="display:grid; gap:8px;"></div>
+                                </div>
+                                <!-- Protocols Builder -->
+                                <div style="flex:1; min-width:280px; background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+                                    <label class="form-label">Protocols</label>
+                                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                                        <input id="protocolInput" type="text" class="form-control" placeholder="Add protocol (e.g. ICMP)">
+                                        <button type="button" class="edit-btn" onclick="addProtocol()"><i class="fas fa-plus"></i></button>
+                                    </div>
+                                    <div id="protocolsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                                </div>
+                                <!-- Topology Builder -->
+                                <div style="flex:1; min-width:320px; background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                                        <label class="form-label" style="margin:0;">Topology</label>
+                                        <select id="topologyLayout" class="form-select" style="max-width:180px;">
+                                            <option value="">Layout: Auto</option>
+                                            <option value="simple">Simple</option>
+                                            <option value="grid">Grid</option>
+                                            <option value="circular">Circular</option>
+                                            <option value="force">Force</option>
+                                        </select>
+                                    </div>
+                                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                                        <div style="font-weight:600;">Links</div>
+                                        <button type="button" class="edit-btn" onclick="addLinkRow()"><i class="fas fa-plus"></i> Add Link</button>
+                                    </div>
+                                    <div id="linksList" style="display:grid; gap:8px; margin-top:8px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learning Objectives Section -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-bullseye"></i>
+                            Learning Objectives
+                        </div>
+                        <button type="button" class="edit-btn" onclick="addObjective()">
+                            <i class="fas fa-plus"></i>
+                            Add Objective
+                        </button>
+                    </div>
+                    
+                    <div class="objectives-container" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 16px;">
+                        <ul class="objectives-list" id="objectivesList" style="list-style: none; margin: 0; padding: 0;">
+                            {% if simulation and simulation.learning_objectives %}
+                                {% for objective in simulation.learning_objectives %}
+                                <li class="objective-item" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px; border-radius: 6px;">
+                                    <i class="fas fa-check-circle" style="color: var(--success-color); margin-top: 2px;"></i>
+                                    <input type="text" class="form-control" name="learning_objectives[]" 
+                                           value="{{ objective }}" style="flex: 1;">
+                                    <button type="button" class="edit-btn danger" onclick="removeObjective(this)" style="padding: 4px 8px;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="objective-item" style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px; border-radius: 6px;">
+                                    <i class="fas fa-check-circle" style="color: var(--success-color); margin-top: 2px;"></i>
+                                    <input type="text" class="form-control" name="learning_objectives[]" 
+                                           placeholder="Enter learning objective..." style="flex: 1;">
+                                    <button type="button" class="edit-btn danger" onclick="removeObjective(this)" style="padding: 4px 8px;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tutorial Step Builder Section -->
+                <div class="content-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <i class="fas fa-graduation-cap"></i>
+                            Tutorial Steps
+                        </div>
+                        
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="edit-btn" onclick="addStep()">
+                                <i class="fas fa-plus"></i>
+                                Add Step
+                            </button>
+                            <button type="button" class="edit-btn" onclick="openTutorialFromForm()">
+                                <i class="fas fa-eye"></i>
+                                Preview Tutorial
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="stepsContainer" style="display:grid; gap:12px;">
+                        {% set steps = simulation.step_definitions if simulation and simulation.step_definitions else [] %}
+                        {% if steps %}
+                            {% for step in steps %}
+                            <div class="step-item" data-index="{{ loop.index0 }}" style="background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div class="step-number" style="background: var(--cyber-glow); color: var(--dark-bg); border-radius: 50%; width: 28px; height: 28px; display:flex; align-items:center; justify-content:center; font-weight:700;">{{ loop.index }}</div>
+                                        <strong>Step</strong>
+                                    </div>
+                                    <div style="display:flex; gap:6px;">
+                                        <button type="button" class="edit-btn" onclick="moveStep(this, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                                        <button type="button" class="edit-btn" onclick="moveStep(this, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                                        <button type="button" class="edit-btn danger" onclick="removeStep(this)" title="Remove"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Type</label>
+                                        <select class="form-select step-type">
+                                            {% set stype = step.type if step.type else 'instruction' %}
+                                            <option value="instruction" {{ 'selected' if stype=='instruction' }}>Instruction</option>
+                                            <option value="question" {{ 'selected' if stype=='question' }}>Question</option>
+                                            <option value="configuration" {{ 'selected' if stype=='configuration' }}>Configuration</option>
+                                            <option value="troubleshooting" {{ 'selected' if stype=='troubleshooting' }}>Troubleshooting</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Title</label>
+                                        <input type="text" class="form-control step-title" value="{{ step.title or '' }}" placeholder="Step title" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Media URL (optional)</label>
+                                        <input type="url" class="form-control step-media" value="{{ step.media or '' }}" placeholder="https://...">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Content (HTML allowed)</label>
+                                        <textarea class="editable-description step-description" placeholder="Enter step content...">{{ step.description or '' }}</textarea>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Validation Type</label>
+                                        {% set _vr = (simulation.validation_rules[loop.index0|string]) if simulation and simulation.validation_rules and (loop.index0|string) in simulation.validation_rules else None %}
+                                        {% set _vtype = _vr.validation_type if _vr and _vr.validation_type else 'manual' %}
+                                        <select class="form-select step-validation-type">
+                                            <option value="exact_match" {{ 'selected' if _vtype=='exact_match' }}>Exact Match</option>
+                                            <option value="contains" {{ 'selected' if _vtype=='contains' }}>Contains</option>
+                                            <option value="regex" {{ 'selected' if _vtype=='regex' }}>Regex</option>
+                                            <option value="multiple_choice" {{ 'selected' if _vtype=='multiple_choice' }}>Multiple Choice</option>
+                                            <option value="manual" {{ 'selected' if _vtype=='manual' }}>Manual</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Expected Answer</label>
+                                        <input type="text" class="form-control step-expected" placeholder="expected answer" value="{{ _vr.expected_answer if _vr and _vr.expected_answer }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Score</label>
+                                        <input type="number" class="form-control step-score" min="0" value="{{ _vr.score if _vr and _vr.score is not none else 10 }}">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="step-empty" style="color:var(--text-muted); font-style:italic;">No steps yet. Click "Add Step" to begin.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Sidebar - Content Management -->
+    <div class="content-sidebar">
+        <div class="content-sidebar-header">
+            <div class="content-sidebar-title">
+                <i class="fas fa-link"></i>
+                Simulation Content
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                Dynamic content management
+            </div>
+        </div>
+
+        {% if simulation %}
+        <div style="display: grid; gap: 12px;">
+            {# Legacy content-management links disabled; routes not available
+               <a href="{{ url_for('simulation_content.tutorial_management') }}?simulation_id={{ simulation.id }}" 
+                  class="edit-btn" style="width: 100%; justify-content: center;">
+                   <i class="fas fa-book"></i>
+                   Manage Tutorials
+               </a>
+               <a href="{{ url_for('simulation_content.device_management') }}?simulation_id={{ simulation.id }}" 
+                  class="edit-btn" style="width: 100%; justify-content: center;">
+                   <i class="fas fa-desktop"></i>
+                   Manage Devices
+               </a>
+               <a href="{{ url_for('simulation_content.cli_management') }}?simulation_id={{ simulation.id }}" 
+                  class="edit-btn" style="width: 100%; justify-content: center;">
+                   <i class="fas fa-terminal"></i>
+                   Manage CLI
+               </a>
+               <a href="{{ url_for('simulation_content.connection_management') }}?simulation_id={{ simulation.id }}" 
+                  class="edit-btn" style="width: 100%; justify-content: center;">
+                   <i class="fas fa-network-wired"></i>
+                   Manage Connections
+               </a>
+            #}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.875rem;">
+            <i class="fas fa-save" style="font-size: 2rem; margin-bottom: 8px; display: block; opacity: 0.5;"></i>
+            Save the simulation first to access content management features
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tutorial Modal -->
+<div id="editorTutorialModal" class="tutorialModal" aria-hidden="true">
+    <div class="tutorialmodal-content">
+        <div class="tutorial-close" onclick="closeEditorTutorial()" title="Close">
+            <i class="fas fa-times"></i>
+        </div>
+        <h2><i class="fas fa-graduation-cap"></i> Tutorial</h2>
+        <div id="editorTutorialStep"></div>
+        <div class="tutorial-buttons">
+            <button id="editorPrevStep" onclick="prevEditorTutorialStep()" disabled>
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <div style="flex:1"></div>
+            <button id="editorNextStep" onclick="nextEditorTutorialStep()">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Removed floating action bar; primary actions are available in the fixed top bar -->
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+    <i class="fas fa-check"></i>
+    <span id="toastMessage">Simulation saved successfully!</span>
+</div>
+
+<!-- Embed simulation_config as JSON for JS to parse safely -->
+<script id="simulation-config-json" type="application/json">{{ (simulation.simulation_config | tojson) if simulation and simulation.simulation_config else '{}' }}</script>
+
+<script>
+// Global variables
+let hasUnsavedChanges = false;
+
+// Read state from data attributes to avoid Jinja in JS
+const editorRoot = document.getElementById('editor-root');
+const HAS_SIMULATION = editorRoot?.dataset.hasSimulation === '1';
+const SIMULATION_ID = (editorRoot?.dataset.simulationId ? parseInt(editorRoot.dataset.simulationId, 10) : null);
+const EDIT_URL_BASE = editorRoot?.dataset.editUrlBase || '/admin/simulation/edit/0';
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupEditableElements();
+    initTroubleshootBuilders();
+});
+
+// Setup editable elements
+function setupEditableElements() {
+    // Track changes on form elements
+    const formElements = document.querySelectorAll('input, textarea, select');
+    formElements.forEach(element => {
+        element.addEventListener('input', function() {
+            hasUnsavedChanges = true;
+        });
+    });
+    
+    // Handle editable title
+    const editableTitle = document.querySelector('.editable-title');
+    if (editableTitle) {
+        editableTitle.addEventListener('blur', function() {
+            const nameInput = document.querySelector('input[name="title"]');
+            if (nameInput) {
+                nameInput.value = this.textContent.trim();
+                hasUnsavedChanges = true;
+            }
+        });
+        
+        editableTitle.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            }
+        });
+    }
+}
+
+// ===== GUI Builders for Troubleshooting Setup =====
+function initTroubleshootBuilders(){
+    try{
+    const cfgEl = document.getElementById('simulation-config-json');
+    const cfg = cfgEl ? JSON.parse(cfgEl.textContent || '{}') : {};
+        // Devices
+        const devices = Array.isArray(cfg?.devices) ? cfg.devices : [];
+        devices.forEach(d => addDeviceRow(d));
+        if(!devices.length) addDeviceRow();
+        // Protocols
+        const protocols = Array.isArray(cfg?.protocols) ? cfg.protocols : [];
+        protocols.forEach(p => addProtocol(p));
+        // Topology
+        const topo = cfg?.network_topology || {};
+        const layoutSel = document.getElementById('topologyLayout');
+        if(layoutSel && topo.layout){ layoutSel.value = topo.layout; }
+        const links = Array.isArray(topo?.links) ? topo.links : [];
+        links.forEach(l => addLinkRow(l));
+        if(!links.length) addLinkRow();
+    }catch(e){ console.warn('Failed to prefill troubleshoot builders', e); }
+}
+
+function addDeviceRow(prefill){
+    const list = document.getElementById('devicesList');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:8px; align-items:center;';
+    const idVal = prefill?.id || '';
+    const typeVal = prefill?.type || '';
+    row.innerHTML = `
+        <input type="text" class="form-control device-id" placeholder="ID (e.g. R1)" value="${idVal.replace(/"/g,'&quot;')}">
+        <select class="form-select device-type">
+            <option value="">Type...</option>
+            <option value="router" ${typeVal==='router'?'selected':''}>Router</option>
+            <option value="switch" ${typeVal==='switch'?'selected':''}>Switch</option>
+            <option value="host" ${typeVal==='host'?'selected':''}>Host</option>
+            <option value="server" ${typeVal==='server'?'selected':''}>Server</option>
+            <option value="firewall" ${typeVal==='firewall'?'selected':''}>Firewall</option>
+        </select>
+        <button type="button" class="edit-btn danger" onclick="this.parentElement.remove(); hasUnsavedChanges=true;"><i class="fas fa-trash"></i></button>
+    `;
+    list.appendChild(row);
+}
+
+function collectDevices(){
+    const out = [];
+    document.querySelectorAll('#devicesList > div').forEach(row => {
+        const id = row.querySelector('.device-id')?.value?.trim();
+        const type = row.querySelector('.device-type')?.value?.trim();
+        if(id){ out.push({ id, type: type || 'device' }); }
+    });
+    return out;
+}
+
+function addProtocol(value){
+    const input = document.getElementById('protocolInput');
+    const val = (value || input?.value || '').trim();
+    if(!val) return;
+    const list = document.getElementById('protocolsList');
+    const tag = document.createElement('span');
+    tag.style.cssText = 'background: rgba(255,255,255,0.08); border:1px solid var(--border-color); padding:6px 10px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;';
+    tag.innerHTML = `${val}<button type="button" class="edit-btn danger" style="padding:2px 6px;" onclick="this.parentElement.remove();"><i class="fas fa-times"></i></button>`;
+    tag.dataset.value = val;
+    list.appendChild(tag);
+    if(input) input.value = '';
+    hasUnsavedChanges = true;
+}
+
+function collectProtocols(){
+    const out = [];
+    document.querySelectorAll('#protocolsList > span').forEach(tag => {
+        const v = tag.dataset.value || tag.textContent.trim();
+        if(v){ out.push(v); }
+    });
+    return out;
+}
+
+function addLinkRow(prefill){
+    const list = document.getElementById('linksList');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:8px; align-items:center;';
+    const a = Array.isArray(prefill) ? (prefill[0] || '') : (prefill?.a || '');
+    const b = Array.isArray(prefill) ? (prefill[1] || '') : (prefill?.b || '');
+    row.innerHTML = `
+        <input type="text" class="form-control link-a" placeholder="From (e.g. R1)" value="${a.replace(/"/g,'&quot;')}">
+        <span style="opacity:0.6;">—</span>
+        <input type="text" class="form-control link-b" placeholder="To (e.g. S1)" value="${b.replace(/"/g,'&quot;')}">
+        <button type="button" class="edit-btn danger" onclick="this.parentElement.remove(); hasUnsavedChanges=true;"><i class="fas fa-trash"></i></button>
+    `;
+    list.appendChild(row);
+}
+
+function collectLinks(){
+    const out = [];
+    document.querySelectorAll('#linksList > div').forEach(row => {
+        const a = row.querySelector('.link-a')?.value?.trim();
+        const b = row.querySelector('.link-b')?.value?.trim();
+        if(a && b){ out.push([a,b]); }
+    });
+    return out;
+}
+
+// ===== Tutorial Step Builder Logic =====
+function addStep(prefill = {title:'', description:'', media:'', type:'instruction', validation_type:'manual', expected_answer:'', score:10}) {
+    const container = document.getElementById('stepsContainer');
+    const empty = container?.querySelector?.('.step-empty');
+    if (empty) empty.remove();
+    const idx = container.querySelectorAll('.step-item').length;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-item';
+    wrapper.dataset.index = String(idx);
+    wrapper.style.cssText = 'background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:8px; padding:12px;';
+    wrapper.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="step-number" style="background: var(--cyber-glow); color: var(--dark-bg); border-radius: 50%; width: 28px; height: 28px; display:flex; align-items:center; justify-content:center; font-weight:700;">${idx+1}</div>
+                <strong>Step</strong>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" class="edit-btn" onclick="moveStep(this, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                <button type="button" class="edit-btn" onclick="moveStep(this, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                <button type="button" class="edit-btn danger" onclick="removeStep(this)" title="Remove"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Type</label>
+                <select class="form-select step-type">
+                    <option value="instruction" ${prefill.type==='instruction'?'selected':''}>Instruction</option>
+                    <option value="question" ${prefill.type==='question'?'selected':''}>Question</option>
+                    <option value="configuration" ${prefill.type==='configuration'?'selected':''}>Configuration</option>
+                    <option value="troubleshooting" ${prefill.type==='troubleshooting'?'selected':''}>Troubleshooting</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control step-title" value="${(prefill.title||'').replace(/"/g,'&quot;')}" placeholder="Step title" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Media URL (optional)</label>
+                <input type="url" class="form-control step-media" value="${(prefill.media||'').replace(/"/g,'&quot;')}" placeholder="https://...">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Content (HTML allowed)</label>
+                <textarea class="editable-description step-description" placeholder="Enter step content...">${prefill.description||''}</textarea>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Validation Type</label>
+                <select class="form-select step-validation-type">
+                    <option value="exact_match" ${prefill.validation_type==='exact_match'?'selected':''}>Exact Match</option>
+                    <option value="contains" ${prefill.validation_type==='contains'?'selected':''}>Contains</option>
+                    <option value="regex" ${prefill.validation_type==='regex'?'selected':''}>Regex</option>
+                    <option value="multiple_choice" ${prefill.validation_type==='multiple_choice'?'selected':''}>Multiple Choice</option>
+                    <option value="manual" ${prefill.validation_type==='manual'?'selected':''}>Manual</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Expected Answer</label>
+                <input type="text" class="form-control step-expected" value="${(prefill.expected_answer||'').replace(/"/g,'&quot;')}" placeholder="expected answer">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Score</label>
+                <input type="number" class="form-control step-score" min="0" value="${Number.isFinite(prefill.score)?prefill.score:10}">
+            </div>
+        </div>
+    `;
+    container.appendChild(wrapper);
+    hasUnsavedChanges = true;
+}
+
+function removeStep(btn){
+    const item = btn.closest('.step-item');
+    item?.remove();
+    renumberSteps();
+    hasUnsavedChanges = true;
+}
+
+function moveStep(btn, delta){
+    const item = btn.closest('.step-item');
+    if(!item) return;
+    const container = item.parentElement;
+    const items = Array.from(container.querySelectorAll('.step-item'));
+    const idx = items.indexOf(item);
+    const target = idx + delta;
+    if(target < 0 || target >= items.length) return;
+    if(delta < 0){
+        container.insertBefore(item, items[target]);
+    } else {
+        container.insertBefore(items[target], item);
+    }
+    renumberSteps();
+    hasUnsavedChanges = true;
+}
+
+function renumberSteps(){
+    document.querySelectorAll('#stepsContainer .step-item').forEach((el, i)=>{
+        el.dataset.index = String(i);
+        const num = el.querySelector('.step-number');
+        if(num) num.textContent = String(i+1);
+    });
+}
+
+function collectStepsFromDOM(){
+    const steps = [];
+    document.querySelectorAll('#stepsContainer .step-item').forEach((el)=>{
+        const title = el.querySelector('.step-title')?.value?.trim() || '';
+        const description = el.querySelector('.step-description')?.value || '';
+        const media = el.querySelector('.step-media')?.value?.trim() || '';
+        const type = el.querySelector('.step-type')?.value || 'instruction';
+        const validationType = el.querySelector('.step-validation-type')?.value || 'manual';
+        const expected = el.querySelector('.step-expected')?.value || '';
+        const score = parseInt(el.querySelector('.step-score')?.value || '0', 10) || 0;
+        if(title){
+            const step = { title, description, type };
+            if(media) step.media = media;
+            steps.push(step);
+            // Attach validation map into global payload (built in submit)
+            if(!window.__validation_rules){ window.__validation_rules = {}; }
+            const idx = steps.length - 1;
+            window.__validation_rules[String(idx)] = {
+                type,
+                validation_type: validationType,
+                expected_answer: expected,
+                score: score,
+                success_message: 'Great job!',
+                error_message: 'Please review and try again.',
+                hint: ''
+            };
+        }
+    });
+    return steps;
+}
+
+// Add new objective
+function addObjective() {
+    const objectivesList = document.getElementById('objectivesList');
+    
+    const newObjective = document.createElement('li');
+    newObjective.className = 'objective-item';
+    newObjective.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px; border-radius: 6px;';
+    newObjective.innerHTML = `
+        <i class="fas fa-check-circle" style="color: var(--success-color); margin-top: 2px;"></i>
+        <input type="text" class="form-control" name="learning_objectives[]" 
+               placeholder="Enter learning objective..." style="flex: 1;">
+        <button type="button" class="edit-btn danger" onclick="removeObjective(this)" style="padding: 4px 8px;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    objectivesList.appendChild(newObjective);
+    
+    // Focus on the new objective
+    const newInput = newObjective.querySelector('input');
+    newInput.focus();
+    
+    // Track changes
+    newInput.addEventListener('input', function() {
+        hasUnsavedChanges = true;
+    });
+    
+    hasUnsavedChanges = true;
+}
+
+// Remove objective
+function removeObjective(button) {
+    const objectiveItem = button.closest('.objective-item');
+    const objectivesList = document.getElementById('objectivesList');
+    
+    if (objectivesList.children.length > 1) {
+        objectiveItem.remove();
+        hasUnsavedChanges = true;
+    } else {
+        // Clear the input instead of removing the last one
+        const input = objectiveItem.querySelector('input');
+        input.value = '';
+        hasUnsavedChanges = true;
+    }
+}
+
+// Duplicate simulation
+function duplicateSimulation() {
+    if (!HAS_SIMULATION) {
+        showToast('Save the simulation first before duplicating', 'warning');
+        return;
+    }
+    if (!confirm('Create a copy of this simulation?')) return;
+    fetch(`/admin/simulation/api/${SIMULATION_ID}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            showToast('Error duplicating simulation: ' + data.error, 'error');
+            return;
+        }
+        showToast('Simulation duplicated successfully', 'success');
+        const nextUrl = EDIT_URL_BASE.replace(/0$/, String(data.duplicate_id || data.simulation_id || ''));
+        setTimeout(() => { window.location.href = nextUrl; }, 800);
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Error duplicating simulation', 'error');
+    });
+}
+
+// Delete simulation
+function deleteSimulation() {
+    if (!HAS_SIMULATION) return;
+    if (confirm('Are you sure you want to delete this simulation? This action cannot be undone.')) {
+        fetch(`/admin/simulation/api/${SIMULATION_ID}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast('Error deleting simulation: ' + data.error, 'error');
+                } else {
+                    showToast('Simulation deleted successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/classes';
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error deleting simulation', 'error');
+            });
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.className = `toast show ${type}`;
+    
+    // Change toast color based on type
+    if (type === 'error') {
+        toast.style.background = 'var(--danger-color)';
+    } else if (type === 'warning') {
+        toast.style.background = 'var(--warning-color)';
+    } else {
+        toast.style.background = 'var(--success-color)';
+    }
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// Handle form submission
+document.getElementById('simulationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    // Collect learning objectives
+    const objectives = [];
+    const objectiveInputs = document.querySelectorAll('input[name="learning_objectives[]"]');
+    objectiveInputs.forEach(input => {
+        if (input.value.trim()) {
+            objectives.push(input.value.trim());
+        }
+    });
+    
+    // Convert form data to JSON
+    const data = {};
+    formData.forEach((value, key) => {
+        if (key !== 'learning_objectives[]') {
+            data[key] = value;
+        }
+    });
+    data.learning_objectives = objectives;
+    // Include steps
+    const steps = collectStepsFromDOM();
+    if(steps.length){ data.step_definitions = steps; }
+    if(window.__validation_rules){ data.validation_rules = window.__validation_rules; }
+
+    // Build simulation_config from GUI builders
+    const simCfg = {};
+    const devs = collectDevices();
+    if(devs.length) simCfg.devices = devs;
+    const prots = collectProtocols();
+    if(prots.length) simCfg.protocols = prots;
+    const links = collectLinks();
+    const layout = document.getElementById('topologyLayout')?.value || '';
+    if(links.length || layout){
+        simCfg.network_topology = {};
+        if(layout) simCfg.network_topology.layout = layout;
+        if(links.length) simCfg.network_topology.links = links;
+    }
+    if(Object.keys(simCfg).length){ data.simulation_config = simCfg; }
+
+    // Client-side validation
+    const required = ['title','difficulty','type'];
+    for(const k of required){ if(!String(data[k]||'').trim()){ showToast(`Missing required field: ${k}`, 'error'); return; } }
+    const dur = parseInt(data.estimated_duration||'0',10); if(!(dur>=1)){ showToast('Estimated duration must be at least 1', 'error'); return; }
+    const maxScore = parseInt(data.max_score||'0',10); if(!(maxScore>=1)){ showToast('Max score must be at least 1', 'error'); return; }
+    if(steps.some(s=>!s.title.trim())){ showToast('Each step must have a title', 'error'); return; }
+    
+    // Submit via API with proper verb
+    const isUpdate = this.dataset.isUpdate === 'true';
+    fetch(this.action, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showToast('Error saving simulation: ' + data.error, 'error');
+        } else {
+            showToast('Simulation saved successfully!', 'success');
+            hasUnsavedChanges = false;
+            
+            // Redirect to edit page if this was a create
+            if (!HAS_SIMULATION) {
+                setTimeout(() => {
+                    const newId = (data.simulation && data.simulation.id) || data.simulation_id;
+                    const nextUrl = EDIT_URL_BASE.replace(/0$/, String(newId || ''));
+                    window.location.href = nextUrl;
+                }, 800);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error saving simulation', 'error');
+    });
+});
+
+// Warn about unsaved changes
+window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    }
+});
+
+// ===== Tutorial (from form values) =====
+let editorTutorialIndex = 0;
+let editorTutorialSteps = [];
+
+function buildEditorTutorialStepsFromForm() {
+    editorTutorialSteps = [];
+    // Prefer step definitions if present in DOM (future enhancement)
+    const desc = (document.querySelector('textarea[name="description"]').value || '').trim();
+    const objectives = Array.from(document.querySelectorAll('input[name="learning_objectives[]"]'))
+        .map(i => (i.value || '').trim()).filter(Boolean);
+    if (desc) editorTutorialSteps.push({ title: 'Overview', content: desc });
+    if (objectives.length) {
+        objectives.forEach((o, idx) => editorTutorialSteps.push({ title: `Objective ${idx+1}`, content: o }));
+    }
+    if (!editorTutorialSteps.length) editorTutorialSteps.push({ title: 'Tutorial', content: 'Add a description or objectives to populate tutorial steps.'});
+}
+
+function renderEditorTutorialStep() {
+    const step = editorTutorialSteps[editorTutorialIndex];
+    const el = document.getElementById('editorTutorialStep');
+    if (!step) return;
+    el.innerHTML = `<div style="font-weight:600;margin-bottom:8px;">${step.title}</div><div style="color:var(--text-secondary);line-height:1.6">${step.content}</div>`;
+    document.getElementById('editorPrevStep').disabled = (editorTutorialIndex === 0);
+    const nextBtn = document.getElementById('editorNextStep');
+    nextBtn.innerHTML = (editorTutorialIndex === editorTutorialSteps.length - 1) ? 'Done <i class="fas fa-check"></i>' : 'Next <i class="fas fa-arrow-right"></i>';
+}
+
+function openTutorialFromForm() {
+    buildEditorTutorialStepsFromForm();
+    editorTutorialIndex = 0;
+    renderEditorTutorialStep();
+    document.getElementById('editorTutorialModal').style.display = 'flex';
+}
+
+function closeEditorTutorial() {
+    document.getElementById('editorTutorialModal').style.display = 'none';
+}
+
+function nextEditorTutorialStep() {
+    if (editorTutorialIndex < editorTutorialSteps.length - 1) {
+        editorTutorialIndex++;
+        renderEditorTutorialStep();
+    } else {
+        closeEditorTutorial();
+    }
+}
+
+function prevEditorTutorialStep() {
+    if (editorTutorialIndex > 0) {
+        editorTutorialIndex--;
+        renderEditorTutorialStep();
+    }
+}
+</script>
+
+<!-- Enhanced Simulation Validation System for All Editors -->
+<script src="{{ url_for('static', filename='js/enhanced-validation-core.js') }}"></script>
+<script>
+// Initialize universal validator for this simulation
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const simulationId = {{ simulation.id if simulation else 'null' }};
+        if (simulationId) {
+            window.initializeUniversalValidator(simulationId);
+            console.log('Universal validator initialized for simulation:', simulationId);
+        }
+    }, 3000);
+});
+
+// Add validation integration to existing save functions
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced save function with validation check
+    const originalSaveSimulation = window.saveSimulation;
+    if (originalSaveSimulation) {
+        window.saveSimulation = function() {
+            if (window.universalValidator) {
+                const report = window.universalValidator.getValidationReport();
+                
+                if (!report.configured) {
+                    showToast('Warning: Some devices may need configuration for full validation', 'warning');
+                }
+                
+                if (!report.physicallyValid) {
+                    showToast('Warning: Physical connections may need validation', 'warning');
+                }
+                
+                // Add validation data to save
+                const validationData = {
+                    enhancedValidation: {
+                        configured: report.configured,
+                        physicallyValid: report.physicallyValid,
+                        connectivityPassed: report.connectivityPassed,
+                        currentState: report.currentState,
+                        validationTimestamp: new Date().toISOString()
+                    }
+                };
+                
+                // Merge validation data with simulation data
+                if (window.simulationData) {
+                    Object.assign(window.simulationData, validationData);
+                }
+            }
+            
+            // Call original save function
+            return originalSaveSimulation.apply(this, arguments);
+        };
+    }
+});
+</script>
+
+{# Removed legacy duplicate editor markup and scripts to prevent Jinja parsing errors and route redirects #}
+{% endblock %}

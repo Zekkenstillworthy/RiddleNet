@@ -27,11 +27,18 @@ enhanced_generator = enhanced_template_generator
 @admin_required
 def index():
     """Display the class management page"""
-    # Add debug print to verify authentication status
-    print(f"User authenticated: {current_user.is_authenticated}")
-    print(f"Current user: {current_user}")
-    
-    return render_template('admin/class.html', active_page='classes')
+    # Show only classes owned by this admin unless super_admin
+    from admin.models.class_model import Class
+    try:
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            classes = Class.query.order_by(Class.name).all()
+        else:
+            classes = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).order_by(Class.name).all()
+    except Exception:
+        # Fallback - show nothing if there's a DB issue
+        classes = []
+
+    return render_template('admin/class.html', active_page='all_classes', classes=classes)
 
 @class_controller.route('/class/<int:class_id>/content-manager')
 @admin_required
@@ -39,6 +46,13 @@ def content_manager(class_id):
     """Redirect to the class content manager"""
     # Import here to avoid circular imports
     from admin.controllers.class_content_controller import class_content_controller_old
+
+    # Ownership check: allow if creator or super_admin
+    cls = Class.query.get_or_404(class_id)
+    if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
+        flash('You do not have permission to access that class', 'error')
+        return redirect(url_for('class_controller.index'))
+
     return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id))
 
 @class_controller.route('/api/classes/<int:class_id>/export/csv', methods=['GET'])
@@ -47,6 +61,9 @@ def export_class_csv(class_id):
     """Export class data including students and performance to CSV"""
     try:
         cls = Class.query.get_or_404(class_id)
+        # Ownership check
+        if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Create CSV content
         output = io.StringIO()
@@ -170,8 +187,11 @@ def export_class_pdf(class_id):
 def get_classes():
     """API endpoint to retrieve all classes"""
     try:
-        # Get all classes from database
-        classes = Class.query.all()
+        # Only return classes owned by current admin unless super_admin
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            classes = Class.query.all()
+        else:
+            classes = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()
         
         # Convert classes to dictionary format for JSON response
         result = []
@@ -228,7 +248,8 @@ def create_class():
             start_date=start_date,
             end_date=end_date,
             max_students=data.get('maxStudents'),
-            status=data.get('status', 'active')
+            status=data.get('status', 'active'),
+            created_by=getattr(current_user, 'id', None)
         )
         
         # Add question groups if provided
@@ -300,6 +321,9 @@ def get_class(class_id):
     """API endpoint to retrieve a specific class details"""
     try:
         cls = Class.query.get_or_404(class_id)
+        # Ownership check
+        if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
+            return jsonify({'error': 'Permission denied'}), 403
         class_data = cls.to_dict()
         # Ensure studentCount is correctly provided
         if 'studentCount' not in class_data or class_data['studentCount'] is None:
@@ -494,8 +518,11 @@ def student_classes():
 def get_student_classes():
     """API endpoint to retrieve all classes that the current admin user can view"""
     try:
-        # Get all classes from database
-        classes = Class.query.all()
+        # Only return classes owned by current admin unless super_admin
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            classes = Class.query.all()
+        else:
+            classes = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()
         
         # Convert classes to dictionary format for JSON response
         result = []

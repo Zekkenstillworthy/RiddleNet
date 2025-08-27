@@ -13,6 +13,17 @@ from datetime import datetime
 # Create a blueprint for class content related routes
 class_content_controller_old = Blueprint('class_content_controller_old', __name__, url_prefix='/admin')
 
+
+def _is_super_admin():
+    return hasattr(current_user, 'role') and current_user.role == 'super_admin'
+
+
+def _require_class_owner(class_id):
+    cls = Class.query.get_or_404(class_id)
+    if _is_super_admin() or cls.created_by == getattr(current_user, 'id', None):
+        return cls
+    return None
+
 @class_content_controller_old.route('/class-content-manager')
 @login_required
 def class_content_manager_redirect():
@@ -31,6 +42,11 @@ def manage_content(class_id):
     try:
         # Get the class details
         cls = Class.query.get_or_404(class_id)
+
+        # Ownership check: only the creator or super_admin can manage content
+        if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
+            flash('You do not have permission to manage that class', 'error')
+            return redirect(url_for('class_controller.index'))
         
         # Get all available simulations
         all_simulations = Simulation.query.filter_by(is_published=True).all()
@@ -102,8 +118,8 @@ def manage_content(class_id):
             } for sim in assigned_simulations]
         }
         
-        # Use module_builder template since that's what we're actually loading
-        return render_template('admin/module_builder.html',
+        # Use class_content_manager template
+        return render_template('admin/class_content_manager.html',
                              class_data=cls,
                              selected_class=cls,
                              class_content=class_content,
@@ -145,7 +161,9 @@ def assign_simulation_to_class(class_id):
         data = request.json
         simulation_id = data.get('simulation_id')
         
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         simulation = Simulation.query.get_or_404(simulation_id)
         
         # Create simulation assignment
@@ -180,7 +198,9 @@ def assign_simulation_to_class(class_id):
 def unassign_simulation_from_class(class_id, simulation_id):
     """Unassign a simulation from a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         simulation = Simulation.query.get_or_404(simulation_id)
         
         # Remove simulation assignment
@@ -207,7 +227,9 @@ def unassign_simulation_from_class(class_id, simulation_id):
 def generate_class_template(class_id):
     """Generate or regenerate class template"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Import the template generator
         from admin.services.enhanced_class_template_generator import enhanced_template_generator
@@ -269,7 +291,9 @@ def get_class_content_summary(class_id):
 def get_class_modules(class_id):
     """Get all modules for a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
         
         modules_data = []
@@ -300,7 +324,9 @@ def create_class_module(class_id):
     """Create a new module for a class"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Get the next order index
         last_module = Module.query.filter_by(class_id=class_id).order_by(Module.order_index.desc()).first()
@@ -347,7 +373,9 @@ def create_class_module(class_id):
 def get_class_module(class_id, module_id):
     """Get a specific module for a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first_or_404()
         
         module_data = {
@@ -378,7 +406,9 @@ def update_class_module(class_id, module_id):
     """Update a class module"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         
         # Update module fields
@@ -415,7 +445,9 @@ def update_class_module(class_id, module_id):
 def delete_class_module(class_id, module_id):
     """Delete a class module"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         
         module_title = module.title
@@ -440,7 +472,9 @@ def delete_class_module(class_id, module_id):
 def get_module_preview(class_id, module_id):
     """Get module data for preview rendering - identical to student view"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first_or_404()
         
         # Get module lessons
@@ -501,7 +535,10 @@ def get_module_preview(class_id, module_id):
 def preview_module_page(class_id, module_id):
     """Direct module preview page - identical to student view"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            flash('Permission denied', 'error')
+            return redirect(url_for('class_controller.index'))
         module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first_or_404()
         
         # Get module lessons
@@ -579,7 +616,10 @@ def admin_student_view(class_id, module_id):
     """Admin-accessible student view of module - redirects to universal student route"""
     try:
         # Verify class and module exist
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            flash('Permission denied', 'error')
+            return redirect(url_for('class_controller.index'))
         module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first_or_404()
         
         # Redirect to the universal student route 
@@ -594,7 +634,9 @@ def admin_student_view(class_id, module_id):
 def get_module_preview_html(class_id, module_id):
     """Get module preview as rendered HTML - identical to student view"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id, is_active=True).first_or_404()
         
         # Get module lessons
@@ -651,7 +693,9 @@ def get_module_lessons(class_id, module_id):
     print(f"DEBUG MODULE_LESSONS: get_module_lessons called with class_id={class_id}, module_id={module_id}")
     try:
         print(f"DEBUG MODULE_LESSONS: Looking for class with id={class_id}")
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         print(f"DEBUG MODULE_LESSONS: Found class: {cls.name if cls else 'None'}")
         
         print(f"DEBUG MODULE_LESSONS: Looking for module with id={module_id} in class_id={class_id}")
@@ -696,7 +740,9 @@ def create_module_lesson(class_id, module_id):
     """Create a new lesson for a module"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         
         # Get the next order index
@@ -744,7 +790,9 @@ def update_module_lesson(class_id, module_id, lesson_id):
     """Update a module lesson"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         lesson = Lesson.query.filter_by(id=lesson_id, module_id=module_id).first_or_404()
         
@@ -786,7 +834,9 @@ def update_module_lesson(class_id, module_id, lesson_id):
 def delete_module_lesson(class_id, module_id, lesson_id):
     """Delete a module lesson"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         lesson = Lesson.query.filter_by(id=lesson_id, module_id=module_id).first_or_404()
         
@@ -816,25 +866,114 @@ def delete_module_lesson(class_id, module_id, lesson_id):
 def get_class_assignments(class_id):
     """Get all assignments for a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         assignments = ClassAssignment.query.filter_by(class_id=class_id).order_by(ClassAssignment.sort_order).all()
+        
+        print(f"🔍 DEBUG: Found {len(assignments)} assignments for class {class_id}")
+        for assignment in assignments:
+            print(f"   - Assignment {assignment.id}: {assignment.title}")
         
         assignments_data = []
         for assignment in assignments:
-            assignments_data.append({
+            assignment_dict = {
                 'id': assignment.id,
                 'title': assignment.title,
                 'description': assignment.description,
-                'content': assignment.content,
+                'instructions': assignment.instructions,
                 'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
                 'points': assignment.points,
+                'priority': getattr(assignment, 'priority', 'medium'),
+                'category': getattr(assignment, 'category', 'general'),
                 'sort_order': assignment.sort_order,
-                'created_at': assignment.created_at.isoformat() if assignment.created_at else None
-            })
+                'created_at': assignment.created_at.isoformat() if assignment.created_at else None,
+                'is_published': getattr(assignment, 'is_published', True)
+            }
+            assignments_data.append(assignment_dict)
+            print(f"   - Converted to dict: {assignment_dict}")
         
-        return jsonify({'assignments': assignments_data})
+        result = {'success': True, 'assignments': assignments_data}
+        print(f"🚀 DEBUG: Returning result: {result}")
+        return jsonify(result)
         
     except Exception as e:
+        print(f"❌ DEBUG: Error in get_class_assignments: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/simulations', methods=['GET'])
+@login_required
+def get_class_simulations(class_id):
+    """Get all simulations assigned to a class"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        from admin.models.simulation import Simulation
+        
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        # Get simulation assignments for this class
+        simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id, is_active=True).all()
+        
+        simulations_data = []
+        for assignment in simulation_assignments:
+            if assignment.simulation and assignment.simulation.is_active:
+                simulation = assignment.simulation
+                simulations_data.append({
+                    'id': simulation.id,
+                    'assignment_id': assignment.id,
+                    'title': simulation.title,
+                    'description': simulation.description,
+                    'simulation_type': simulation.simulation_type,
+                    'difficulty': simulation.difficulty,
+                    'estimated_duration': simulation.estimated_duration,
+                    'is_published': assignment.is_published,
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                    'total_points': assignment.total_points,
+                    'assignment_title': assignment.title,
+                    'assigned_date': assignment.assigned_date.isoformat() if assignment.assigned_date else None,
+                    'created_at': simulation.created_at.isoformat() if simulation.created_at else None
+                })
+        
+        return jsonify({'success': True, 'simulations': simulations_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/simulations/<int:simulation_id>', methods=['DELETE'])
+@login_required
+def remove_class_simulation(class_id, simulation_id):
+    """Remove a simulation assignment from a class"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        # Find the simulation assignment
+        assignment = SimulationAssignment.query.filter_by(
+            class_id=class_id, 
+            simulation_id=simulation_id,
+            is_active=True
+        ).first_or_404()
+        
+        # Soft delete by marking as inactive
+        assignment.is_active = False
+        assignment.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Simulation removed from class successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments', methods=['POST'])
@@ -843,7 +982,9 @@ def create_class_assignment(class_id):
     """Create a new assignment for a class"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Get the next sort order
         last_assignment = ClassAssignment.query.filter_by(class_id=class_id).order_by(ClassAssignment.sort_order.desc()).first()
@@ -861,9 +1002,11 @@ def create_class_assignment(class_id):
         new_assignment = ClassAssignment(
             title=data['title'],
             description=data.get('description', ''),
-            content=data.get('instructions', ''),  # Use instructions field for content
+            instructions=data.get('instructions', ''),  # Use instructions field
             due_date=due_date,
             points=data.get('points', 0),
+            priority=data.get('priority', 'medium'),
+            category=data.get('category', 'general'),
             sort_order=next_order,
             class_id=class_id,
             created_by=current_user.id
@@ -897,24 +1040,35 @@ def create_class_assignment(class_id):
 def get_class_assignment(class_id, assignment_id):
     """Get specific assignment details"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         assignment = ClassAssignment.query.filter_by(id=assignment_id, class_id=class_id).first_or_404()
         
         return jsonify({
+            'success': True,
             'assignment': {
                 'id': assignment.id,
                 'title': assignment.title,
                 'description': assignment.description,
-                'content': assignment.content,
+                'instructions': getattr(assignment, 'instructions', ''),
                 'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
                 'points': assignment.points,
+                'priority': getattr(assignment, 'priority', 'medium'),
+                'category': getattr(assignment, 'category', 'general'),
+                'is_published': getattr(assignment, 'is_published', True),
                 'sort_order': assignment.sort_order,
                 'created_at': assignment.created_at.isoformat() if assignment.created_at else None
             }
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error fetching assignment {assignment_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': f'Failed to load assignment: {str(e)}'
+        }), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>', methods=['PUT'])
 @login_required
@@ -922,7 +1076,9 @@ def update_class_assignment(class_id, assignment_id):
     """Update an existing assignment"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         assignment = ClassAssignment.query.filter_by(id=assignment_id, class_id=class_id).first_or_404()
         
         # Update assignment fields
@@ -930,10 +1086,16 @@ def update_class_assignment(class_id, assignment_id):
             assignment.title = data['title']
         if 'description' in data:
             assignment.description = data['description']
-        if 'content' in data:
-            assignment.content = data['content']
+        if 'instructions' in data:
+            assignment.instructions = data['instructions']
         if 'points' in data:
             assignment.points = data['points']
+        if 'priority' in data and hasattr(assignment, 'priority'):
+            assignment.priority = data['priority']
+        if 'category' in data and hasattr(assignment, 'category'):
+            assignment.category = data['category']
+        if 'is_published' in data and hasattr(assignment, 'is_published'):
+            assignment.is_published = data['is_published']
         if 'due_date' in data:
             if data['due_date']:
                 try:
@@ -953,15 +1115,22 @@ def update_class_assignment(class_id, assignment_id):
         })
         
     except Exception as e:
+        print(f"Error updating assignment {assignment_id}: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': f'Failed to update assignment: {str(e)}'
+        }), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>', methods=['DELETE'])
 @login_required
 def delete_class_assignment(class_id, assignment_id):
     """Delete an assignment"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         assignment = ClassAssignment.query.filter_by(id=assignment_id, class_id=class_id).first_or_404()
         
         assignment_title = assignment.title
@@ -988,7 +1157,9 @@ def delete_class_assignment(class_id, assignment_id):
 def get_class_materials(class_id):
     """Get all materials for a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         materials = ClassMaterial.query.filter_by(class_id=class_id).order_by(ClassMaterial.sort_order).all()
         
         materials_data = []
@@ -1013,7 +1184,9 @@ def get_class_materials(class_id):
 def create_class_material(class_id):
     """Create a new material for a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Get the next sort order
         last_material = ClassMaterial.query.filter_by(class_id=class_id).order_by(ClassMaterial.sort_order.desc()).first()
@@ -1103,7 +1276,9 @@ def create_class_material(class_id):
 def delete_class_material(class_id, material_id):
     """Delete a material"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         material = ClassMaterial.query.filter_by(id=material_id, class_id=class_id).first_or_404()
         
         material_title = material.title
@@ -1167,7 +1342,9 @@ def create_class_quiz(class_id):
 def get_student_progress(class_id, student_id):
     """Get student progress for a specific class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Import User model to get student info
         from user.models.user import User
@@ -1202,7 +1379,9 @@ def send_student_message(class_id, student_id):
     """Send a message to a student"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         from user.models.user import User
         student = User.query.get_or_404(student_id)
@@ -1223,7 +1402,9 @@ def send_student_message(class_id, student_id):
 def remove_student_from_class(class_id, student_id):
     """Remove a student from a class"""
     try:
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
         from user.models.user import User
         student = User.query.get_or_404(student_id)
@@ -1245,22 +1426,64 @@ def invite_students_to_class(class_id):
     """Send email invitations to students"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
-        
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+
         emails = data.get('emails', [])
         class_name = data.get('class_name')
         class_code = data.get('class_code')
         invite_message = data.get('invite_message')
         
-        # Here you would implement email sending logic
-        # For now, just return success
-        
+        # TODO: implement email sending logic
         return jsonify({
             'success': True,
             'message': f'Invitations sent to {len(emails)} email addresses'
         })
-        
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Copy assignment to another class (owner's classes only)
+@class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>/copy-to/<int:target_class_id>', methods=['POST'])
+@login_required
+def copy_assignment_to_class(class_id, assignment_id, target_class_id):
+    try:
+        source_cls = _require_class_owner(class_id)
+        target_cls = _require_class_owner(target_class_id)
+        if not source_cls or not target_cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        assignment = ClassAssignment.query.filter_by(id=assignment_id, class_id=class_id).first_or_404()
+        # Duplicate assignment basic fields; do not copy submissions
+        new_assignment = ClassAssignment(
+            class_id=target_class_id,
+            title=f"{assignment.title}",
+            description=assignment.description,
+            instructions=getattr(assignment, 'instructions', ''),
+            due_date=assignment.due_date,
+            points=assignment.points,
+            assignment_type=getattr(assignment, 'assignment_type', None),
+            priority=getattr(assignment, 'priority', 'medium'),
+            category=getattr(assignment, 'category', 'general'),
+            is_published=False,
+            allow_file_uploads=getattr(assignment, 'allow_file_uploads', True),
+            allowed_file_types=getattr(assignment, 'allowed_file_types', 'pdf,doc,docx,txt,jpg,png,zip'),
+            max_file_size_mb=getattr(assignment, 'max_file_size_mb', 10),
+            max_files=getattr(assignment, 'max_files', 5),
+            allow_text_submission=getattr(assignment, 'allow_text_submission', True),
+            allow_late_submissions=getattr(assignment, 'allow_late_submissions', True),
+            late_penalty_per_day=getattr(assignment, 'late_penalty_per_day', 10.0),
+            allow_resubmission=getattr(assignment, 'allow_resubmission', True),
+            module_id=None,
+            sort_order=0,
+            question_group_id=getattr(assignment, 'question_group_id', None),
+            simulation_id=getattr(assignment, 'simulation_id', None),
+            created_by=getattr(current_user, 'id', None)
+        )
+        db.session.add(new_assignment)
+        db.session.commit()
+        return jsonify({'success': True, 'assignment_id': new_assignment.id})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # Alias for backward compatibility

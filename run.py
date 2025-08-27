@@ -211,6 +211,11 @@ try:
         app.register_blueprint(notification_bp)
         print("User Notification Blueprint registered successfully")
         
+        # Register user assignment routes
+        from user.routes.assignment_routes import user_assignment_bp
+        app.register_blueprint(user_assignment_bp)
+        print("User Assignment Blueprint registered successfully")
+        
         # NOTE: Dynamic simulation blueprint is registered in __init__.py to avoid duplicates
         print("Dynamic Simulation Blueprint already registered in __init__.py")
     except Exception as e:
@@ -239,6 +244,8 @@ try:
         ('admin.controllers.question_controller', 'question_bp', '/admin/questions', None),
         ('admin.controllers.score_controller', 'score_bp', '/admin', None),
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
+
+        
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
     ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
@@ -249,12 +256,15 @@ try:
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
         ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
         ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),  # Lesson management
-        ('simple_test_bp', 'simple_test_bp', '/admin', None),  # Simple test blueprint
+    ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),  # Tutorial management
+    ('admin.controllers.rubric_controller', 'rubric_bp', None, None),  # Rubric management
+    ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),  # Admin settings
+
         ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),  # Admin API routes with internal prefix
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp')  # Enhanced simulation routes
+    ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp')  # Enhanced simulation routes
     ]
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
@@ -345,22 +355,6 @@ try:
     print("   • /simulation/api/<id>/restart - Restart simulation")
 except Exception as e:
     print(f"❌ Error registering enhanced user simulation routes: {e}")
-    import traceback
-    traceback.print_exc()
-
-# Register Simulation Template Routes
-print("\n=== Registering Simulation Template Routes ===")
-try:
-    from user.routes.simulation_template_routes import simulation_template_bp
-    app.register_blueprint(simulation_template_bp)
-    print("✅ Simulation template routes registered successfully")
-    print("   • /simulation-template/ - Interactive simulation template")
-    print("   • /simulation-template/api/progress - Update simulation progress")
-    print("   • /simulation-template/api/hint - Get contextual hints")
-    print("   • /simulation-template/api/validate - Validate user actions")
-    print("   • /simulation-template/api/achievements - Get available achievements")
-except Exception as e:
-    print(f"❌ Error registering simulation template routes: {e}")
     import traceback
     traceback.print_exc()
 

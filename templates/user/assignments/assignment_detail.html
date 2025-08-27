@@ -1,0 +1,424 @@
+{% extends "user/base.html" %}
+
+{% block title %}{{ assignment.title }} - Assignment Details{% endblock %}
+
+{% block extra_css %}
+<style>
+.assignment-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.assignment-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+    margin-left: 15px;
+}
+
+.status-not-submitted {
+    background-color: #ffeaa7;
+    color: #2d3436;
+}
+
+.status-submitted {
+    background-color: #74b9ff;
+    color: white;
+}
+
+.status-graded {
+    background-color: #00b894;
+    color: white;
+}
+
+.status-overdue {
+    background-color: #e17055;
+    color: white;
+}
+
+.status-resubmitted {
+    background-color: #a29bfe;
+    color: white;
+}
+
+.assignment-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.meta-item {
+    text-align: center;
+}
+
+.meta-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.meta-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #2d3436;
+}
+
+.due-soon {
+    color: #e17055 !important;
+}
+
+.submission-panel {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.submission-info {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+}
+
+.file-icon {
+    margin-right: 10px;
+    font-size: 16px;
+    color: #0984e3;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #666;
+    margin-left: 10px;
+}
+
+.btn-download {
+    background-color: #0984e3;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.btn-download:hover {
+    background-color: #0770c4;
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #0984e3;
+    color: white;
+}
+
+.btn-success {
+    background-color: #00b894;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #636e72;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.grade-display {
+    text-align: center;
+    padding: 20px;
+    background: #e8f5e8;
+    border: 2px solid #00b894;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.grade-score {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00b894;
+    margin-bottom: 10px;
+}
+
+.grade-feedback {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #00b894;
+    margin-top: 15px;
+}
+
+.warning-panel {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 20px 0;
+    color: #856404;
+}
+
+.error-panel {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 20px 0;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Assignment Header -->
+    <div class="assignment-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1>{{ assignment.title }}</h1>
+                <p class="mb-2"><i class="fas fa-graduation-cap"></i> {{ assignment.class_obj.name }}</p>
+                {% if assignment.category %}
+                    <span class="badge badge-light">{{ assignment.category }}</span>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                <span class="status-badge status-{{ status }}">
+                    {% if status == 'not_submitted' %}Not Submitted
+                    {% elif status == 'submitted' %}Submitted
+                    {% elif status == 'graded' %}Graded
+                    {% elif status == 'overdue' %}Overdue
+                    {% elif status == 'resubmitted' %}Resubmitted
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assignment Meta Information -->
+    <div class="assignment-meta">
+        <div class="meta-item">
+            <div class="meta-label">Points</div>
+            <div class="meta-value">{{ assignment.points }}</div>
+        </div>
+        
+        <div class="meta-item">
+            <div class="meta-label">Due Date</div>
+            <div class="meta-value {% if is_past_due and status == 'not_submitted' %}due-soon{% endif %}">
+                {% if assignment.due_date %}
+                    {{ assignment.due_date.strftime('%b %d, %Y') }}<br>
+                    <small>{{ assignment.due_date.strftime('%I:%M %p') }}</small>
+                {% else %}
+                    No due date
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if submission %}
+            <div class="meta-item">
+                <div class="meta-label">Submitted</div>
+                <div class="meta-value">
+                    {{ submission.submitted_at.strftime('%b %d, %Y') }}<br>
+                    <small>{{ submission.submitted_at.strftime('%I:%M %p') }}</small>
+                </div>
+            </div>
+            
+            {% if submission.grade is not none %}
+                <div class="meta-item">
+                    <div class="meta-label">Grade</div>
+                    <div class="meta-value" style="color: #00b894;">
+                        {{ submission.grade }}/{{ assignment.points }}
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Warning Messages -->
+    {% if is_past_due and status == 'not_submitted' %}
+        {% if assignment.allow_late_submissions %}
+            <div class="warning-panel">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Late Submission:</strong> This assignment is past due, but late submissions are still allowed.
+            </div>
+        {% else %}
+            <div class="error-panel">
+                <i class="fas fa-times-circle"></i>
+                <strong>Past Due:</strong> This assignment is past due and late submissions are not allowed.
+            </div>
+        {% endif %}
+    {% endif %}
+    
+    <!-- Assignment Content -->
+    <div class="assignment-content">
+        <h3>Instructions</h3>
+        {% if assignment.description %}
+            <div class="assignment-description">
+                {{ assignment.description|safe }}
+            </div>
+        {% else %}
+            <p class="text-muted">No instructions provided.</p>
+        {% endif %}
+        
+        <!-- Submission Requirements -->
+        {% if assignment.allow_text_submission or assignment.allow_file_uploads %}
+            <h4 class="mt-4">Submission Requirements</h4>
+            <ul>
+                {% if assignment.allow_text_submission %}
+                    <li>Text submission is allowed</li>
+                {% endif %}
+                {% if assignment.allow_file_uploads %}
+                    <li>File uploads are allowed</li>
+                    {% if assignment.allowed_file_types %}
+                        <li>Allowed file types: {{ assignment.allowed_file_types }}</li>
+                    {% endif %}
+                    {% if assignment.max_files > 1 %}
+                        <li>Maximum {{ assignment.max_files }} files</li>
+                    {% endif %}
+                    {% if assignment.max_file_size_mb %}
+                        <li>Maximum file size: {{ assignment.max_file_size_mb }}MB per file</li>
+                    {% endif %}
+                {% endif %}
+                {% if assignment.allow_resubmission %}
+                    <li>Resubmission is allowed</li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    </div>
+    
+    <!-- Submission Information -->
+    {% if submission %}
+        <div class="submission-info">
+            <h3>Your Submission</h3>
+            
+            <!-- Grade Display -->
+            {% if submission.grade is not none %}
+                <div class="grade-display">
+                    <div class="grade-score">{{ submission.grade }}/{{ assignment.points }} points</div>
+                    <div class="text-muted">Graded on {{ submission.graded_at.strftime('%B %d, %Y at %I:%M %p') }}</div>
+                    
+                    {% if submission.feedback %}
+                        <div class="grade-feedback">
+                            <h5>Instructor Feedback:</h5>
+                            <p>{{ submission.feedback }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            <!-- Submission Text -->
+            {% if submission.submission_text %}
+                <h4>Text Submission</h4>
+                <div class="submission-text" style="background: #f8f9fa; padding: 15px; border-radius: 6px; white-space: pre-wrap;">{{ submission.submission_text }}</div>
+            {% endif %}
+            
+            <!-- File Attachments -->
+            {% if submission.attachments %}
+                <h4 class="mt-3">File Attachments</h4>
+                <ul class="file-list">
+                    {% for attachment in submission.attachments %}
+                        <li class="file-item">
+                            <div class="file-info">
+                                <i class="fas fa-file file-icon"></i>
+                                <span>{{ attachment.original_filename }}</span>
+                                <span class="file-size">({{ (attachment.file_size / 1024 / 1024)|round(2) }} MB)</span>
+                            </div>
+                            <a href="{{ url_for('assignment_submission.download_attachment', attachment_id=attachment.id) }}" 
+                               class="btn-download">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            
+            <div class="text-muted mt-3">
+                <small>
+                    Submitted on {{ submission.submitted_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    {% if submission.is_late %}
+                        <span class="text-warning">(Late Submission)</span>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{{ url_for('user_assignments.assignment_list') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Assignments
+        </a>
+        
+        {% if can_submit %}
+            {% if not is_past_due or assignment.allow_late_submissions %}
+                <a href="{{ url_for('user_assignments.submit_assignment_form', assignment_id=assignment.id) }}" 
+                   class="btn btn-success">
+                    <i class="fas fa-upload"></i> 
+                    {% if submission %}Resubmit Assignment{% else %}Submit Assignment{% endif %}
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

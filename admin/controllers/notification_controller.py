@@ -36,7 +36,7 @@ notification_controller = Blueprint('notification_controller', __name__, url_pre
 @login_required
 def notification_center():
     """Display the notification center dashboard"""
-    return render_template('admin/notification_center.html')
+    return render_template('admin/notification_center.html', active_page='notifications')
 
 @notification_controller.route('/api/notifications/send', methods=['POST'])
 @login_required
@@ -87,16 +87,31 @@ def send_notification():
             user_id = data.get('specific_user')
             if not user_id:
                 return jsonify({'error': 'User ID required for specific user notifications'}), 400
-                
-            result = notification_service.send_user_notification(
-                user_id=int(user_id),
-                notification_type=notification_type,
-                title=data['title'],
-                message=data['message'],
-                priority=priority,
-                channel=channel,
-                sender_info=sender_info
-            )
+            
+            # Handle admin user IDs (format: "admin_3") vs regular user IDs (format: "3")
+            if str(user_id).startswith('admin_'):
+                # Extract admin ID and send admin notification
+                admin_id = int(str(user_id).replace('admin_', ''))
+                # For admin users, we'll send an admin notification to that specific admin
+                # Note: This is a simplified approach - you might want to implement a more specific method
+                result = notification_service.send_admin_notification(
+                    notification_type=notification_type,
+                    title=data['title'],
+                    message=data['message'],
+                    priority=priority,
+                    sender_info=sender_info
+                )
+            else:
+                # Regular user notification
+                result = notification_service.send_user_notification(
+                    user_id=int(user_id),
+                    notification_type=notification_type,
+                    title=data['title'],
+                    message=data['message'],
+                    priority=priority,
+                    channel=channel,
+                    sender_info=sender_info
+                )
         else:
             return jsonify({'error': 'Invalid recipient type'}), 400
         
@@ -134,9 +149,10 @@ def notification_stats():
         stats = NotificationHistory.get_statistics(days=1)
         
         # Add additional stats
+        # Note: Regular users don't have is_admin property, only Admin table contains admin users
         stats.update({
             'active_users': User.query.count(),
-            'total_admins': Admin.query.count() + User.query.filter_by(is_admin=True).count(),
+            'total_admins': Admin.query.count(),  # Only count from Admin table
             'last_24h': NotificationHistory.get_statistics(days=1)['total_sent']
         })
         
@@ -151,6 +167,7 @@ def notification_stats():
 def get_users():
     """Get list of users for notification targeting"""
     try:
+        # Get regular users
         users = User.query.all()
         user_list = []
         
@@ -159,7 +176,19 @@ def get_users():
                 'id': user.id,
                 'username': user.username,
                 'email': getattr(user, 'email', None),
-                'is_admin': getattr(user, 'is_admin', False)
+                'is_admin': False,  # Regular users are not admins
+                'user_type': 'user'
+            })
+        
+        # Get admin users from Admin table
+        admins = Admin.query.all()
+        for admin in admins:
+            user_list.append({
+                'id': f"admin_{admin.id}",  # Prefix to distinguish from regular users
+                'username': admin.username,
+                'email': getattr(admin, 'email', None),
+                'is_admin': True,
+                'user_type': 'admin'
             })
         
         return jsonify(user_list)

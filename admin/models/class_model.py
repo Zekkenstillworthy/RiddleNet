@@ -34,6 +34,11 @@ class Class(db.Model):
     status = db.Column(db.String(20), default='active')  # active, inactive, archived
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Ownership: which admin created/owns this class
+    created_by = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=True)
+
+    # Optional relationship to the Admin who created the class. Use string import to avoid circular import.
+    creator = db.relationship('Admin', backref=db.backref('created_classes', lazy='dynamic'), foreign_keys=[created_by])
     
     # Relationships
     question_groups = db.relationship(
@@ -63,6 +68,8 @@ class Class(db.Model):
             'section': self.section,
             'code': self.code,
             'description': self.description,
+            'createdBy': self.created_by,
+            'createdByUsername': getattr(self.creator, 'username', None) if getattr(self, 'creator', None) else None,
             'startDate': self.start_date.isoformat() if self.start_date else None,
             'endDate': self.end_date.isoformat() if self.end_date else None,
             'maxStudents': self.max_students,

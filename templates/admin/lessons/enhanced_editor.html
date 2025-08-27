@@ -601,7 +601,7 @@
 
     /* Content Editor */
     .content-editor {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(26, 43, 71, 0.8) !important;
         border: 1px solid var(--border-color);
         border-radius: 8px;
         min-height: 400px;
@@ -741,7 +741,7 @@
     /* Form Controls */
     .form-select {
         width: 100%;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(26, 43, 71, 0.8) !important;
         border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 10px;
@@ -800,7 +800,7 @@
 
     /* Layout Designer Styles */
     .layout-designer {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(26, 43, 71, 0.8) !important;
         border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 20px;
@@ -960,6 +960,30 @@
         color: white;
     }
 
+    /* Collapsible dropdown styles for content editor */
+    details.lesson-dropdown {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        margin: 12px 0;
+        overflow: hidden;
+    }
+    details.lesson-dropdown summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 12px 14px;
+        background: var(--surface-hover);
+        color: var(--text-primary);
+        outline: none;
+        user-select: none;
+    }
+    details.lesson-dropdown summary::-webkit-details-marker { display: none; }
+    details.lesson-dropdown .dropdown-body {
+        padding: 14px;
+        color: var(--text-primary);
+        background: rgba(0, 0, 0, 0.15);
+    }
+
     .style-controls {
         display: flex;
         flex-direction: column;
@@ -984,6 +1008,7 @@
         border-radius: 4px;
         height: 6px;
         outline: none;
+    appearance: none;
         -webkit-appearance: none;
     }
 
@@ -1318,7 +1343,7 @@
 </style>
 </head>
 
-<body>
+<body data-current-lesson-id="{{ selected_lesson.id if selected_lesson else '' }}">
     <!-- Learning Navigation - Exact match from module_preview.html -->
     <nav class="learning-nav">
         <a href="/admin/classes" class="nav-brand">
@@ -1694,6 +1719,10 @@
                             <i class="fas fa-link"></i>
                             Link
                         </button>
+                        <button class="toolbar-btn" onclick="insertDropdown()">
+                            <i class="fas fa-caret-down"></i>
+                            Insert Dropdown
+                        </button>
                     </div>
                 </div>
 
@@ -1773,7 +1802,8 @@
 
     <script>
     // Global variables
-    let currentLessonId = {% if selected_lesson %}{{ selected_lesson.id }}{% else %}null{% endif %};
+    const currentLessonIdRaw = document.body.getAttribute('data-current-lesson-id');
+    let currentLessonId = currentLessonIdRaw ? parseInt(currentLessonIdRaw, 10) : null;
     let mediaItems = {
         videos: [],
         images: [],
@@ -2418,6 +2448,33 @@
         }
     }
 
+    // Insert a collapsible dropdown section
+    function insertDropdown() {
+        const editor = document.getElementById('contentEditor');
+        const selection = window.getSelection();
+        const dropdownHTML = `
+<details class="lesson-dropdown">
+  <summary><strong>New Section</strong> — click to expand</summary>
+  <div class="dropdown-body"><p>Write details here…</p></div>
+</details>`;
+
+        // Prefer inserting into a selected text block when in layout mode
+        const target = (typeof selectedBlock !== 'undefined' && selectedBlock && selectedBlock.classList.contains('text-block'))
+            ? selectedBlock
+            : editor;
+
+        if (selection && selection.rangeCount > 0 && target.contains(selection.anchorNode)) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(range.createContextualFragment(dropdownHTML));
+        } else {
+            target.insertAdjacentHTML('beforeend', dropdownHTML);
+        }
+
+        target.focus();
+        showToast('Dropdown inserted', 'success');
+    }
+
     function insertMedia(type) {
         const category = type + 's';
         const availableItems = mediaItems[category];
@@ -2656,7 +2713,7 @@
             showToast('Preview mode enabled', 'success');
         } else {
             editor.contentEditable = 'true';
-            editor.style.background = 'rgba(255, 255, 255, 0.02)';
+            editor.style.background = 'rgba(26, 43, 71, 0.8)';
             showToast('Edit mode enabled', 'success');
         }
     }

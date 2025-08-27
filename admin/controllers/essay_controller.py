@@ -25,8 +25,13 @@ def index():
     per_page = 10  # Fixed to 10 items per page
     
     if step == 'classes':
-        # Step 1: Show classes with pagination
-        classes_pagination = Class.query.paginate(
+        # Step 1: Show classes with pagination (filter by ownership)
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            classes_query = Class.query
+        else:
+            classes_query = Class.query.filter_by(created_by=getattr(current_user, 'id', None))
+        
+        classes_pagination = classes_query.paginate(
             page=page, per_page=per_page, error_out=False
         )
         

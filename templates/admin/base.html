@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-actions-banner.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
@@ -243,8 +245,7 @@
     #sidebar li:nth-child(3),
     #sidebar li:nth-child(4),
     #sidebar li:nth-child(5),
-    #sidebar li:nth-child(6),    #sidebar li:nth-child(7),
-    #sidebar li:nth-child(8) {
+    #sidebar li:nth-child(6) {
         display: none;
         margin-left: 12px;
         border-left: 2px solid rgba(59, 130, 246, 0.3);
@@ -253,9 +254,7 @@
     #sidebar li:nth-child(3) a,
     #sidebar li:nth-child(4) a,
     #sidebar li:nth-child(5) a,
-    #sidebar li:nth-child(6) a,
-    #sidebar li:nth-child(7) a,
-    #sidebar li:nth-child(8) a {
+    #sidebar li:nth-child(6) a {
         padding-left: 24px;
         font-size: 13px;
         color: var(--text-muted);
@@ -265,9 +264,7 @@
     #sidebar li:nth-child(3) a:hover,
     #sidebar li:nth-child(4) a:hover,
     #sidebar li:nth-child(5) a:hover,
-    #sidebar li:nth-child(6) a:hover,
-    #sidebar li:nth-child(7) a:hover,
-    #sidebar li:nth-child(8) a:hover {
+    #sidebar li:nth-child(6) a:hover {
         color: var(--text-secondary);
         background: rgba(59, 130, 246, 0.05);
     }
@@ -447,6 +444,7 @@
 
 <body>
     {% block body %}
+    {% block sidebar %}
     <nav id="sidebar">
         <div class="logo-details">
             <div class="logo-icon">
@@ -474,18 +472,6 @@
                 <a href="/admin/classes">
                     <i class='bx bx-folder'></i>
                     <span>All Classes</span>
-                </a>
-            </li>
-            <li {% if active_page=='simulation_builder' %}class="active" {% endif %}>
-                <a href="{{ url_for('dashboard.simulation_builder') }}">
-                    <i class='bx bx-code-block'></i>
-                    <span>Simulation Builder</span>
-                </a>
-            </li>
-            <li {% if active_page=='manage_simulations' %}class="active" {% endif %}>
-                <a href="{{ url_for('dashboard.manage_simulations') }}">
-                    <i class='bx bx-cog'></i>
-                    <span>Manage Simulations</span>
                 </a>
             </li>
             <li {% if active_page=='module_builder' %}class="active" {% endif %}>
@@ -535,12 +521,6 @@
                     <span>Real-Time</span>
                 </a>
             </li>
-            <li {% if active_page=='websocket_test_center' %}class="active" {% endif %}>
-                <a href="{{ url_for('dashboard.websocket_test_center') }}">
-                    <i class='bx bx-test-tube'></i>
-                    <span>WebSocket Test</span>
-                </a>
-            </li>
             <li>
                 <a href="{{ url_for('auth.logout') }}">
                     <i class='bx bx-log-out'></i>
@@ -549,6 +529,7 @@
             </li>
         </ul>
     </nav>
+    {% endblock %}
     
     {% block content %}
     {% endblock %}
@@ -556,11 +537,9 @@
     <script>        // Enhanced dropdown functionality with animations        
     const classesDropdownItems = [
             document.querySelector('#sidebar li:nth-child(3)'), // All Classes
-            document.querySelector('#sidebar li:nth-child(4)'), // Simulation Builder
-            document.querySelector('#sidebar li:nth-child(5)'), // Manage Simulations
-            document.querySelector('#sidebar li:nth-child(6)'), // Module Builder
-            document.querySelector('#sidebar li:nth-child(7)'), // Questions
-            document.querySelector('#sidebar li:nth-child(8)')  // Essay Responses
+            document.querySelector('#sidebar li:nth-child(4)'), // Class Content Manager
+            document.querySelector('#sidebar li:nth-child(5)'), // Questions
+            document.querySelector('#sidebar li:nth-child(6)')  // Essay Responses
         ];
 
         function toggleDropdown(element) {

@@ -4,6 +4,7 @@ from admin.controllers.simulation_controller import SimulationController
 # Learning controller removed - Learning Paths feature disabled
 from admin.services.assignment_service import assignment_service
 from socket_events import emit_new_simulation_available, emit_assignment_created
+from utils.render_utils import render_safe_template
 import json
 
 # Create blueprint with unique name to avoid conflicts
@@ -13,63 +14,278 @@ admin_simulation_bp = Blueprint('admin_simulation', __name__, url_prefix='/admin
 simulation_controller = SimulationController()
 # learning_controller removed - Learning Paths feature disabled
 
-@admin_simulation_bp.route('/dashboard')
+class TroubleshootingSimulation:
+    """Helper class to create troubleshooting-compatible simulation objects"""
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+    def to_dict(self):
+        """Convert to dictionary for template usage"""
+        return {key: getattr(self, key, None) for key in dir(self) 
+                if not key.startswith('_') and not callable(getattr(self, key))}
+
+# Dashboard route removed - direct simulation access only
+
+# List route removed - direct simulation access only
+
+# Selector route removed - direct simulation access only
+
+@admin_simulation_bp.route('/edit/new')
 @login_required
-def simulation_dashboard():
-    """Enhanced simulation management dashboard"""
+def new_simulation_troubleshooting_editor():
+    """Create new simulation using troubleshooting editor"""
     try:
-        # Get dashboard data
-        dashboard_data = simulation_controller.get_dashboard_data()
-        # Learning data removed - Learning Paths feature disabled
-        learning_data = {'recent_paths': [], 'total_paths': 0, 'published_paths': 0}
-        
-        return render_template(
-            'admin/simulation_dashboard.html',
-            simulation_data=dashboard_data,
-            learning_data=learning_data
+        # Use the enhanced troubleshooting editor template with no simulation data
+        return render_safe_template(
+            'admin/troubleshooting/edit_simulation.html',
+            simulation=None
         )
     except Exception as e:
-        flash(f'Error loading dashboard: {str(e)}', 'error')
-        return redirect(url_for('admin.index'))
-
-@admin_simulation_bp.route('/builder')
-@login_required
-def simulation_builder():
-    """Enhanced simulation builder interface"""
-    return render_template('admin/simulation_builder.html')
-
-@admin_simulation_bp.route('/list')
-@login_required
-def simulation_list():
-    """List all simulations with management options"""
-    try:
-        simulations_data = simulation_controller.get_all_simulations()
-        return render_template(
-            'admin/simulation_list.html',
-            simulations=simulations_data.get('simulations', []),
-            total_count=simulations_data.get('total_count', 0)
-        )
-    except Exception as e:
-        flash(f'Error loading simulations: {str(e)}', 'error')
-        return redirect(url_for('admin_simulation.simulation_dashboard'))
+        flash(f'Error loading editor: {str(e)}', 'error')
+        return redirect('/admin/classes')
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>')
 @login_required
 def edit_simulation(simulation_id):
-    """Edit existing simulation"""
+    """Edit existing simulation with enhanced troubleshooting editor"""
     try:
         simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
         if 'error' in simulation_data:
             flash(simulation_data['error'], 'error')
-            return redirect(url_for('admin_simulation.simulation_list'))
+            return redirect('/admin/classes')
+        
+        # Convert simulation data to troubleshooting format if needed
+        simulation = simulation_data['simulation']
+        
+        # Create a troubleshooting-compatible simulation object
+        troubleshooting_sim = TroubleshootingSimulation(
+            id=simulation.get('id'),
+            title=simulation.get('title', 'Untitled Simulation'),
+            description=simulation.get('description', ''),
+            difficulty=simulation.get('difficulty', 'medium'),
+            problem_type=simulation.get('simulation_type', 'network'),
+            scenario=simulation.get('description', ''),
+            solution=simulation.get('solution_steps', ''),
+            time_limit=simulation.get('estimated_duration', 15),
+            base_score=simulation.get('base_score', 50),
+            time_bonus=simulation.get('time_bonus', 10),
+            hints=simulation.get('hints', []),
+            initial_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
+            solution_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
+            required_steps=simulation.get('step_definitions', []),
+            created_at=simulation.get('created_at'),
+            updated_at=simulation.get('updated_at'),
+            is_active=simulation.get('is_active', True)
+        )
+        
+        # Use the enhanced troubleshooting editor template
+        return render_safe_template(
+            'admin/troubleshooting/edit_simulation.html',
+            simulation=troubleshooting_sim
+        )
+    except Exception as e:
+        flash(f'Error loading simulation: {str(e)}', 'error')
+        return redirect('/admin/classes')
+
+@admin_simulation_bp.route('/edit/<int:simulation_id>/save', methods=['POST'])
+@login_required
+def save_simulation_from_troubleshooting_editor(simulation_id):
+    """Save simulation changes from troubleshooting editor"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        # Convert troubleshooting editor data back to simulation format
+        update_data = {
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'difficulty': data.get('difficulty'),
+            'simulation_type': data.get('problem_type', 'network'),
+            'estimated_duration': data.get('time_limit', 15),
+            'base_score': data.get('base_score', 50),
+            'time_bonus': data.get('time_bonus', 10),
+            'hints': data.get('hints', []),
+            'step_definitions': data.get('required_steps', []),
+            'solution_steps': data.get('solution'),
+            'simulation_config': {
+                'network_topology': data.get('initial_topology', {}),
+                'devices': data.get('devices', []),
+                'solution_topology': data.get('solution_topology', {})
+            }
+        }
+        
+        # Update the simulation
+        result = simulation_controller.update_simulation(simulation_id, update_data)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': 'Simulation updated successfully',
+                'simulation_id': simulation_id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('error', 'Error updating simulation')
+            }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error saving simulation: {str(e)}'
+        }), 500
+
+@admin_simulation_bp.route('/edit/<int:simulation_id>/validation/config', methods=['GET'])
+@login_required
+def get_enhanced_validation_config(simulation_id):
+    """Get enhanced validation configuration for a simulation"""
+    from admin.controllers.modern_simulation_controller import modern_simulation_controller
+    
+    result = modern_simulation_controller.get_enhanced_validation_config(simulation_id)
+    
+    if 'error' in result:
+        return jsonify({'success': False, 'message': result['error']}), 404
+    
+    return jsonify(result)
+
+
+@admin_simulation_bp.route('/edit/<int:simulation_id>/validation/config', methods=['POST'])
+@login_required
+def save_enhanced_validation_config(simulation_id):
+    """Save enhanced validation configuration for a simulation"""
+    from admin.controllers.modern_simulation_controller import modern_simulation_controller
+    
+    data = request.json
+    if not data:
+        return jsonify({'success': False, 'message': 'No validation data provided'}), 400
+    
+    result = modern_simulation_controller.save_enhanced_validation_config(simulation_id, data)
+    
+    if 'error' in result:
+        return jsonify({'success': False, 'message': result['error']}), 500
+    
+    return jsonify(result)
+
+
+@admin_simulation_bp.route('/edit/<int:simulation_id>/validation/state', methods=['POST'])
+@login_required
+def validate_simulation_state(simulation_id):
+    """Validate current simulation state"""
+    from admin.controllers.modern_simulation_controller import modern_simulation_controller
+    
+    data = request.json
+    if not data:
+        return jsonify({'success': False, 'message': 'No topology data provided'}), 400
+    
+    result = modern_simulation_controller.validate_simulation_state(simulation_id, data)
+    
+    if 'error' in result:
+        return jsonify({'success': False, 'message': result['error']}), 500
+    
+    return jsonify(result)
+
+
+@admin_simulation_bp.route('/edit/<int:simulation_id>/validation/tests', methods=['POST'])
+@login_required
+def run_connectivity_tests(simulation_id):
+    """Run connectivity tests for a simulation"""
+    from admin.controllers.modern_simulation_controller import modern_simulation_controller
+    
+    data = request.json
+    if not data:
+        return jsonify({'success': False, 'message': 'No test data provided'}), 400
+    
+    topology_data = data.get('topology', {})
+    test_config = data.get('test_config', {})
+    
+    result = modern_simulation_controller.run_connectivity_tests(simulation_id, topology_data, test_config)
+    
+    if 'error' in result:
+        return jsonify({'success': False, 'message': result['error']}), 500
+    
+    return jsonify(result)
+
+
+@admin_simulation_bp.route('/edit/save', methods=['POST'])
+@login_required
+def create_simulation_from_troubleshooting_editor():
+    """Create new simulation from troubleshooting editor"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+        
+        # Convert troubleshooting editor data to simulation format
+        simulation_data = {
+            'basic': {
+                'title': data.get('title', 'New Simulation'),
+                'description': data.get('description', ''),
+                'difficulty': data.get('difficulty', 'medium'),
+                'simulation_type': data.get('problem_type', 'network'),
+                'category': data.get('problem_type', 'network'),
+                'duration': data.get('time_limit', 15)
+            },
+            'objectives': [
+                'Complete the troubleshooting scenario',
+                'Apply networking knowledge',
+                'Demonstrate problem-solving skills'
+            ],
+            'steps': data.get('required_steps', []),
+            'scoring': {
+                'timeBonus': data.get('time_bonus', 10),
+                'perfectBonus': data.get('base_score', 50),
+                'tags': '',
+                'isActive': True,
+                'isPublished': False
+            },
+            'template': {
+                'selectedTemplate': 'troubleshooting-template',
+                'networkTopology': data.get('initial_topology', {}),
+                'devices': data.get('devices', []),
+                'protocols': []
+            }
+        }
+        
+        # Create the simulation
+        result = simulation_controller.create_simulation_from_builder(simulation_data, current_user.id)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'message': 'Simulation created successfully',
+                'simulation_id': result.get('simulation', {}).get('id')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('error', 'Error creating simulation')
+            }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error creating simulation: {str(e)}'
+        }), 500
+
+@admin_simulation_bp.route('/<int:simulation_id>')
+@login_required
+def view_simulation(simulation_id):
+    """Preview simulation"""
+    try:
+        simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
+        if 'error' in simulation_data:
+            flash(simulation_data['error'], 'error')
+            return redirect('/admin/classes')
         
         return render_template(
-            'admin/simulation_editor.html',
+            'admin/simulation_preview.html',
             simulation=simulation_data['simulation']
         )
     except Exception as e:
         flash(f'Error loading simulation: {str(e)}', 'error')
-        return redirect(url_for('admin_simulation.simulation_list'))
+        return redirect('/admin/classes')
 
 @admin_simulation_bp.route('/analytics/<int:simulation_id>')
 @login_required
@@ -79,7 +295,7 @@ def simulation_analytics(simulation_id):
         analytics_data = simulation_controller.get_simulation_analytics(simulation_id)
         if 'error' in analytics_data:
             flash(analytics_data['error'], 'error')
-            return redirect(url_for('admin_simulation.simulation_list'))
+            return redirect('/admin/classes')
         
         return render_template(
             'admin/simulation_analytics.html',
@@ -87,11 +303,11 @@ def simulation_analytics(simulation_id):
         )
     except Exception as e:
         flash(f'Error loading analytics: {str(e)}', 'error')
-        return redirect(url_for('admin_simulation.simulation_list'))
+        return redirect('/admin/classes')
 
 # API Routes for AJAX/Frontend Integration
 
-@admin_simulation_bp.route('/api/create', methods=['POST'])
+@admin_simulation_bp.route('/api', methods=['POST'])
 @login_required
 def create_simulation_api():
     """Create simulation from builder interface"""
@@ -99,8 +315,8 @@ def create_simulation_api():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
-        result = simulation_controller.create_simulation_from_builder(data, current_user.id)
+        # Accept both flat payloads and builder format, delegate to controller
+        result = simulation_controller.create_simulation_from_payload(data, current_user.id)
         
         if 'error' in result:
             return jsonify(result), 400
@@ -204,6 +420,48 @@ def update_simulation_api(simulation_id):
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': f'Failed to update simulation: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/publish', methods=['POST'])
+@login_required
+def publish_simulation_api(simulation_id):
+    """Publish simulation"""
+    try:
+        result = simulation_controller.toggle_simulation_status(simulation_id, True)
+        
+        if 'error' in result:
+            return jsonify(result), 400
+        
+        return jsonify({'success': True, 'message': 'Simulation published successfully'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to publish simulation: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/unpublish', methods=['POST'])
+@login_required
+def unpublish_simulation_api(simulation_id):
+    """Unpublish simulation"""
+    try:
+        result = simulation_controller.toggle_simulation_status(simulation_id, False)
+        
+        if 'error' in result:
+            return jsonify(result), 400
+        
+        return jsonify({'success': True, 'message': 'Simulation unpublished successfully'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to unpublish simulation: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/duplicate', methods=['POST'])
+@login_required
+def duplicate_simulation_api(simulation_id):
+    """Duplicate simulation"""
+    try:
+        result = simulation_controller.duplicate_simulation(simulation_id)
+        
+        if 'error' in result:
+            return jsonify(result), 400
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Failed to duplicate simulation: {str(e)}'}), 500
 
 @admin_simulation_bp.route('/api/<int:simulation_id>', methods=['DELETE'])
 @login_required
@@ -477,3 +735,99 @@ def create_simulation_with_auto_assign():
         
     except Exception as e:
         return jsonify({'error': f'Failed to create simulation with auto-assignment: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/quick-create', methods=['POST'])
+@login_required
+def quick_create_simulation():
+    """Quick create simulation with minimal setup"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Build simulation data from quick form
+        simulation_data = {
+            'basic': {
+                'title': data.get('title'),
+                'simulation_type': data.get('simulation_type'),
+                'difficulty': data.get('difficulty'),
+                'description': data.get('description', ''),
+                'category': data.get('simulation_type', 'general'),
+                'tags': '',
+                'estimated_duration': 30,
+                'isActive': True,
+                'isPublished': data.get('is_published', False)
+            },
+            'objectives': [
+                f"Complete {data.get('simulation_type', 'networking')} exercise",
+                "Apply learned concepts in practice",
+                "Demonstrate understanding through hands-on work"
+            ],
+            'template': {
+                'selectedTemplate': 'basic-template',
+                'networkTopology': 'simple'
+            },
+            'steps': [
+                {
+                    'title': 'Introduction',
+                    'type': 'instruction',
+                    'description': f"Welcome to the {data.get('title', 'simulation')} exercise.",
+                    'content': data.get('description', ''),
+                    'validation': {'score': 0}
+                },
+                {
+                    'title': 'Complete Task',
+                    'type': 'question',
+                    'description': 'Complete the assigned networking task.',
+                    'questionText': f"Complete the {data.get('simulation_type', 'networking')} configuration as instructed.",
+                    'questionType': 'text',
+                    'validation': {
+                        'expectedAnswer': '',
+                        'score': 100
+                    },
+                    'hint': 'Follow the step-by-step instructions provided.'
+                }
+            ],
+            'scoring': {
+                'timeBonus': 10,
+                'perfectBonus': 20,
+                'totalPoints': 100
+            }
+        }
+        
+        # Create the simulation
+        result = simulation_controller.create_simulation_from_builder(simulation_data, current_user.id)
+        
+        if 'error' in result:
+            return jsonify(result), 400
+        
+        # Auto-assign to specified class if requested
+        if data.get('auto_assign') and data.get('class_id'):
+            try:
+                assignment = assignment_service.create_explicit_assignment(
+                    simulation_id=result['simulation']['id'],
+                    class_id=data['class_id'],
+                    title=f"Assignment: {data.get('title')}",
+                    description=data.get('description', ''),
+                    max_attempts=3
+                )
+                
+                # Send notification
+                emit_assignment_created(
+                    assignment.id,
+                    assignment.class_id,
+                    assignment.simulation_id
+                )
+                
+            except Exception as e:
+                # Log but don't fail the creation
+                print(f"Warning: Failed to auto-assign simulation: {e}")
+        
+        return jsonify({
+            'success': True,
+            'simulation': result['simulation'],
+            'message': 'Simulation created successfully!'
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to create simulation: {str(e)}'}), 500

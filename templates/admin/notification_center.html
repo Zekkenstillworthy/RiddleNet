@@ -463,8 +463,16 @@
                     <form id="notificationForm">
                         <div class="form-group">
                             <label class="form-label">Recipient Type</label>
-                            <select class="form-select" id="recipientType">
+                            <select class="form-select" id="recipientType" onchange="toggleSpecificUser()">
                                 <option value="all_admins">All Admins</option>
+                                <option value="specific_user">Specific User</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="specificUserGroup" style="display: none;">
+                            <label class="form-label">Select User</label>
+                            <select class="form-select" id="specificUser">
+                                <option value="">Loading users...</option>
                             </select>
                         </div>
 
@@ -601,6 +609,40 @@
             document.getElementById('notificationForm').addEventListener('submit', sendNotification);
         });
 
+        // Load users for recipient selection
+        async function loadUsers() {
+            try {
+                const response = await fetch('/admin/api/users');
+                const users = await response.json();
+                
+                const select = document.getElementById('specificUser');
+                select.innerHTML = '<option value="">Select a user...</option>';
+                
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.username} (${user.email || 'No email'}) ${user.is_admin ? '- Admin' : ''}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                const select = document.getElementById('specificUser');
+                select.innerHTML = '<option value="">Failed to load users</option>';
+            }
+        }
+
+        // Toggle specific user selection visibility
+        function toggleSpecificUser() {
+            const recipientType = document.getElementById('recipientType').value;
+            const specificUserGroup = document.getElementById('specificUserGroup');
+            
+            if (recipientType === 'specific_user') {
+                specificUserGroup.style.display = 'block';
+            } else {
+                specificUserGroup.style.display = 'none';
+            }
+        }
+
         // Send notification
         async function sendNotification(event) {
             event.preventDefault();
@@ -626,8 +668,18 @@
                 channel: document.getElementById('channel').value
             };
 
+            // Validation
             if (!formData.title || !formData.message) {
                 showAlert('Please fill in title and message', 'error');
+                // Re-enable button
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="bx bx-send"></i> Send Notification';
+                return;
+            }
+
+            // Validate specific user selection if needed
+            if (formData.recipient_type === 'specific_user' && !formData.specific_user) {
+                showAlert('Please select a specific user', 'error');
                 // Re-enable button
                 submitButton.disabled = false;
                 submitButton.innerHTML = '<i class="bx bx-send"></i> Send Notification';
@@ -655,6 +707,7 @@
                     
                     // Reset form
                     document.getElementById('notificationForm').reset();
+                    toggleSpecificUser(); // Reset the specific user visibility
                     
                     // Refresh data
                     loadNotificationHistory();

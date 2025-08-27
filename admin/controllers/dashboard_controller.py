@@ -398,13 +398,6 @@ def websocket_test_center():
     return render_safe_template('admin/websocket_test_center.html', 
                                active_page='websocket_test_center')
 
-@dashboard_bp.route('/simulation-builder')
-@login_required
-def simulation_builder():
-    """Simulation Builder page for creating and editing network simulations"""
-    return render_safe_template('admin/simulation_builder.html', 
-                               active_page='simulation_builder')
-
 @dashboard_bp.route('/manage-simulations')
 @login_required
 def manage_simulations():
@@ -447,13 +440,16 @@ def class_content_manager():
         else:
             print("❌ No class_id provided, showing class selection interface")
         
-        # Get all classes for selection dropdown
+        # Get classes available to this admin (owner) for selection dropdown
         from admin.models.class_model import Class
         
-        # First try to get all classes, then filter by status
+        # First try to get classes, then filter by ownership and status
         try:
-            # Try to get all classes from database
-            all_classes_query = Class.query.all()
+            # If super_admin, show all classes
+            if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+                all_classes_query = Class.query.all()
+            else:
+                all_classes_query = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()
             print(f"Raw query result: {len(all_classes_query)} classes found")
             current_app.logger.info(f"Module Builder: Total classes in DB: {len(all_classes_query)}")
             
@@ -727,7 +723,7 @@ def class_content_manager():
                 'average_score': 0
             }
         
-        return render_safe_template('admin/module_builder.html', 
+        return render_safe_template('admin/class_content_manager.html', 
                                    active_page='module_builder',
                                    all_classes=all_classes,
                                    selected_class=selected_class,
@@ -753,7 +749,7 @@ def class_content_manager():
             current_app.logger.error(f"Failed to load classes in exception handler: {class_error}")
             all_classes = []
         
-        return render_safe_template('admin/module_builder.html', 
+        return render_safe_template('admin/class_content_manager.html', 
                                    active_page='module_builder',
                                    all_classes=all_classes,
                                    selected_class=None,
@@ -962,6 +958,8 @@ def create_class_content(class_id):
                 due_date=datetime.fromisoformat(data.get('due_date')) if data.get('due_date') else None,
                 points=data.get('points', 100),
                 assignment_type=data.get('assignment_type', 'assignment'),
+                priority=data.get('priority', 'medium'),
+                category=data.get('category', 'general'),
                 is_published=data.get('is_published', False),
                 question_group_id=data.get('question_group_id'),
                 simulation_id=data.get('simulation_id'),

@@ -198,6 +198,10 @@ def create_module(class_id):
     try:
         # Verify class exists
         class_obj = Class.query.get_or_404(class_id)
+
+        # Ownership check: only creator or super_admin can create content for this class
+        if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and class_obj.created_by != getattr(current_user, 'id', None):
+            return jsonify({'error': 'Permission denied'}), 403
         
         # Get form data with enhanced fields
         title = request.form.get('title', '').strip()

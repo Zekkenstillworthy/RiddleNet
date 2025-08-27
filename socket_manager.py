@@ -247,10 +247,32 @@ def register_handlers():
                 if is_admin:
                     join_room('admin_room')
                     print(f"✅ Admin {username} joined admin room")
+                    
+                    # Send updated user list to all admins
+                    emit_admin_user_update()
+                    
+                    # Log admin connection activity
+                    emit_admin_activity(
+                        'admin_connected',
+                        username,
+                        f'Admin {username} connected to the system',
+                        'bx-shield-check'
+                    )
                 else:
                     print(f"🔍 Regular user {username} - not joining admin room")
+                    
+                    # Log regular user connection
+                    emit_admin_activity(
+                        'user_connected', 
+                        username,
+                        f'User {username} connected to the platform',
+                        'bx-user-plus'
+                    )
                 
                 print(f"✅ User {username} (ID: {user_id}) connected via WebSocket")
+                
+                # Send updated user count to admins
+                emit_admin_user_update()
                 
                 # Notify admins of user connection
                 emit('user_connected', {
@@ -284,8 +306,19 @@ def register_handlers():
                 # Register with monitor
                 socket_monitor.register_disconnect(request.sid)
                 
+                # Log disconnection activity
+                emit_admin_activity(
+                    'user_disconnected',
+                    username,
+                    f'User {username} disconnected from the platform',
+                    'bx-user-minus'
+                )
+                
                 # Remove from tracking
                 del user_connections[request.sid]
+                
+                # Send updated user list
+                emit_admin_user_update()
                 
                 print(f"🔌 User {username} (ID: {user_id}) disconnected from WebSocket")
                 
@@ -312,6 +345,12 @@ def register_handlers():
         except Exception as e:
             print(f"❌ Error in health check handler: {str(e)}")
             socket_monitor.register_error(request.sid, e)
+
+    @socketio.on('get_admin_user_list')
+    @admin_only
+    def handle_get_admin_user_list(data=None):
+        """Handle request for current user list from admin panel"""
+        emit_admin_user_update()
 
     @socketio.on_error_default
     def default_error_handler(e):
@@ -355,5 +394,45 @@ def update_user_activity(user_id, activity_type):
                 break
     except Exception as e:
         print(f"❌ Error updating user activity: {str(e)}")
+
+def emit_admin_user_update():
+    """Send connected users update to admin panel"""
+    try:
+        connected_users = []
+        for sid, conn_info in user_connections.items():
+            connected_users.append({
+                'username': conn_info['username'],
+                'user_id': conn_info['user_id'],
+                'connected_at': conn_info['connected_at'],
+                'session_id': sid,
+                'last_activity': 'Active'
+            })
+        
+        socketio.emit('admin_users_update', {
+            'users': connected_users,
+            'total_count': len(connected_users)
+        }, room='admin_room')
+        
+        print(f"📊 Sent user update to admin panel: {len(connected_users)} users")
+        
+    except Exception as e:
+        print(f"❌ Error sending admin user update: {e}")
+
+def emit_admin_activity(activity_type, username, details, icon='bx-info-circle'):
+    """Send activity update to admin panel"""
+    try:
+        activity_data = {
+            'type': activity_type,
+            'username': username,
+            'details': details,
+            'timestamp': datetime.utcnow().isoformat(),
+            'icon': icon
+        }
+        
+        socketio.emit('admin_activity_update', activity_data, room='admin_room')
+        print(f"📈 Activity sent to admin panel: {activity_type} - {username}")
+        
+    except Exception as e:
+        print(f"❌ Error sending admin activity: {e}")
 
 print("✅ Socket manager initialized successfully")

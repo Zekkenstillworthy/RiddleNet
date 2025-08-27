@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request, render_template
+from flask_login import current_user
 from admin import db
 from admin.models.class_model import Class
 from admin.models.question_group import QuestionGroup
@@ -8,6 +9,106 @@ import string
 from datetime import datetime
 
 api_bp = Blueprint('admin_api', __name__, url_prefix='/admin/api')
+
+@api_bp.route('/deadlines/<int:class_id>', methods=['GET'])
+def get_deadlines(class_id):
+    """Get deadline data for a specific class"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        from admin.models.assignment_submission import AssignmentSubmission
+        from admin.models.deadline_policy import StudentDeadlineExtension, DeadlinePolicy
+        from user.models.user import User
+        from datetime import datetime
+        
+        # Get assignments for the class
+        assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
+        
+        assignment_data = []
+        for assignment in assignments:
+            submissions = AssignmentSubmission.query.filter_by(assignment_id=assignment.id).all()
+            extensions = StudentDeadlineExtension.query.filter_by(assignment_id=assignment.id).all()
+            
+            late_count = len([s for s in submissions if s.is_late])
+            
+            assignment_data.append({
+                'id': assignment.id,
+                'title': assignment.title,
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'submissions_count': len(submissions),
+                'late_count': late_count,
+                'extensions_count': len([e for e in extensions if e.is_active])
+            })
+        
+        # Get active extensions for the class
+        extension_data = []
+        for assignment in assignments:
+            extensions = StudentDeadlineExtension.query.filter_by(assignment_id=assignment.id).all()
+            for extension in extensions:
+                student = User.query.get(extension.student_id)
+                granted_by = User.query.get(extension.granted_by_id)
+                
+                extension_data.append({
+                    'id': extension.id,
+                    'student_name': f"{student.first_name} {student.last_name}" if student else "Unknown",
+                    'assignment_title': assignment.title,
+                    'extended_due_date': extension.extended_due_date.isoformat() if extension.extended_due_date else None,
+                    'granted_by_name': f"{granted_by.first_name} {granted_by.last_name}" if granted_by else "Unknown",
+                    'reason': extension.reason,
+                    'is_active': extension.is_active,
+                    'used': extension.used
+                })
+        
+        # Get policies
+        policies = DeadlinePolicy.query.all()
+        policy_data = []
+        for policy in policies:
+            # Count assignments using this policy (this would need a relationship)
+            policy_data.append({
+                'id': policy.id,
+                'name': policy.name,
+                'policy_type': policy.policy_type,
+                'simple_penalty_per_day': policy.simple_penalty_per_day,
+                'grace_period_hours': policy.grace_period_hours,
+                'max_penalty_percentage': policy.max_penalty_percentage,
+                'assignments_count': 0  # TODO: Implement policy-assignment relationship
+            })
+        
+        # Calculate statistics
+        all_submissions = AssignmentSubmission.query.join(ClassAssignment).filter(
+            ClassAssignment.class_id == class_id
+        ).all()
+        
+        late_submissions = [s for s in all_submissions if s.is_late]
+        active_extensions = StudentDeadlineExtension.query.join(ClassAssignment).filter(
+            ClassAssignment.class_id == class_id,
+            StudentDeadlineExtension.is_active == True
+        ).count()
+        
+        avg_late_penalty = sum([s.late_penalty_applied for s in late_submissions]) / len(late_submissions) if late_submissions else 0
+        on_time_rate = ((len(all_submissions) - len(late_submissions)) / len(all_submissions) * 100) if all_submissions else 100
+        
+        return jsonify({
+            'assignments': assignment_data,
+            'extensions': extension_data,
+            'policies': policy_data,
+            'statistics': {
+                'late_submissions': len(late_submissions),
+                'active_extensions': active_extensions,
+                'avg_late_penalty': round(avg_late_penalty, 1),
+                'on_time_rate': round(on_time_rate, 1)
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# NOTE: Duplicate endpoint removed. A more robust implementation of
+# `get_classes` exists later in this file ("Get all classes with better
+# error handling"). Keeping a single definition avoids Flask endpoint
+# collision (AssertionError: View function mapping is overwriting an
+# existing endpoint function: admin_api.get_classes) which previously
+# prevented other admin blueprints (e.g., simulation routes) from
+# registering.
 
 @api_bp.route('/test', methods=['GET'])
 def test_api():
@@ -50,7 +151,14 @@ def get_classes():
     """Get all classes with better error handling"""
     try:
         print("Fetching classes from database...")
-        classes = Class.query.all()
+        # Only return classes owned by current admin unless super_admin
+        try:
+            if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+                classes = Class.query.all()
+            else:
+                classes = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()
+        except Exception:
+            classes = Class.query.all()
         print(f"Found {len(classes)} classes in database")
         
         classes_data = []
@@ -105,6 +213,11 @@ def create_class():
             max_students=data['maxStudents'],
             status=data.get('status', 'active')
         )
+        # Set ownership if current_user is available
+        try:
+            new_class.created_by = getattr(current_user, 'id', None)
+        except Exception:
+            pass
         
         # Manually set timestamps if column exists
         try:
@@ -149,6 +262,9 @@ def get_class(class_id):
     """Get a specific class"""
     try:
         cls = Class.query.get_or_404(class_id)
+        # Ownership check
+        if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
+            return jsonify({'error': 'Permission denied'}), 403
         return jsonify(cls.to_dict())
     except Exception as e:
         return jsonify({'error': str(e)}), 404
@@ -317,8 +433,8 @@ def get_module_preview_data(class_id, module_id):
         }), 500
 
 # Enhanced UI Components API Endpoints
-@api_bp.route('/deadlines', methods=['GET'])
-def get_deadlines():
+@api_bp.route('/deadlines', methods=['GET'], endpoint='get_all_deadlines')
+def get_all_deadlines():
     """Get all deadlines for enhanced deadline management"""
     try:
         # For now, return empty array since we don't have deadline models yet
@@ -650,6 +766,657 @@ def download_collaboration_file(file_id):
             'success': False,
             'error': 'File not found'
         }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/grades/<int:class_id>', methods=['GET'])
+def get_class_grades(class_id):
+    """Get comprehensive grade data for a class"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        from admin.models.assignment_submission import AssignmentSubmission
+        from user.models.user import User
+        from admin.models.class_model import Class
+        
+        # Verify class exists and user has access
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Get all students in the class
+        students = User.query.filter_by(role='student').join(
+            User.enrolled_classes
+        ).filter_by(id=class_id).all()
+        
+        # Get all assignments for this class
+        assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
+        
+        # Get all submissions for these assignments
+        assignment_ids = [a.id for a in assignments]
+        submissions = AssignmentSubmission.query.filter(
+            AssignmentSubmission.assignment_id.in_(assignment_ids)
+        ).all() if assignment_ids else []
+        
+        # Group submissions by student and assignment
+        submission_map = {}
+        grade_map = {}
+        
+        for submission in submissions:
+            if submission.student_id not in submission_map:
+                submission_map[submission.student_id] = {}
+                grade_map[submission.student_id] = {}
+            
+            submission_map[submission.student_id][submission.assignment_id] = submission
+            
+            if submission.grade is not None:
+                grade_map[submission.student_id][submission.assignment_id] = {
+                    'score': submission.grade,
+                    'max_points': submission.max_points or 100,
+                    'percentage': (submission.grade / (submission.max_points or 100)) * 100,
+                    'graded_at': submission.graded_at.isoformat() if submission.graded_at else None
+                }
+        
+        # Prepare student data
+        student_data = []
+        for student in students:
+            student_grades = grade_map.get(student.id, {})
+            student_submissions = submission_map.get(student.id, {})
+            
+            student_data.append({
+                'id': student.id,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'email': student.email,
+                'grades': student_grades,
+                'submissions': {aid: {'status': sub.status, 'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None} 
+                              for aid, sub in student_submissions.items()}
+            })
+        
+        # Prepare assignment data with statistics
+        assignment_data = []
+        for assignment in assignments:
+            assignment_submissions = [s for s in submissions if s.assignment_id == assignment.id]
+            assignment_grades = [s.grade for s in assignment_submissions if s.grade is not None]
+            
+            stats = {
+                'id': assignment.id,
+                'title': assignment.title,
+                'type': 'assignment',
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'max_points': assignment.max_points or 100,
+                'submitted_count': len(assignment_submissions),
+                'graded_count': len(assignment_grades),
+                'average_grade': sum(assignment_grades) / len(assignment_grades) if assignment_grades else 0
+            }
+            assignment_data.append(stats)
+        
+        # TODO: Add simulation and quiz data when those models are available
+        simulation_data = []
+        quiz_data = []
+        
+        response_data = {
+            'students': student_data,
+            'assignments': assignment_data,
+            'simulations': simulation_data,
+            'quizzes': quiz_data,
+            'class_info': {
+                'id': class_obj.id,
+                'name': class_obj.name,
+                'code': class_obj.code
+            }
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# DEADLINE MANAGEMENT API ENDPOINTS
+
+@api_bp.route('/deadline-policies', methods=['GET'])
+def get_deadline_policies():
+    """Get all deadline policies"""
+    try:
+        from admin.models.deadline_policy import DeadlinePolicy
+        
+        policies = DeadlinePolicy.query.all()
+        return jsonify({
+            'success': True,
+            'policies': [policy.to_dict() for policy in policies]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/deadline-policies', methods=['POST'])
+def create_deadline_policy():
+    """Create a new deadline policy"""
+    try:
+        from admin.models.deadline_policy import DeadlinePolicy, PenaltyTier
+        from flask_login import current_user
+        
+        data = request.get_json()
+        
+        policy = DeadlinePolicy(
+            name=data['name'],
+            description=data.get('description'),
+            policy_type=data.get('policy_type', 'simple'),
+            simple_penalty_per_day=data.get('simple_penalty_per_day', 10.0),
+            max_penalty_percentage=data.get('max_penalty_percentage', 100.0),
+            grace_period_hours=data.get('grace_period_hours', 0),
+            hard_cutoff_enabled=data.get('hard_cutoff_enabled', False),
+            hard_cutoff_days=data.get('hard_cutoff_days', 7),
+            exclude_weekends=data.get('exclude_weekends', False),
+            exclude_holidays=data.get('exclude_holidays', False),
+            allow_partial_credit=data.get('allow_partial_credit', True),
+            round_penalty_up=data.get('round_penalty_up', False),
+            created_by=current_user.id
+        )
+        
+        db.session.add(policy)
+        db.session.flush()  # Get the policy ID
+        
+        # Add penalty tiers if specified
+        if 'penalty_tiers' in data:
+            for tier_data in data['penalty_tiers']:
+                tier = PenaltyTier(
+                    policy_id=policy.id,
+                    start_day=tier_data['start_day'],
+                    end_day=tier_data.get('end_day'),
+                    penalty_percentage=tier_data['penalty_percentage'],
+                    penalty_type=tier_data.get('penalty_type', 'per_day'),
+                    description=tier_data.get('description')
+                )
+                db.session.add(tier)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Deadline policy created successfully',
+            'policy': policy.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/deadline-policies/<int:policy_id>', methods=['PUT'])
+def update_deadline_policy(policy_id):
+    """Update a deadline policy"""
+    try:
+        from admin.models.deadline_policy import DeadlinePolicy, PenaltyTier
+        
+        policy = DeadlinePolicy.query.get_or_404(policy_id)
+        data = request.get_json()
+        
+        # Update policy fields
+        for field in ['name', 'description', 'policy_type', 'simple_penalty_per_day',
+                     'max_penalty_percentage', 'grace_period_hours', 'hard_cutoff_enabled',
+                     'hard_cutoff_days', 'exclude_weekends', 'exclude_holidays',
+                     'allow_partial_credit', 'round_penalty_up']:
+            if field in data:
+                setattr(policy, field, data[field])
+        
+        # Update penalty tiers if specified
+        if 'penalty_tiers' in data:
+            # Remove existing tiers
+            PenaltyTier.query.filter_by(policy_id=policy.id).delete()
+            
+            # Add new tiers
+            for tier_data in data['penalty_tiers']:
+                tier = PenaltyTier(
+                    policy_id=policy.id,
+                    start_day=tier_data['start_day'],
+                    end_day=tier_data.get('end_day'),
+                    penalty_percentage=tier_data['penalty_percentage'],
+                    penalty_type=tier_data.get('penalty_type', 'per_day'),
+                    description=tier_data.get('description')
+                )
+                db.session.add(tier)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Deadline policy updated successfully',
+            'policy': policy.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/deadline-policies/<int:policy_id>', methods=['DELETE'])
+def delete_deadline_policy(policy_id):
+    """Delete a deadline policy"""
+    try:
+        from admin.models.deadline_policy import DeadlinePolicy
+        
+        policy = DeadlinePolicy.query.get_or_404(policy_id)
+        
+        # Check if policy is in use
+        from admin.models.deadline_policy import AssignmentAvailabilityWindow
+        in_use = AssignmentAvailabilityWindow.query.filter_by(deadline_policy_id=policy.id).first()
+        
+        if in_use:
+            return jsonify({
+                'success': False,
+                'error': 'Cannot delete policy that is currently in use by assignments'
+            }), 400
+        
+        db.session.delete(policy)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Deadline policy deleted successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/availability', methods=['GET'])
+def get_assignment_availability(assignment_id):
+    """Get assignment availability window"""
+    try:
+        from admin.models.deadline_policy import AssignmentAvailabilityWindow
+        from services.deadline_service import DeadlineService
+        
+        availability = AssignmentAvailabilityWindow.query.filter_by(
+            assignment_id=assignment_id
+        ).first()
+        
+        if availability:
+            return jsonify({
+                'success': True,
+                'availability': availability.to_dict()
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'availability': None
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/availability', methods=['POST', 'PUT'])
+def set_assignment_availability(assignment_id):
+    """Set or update assignment availability window"""
+    try:
+        from admin.models.deadline_policy import AssignmentAvailabilityWindow
+        from datetime import datetime
+        
+        data = request.get_json()
+        
+        # Get or create availability window
+        availability = AssignmentAvailabilityWindow.query.filter_by(
+            assignment_id=assignment_id
+        ).first()
+        
+        if not availability:
+            availability = AssignmentAvailabilityWindow(assignment_id=assignment_id)
+            db.session.add(availability)
+        
+        # Update fields
+        date_fields = ['available_from', 'available_until', 'due_date', 
+                      'extended_due_date', 'late_submission_until']
+        
+        for field in date_fields:
+            if field in data and data[field]:
+                try:
+                    setattr(availability, field, datetime.fromisoformat(data[field].replace('Z', '+00:00')))
+                except ValueError:
+                    setattr(availability, field, datetime.strptime(data[field], '%Y-%m-%d %H:%M:%S'))
+            elif field in data and data[field] is None:
+                setattr(availability, field, None)
+        
+        # Update other fields
+        other_fields = ['late_submission_enabled', 'deadline_policy_id', 
+                       'custom_penalty_enabled', 'custom_penalty_per_day',
+                       'require_password', 'access_password', 'ip_restrictions',
+                       'time_limit_enabled', 'time_limit_minutes', 'max_attempts',
+                       'allow_save_and_resume']
+        
+        for field in other_fields:
+            if field in data:
+                setattr(availability, field, data[field])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assignment availability updated successfully',
+            'availability': availability.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/extensions', methods=['GET'])
+def get_assignment_extensions(assignment_id):
+    """Get all deadline extensions for an assignment"""
+    try:
+        from admin.models.deadline_policy import StudentDeadlineExtension
+        from user.models.user import User
+        
+        extensions = db.session.query(StudentDeadlineExtension, User).join(
+            User, StudentDeadlineExtension.student_id == User.id
+        ).filter(StudentDeadlineExtension.assignment_id == assignment_id).all()
+        
+        result = []
+        for extension, student in extensions:
+            ext_dict = extension.to_dict()
+            ext_dict['student'] = {
+                'id': student.id,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'email': student.email
+            }
+            result.append(ext_dict)
+        
+        return jsonify({
+            'success': True,
+            'extensions': result
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/extensions', methods=['POST'])
+def grant_deadline_extension(assignment_id):
+    """Grant a deadline extension to a student"""
+    try:
+        from services.deadline_service import DeadlineService
+        from flask_login import current_user
+        
+        data = request.get_json()
+        
+        extension = DeadlineService.grant_extension(
+            assignment_id=assignment_id,
+            student_id=data['student_id'],
+            hours=data['hours'],
+            reason=data.get('reason'),
+            approved_by=current_user.id,
+            waive_late_penalty=data.get('waive_late_penalty', False),
+            custom_penalty_rate=data.get('custom_penalty_rate'),
+            approval_notes=data.get('approval_notes')
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Deadline extension granted successfully',
+            'extension': extension.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/extensions/<int:extension_id>', methods=['PUT'])
+def update_deadline_extension(extension_id):
+    """Update a deadline extension"""
+    try:
+        from admin.models.deadline_policy import StudentDeadlineExtension
+        from datetime import datetime, timedelta
+        
+        extension = StudentDeadlineExtension.query.get_or_404(extension_id)
+        data = request.get_json()
+        
+        # Update extension hours and recalculate due date
+        if 'hours' in data:
+            extension.extension_hours = data['hours']
+            extension.extended_due_date = extension.original_due_date + timedelta(hours=data['hours'])
+        
+        # Update other fields
+        for field in ['reason', 'approval_notes', 'waive_late_penalty', 
+                     'custom_penalty_rate', 'is_active']:
+            if field in data:
+                setattr(extension, field, data[field])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Deadline extension updated successfully',
+            'extension': extension.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/extensions/<int:extension_id>', methods=['DELETE'])
+def revoke_deadline_extension(extension_id):
+    """Revoke a deadline extension"""
+    try:
+        from admin.models.deadline_policy import StudentDeadlineExtension
+        
+        extension = StudentDeadlineExtension.query.get_or_404(extension_id)
+        
+        # Check if extension has been used
+        if extension.used:
+            # Don't delete, just deactivate
+            extension.is_active = False
+            db.session.commit()
+            message = 'Extension deactivated (student had already used it)'
+        else:
+            # Can safely delete
+            db.session.delete(extension)
+            db.session.commit()
+            message = 'Extension revoked successfully'
+        
+        return jsonify({
+            'success': True,
+            'message': message
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/penalty-calculation', methods=['POST'])
+def calculate_assignment_penalties(assignment_id):
+    """Calculate penalties for all submissions of an assignment"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        from admin.models.assignment_submission import AssignmentSubmission
+        from services.deadline_service import DeadlineService
+        
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        submissions = AssignmentSubmission.query.filter_by(assignment_id=assignment_id).all()
+        
+        results = []
+        for submission in submissions:
+            penalty_result = DeadlineService.calculate_late_penalty(submission, assignment)
+            results.append({
+                'submission_id': submission.id,
+                'student_id': submission.student_id,
+                'penalty_result': penalty_result
+            })
+        
+        return jsonify({
+            'success': True,
+            'assignment_id': assignment_id,
+            'penalty_calculations': results,
+            'total_submissions': len(submissions),
+            'late_submissions': len([r for r in results if r['penalty_result']['is_late']])
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/submissions/<int:submission_id>/penalty-details', methods=['GET'])
+def get_submission_penalty_details(submission_id):
+    """Get detailed penalty calculation for a specific submission"""
+    try:
+        from admin.models.assignment_submission import AssignmentSubmission
+        from admin.models.deadline_policy import DeadlineCalculationLog
+        from services.deadline_service import DeadlineService
+        
+        submission = AssignmentSubmission.query.get_or_404(submission_id)
+        assignment = submission.assignment
+        
+        # Get current penalty calculation
+        penalty_result = DeadlineService.calculate_late_penalty(submission, assignment)
+        
+        # Get calculation logs
+        logs = DeadlineCalculationLog.query.filter_by(
+            submission_id=submission_id
+        ).order_by(DeadlineCalculationLog.calculated_at.desc()).all()
+        
+        return jsonify({
+            'success': True,
+            'submission': submission.to_dict(),
+            'current_penalty': penalty_result,
+            'calculation_history': [log.to_dict() for log in logs]
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/assignments/<int:assignment_id>/availability-check', methods=['GET'])
+def check_assignment_availability(assignment_id):
+    """Check current availability status of an assignment"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        from services.deadline_service import DeadlineService
+        
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        student_id = request.args.get('student_id', type=int)
+        
+        availability_status = DeadlineService.check_assignment_availability(assignment, student_id)
+        
+        return jsonify({
+            'success': True,
+            'assignment_id': assignment_id,
+            'availability': availability_status
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/classes/<int:class_id>/deadline-report', methods=['GET'])
+def get_class_deadline_report(class_id):
+    """Get comprehensive deadline report for a class"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        from admin.models.assignment_submission import AssignmentSubmission
+        from admin.models.deadline_policy import StudentDeadlineExtension, DeadlineCalculationLog
+        from user.models.user import User
+        from datetime import datetime, timedelta
+        
+        # Get all assignments for the class
+        assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
+        assignment_ids = [a.id for a in assignments]
+        
+        # Get all submissions
+        submissions = AssignmentSubmission.query.filter(
+            AssignmentSubmission.assignment_id.in_(assignment_ids)
+        ).all() if assignment_ids else []
+        
+        # Get all extensions
+        extensions = StudentDeadlineExtension.query.filter(
+            StudentDeadlineExtension.assignment_id.in_(assignment_ids)
+        ).all() if assignment_ids else []
+        
+        # Get penalty logs for recent calculations
+        recent_date = datetime.utcnow() - timedelta(days=30)
+        penalty_logs = DeadlineCalculationLog.query.filter(
+            DeadlineCalculationLog.submission_id.in_([s.id for s in submissions]),
+            DeadlineCalculationLog.calculated_at >= recent_date
+        ).all() if submissions else []
+        
+        # Calculate statistics
+        total_submissions = len(submissions)
+        late_submissions = len([s for s in submissions if s.is_late])
+        on_time_rate = ((total_submissions - late_submissions) / total_submissions * 100) if total_submissions > 0 else 0
+        
+        # Extensions statistics
+        total_extensions = len(extensions)
+        active_extensions = len([e for e in extensions if e.is_active])
+        used_extensions = len([e for e in extensions if e.used])
+        
+        # Assignment breakdown
+        assignment_stats = []
+        for assignment in assignments:
+            assignment_submissions = [s for s in submissions if s.assignment_id == assignment.id]
+            assignment_late = len([s for s in assignment_submissions if s.is_late])
+            assignment_extensions = [e for e in extensions if e.assignment_id == assignment.id]
+            
+            assignment_stats.append({
+                'assignment_id': assignment.id,
+                'title': assignment.title,
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'total_submissions': len(assignment_submissions),
+                'late_submissions': assignment_late,
+                'on_time_rate': ((len(assignment_submissions) - assignment_late) / len(assignment_submissions) * 100) if assignment_submissions else 0,
+                'extensions_granted': len(assignment_extensions),
+                'average_penalty': sum([s.late_penalty_applied for s in assignment_submissions if s.late_penalty_applied]) / len([s for s in assignment_submissions if s.late_penalty_applied]) if [s for s in assignment_submissions if s.late_penalty_applied] else 0
+            })
+        
+        return jsonify({
+            'success': True,
+            'class_id': class_id,
+            'report_generated': datetime.utcnow().isoformat(),
+            'overview': {
+                'total_assignments': len(assignments),
+                'total_submissions': total_submissions,
+                'late_submissions': late_submissions,
+                'on_time_rate': on_time_rate,
+                'total_extensions': total_extensions,
+                'active_extensions': active_extensions,
+                'used_extensions': used_extensions
+            },
+            'assignment_breakdown': assignment_stats,
+            'recent_penalty_calculations': len(penalty_logs)
+        })
+        
     except Exception as e:
         return jsonify({
             'success': False,

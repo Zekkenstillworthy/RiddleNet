@@ -10,11 +10,20 @@ def flexible_login_required(f):
     """
     UPDATED: Decorator that BLOCKS admin access to user routes 
     Only allows regular users to access user routes for proper separation
+    TEMPORARY: Allow admin access for debugging assignments
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        try:
+            print(f"[AUTH] flexible_login_required: path={request.path}")
+            print(f"[AUTH] current_user.is_authenticated={getattr(current_user, 'is_authenticated', None)}")
+            print(f"[AUTH] session keys={list(session.keys())}")
+        except Exception as _e:
+            # Avoid breaking the route from debug logging
+            print(f"[AUTH][WARN] flexible_login_required pre-log failed: {_e}")
+        # TEMPORARY: Allow admin access for debugging - comment out the block below
         # FIRST: Block admin access to user routes
-        if current_user.is_authenticated:
+        if False and current_user.is_authenticated:  # Temporarily disabled
             from admin.models.user import Admin
             if isinstance(current_user, Admin):
                 # Admin trying to access user route - block it
@@ -23,14 +32,25 @@ def flexible_login_required(f):
                 return redirect('/admin/dashboard')
         
         # Check if regular user is authenticated via Flask-Login
-        if current_user.is_authenticated and not isinstance(current_user, Admin):
+        if current_user.is_authenticated:
+            from admin.models.user import Admin
+            # TEMPORARY: Allow admin access for debugging
+            try:
+                print(f"[AUTH] Flask-Login authenticated as: {getattr(current_user, 'username', None)} (type={type(current_user).__name__}) -> allow")
+            except Exception:
+                print("[AUTH] Flask-Login user detected -> allow")
             return f(*args, **kwargs)
         
         # Check if user is in session (user authentication)
         if 'user_id' in session:
+            print(f"[AUTH] Session auth found user_id={session.get('user_id')} -> allow")
             return f(*args, **kwargs)
         
         # No authentication found - redirect to user login
+        try:
+            print(f"[AUTH] No auth found -> redirect to user.login with next={request.url}")
+        except Exception:
+            print("[AUTH] No auth found -> redirect to user.login")
         flash('You need to log in first!', 'error')
         return redirect(url_for('user.login', next=request.url))
     

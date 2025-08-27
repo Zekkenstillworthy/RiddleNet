@@ -2,6 +2,8 @@
 
 {% block head %}
 <title>{{ module.title }} - {{ class_data.name }} | RiddleNet Preview</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-actions-banner.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
 :root {
   /* Using the exact variables from learning_base.html */
@@ -68,76 +70,76 @@
     100% { opacity: 1; transform: scale(1); }
 }
 
-/* Admin Actions Banner */
-.admin-actions-banner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    border-bottom: 2px solid var(--border-color);
-    padding: 0 24px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
 
-.admin-actions-banner::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--gradient-primary);
-    animation: pulse 2s ease-in-out infinite alternate;
-}
 
-.nav-brand {
+
+
+
+
+
+
+
+.admin-nav-brand {
     display: flex;
     align-items: center;
     gap: 12px;
     text-decoration: none;
-    color: var(--text-primary);
+    color: #F8FAFC;
 }
 
-.nav-brand .logo-icon {
+.admin-nav-brand .logo-icon {
     height: 40px;
     width: 40px;
     border-radius: 12px;
     padding: 6px;
-    background: var(--gradient-primary);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     color: white;
-    transition: all var(--transition-speed) ease;
+    transition: all 0.3s ease;
 }
 
-.nav-brand .logo-icon:hover {
-    box-shadow: var(--shadow-glow);
+.admin-nav-brand .logo-icon:hover {
+    box-shadow: 0 0 40px rgba(0, 217, 255, 0.6);
     transform: scale(1.1);
 }
 
-.nav-brand .logo-text {
+.admin-nav-brand .logo-text {
     font-size: 1.5rem;
     font-weight: 700;
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.nav-actions {
+.admin-nav-right {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.back-btn {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.back-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(56, 189, 248, 0.3);
 }
 
 .user-profile-nav {
@@ -153,49 +155,33 @@
 }
 
 .user-profile-nav:hover {
-    background: rgba(0, 212, 255, 0.1);
-    border-color: rgba(0, 212, 255, 0.3);
+    background: rgba(0, 217, 255, 0.1);
+    border-color: rgba(0, 217, 255, 0.3);
 }
 
 .profile-avatar-nav {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
     font-size: 0.875rem;
     overflow: hidden;
-    border: 2px solid rgba(0, 212, 255, 0.3);
+    border: 2px solid rgba(0, 217, 255, 0.3);
     transition: all 0.3s ease;
 }
 
 .profile-avatar-nav:hover {
-    border-color: var(--cyber-glow);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    border-color: #00D9FF;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
 }
 
 .profile-name-nav {
     font-weight: 500;
-    color: var(--text-primary);
-}
-
-.admin-actions-banner::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(135deg, var(--accent-color), var(--network-purple));
-    animation: adminPulse 3s ease-in-out infinite alternate;
-}
-
-@keyframes adminPulse {
-    0% { opacity: 0.6; }
-    100% { opacity: 1; }
+    color: #F8FAFC;
 }
 
 /* Main Layout with Persistent Sidebar */
@@ -701,51 +687,93 @@
         padding: 1rem;
     }
     
-    .module-navigation .module-nav-list {
-        grid-template-columns: 1fr;
-    }
-    
-    .quick-actions {
-        grid-template-columns: 1fr;
-    }
-    
-    .class-title {
-        font-size: 1.1rem;
-    }
-    
-    .module-nav-item {
-        padding: 10px 12px;
-    }
-    
-    .module-meta {
-        gap: 16px;
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .learning-container {
+            flex-direction: column;
+            padding-top: 90px; /* Account for fixed top bar */
+        }
+        
+        .class-sidebar {
+            width: 100%;
+            max-height: none;
+            position: static;
+        }
+        
+        .module-navigation .module-nav-list {
+            grid-template-columns: 1fr;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .class-title {
+            font-size: 1.1rem;
+        }
+        
+        .module-nav-item {
+            padding: 10px 12px;
+        }
+        
+        .module-meta {
+            gap: 16px;
+        }
+
+        .admin-actions-banner {
+            padding: 0 16px;
+            flex-wrap: wrap;
+            height: auto;
+            min-height: 70px;
+        }
+
+        .admin-nav-right {
+            gap: 12px;
+        }
+
+        .back-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
     }
 
-    .admin-actions-banner {
-        padding: 12px 16px;
-        height: 60px;
-    }
+    @media (max-width: 768px) {
+        .learning-container {
+            padding: 1rem;
+            padding-top: 120px; /* Account for mobile header */
+        }
 
-    .nav-actions {
-        flex-direction: column;
-        gap: 8px;
-        width: 100%;
-    }
+        .admin-actions-banner {
+            padding: 0 12px;
+            height: auto;
+            min-height: 60px;
+        }
 
-    .nav-btn {
-        width: 100%;
-        justify-content: center;
-    }
+        .admin-nav-brand .logo-text {
+            display: none; /* Hide text on mobile */
+        }
 
-    .user-profile-nav .profile-name-nav {
-        display: none;
-    }
+        .admin-nav-brand .logo-icon {
+            width: 36px;
+            height: 36px;
+        }
 
-    .preview-indicator {
-        top: 75px;
-        right: 12px;
-        font-size: 0.7rem;
-        padding: 6px 12px;
+        .admin-nav-right {
+            gap: 8px;
+        }
+
+        .back-btn {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        .back-btn span {
+            display: none; /* Hide text, show only icons on mobile */
+        }
+
+        .profile-name-nav {
+            display: none; /* Hide username on mobile */
+        }
     }
 }
 
@@ -783,25 +811,25 @@ html {
 
 {% block body %}
 <!-- Override the body block to remove the learning navigation -->
-<main class="learning-main" style="padding-top: 0;">
+<main class="learning-main" style="padding-top: 70px; margin-top: 0;">
     {% block content %}
    
 
-<!-- Admin Actions Banner - Fixed Top Bar -->
+<!-- Admin Actions Banner - Unified Top Bar -->
 <nav class="admin-actions-banner">
-    <a href="/admin/classes" class="nav-brand">
-        <div class="logo-icon">
-            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
-        </div>
-        <div class="logo-text">RiddleNet</div>
-    </a>
-    
-    <div class="nav-actions">
-        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="nav-btn">
+    <div class="admin-nav-left">
+        <a href="/admin/classes" class="admin-nav-brand">
+            <div class="logo-icon">
+                <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
+            </div>
+            <span class="logo-text">RiddleNet</span>
+        </a>
+        <a href="{{ url_for('class_content_controller_old.manage_content', class_id=class_data.id) }}" class="back-btn">
             <i class="fas fa-arrow-left"></i>
             Back to Content Manager
         </a>
-        
+    </div>
+    <div class="admin-nav-right">
         <div class="user-profile-nav" onclick="window.location.href='/admin/classes'">
             <div class="profile-avatar-nav">
                 {% if current_user and current_user.is_authenticated %}
@@ -810,13 +838,13 @@ html {
                     A
                 {% endif %}
             </div>
-            <div class="profile-name-nav">
+            <span class="profile-name-nav">
                 {% if current_user and current_user.is_authenticated %}
                     {{ current_user.first_name or current_user.username or 'Admin' }}
                 {% else %}
                     Admin
                 {% endif %}
-            </div>
+            </span>
         </div>
     </div>
 </nav>

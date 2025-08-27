@@ -1,0 +1,289 @@
+{% extends "user/base.html" %}
+
+{% block title %}My Assignments - RiddleNet{% endblock %}
+
+{% block extra_css %}
+<style>
+.assignment-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.assignment-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-not-submitted {
+    background-color: #ffeaa7;
+    color: #2d3436;
+}
+
+.status-submitted {
+    background-color: #74b9ff;
+    color: white;
+}
+
+.status-graded {
+    background-color: #00b894;
+    color: white;
+}
+
+.status-overdue {
+    background-color: #e17055;
+    color: white;
+}
+
+.status-resubmitted {
+    background-color: #a29bfe;
+    color: white;
+}
+
+.due-date {
+    color: #666;
+    font-size: 14px;
+}
+
+.due-soon {
+    color: #e17055;
+    font-weight: bold;
+}
+
+.assignment-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.assignment-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-primary, .btn-secondary, .btn-success {
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #0984e3;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #636e72;
+    color: white;
+}
+
+.btn-success {
+    background-color: #00b894;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.grade-display {
+    font-weight: bold;
+    color: #00b894;
+    margin-left: 10px;
+}
+
+.no-assignments {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.filter-tabs {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.filter-tab {
+    padding: 10px 20px;
+    margin-right: 10px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+}
+
+.filter-tab.active {
+    color: #0984e3;
+    border-bottom-color: #0984e3;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-clipboard-list"></i> My Assignments</h2>
+            
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterAssignments('all')">
+                    All Assignments
+                </button>
+                <button class="filter-tab" onclick="filterAssignments('not_submitted')">
+                    Not Submitted
+                </button>
+                <button class="filter-tab" onclick="filterAssignments('submitted')">
+                    Submitted
+                </button>
+                <button class="filter-tab" onclick="filterAssignments('graded')">
+                    Graded
+                </button>
+                <button class="filter-tab" onclick="filterAssignments('overdue')">
+                    Overdue
+                </button>
+            </div>
+            
+            {% if assignments %}
+                {% for item in assignments %}
+                    {% set assignment = item.assignment %}
+                    {% set submission = item.submission %}
+                    {% set status = item.status %}
+                    
+                    <div class="assignment-card" data-status="{{ status }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h4>
+                                    <a href="{{ url_for('user_assignments.view_assignment', assignment_id=assignment.id) }}" 
+                                       style="text-decoration: none; color: #2d3436;">
+                                        {{ assignment.title }}
+                                    </a>
+                                </h4>
+                                <p class="text-muted mb-2">{{ assignment.class_obj.name }}</p>
+                                
+                                {% if assignment.description %}
+                                    <p class="assignment-description">
+                                        {{ assignment.description[:200] }}
+                                        {% if assignment.description|length > 200 %}...{% endif %}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-right">
+                                <span class="status-badge status-{{ status }}">
+                                    {% if status == 'not_submitted' %}Not Submitted
+                                    {% elif status == 'submitted' %}Submitted
+                                    {% elif status == 'graded' %}Graded
+                                    {% elif status == 'overdue' %}Overdue
+                                    {% elif status == 'resubmitted' %}Resubmitted
+                                    {% endif %}
+                                </span>
+                                
+                                {% if submission and submission.grade is not none %}
+                                    <div class="grade-display">
+                                        {{ submission.grade }}/{{ assignment.points }} points
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="assignment-meta">
+                            <div>
+                                {% if assignment.due_date %}
+                                    {% set is_due_soon = (assignment.due_date - now()).days <= 2 %}
+                                    <div class="due-date {% if is_due_soon %}due-soon{% endif %}">
+                                        <i class="fas fa-clock"></i>
+                                        Due: {{ assignment.due_date.strftime('%B %d, %Y at %I:%M %p') }}
+                                        {% if is_due_soon and status == 'not_submitted' %}
+                                            <span class="text-danger">(Due Soon!)</span>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="due-date">
+                                        <i class="fas fa-infinity"></i> No due date
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="text-muted mt-1" style="font-size: 12px;">
+                                    {{ assignment.points }} points
+                                    {% if assignment.category %} • {{ assignment.category }}{% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="assignment-actions">
+                                <a href="{{ url_for('user_assignments.view_assignment', assignment_id=assignment.id) }}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                
+                                {% if status in ['not_submitted', 'submitted'] and assignment.is_published %}
+                                    {% if not assignment.due_date or assignment.due_date > now() or assignment.allow_late_submissions %}
+                                        {% if not submission or assignment.allow_resubmission %}
+                                            <a href="{{ url_for('user_assignments.submit_assignment_form', assignment_id=assignment.id) }}" 
+                                               class="btn btn-success">
+                                                <i class="fas fa-upload"></i> 
+                                                {% if submission %}Resubmit{% else %}Submit{% endif %}
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-assignments">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h4>No Assignments Yet</h4>
+                    <p>You don't have any assignments at the moment. Check back later!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterAssignments(status) {
+    // Update active tab
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show/hide assignments
+    document.querySelectorAll('.assignment-card').forEach(card => {
+        if (status === 'all' || card.dataset.status === status) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Add current time for due date calculations
+window.now = () => new Date();
+</script>
+{% endblock %}

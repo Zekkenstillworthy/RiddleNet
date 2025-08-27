@@ -53,6 +53,7 @@ class Simulation(db.Model):
     average_score = db.Column(db.Float, default=0.0)
     average_duration = db.Column(db.Float, default=0.0)
     
+    
     # Learning Path Integration
     learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=True)
     order_in_path = db.Column(db.Integer, nullable=True)

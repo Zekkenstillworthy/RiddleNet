@@ -65,7 +65,19 @@ class ClassAssignment(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     points = db.Column(db.Integer, default=100)
     assignment_type = db.Column(db.String(50), default='assignment')  # assignment, quiz, project
+    priority = db.Column(db.String(20), default='medium')  # low, medium, high
+    category = db.Column(db.String(50), default='general')  # general, networking1, networking2, security, etc.
     is_published = db.Column(db.Boolean, default=False)
+    
+    # Submission Settings
+    allow_file_uploads = db.Column(db.Boolean, default=True)
+    allowed_file_types = db.Column(db.String(500), default='pdf,doc,docx,txt,jpg,png,zip')  # Comma-separated
+    max_file_size_mb = db.Column(db.Integer, default=10)  # Maximum file size in MB
+    max_files = db.Column(db.Integer, default=5)  # Maximum number of files
+    allow_text_submission = db.Column(db.Boolean, default=True)
+    allow_late_submissions = db.Column(db.Boolean, default=True)
+    late_penalty_per_day = db.Column(db.Float, default=10.0)  # Percentage penalty per day late
+    allow_resubmission = db.Column(db.Boolean, default=True)
     
     # Organization - moved from topic to module
     module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=True)
@@ -96,7 +108,17 @@ class ClassAssignment(db.Model):
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'points': self.points,
             'assignment_type': self.assignment_type,
+            'priority': self.priority,
+            'category': self.category,
             'is_published': self.is_published,
+            'allow_file_uploads': getattr(self, 'allow_file_uploads', True),
+            'allowed_file_types': getattr(self, 'allowed_file_types', 'pdf,doc,docx,txt,jpg,png,zip'),
+            'max_file_size_mb': getattr(self, 'max_file_size_mb', 10),
+            'max_files': getattr(self, 'max_files', 5),
+            'allow_text_submission': getattr(self, 'allow_text_submission', True),
+            'allow_late_submissions': getattr(self, 'allow_late_submissions', True),
+            'late_penalty_per_day': getattr(self, 'late_penalty_per_day', 10.0),
+            'allow_resubmission': getattr(self, 'allow_resubmission', True),
             'module_id': self.module_id,
             'sort_order': self.sort_order,
             'question_group_id': self.question_group_id,

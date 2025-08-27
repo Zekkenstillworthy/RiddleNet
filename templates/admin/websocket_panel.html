@@ -403,10 +403,6 @@
         .communication-grid {
             grid-template-columns: 1fr 1fr;
         }
-        
-        .activity-feed-card {
-            grid-column: 1 / -1;
-        }
     }
 
     /* Animations */
@@ -824,7 +820,42 @@
                     statusDot.style.boxShadow = '0 0 10px var(--neon-green)';
                     statusText.textContent = 'Network Online';
                 }
+                
+                // Request current user list
+                setTimeout(() => {
+                    socketClient.emit('get_admin_user_list');
+                }, 1000);
             });
+
+            // Add these new event handlers after the existing ones:
+
+            socketClient.on('admin_users_update', function(data) {
+                console.log('👥 Admin users update received:', data);
+                updateConnectedUsersList(data.users || []);
+            });
+
+            socketClient.on('admin_activity_update', function(data) {
+                console.log('📊 Admin activity update received:', data);
+                addActivityItem(
+                    data.icon || 'bx-info-circle',
+                    data.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    data.details,
+                    data.timestamp,
+                    getActivityType(data.type)
+                );
+            });
+
+            function getActivityType(activityType) {
+                const typeMap = {
+                    'admin_connected': 'success',
+                    'user_connected': 'info', 
+                    'user_disconnected': 'warning',
+                    'authentication_success': 'success',
+                    'system_update': 'info',
+                    'security_alert': 'error'
+                };
+                return typeMap[activityType] || 'info';
+            }
             
             socketClient.on('disconnected', function(reason) {
                 addActivityItem(

@@ -5,6 +5,7 @@ Handles all class detail pages using a single dynamic template
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
+from datetime import datetime
 from user.models.user import User
 from user.models.score import Score  # Import Score to ensure SQLAlchemy relationship works
 from admin.models.class_model import Class
@@ -13,6 +14,7 @@ from admin.models.simulation import Simulation
 from admin.models.simulation_assignment import SimulationAssignment
 from admin.models.module import Module, Lesson
 from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
+from admin.models.assignment_submission import AssignmentSubmission
 # ClassTopic removed - content now organized under Modules
 from utils.auth_utils import flexible_login_required, get_current_user_context
 from admin import db
@@ -33,6 +35,7 @@ def dynamic_class_detail(class_id):
     - Admin can create new classes without needing new templates
     - All content is database-driven and configurable
     """
+    print(f"🚀 ROUTE HIT: /class/{class_id} - dynamic_class_detail called")
     try:
         # Get user context
         user_context = get_current_user_context()
@@ -180,6 +183,46 @@ def dynamic_class_detail(class_id):
             'score': 0   # TODO: Calculate from assessment scores
         }
         
+        # Get class assignments
+        class_assignments = []
+        assignments = ClassAssignment.query.filter_by(class_id=class_id, is_published=True).order_by(ClassAssignment.due_date).all()
+        now = datetime.now()
+        
+        # DEBUG: Print assignment info
+        print(f"🔍 DEBUG: Class {class_id} assignments query:")
+        print(f"   - Found {len(assignments)} published assignments")
+        print(f"   - User ID: {user_id}")
+        print(f"   - User authenticated: {user_context['is_authenticated']}")
+        
+        for assignment in assignments:
+            print(f"   - Assignment: {assignment.title} (ID: {assignment.id})")
+            
+            # Get submission status for this user
+            submission = None
+            status = 'not_submitted'
+            
+            if user_id:
+                submission = AssignmentSubmission.query.filter_by(
+                    assignment_id=assignment.id,
+                    student_id=user_id
+                ).first()
+                
+                if submission:
+                    if submission.grade is not None:
+                        status = 'graded'
+                    else:
+                        status = 'submitted'
+                elif assignment.due_date and assignment.due_date < now:
+                    status = 'overdue'
+            
+            class_assignments.append({
+                'assignment': assignment,
+                'submission': submission,
+                'status': status
+            })
+        
+        print(f"   - Final class_assignments count: {len(class_assignments)}")
+        
         # Calculate actual progress if user is authenticated
         if user_id:
             # TODO: Implement progress calculation from database
@@ -194,7 +237,9 @@ def dynamic_class_detail(class_id):
                              class_modules=class_modules,
                              class_simulations=class_simulations,
                              question_groups=question_groups_data,
-                             class_progress=class_progress)
+                             class_progress=class_progress,
+                             class_assignments=class_assignments,
+                             now=datetime.now())
                              
     except Exception as e:
         print(f"Error in dynamic_class_detail: {str(e)}")
@@ -327,7 +372,42 @@ def module_detail(class_id, module_id):
         # Get module lessons
         lessons = Lesson.query.filter_by(module_id=module_id, is_active=True).order_by(Lesson.order_index).all()
         
+        # Get assignments for this class/module
+        assignments = ClassAssignment.query.filter_by(
+            class_id=class_id, 
+            is_published=True
+        ).order_by(ClassAssignment.due_date.asc()).all()
+        
+        # Get user's submissions for these assignments
+        assignment_submissions = {}
+        if user_id:
+            from admin.models.assignment_submission import AssignmentSubmission
+            submissions = AssignmentSubmission.query.filter_by(student_id=user_id).all()
+            assignment_submissions = {sub.assignment_id: sub for sub in submissions}
+        
+        # Prepare assignment data with submission status
+        assignment_data = []
+        for assignment in assignments:
+            submission = assignment_submissions.get(assignment.id)
+            status = 'not_submitted'
+            if submission:
+                if submission.status == 'graded':
+                    status = 'graded'
+                elif submission.status == 'resubmitted':
+                    status = 'resubmitted'
+                else:
+                    status = 'submitted'
+            elif assignment.due_date and assignment.due_date < datetime.utcnow():
+                status = 'overdue'
+            
+            assignment_data.append({
+                'assignment': assignment,
+                'submission': submission,
+                'status': status
+            })
+        
         # Get module materials (if any)
+        module_materials = []
         try:
             module_materials = ClassMaterial.query.filter_by(class_id=class_id).all()
             # Filter materials that might be associated with this module
@@ -345,14 +425,16 @@ def module_detail(class_id, module_id):
         # Render using the module detail template with sidebar navigation
         return render_template('user/module_detail.html',
                              user=user,
-                             user_context=user_context,  # Add user_context for profile display
+                             user_context=user_context,
                              class_data=class_obj,
-                             class_modules=class_modules_data,  # Add this for sidebar
+                             class_modules=class_modules_data,
                              module=module,
                              lessons=lessons,
+                             assignments=assignment_data,
                              materials=module_materials,
                              progress=module_progress,
-                             is_student_view=True)
+                             is_student_view=True,
+                             now=datetime.now())
     
     except Exception as e:
         print(f"Error in module_detail: {str(e)}")

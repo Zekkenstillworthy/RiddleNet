@@ -1,0 +1,4831 @@
+{% extends 'admin/base.html' %}
+
+{% block head %}
+<title>Edit Troubleshooting Simulation | RiddleNet Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+
+<style>
+    :root {
+        /* Use same variables as admin dashboard */
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #020617;
+        --surface: #0F172A;
+        --surface-hover: #1E293B;
+        --border-color: rgba(59, 130, 246, 0.2);
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        
+        /* Text Colors */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+        --text-inverse: #ffffff;
+        
+        --dark-bg: rgba(26, 35, 126, 0.85);
+        --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+        
+        /* Spacing */
+        --space-xs: 8px;
+        --space-sm: 12px;
+        --space-md: 16px;
+        --space-lg: 24px;
+        --space-xl: 32px;
+    }
+
+    /* Override sidebar to be hidden and main content to use full width */
+    #sidebar {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Custom top navigation bar replacing sidebar */
+    .admin-top-navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 80px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        z-index: 1000;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+    }
+
+    .admin-top-navbar::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    /* Logo section in top bar */
+    .top-navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .top-navbar-logo img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .top-navbar-logo .brand-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .top-navbar-logo .brand-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .top-navbar-logo .brand-subtitle {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    /* Navigation menu in top bar */
+    .top-navbar-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .top-nav-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: transparent;
+        border: 1px solid transparent;
+    }
+
+    .top-nav-item:hover {
+        color: var(--text-primary);
+        background: var(--surface-hover);
+        border-color: var(--border-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+    }
+
+    .top-nav-item.active {
+        color: var(--cyber-glow);
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .top-nav-item i {
+        font-size: 1.1rem;
+        color: var(--accent-color);
+        transition: all 0.3s ease;
+    }
+
+    .top-nav-item:hover i,
+    .top-nav-item.active i {
+        color: var(--cyber-glow);
+        transform: scale(1.1);
+        text-shadow: 0 0 8px currentColor;
+    }
+
+    /* Special styling for action buttons */
+    .top-nav-item[onclick] {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .top-nav-item[onclick]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    }
+
+    /* User section in top bar */
+    .top-navbar-user {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .top-nav-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+    }
+
+    .top-nav-user-info i {
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+    }
+
+    .top-nav-logout {
+        padding: 8px 12px;
+        background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .top-nav-logout:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Adjust main content for top navbar */
+    .main-content {
+        padding-top: 80px !important;
+    }
+
+    /* Responsive design for top navbar */
+    @media (max-width: 1400px) {
+        .top-navbar-nav {
+            gap: 4px;
+        }
+        
+        .top-nav-item {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .top-nav-item span {
+            display: none;
+        }
+        
+        .top-nav-item i {
+            margin: 0;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .admin-top-navbar {
+            padding: 0 16px;
+        }
+        
+        .top-navbar-logo .brand-text {
+            display: none;
+        }
+        
+        .top-nav-user-info span {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .admin-top-navbar {
+            height: 60px;
+        }
+        
+        .main-content {
+            padding-top: 60px !important;
+        }
+        
+        .top-navbar-nav {
+            display: none;
+        }
+        
+        .top-navbar-logo img {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    /* Enhanced glassmorphism effects */
+    .modern-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+    }
+
+    /* Enhanced section headers */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 48px 0 32px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+        position: relative;
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    .section-header .section-icon {
+        font-size: 1.8rem;
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 10px var(--cyber-glow));
+    }
+
+    /* Enhanced button styles */
+    .btn-modern {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-family: inherit;
+    }
+
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .btn-modern i {
+        font-size: 1rem;
+    }
+
+    /* Main editor layout with collapsible sidebar */
+    .simulation-editor {
+        margin-top: 0;
+        display: flex;
+        gap: 24px;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* Collapsible Sidebar */
+    .collapsible-sidebar {
+        position: relative;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        transition: all 0.3s ease;
+        width: 320px;
+        overflow: hidden;
+        margin: 16px;
+        height: fit-content;
+    }
+
+    .collapsible-sidebar.collapsed {
+        width: 60px;
+    }
+
+    .collapsible-sidebar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    /* Sidebar Toggle Button */
+    .sidebar-toggle {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 10;
+        color: var(--text-secondary);
+    }
+
+    .sidebar-toggle:hover {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .sidebar-toggle i {
+        font-size: 14px;
+        transition: transform 0.3s ease;
+    }
+
+    .collapsible-sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+
+    /* Sidebar Content */
+    .sidebar-content {
+        padding: 24px;
+        transition: all 0.3s ease;
+    }
+
+    .collapsible-sidebar.collapsed .sidebar-content {
+        opacity: 0;
+        transform: translateX(-20px);
+        pointer-events: none;
+    }
+
+    /* Sidebar Header */
+    .sidebar-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .sidebar-header i {
+        color: var(--cyber-glow);
+        font-size: 1.2rem;
+        filter: drop-shadow(0 0 8px var(--cyber-glow));
+    }
+
+    .collapsible-sidebar.collapsed .sidebar-header {
+        opacity: 0;
+    }
+
+    /* Editor Container - Updated for flexible layout */
+    .editor-container {
+        display: flex;
+        gap: 24px;
+        min-height: calc(100vh - 200px);
+        width: 100%;
+    }
+
+    /* Main Editor - Flexible width */
+    .main-editor-wrapper {
+        flex: 1;
+        display: flex;
+        gap: 24px;
+    }
+
+    /* Properties panel styling */
+    .properties-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        position: relative;
+        overflow: hidden;
+        width: 320px;
+        margin: 16px;
+        height: fit-content;
+    }
+
+    .properties-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    /* Collapsed sidebar icon indicators */
+    .collapsed-icons {
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px 8px;
+        align-items: center;
+    }
+
+    .collapsible-sidebar.collapsed .collapsed-icons {
+        display: flex;
+        margin-top: 40px;
+    }
+
+    .collapsed-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: var(--text-secondary);
+        position: relative;
+    }
+
+    .collapsed-icon:hover {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .collapsed-icon.active {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    /* Tooltip for collapsed icons */
+    .collapsed-icon::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 50px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+    }
+
+    .collapsed-icon:hover::after {
+        opacity: 1;
+    }
+
+    /* Main editor area */
+    .main-editor {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        position: relative;
+        overflow: hidden;
+        min-height: 600px;
+    }
+
+    .main-editor::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+    }
+
+    .canvas-container {
+        position: relative;
+        height: 100%;
+        min-height: 500px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* Form styling */
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        outline: none;
+    }
+
+    /* Device Palette */
+    #device-palette {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        z-index: 1000;
+    }
+
+    .palette-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .palette-separator {
+        width: 1px;
+        height: 32px;
+        background: var(--border-color);
+    }
+
+    .device {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+
+    .device:hover {
+        transform: translateY(-2px);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .device-icon {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
+
+    .device span {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: var(--text-secondary);
+        min-width: 70px;
+    }
+
+    .action-btn:hover {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+    }
+
+    .action-btn.active {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .action-btn i {
+        font-size: 1.2rem;
+    }
+
+    .action-btn .label {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    /* Mode buttons */
+    .mode-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 16px 0;
+    }
+
+    .mode-btn {
+        padding: 12px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    .mode-btn:hover {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+    }
+
+    .mode-btn.active {
+        background: var(--surface-hover);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    /* Tab system */
+    .panel-tabs {
+        display: flex;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-tab {
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 2px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .panel-tab:hover {
+        color: var(--text-secondary);
+    }
+
+    .panel-tab.active {
+        color: var(--cyber-glow);
+        border-bottom-color: var(--cyber-glow);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Canvas elements */
+    .canvas-device {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px;
+        background: var(--surface);
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+
+    .canvas-device:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .canvas-device.selected {
+        border-color: var(--neon-green);
+        box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+    }
+
+    .canvas-device img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+
+    .canvas-device span {
+        font-size: 0.8rem;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    /* Toast notifications */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 16px 20px;
+        color: var(--text-primary);
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .toast.error {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .toast.warning {
+        border-left: 4px solid var(--warning-color);
+    }
+
+    .toast.info {
+        border-left: 4px solid var(--cyber-glow);
+    }
+
+    /* Difficulty badges */
+    .difficulty-badges {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .difficulty-badge {
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .difficulty-badge:hover {
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+    }
+
+    .difficulty-badge.active {
+        border-color: var(--cyber-glow);
+        background: var(--surface-hover);
+        color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .difficulty-badge.easy.active {
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+
+    .difficulty-badge.medium.active {
+        border-color: var(--warning-color);
+        color: var(--warning-color);
+    }
+
+    .difficulty-badge.hard.active {
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+    @media (max-width: 1400px) {
+        .editor-container {
+            grid-template-columns: 280px 1fr 280px;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .editor-container {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr auto;
+        }
+        
+        .sidebar,
+        .properties-panel {
+            height: auto;
+        }
+        
+        #device-palette {
+            position: relative;
+            left: auto;
+            transform: none;
+            bottom: auto;
+            margin-top: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .nav-center h1 {
+            display: none;
+        }
+        
+        .nav-actions {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .btn-modern {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+        
+        #device-palette .center-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        animation: modalSlideIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .modal-header i {
+        color: var(--accent-color);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+        background: var(--surface);
+        color: var(--text-primary);
+    }
+
+    .modal-body {
+        color: var(--text-secondary);
+    }
+
+    .modal-form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .modal-form-row.single {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-checkbox-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    .modal-checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-checkbox-item input[type="checkbox"] {
+        transform: scale(1.2);
+        accent-color: var(--accent-color);
+    }
+
+    .modal-status-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .modal-status-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .modal-status-option:hover {
+        border-color: var(--accent-color);
+    }
+
+    .modal-status-option.selected {
+        border-color: var(--accent-color);
+        background: rgba(0, 217, 255, 0.1);
+    }
+
+    .modal-status-option input[type="radio"] {
+        margin: 0;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .modal-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-btn.primary {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .modal-btn.primary:hover {
+        background: #00b8d4;
+        transform: translateY(-1px);
+    }
+
+    .modal-btn.secondary {
+        background: var(--surface);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .modal-btn.secondary:hover {
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .scenario-editor {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 16px;
+    }
+
+    .scenario-section {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .scenario-section h4 {
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .scenario-section h4 i {
+        color: var(--accent-color);
+    }
+
+    .preview-content {
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 200px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+    }
+
+    @media (max-width: 768px) {
+        .modal-content {
+            padding: 20px;
+            margin: 20px;
+        }
+
+        .modal-form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .scenario-editor {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Custom Admin Top Navigation Bar -->
+<nav class="admin-top-navbar">
+    <!-- Logo Section -->
+    <div class="top-navbar-logo">
+        <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet Logo">
+        <div class="brand-text">
+            <div class="brand-name">RiddleNet</div>
+            <div class="brand-subtitle">Admin Panel</div>
+        </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <div class="top-navbar-nav">
+        <button class="top-nav-item" onclick="openDeviceConfigModal()">
+            <i class="fas fa-cog"></i>
+            <span>Device Config</span>
+        </button>
+        <button class="top-nav-item" onclick="openScenarioModal()">
+            <i class="fas fa-tasks"></i>
+            <span>Problem Scenario</span>
+        </button>
+        <button class="top-nav-item" onclick="openSolutionModal()">
+            <i class="fas fa-check-circle"></i>
+            <span>Solution & Scoring</span>
+        </button>
+        <button class="top-nav-item" onclick="openPreviewModal()">
+            <i class="fas fa-eye"></i>
+            <span>Live Preview</span>
+        </button>
+        
+        <!-- Simulation Editor Specific Actions -->
+        <div style="border-left: 1px solid var(--border-color); height: 32px; margin: 0 16px;"></div>
+        
+        <button class="top-nav-item" style="background: var(--gradient-secondary); color: white;" onclick="previewSimulation()">
+            <i class="fas fa-eye"></i>
+            <span>Preview</span>
+        </button>
+        <button class="top-nav-item" style="background: var(--gradient-primary); color: white;" onclick="saveSimulation()">
+            <i class="fas fa-save"></i>
+            <span>Save</span>
+        </button>
+        <button class="top-nav-item" style="background: linear-gradient(135deg, var(--danger-color), #dc2626); color: white;" onclick="exitEditor()">
+            <i class="fas fa-times"></i>
+            <span>Exit</span>
+        </button>
+    </div>
+
+    <!-- User Section -->
+    <div class="top-navbar-user">
+        <div class="top-nav-user-info">
+            <i class="fas fa-user-circle"></i>
+            <span>{{ current_user.username if current_user.is_authenticated else 'Admin' }}</span>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="top-nav-logout">
+            <i class='bx bx-log-out'></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</nav>
+
+<div class="main-content">
+
+<!-- Dashboard-style Main Section Header -->
+<div class="section-header">
+    <i class="fas fa-edit section-icon"></i>
+    <h2>Troubleshooting Simulation Editor</h2>
+</div>
+
+<div class="simulation-editor">
+    <!-- Collapsible Left Sidebar - Enhanced Configuration Panel -->
+    <div class="collapsible-sidebar" id="editing-sidebar">
+        <!-- Sidebar Toggle Button -->
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Collapsed State Icons -->
+        <div class="collapsed-icons">
+            <div class="collapsed-icon" data-tooltip="Device Mode" onclick="showSidebarAndSwitchMode('devices')">
+                <i class="fas fa-laptop"></i>
+            </div>
+            <div class="collapsed-icon" data-tooltip="Scenario Mode" onclick="showSidebarAndSwitchMode('scenario')">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="collapsed-icon" data-tooltip="Solution Mode" onclick="showSidebarAndSwitchMode('solution')">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="collapsed-icon" data-tooltip="CLI Editor" onclick="showSidebarAndSwitchTab('cli')">
+                <i class="fas fa-terminal"></i>
+            </div>
+            <div class="collapsed-icon" data-tooltip="Tutorial Editor" onclick="showSidebarAndSwitchTab('tutorial')">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="collapsed-icon" data-tooltip="Bulk Operations" onclick="showSidebarAndSwitchTab('bulk')">
+                <i class="fas fa-layer-group"></i>
+            </div>
+        </div>
+
+        <!-- Sidebar Content -->
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <i class="fas fa-tools"></i>
+                <h3>Editing Tools</h3>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="form-group">
+                <label>Editing Mode</label>
+                <div class="mode-buttons">
+                    <div class="mode-btn active" data-mode="devices">
+                        <i class="fas fa-laptop"></i>
+                        <span>Device Mode</span>
+                    </div>
+                    <div class="mode-btn" data-mode="scenario">
+                        <i class="fas fa-tasks"></i>
+                        <span>Scenario Mode</span>
+                    </div>
+                    <div class="mode-btn" data-mode="solution">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Solution Mode</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Settings -->
+            <div class="form-group">
+                <label for="simulation-title">Simulation Title</label>
+                <input type="text" id="simulation-title" placeholder="Enter simulation title..." value="{{ simulation.title if simulation else 'Network Troubleshooting Simulation' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="simulation-description">Description</label>
+                <textarea id="simulation-description" rows="3" placeholder="Enter simulation description...">{{ simulation.description if simulation else 'Identify and resolve network connectivity issues in this hands-on troubleshooting scenario.' }}</textarea>
+            </div>
+
+            <!-- Difficulty Selection -->
+            <div class="form-group">
+                <label>Difficulty Level</label>
+                <div class="difficulty-badges">
+                    <div class="difficulty-badge easy" data-difficulty="easy">
+                        <i class="fas fa-circle"></i>
+                        <span>Easy</span>
+                    </div>
+                    <div class="difficulty-badge medium active" data-difficulty="medium">
+                        <i class="fas fa-circle"></i>
+                        <span>Medium</span>
+                    </div>
+                    <div class="difficulty-badge hard" data-difficulty="hard">
+                        <i class="fas fa-circle"></i>
+                        <span>Hard</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Tabs -->
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-tab="properties">Properties</button>
+                <button class="panel-tab" data-tab="cli">CLI Editor</button>
+                <button class="panel-tab" data-tab="tutorial">Tutorial</button>
+                <button class="panel-tab" data-tab="bulk">Bulk Ops</button>
+            </div>
+
+            <!-- Properties Tab Content -->
+            <div id="properties-tab-content" class="tab-content active">
+                <div class="form-group">
+                    <label for="max-score">Maximum Score</label>
+                    <input type="number" id="max-score" value="100" min="1" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="time-limit">Time Limit (minutes)</label>
+                    <input type="number" id="time-limit" value="{{ simulation.time_limit if simulation else 30 }}" min="5" max="180">
+                </div>
+                
+                <div class="form-group">
+                    <label for="attempts-allowed">Attempts Allowed</label>
+                    <input type="number" id="attempts-allowed" value="3" min="1" max="10">
+                </div>
+            </div>
+
+            <!-- CLI Editor Tab Content -->
+            <div id="cli-tab-content" class="tab-content">
+                <div class="form-group">
+                    <label for="cli-device-select">Select Device for CLI</label>
+                    <select id="cli-device-select" onchange="loadDeviceCLI()">
+                        <option value="">Choose a device...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn-modern" style="background: var(--accent-color);" onclick="addCLICommand()">
+                        <i class="fas fa-plus"></i>
+                        Add Command
+                    </button>
+                    <button class="btn-modern" style="background: var(--warning-color);" onclick="importTemplate()">
+                        <i class="fas fa-download"></i>
+                        Import Template
+                    </button>
+                </div>
+                
+                <div id="cli-commands-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No CLI commands configured
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutorial Editor Tab Content -->
+            <div id="tutorial-tab-content" class="tab-content">
+                <div class="form-group">
+                    <button class="btn-modern" style="background: var(--success-color);" onclick="addTutorialStep()">
+                        <i class="fas fa-plus"></i>
+                        Add Step
+                    </button>
+                    <button class="btn-modern" style="background: var(--accent-color);" onclick="reorderSteps()">
+                        <i class="fas fa-sort"></i>
+                        Reorder
+                    </button>
+                </div>
+                
+                <div id="tutorial-steps-list" style="max-height: 250px; overflow-y: auto;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No tutorial steps created yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Operations Tab Content -->
+            <div id="bulk-tab-content" class="tab-content">
+                <div class="form-group">
+                    <label>Device Selection</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button class="btn-modern" style="background: var(--accent-color); font-size: 0.8rem; padding: 6px 12px;" onclick="selectAllDevices()">
+                            All
+                        </button>
+                        <button class="btn-modern" style="background: var(--surface); color: var(--text-secondary); font-size: 0.8rem; padding: 6px 12px;" onclick="selectNone()">
+                            None
+                        </button>
+                        <button class="btn-modern" style="background: var(--warning-color); font-size: 0.8rem; padding: 6px 12px;" onclick="selectByType()">
+                            By Type
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="bulk-device-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No devices to configure
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="bulk-subnet">Bulk Apply Subnet</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="bulk-subnet" placeholder="192.168.1.0/24" style="flex: 1;">
+                        <button class="btn-modern" style="background: var(--success-color); padding: 8px 12px;" onclick="applyBulkSubnet()">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-group" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                <button class="btn-modern" style="background: var(--success-color); width: 100%; margin-bottom: 8px;" onclick="addStep()">
+                    <i class="fas fa-plus"></i>
+                    Add Simulation Step
+                </button>
+                <button class="btn-modern" style="background: var(--accent-color); width: 100%;" onclick="addHint()">
+                    <i class="fas fa-lightbulb"></i>
+                    Add Hint
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Editor Area Wrapper -->
+    <div class="main-editor-wrapper">
+        <!-- Main Editor Area with Troubleshoot.html Layout -->
+        <div class="main-editor modern-card" style="flex: 1; margin: 16px;">
+            <div class="sidebar-header">
+                <i class="fas fa-desktop"></i>
+                <h3>Network Topology Canvas</h3>
+            </div>
+            
+            <div class="canvas-container" id="simulation-canvas">
+                <!-- SVG layer for connections -->
+                <svg id="connection-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+                </svg>
+                
+                <!-- Canvas content for devices -->
+                <div id="canvas-content" style="position: relative; width: 100%; height: 100%; z-index: 2;">
+                    <!-- Devices will be dynamically added here -->
+                </div>
+                
+                <!-- Grid overlay (optional) -->
+                <div class="grid-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; pointer-events: none; z-index: 0; background-image: radial-gradient(circle, var(--cyber-glow) 1px, transparent 1px); background-size: 20px 20px;"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Enhanced Properties -->
+        <div class="properties-panel">
+            <div class="sidebar-header">
+                <i class="fas fa-cog"></i>
+                <h3>Device Properties</h3>
+            </div>
+            
+            <!-- Device Properties Panel -->
+            <div id="device-properties" style="display: none;">
+                <div class="form-group">
+                    <label for="device-name">Device Name</label>
+                    <input type="text" id="device-name" placeholder="Device name...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="device-ip">IP Address</label>
+                    <input type="text" id="device-ip" placeholder="192.168.1.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="device-mask">Subnet Mask</label>
+                    <input type="text" id="device-mask" placeholder="255.255.255.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="device-gw">Default Gateway</label>
+                    <input type="text" id="device-gw" placeholder="192.168.1.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="device-status">Device Status</label>
+                    <select id="device-status">
+                        <option value="normal">Normal</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                        <option value="offline">Offline</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="device-problem">Problem Description</label>
+                    <textarea id="device-problem" rows="3" placeholder="Describe the network issue..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn-modern" style="background: var(--danger-color); width: 100%;" onclick="removeSelectedDevice()">
+                        <i class="fas fa-trash"></i>
+                        Remove Device
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div id="preview-panel">
+                <div class="form-group">
+                    <label>Live Preview</label>
+                    <div id="preview-content" style="min-height: 200px; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; background: var(--surface); font-size: 0.9rem; color: var(--text-secondary);">
+                        Select a device or configure simulation settings to see a preview here.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Main Canvas Area -->
+            <div id="cli-tab-content" class="tab-content">
+                <div class="section-header">
+                    <i class="fas fa-terminal"></i>
+                    CLI Command Editor
+                    <button class="btn btn-secondary" onclick="showCommandLibrary()" style="margin-left: auto; padding: 4px 8px; font-size: 12px;">
+                        <i class="fas fa-book"></i> Library
+                    </button>
+                </div>
+
+                <div id="cli-editor-content">
+                    <div class="cli-device-selector">
+                        <label for="cli-device-select">Select Device:</label>
+                        <select id="cli-device-select" onchange="loadDeviceCLI()">
+                            <option value="">Choose a device...</option>
+                        </select>
+                    </div>
+
+                    <div id="cli-commands-section" style="display: none;">
+                        <div class="cli-toolbar">
+                            <button class="btn btn-primary" onclick="addCLICommand()">
+                                <i class="fas fa-plus"></i> Add Command
+                            </button>
+                            <button class="btn btn-secondary" onclick="importTemplate()">
+                                <i class="fas fa-download"></i> Import Template
+                            </button>
+                            <button class="btn btn-warning" onclick="testCLICommands()">
+                                <i class="fas fa-play"></i> Test Commands
+                            </button>
+                        </div>
+
+                        <div id="cli-commands-list" class="cli-commands-container">
+                            <!-- CLI commands will be populated here -->
+                        </div>
+
+                        <!-- Interactive CLI Console -->
+                        <div class="cli-console">
+                            <div class="console-header">
+                                <i class="fas fa-terminal"></i>
+                                Interactive CLI Console
+                                <button class="btn btn-secondary" onclick="clearConsole()" style="margin-left: auto; padding: 2px 6px; font-size: 10px;">Clear</button>
+                            </div>
+                            <div class="console-output" id="cli-console-output"></div>
+                            <div class="console-input-container">
+                                <span class="console-prompt" id="cli-prompt">Device&gt;</span>
+                                <input type="text" id="cli-input" class="console-input" placeholder="Enter command..." onkeypress="handleCLIInput(event)" autocomplete="off">
+                                <button class="console-send" onclick="executeCLICommand()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Tutorial Editor Tab -->
+            <div id="tutorial-tab-content" class="tab-content">
+                <div class="section-header">
+                    <i class="fas fa-graduation-cap"></i>
+                    Tutorial Editor
+                    <button class="btn btn-secondary" id="preview-tutorial" style="margin-left: auto; padding: 4px 8px; font-size: 12px;">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                </div>
+
+                <div class="tutorial-editor-content">
+                    <!-- Tutorial Steps Manager -->
+                    <div class="tutorial-steps-manager">
+                        <div class="tutorial-toolbar">
+                            <button class="btn btn-primary" id="add-tutorial-step">
+                                <i class="fas fa-plus"></i> Add Step
+                            </button>
+                            <button class="btn btn-secondary" id="reorder-steps">
+                                <i class="fas fa-sort"></i> Reorder
+                            </button>
+                            <button class="btn btn-success" id="save-tutorial">
+                                <i class="fas fa-save"></i> Save All
+                            </button>
+                        </div>
+
+                        <div id="tutorial-steps-list" class="tutorial-steps-container">
+                            <!-- Tutorial steps will be populated here -->
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-plus-circle fa-3x mb-2"></i>
+                                <p>No tutorial steps yet. Click "Add Step" to get started.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step Content Editor -->
+                    <div class="tutorial-content-editor" id="tutorial-content-editor">
+                        <div class="section-header">
+                            <i class="fas fa-edit"></i>
+                            Step Editor
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tutorial-step-type">Step Type</label>
+                            <select id="tutorial-step-type" class="form-control">
+                                <option value="text">Text Content</option>
+                                <option value="image">Image with Caption</option>
+                                <option value="video">Video with Caption</option>
+                                <option value="code">Code Snippet</option>
+                                <option value="tip">Tip/Hint</option>
+                            </select>
+                        </div>
+
+                        <!-- Content Section (for text, code, tip) -->
+                        <div class="content-section">
+                            <div class="form-group">
+                                <label for="tutorial-step-content">Content</label>
+                                <textarea id="tutorial-step-content" placeholder="Enter step content..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Media Upload Section (for image, video) -->
+                        <div class="media-upload-section" style="display: none;">
+                            <div class="form-group">
+                                <label for="tutorial-media-file">Upload Media</label>
+                                <input type="file" id="tutorial-media-file" accept="image/*,video/*">
+                                <div class="form-text">Supported: JPEG, PNG, GIF, MP4, WebM</div>
+                            </div>
+                            
+                            <!-- Upload Progress -->
+                            <div class="upload-progress" id="upload-progress">
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">Uploading...</small>
+                                </div>
+                            </div>
+
+                            <!-- Media Preview -->
+                            <div class="media-preview" id="media-preview"></div>
+                        </div>
+
+                        <!-- Caption (for image, video) -->
+                        <div class="form-group" style="display: none;">
+                            <label for="tutorial-step-caption">Caption (optional)</label>
+                            <input type="text" id="tutorial-step-caption" class="form-control" placeholder="Enter image/video caption...">
+                        </div>
+
+                        <!-- Auto-save Status -->
+                        <div class="tutorial-status" id="tutorial-editor-status"></div>
+                    </div>
+
+                    <!-- Visual Position Editor (Optional for modal positioning) -->
+                    <div class="position-editor" style="display: none;">
+                        <div class="position-editor-header">
+                            <span>Modal Position Editor</span>
+                            <div class="position-controls">
+                                <button onclick="resetPosition()">Reset</button>
+                                <button onclick="centerPosition()">Center</button>
+                            </div>
+                        </div>
+                        <div class="position-editor-canvas" id="position-canvas">
+                            <div class="position-preview-modal" id="position-preview">
+                                <div class="preview-header">Tutorial Modal Preview</div>
+                                <div class="preview-content">Drag me to position</div>
+                            </div>
+                        </div>
+                        <div class="position-coordinates">
+                            <label>X: <input type="number" id="modal-x" onchange="updateModalPosition()"></label>
+                            <label>Y: <input type="number" id="modal-y" onchange="updateModalPosition()"></label>
+                            <label>Width: <input type="number" id="modal-width" onchange="updateModalSize()"></label>
+                            <label>Height: <input type="number" id="modal-height" onchange="updateModalSize()"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Operations Tab -->
+            <div id="bulk-tab-content" class="tab-content">
+                <div class="section-header">
+                    <i class="fas fa-layer-group"></i>
+                    Bulk Operations
+                </div>
+
+                <div class="bulk-operations-content">
+                    <!-- Device Selection -->
+                    <div class="bulk-device-selection">
+                        <div class="selection-header">
+                            <span>Device Selection</span>
+                            <div class="selection-controls">
+                                <button onclick="selectAllDevices()">Select All</button>
+                                <button onclick="selectNone()">Select None</button>
+                                <button onclick="selectByType()">By Type</button>
+                            </div>
+                        </div>
+                        <div id="bulk-device-list" class="device-selection-list">
+                            <!-- Device checkboxes will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Bulk Operations -->
+                    <div class="bulk-operations-panel">
+                        <div class="operation-section">
+                            <h4>Network Configuration</h4>
+                            <div class="bulk-operation-item">
+                                <label for="bulk-subnet">Apply Subnet:</label>
+                                <input type="text" id="bulk-subnet" placeholder="192.168.1.0/24">
+                                <button onclick="applyBulkSubnet()">Apply</button>
+                            </div>
+                            <div class="bulk-operation-item">
+                                <label for="bulk-gateway">Set Gateway:</label>
+                                <input type="text" id="bulk-gateway" placeholder="192.168.1.1">
+                                <button onclick="applyBulkGateway()">Apply</button>
+                            </div>
+                            <div class="bulk-operation-item">
+                                <label for="bulk-dns">Set DNS:</label>
+                                <input type="text" id="bulk-dns" placeholder="8.8.8.8">
+                                <button onclick="applyBulkDNS()">Apply</button>
+                            </div>
+                        </div>
+
+                        <div class="operation-section">
+                            <h4>Device Management</h4>
+                            <div class="bulk-operation-item">
+                                <label for="bulk-status">Set Status:</label>
+                                <select id="bulk-status">
+                                    <option value="normal">Normal</option>
+                                    <option value="malfunctioning">Malfunctioning</option>
+                                    <option value="offline">Offline</option>
+                                    <option value="misconfigured">Misconfigured</option>
+                                </select>
+                                <button onclick="applyBulkStatus()">Apply</button>
+                            </div>
+                            <div class="bulk-operation-item">
+                                <button class="btn btn-danger" onclick="deleteSelectedDevices()">
+                                    <i class="fas fa-trash"></i> Delete Selected
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="operation-section">
+                            <h4>Layout Operations</h4>
+                            <div class="layout-operations">
+                                <button onclick="arrangeInGrid()">Grid Layout</button>
+                                <button onclick="arrangeInLine()">Linear Layout</button>
+                                <button onclick="arrangeInCircle()">Circular Layout</button>
+                                <button onclick="distributeEvenly()">Distribute Evenly</button>
+                            </div>
+                        </div>
+
+                        <div class="operation-section">
+                            <h4>Export/Import</h4>
+                            <div class="bulk-operation-item">
+                                <button onclick="exportDeviceConfig()">
+                                    <i class="fas fa-download"></i> Export Config
+                                </button>
+                                <button onclick="importDeviceConfig()">
+                                    <i class="fas fa-upload"></i> Import Config
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<!-- Device Palette - Based on troubleshoot.html structure -->
+<div id="device-palette">
+    <!-- Left Section: Mode & Status -->
+    <div class="palette-section left-section">
+        <div class="action-btn" id="mode-indicator">
+            <i class="fas fa-edit"></i>
+            <span class="label">Edit Mode</span>
+        </div>
+        
+        <div class="palette-separator"></div>
+        
+        <div class="action-btn" onclick="toggleGrid()">
+            <i class="fas fa-th"></i>
+            <span class="label">Toggle Grid</span>
+        </div>
+    </div>
+
+    <!-- Center Section: Network Devices -->
+    <div class="palette-section center-section">
+        <div class="device" data-device-type="router" draggable="true">
+            <img src="{{ url_for('static', filename='img/router.png') }}" alt="Router" class="device-icon">
+            <span>Router</span>
+        </div>
+        
+        <div class="device" data-device-type="switch" draggable="true">
+            <img src="{{ url_for('static', filename='img/switch.png') }}" alt="Switch" class="device-icon">
+            <span>Switch</span>
+        </div>
+        
+        <div class="device" data-device-type="pc" draggable="true">
+            <img src="{{ url_for('static', filename='img/pc.png') }}" alt="PC" class="device-icon">
+            <span>Workstation</span>
+        </div>
+        
+        <div class="device" data-device-type="server" draggable="true">
+            <img src="{{ url_for('static', filename='img/server.png') }}" alt="Server" class="device-icon">
+            <span>Server</span>
+        </div>
+        
+        <div class="device" data-device-type="firewall" draggable="true">
+            <img src="{{ url_for('static', filename='img/firewall.png') }}" alt="Firewall" class="device-icon">
+            <span>Firewall</span>
+        </div>
+        
+        <div class="device" data-device-type="access-point" draggable="true">
+            <img src="{{ url_for('static', filename='img/access-point.png') }}" alt="Access Point" class="device-icon">
+            <span>Access Point</span>
+        </div>
+        
+        <div class="device" data-device-type="cable" draggable="true">
+            <img src="{{ url_for('static', filename='img/cable.png') }}" alt="Cable" class="device-icon">
+            <span>Connection</span>
+        </div>
+    </div>
+
+    <!-- Right Section: Actions -->
+    <div class="palette-section right-section">
+        <div class="palette-separator"></div>
+        
+        <div class="action-btn" onclick="clearCanvas()">
+            <i class="fas fa-trash-alt"></i>
+            <span class="label">Clear All</span>
+        </div>
+        
+        <div class="action-btn" onclick="autoArrange()">
+            <i class="fas fa-magic"></i>
+            <span class="label">Auto Arrange</span>
+        </div>
+        
+        <div class="action-btn" onclick="validateTopology()">
+            <i class="fas fa-check-circle"></i>
+            <span class="label">Validate</span>
+        </div>
+        
+        <div class="action-btn" onclick="toggleConnectMode()" id="connect-mode-btn">
+            <i class="fas fa-project-diagram"></i>
+            <span class="label">Connect</span>
+        </div>
+    </div>
+</div>
+
+<!-- Inject server-provided simulation JSON for editor bootstrap -->
+<script id="simulation-json" type="application/json">{{ simulation.to_dict() | tojson if simulation else '{}' }}</script>
+
+<!-- Enhanced JavaScript for Simulation Editor -->
+<script>
+// Enhanced Simulation Editor with troubleshoot.html structure
+class SimulationEditor {
+    constructor() {
+        this.currentMode = 'devices';
+        this.selectedDevice = null;
+        this.devices = [];
+        this.connections = [];
+        this.steps = [];
+        this.hints = [];
+        this.gridVisible = true;
+        this.simulationData = {};
+        
+        // Load simulation data if available
+        try {
+            const jsonEl = document.getElementById('simulation-json');
+            const serverData = jsonEl ? JSON.parse(jsonEl.textContent || '{}') : {};
+            this.simulationData = serverData || {};
+        } catch (e) {
+            console.warn('Could not load simulation data:', e);
+            this.simulationData = {};
+        }
+        
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadSimulationData();
+        this.setupDragAndDrop();
+        this.updateModeIndicator();
+        this.updateConnections();
+        this.setupTabNavigation();
+    }
+
+    setupTabNavigation() {
+        // Tab switching functionality
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                this.switchTab(targetTab);
+            });
+        });
+
+        // Initialize first tab as active
+        this.switchTab('properties');
+    }
+
+    switchTab(tabName) {
+        // Remove active class from all tabs and content
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Add active class to selected tab and content
+        const selectedTab = document.querySelector(`[data-tab="${tabName}"]`);
+        const selectedContent = document.getElementById(`${tabName}-tab-content`);
+
+        if (selectedTab) selectedTab.classList.add('active');
+        if (selectedContent) selectedContent.classList.add('active');
+
+        // Initialize tab-specific functionality
+        switch (tabName) {
+            case 'cli':
+                this.initializeCLIEditor();
+                break;
+            case 'tutorial':
+                this.initializeTutorialEditor();
+                break;
+            case 'bulk':
+                this.initializeBulkOperations();
+                break;
+        }
+    }
+
+    setupEventListeners() {
+        // Mode switching
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchMode(e.target.closest('.mode-btn').dataset.mode));
+        });
+
+        // Difficulty selection
+        document.querySelectorAll('.difficulty-badge').forEach(badge => {
+            badge.addEventListener('click', (e) => this.setDifficulty(e.target.closest('.difficulty-badge').dataset.difficulty));
+        });
+
+        // Form inputs with enhanced validation
+        const inputs = [
+            'simulation-title', 'simulation-description', 'scenario-text', 
+            'solution-text', 'problem-symptoms', 'background-context',
+            'learning-objectives', 'solution-steps'
+        ];
+        
+        inputs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => this.updatePreview());
+                element.addEventListener('blur', () => this.validateField(id));
+            }
+        });
+
+        // Canvas interactions
+        const canvas = document.getElementById('simulation-canvas');
+        if (canvas) {
+            canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            canvas.addEventListener('contextmenu', (e) => this.handleCanvasRightClick(e));
+        }
+
+        // Device property updates
+        ['device-name', 'device-ip', 'device-config', 'device-status', 'device-problem'].forEach(id => {
+            ['device-mask','device-gw','device-dns','device-model','device-ram',
+             'capability-wired','capability-wireless','capability-routing','capability-switching'].forEach(extra=>{}); // placeholder
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', () => this.updateSelectedDevice());
+            }
+        });
+        // Extra device fields listeners
+        ['device-mask','device-gw','device-dns','device-model','device-ram'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.addEventListener('input', ()=> this.updateSelectedDevice());
+        });
+        ['capability-wired','capability-wireless','capability-routing','capability-switching'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.addEventListener('change', ()=> this.updateSelectedDevice());
+        });
+    }
+
+    setupDragAndDrop() {
+        const devices = document.querySelectorAll('.device[draggable="true"]');
+        const canvas = document.getElementById('simulation-canvas');
+
+        devices.forEach(device => {
+            device.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('device-type', device.dataset.deviceType);
+                device.style.opacity = '0.5';
+            });
+            
+            device.addEventListener('dragend', (e) => {
+                device.style.opacity = '1';
+            });
+        });
+
+        if (canvas) {
+            canvas.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                canvas.style.backgroundColor = 'rgba(0, 217, 255, 0.1)';
+            });
+            
+            canvas.addEventListener('dragleave', (e) => {
+                canvas.style.backgroundColor = '';
+            });
+            
+            canvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                canvas.style.backgroundColor = '';
+                this.handleDeviceDrop(e);
+            });
+        }
+    }
+
+    switchMode(mode) {
+        this.currentMode = mode;
+        
+        // Update active button
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Show/hide properties panels
+        document.getElementById('device-properties').style.display = 'none';
+        document.getElementById('scenario-properties').style.display = mode === 'scenario' ? 'block' : 'none';
+        document.getElementById('solution-properties').style.display = mode === 'solution' ? 'block' : 'none';
+
+        // Update mode indicator
+        this.updateModeIndicator();
+        this.updatePreview();
+    }
+
+    updateModeIndicator() {
+        const indicator = document.getElementById('mode-indicator');
+        if (indicator) {
+            const icons = {
+                'devices': 'fas fa-microchip',
+                'scenario': 'fas fa-file-alt',
+                'solution': 'fas fa-check-circle'
+            };
+            
+            const labels = {
+                'devices': 'Topology Mode',
+                'scenario': 'Scenario Mode',
+                'solution': 'Solution Mode'
+            };
+            
+            indicator.innerHTML = `
+                <i class="${icons[this.currentMode]}"></i>
+                <span class="label">${labels[this.currentMode]}</span>
+            `;
+        }
+    }
+
+    setDifficulty(difficulty) {
+        document.querySelectorAll('.difficulty-badge').forEach(badge => {
+            badge.classList.toggle('active', badge.dataset.difficulty === difficulty);
+        });
+        this.updatePreview();
+    }
+
+    handleDeviceDrop(e) {
+        const deviceType = e.dataTransfer.getData('device-type');
+        if (!deviceType) return;
+        
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = Math.max(30, Math.min(e.clientX - rect.left - 30, rect.width - 90));
+        const y = Math.max(30, Math.min(e.clientY - rect.top - 30, rect.height - 90));
+
+        this.addDevice(deviceType, x, y);
+    }
+
+    addDevice(type, x, y) {
+        const device = {
+            id: 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            type: type,
+            x: Math.round(x / 20) * 20, // Snap to grid
+            y: Math.round(y / 20) * 20,
+            name: this.generateDeviceName(type),
+            config: {
+                ip: this.generateDefaultIP(type),
+                mask: '255.255.255.0',
+                gw: '',
+                dns: '',
+                commands: ''
+            },
+            specs: {
+                model: '',
+                ramMB: 256,
+                capabilities: {
+                    wired: ['pc','server','switch','router','firewall','access-point'].includes(type),
+                    wireless: type === 'access-point',
+                    routing: type === 'router' || type === 'firewall',
+                    switching: type === 'switch'
+                }
+            },
+            status: 'normal',
+            problem: ''
+        };
+
+        this.devices.push(device);
+        this.renderDevice(device);
+        this.showToast(`${device.name} added successfully`, 'success');
+        this.updatePreview();
+
+    // Keep connectivity console device list in sync
+    try { window.connectivityTester?.updateDeviceList?.(); } catch (_) {}
+    }
+
+    generateDeviceName(type) {
+        const count = this.devices.filter(d => d.type === type).length;
+        const typeNames = {
+            'router': 'RTR',
+            'switch': 'SW',
+            'pc': 'PC',
+            'server': 'SRV',
+            'firewall': 'FW',
+            'access-point': 'AP',
+            'cable': 'CONN'
+        };
+        return `${typeNames[type] || type.toUpperCase()}-${count + 1}`;
+    }
+
+    generateDefaultIP(type) {
+        const baseIPs = {
+            'router': '192.168.1.1',
+            'switch': '192.168.1.10',
+            'pc': '192.168.1.100',
+            'server': '192.168.1.50',
+            'firewall': '192.168.1.1',
+            'access-point': '192.168.1.20'
+        };
+        return baseIPs[type] || '';
+    }
+
+    renderDevice(device) {
+        const canvas = document.getElementById('canvas-content');
+        if (!canvas) return;
+
+        const deviceElement = document.createElement('div');
+        deviceElement.className = 'canvas-device device-placed';
+        deviceElement.dataset.deviceId = device.id;
+        deviceElement.style.left = device.x + 'px';
+        deviceElement.style.top = device.y + 'px';
+
+        // Status-based styling
+        const statusColors = {
+            'normal': 'var(--success-color)',
+            'malfunctioning': 'var(--warning-color)',
+            'offline': 'var(--danger-color)',
+            'misconfigured': 'var(--warning-color)',
+            'degraded': 'var(--warning-color)'
+        };
+
+        deviceElement.style.borderColor = statusColors[device.status] || 'var(--glass-border)';
+
+        deviceElement.innerHTML = `
+            <img src="/static/img/${device.type}.png" alt="${device.type}" onerror="this.style.display='none'">
+            <span>${device.name}</span>
+            <div class="ip-badge" style="position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); font-size:10px; color: var(--text-muted);">${device.config.ip || ''}</div>
+            ${device.status !== 'normal' ? `<div class="status-indicator" style="position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: ${statusColors[device.status]}; border-radius: 50%; border: 2px solid var(--background);"></div>` : ''}
+        `;
+
+        deviceElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (window.connectMode) {
+                window.handleConnectClick(device);
+                return;
+            }
+            this.selectDevice(device);
+        });
+
+        // Quick access to enhanced configurator
+        deviceElement.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (window.deviceConfigurator && typeof window.deviceConfigurator.openDeviceConfiguration === 'function') {
+                window.deviceConfigurator.openDeviceConfiguration(device);
+            } else {
+                this.showToast('Configurator not available', 'warning');
+            }
+        });
+
+        // Make devices draggable
+        deviceElement.draggable = true;
+        deviceElement.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('device-id', device.id);
+        });
+
+        canvas.appendChild(deviceElement);
+    }
+
+    selectDevice(device) {
+        this.selectedDevice = device;
+        
+        // Update visual selection
+        document.querySelectorAll('.canvas-device').forEach(el => {
+            el.classList.remove('selected');
+        });
+        const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+        if (deviceElement) {
+            deviceElement.classList.add('selected');
+        }
+
+        // Populate device properties
+        this.populateDeviceProperties(device);
+        
+        // Show device properties panel
+        document.getElementById('device-properties').style.display = 'block';
+        this.switchMode('devices'); // Ensure we're in device mode
+        this.updatePreview();
+    }
+
+    populateDeviceProperties(device) {
+        const fields = {
+            'device-name': device.name,
+            'device-ip': device.config.ip || '',
+            'device-mask': device.config.mask || '255.255.255.0',
+            'device-gw': device.config.gw || '',
+            'device-dns': device.config.dns || '',
+            'device-config': device.config.commands || '',
+            'device-model': device.specs?.model || '',
+            'device-ram': device.specs?.ramMB || 256,
+            'device-status': device.status,
+            'device-problem': device.problem || ''
+        };
+
+        Object.entries(fields).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value;
+            }
+        });
+        // Checkboxes
+        const caps = device.specs?.capabilities || {};
+        const cb = (id, val)=>{ const el = document.getElementById(id); if (el) el.checked = !!val; };
+        cb('capability-wired', caps.wired);
+        cb('capability-wireless', caps.wireless);
+        cb('capability-routing', caps.routing);
+        cb('capability-switching', caps.switching);
+    }
+
+    updateSelectedDevice() {
+        if (!this.selectedDevice) return;
+
+        const updates = {
+            name: document.getElementById('device-name')?.value || this.selectedDevice.name,
+            config: {
+                ip: document.getElementById('device-ip')?.value || '',
+                mask: document.getElementById('device-mask')?.value || '255.255.255.0',
+                gw: document.getElementById('device-gw')?.value || '',
+                dns: document.getElementById('device-dns')?.value || '',
+                commands: document.getElementById('device-config')?.value || ''
+            },
+            specs: {
+                model: document.getElementById('device-model')?.value || '',
+                ramMB: parseInt(document.getElementById('device-ram')?.value) || 256,
+                capabilities: {
+                    wired: document.getElementById('capability-wired')?.checked || false,
+                    wireless: document.getElementById('capability-wireless')?.checked || false,
+                    routing: document.getElementById('capability-routing')?.checked || false,
+                    switching: document.getElementById('capability-switching')?.checked || false,
+                }
+            },
+            status: document.getElementById('device-status')?.value || 'normal',
+            problem: document.getElementById('device-problem')?.value || ''
+        };
+
+        Object.assign(this.selectedDevice, updates);
+
+        // Mirror into enhanced configurator so validators/tests see it
+        try {
+            const cfg = {
+                name: this.selectedDevice.name,
+                mode: '',
+                status: updates.status,
+                ipAddress: updates.config.ip || '',
+                subnetMask: updates.config.mask || '255.255.255.0',
+                gateway: updates.config.gw || '',
+                dnsServer: updates.config.dns || '',
+                routes: this.selectedDevice.config?.routes || [],
+                vlans: this.selectedDevice.config?.vlans || [],
+                wireless: this.selectedDevice.config?.wireless || {},
+                services: this.selectedDevice.config?.services || [],
+                deviceType: this.selectedDevice.type,
+            };
+            window.deviceConfigurator?.setDeviceConfiguration?.(this.selectedDevice.id, cfg);
+            window.connectivityTester?.updateDeviceList?.();
+        } catch (_) {}
+
+        // Update visual representation
+        const deviceElement = document.querySelector(`[data-device-id="${this.selectedDevice.id}"]`);
+        if (deviceElement) {
+            const nameSpan = deviceElement.querySelector('span');
+            if (nameSpan) nameSpan.textContent = updates.name;
+            const ipBadge = deviceElement.querySelector('.ip-badge');
+            if (ipBadge) ipBadge.textContent = updates.config.ip || '';
+            
+            // Update border color based on status
+            const statusColors = {
+                'normal': 'var(--success-color)',
+                'malfunctioning': 'var(--warning-color)',
+                'offline': 'var(--danger-color)',
+                'misconfigured': 'var(--warning-color)',
+                'degraded': 'var(--warning-color)'
+            };
+            deviceElement.style.borderColor = statusColors[updates.status] || 'var(--glass-border)';
+        }
+
+        this.updatePreview();
+    }
+
+    addStep() {
+        const stepTitle = prompt('Enter step title:');
+        if (!stepTitle || !stepTitle.trim()) return;
+
+        const step = {
+            id: 'step_' + Date.now(),
+            title: stepTitle.trim(),
+            description: '',
+            type: 'action',
+            required: true,
+            order: this.steps.length + 1
+        };
+
+        this.steps.push(step);
+        this.renderSteps();
+        this.showToast('Step added successfully', 'success');
+    }
+
+    renderSteps() {
+        const stepList = document.getElementById('step-list');
+        if (!stepList) return;
+
+        stepList.innerHTML = '';
+
+        this.steps.forEach((step, index) => {
+            const stepElement = document.createElement('div');
+            stepElement.className = 'step-item';
+            stepElement.innerHTML = `
+                <div>
+                    <div class="step-title">${step.title}</div>
+                    <div class="step-type">${step.type}</div>
+                </div>
+                <button class="hint-remove" onclick="editor.removeStep(${index})" title="Remove step">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            stepList.appendChild(stepElement);
+        });
+    }
+
+    removeStep(index) {
+        if (index >= 0 && index < this.steps.length) {
+            this.steps.splice(index, 1);
+            this.renderSteps();
+            this.showToast('Step removed', 'warning');
+        }
+    }
+
+    addHint() {
+        const hintText = prompt('Enter hint text:');
+        if (hintText && hintText.trim()) {
+            this.hints.push(hintText.trim());
+            this.renderHints();
+            this.showToast('Hint added successfully', 'success');
+        }
+    }
+
+    renderHints() {
+        const hintList = document.getElementById('hint-list');
+        if (!hintList) return;
+
+        hintList.innerHTML = '';
+
+        this.hints.forEach((hint, index) => {
+            const hintElement = document.createElement('div');
+            hintElement.className = 'hint-item';
+            hintElement.innerHTML = `
+                <div class="hint-text">${hint}</div>
+                <button class="hint-remove" onclick="editor.removeHint(${index})" title="Remove hint">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            hintList.appendChild(hintElement);
+        });
+    }
+
+    removeHint(index) {
+        if (index >= 0 && index < this.hints.length) {
+            this.hints.splice(index, 1);
+            this.renderHints();
+            this.showToast('Hint removed', 'warning');
+        }
+    }
+
+    validateField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        let isValid = true;
+        let message = '';
+
+        switch (fieldId) {
+            case 'simulation-title':
+                isValid = field.value.trim().length >= 3;
+                message = 'Title must be at least 3 characters long';
+                break;
+            case 'device-ip':
+                const ipPattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+                isValid = !field.value || ipPattern.test(field.value);
+                message = 'Please enter a valid IP address';
+                break;
+        }
+
+        if (!isValid) {
+            field.style.borderColor = 'var(--danger-color)';
+            this.showToast(message, 'error');
+        } else {
+            field.style.borderColor = '';
+        }
+
+        return isValid;
+    }
+
+    updatePreview() {
+        const previewContent = document.getElementById('preview-content');
+        if (!previewContent) return;
+
+        const mode = this.currentMode;
+        let content = '';
+        
+        if (mode === 'devices' && this.selectedDevice) {
+            const device = this.selectedDevice;
+            content = `
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="fas fa-microchip" style="font-size: 32px; color: var(--cyber-glow); margin-bottom: 10px;"></i>
+                </div>
+                <strong>Device:</strong> ${device.name}<br>
+                <strong>Type:</strong> ${device.type}<br>
+                <strong>Status:</strong> <span style="color: ${device.status === 'normal' ? 'var(--success-color)' : 'var(--warning-color)'}">${device.status}</span><br>
+                <strong>IP Address:</strong> ${device.config.ip || 'Not set'}<br>
+                <strong>Position:</strong> (${device.x}, ${device.y})<br>
+                ${device.problem ? `<strong>Problem:</strong> ${device.problem}<br>` : ''}
+                <hr style="margin: 10px 0; border-color: var(--glass-border);">
+                <small style="color: var(--text-muted);">Click to edit device properties</small>
+            `;
+        } else if (mode === 'scenario') {
+            const scenario = document.getElementById('scenario-text')?.value || '';
+            const symptoms = document.getElementById('problem-symptoms')?.value || '';
+            content = `
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="fas fa-file-alt" style="font-size: 32px; color: var(--cyber-glow); margin-bottom: 10px;"></i>
+                </div>
+                <strong>Scenario:</strong><br>
+                <div style="background: var(--glass-bg-light); padding: 10px; border-radius: 8px; margin: 8px 0;">
+                    ${scenario || '<em>No scenario description entered.</em>'}
+                </div>
+                ${symptoms ? `<strong>Symptoms:</strong><br><div style="background: var(--glass-bg-light); padding: 10px; border-radius: 8px; margin: 8px 0;">${symptoms}</div>` : ''}
+            `;
+        } else if (mode === 'solution') {
+            const solution = document.getElementById('solution-text')?.value || '';
+            const baseScore = document.getElementById('base-score')?.value || 0;
+            const timeBonus = document.getElementById('time-bonus')?.value || 0;
+            content = `
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <i class="fas fa-check-circle" style="font-size: 32px; color: var(--cyber-glow); margin-bottom: 10px;"></i>
+                </div>
+                <strong>Solution:</strong><br>
+                <div style="background: var(--glass-bg-light); padding: 10px; border-radius: 8px; margin: 8px 0;">
+                    ${solution || '<em>No solution description entered.</em>'}
+                </div>
+                <strong>Scoring:</strong><br>
+                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                    <span>Base Points:</span>
+                    <span style="color: var(--cyber-glow); font-weight: bold;">${baseScore}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                    <span>Time Bonus:</span>
+                    <span style="color: var(--success-color); font-weight: bold;">${timeBonus}</span>
+                </div>
+            `;
+        } else {
+            content = `
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                    <i class="fas fa-mouse-pointer" style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p>Select an element to preview.</p>
+                    <small>Devices: ${this.devices.length} | Steps: ${this.steps.length} | Hints: ${this.hints.length}</small>
+                </div>
+            `;
+        }
+        
+        previewContent.innerHTML = content;
+    }
+
+    // CLI Editor Methods
+    initializeCLIEditor() {
+        this.loadDevicesForCLI();
+        this.setupCLIConsole();
+    }
+
+    loadDevicesForCLI() {
+        const deviceSelect = document.getElementById('cli-device-select');
+        if (!deviceSelect) return;
+
+        deviceSelect.innerHTML = '<option value="">Choose a device...</option>';
+        this.devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.id;
+            option.textContent = `${device.name} (${device.type})`;
+            deviceSelect.appendChild(option);
+        });
+    }
+
+    setupCLIConsole() {
+        const input = document.getElementById('cli-input');
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.executeCLICommand();
+                }
+            });
+        }
+    }
+
+    executeCLICommand() {
+        const input = document.getElementById('cli-input');
+        const output = document.getElementById('cli-console-output');
+        if (!input || !output) return;
+
+        const command = input.value.trim();
+        if (!command) return;
+
+        // Add command to output
+        output.innerHTML += `<div style="color: #00ff00;">Device> ${command}</div>`;
+        
+        // Simulate command execution (placeholder)
+        if (command.toLowerCase().includes('help')) {
+            output.innerHTML += `<div style="color: #ffffff;">Available commands: show ip interface, show version, ping, traceroute</div>`;
+        } else if (command.toLowerCase().includes('show ip interface')) {
+            output.innerHTML += `<div style="color: #ffffff;">Interface Status Protocol IP-Address
+FastEthernet0/0 up up 192.168.1.1
+FastEthernet0/1 up up 192.168.2.1</div>`;
+        } else {
+            output.innerHTML += `<div style="color: #ff6b6b;">Unknown command: ${command}</div>`;
+        }
+
+        // Clear input and scroll to bottom
+        input.value = '';
+        output.scrollTop = output.scrollHeight;
+    }
+
+    // Tutorial Editor Methods
+    initializeTutorialEditor() {
+        this.setupTutorialPositioning();
+        this.loadTutorialSteps();
+    }
+
+    setupTutorialPositioning() {
+        const previewModal = document.getElementById('position-preview');
+        if (!previewModal) return;
+
+        let isDragging = false;
+        let startX, startY, startLeft, startTop;
+
+        previewModal.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = parseInt(previewModal.style.left || '50');
+            startTop = parseInt(previewModal.style.top || '50');
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            const newLeft = startLeft + deltaX;
+            const newTop = startTop + deltaY;
+
+            previewModal.style.left = `${newLeft}px`;
+            previewModal.style.top = `${newTop}px`;
+
+            // Update coordinate inputs
+            const xInput = document.getElementById('modal-x');
+            const yInput = document.getElementById('modal-y');
+            if (xInput) xInput.value = newLeft;
+            if (yInput) yInput.value = newTop;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    }
+
+    loadTutorialSteps() {
+        // Load existing tutorial steps
+        const stepsList = document.getElementById('tutorial-steps-list');
+        if (!stepsList) return;
+
+        // Clear existing steps
+        stepsList.innerHTML = '';
+
+        // Add placeholder for new tutorial
+        if (!this.simulationData.tutorial_steps || this.simulationData.tutorial_steps.length === 0) {
+            stepsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No tutorial steps yet. Click "Add Step" to create your first tutorial step.</div>';
+        }
+    }
+
+    // Bulk Operations Methods
+    initializeBulkOperations() {
+        this.loadDevicesForBulkOps();
+        this.setupBulkSelection();
+    }
+
+    loadDevicesForBulkOps() {
+        const devicesList = document.getElementById('bulk-device-list');
+        if (!devicesList) return;
+
+        devicesList.innerHTML = '';
+        this.devices.forEach(device => {
+            const item = document.createElement('div');
+            item.className = 'device-selection-item';
+            item.innerHTML = `
+                <input type="checkbox" id="bulk-device-${device.id}" value="${device.id}">
+                <label for="bulk-device-${device.id}">
+                    ${device.name} (${device.type}) - ${device.ip || 'No IP'}
+                </label>
+            `;
+            devicesList.appendChild(item);
+        });
+    }
+
+    setupBulkSelection() {
+        // Setup bulk selection event handlers
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('button[onclick*="selectAllDevices"]')) {
+                e.preventDefault();
+                this.selectAllDevices();
+            } else if (e.target.matches('button[onclick*="selectNone"]')) {
+                e.preventDefault();
+                this.selectNone();
+            }
+        });
+    }
+
+    selectAllDevices() {
+        document.querySelectorAll('#bulk-device-list input[type="checkbox"]').forEach(cb => {
+            cb.checked = true;
+        });
+    }
+
+    selectNone() {
+        document.querySelectorAll('#bulk-device-list input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+    }
+
+    loadSimulationData() {
+        if (this.simulationData && Object.keys(this.simulationData).length > 0) {
+            // Load basic info
+            this.setFieldValue('simulation-title', this.simulationData.title);
+            this.setFieldValue('simulation-description', this.simulationData.description);
+            this.setFieldValue('time-limit', this.simulationData.time_limit || 15);
+            this.setFieldValue('problem-type', this.simulationData.problem_type || 'network');
+
+            // Set difficulty
+            if (this.simulationData.difficulty) {
+                this.setDifficulty(this.simulationData.difficulty);
+            }
+
+            // Load scenario and solution
+            this.setFieldValue('scenario-text', this.simulationData.scenario);
+            this.setFieldValue('solution-text', this.simulationData.solution);
+            this.setFieldValue('base-score', this.simulationData.base_score || 50);
+            this.setFieldValue('time-bonus', this.simulationData.time_bonus || 10);
+
+            // Load hints
+            if (Array.isArray(this.simulationData.hints)) {
+                this.hints = [...this.simulationData.hints];
+                this.renderHints();
+            }
+
+            // Load initial topology
+            if (this.simulationData.initial_topology && Array.isArray(this.simulationData.initial_topology.devices)) {
+                this.devices = [...this.simulationData.initial_topology.devices];
+                this.devices.forEach(device => {
+                    this.renderDevice(device);
+                    // Import any existing config into enhanced configurator
+                    const cfg = device.config || {};
+                    const mapped = {
+                        name: device.name,
+                        status: device.status || 'up',
+                        ipAddress: cfg.ip || '',
+                        subnetMask: cfg.mask || '255.255.255.0',
+                        gateway: cfg.gw || '',
+                        dnsServer: cfg.dns || '',
+                        routes: cfg.routes || [],
+                        vlans: cfg.vlans || [],
+                        wireless: cfg.wireless || {},
+                        services: cfg.services || [],
+                        deviceType: device.type,
+                    };
+                    try { window.deviceConfigurator?.setDeviceConfiguration?.(device.id, mapped); } catch (_) {}
+                });
+                if (Array.isArray(this.simulationData.initial_topology.connections)) {
+                    this.connections = [...this.simulationData.initial_topology.connections];
+                    this.updateConnections();
+                }
+            }
+
+            // Load required steps
+            if (Array.isArray(this.simulationData.required_steps)) {
+                this.steps = [...this.simulationData.required_steps];
+                this.renderSteps();
+            }
+        }
+        
+        this.updatePreview();
+
+    // Sync connectivity console list after initial load
+    try { window.connectivityTester?.updateDeviceList?.(); } catch (_) {}
+    }
+
+    updateConnections() {
+        const svg = document.getElementById('connection-layer');
+        const canvas = document.getElementById('simulation-canvas');
+        if (!svg || !canvas) return;
+        // Clear
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+        // Draw
+        const byId = Object.fromEntries(this.devices.map(d=>[d.id,d]));
+        const rect = canvas.getBoundingClientRect();
+        const toCenter = d => ({ x: d.x + 30, y: d.y + 30 });
+        this.connections.forEach(c => {
+            const a = byId[c.source], b = byId[c.target];
+            if (!a || !b) return;
+            const pa = toCenter(a), pb = toCenter(b);
+            const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+            line.setAttribute('x1', String(pa.x));
+            line.setAttribute('y1', String(pa.y));
+            line.setAttribute('x2', String(pb.x));
+            line.setAttribute('y2', String(pb.y));
+            line.setAttribute('stroke', c.type === 'wireless' ? '#8B5CF6' : '#00D9FF');
+            line.setAttribute('stroke-width','2');
+            line.setAttribute('opacity','0.8');
+            svg.appendChild(line);
+        });
+    }
+
+    setFieldValue(id, value) {
+        const element = document.getElementById(id);
+        if (element && value !== undefined && value !== null) {
+            element.value = value;
+        }
+    }
+
+    handleCanvasClick(e) {
+        if (e.target.id === 'simulation-canvas' || e.target.id === 'canvas-content') {
+            this.selectedDevice = null;
+            document.getElementById('device-properties').style.display = 'none';
+            document.querySelectorAll('.canvas-device').forEach(el => {
+                el.classList.remove('selected');
+            });
+            this.updatePreview();
+        }
+    }
+
+    handleCanvasRightClick(e) {
+        e.preventDefault();
+        // Could implement context menu here
+    }
+
+    removeSelectedDevice() {
+        if (this.selectedDevice) {
+            // Remove from devices array
+            this.devices = this.devices.filter(d => d.id !== this.selectedDevice.id);
+            
+            // Remove from canvas
+            const deviceElement = document.querySelector(`[data-device-id="${this.selectedDevice.id}"]`);
+            if (deviceElement) {
+                deviceElement.remove();
+            }
+            
+            // Clear selection
+            this.selectedDevice = null;
+            document.getElementById('device-properties').style.display = 'none';
+            
+            this.showToast('Device removed successfully', 'success');
+            this.updatePreview();
+
+            // Keep connectivity console in sync
+            try { window.connectivityTester?.updateDeviceList?.(); } catch (_) {}
+        }
+    }
+
+    showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            'success': 'fas fa-check-circle',
+            'error': 'fas fa-exclamation-triangle',
+            'warning': 'fas fa-exclamation-circle',
+            'info': 'fas fa-info-circle'
+        };
+        
+        toast.innerHTML = `
+            <i class="${icons[type] || icons.info}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    getSimulationData() {
+        const activeDifficulty = document.querySelector('.difficulty-badge.active');
+        
+        return {
+            title: document.getElementById('simulation-title')?.value || '',
+            description: document.getElementById('simulation-description')?.value || '',
+            difficulty: activeDifficulty ? activeDifficulty.dataset.difficulty : 'medium',
+            problem_type: document.getElementById('problem-type')?.value || 'network',
+            scenario: document.getElementById('scenario-text')?.value || '',
+            solution: document.getElementById('solution-text')?.value || '',
+            time_limit: parseInt(document.getElementById('time-limit')?.value) || 15,
+            base_score: parseInt(document.getElementById('base-score')?.value) || 50,
+            time_bonus: parseInt(document.getElementById('time-bonus')?.value) || 10,
+            hints: [...this.hints],
+            initial_topology: {
+                devices: this.devices.map(device => ({...device})),
+                connections: [...this.connections]
+            },
+            solution_topology: {
+                devices: this.devices.map(device => ({...device})),
+                connections: [...this.connections]
+            },
+            required_steps: this.steps.map(step => ({...step})),
+            is_active: true
+        };
+    }
+
+    saveSimulation() {
+        const saveBtn = document.querySelector('button[onclick="saveSimulation()"]');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<div class="loading-spinner"></div> Saving...';
+        }
+
+        const simulationData = this.getSimulationData();
+        
+        // Basic validation
+        if (!simulationData.title.trim()) {
+            this.showToast('Please enter a simulation title', 'error');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            }
+            return;
+        }
+
+        // Strict gating: require config and connectivity correctness before persisting
+        const preflight = window.__rn_preflightValidate?.(this);
+        if (!preflight?.ok) {
+            this.showToast(preflight?.message || 'Validation failed. Fix issues before saving.', 'error');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            }
+            return;
+        }
+
+        const url = this.simulationData.id ? 
+            `/admin/simulation/edit/${this.simulationData.id}/save` : 
+            `/admin/simulation/edit/save`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(simulationData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.showToast('Simulation saved successfully!', 'success');
+                if (!this.simulationData.id && data.simulation_id) {
+                    // Update the simulation data with the new ID
+                    this.simulationData.id = data.simulation_id;
+                    // Update the URL to reflect we're now editing an existing simulation
+                    window.history.replaceState({}, '', `/admin/simulation/edit/${data.simulation_id}`);
+                }
+            } else {
+                this.showToast('Error saving simulation: ' + (data.message || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            this.showToast('Error saving simulation: ' + error.message, 'error');
+        })
+        .finally(() => {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            }
+        });
+    }
+}
+
+// Initialize the editor
+let editor;
+document.addEventListener('DOMContentLoaded', () => {
+    editor = new SimulationEditor();
+});
+
+// Global functions for palette actions
+function toggleGrid() {
+    if (editor) {
+        editor.gridVisible = !editor.gridVisible;
+        const canvas = document.getElementById('simulation-canvas');
+        if (canvas) {
+            canvas.style.opacity = editor.gridVisible ? '1' : '0.8';
+        }
+        editor.showToast(`Grid ${editor.gridVisible ? 'enabled' : 'disabled'}`, 'info');
+    }
+}
+
+function clearCanvas() {
+    if (editor && confirm('Are you sure you want to clear all devices? This action cannot be undone.')) {
+        editor.devices = [];
+        editor.connections = [];
+        editor.selectedDevice = null;
+        
+        const canvasContent = document.getElementById('canvas-content');
+        if (canvasContent) {
+            canvasContent.innerHTML = '';
+        }
+        
+    document.getElementById('device-properties').style.display = 'none';
+    editor.updateConnections();
+        editor.updatePreview();
+        editor.showToast('Canvas cleared', 'warning');
+
+    // Sync connectivity console
+    try { window.connectivityTester?.updateDeviceList?.(); } catch (_) {}
+    }
+}
+
+function autoArrange() {
+    if (editor && editor.devices.length > 0) {
+        const canvas = document.getElementById('simulation-canvas');
+        if (!canvas) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const margin = 80;
+        const spacing = 120;
+        const cols = Math.floor((rect.width - 2 * margin) / spacing);
+        
+        editor.devices.forEach((device, index) => {
+            const col = index % cols;
+            const row = Math.floor(index / cols);
+            
+            device.x = margin + col * spacing;
+            device.y = margin + row * spacing;
+            
+            const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+            if (deviceElement) {
+                deviceElement.style.left = device.x + 'px';
+                deviceElement.style.top = device.y + 'px';
+            }
+        });
+        
+    editor.updateConnections();
+    editor.showToast('Devices auto-arranged', 'success');
+        editor.updatePreview();
+    }
+}
+
+function validateTopology() {
+    if (editor) {
+        const issues = [];
+        const warn = [];
+
+        // Basic content
+        if (!document.getElementById('simulation-title')?.value?.trim()) issues.push('Missing simulation title');
+        if (!document.getElementById('scenario-text')?.value?.trim()) issues.push('Missing problem scenario');
+        if (!document.getElementById('solution-text')?.value?.trim()) issues.push('Missing solution description');
+
+        // Devices present
+        if (editor.devices.length === 0) issues.push('No devices in topology');
+
+        // IP/interface validation per device
+        const ipSet = new Set();
+        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const ipToNum = ip => ip.split('.').reduce((a,o)=> (a<<8)+parseInt(o),0)>>>0;
+        const maskToNum = ipToNum;
+        const network = (ip,mask)=> (ipToNum(ip) & maskToNum(mask))>>>0;
+
+        editor.devices.forEach(d => {
+            // Check NIC capability if connected later
+            if (d.type !== 'cable' && d.specs && !d.specs.capabilities.wired) {
+                warn.push(`${d.name} has no wired NIC capability`);
+            }
+            const cfg = d.config || {};
+            if (cfg.ip) {
+                if (!ipRegex.test(cfg.ip)) issues.push(`${d.name}: invalid IP format`);
+                if (ipSet.has(cfg.ip)) issues.push(`${d.name}: duplicate IP ${cfg.ip}`);
+                ipSet.add(cfg.ip);
+                if (cfg.mask && ipRegex.test(cfg.mask)) {
+                    const n = network(cfg.ip, cfg.mask);
+                    const b = n | (~maskToNum(cfg.mask)>>>0);
+                    const ipN = ipToNum(cfg.ip);
+                    if (ipN === n || ipN === b) warn.push(`${d.name}: IP is network/broadcast address`);
+                }
+            }
+            if (cfg.gw && !ipRegex.test(cfg.gw)) issues.push(`${d.name}: invalid gateway format`);
+            if (cfg.dns && !ipRegex.test(cfg.dns)) issues.push(`${d.name}: invalid DNS format`);
+        });
+
+        // Physical connections realism: require compatibility and ensure devices aren't linked PC-to-PC without switch unless crossover assumed
+        const byId = Object.fromEntries(editor.devices.map(d=>[d.id,d]));
+        const deg = new Map();
+        const addDeg = id => deg.set(id,(deg.get(id)||0)+1);
+        editor.connections.forEach(c => { addDeg(c.source); addDeg(c.target); });
+
+        editor.connections.forEach(c => {
+            const a = byId[c.source], b = byId[c.target];
+            if (!a || !b) { issues.push('Dangling connection'); return; }
+            // Basic port compatibility: end devices should connect to switch/AP/router, not directly to end devices
+            const endTypes = new Set(['pc','server']);
+            if (endTypes.has(a.type) && endTypes.has(b.type)) {
+                warn.push(`Direct end-device link between ${a.name} and ${b.name}`);
+            }
+            // Wireless requires AP capability
+            if (c.type === 'wireless') {
+                const ok = (a.specs?.capabilities?.wireless || a.type==='access-point') && (b.specs?.capabilities?.wireless || b.type==='access-point');
+                if (!ok) issues.push(`Wireless link requires wireless capability between ${a.name} and ${b.name}`);
+            }
+        });
+
+        // Reachability heuristic: if two configured hosts share subnet, they should be connected path-wise
+        const neighbors = new Map();
+        editor.devices.forEach(d=>neighbors.set(d.id,[]));
+        editor.connections.forEach(c=>{ neighbors.get(c.source)?.push(c.target); neighbors.get(c.target)?.push(c.source); });
+        const bfs = (s,t)=>{ const q=[s], seen=new Set([s]); while(q.length){ const x=q.shift(); if(x===t) return true; for(const y of neighbors.get(x)||[]){ if(!seen.has(y)){ seen.add(y); q.push(y);} } } return false; };
+
+        const sameSubnet = (d1,d2)=>{
+            const c1=d1.config||{}, c2=d2.config||{}; if(!c1.ip||!c2.ip||!c1.mask||!c2.mask) return false; return (ipToNum(c1.ip)&maskToNum(c1.mask)) === (ipToNum(c2.ip)&maskToNum(c2.mask)) && c1.mask===c2.mask; };
+        const ends = editor.devices.filter(d=>['pc','server'].includes(d.type));
+        for(let i=0;i<ends.length;i++){
+            for(let j=i+1;j<ends.length;j++){
+                if (sameSubnet(ends[i], ends[j]) && !bfs(ends[i].id, ends[j].id)) {
+                    issues.push(`Same-subnet hosts not connected: ${ends[i].name} ↔ ${ends[j].name}`);
+                }
+            }
+        }
+
+        if (issues.length === 0) {
+            editor.showToast(warn.length? `Valid with warnings: ${warn.join('; ')}` : 'Topology validation passed!', warn.length? 'warning':'success');
+        } else {
+            editor.showToast(`Validation issues: ${issues.join('; ')}`, 'error');
+        }
+    }
+}
+
+// Connect mode state and handlers
+window.connectMode = false; window.pendingSource = null;
+function toggleConnectMode(){
+    window.connectMode = !window.connectMode; window.pendingSource = null;
+    const btn = document.getElementById('connect-mode-btn');
+    if (btn) btn.classList.toggle('active', window.connectMode);
+    editor?.showToast(window.connectMode? 'Connect mode: click two devices to link' : 'Connect mode off', window.connectMode? 'info':'secondary');
+    // Attach click handlers on devices when rendered
+}
+
+// Connect two devices by clicking them in sequence while in connect mode
+function handleConnectClick(device){
+    if (!window.connectMode || !editor) return;
+    // First click selects source
+    if (!window.pendingSource) {
+        window.pendingSource = device;
+        editor.showToast('Select a target device to create a link', 'info');
+        return;
+    }
+    // If same device clicked, cancel selection
+    if (window.pendingSource.id === device.id) {
+        window.pendingSource = null;
+        editor.showToast('Canceled link selection', 'secondary');
+        return;
+    }
+    // Prevent duplicate links (unordered)
+    const exists = editor.connections.some(c =>
+        (c.source === window.pendingSource.id && c.target === device.id) ||
+        (c.source === device.id && c.target === window.pendingSource.id)
+    );
+    if (exists) {
+        editor.showToast('Link already exists between these devices', 'warning');
+        window.pendingSource = null;
+        return;
+    }
+    // Infer connection type
+    const type = (window.pendingSource.type === 'access-point' || device.type === 'access-point') ? 'wireless' : 'ethernet';
+
+    // Enforce compatibility rules (wired vs wireless, end-device restrictions)
+    const a = window.pendingSource, b = device;
+    const endTypes = new Set(['pc','server','laptop','smartphone']);
+    const aCaps = a.specs?.capabilities || {}; const bCaps = b.specs?.capabilities || {};
+    // Block end-device to end-device on ethernet
+    if (type === 'ethernet' && endTypes.has(a.type) && endTypes.has(b.type)) {
+        editor.showToast(`Invalid link: connect ${a.name} and ${b.name} via a switch/router`, 'error');
+        window.pendingSource = null;
+        return;
+    }
+    // Require NIC support
+    if (type === 'ethernet' && (!aCaps.wired || !bCaps.wired)) {
+        editor.showToast('Invalid link: one or both devices lack wired capability', 'error');
+        window.pendingSource = null;
+        return;
+    }
+    if (type === 'wireless') {
+        // Require exactly one AP and a non-AP peer (client)
+        const apCount = (a.type === 'access-point') + (b.type === 'access-point');
+        if (apCount !== 1) {
+            editor.showToast('Wireless links must be between an Access Point and a client device', 'error');
+            window.pendingSource = null;
+            return;
+        }
+        // Client side must have wireless capability
+        const client = a.type === 'access-point' ? b : a;
+        const clientCaps = client.specs?.capabilities || {};
+        if (!clientCaps.wireless) {
+            editor.showToast(`${client.name} lacks wireless capability`, 'error');
+            window.pendingSource = null;
+            return;
+        }
+    }
+    editor.connections.push({ source: window.pendingSource.id, target: device.id, type });
+    // Refresh connection layer
+    editor.updateConnections();
+    editor.showToast(`Linked ${window.pendingSource.name} ↔ ${device.name}`, 'success');
+    // Reset for next link
+    window.pendingSource = null;
+}
+
+// Global functions for toolbar actions
+function previewSimulation() {
+    if (!editor) return;
+
+    // If we're editing an existing simulation, go to the admin preview page
+    const existingId = editor?.simulationData?.id;
+    // Run strict gating before allowing preview
+    const preflight = window.__rn_preflightValidate?.(editor);
+    if (!preflight?.ok) {
+        editor.showToast(preflight?.message || 'Fix validation issues before previewing.', 'error');
+        return;
+    }
+    if (existingId) {
+        window.location.href = `/admin/simulation/${existingId}`;
+        return;
+    }
+
+    // If it's a new (unsaved) simulation, save first, then redirect to preview
+    const saveBtn = document.querySelector('button[onclick="saveSimulation()"]');
+    const prevBtn = document.querySelector('button[onclick="previewSimulation()"]');
+    const restorePrev = () => {
+        if (prevBtn) prevBtn.innerHTML = '<i class="fas fa-eye"></i><span>Preview</span>';
+        if (prevBtn) prevBtn.disabled = false;
+    };
+
+    try {
+        if (prevBtn) {
+            prevBtn.disabled = true;
+            prevBtn.innerHTML = '<div class="loading-spinner"></div> Preview...';
+        }
+
+        const payload = editor.getSimulationData();
+        fetch('/admin/simulation/edit/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data?.success || !data?.simulation_id) {
+                throw new Error(data?.message || 'Unable to save simulation for preview');
+            }
+            // Update editor state and go to preview
+            editor.simulationData.id = data.simulation_id;
+            window.location.href = `/admin/simulation/${data.simulation_id}`;
+        })
+        .catch(err => {
+            console.error('Preview redirect failed:', err);
+            editor.showToast('Preview failed: ' + err.message, 'error');
+            restorePrev();
+        });
+    } catch (e) {
+        console.error(e);
+        editor.showToast('Preview failed: ' + (e?.message || 'Unknown error'), 'error');
+        restorePrev();
+    }
+}
+
+function saveSimulation() {
+    if (editor) {
+        editor.saveSimulation();
+    }
+}
+
+function exitEditor() {
+    if (confirm('Are you sure you want to exit? Any unsaved changes will be lost.')) {
+        // Check if we have a referrer that includes class_id to go back to
+        const referrer = document.referrer;
+        const urlParams = new URLSearchParams(window.location.search);
+        let classId = urlParams.get('class_id');
+        
+        // Try to extract class_id from referrer if not in current URL
+        if (!classId && referrer && referrer.includes('class_id=')) {
+            const referrerMatch = referrer.match(/class_id=(\d+)/);
+            if (referrerMatch) {
+                classId = referrerMatch[1];
+            }
+        }
+        
+        // Default to class_id=9 if we can't determine it from the referrer
+        if (!classId) {
+            classId = '9';
+        }
+        
+        // Redirect back to the class content selector with the class_id
+        window.location.href = `/admin/class-content-selector?class_id=${classId}`;
+    }
+}
+</script>
+
+<!-- Enhanced Simulation Validation System -->
+<script src="{{ url_for('static', filename='js/enhanced-device-configurator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/connectivity-test-manager.js') }}"></script>
+
+<script>
+// Strict preflight gating used by Save/Preview
+window.__rn_preflightValidate = function(editorInstance) {
+    try {
+        const ed = editorInstance || window.editor;
+        if (!ed) return { ok: false, message: 'Editor not ready' };
+
+        // 1) Require basic configuration on all devices (non-cable)
+        const unconfigured = (ed.devices || []).filter(d => d.type !== 'cable').filter(d => {
+            // Prefer enhanced configurator store if available
+            const cfg = window.deviceConfigurator?.getDeviceConfiguration?.(d.id) || d.config || {};
+            return !(cfg.ipAddress || cfg.ip) || !(cfg.subnetMask || cfg.mask);
+        });
+        if (unconfigured.length > 0) {
+            const names = unconfigured.slice(0,5).map(d=>d.name).join(', ');
+            return { ok: false, message: `Configure IP and subnet on all devices first. Missing on: ${names}${unconfigured.length>5?'…':''}` };
+        }
+
+        // 2) Enforce that any existing connections are compatible (handled at link time). Just sanity-check no dangling ids
+        const byId = new Set((ed.devices||[]).map(d=>d.id));
+        const dangling = (ed.connections||[]).some(c => !byId.has(c.source) || !byId.has(c.target));
+        if (dangling) {
+            return { ok: false, message: 'Fix dangling connections before continuing' };
+        }
+
+        // 3) Require connectivity tests all pass for configured devices
+        if (window.connectivityTester && typeof window.connectivityTester.getConnectivityReport === 'function') {
+            const report = window.connectivityTester.getConnectivityReport();
+            if (report.totalTests === 0) {
+                return { ok: false, message: 'Add at least two configured devices with valid links to run connectivity tests' };
+            }
+            if (!report.allValid) {
+                return { ok: false, message: `Connectivity tests failed (${report.passedTests}/${report.totalTests} passed)` };
+            }
+        }
+
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, message: 'Preflight validation error: ' + (e?.message || 'unknown') };
+    }
+};
+
+// Enhanced integration with existing validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize universal validator for this simulation
+    setTimeout(() => {
+        try {
+            const jsonEl = document.getElementById('simulation-json');
+            const serverData = jsonEl ? JSON.parse(jsonEl.textContent || '{}') : {};
+            const simulationId = serverData && serverData.id ? serverData.id : null;
+            if (simulationId) {
+                window.initializeUniversalValidator(simulationId);
+            }
+        } catch (e) {
+            console.warn('Could not initialize universal validator:', e);
+        }
+    }, 3000);
+});
+
+// Integration with existing validation
+const originalValidateTopology = validateTopology;
+validateTopology = function() {
+    // Run original validation first
+    originalValidateTopology();
+    
+    // Then run enhanced validation if available
+    if (window.universalValidator) {
+        window.universalValidator.performValidation();
+        
+        const report = window.universalValidator.getValidationReport();
+        if (report.overallValid) {
+            editor?.showToast('✓ Enhanced validation: All requirements met!', 'success');
+        } else {
+            const issues = [];
+            if (!report.configured) issues.push('Configuration incomplete');
+            if (!report.physicallyValid) issues.push('Physical connections invalid');
+            if (!report.connectivityPassed) issues.push('Connectivity tests failed');
+            
+            if (issues.length > 0) {
+                editor?.showToast(`Validation issues: ${issues.join(', ')}`, 'warning');
+            }
+        }
+    }
+};
+
+// Override save simulation to include validation requirements
+if (editor && editor.saveSimulation) {
+    const originalSave = editor.saveSimulation;
+    editor.saveSimulation = function() {
+        // Check enhanced validation before saving
+        if (window.universalValidator) {
+            const report = window.universalValidator.getValidationReport();
+            
+            if (!report.configured) {
+                editor.showToast('Cannot save: All devices must be configured (IP, mode, etc.)', 'error');
+                return;
+            }
+            
+            if (!report.physicallyValid) {
+                editor.showToast('Cannot save: Fix physical connection issues first', 'error');
+                return;
+            }
+            
+            // Add validation results to simulation data
+            const validationData = {
+                enhancedValidation: {
+                    configured: report.configured,
+                    physicallyValid: report.physicallyValid,
+                    connectivityPassed: report.connectivityPassed,
+                    totalTests: report.totalTests,
+                    passedTests: report.passedTests,
+                    validationTimestamp: new Date().toISOString(),
+                    requiresConnectivityTests: true,
+                    currentState: report.currentState
+                }
+            };
+            
+            // Merge with existing simulation data
+            if (editor.simulationData) {
+                Object.assign(editor.simulationData, validationData);
+            }
+        }
+        
+        // Proceed with original save
+        return originalSave.call(this);
+    };
+}
+
+// Enhanced help content
+window.showEnhancedHelp = function() {
+    const helpContent = `
+ENHANCED NETWORK VALIDATION SYSTEM
+
+The simulation now enforces real network correctness through a comprehensive validation system.
+
+VALIDATION STATES:
+1. DISCONNECTED: No or minimal configuration
+2. CONFIGURED: All devices properly configured
+3. CONNECTED: Physical topology validated
+4. VALIDATED: Connectivity tests passed
+5. WORKING: Simulation fully functional
+
+REQUIREMENTS FOR "WORKING" STATUS:
+
+1. DEVICE CONFIGURATION:
+   • PCs/Servers: IP address, subnet mask, default gateway
+   • Routers: Interface configuration, routing protocol
+   • Switches: VLAN setup, interface configuration
+   • Access Points: SSID, security settings
+
+2. PHYSICAL CONNECTIONS:
+   • Compatible device types (PC→Switch, Router→Router, etc.)
+   • Correct cable types (Ethernet, Fiber, Wireless)
+   • No invalid direct connections (PC→PC without crossover)
+
+3. CONNECTIVITY TESTS:
+   • Basic ping tests between end devices
+   • Route validation for routing devices
+   • Full connectivity matrix verification
+
+VALIDATION PANEL FEATURES:
+   • Real-time state machine display
+   • Collapsible requirement sections
+   • Detailed error descriptions
+   • Automated testing capabilities
+   • Configuration persistence
+
+IMPORTANT: The simulation cannot be marked as "Working" based solely on drag-and-drop. 
+All configuration, physical, and connectivity requirements must be satisfied.
+
+Use the validation panel on the right to monitor progress and run tests!
+    `;
+    
+    if (window.editor && window.editor.showToast) {
+        // Create enhanced help modal
+        const modal = document.createElement('div');
+        modal.className = 'enhanced-help-modal';
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="this.parentElement.remove()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-question-circle"></i> Enhanced Validation Help</h3>
+                    <button onclick="this.closest('.enhanced-help-modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10002;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            .enhanced-help-modal .modal-backdrop {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(4px);
+            }
+            
+            .enhanced-help-modal .modal-content {
+                position: relative;
+                background: linear-gradient(135deg, #1E293B, #0F172A);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                border-radius: 16px;
+                width: 90%;
+                max-width: 800px;
+                max-height: 80vh;
+                overflow: hidden;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            }
+            
+            .enhanced-help-modal .modal-header {
+                padding: 20px;
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: #00D9FF;
+            }
+            
+            .enhanced-help-modal .modal-header h3 {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 600;
+            }
+            
+            .enhanced-help-modal .modal-header button {
+                background: none;
+                border: none;
+                color: #94A3B8;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+            
+            .enhanced-help-modal .modal-header button:hover {
+                color: white;
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .enhanced-help-modal .modal-body {
+                padding: 20px;
+                color: white;
+                overflow-y: auto;
+                max-height: calc(80vh - 80px);
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(modal);
+    } else {
+        alert(helpContent);
+    }
+};
+
+// Enhanced device double-click handler for configuration
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for editor to be available
+    const enhanceDeviceInteraction = () => {
+        if (window.editor && window.deviceConfigurator) {
+            // Override device double-click to open enhanced configurator
+            const originalCreateDevice = window.editor.createDevice;
+            if (originalCreateDevice) {
+                window.editor.createDevice = function(deviceData) {
+                    const deviceElement = originalCreateDevice.call(this, deviceData);
+                    
+                    // Add double-click handler for configuration
+                    deviceElement.addEventListener('dblclick', (e) => {
+                        e.stopPropagation();
+                        window.deviceConfigurator.openDeviceConfiguration(deviceData);
+                    });
+                    
+                    // Add right-click context menu for configuration
+                    deviceElement.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        window.deviceConfigurator.openDeviceConfiguration(deviceData);
+                    });
+                    
+                    return deviceElement;
+                };
+            }
+            
+            // Add configuration and testing buttons to device palette
+            const devicePalette = document.getElementById('device-palette');
+            if (devicePalette && !document.getElementById('enhanced-controls')) {
+                const controlsSection = document.createElement('div');
+                controlsSection.id = 'enhanced-controls';
+                controlsSection.className = 'palette-section center-section';
+                controlsSection.innerHTML = `
+                    <div class="action-btn" onclick="showConfigurationHelp()" title="Configuration Help">
+                        <div class="action-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <span class="label">Help</span>
+                    </div>
+                    <div class="action-btn" onclick="runQuickConnectivityTest()" title="Quick Connectivity Test">
+                        <div class="action-icon">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <span class="label">Test Net</span>
+                    </div>
+                `;
+                devicePalette.appendChild(controlsSection);
+            }
+        } else {
+            setTimeout(enhanceDeviceInteraction, 500);
+        }
+    };
+    
+    enhanceDeviceInteraction();
+});
+
+// Quick connectivity test function
+function runQuickConnectivityTest() {
+    if (window.connectivityTester) {
+        window.connectivityTester.runPingAllTest();
+        
+        // Show test console if minimized
+        const console = document.getElementById('connectivity-test-console');
+        if (console && console.classList.contains('minimized')) {
+            console.classList.remove('minimized');
+        }
+    } else {
+        editor?.showToast('Connectivity tester not available', 'error');
+    }
+}
+
+// Configuration help function
+function showConfigurationHelp() {
+    const helpMessage = `
+Device Configuration Guide:
+
+1. BASIC SETUP:
+   • Double-click any device to configure
+   • Set device name, mode, and status
+   • All devices need IP configuration
+
+2. NETWORK CONFIGURATION:
+   • IP Address: Required for connectivity tests
+   • Subnet Mask: Must match network design
+   • Gateway: Required for inter-subnet communication
+
+3. ADVANCED FEATURES:
+   • Routers: Configure routing tables
+   • Switches: Set up VLANs and interfaces
+   • Access Points: Configure wireless settings
+   • Servers: Enable services (DHCP, DNS, etc.)
+
+4. VALIDATION:
+   • Green checkmark = Fully configured
+   • Yellow warning = Partial configuration
+   • Red X = Configuration required
+
+5. CONNECTIVITY TESTING:
+   • Configure all devices first
+   • Ensure physical connections are valid
+   • Run connectivity tests to verify network functionality
+   • Use the Network Testing Console for detailed tests
+
+6. SIMULATION STATES:
+   • Disconnected: No or minimal configuration
+   • Configured: All devices have basic config
+   • Connected: Physical topology is valid
+   • Validated: Connectivity tests passed
+   • Working: Simulation is fully functional
+
+Note: The simulation requires ALL devices to be properly configured, physical connections to be compatible, AND ALL connectivity tests to pass before marking as "working".
+
+TIP: Use "Test Net" button for quick connectivity validation!
+    `;
+    
+    if (window.editor && window.editor.showToast) {
+        // Create a larger modal for help content
+        const helpModal = document.createElement('div');
+        helpModal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.7); z-index: 3000; display: flex; 
+            align-items: center; justify-content: center;
+        `;
+        helpModal.innerHTML = `
+            <div style="background: var(--surface); border-radius: 12px; padding: 30px; 
+                        max-width: 700px; max-height: 80vh; overflow-y: auto; 
+                        color: var(--text-primary); border: 1px solid var(--glass-border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: var(--accent-color);">
+                        <i class="fas fa-cogs"></i> Enhanced Simulation Configuration Guide
+                    </h3>
+                    <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
+                            style="background: none; border: none; color: var(--text-secondary); 
+                                   font-size: 24px; cursor: pointer; padding: 5px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div style="white-space: pre-line; line-height: 1.6; font-size: 14px;">
+                    ${helpMessage}
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
+                            style="background: var(--accent-color); color: white; border: none; 
+                                   padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(helpModal);
+    } else {
+        alert(helpMessage);
+    }
+}
+
+// Enhanced validation integration with connectivity testing
+if (window.enhancedValidator) {
+    // Override the connectivity test runner to use our test manager
+    const originalRunConnectivityTests = window.enhancedValidator.runConnectivityTests;
+    if (originalRunConnectivityTests) {
+        window.enhancedValidator.runConnectivityTests = async function() {
+            if (window.connectivityTester) {
+                const report = window.connectivityTester.getConnectivityReport();
+                
+                // Update validation states based on connectivity test results
+                this.connectivityTests.forEach((test, testId) => {
+                    if (test.type === 'ping') {
+                        const sourceConfig = window.deviceConfigurator?.getDeviceConfiguration(test.source.id);
+                        const targetConfig = window.deviceConfigurator?.getDeviceConfiguration(test.target.id);
+                        
+                        if (sourceConfig && targetConfig) {
+                            const connectivity = window.connectivityTester.checkConnectivity(
+                                test.source, sourceConfig, test.target, targetConfig
+                            );
+                            
+                            test.status = connectivity.reachable ? 'passed' : 'failed';
+                            test.result = {
+                                success: connectivity.reachable,
+                                message: connectivity.reachable ? 
+                                    `Connectivity verified: ${test.source.name} ↔ ${test.target.name}` :
+                                    `No connectivity: ${connectivity.reason}`,
+                                details: connectivity.reason
+                            };
+                        }
+                    }
+                    
+                    this.updateTestDisplay(testId, test);
+                });
+                
+                this.updateOverallStatus(report.allValid);
+                return report.allValid;
+            }
+            
+            // Fallback to original implementation
+            return originalRunConnectivityTests.call(this);
+        };
+    }
+}
+
+// Override save simulation to include validation requirements
+if (editor && editor.saveSimulation) {
+    const originalSave = editor.saveSimulation;
+    editor.saveSimulation = function() {
+        // Check enhanced validation before saving
+        if (window.enhancedValidator) {
+            const report = window.enhancedValidator.getValidationReport();
+            
+            if (!report.configured) {
+                editor.showToast('Cannot save: All devices must be configured (IP, mode, etc.)', 'error');
+                return;
+            }
+            
+            if (!report.physicallyValid) {
+                editor.showToast('Cannot save: Fix physical connection issues first', 'error');
+                return;
+            }
+            
+            // Add validation results to simulation data
+            const validationData = {
+                enhancedValidation: {
+                    configured: report.configured,
+                    physicallyValid: report.physicallyValid,
+                    connectivityPassed: report.connectivityPassed,
+                    totalTests: report.totalTests,
+                    passedTests: report.passedTests,
+                    validationTimestamp: new Date().toISOString(),
+                    requiresConnectivityTests: true
+                }
+            };
+            
+            // Merge with existing simulation data
+            if (editor.simulationData) {
+                Object.assign(editor.simulationData, validationData);
+            }
+        }
+        
+        // Proceed with original save
+        return originalSave.call(this);
+    };
+}
+
+// Show validation panel by default for better UX
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const panel = document.querySelector('#enhanced-validation-panel, #universal-validation-panel');
+        if (!panel) return;
+        const sections = panel.querySelectorAll('.section-content');
+        sections.forEach(section => section.classList.add('expanded'));
+    }, 1000);
+});
+
+// Global functions for tab-specific operations
+
+// CLI Editor functions
+function loadDeviceCLI() {
+    if (editor) {
+        editor.loadDevicesForCLI();
+    }
+}
+
+function addCLICommand() {
+    const deviceSelect = document.getElementById('cli-device-select');
+    if (!deviceSelect.value) {
+        alert('Please select a device first');
+        return;
+    }
+    
+    const commandsList = document.getElementById('cli-commands-list');
+    const commandItem = document.createElement('div');
+    commandItem.className = 'cli-command-item';
+    commandItem.innerHTML = `
+        <div>
+            <input type="text" placeholder="Enter CLI command" style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-light); padding: 4px 8px; border-radius: 4px; margin-right: 8px;">
+            <select style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-light); padding: 4px 8px; border-radius: 4px;">
+                <option value="config">Configuration</option>
+                <option value="show">Show Command</option>
+                <option value="debug">Debug Command</option>
+            </select>
+        </div>
+        <div>
+            <button onclick="this.parentElement.parentElement.remove()" style="background: var(--danger); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Remove</button>
+        </div>
+    `;
+    commandsList.appendChild(commandItem);
+}
+
+function importTemplate() {
+    alert('Template import functionality would be implemented here');
+}
+
+function testCLICommands() {
+    if (editor) {
+        editor.executeCLICommand();
+    }
+}
+
+function showCommandLibrary() {
+    alert('Command library functionality would show a modal with available CLI templates');
+}
+
+function executeCLICommand() {
+    if (editor) {
+        editor.executeCLICommand();
+    }
+}
+
+function clearConsole() {
+    const output = document.getElementById('cli-console-output');
+    if (output) {
+        output.innerHTML = '';
+    }
+}
+
+function handleCLIInput(event) {
+    if (event.key === 'Enter') {
+        executeCLICommand();
+    }
+}
+
+// Tutorial Editor functions
+function addTutorialStep() {
+    const stepsList = document.getElementById('tutorial-steps-list');
+    const stepCount = stepsList.children.length + 1;
+    
+    const stepItem = document.createElement('div');
+    stepItem.className = 'tutorial-step-item';
+    stepItem.innerHTML = `
+        <div>
+            <strong>Step ${stepCount}</strong>
+            <div style="font-size: 12px; color: var(--text-muted);">Click to edit</div>
+        </div>
+        <div>
+            <button onclick="editTutorialStep(this)" style="background: var(--primary); border: none; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 4px; cursor: pointer;">Edit</button>
+            <button onclick="this.parentElement.parentElement.remove()" style="background: var(--danger); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Remove</button>
+        </div>
+    `;
+    stepsList.appendChild(stepItem);
+    
+    // Clear placeholder if it exists
+    const placeholder = stepsList.querySelector('div[style*="text-align: center"]');
+    if (placeholder) {
+        placeholder.remove();
+    }
+}
+
+function editTutorialStep(button) {
+    const editor = document.getElementById('tutorial-content-editor');
+    if (editor) {
+        editor.style.display = 'block';
+    }
+}
+
+function saveTutorialStep() {
+    const editor = document.getElementById('tutorial-content-editor');
+    if (editor) {
+        editor.style.display = 'none';
+    }
+}
+
+function cancelTutorialEdit() {
+    const editor = document.getElementById('tutorial-content-editor');
+    if (editor) {
+        editor.style.display = 'none';
+    }
+}
+
+function reorderSteps() {
+    alert('Step reordering functionality would implement drag-and-drop reordering');
+}
+
+function previewTutorial() {
+    alert('Tutorial preview functionality would show how the tutorial appears to students');
+}
+
+function resetPosition() {
+    const preview = document.getElementById('position-preview');
+    if (preview) {
+        preview.style.left = '50px';
+        preview.style.top = '50px';
+        document.getElementById('modal-x').value = 50;
+        document.getElementById('modal-y').value = 50;
+    }
+}
+
+function centerPosition() {
+    const preview = document.getElementById('position-preview');
+    const canvas = document.getElementById('position-canvas');
+    if (preview && canvas) {
+        const centerX = (canvas.offsetWidth - preview.offsetWidth) / 2;
+        const centerY = (canvas.offsetHeight - preview.offsetHeight) / 2;
+        preview.style.left = centerX + 'px';
+        preview.style.top = centerY + 'px';
+        document.getElementById('modal-x').value = centerX;
+        document.getElementById('modal-y').value = centerY;
+    }
+}
+
+function updateModalPosition() {
+    const preview = document.getElementById('position-preview');
+    const x = document.getElementById('modal-x').value;
+    const y = document.getElementById('modal-y').value;
+    if (preview) {
+        preview.style.left = x + 'px';
+        preview.style.top = y + 'px';
+    }
+}
+
+function updateModalSize() {
+    const preview = document.getElementById('position-preview');
+    const width = document.getElementById('modal-width').value;
+    const height = document.getElementById('modal-height').value;
+    if (preview) {
+        if (width) preview.style.width = width + 'px';
+        if (height) preview.style.height = height + 'px';
+    }
+}
+
+function uploadTutorialMedia() {
+    alert('Media upload functionality would allow uploading images/videos for tutorial content');
+}
+
+// Bulk Operations functions
+function selectAllDevices() {
+    if (editor) {
+        editor.selectAllDevices();
+    }
+}
+
+function selectNone() {
+    if (editor) {
+        editor.selectNone();
+    }
+}
+
+function selectByType() {
+    const type = prompt('Enter device type (router, switch, pc, access-point):');
+    if (type) {
+        document.querySelectorAll('#bulk-device-list input[type="checkbox"]').forEach(cb => {
+            const label = cb.nextElementSibling.textContent;
+            cb.checked = label.toLowerCase().includes(type.toLowerCase());
+        });
+    }
+}
+
+function applyBulkSubnet() {
+    const subnet = document.getElementById('bulk-subnet').value;
+    if (!subnet) {
+        alert('Please enter a subnet');
+        return;
+    }
+    
+    const selectedDevices = document.querySelectorAll('#bulk-device-list input[type="checkbox"]:checked');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device');
+        return;
+    }
+    
+    alert(`Applied subnet ${subnet} to ${selectedDevices.length} device(s)`);
+}
+
+function applyBulkGateway() {
+    const gateway = document.getElementById('bulk-gateway').value;
+    if (!gateway) {
+        alert('Please enter a gateway address');
+        return;
+    }
+    
+    const selectedDevices = document.querySelectorAll('#bulk-device-list input[type="checkbox"]:checked');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device');
+        return;
+    }
+    
+    alert(`Applied gateway ${gateway} to ${selectedDevices.length} device(s)`);
+}
+
+function applyBulkDNS() {
+    const dns = document.getElementById('bulk-dns').value;
+    if (!dns) {
+        alert('Please enter a DNS address');
+        return;
+    }
+    
+    const selectedDevices = document.querySelectorAll('#bulk-device-list input[type="checkbox"]:checked');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device');
+        return;
+    }
+    
+    alert(`Applied DNS ${dns} to ${selectedDevices.length} device(s)`);
+}
+
+function applyBulkStatus() {
+    const status = document.getElementById('bulk-status').value;
+    const selectedDevices = document.querySelectorAll('#bulk-device-list input[type="checkbox"]:checked');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device');
+        return;
+    }
+    
+    alert(`Applied status "${status}" to ${selectedDevices.length} device(s)`);
+}
+
+function deleteSelectedDevices() {
+    const selectedDevices = document.querySelectorAll('#bulk-device-list input[type="checkbox"]:checked');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete ${selectedDevices.length} device(s)?`)) {
+        alert(`Deleted ${selectedDevices.length} device(s)`);
+        // Implementation would actually remove devices from the editor
+    }
+}
+
+function arrangeInGrid() {
+    alert('Grid layout arrangement functionality would arrange selected devices in a grid pattern');
+}
+
+function arrangeInLine() {
+    alert('Linear layout arrangement functionality would arrange selected devices in a line');
+}
+
+function arrangeInCircle() {
+    alert('Circular layout arrangement functionality would arrange selected devices in a circle');
+}
+
+function distributeEvenly() {
+    alert('Even distribution functionality would space selected devices evenly');
+}
+
+function exportDeviceConfig() {
+    alert('Export functionality would download device configurations as JSON/CSV');
+}
+
+function importDeviceConfig() {
+    alert('Import functionality would allow uploading device configurations from file');
+}
+
+// Collapsible Sidebar Functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('editing-sidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle');
+    const icons = document.querySelector('.collapsed-icons');
+    const content = document.querySelector('.sidebar-content');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        // Expand sidebar
+        sidebar.classList.remove('collapsed');
+        toggleBtn.querySelector('i').className = 'fas fa-chevron-left';
+        icons.style.display = 'none';
+        content.style.display = 'block';
+        localStorage.setItem('sidebarCollapsed', 'false');
+    } else {
+        // Collapse sidebar
+        sidebar.classList.add('collapsed');
+        toggleBtn.querySelector('i').className = 'fas fa-chevron-right';
+        icons.style.display = 'flex';
+        content.style.display = 'none';
+        localStorage.setItem('sidebarCollapsed', 'true');
+    }
+}
+
+function showSidebarAndSwitchMode(mode) {
+    // First expand the sidebar
+    const sidebar = document.getElementById('editing-sidebar');
+    if (sidebar.classList.contains('collapsed')) {
+        toggleSidebar();
+    }
+    
+    // Then switch to the specified mode
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    modeButtons.forEach(btn => btn.classList.remove('active'));
+    
+    const targetBtn = document.querySelector(`.mode-btn[data-mode="${mode}"]`);
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
+    // You could add mode-specific logic here
+    console.log(`Switched to ${mode} mode`);
+}
+
+function showSidebarAndSwitchTab(tab) {
+    // First expand the sidebar
+    const sidebar = document.getElementById('editing-sidebar');
+    if (sidebar.classList.contains('collapsed')) {
+        toggleSidebar();
+    }
+    
+    // Then switch to the specified tab
+    const tabs = document.querySelectorAll('.panel-tab');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.classList.remove('active'));
+    
+    const targetTab = document.querySelector(`.panel-tab[data-tab="${tab}"]`);
+    const targetContent = document.getElementById(`${tab}-tab-content`);
+    
+    if (targetTab && targetContent) {
+        targetTab.classList.add('active');
+        targetContent.classList.add('active');
+    }
+    
+    console.log(`Switched to ${tab} tab`);
+}
+
+// Modal Management Functions
+function openDeviceConfigModal() {
+    // Populate with current device data if a device is selected
+    if (editor && editor.selectedDevice) {
+        const device = editor.selectedDevice;
+        document.getElementById('modal-device-name').value = device.name || '';
+        document.getElementById('modal-device-ip').value = device.ip || '';
+        document.getElementById('modal-default-gateway').value = device.gateway || '';
+        document.getElementById('modal-dns-server').value = device.dns || '';
+        document.getElementById('modal-device-model').value = device.model || '';
+        document.getElementById('modal-ram').value = device.ram || '512';
+        document.getElementById('modal-device-config').value = device.config || '';
+        document.getElementById('modal-problem-description').value = device.problem || '';
+        
+        // Set capabilities
+        document.getElementById('modal-wired-nic').checked = device.specs?.capabilities?.wired !== false;
+        document.getElementById('modal-wireless').checked = device.specs?.capabilities?.wireless || false;
+        document.getElementById('modal-routing').checked = device.specs?.capabilities?.routing || false;
+        document.getElementById('modal-switching').checked = device.specs?.capabilities?.switching || false;
+        
+        // Set status
+        const statusRadios = document.querySelectorAll('input[name="device-status"]');
+        statusRadios.forEach(radio => {
+            radio.checked = radio.value === (device.status || 'normal');
+            radio.closest('.modal-status-option').classList.toggle('selected', radio.checked);
+        });
+    }
+    
+    document.getElementById('deviceConfigModal').classList.add('show');
+}
+
+function openScenarioModal() {
+    // Populate with current scenario data
+    if (editor && editor.simulationData) {
+        const sim = editor.simulationData;
+        document.getElementById('modal-lesson-content').value = sim.lesson_content || '';
+        document.getElementById('modal-observable-symptoms').value = sim.symptoms || '';
+        document.getElementById('modal-background-context').value = sim.context || '';
+        document.getElementById('modal-student-role').value = sim.student_role || 'Network Technician';
+        document.getElementById('modal-learning-objectives').value = sim.objectives || '';
+        document.getElementById('modal-complete-solution').value = sim.solution || '';
+        document.getElementById('modal-step-solution').value = sim.steps?.join('\n') || '';
+    }
+    
+    document.getElementById('scenarioModal').classList.add('show');
+}
+
+function openSolutionModal() {
+    // Populate with current scoring data
+    if (editor && editor.simulationData) {
+        const sim = editor.simulationData;
+        document.getElementById('modal-base-score').value = sim.base_score || '50';
+        document.getElementById('modal-time-bonus').value = sim.time_bonus || '10';
+        document.getElementById('modal-hint-penalty').value = sim.hint_penalty || '2';
+        document.getElementById('modal-max-attempts').value = sim.max_attempts || '3';
+        document.getElementById('modal-success-criteria').value = sim.success_criteria || '';
+        document.getElementById('modal-grading-rubric').value = sim.grading_rubric || '';
+    }
+    
+    document.getElementById('solutionModal').classList.add('show');
+}
+
+function openPreviewModal() {
+    updateLivePreview();
+    document.getElementById('previewModal').classList.add('show');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+function saveDeviceConfig() {
+    if (!editor || !editor.selectedDevice) {
+        alert('Please select a device first');
+        return;
+    }
+    
+    const device = editor.selectedDevice;
+    
+    // Update device properties
+    device.name = document.getElementById('modal-device-name').value;
+    device.ip = document.getElementById('modal-device-ip').value;
+    device.gateway = document.getElementById('modal-default-gateway').value;
+    device.dns = document.getElementById('modal-dns-server').value;
+    device.model = document.getElementById('modal-device-model').value;
+    device.ram = document.getElementById('modal-ram').value;
+    device.config = document.getElementById('modal-device-config').value;
+    device.problem = document.getElementById('modal-problem-description').value;
+    
+    // Update capabilities
+    if (!device.specs) device.specs = { capabilities: {} };
+    device.specs.capabilities.wired = document.getElementById('modal-wired-nic').checked;
+    device.specs.capabilities.wireless = document.getElementById('modal-wireless').checked;
+    device.specs.capabilities.routing = document.getElementById('modal-routing').checked;
+    device.specs.capabilities.switching = document.getElementById('modal-switching').checked;
+    
+    // Update status
+    const selectedStatus = document.querySelector('input[name="device-status"]:checked');
+    device.status = selectedStatus ? selectedStatus.value : 'normal';
+    
+    // Re-render the device
+    editor.renderDevice(device);
+    editor.populateDeviceProperties(device);
+    
+    closeModal('deviceConfigModal');
+    editor.showToast('Device configuration saved', 'success');
+}
+
+function saveScenario() {
+    if (!editor) return;
+    
+    if (!editor.simulationData) editor.simulationData = {};
+    const sim = editor.simulationData;
+    
+    sim.lesson_content = document.getElementById('modal-lesson-content').value;
+    sim.symptoms = document.getElementById('modal-observable-symptoms').value;
+    sim.context = document.getElementById('modal-background-context').value;
+    sim.student_role = document.getElementById('modal-student-role').value;
+    sim.objectives = document.getElementById('modal-learning-objectives').value;
+    sim.solution = document.getElementById('modal-complete-solution').value;
+    sim.steps = document.getElementById('modal-step-solution').value.split('\n').filter(s => s.trim());
+    
+    closeModal('scenarioModal');
+    editor.showToast('Problem scenario saved', 'success');
+}
+
+function saveSolution() {
+    if (!editor) return;
+    
+    if (!editor.simulationData) editor.simulationData = {};
+    const sim = editor.simulationData;
+    
+    sim.base_score = parseInt(document.getElementById('modal-base-score').value) || 50;
+    sim.time_bonus = parseInt(document.getElementById('modal-time-bonus').value) || 10;
+    sim.hint_penalty = parseInt(document.getElementById('modal-hint-penalty').value) || 2;
+    sim.max_attempts = parseInt(document.getElementById('modal-max-attempts').value) || 3;
+    sim.success_criteria = document.getElementById('modal-success-criteria').value;
+    sim.grading_rubric = document.getElementById('modal-grading-rubric').value;
+    
+    closeModal('solutionModal');
+    editor.showToast('Solution & scoring saved', 'success');
+}
+
+function updateLivePreview() {
+    if (!editor) return;
+    
+    const deviceCount = editor.devices ? editor.devices.length : 0;
+    const connectionCount = editor.connections ? editor.connections.length : 0;
+    const title = document.getElementById('simulation-title')?.value || 'Untitled Simulation';
+    const difficulty = document.querySelector('.difficulty-badge.active')?.getAttribute('data-difficulty') || 'medium';
+    const timeLimit = document.getElementById('time-limit')?.value || '30';
+    
+    const previewText = `Current Configuration:
+- Simulation Title: ${title}
+- Difficulty: ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+- Time Limit: ${timeLimit} minutes
+- Devices: ${deviceCount} configured
+- Connections: ${connectionCount} established
+- Status: ${deviceCount > 0 ? 'Active' : 'Draft'}
+
+${deviceCount > 0 ? 'Devices Configured:' : 'No devices configured yet'}
+${editor.devices ? editor.devices.map(d => `- ${d.name} (${d.type}): ${d.ip || 'No IP'}`).join('\n') : ''}
+
+${connectionCount > 0 ? '\nConnections:' : ''}
+${editor.connections ? editor.connections.map(c => {
+    const source = editor.devices.find(d => d.id === c.source);
+    const target = editor.devices.find(d => d.id === c.target);
+    return `- ${source?.name || 'Unknown'} ↔ ${target?.name || 'Unknown'} (${c.type})`;
+}).join('\n') : ''}
+
+Preview will update as you configure the simulation...`;
+    
+    document.getElementById('live-preview-content').textContent = previewText;
+}
+
+function runFullPreview() {
+    closeModal('previewModal');
+    previewSimulation();
+}
+
+// Add event listeners for modal status options
+document.addEventListener('DOMContentLoaded', function() {
+    // Status option selection
+    document.querySelectorAll('.modal-status-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+                // Remove selected class from all options
+                document.querySelectorAll('.modal-status-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // Add selected class to clicked option
+                this.classList.add('selected');
+            }
+        });
+    });
+    
+    // Close modals when clicking outside
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+    });
+    
+    // ESC key to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+    });
+});
+
+// Initialize sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        toggleSidebar();
+    }
+    
+    // Add hover tooltips for collapsed icons
+    const collapsedIcons = document.querySelectorAll('.collapsed-icon');
+    collapsedIcons.forEach(icon => {
+        icon.addEventListener('mouseenter', function() {
+            const tooltip = this.getAttribute('data-tooltip');
+            // You could implement a more sophisticated tooltip here
+            this.title = tooltip;
+        });
+    });
+    
+    // Add tab switching functionality
+    const tabs = document.querySelectorAll('.panel-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            showSidebarAndSwitchTab(tabName);
+        });
+    });
+    
+    // Add mode switching functionality
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const mode = this.getAttribute('data-mode');
+            modeButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            console.log(`Switched to ${mode} mode`);
+        });
+    });
+    
+    // Add difficulty badge functionality
+    const difficultyBadges = document.querySelectorAll('.difficulty-badge');
+    difficultyBadges.forEach(badge => {
+        badge.addEventListener('click', function() {
+            difficultyBadges.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const difficulty = this.getAttribute('data-difficulty');
+            console.log(`Set difficulty to ${difficulty}`);
+        });
+    });
+});
+</script>
+
+    
+
+    <!-- Include tutorial editor JS -->
+    <script src="{{ url_for('static', filename='js/tutorial-editor.js') }}"></script>
+
+    <!-- Initialize tutorial editor -->
+    <script>
+        $(document).ready(function() {
+            // Initialize tutorial editor when document is ready
+            if (typeof TutorialEditorManager !== 'undefined') {
+                window.tutorialEditor = new TutorialEditorManager({
+                    simulationId: simulationId // This should be set by the simulation editor
+                });
+                
+                // Bind events to new IDs
+                $('#add-tutorial-step').on('click', function() {
+                    window.tutorialEditor.addTutorialStep();
+                });
+                
+                $('#preview-tutorial').on('click', function() {
+                    window.tutorialEditor.previewTutorial();
+                });
+                
+                $('#save-tutorial').on('click', function() {
+                    window.tutorialEditor.saveTutorial();
+                });
+                
+                $('#reorder-steps').on('click', function() {
+                    window.tutorialEditor.enableReordering();
+                });
+                
+                // Load existing tutorial when tab is activated
+                if (simulationId) {
+                    window.tutorialEditor.loadTutorial(simulationId);
+                }
+            }
+        });
+    </script>
+
+<!-- Configuration Modals -->
+
+<!-- Device Configuration Modal -->
+<div class="modal-overlay" id="deviceConfigModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-cog"></i> Device Configuration</h3>
+            <button class="modal-close" onclick="closeModal('deviceConfigModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-device-name">Device Name</label>
+                    <input type="text" id="modal-device-name" placeholder="Device name...">
+                </div>
+                <div class="form-group">
+                    <label for="modal-device-ip">IP Address</label>
+                    <input type="text" id="modal-device-ip" placeholder="192.168.1.1">
+                </div>
+            </div>
+            
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-subnet-mask">Subnet Mask</label>
+                    <select id="modal-subnet-mask">
+                        <option value="255.255.255.0">/24 - 255.255.255.0</option>
+                        <option value="255.255.0.0">/16 - 255.255.0.0</option>
+                        <option value="255.0.0.0">/8 - 255.0.0.0</option>
+                        <option value="255.255.255.128">/25 - 255.255.255.128</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="modal-default-gateway">Default Gateway</label>
+                    <input type="text" id="modal-default-gateway" placeholder="192.168.1.1">
+                </div>
+            </div>
+            
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-dns-server">DNS Server</label>
+                    <input type="text" id="modal-dns-server" placeholder="8.8.8.8">
+                </div>
+                <div class="form-group">
+                    <label for="modal-device-model">Device Model</label>
+                    <input type="text" id="modal-device-model" placeholder="e.g., Cisco 2960, ISR 4321, Generic PC">
+                </div>
+            </div>
+            
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-ram">RAM (MB)</label>
+                    <input type="number" id="modal-ram" placeholder="512" min="128" max="8192">
+                </div>
+                <div class="form-group">
+                    <label>Capabilities</label>
+                    <div class="modal-checkbox-group">
+                        <div class="modal-checkbox-item">
+                            <input type="checkbox" id="modal-wired-nic" checked>
+                            <label for="modal-wired-nic">Wired NIC</label>
+                        </div>
+                        <div class="modal-checkbox-item">
+                            <input type="checkbox" id="modal-wireless">
+                            <label for="modal-wireless">Wireless</label>
+                        </div>
+                        <div class="modal-checkbox-item">
+                            <input type="checkbox" id="modal-routing">
+                            <label for="modal-routing">Routing</label>
+                        </div>
+                        <div class="modal-checkbox-item">
+                            <input type="checkbox" id="modal-switching">
+                            <label for="modal-switching">Switching</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-form-row single">
+                <div class="form-group">
+                    <label for="modal-device-config">Device Configuration</label>
+                    <textarea id="modal-device-config" rows="4" placeholder="Enter device-specific configuration settings"></textarea>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Current Status</label>
+                <div class="modal-status-group">
+                    <div class="modal-status-option selected">
+                        <input type="radio" name="device-status" value="normal" checked>
+                        <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                        <span>Normal Operation</span>
+                    </div>
+                    <div class="modal-status-option">
+                        <input type="radio" name="device-status" value="warning">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
+                        <span>Warning</span>
+                    </div>
+                    <div class="modal-status-option">
+                        <input type="radio" name="device-status" value="error">
+                        <i class="fas fa-times-circle" style="color: var(--danger-color);"></i>
+                        <span>Error</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-form-row single">
+                <div class="form-group">
+                    <label for="modal-problem-description">Problem Description</label>
+                    <textarea id="modal-problem-description" rows="3" placeholder="Describe what's wrong with this device"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn secondary" onclick="closeModal('deviceConfigModal')">Cancel</button>
+            <button class="modal-btn primary" onclick="saveDeviceConfig()">
+                <i class="fas fa-save"></i> Save Configuration
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Problem Scenario Modal -->
+<div class="modal-overlay" id="scenarioModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-tasks"></i> Problem Scenario</h3>
+            <button class="modal-close" onclick="closeModal('scenarioModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="scenario-editor">
+                <div class="scenario-section">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Problem Definition</h4>
+                    
+                    <div class="form-group">
+                        <label for="modal-lesson-content">Lesson Content</label>
+                        <textarea id="modal-lesson-content" rows="4">Computer Network tutorial provides basic and advanced concepts of Data Communication & Networks (DCN). A computer network is a set of devices connected through links. A node can be computer, printer, or any other device capable of sending or receiving the data. The li...</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-observable-symptoms">Observable Symptoms</label>
+                        <textarea id="modal-observable-symptoms" rows="3" placeholder="List the symptoms that users will experience (e.g., cannot access internet, slow connectivity, etc.)"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-background-context">Background Context</label>
+                        <textarea id="modal-background-context" rows="3" placeholder="Provide additional context about the network environment"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-student-role">Student Role</label>
+                        <input type="text" id="modal-student-role" value="Network Technician" placeholder="What role should the student assume?">
+                    </div>
+                </div>
+                
+                <div class="scenario-section">
+                    <h4><i class="fas fa-lightbulb"></i> Learning Objectives</h4>
+                    
+                    <div class="form-group">
+                        <label for="modal-learning-objectives">Learning Objectives</label>
+                        <textarea id="modal-learning-objectives" rows="4" placeholder="What should students learn from this simulation?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-complete-solution">Complete Solution</label>
+                        <textarea id="modal-complete-solution" rows="3" placeholder="Provide the complete solution explanation"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-step-solution">Step-by-Step Solution</label>
+                        <textarea id="modal-step-solution" rows="4" placeholder="1. First, check network connectivity...&#10;2. Verify device configurations...&#10;3. Test connection paths..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn secondary" onclick="closeModal('scenarioModal')">Cancel</button>
+            <button class="modal-btn primary" onclick="saveScenario()">
+                <i class="fas fa-save"></i> Save Scenario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Solution & Scoring Modal -->
+<div class="modal-overlay" id="solutionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-check-circle"></i> Solution & Scoring</h3>
+            <button class="modal-close" onclick="closeModal('solutionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-base-score">Base Score Points</label>
+                    <input type="number" id="modal-base-score" value="50" min="10" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="modal-time-bonus">Time Bonus Points</label>
+                    <input type="number" id="modal-time-bonus" value="10" min="0" max="50">
+                </div>
+            </div>
+            
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="modal-hint-penalty">Hint Penalty (per hint)</label>
+                    <input type="number" id="modal-hint-penalty" value="2" min="0" max="10">
+                </div>
+                <div class="form-group">
+                    <label for="modal-max-attempts">Maximum Attempts</label>
+                    <input type="number" id="modal-max-attempts" value="3" min="1" max="10">
+                </div>
+            </div>
+            
+            <div class="modal-form-row single">
+                <div class="form-group">
+                    <label for="modal-success-criteria">Success Criteria</label>
+                    <textarea id="modal-success-criteria" rows="4" placeholder="Define what constitutes a successful completion of this simulation"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-form-row single">
+                <div class="form-group">
+                    <label for="modal-grading-rubric">Grading Rubric</label>
+                    <textarea id="modal-grading-rubric" rows="4" placeholder="Define how student performance will be evaluated"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn secondary" onclick="closeModal('solutionModal')">Cancel</button>
+            <button class="modal-btn primary" onclick="saveSolution()">
+                <i class="fas fa-save"></i> Save Scoring
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Live Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-eye"></i> Live Preview</h3>
+            <button class="modal-close" onclick="closeModal('previewModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Simulation Preview</label>
+                <div class="preview-content" id="live-preview-content">
+Select an element to see its preview here.
+
+Current Configuration:
+- Simulation Title: Network Troubleshooting Simulation
+- Difficulty: Medium
+- Time Limit: 30 minutes
+- Devices: 0 configured
+- Connections: 0 established
+- Status: Draft
+
+Preview will update as you configure the simulation...
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn secondary" onclick="closeModal('previewModal')">Close</button>
+            <button class="modal-btn primary" onclick="runFullPreview()">
+                <i class="fas fa-play"></i> Full Preview
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- Error/Success Toast Container -->
+    <div class="toast-container" id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+</div>
+{% endblock %}

@@ -88,12 +88,14 @@ class TroubleshootingController:
     def delete_troubleshooting(self, troubleshooting_id):
         item = Troubleshooting.query.get_or_404(troubleshooting_id)
         try:
-            db.session.delete(item)
+            # Instead of hard delete, mark as inactive
+            item.is_active = False
+            item.updated_at = datetime.utcnow()
             db.session.commit()
-            return jsonify({"message": "Troubleshooting deleted successfully"}), 200
+            return jsonify({"success": True, "message": "Troubleshooting scenario deleted successfully"}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"success": False, "error": str(e)}), 500
             
     def list_troubleshootings(self, page=1, per_page=10, search='', difficulty=''):
         """Get paginated list of troubleshooting scenarios with filtering options"""

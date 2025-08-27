@@ -391,3 +391,594 @@ class DeadlineManager {
 // Initialize deadline manager
 const deadlineManager = new DeadlineManager();
 window.deadlineManager = deadlineManager;
+
+// === ADVANCED DEADLINE POLICY MANAGEMENT ===
+
+class AdvancedDeadlineManager extends DeadlineManager {
+    constructor() {
+        super();
+        this.penaltyTiers = [];
+        this.currentPenaltyType = 'simple';
+        this.initAdvancedFeatures();
+    }
+
+    initAdvancedFeatures() {
+        this.bindAdvancedEventListeners();
+        this.updatePolicyPreview();
+        this.initializePenaltyCalculator();
+    }
+
+    bindAdvancedEventListeners() {
+        // Policy type change handler
+        $(document).on('change', '#penalty_policy_type', (e) => {
+            this.currentPenaltyType = e.target.value;
+            this.togglePolicySettings();
+            this.updatePolicyPreview();
+        });
+
+        // Add penalty tier button
+        $(document).on('click', '#addPenaltyTier', () => {
+            this.addPenaltyTier();
+        });
+
+        // Remove penalty tier
+        $(document).on('click', '.penalty-tier-remove', (e) => {
+            this.removePenaltyTier(e.target.closest('.penalty-tier'));
+        });
+
+        // Penalty tier input changes
+        $(document).on('input', '.penalty-tier input', () => {
+            this.updatePolicyPreview();
+        });
+
+        // Exponential penalty settings
+        $(document).on('input', '#exponential_base, #exponential_max_penalty', () => {
+            this.updatePolicyPreview();
+        });
+
+        // Fixed penalty settings
+        $(document).on('input', '#fixed_penalty_amount', () => {
+            this.updatePolicyPreview();
+        });
+
+        // Simple penalty settings
+        $(document).on('input', '#simple_penalty_per_day', () => {
+            this.updatePolicyPreview();
+        });
+
+        // Penalty calculator inputs
+        $(document).on('input', '#calculator_days_late, #calculator_original_grade', () => {
+            this.calculatePenaltyPreview();
+        });
+
+        // Extension form validation
+        $(document).on('input', '#extension_hours', (e) => {
+            this.validateExtensionHours(e.target);
+        });
+
+        // Availability window preview
+        $(document).on('change', '#availability_from, #availability_to, #deadline_date', () => {
+            this.updateAvailabilityPreview();
+        });
+    }
+
+    togglePolicySettings() {
+        // Hide all policy-specific settings
+        $('.policy-type-settings').hide();
+        
+        // Show the relevant settings based on selected type
+        switch(this.currentPenaltyType) {
+            case 'tiered':
+                $('#tieredPenaltySettings').show();
+                break;
+            case 'exponential':
+                $('#exponentialPenaltySettings').show();
+                break;
+            case 'fixed':
+                $('#fixedPenaltySettings').show();
+                break;
+            case 'simple':
+                $('#simplePenaltySettings').show();
+                break;
+            default:
+                $('#customPenaltySettings').show();
+        }
+    }
+
+    addPenaltyTier() {
+        const tierCount = $('.penalty-tier').length + 1;
+        const tierHtml = `
+            <div class="penalty-tier">
+                <div class="penalty-tier-header">
+                    <span class="tier-number">${tierCount}</span>
+                    <button type="button" class="penalty-tier-remove">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Days Late (Start)</label>
+                        <input type="number" class="form-control tier-days-start" 
+                               min="1" step="1" value="${tierCount}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Days Late (End)</label>
+                        <input type="number" class="form-control tier-days-end" 
+                               min="1" step="1" value="${tierCount + 2}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Penalty (%)</label>
+                        <input type="number" class="form-control tier-penalty" 
+                               min="0" max="100" step="0.1" value="${tierCount * 10}" required>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#penaltyTiersList').append(tierHtml);
+        this.updatePolicyPreview();
+        
+        // Scroll to new tier
+        $('.penalty-tier:last')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    removePenaltyTier(tierElement) {
+        $(tierElement).fadeOut(300, function() {
+            $(this).remove();
+            // Renumber remaining tiers
+            $('.penalty-tier').each(function(index) {
+                $(this).find('.tier-number').text(index + 1);
+            });
+        });
+        
+        setTimeout(() => {
+            this.updatePolicyPreview();
+        }, 350);
+    }
+
+    updatePolicyPreview() {
+        const previewData = this.generatePreviewData();
+        this.renderPolicyPreview(previewData);
+    }
+
+    generatePreviewData() {
+        const data = [];
+        
+        switch(this.currentPenaltyType) {
+            case 'tiered':
+                $('.penalty-tier').each(function() {
+                    const startDay = parseInt($(this).find('.tier-days-start').val()) || 0;
+                    const endDay = parseInt($(this).find('.tier-days-end').val()) || 0;
+                    const penalty = parseFloat($(this).find('.tier-penalty').val()) || 0;
+                    
+                    if (startDay > 0 && endDay >= startDay && penalty >= 0) {
+                        for (let day = startDay; day <= Math.min(endDay, startDay + 10); day++) {
+                            data.push({
+                                day: day,
+                                penalty: penalty,
+                                finalGrade: Math.max(0, 100 - penalty)
+                            });
+                        }
+                    }
+                });
+                break;
+                
+            case 'exponential':
+                const base = parseFloat($('#exponential_base').val()) || 1.1;
+                const maxPenalty = parseFloat($('#exponential_max_penalty').val()) || 100;
+                
+                for (let day = 1; day <= 15; day++) {
+                    const penalty = Math.min(Math.pow(base, day) - 1, maxPenalty);
+                    data.push({
+                        day: day,
+                        penalty: penalty.toFixed(1),
+                        finalGrade: Math.max(0, 100 - penalty).toFixed(1)
+                    });
+                }
+                break;
+                
+            case 'fixed':
+                const fixedPenalty = parseFloat($('#fixed_penalty_amount').val()) || 0;
+                for (let day = 1; day <= 10; day++) {
+                    data.push({
+                        day: day,
+                        penalty: fixedPenalty,
+                        finalGrade: Math.max(0, 100 - fixedPenalty)
+                    });
+                }
+                break;
+                
+            case 'simple':
+                const dailyPenalty = parseFloat($('#simple_penalty_per_day').val()) || 5;
+                for (let day = 1; day <= 15; day++) {
+                    const penalty = Math.min(day * dailyPenalty, 100);
+                    data.push({
+                        day: day,
+                        penalty: penalty.toFixed(1),
+                        finalGrade: Math.max(0, 100 - penalty).toFixed(1)
+                    });
+                }
+                break;
+        }
+        
+        return data.slice(0, 15); // Limit to 15 rows for preview
+    }
+
+    renderPolicyPreview(data) {
+        const tableBody = $('#policyPreviewTable tbody');
+        tableBody.empty();
+        
+        if (data.length === 0) {
+            tableBody.append(`
+                <tr>
+                    <td colspan="3" class="text-center text-muted">
+                        Configure penalty settings to see preview
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        data.forEach(row => {
+            const penaltyClass = row.penalty >= 50 ? 'text-danger' : 
+                                row.penalty >= 25 ? 'text-warning' : 'text-info';
+            
+            tableBody.append(`
+                <tr>
+                    <td>${row.day}</td>
+                    <td class="${penaltyClass}">${row.penalty}%</td>
+                    <td>${row.finalGrade}%</td>
+                </tr>
+            `);
+        });
+    }
+
+    initializePenaltyCalculator() {
+        // Set default values
+        $('#calculator_original_grade').val('100');
+        $('#calculator_days_late').val('1');
+        this.calculatePenaltyPreview();
+    }
+
+    calculatePenaltyPreview() {
+        const daysLate = parseInt($('#calculator_days_late').val()) || 0;
+        const originalGrade = parseFloat($('#calculator_original_grade').val()) || 100;
+        
+        if (daysLate <= 0 || originalGrade <= 0) {
+            $('#calculatorResult .penalty-amount').text('0%');
+            $('#calculatorResult .final-grade').text(`${originalGrade}%`);
+            return;
+        }
+        
+        let penalty = 0;
+        
+        switch(this.currentPenaltyType) {
+            case 'tiered':
+                penalty = this.calculateTieredPenalty(daysLate);
+                break;
+            case 'exponential':
+                const base = parseFloat($('#exponential_base').val()) || 1.1;
+                const maxPenalty = parseFloat($('#exponential_max_penalty').val()) || 100;
+                penalty = Math.min(Math.pow(base, daysLate) - 1, maxPenalty);
+                break;
+            case 'fixed':
+                penalty = parseFloat($('#fixed_penalty_amount').val()) || 0;
+                break;
+            case 'simple':
+                const dailyPenalty = parseFloat($('#simple_penalty_per_day').val()) || 5;
+                penalty = Math.min(daysLate * dailyPenalty, 100);
+                break;
+        }
+        
+        const finalGrade = Math.max(0, originalGrade - (originalGrade * penalty / 100));
+        
+        $('#calculatorResult .penalty-amount').text(`${penalty.toFixed(1)}%`);
+        $('#calculatorResult .final-grade').text(`Final Grade: ${finalGrade.toFixed(1)}%`);
+    }
+
+    calculateTieredPenalty(daysLate) {
+        let penalty = 0;
+        
+        $('.penalty-tier').each(function() {
+            const startDay = parseInt($(this).find('.tier-days-start').val()) || 0;
+            const endDay = parseInt($(this).find('.tier-days-end').val()) || 0;
+            const tierPenalty = parseFloat($(this).find('.tier-penalty').val()) || 0;
+            
+            if (daysLate >= startDay && daysLate <= endDay) {
+                penalty = tierPenalty;
+                return false; // Break the loop
+            }
+        });
+        
+        return penalty;
+    }
+
+    validateExtensionHours(input) {
+        const hours = parseInt(input.value);
+        const helpText = $(input).siblings('.form-text');
+        
+        if (hours < 1) {
+            input.classList.add('is-invalid');
+            helpText.text('Extension must be at least 1 hour').addClass('text-danger');
+        } else if (hours > 168) { // 1 week
+            input.classList.add('is-invalid');
+            helpText.text('Extensions cannot exceed 168 hours (1 week)').addClass('text-danger');
+        } else {
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+            
+            const days = Math.floor(hours / 24);
+            const remainingHours = hours % 24;
+            let timeText = '';
+            
+            if (days > 0) {
+                timeText += `${days} day${days > 1 ? 's' : ''}`;
+                if (remainingHours > 0) {
+                    timeText += ` and ${remainingHours} hour${remainingHours > 1 ? 's' : ''}`;
+                }
+            } else {
+                timeText = `${hours} hour${hours > 1 ? 's' : ''}`;
+            }
+            
+            helpText.text(`Extension: ${timeText}`).removeClass('text-danger').addClass('text-success');
+        }
+    }
+
+    updateAvailabilityPreview() {
+        const availableFrom = $('#availability_from').val();
+        const availableTo = $('#availability_to').val();
+        const deadlineDate = $('#deadline_date').val();
+        
+        if (!availableFrom || !availableTo || !deadlineDate) {
+            $('.availability-window-preview').hide();
+            return;
+        }
+        
+        const fromDate = new Date(availableFrom);
+        const toDate = new Date(availableTo);
+        const deadline = new Date(deadlineDate);
+        
+        // Calculate durations
+        const totalDuration = toDate - fromDate;
+        const workingDuration = deadline - fromDate;
+        const workingPercentage = Math.max(0, Math.min(100, (workingDuration / totalDuration) * 100));
+        
+        // Update timeline visualization
+        $('.timeline-line').css('background', 
+            `linear-gradient(to right, var(--cyber-glow) 0%, var(--cyber-glow) ${workingPercentage}%, var(--danger-color) ${workingPercentage}%, var(--danger-color) 100%)`
+        );
+        
+        // Update labels
+        $('.timeline-label:first').text(this.formatDate(fromDate));
+        $('.timeline-label:nth-child(3)').text(this.formatDate(deadline));
+        $('.timeline-label:last').text(this.formatDate(toDate));
+        
+        $('.availability-window-preview').show();
+    }
+
+    formatDate(date) {
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // Public methods for external use
+    savePolicyConfiguration() {
+        const config = {
+            type: this.currentPenaltyType,
+            settings: this.getPolicySettings(),
+            preview: this.generatePreviewData()
+        };
+        
+        return config;
+    }
+
+    getPolicySettings() {
+        const settings = {};
+        
+        switch(this.currentPenaltyType) {
+            case 'tiered':
+                settings.tiers = [];
+                $('.penalty-tier').each(function() {
+                    settings.tiers.push({
+                        start_day: parseInt($(this).find('.tier-days-start').val()),
+                        end_day: parseInt($(this).find('.tier-days-end').val()),
+                        penalty: parseFloat($(this).find('.tier-penalty').val())
+                    });
+                });
+                break;
+            case 'exponential':
+                settings.base = parseFloat($('#exponential_base').val());
+                settings.max_penalty = parseFloat($('#exponential_max_penalty').val());
+                break;
+            case 'fixed':
+                settings.penalty_amount = parseFloat($('#fixed_penalty_amount').val());
+                break;
+            case 'simple':
+                settings.penalty_per_day = parseFloat($('#simple_penalty_per_day').val());
+                break;
+        }
+        
+        return settings;
+    }
+
+    loadPolicyConfiguration(config) {
+        this.currentPenaltyType = config.type;
+        $('#penalty_policy_type').val(config.type);
+        this.togglePolicySettings();
+        
+        // Load specific settings
+        switch(config.type) {
+            case 'tiered':
+                this.loadTieredSettings(config.settings);
+                break;
+            case 'exponential':
+                $('#exponential_base').val(config.settings.base);
+                $('#exponential_max_penalty').val(config.settings.max_penalty);
+                break;
+            case 'fixed':
+                $('#fixed_penalty_amount').val(config.settings.penalty_amount);
+                break;
+            case 'simple':
+                $('#simple_penalty_per_day').val(config.settings.penalty_per_day);
+                break;
+        }
+        
+        this.updatePolicyPreview();
+    }
+
+    loadTieredSettings(settings) {
+        $('#penaltyTiersList').empty();
+        
+        if (settings.tiers && settings.tiers.length > 0) {
+            settings.tiers.forEach((tier, index) => {
+                const tierHtml = `
+                    <div class="penalty-tier">
+                        <div class="penalty-tier-header">
+                            <span class="tier-number">${index + 1}</span>
+                            <button type="button" class="penalty-tier-remove">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Days Late (Start)</label>
+                                <input type="number" class="form-control tier-days-start" 
+                                       min="1" step="1" value="${tier.start_day}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Days Late (End)</label>
+                                <input type="number" class="form-control tier-days-end" 
+                                       min="1" step="1" value="${tier.end_day}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Penalty (%)</label>
+                                <input type="number" class="form-control tier-penalty" 
+                                       min="0" max="100" step="0.1" value="${tier.penalty}" required>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#penaltyTiersList').append(tierHtml);
+            });
+        } else {
+            // Add default tier if none exist
+            this.addPenaltyTier();
+        }
+    }
+}
+
+// Enhanced notification system for deadline alerts
+class DeadlineNotifications {
+    constructor() {
+        this.notifications = [];
+        this.init();
+    }
+
+    init() {
+        this.createNotificationContainer();
+        this.bindEventListeners();
+    }
+
+    createNotificationContainer() {
+        if (!$('#deadlineNotifications').length) {
+            $('body').append('<div id="deadlineNotifications" class="deadline-notifications"></div>');
+        }
+    }
+
+    bindEventListeners() {
+        $(document).on('click', '.notification-close', (e) => {
+            this.removeNotification($(e.target).closest('.deadline-notification'));
+        });
+    }
+
+    showNotification(message, type = 'info', duration = 5000) {
+        const notificationId = 'notification_' + Date.now();
+        const iconClass = this.getIconClass(type);
+        
+        const notificationHtml = `
+            <div id="${notificationId}" class="deadline-notification notification-${type}">
+                <div class="notification-content">
+                    <i class="${iconClass}"></i>
+                    <div class="notification-text">
+                        <strong>${this.getTypeTitle(type)}</strong>
+                        <p>${message}</p>
+                    </div>
+                    <button class="notification-close" type="button">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        $('#deadlineNotifications').append(notificationHtml);
+        
+        // Auto-remove after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                this.removeNotification($(`#${notificationId}`));
+            }, duration);
+        }
+        
+        return notificationId;
+    }
+
+    removeNotification(element) {
+        element.fadeOut(300, function() {
+            $(this).remove();
+        });
+    }
+
+    getIconClass(type) {
+        const icons = {
+            info: 'fas fa-info-circle',
+            warning: 'fas fa-exclamation-triangle',
+            urgent: 'fas fa-exclamation-circle',
+            success: 'fas fa-check-circle'
+        };
+        return icons[type] || icons.info;
+    }
+
+    getTypeTitle(type) {
+        const titles = {
+            info: 'Information',
+            warning: 'Warning',
+            urgent: 'Urgent',
+            success: 'Success'
+        };
+        return titles[type] || 'Notification';
+    }
+}
+
+// Initialize advanced features when document is ready
+$(document).ready(function() {
+    // Replace basic deadline manager with advanced version
+    window.deadlineManager = new AdvancedDeadlineManager();
+    window.deadlineNotifications = new DeadlineNotifications();
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Show notification when policy is saved
+    $(document).on('click', '#savePolicyConfiguration', function() {
+        const config = window.deadlineManager.savePolicyConfiguration();
+        console.log('Saving policy configuration:', config);
+        
+        window.deadlineNotifications.showNotification(
+            'Deadline policy configuration saved successfully!', 
+            'success'
+        );
+    });
+    
+    // Initialize policy settings toggle
+    if ($('#penalty_policy_type').length) {
+        window.deadlineManager.togglePolicySettings();
+    }
+});
+
+// Export for external use
+window.AdvancedDeadlineManager = AdvancedDeadlineManager;
+window.DeadlineNotifications = DeadlineNotifications;

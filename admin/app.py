@@ -103,14 +103,16 @@ class AdminApp:
         from admin.controllers.enhanced_module_controller import enhanced_module_bp
         from admin.controllers.lesson_editor_controller import lesson_editor_bp
         from admin.controllers.module_lesson_editor_controller import module_lesson_editor_bp
-        from simple_test_bp import simple_test_bp
         # from admin.controllers.scenario_controller import scenario_bp
         from admin.controllers.audit_log_controller import audit_log_bp
         from admin.routes.topology_routes import topology_bp
         from admin.routes.topology_api_routes import topology_api_bp
         from admin.routes.troubleshooting_routes import troubleshooting_bp
+        from admin.controllers.assignment_submission_controller import assignment_submission_bp
+        from admin.controllers.deadline_controller import deadline_controller_bp
         from user.routes.universal_class_routes import universal_class_bp
         from admin.routes.api_routes import api_bp
+        from admin.routes.simulation_routes import admin_simulation_bp
         
         print("📝 Registering universal_class_bp blueprint...")
         
@@ -127,15 +129,18 @@ class AdminApp:
         self.app.register_blueprint(enhanced_module_bp)
         self.app.register_blueprint(lesson_editor_bp)
         self.app.register_blueprint(module_lesson_editor_bp)
-        self.app.register_blueprint(simple_test_bp)
         self.app.register_blueprint(notification_controller)
         # self.app.register_blueprint(scenario_bp)
         self.app.register_blueprint(audit_log_bp)        # audit_log_bp registration removed (controller deleted)
         self.app.register_blueprint(topology_bp)
         self.app.register_blueprint(topology_api_bp)
         self.app.register_blueprint(troubleshooting_bp)
+        self.app.register_blueprint(assignment_submission_bp)
+        self.app.register_blueprint(deadline_controller_bp)
         self.app.register_blueprint(universal_class_bp)
         print("✅ universal_class_bp registered successfully!")
+        self.app.register_blueprint(admin_simulation_bp)
+        print("✅ admin_simulation_bp registered successfully!")
         self.app.register_blueprint(api_bp)
         
         # Add root route to redirect to admin dashboard

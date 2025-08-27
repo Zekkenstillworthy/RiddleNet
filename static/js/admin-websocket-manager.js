@@ -1,3 +1,4 @@
+
 // Enhanced Admin WebSocket Integration System
 // Provides real-time functionality across all admin pages
 
@@ -238,10 +239,6 @@ class AdminWebSocketManager {
             case 'content-management':
                 this.socket.emit('join_module_builder');
                 this.adminRooms.add('module_builder');
-                break;
-            case 'simulation-builder':
-                this.socket.emit('join_simulation_builder');
-                this.adminRooms.add('simulation_builder');
                 break;
             case 'user-management':
                 this.socket.emit('join_user_management');

@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from admin.controllers.troubleshooting_controller import TroubleshootingController
 from flask_cors import cross_origin
 from admin.models.troubleshooting_progress import TroubleshootingProgress
+from admin.models.troubleshooting import Troubleshooting
 from admin import db
 from datetime import datetime
+from utils.auth_decorators import admin_required
+from utils.render_utils import render_safe_template
 
 # Create the troubleshooting blueprint 
 troubleshooting_bp = Blueprint('admin_troubleshooting', __name__, url_prefix='/admin/troubleshooting')
@@ -96,3 +99,162 @@ def validate_solution(troubleshooting_id):
             print(f"Error recording troubleshooting progress: {str(e)}")
     
     return jsonify(result)
+
+# Admin Simulation Editor Routes
+@troubleshooting_bp.route('/editor')
+@login_required
+@admin_required
+def simulation_editor_list():
+    """Display list of troubleshooting simulations for editing"""
+    try:
+        simulations = Troubleshooting.query.filter_by(is_active=True).order_by(Troubleshooting.created_at.desc()).all()
+        return render_safe_template('admin/troubleshooting/editor_list.html', simulations=simulations)
+    except Exception as e:
+        flash(f'Error loading simulations: {str(e)}', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+@troubleshooting_bp.route('/editor/new')
+@login_required
+@admin_required
+def new_simulation_editor():
+    """Create new troubleshooting simulation"""
+    return render_safe_template('admin/troubleshooting/edit_simulation.html', simulation=None)
+
+@troubleshooting_bp.route('/editor/<int:simulation_id>')
+@login_required
+@admin_required
+def edit_simulation_editor(simulation_id):
+    """Edit existing troubleshooting simulation"""
+    try:
+        simulation = Troubleshooting.query.get_or_404(simulation_id)
+        return render_safe_template('admin/troubleshooting/edit_simulation.html', simulation=simulation)
+    except Exception as e:
+        flash(f'Error loading simulation: {str(e)}', 'error')
+        return redirect(url_for('admin_troubleshooting.simulation_editor_list'))
+
+@troubleshooting_bp.route('/editor/<int:simulation_id>/save', methods=['POST'])
+@login_required
+@admin_required
+def save_simulation_editor(simulation_id):
+    """Save simulation changes from editor"""
+    try:
+        data = request.json
+        simulation = Troubleshooting.query.get_or_404(simulation_id)
+        
+        # Update simulation properties
+        simulation.title = data.get('title', simulation.title)
+        simulation.description = data.get('description', simulation.description)
+        simulation.difficulty = data.get('difficulty', simulation.difficulty)
+        simulation.problem_type = data.get('problem_type', simulation.problem_type)
+        simulation.scenario = data.get('scenario', simulation.scenario)
+        simulation.solution = data.get('solution', simulation.solution)
+        simulation.time_limit = data.get('time_limit', simulation.time_limit)
+        simulation.base_score = data.get('base_score', simulation.base_score)
+        simulation.time_bonus = data.get('time_bonus', simulation.time_bonus)
+        simulation.hints = data.get('hints', [])
+        simulation.initial_topology = data.get('initial_topology', {})
+        simulation.solution_topology = data.get('solution_topology', {})
+        simulation.required_steps = data.get('required_steps', [])
+        simulation.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Simulation updated successfully',
+            'simulation_id': simulation.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error saving simulation: {str(e)}'
+        }), 500
+
+@troubleshooting_bp.route('/editor/save', methods=['POST'])
+@login_required
+@admin_required
+def create_simulation_editor():
+    """Create new simulation from editor"""
+    try:
+        data = request.json
+        
+        simulation = Troubleshooting(
+            title=data.get('title', 'New Simulation'),
+            description=data.get('description', ''),
+            difficulty=data.get('difficulty', 'medium'),
+            problem_type=data.get('problem_type', 'network'),
+            scenario=data.get('scenario', ''),
+            solution=data.get('solution', ''),
+            time_limit=data.get('time_limit', 15),
+            base_score=data.get('base_score', 10),
+            time_bonus=data.get('time_bonus', 5),
+            hints=data.get('hints', []),
+            initial_topology=data.get('initial_topology', {}),
+            solution_topology=data.get('solution_topology', {}),
+            required_steps=data.get('required_steps', []),
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.session.add(simulation)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Simulation created successfully',
+            'simulation_id': simulation.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error creating simulation: {str(e)}'
+        }), 500
+
+@troubleshooting_bp.route('/editor/<int:simulation_id>/duplicate', methods=['POST'])
+@login_required
+@admin_required
+def duplicate_simulation(simulation_id):
+    """Duplicate an existing simulation"""
+    try:
+        original = Troubleshooting.query.get_or_404(simulation_id)
+        
+        # Create duplicate
+        duplicate = Troubleshooting(
+            title=f"Copy of {original.title}",
+            description=original.description,
+            difficulty=original.difficulty,
+            problem_type=original.problem_type,
+            scenario=original.scenario,
+            solution=original.solution,
+            time_limit=original.time_limit,
+            base_score=original.base_score,
+            time_bonus=original.time_bonus,
+            hints=original.hints,
+            initial_topology=original.initial_topology,
+            solution_topology=original.solution_topology,
+            required_steps=original.required_steps,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.session.add(duplicate)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Simulation duplicated successfully',
+            'simulation_id': duplicate.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error duplicating simulation: {str(e)}'
+        }), 500
