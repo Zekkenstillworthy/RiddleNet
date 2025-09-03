@@ -739,9 +739,24 @@
                         </td>
                         <td>
                             <div class="actions-column">
-                                <button class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 8px;" onclick="viewEssay({{ essay.id }})">
+                                <button class="power-up-btn btn view-essay-btn" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 8px;"
+                                    data-id="{{ essay.id }}"
+                                    data-username="{{ selected_student.username }}"
+                                    data-question="{{ essay.question_text }}"
+                                    data-answer="{{ essay.response_text }}"
+                                    data-category="{{ essay.category }}"
+                                    data-date="{{ essay.submission_date.strftime('%Y-%m-%d %H:%M') if essay.submission_date else '' }}"
+                                    data-status="{{ 'Reviewed' if essay.is_graded else 'Pending Review' }}"
+                                    data-score="{{ essay.graded_score if essay.graded_score is not none else '' }}"
+                                    aria-label="View essay details">
                                     <i class='bx bx-show'></i>
                                     Inspect
+                                </button>
+                                <button class="power-up-btn btn edit-essay-btn" style="padding: 6px 12px; font-size: 0.75rem; margin-right: 8px;"
+                                    data-id="{{ essay.id }}"
+                                    aria-label="Edit essay">
+                                    <i class='bx bx-edit'></i>
+                                    Edit
                                 </button>
                                 <form method="POST" action="{{ url_for('essay.delete', essay_id=essay.id) }}" style="display: inline;" onsubmit="return confirm('🗑️ Delete this knowledge scroll permanently?')">
                                     <button type="submit" class="power-up-btn" style="padding: 6px 12px; font-size: 0.75rem; background: linear-gradient(135deg, #ff4757, #ff3742);">
@@ -830,29 +845,113 @@
         <!-- Enhanced Modals (keeping existing functionality) -->
         <div id="essayModal" class="modal">
             <div class="modal-content modern-card">
-                <div class="modal-header">
+                <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between;">
                     <h3 style="color: var(--cyber-glow);">🔍 Knowledge Scroll Inspector</h3>
-                    <button class="close-modal power-up-btn" style="padding: 8px 12px;">
-                        <i class='bx bx-x'></i>
-                    </button>
+                    <span class="close" id="close-modal-btn" style="cursor:pointer; font-size: 22px; line-height: 1;">&times;</span>
                 </div>
-                <div class="modal-body">
-                    <!-- Modal content will be populated by JavaScript -->
+                <div class="essay-details">
+                    <div class="detail-group">
+                        <span class="detail-label">Essay ID</span>
+                        <span class="detail-value" id="essay-id">-</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Student</span>
+                        <span class="detail-value" id="essay-username">-</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Category</span>
+                        <span class="detail-value" id="essay-category">-</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Submission Date</span>
+                        <span class="detail-value" id="essay-date">-</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" id="essay-status">-</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Score</span>
+                        <span class="detail-value" id="essay-score">-</span>
+                    </div>
+                </div>
+                
+                <div class="essay-content">
+                    <div class="detail-group">
+                        <span class="detail-label">Question</span>
+                        <div class="detail-value essay-text" id="essay-question">-</div>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Student's Answer</span>
+                        <div class="detail-value essay-text" id="essay-answer">-</div>
+                    </div>
+                </div>
+                
+                <div class="grading-section">
+                    <h3>Grade This Essay</h3>
+                    <p>Enter a score from 0 to 100:</p>
+                    <div class="grade-input">
+                        <input type="number" id="grade-input" min="0" max="100" placeholder="Enter grade...">
+                        <button id="save-grade-btn" class="btn btn-view power-up-btn" style="margin-left:8px;">Save Grade</button>
+                    </div>
+                    
+                    <div id="rubric-panel" class="rubric-panel" aria-label="Rubric Breakdown" style="margin-top: 12px;">
+                        <details>
+                            <summary style="cursor: pointer; font-weight: 600;">Rubric (optional)</summary>
+                            <div class="rubric-grid" style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 10px;">
+                                <label for="rubric-clarity">Clarity (0-25)</label>
+                                <input type="number" id="rubric-clarity" min="0" max="25" step="1" value="" aria-label="Clarity points">
+                                <label for="rubric-accuracy">Accuracy (0-25)</label>
+                                <input type="number" id="rubric-accuracy" min="0" max="25" step="1" value="" aria-label="Accuracy points">
+                                <label for="rubric-depth">Depth (0-25)</label>
+                                <input type="number" id="rubric-depth" min="0" max="25" step="1" value="" aria-label="Depth points">
+                                <label for="rubric-writing">Writing Mechanics (0-25)</label>
+                                <input type="number" id="rubric-writing" min="0" max="25" step="1" value="" aria-label="Writing points">
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                <button type="button" id="rubric-apply-total" class="btn btn-view power-up-btn" aria-label="Apply rubric total to grade">Apply total to grade</button>
+                                <span id="rubric-total" class="text-muted" aria-live="polite"></span>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+                
+                <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+                    <button id="close-modal-btn" class="btn btn-delete power-up-btn">Close</button>
                 </div>
             </div>
         </div>
 
         <div id="editEssayModal" class="modal">
             <div class="modal-content modern-card">
-                <div class="modal-header">
+                <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between;">
                     <h3 style="color: var(--cyber-glow);">✏️ Edit Knowledge Scroll</h3>
-                    <button class="close-modal power-up-btn" style="padding: 8px 12px;">
-                        <i class='bx bx-x'></i>
-                    </button>
+                    <span class="close" id="edit-close" style="cursor:pointer; font-size: 22px; line-height: 1;">&times;</span>
                 </div>
-                <div class="modal-body">
-                    <!-- Modal content will be populated by JavaScript -->
-                </div>
+                <form id="edit-essay-form" style="padding: 8px 16px 16px 16px;">
+                    <input type="hidden" id="edit-essay-id">
+                    <div class="detail-group">
+                        <span class="detail-label">Question</span>
+                        <textarea id="edit-question" class="edit-area" style="width:100%; min-height: 80px;"></textarea>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Student's Answer</span>
+                        <textarea id="edit-answer" class="edit-area" style="width:100%; min-height: 120px;"></textarea>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Category</span>
+                        <select id="edit-category" class="filter-select">
+                            <option value="riddle">Riddle</option>
+                            <option value="topology">Topology</option>
+                            <option value="troubleshoot">Troubleshooting</option>
+                            <option value="crimping">Cable Crimping</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button type="button" class="btn btn-delete power-up-btn" id="edit-cancel-btn">Cancel</button>
+                        <button type="submit" class="btn btn-view power-up-btn">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

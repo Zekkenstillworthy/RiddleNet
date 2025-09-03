@@ -121,12 +121,80 @@ def view_assignment(assignment_id):
         is_past_due = assignment.due_date and datetime.utcnow() > assignment.due_date
         print(f"[ASSIGNMENTS] view_assignment: is_past_due={bool(is_past_due)}, due_date={assignment.due_date}")
         
+        # Compute late policy name and a penalty preview if possible
+        penalty_preview = None
+        late_policy_name = None
+        try:
+            # If there's an availability window with a policy, expose its name
+            from admin.models.deadline_policy import AssignmentAvailabilityWindow, DeadlinePolicy
+            availability = AssignmentAvailabilityWindow.query.filter_by(assignment_id=assignment.id).first()
+            policy = None
+            if availability and availability.deadline_policy_id:
+                policy = DeadlinePolicy.query.get(availability.deadline_policy_id)
+                late_policy_name = getattr(policy, 'name', None)
+
+            # Compute a non-logging preview of penalty if submitting now
+            if assignment.due_date:
+                from datetime import datetime as _dt
+                now = _dt.utcnow()
+                effective_due = assignment.due_date
+                # If a student extension exists and active, prefer its due date
+                try:
+                    from admin.models.deadline_policy import StudentDeadlineExtension
+                    ext = StudentDeadlineExtension.query.filter_by(assignment_id=assignment.id, student_id=user_id, is_active=True).first()
+                except Exception:
+                    ext = None
+                if ext and ext.extended_due_date and now <= ext.extended_due_date:
+                    effective_due = ext.extended_due_date
+
+                if now > effective_due:
+                    seconds_late = (now - effective_due).total_seconds()
+                    hours_late = seconds_late / 3600.0
+                    # Basic grace period handling
+                    grace_ok = bool(policy and getattr(policy, 'grace_period_hours', 0) and hours_late <= policy.grace_period_hours)
+                    if grace_ok:
+                        pct = 0.0
+                        message = f"Within {policy.grace_period_hours}-hour grace period"
+                    else:
+                        # Days late rounded up
+                        days_late = int((hours_late + 24 - 1e-9) // 24) or 1
+                        pct = 0.0
+                        message = None
+                        if policy:
+                            if policy.policy_type == 'simple' or policy.simple_penalty_per_day is not None:
+                                pct = float(policy.simple_penalty_per_day or 0.0) * days_late
+                            else:
+                                # Fallback to simple if unknown type
+                                pct = float(policy.simple_penalty_per_day or 0.0) * days_late
+                            # Cap at max_penalty_percentage
+                            if policy.max_penalty_percentage is not None:
+                                pct = min(pct, float(policy.max_penalty_percentage))
+                            message = f"Applied {policy.name} policy"
+                        else:
+                            # Assignment-level simple fallback
+                            per_day = getattr(assignment, 'late_penalty_per_day', 10.0)
+                            pct = float(per_day) * days_late
+                            message = f"{per_day}% per-day penalty (simple)"
+
+                    adjusted = None
+                    if assignment.points is not None:
+                        adjusted = max(0, assignment.points - (assignment.points * (pct/100.0)))
+                    penalty_preview = {
+                        'penalty_percent': (pct/100.0) if pct else 0,
+                        'adjusted_points': round(adjusted, 2) if adjusted is not None else None,
+                        'message': message
+                    }
+        except Exception as _e:
+            print(f"[ASSIGNMENTS] penalty preview computation failed: {_e}")
+
         return render_template('user/assignments/assignment_detail.html',
                                assignment=assignment,
                                submission=submission,
                                can_submit=can_submit,
                                is_past_due=is_past_due,
-                               status=get_assignment_status(assignment, submission))
+                               status=get_assignment_status(assignment, submission),
+                               penalty_preview=penalty_preview,
+                               late_policy_name=late_policy_name)
         
     except Exception as e:
         print(f"[ASSIGNMENTS][ERROR] view_assignment failed: {e}")

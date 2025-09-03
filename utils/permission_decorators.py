@@ -38,3 +38,21 @@ def owner_required(model_cls, param_name: str = 'id', field_name: str = 'created
 		return wrapper
 	return decorator
 
+
+def require_class_id_in_json(f):
+	"""Ensure incoming JSON payloads include a non-empty class_id field.
+
+	Returns 400 with an error message if class_id is missing/invalid.
+	"""
+	@wraps(f)
+	def wrapper(*args, **kwargs):
+		try:
+			payload = request.get_json(silent=True) or {}
+		except Exception:
+			payload = {}
+		class_id = payload.get('class_id') or payload.get('classId')
+		if not class_id:
+			return jsonify({'error': 'class_id is required'}), 400
+		return f(*args, **kwargs)
+	return wrapper
+

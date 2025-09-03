@@ -401,37 +401,64 @@ def api_grade_essay(essay_id):
     essay = EssayResponse.query.get_or_404(essay_id)
     
     # Get grade from request
-    data = request.json
+    data = request.json or {}
     grade = data.get('grade')
-    
+    rubric = data.get('rubric') or None
+    rubric_total = data.get('rubric_total')
+
+    # If grade not provided but rubric_total exists, use it
+    if grade is None and rubric_total is not None:
+        try:
+            grade = float(rubric_total)
+        except (TypeError, ValueError):
+            grade = None
+
     if grade is None:
         return jsonify({'error': 'Grade is required'}), 400
-    
+
+    # Validate grade
     try:
         grade = float(grade)
         if grade < 0 or grade > 100:
             return jsonify({'error': 'Grade must be between 0 and 100'}), 400
-    except ValueError:
+    except (TypeError, ValueError):
         return jsonify({'error': 'Invalid grade value'}), 400
-    
-    # Update the essay
+
+    # Update the essay record
     essay.graded_score = grade
     essay.is_graded = True
+
+    # If rubric provided, persist a compact breakdown into feedback (no schema change)
+    if rubric and isinstance(rubric, dict):
+        # Build a readable rubric breakdown
+        parts = []
+        for key in ['clarity', 'accuracy', 'depth', 'writing']:
+            val = rubric.get(key)
+            if isinstance(val, (int, float)):
+                parts.append(f"{key.title()}: {int(val)}")
+        total_display = rubric.get('total') if isinstance(rubric.get('total'), (int, float)) else grade
+        rubric_text = "Rubric Breakdown:\n" + ("\n".join(parts) + ("\n" if parts else "")) + f"Total: {int(total_display)}/100"
+        if essay.feedback and essay.feedback.strip():
+            essay.feedback = f"{essay.feedback}\n\n{rubric_text}"
+        else:
+            essay.feedback = rubric_text
+
     db.session.commit()
-    
+
     # Log the activity
     ActivityLog.log_activity(
         user_id=current_user.id,
         action_type='grade',
-        message=f'Graded essay response #{essay_id} with score {grade}',
+        message=f"Graded essay response #{essay_id} with score {grade}" + (" using rubric" if rubric else ""),
         related_entity_type='essay',
         related_entity_id=essay_id
     )
-    
+
     return jsonify({
         'success': True,
         'essay_id': essay_id,
-        'grade': grade
+        'grade': grade,
+        'rubric_total': rubric_total if rubric_total is not None else None
     })
 
 @essay_bp.route('/api/essays/<int:essay_id>')

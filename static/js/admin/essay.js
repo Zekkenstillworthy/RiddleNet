@@ -74,6 +74,24 @@ function setupModalHandlers() {
         });
     }
 
+    // Rubric helpers
+    const rubricApplyBtn = document.getElementById('rubric-apply-total');
+    if (rubricApplyBtn) {
+        rubricApplyBtn.addEventListener('click', function() {
+            const total = computeRubricTotal();
+            if (!isNaN(total)) {
+                const gradeInput = document.getElementById('grade-input');
+                if (gradeInput) gradeInput.value = Math.max(0, Math.min(100, total));
+                updateRubricTotalLabel(total);
+            }
+        });
+    }
+
+    ['rubric-clarity','rubric-accuracy','rubric-depth','rubric-writing'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => updateRubricTotalLabel(computeRubricTotal()));
+    });
+
     // Edit form submission
     const editForm = document.getElementById('edit-essay-form');
     if (editForm) {
@@ -175,12 +193,20 @@ function saveEssayGrade() {
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
     
+    // Compose payload with optional rubric breakdown
+    const payload = { grade: grade };
+    const rubric = collectRubricBreakdown();
+    if (rubric) {
+        payload.rubric = rubric;
+        payload.rubric_total = rubric.total;
+    }
+
     fetch(`/admin/api/essays/${essayId}/grade`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ grade: grade })
+        body: JSON.stringify(payload)
     })
     .then(response => {
         if (!response.ok) {
@@ -214,6 +240,28 @@ function saveEssayGrade() {
         saveBtn.disabled = false;
         saveBtn.textContent = originalText;
     });
+}
+
+// Optional rubric helpers
+function collectRubricBreakdown() {
+    const clarity = parseInt(document.getElementById('rubric-clarity')?.value || '');
+    const accuracy = parseInt(document.getElementById('rubric-accuracy')?.value || '');
+    const depth = parseInt(document.getElementById('rubric-depth')?.value || '');
+    const writing = parseInt(document.getElementById('rubric-writing')?.value || '');
+    const parts = [clarity, accuracy, depth, writing].filter(v => !isNaN(v));
+    if (parts.length === 0) return null;
+    const total = parts.reduce((a,b) => a + b, 0);
+    return { clarity, accuracy, depth, writing, total };
+}
+
+function computeRubricTotal() {
+    const r = collectRubricBreakdown();
+    return r ? r.total : NaN;
+}
+
+function updateRubricTotalLabel(total) {
+    const label = document.getElementById('rubric-total');
+    if (label) label.textContent = isNaN(total) ? '' : `Total: ${total}/100`;
 }
 
 // Save essay edit

@@ -1436,10 +1436,7 @@
     <!-- Header -->
     <div class="simulation-header">
         <div class="header-left">
-            <a href="{{ url_for('dynamic_simulations.my_simulations') }}" class="back-btn">
-                <i class="fas fa-arrow-left"></i>
-                Back to Dashboard
-            </a>
+            
             <div>
                 <div class="simulation-type">{{ simulation.simulation_type }}</div>
                 <h1 class="simulation-title">{{ simulation.title }}</h1>
@@ -2146,9 +2143,7 @@ class DynamicSimulation {
         this.canvas.addEventListener('wheel', (e) => this.handleCanvasWheel(e));
         this.canvas.addEventListener('contextmenu', (e) => this.handleCanvasRightClick(e));
         
-        // Drag and drop events for devices - REMOVED DUPLICATE (handled in setupDragAndDrop)
-        this.canvas.addEventListener('dragover', (e) => this.handleCanvasDragOver(e));
-        // NOTE: drop event handled in setupDragAndDrop method to avoid duplication
+    // Drag and drop events for devices are handled in setupDragAndDrop to avoid duplication
         
         // Window resize
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -2263,6 +2258,11 @@ class DynamicSimulation {
         
         // Create new device
         this.createDeviceAtPosition(deviceType, x, y);
+        
+        // Auto-collapse the device palette after placing a device (prevents stuck open state)
+        try {
+            this.setPaletteMinimized?.(true);
+        } catch (_) {}
         
         // Hide drop zone
         const dropZone = document.getElementById('canvas-drop-zone');
@@ -3620,25 +3620,30 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         return null;
     }
     
-    togglePalette() {
+    // Deterministic palette state setter (prevents double toggles)
+    setPaletteMinimized(minimized) {
         const palette = document.getElementById('device-palette');
         const btn = document.querySelector('.palette-toggle');
-        
         if (!palette) return;
-        
-        const willMinimize = !palette.classList.contains('minimized');
-        palette.classList.toggle('minimized', willMinimize);
-        
+        const currentlyMin = palette.classList.contains('minimized');
+        if (currentlyMin === minimized) return; // no-op if already desired state
+        palette.classList.toggle('minimized', minimized);
         if (btn) {
-            // Update aria state and icon
-            btn.setAttribute('aria-expanded', (!willMinimize).toString());
+            btn.setAttribute('aria-expanded', (!minimized).toString());
             const icon = btn.querySelector('i');
             if (icon) {
-                icon.classList.toggle('fa-chevron-down', !willMinimize);
-                icon.classList.toggle('fa-chevron-up', willMinimize);
+                icon.classList.toggle('fa-chevron-down', !minimized);
+                icon.classList.toggle('fa-chevron-up', minimized);
             }
         }
-        console.log('🎨 Device palette toggled', { minimized: willMinimize });
+        console.log('🎨 Device palette state set', { minimized });
+    }
+
+    togglePalette() {
+        const palette = document.getElementById('device-palette');
+        if (!palette) return;
+        const willMinimize = !palette.classList.contains('minimized');
+        this.setPaletteMinimized(willMinimize);
     }
     
     // Device configuration methods
@@ -6517,21 +6522,41 @@ function initializeValidationSystem() {
 // Device configuration panel integration
 DynamicSimulation.prototype.openDeviceConfigPanel = function(device) {
     if (!device) return;
-    
-    // Initialize device configurator if not already done
-    if (!window.userDeviceConfigurator) {
-        window.userDeviceConfigurator = new UserDeviceConfigurator();
-    }
-    
-    // Open configuration modal for the device
-    window.userDeviceConfigurator.openModal(device, {
-        onSave: (deviceId, config) => {
-            this.updateDeviceConfiguration(deviceId, config);
-        },
-        onTest: (deviceId, config) => {
-            this.testDeviceConfiguration(deviceId, config);
+
+    // Prefer student configurator if present
+    if (window.userDeviceConfigurator && typeof window.userDeviceConfigurator.openDeviceConfiguration === 'function') {
+        try {
+            window.userDeviceConfigurator.openDeviceConfiguration(device);
+            return;
+        } catch (e) {
+            console.warn('UserDeviceConfigurator failed, falling back:', e);
         }
-    });
+    }
+
+    // Fallback to admin-style configurator if available
+    if (window.networkDeviceConfigurator && typeof window.networkDeviceConfigurator.openConfigPanel === 'function') {
+        try {
+            window.networkDeviceConfigurator.openConfigPanel(device);
+            return;
+        } catch (e) {
+            console.warn('NetworkDeviceConfigurator failed, falling back:', e);
+        }
+    }
+
+    // Last resort: if IP Manager exists, open that for basic config
+    if (window.ipManager && typeof window.ipManager.openConfigModal === 'function') {
+        try {
+            window.ipManager.openConfigModal(device);
+            return;
+        } catch (e) {
+            console.warn('IP Manager failed, falling back:', e);
+        }
+    }
+
+    // Built-in minimal modal
+    if (typeof this.showDeviceConfigModal === 'function') {
+        this.showDeviceConfigModal(device);
+    }
 };
 
 DynamicSimulation.prototype.updateDeviceConfiguration = function(deviceId, config) {
@@ -7676,6 +7701,7 @@ class SimulationPerformanceFeedback {
 <script src="{{ url_for('static', filename='js/network-device-configurator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/simulation-integration-bridge.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-device-configurator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ip-configuration-manager.js') }}"></script>
 
 <!-- Audio feedback integration (from troubleshoot.html) -->
 <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}" preload="auto"></audio>

@@ -259,7 +259,7 @@ try:
         ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),  # Module management
         ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),  # Module lesson editor
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
-        ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
+    ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
         ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),  # Lesson management
     ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),  # Tutorial management
     ('admin.controllers.rubric_controller', 'rubric_bp', None, None),  # Rubric management
@@ -269,7 +269,9 @@ try:
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-    ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp')  # Enhanced simulation routes
+    ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
+    ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),  # Instructor labs dashboard
+    ('admin.routes.lab_api', 'lab_api', None, None)  # Instructor-scoped lab API
     ]
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:

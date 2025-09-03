@@ -5,6 +5,7 @@ from admin.controllers.simulation_controller import SimulationController
 from admin.services.assignment_service import assignment_service
 from socket_events import emit_new_simulation_available, emit_assignment_created
 from utils.render_utils import render_safe_template
+from utils.permission_decorators import teacher_required, require_class_id_in_json
 import json
 
 # Create blueprint with unique name to avoid conflicts
@@ -33,6 +34,7 @@ class TroubleshootingSimulation:
 
 @admin_simulation_bp.route('/edit/new')
 @login_required
+@teacher_required
 def new_simulation_troubleshooting_editor():
     """Create new simulation using troubleshooting editor"""
     try:
@@ -47,6 +49,7 @@ def new_simulation_troubleshooting_editor():
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>')
 @login_required
+@teacher_required
 def edit_simulation(simulation_id):
     """Edit existing simulation with enhanced troubleshooting editor"""
     try:
@@ -96,6 +99,7 @@ def edit_simulation(simulation_id):
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/save', methods=['POST'])
 @login_required
+@teacher_required
 def save_simulation_from_troubleshooting_editor(simulation_id):
     """Save simulation changes from troubleshooting editor"""
     try:
@@ -152,6 +156,7 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/validation/config', methods=['GET'])
 @login_required
+@teacher_required
 def get_enhanced_validation_config(simulation_id):
     """Get enhanced validation configuration for a simulation"""
     from admin.controllers.modern_simulation_controller import modern_simulation_controller
@@ -166,6 +171,7 @@ def get_enhanced_validation_config(simulation_id):
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/validation/config', methods=['POST'])
 @login_required
+@teacher_required
 def save_enhanced_validation_config(simulation_id):
     """Save enhanced validation configuration for a simulation"""
     from admin.controllers.modern_simulation_controller import modern_simulation_controller
@@ -184,6 +190,7 @@ def save_enhanced_validation_config(simulation_id):
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/validation/state', methods=['POST'])
 @login_required
+@teacher_required
 def validate_simulation_state(simulation_id):
     """Validate current simulation state"""
     from admin.controllers.modern_simulation_controller import modern_simulation_controller
@@ -202,6 +209,7 @@ def validate_simulation_state(simulation_id):
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/validation/tests', methods=['POST'])
 @login_required
+@teacher_required
 def run_connectivity_tests(simulation_id):
     """Run connectivity tests for a simulation"""
     from admin.controllers.modern_simulation_controller import modern_simulation_controller
@@ -223,6 +231,7 @@ def run_connectivity_tests(simulation_id):
 
 @admin_simulation_bp.route('/edit/save', methods=['POST'])
 @login_required
+@teacher_required
 def create_simulation_from_troubleshooting_editor():
     """Create new simulation from troubleshooting editor"""
     try:
@@ -291,6 +300,7 @@ def create_simulation_from_troubleshooting_editor():
 
 @admin_simulation_bp.route('/<int:simulation_id>')
 @login_required
+@teacher_required
 def view_simulation(simulation_id):
     """Preview simulation"""
     try:
@@ -309,6 +319,7 @@ def view_simulation(simulation_id):
 
 @admin_simulation_bp.route('/analytics/<int:simulation_id>')
 @login_required
+@teacher_required
 def simulation_analytics(simulation_id):
     """Detailed analytics for a specific simulation"""
     try:
@@ -329,6 +340,7 @@ def simulation_analytics(simulation_id):
 
 @admin_simulation_bp.route('/api', methods=['POST'])
 @login_required
+@teacher_required
 def create_simulation_api():
     """Create simulation from builder interface"""
     try:
@@ -348,6 +360,7 @@ def create_simulation_api():
 
 @admin_simulation_bp.route('/api/templates/<simulation_type>')
 @login_required
+@teacher_required
 def get_simulation_templates(simulation_type):
     """Get templates for specific simulation type"""
     try:
@@ -358,6 +371,7 @@ def get_simulation_templates(simulation_type):
 
 @admin_simulation_bp.route('/api/validate-step', methods=['POST'])
 @login_required
+@teacher_required
 def validate_simulation_step():
     """Real-time validation for simulation steps during creation"""
     try:
@@ -399,6 +413,7 @@ def validate_simulation_step():
 
 @admin_simulation_bp.route('/api/list', methods=['GET'])
 @login_required
+@teacher_required
 def get_simulations_api():
     """Get simulations list for API consumption"""
     try:
@@ -410,6 +425,7 @@ def get_simulations_api():
 
 @admin_simulation_bp.route('/api/<int:simulation_id>', methods=['GET'])
 @login_required
+@teacher_required
 def get_simulation_api(simulation_id):
     """Get simulation by ID"""
     try:
@@ -425,6 +441,7 @@ def get_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>', methods=['PUT'])
 @login_required
+@teacher_required
 def update_simulation_api(simulation_id):
     """Update simulation"""
     try:
@@ -443,6 +460,7 @@ def update_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>/publish', methods=['POST'])
 @login_required
+@teacher_required
 def publish_simulation_api(simulation_id):
     """Publish simulation"""
     try:
@@ -457,6 +475,7 @@ def publish_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>/unpublish', methods=['POST'])
 @login_required
+@teacher_required
 def unpublish_simulation_api(simulation_id):
     """Unpublish simulation"""
     try:
@@ -471,6 +490,7 @@ def unpublish_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>/duplicate', methods=['POST'])
 @login_required
+@teacher_required
 def duplicate_simulation_api(simulation_id):
     """Duplicate simulation"""
     try:
@@ -485,6 +505,7 @@ def duplicate_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>', methods=['DELETE'])
 @login_required
+@teacher_required
 def delete_simulation_api(simulation_id):
     """Delete simulation"""
     try:
@@ -499,6 +520,7 @@ def delete_simulation_api(simulation_id):
 
 @admin_simulation_bp.route('/api/search', methods=['GET'])
 @login_required
+@teacher_required
 def search_simulations_api():
     """Search simulations with filters"""
     try:
@@ -516,6 +538,7 @@ def search_simulations_api():
 
 @admin_simulation_bp.route('/api/<int:simulation_id>/analytics', methods=['GET'])
 @login_required
+@teacher_required
 def get_simulation_analytics_api(simulation_id):
     """Get simulation analytics"""
     try:
@@ -530,6 +553,7 @@ def get_simulation_analytics_api(simulation_id):
 
 @admin_simulation_bp.route('/api/<int:simulation_id>/validate/<int:step_index>', methods=['POST'])
 @login_required
+@teacher_required
 def validate_step_response(simulation_id, step_index):
     """Validate a specific step response (for testing simulations)"""
     try:
@@ -580,6 +604,8 @@ def internal_error(error):
 
 @admin_simulation_bp.route('/api/assignments/lesson', methods=['POST'])
 @login_required
+@teacher_required
+@require_class_id_in_json
 def create_lesson_assignment():
     """Create a lesson-based assignment"""
     try:
@@ -604,6 +630,7 @@ def create_lesson_assignment():
 
 @admin_simulation_bp.route('/api/assignments/category', methods=['POST'])
 @login_required
+@teacher_required
 def create_category_auto_assignment():
     """Create automatic assignments for all simulations in a category"""
     try:
@@ -625,6 +652,8 @@ def create_category_auto_assignment():
 
 @admin_simulation_bp.route('/api/assignments/explicit', methods=['POST'])
 @login_required
+@teacher_required
+@require_class_id_in_json
 def create_explicit_assignment():
     """Create an explicit assignment with custom settings"""
     try:
@@ -650,6 +679,7 @@ def create_explicit_assignment():
 
 @admin_simulation_bp.route('/api/assignments/auto-assign/<int:simulation_id>', methods=['POST'])
 @login_required
+@teacher_required
 def auto_assign_simulation(simulation_id):
     """Automatically assign a simulation to relevant classes"""
     try:
@@ -667,6 +697,7 @@ def auto_assign_simulation(simulation_id):
 
 @admin_simulation_bp.route('/api/assignments/class/<int:class_id>')
 @login_required
+@teacher_required
 def get_class_assignments(class_id):
     """Get all assignments for a specific class"""
     try:
@@ -685,6 +716,7 @@ def get_class_assignments(class_id):
 
 @admin_simulation_bp.route('/api/assignments/enable-auto/<int:class_id>', methods=['POST'])
 @login_required
+@teacher_required
 def enable_category_auto_assignment(class_id):
     """Enable automatic assignment for a category in a class"""
     try:
@@ -706,6 +738,7 @@ def enable_category_auto_assignment(class_id):
 
 @admin_simulation_bp.route('/api/assignments/statistics/<int:class_id>')
 @login_required
+@teacher_required
 def get_assignment_statistics(class_id):
     """Get comprehensive assignment statistics for a class"""
     try:
@@ -723,6 +756,7 @@ def get_assignment_statistics(class_id):
 # Enhanced simulation creation with auto-assignment
 @admin_simulation_bp.route('/api/create-with-auto-assign', methods=['POST'])
 @login_required
+@teacher_required
 def create_simulation_with_auto_assign():
     """Create simulation and automatically assign to relevant classes"""
     try:
@@ -758,6 +792,7 @@ def create_simulation_with_auto_assign():
 
 @admin_simulation_bp.route('/api/quick-create', methods=['POST'])
 @login_required
+@teacher_required
 def quick_create_simulation():
     """Quick create simulation with minimal setup"""
     try:

@@ -7,8 +7,22 @@ from admin.models.module import Module
 import random
 import string
 from datetime import datetime
+from utils.permission_decorators import teacher_required
 
 api_bp = Blueprint('admin_api', __name__, url_prefix='/admin/api')
+
+# Require instructor/admin for mutation methods across this blueprint
+@api_bp.before_request
+def admin_api_write_guard():
+    # Allow safe methods (GET/HEAD/OPTIONS) for reads/preflights
+    if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        return None
+    # For mutating methods, enforce teacher/instructor access
+    # The decorator returns a Flask response on failure; emulate that here
+    @teacher_required
+    def _noop():
+        return None
+    return _noop()
 
 @api_bp.route('/deadlines/<int:class_id>', methods=['GET'])
 def get_deadlines(class_id):

@@ -295,6 +295,36 @@
         {% endif %}
     </div>
     
+    {# Late policy / penalty preview #}
+    {% if (assignment.due_date and status != 'graded') %}
+        <div class="submission-panel" aria-label="Deadline and penalty preview">
+            <h4><i class="fas fa-hourglass-half"></i> Deadline & Late Policy</h4>
+            <div class="d-flex flex-column" style="gap:8px;">
+                {% if assignment.due_date %}
+                    <div>
+                        <strong>Due:</strong> {{ assignment.due_date.strftime('%b %d, %Y %I:%M %p') }}
+                    </div>
+                {% endif %}
+                {% if late_policy_name %}
+                    <div>
+                        <strong>Policy:</strong> {{ late_policy_name }}
+                    </div>
+                {% endif %}
+                {% if penalty_preview %}
+                    <div class="warning-panel" style="margin:0;">
+                        <div><strong>Penalty if submitted now:</strong> {{ (penalty_preview.penalty_percent * 100)|round(0) }}%</div>
+                        {% if penalty_preview.adjusted_points is not none %}
+                            <div>Adjusted max points: {{ penalty_preview.adjusted_points }}/{{ assignment.points }}</div>
+                        {% endif %}
+                        {% if penalty_preview.message %}
+                            <div class="text-muted"><small>{{ penalty_preview.message }}</small></div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+    
     <!-- Warning Messages -->
     {% if is_past_due and status == 'not_submitted' %}
         {% if assignment.allow_late_submissions %}
