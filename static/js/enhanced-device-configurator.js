@@ -831,10 +831,10 @@ class EnhancedDeviceConfigurator {
         routeRows.forEach(row => {
             const destination = row.querySelector('[data-field="destination"]').value;
             const gateway = row.querySelector('[data-field="gateway"]').value;
-            const interface = row.querySelector('[data-field="interface"]').value;
+            const iface = row.querySelector('[data-field="interface"]').value;
 
-            if (destination && gateway && interface) {
-                routes.push({ destination, gateway, interface });
+            if (destination && gateway && iface) {
+                routes.push({ destination, gateway, interface: iface });
             }
         });
 

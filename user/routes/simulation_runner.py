@@ -7,10 +7,14 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.class_model import Class
+from admin.models.class_content import ClassAssignment
+from admin.models.assignment_submission import AssignmentSubmission, AssignmentSubmissionHistory
+from admin.models.rubric import Rubric, RubricCriterion, RubricAssessment
 from admin.models.module import Module, Lesson
 from admin import db
 from datetime import datetime
 import json
+from services.deadline_service import DeadlineService
 
 # Create blueprint for user simulation runner
 user_simulation_bp = Blueprint('user_simulation', __name__, url_prefix='/simulation')
@@ -466,27 +470,129 @@ def complete_simulation(simulation_id):
     try:
         data = request.get_json()
         attempt_id = data.get('attempt_id')
-        
+        validation = data.get('validation') or {}
+
         if not attempt_id:
             return jsonify({'success': False, 'error': 'Missing attempt ID'}), 400
-        
+
+        # Strict validation gating based on simulation rules
+        sim_obj = Simulation.query.get(simulation_id)
+        rules = (sim_obj.validation_rules or {}) if sim_obj else {}
+        if bool(rules.get('enforce_strict', False)):
+            if not isinstance(validation, dict) or not validation.get('passed', False):
+                return jsonify({'success': False, 'error': 'Validation requirements not met. Please pass all required checks before submission.'}), 400
+
         # Complete the attempt
         result = simulation_controller.complete_simulation_attempt(attempt_id)
-        
         if not result['success']:
             return jsonify(result), 500
-        
         attempt = result['attempt']
-        
+
+        # Attempt to sync grade to an assignment referencing this simulation
+        try:
+            candidate = None
+            user_classes = None
+            try:
+                user_classes = current_user.enrolled_classes
+            except Exception:
+                user_classes = None
+            assignments = ClassAssignment.query.filter_by(simulation_id=simulation_id, is_published=True).all()
+            if assignments:
+                if user_classes is not None and hasattr(user_classes, 'all'):
+                    class_ids = [c.id for c in user_classes.all()]
+                    assignments = [a for a in assignments if a.class_id in class_ids]
+                upcoming = [a for a in assignments if not a.due_date or a.due_date >= datetime.utcnow()]
+                if upcoming:
+                    candidate = sorted(upcoming, key=lambda a: a.due_date or datetime.max)[0]
+                else:
+                    candidate = sorted(assignments, key=lambda a: a.created_at or datetime.min, reverse=True)[0]
+
+            if candidate:
+                submission = AssignmentSubmission.query.filter_by(assignment_id=candidate.id, student_id=current_user.id).first()
+                is_resub = False
+                if not submission:
+                    submission = AssignmentSubmission(
+                        assignment_id=candidate.id,
+                        student_id=current_user.id,
+                        submission_text=f"Auto-submitted from simulation attempt {attempt.id}",
+                        max_points=candidate.points,
+                        submitted_at=datetime.utcnow(),
+                        status='submitted'
+                    )
+                    db.session.add(submission)
+                else:
+                    is_resub = True
+                    submission.submission_text = f"Auto-resubmitted from simulation attempt {attempt.id}"
+                    submission.submitted_at = datetime.utcnow()
+                    submission.status = 'resubmitted'
+
+                rubric = Rubric.query.filter_by(assignment_id=candidate.id).first()
+                total_points_assignment = candidate.points or 100
+                sim_total = (sim_obj.scoring_config.get('total_points') if sim_obj and sim_obj.scoring_config else None) or 100
+                try:
+                    proportion = max(0.0, min(1.0, (attempt.total_score or 0) / float(sim_total)))
+                except Exception:
+                    proportion = 0.0
+
+                if rubric and rubric.criteria:
+                    try:
+                        RubricAssessment.query.filter_by(submission_id=submission.id).delete()
+                    except Exception:
+                        pass
+                    max_total = sum(float(c.max_points or 0.0) for c in rubric.criteria)
+                    awarded_total = 0.0
+                    for c in sorted(rubric.criteria, key=lambda x: x.order_index or 0):
+                        c_max = float(getattr(c, 'max_points', 0.0) or 0.0)
+                        award = round(proportion * c_max, 2)
+                        db.session.add(RubricAssessment(
+                            submission_id=submission.id,
+                            rubric_id=rubric.id,
+                            criterion_id=c.id,
+                            awarded_points=award,
+                            feedback=None
+                        ))
+                        awarded_total += award
+                    grade = round(awarded_total * (total_points_assignment / max_total), 2) if max_total > 0 else round(proportion * total_points_assignment, 2)
+                else:
+                    grade = round(proportion * total_points_assignment, 2)
+
+                submission.grade = grade
+                submission.status = 'graded'
+                submission.graded_at = datetime.utcnow()
+                submission.feedback = (submission.feedback or '')
+
+                # Apply late penalty
+                try:
+                    final_grade, penalty_info = DeadlineService.apply_penalty_to_grade(submission, submission.grade)
+                    submission.grade = final_grade
+                    if penalty_info.get('is_late'):
+                        submission.is_late = True
+                        submission.late_penalty_applied = penalty_info.get('penalty_percentage', 0.0)
+                except Exception as e:
+                    current_app.logger.error(f"Late penalty application failed: {e}")
+
+                db.session.add(AssignmentSubmissionHistory(
+                    submission_id=submission.id,
+                    action='graded',
+                    old_grade=None,
+                    new_grade=submission.grade,
+                    old_status='submitted' if not is_resub else 'resubmitted',
+                    new_status='graded',
+                    changed_by=current_user.id,
+                    changed_by_type='admin' if getattr(current_user, 'role', '') == 'admin' else 'student',
+                    notes='Auto-graded from simulation completion'
+                ))
+                db.session.commit()
+        except Exception as sync_err:
+            current_app.logger.error(f"Error syncing simulation to assignment: {sync_err}")
+
         return jsonify({
             'success': True,
             'final_score': attempt.total_score,
             'duration_minutes': attempt.duration_minutes,
-            'results_url': url_for('user_simulation.simulation_results', 
-                                 simulation_id=simulation_id, 
-                                 attempt_id=attempt_id)
+            'validation': validation,
+            'results_url': url_for('user_simulation.simulation_results', simulation_id=simulation_id, attempt_id=attempt_id)
         })
-        
     except Exception as e:
         current_app.logger.error(f"Error completing simulation: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500

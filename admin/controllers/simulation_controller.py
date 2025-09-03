@@ -132,7 +132,14 @@ class SimulationController:
                 'template_used': template_data.get('selectedTemplate'),
                 'network_topology': template_data.get('networkTopology', {}),
                 'devices': template_data.get('devices', []),
-                'protocols': template_data.get('protocols', [])
+                'protocols': template_data.get('protocols', []),
+                # Carry optional CLI rules authored in the troubleshooting editor
+                'cli_rules': template_data.get('cli_rules', {}) if isinstance(template_data, dict) else {},
+                # Also persist new nested authoring blocks without requiring migrations
+                'collab': template_data.get('collab', {}) if isinstance(template_data, dict) else {},
+                'tutorial': template_data.get('tutorial', {}) if isinstance(template_data, dict) else {},
+                'achievements': template_data.get('achievements', {}) if isinstance(template_data, dict) else {},
+                'scoring': template_data.get('scoring', {}) if isinstance(template_data, dict) else {}
             }
             
             # Create the simulation

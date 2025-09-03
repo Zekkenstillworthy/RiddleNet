@@ -73,6 +73,12 @@ def edit_simulation(simulation_id):
             hints=simulation.get('hints', []),
             initial_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
             solution_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
+            cli_rules=simulation.get('simulation_config', {}).get('cli_rules', {}) if simulation.get('simulation_config') else {},
+            # New nested blocks for enhanced authoring
+            collab=simulation.get('simulation_config', {}).get('collab', {}) if simulation.get('simulation_config') else {},
+            tutorial=simulation.get('simulation_config', {}).get('tutorial', {}) if simulation.get('simulation_config') else {},
+            achievements=simulation.get('simulation_config', {}).get('achievements', {}) if simulation.get('simulation_config') else {},
+            scoring=simulation.get('simulation_config', {}).get('scoring', {}) if simulation.get('simulation_config') else {},
             required_steps=simulation.get('step_definitions', []),
             created_at=simulation.get('created_at'),
             updated_at=simulation.get('updated_at'),
@@ -96,13 +102,13 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
         data = request.json
         if not data:
             return jsonify({'success': False, 'message': 'No data provided'}), 400
-        
+
         # Convert troubleshooting editor data back to simulation format
         update_data = {
             'title': data.get('title'),
             'description': data.get('description'),
             'difficulty': data.get('difficulty'),
-            'simulation_type': data.get('problem_type', 'network'),
+            'type': data.get('problem_type', 'network'),
             'estimated_duration': data.get('time_limit', 15),
             'base_score': data.get('base_score', 50),
             'time_bonus': data.get('time_bonus', 10),
@@ -112,13 +118,20 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
             'simulation_config': {
                 'network_topology': data.get('initial_topology', {}),
                 'devices': data.get('devices', []),
-                'solution_topology': data.get('solution_topology', {})
+                'solution_topology': data.get('solution_topology', {}),
+                # Persist CLI rules authored in the editor without requiring a DB migration
+                'cli_rules': data.get('cli_rules', {}),
+                # New nested authoring blocks
+                'collab': data.get('collab', {}),
+                'tutorial': data.get('tutorial', {}),
+                'achievements': data.get('achievements', {}),
+                'scoring': data.get('scoring', {})
             }
         }
-        
+
         # Update the simulation
         result = simulation_controller.update_simulation(simulation_id, update_data)
-        
+
         if result.get('success'):
             return jsonify({
                 'success': True,
@@ -130,7 +143,7 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
                 'success': False,
                 'message': result.get('error', 'Error updating simulation')
             }), 400
-        
+
     except Exception as e:
         return jsonify({
             'success': False,
@@ -216,7 +229,7 @@ def create_simulation_from_troubleshooting_editor():
         data = request.json
         if not data:
             return jsonify({'success': False, 'message': 'No data provided'}), 400
-        
+
         # Convert troubleshooting editor data to simulation format
         simulation_data = {
             'basic': {
@@ -244,13 +257,20 @@ def create_simulation_from_troubleshooting_editor():
                 'selectedTemplate': 'troubleshooting-template',
                 'networkTopology': data.get('initial_topology', {}),
                 'devices': data.get('devices', []),
-                'protocols': []
+                'protocols': [],
+                # Carry CLI rules through the builder payload
+                'cli_rules': data.get('cli_rules', {}),
+                # Carry new nested authoring blocks as well
+                'collab': data.get('collab', {}),
+                'tutorial': data.get('tutorial', {}),
+                'achievements': data.get('achievements', {}),
+                'scoring': data.get('scoring', {})
             }
         }
-        
+
         # Create the simulation
         result = simulation_controller.create_simulation_from_builder(simulation_data, current_user.id)
-        
+
         if result.get('success'):
             return jsonify({
                 'success': True,
@@ -262,7 +282,7 @@ def create_simulation_from_troubleshooting_editor():
                 'success': False,
                 'message': result.get('error', 'Error creating simulation')
             }), 400
-        
+
     except Exception as e:
         return jsonify({
             'success': False,

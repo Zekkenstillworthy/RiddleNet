@@ -615,9 +615,9 @@ class ConnectivityTestManager {
                 const destination = route.destination || '0.0.0.0';
                 const netmask = route.netmask || '0.0.0.0';
                 const gateway = route.gateway || sourceConfig.gateway;
-                const interface = sourceConfig.ipAddress;
+                const iface = sourceConfig.ipAddress;
                 
-                output += `        ${destination.padEnd(15)} ${netmask.padEnd(15)} ${gateway.padEnd(12)} ${interface.padEnd(10)}    1\n`;
+                output += `        ${destination.padEnd(15)} ${netmask.padEnd(15)} ${gateway.padEnd(12)} ${iface.padEnd(10)}    1\n`;
             });
         } else {
             output += `\n===========================================================================\n`;

@@ -821,6 +821,15 @@ function completeSimulation() {
     // Hide navigation buttons
     document.querySelector('.step-actions').style.display = 'none';
     
+    // Build optional validation payload (from client validator if present)
+    let validation = {};
+    try {
+        if (window.universalValidator && typeof window.universalValidator.getSummary === 'function') {
+            const summary = window.universalValidator.getSummary();
+            validation = { passed: !!summary?.passed, score: summary?.score || 0, details: summary || {} };
+        }
+    } catch (_) { /* ignore */ }
+
     // Submit completion
     fetch(`/simulation/api/${simulationData.id}/complete`, {
         method: 'POST',
@@ -828,7 +837,8 @@ function completeSimulation() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            attempt_id: attemptData.id
+            attempt_id: attemptData.id,
+            validation
         })
     })
     .then(response => response.json())

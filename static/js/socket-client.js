@@ -1,5 +1,9 @@
 /**
- * WebSocket connection management for RiddleNet
+// Helper for getting the current host with the correct protocol
+function getHostUrl() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const port = window.location.port;nnection management for RiddleNet
  * Non-disruptive real-time features that preserve template rendering
  */
 
@@ -15,11 +19,13 @@ class SocketClient {
     constructor() {
         this.socket = null;
         this.connected = false;
+        this.isConnecting = false;
         this.eventHandlers = {};
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // Start with 2 seconds
         this.healthCheckInterval = null;
+        this.lastReconnectAttempt = 0;
         
         // Initialize video optimization when DOM is ready
         if (document.readyState === 'loading') {
@@ -108,10 +114,12 @@ class SocketClient {
             return;
         }
 
-        if (this.socket) {
-            console.log('Connection in progress...');
+        if (this.isConnecting) {
+            console.log('Connection already in progress...');
             return;
-        }        // Check if we're in an environment where WebSocket should be available
+        }
+        
+        this.isConnecting = true;        // Check if we're in an environment where WebSocket should be available
         if (typeof window === 'undefined') {
             console.warn('Not in browser environment, skipping WebSocket connection');
             return;
@@ -174,6 +182,7 @@ class SocketClient {
         this.socket.on('connect', () => {
             console.log('✅ Connected to WebSocket server');
             this.connected = true;
+            this.isConnecting = false;
             this.reconnectAttempts = 0;
             this.reconnectDelay = 2000; // Reset delay
             this.trigger('connected');
@@ -193,12 +202,14 @@ class SocketClient {
         this.socket.on('disconnect', (reason) => {
             console.log('🔌 Disconnected from WebSocket server:', reason);
             this.connected = false;
+            this.isConnecting = false;
             this.stopHealthCheck();
             this.trigger('disconnected', reason);
         });
 
         this.socket.on('connect_error', (error) => {
             console.warn('⚠️ WebSocket connection error:', error.message || error);
+            this.isConnecting = false;
             this.reconnectAttempts++;
             
             if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -621,9 +632,14 @@ class SocketClient {
     emit(event, data) {
         if (!this.socket) {
             console.warn('⚠️ Cannot emit event, socket not initialized');
-            // Try to reconnect if not already connecting
-            if (!this.connected && this.reconnectAttempts < this.maxReconnectAttempts) {
+            // Try to reconnect if not already connecting (rate limited)
+            if (!this.connected && 
+                this.reconnectAttempts < this.maxReconnectAttempts && 
+                !this.isConnecting &&
+                (Date.now() - (this.lastReconnectAttempt || 0)) > 5000) { // 5 second rate limit
+                
                 console.log('🔄 Attempting to reconnect...');
+                this.lastReconnectAttempt = Date.now();
                 this.connect();
             }
             return false;

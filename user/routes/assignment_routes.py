@@ -12,6 +12,7 @@ from admin.models.assignment_submission import AssignmentSubmission
 from admin.models.class_model import Class, class_students
 from user.models.user import User
 from utils.auth_utils import flexible_login_required, get_current_user_context
+from services.deadline_service import DeadlineService
 
 user_assignment_bp = Blueprint('user_assignments', __name__, url_prefix='/assignments')
 
@@ -255,14 +256,15 @@ def submit_assignment_form(assignment_id):
             flash('You have already submitted this assignment and resubmission is not allowed', 'warning')
             return redirect(url_for('user_assignments.view_assignment', assignment_id=assignment_id))
         
-        # Check if late submission is allowed
+        # Enforce availability and late policy
+        availability = DeadlineService.check_assignment_availability(assignment, student_id=user_id)
+        print(f"[ASSIGNMENTS] submit_assignment_form: availability={availability}")
+        if not availability.get('can_submit', True):
+            for msg in availability.get('messages', []):
+                flash(msg, 'warning')
+            return redirect(url_for('user_assignments.view_assignment', assignment_id=assignment_id))
         from datetime import datetime
         is_past_due = assignment.due_date and datetime.utcnow() > assignment.due_date
-        print(f"[ASSIGNMENTS] submit_assignment_form: is_past_due={bool(is_past_due)}, allow_late={assignment.allow_late_submissions}")
-        if is_past_due and not assignment.allow_late_submissions:
-            print("[ASSIGNMENTS] submit_assignment_form: late submissions not allowed -> redirect to view page")
-            flash('This assignment is past due and late submissions are not allowed', 'error')
-            return redirect(url_for('user_assignments.view_assignment', assignment_id=assignment_id))
         
         print(f"[ASSIGNMENTS] submit_assignment_form: rendering submission form for assignment_id={assignment_id}")
         return render_template('user/assignments/submit_assignment.html',
@@ -325,11 +327,12 @@ def api_submit_assignment(assignment_id):
         if existing_submission and not assignment.allow_resubmission:
             return jsonify({'error': 'Resubmission not allowed for this assignment'}), 400
         
-        # Check if late submission is allowed
+        # Enforce availability and late policy
+        availability = DeadlineService.check_assignment_availability(assignment, student_id=user_id)
+        if not availability.get('can_submit', True):
+            return jsonify({'error': '; '.join(availability.get('messages', ['Submission not allowed']))}), 400
         from datetime import datetime
         is_past_due = assignment.due_date and datetime.utcnow() > assignment.due_date
-        if is_past_due and not assignment.allow_late_submissions:
-            return jsonify({'error': 'Late submissions not allowed for this assignment'}), 400
         
         # Create or update submission (simplified - redirect to admin controller for full implementation)
         # For now, just create a basic text submission
@@ -349,6 +352,15 @@ def api_submit_assignment(assignment_id):
             db.session.add(submission)
         
         db.session.commit()
+        
+        # If late, compute and store penalty log (grade impact occurs during grading)
+        try:
+            if is_past_due:
+                sub = existing_submission or submission
+                # Apply calculation primarily for logging; grading deduction later
+                DeadlineService.calculate_late_penalty(sub, assignment)
+        except Exception as e:
+            print(f"[ASSIGNMENTS] warning: penalty calc/log failed: {e}")
         
         return jsonify({
             'success': True,

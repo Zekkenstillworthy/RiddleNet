@@ -5,16 +5,401 @@ Automatically creates routes for admin-created simulations - Learning Paths feat
 
 from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash
 from user.models.user import User as UserModel
-from admin.models.simulation import Simulation
+from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.class_model import Class
 # Learning Path models removed - import stubs to prevent errors
 from admin.models.learning_path import LearningPath, LearningPathSimulation, UserLearningProgress
+from admin.models.simulation_assignment import SimulationAssignment
+from admin.services.assignment_service import assignment_service
 from admin import db
 from functools import wraps
 import json
+import re
+from datetime import datetime
+
+# Import login_required from proper location
+def login_required(f):
+    """Login required decorator"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user_id = session.get('user_id')
+        if not user_id:
+            return redirect(url_for('user.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Enhanced validation functions for network simulations
+def validate_network_configuration(network_state, expected_config):
+    """Enhanced network device configuration validation"""
+    if not network_state or not expected_config:
+        return {'valid': False, 'errors': ['Missing network state or expected configuration']}
+    
+    validation_result = {
+        'valid': True,
+        'errors': [],
+        'warnings': [],
+        'score': 100
+    }
+    
+    try:
+        device_states = network_state.get('deviceStates', {})
+        network_devices = network_state.get('networkDevices', [])
+        
+        for device_id, expected in expected_config.items():
+            if device_id not in device_states:
+                validation_result['errors'].append(f'Device {device_id} not found in network state')
+                validation_result['valid'] = False
+                continue
+            
+            actual = device_states[device_id]
+            device_validation = validate_single_device(device_id, actual, expected)
+            
+            # Merge validation results
+            if not device_validation['valid']:
+                validation_result['valid'] = False
+            
+            validation_result['errors'].extend(device_validation['errors'])
+            validation_result['warnings'].extend(device_validation['warnings'])
+            validation_result['score'] *= device_validation['score'] / 100
+        
+        # Additional network-wide validations
+        network_validation = validate_network_connectivity(network_state)
+        validation_result['warnings'].extend(network_validation.get('warnings', []))
+        
+        ip_validation = validate_ip_addressing(network_state)
+        if not ip_validation['valid']:
+            validation_result['valid'] = False
+            validation_result['errors'].extend(ip_validation['errors'])
+        validation_result['warnings'].extend(ip_validation.get('warnings', []))
+        
+    except Exception as e:
+        validation_result['valid'] = False
+        validation_result['errors'].append(f'Validation error: {str(e)}')
+    
+    return validation_result
+
+def validate_single_device(device_id, actual_state, expected_config):
+    """Validate a single device configuration"""
+    result = {
+        'valid': True,
+        'errors': [],
+        'warnings': [],
+        'score': 100
+    }
+    
+    # Check interfaces configuration
+    if 'interfaces' in expected_config:
+        actual_interfaces = actual_state.get('interfaces', {})
+        for intf_name, intf_config in expected_config['interfaces'].items():
+            if intf_name not in actual_interfaces:
+                result['errors'].append(f'Device {device_id}: Interface {intf_name} not configured')
+                result['valid'] = False
+                result['score'] -= 20
+                continue
+            
+            actual_intf = actual_interfaces[intf_name]
+            
+            # Check IP address
+            if 'ip_address' in intf_config:
+                expected_ip = intf_config['ip_address']
+                actual_ip = actual_intf.get('ip_address')
+                if actual_ip != expected_ip:
+                    result['errors'].append(f'Device {device_id} {intf_name}: Expected IP {expected_ip}, got {actual_ip}')
+                    result['valid'] = False
+                    result['score'] -= 15
+            
+            # Check interface status
+            if 'status' in intf_config:
+                expected_status = intf_config['status']
+                actual_status = actual_intf.get('status', 'down')
+                if actual_status != expected_status:
+                    result['errors'].append(f'Device {device_id} {intf_name}: Expected status {expected_status}, got {actual_status}')
+                    result['valid'] = False
+                    result['score'] -= 10
+    
+    # Check routing table for routers
+    if 'routing_table' in expected_config:
+        actual_routing = actual_state.get('routingTable', [])
+        expected_routes = expected_config['routing_table']
+        
+        for expected_route in expected_routes:
+            route_found = False
+            for actual_route in actual_routing:
+                if (actual_route.get('network') == expected_route.get('network') and
+                    actual_route.get('gateway') == expected_route.get('gateway')):
+                    route_found = True
+                    break
+            
+            if not route_found:
+                result['errors'].append(f'Device {device_id}: Missing route to {expected_route.get("network")}')
+                result['valid'] = False
+                result['score'] -= 15
+    
+    # Check VLAN configuration for switches
+    if 'vlans' in expected_config:
+        actual_vlans = actual_state.get('vlans', {})
+        for vlan_id, vlan_config in expected_config['vlans'].items():
+            if vlan_id not in actual_vlans:
+                result['warnings'].append(f'Device {device_id}: VLAN {vlan_id} not configured')
+                result['score'] -= 5
+    
+    return result
+
+def validate_network_connectivity(network_state):
+    """Validate network connectivity and topology"""
+    result = {
+        'valid': True,
+        'warnings': []
+    }
+    
+    try:
+        devices = network_state.get('networkDevices', [])
+        connections = network_state.get('networkConnections', [])
+        
+        # Find isolated devices
+        connected_devices = set()
+        for conn in connections:
+            connected_devices.add(conn.get('from'))
+            connected_devices.add(conn.get('to'))
+        
+        device_ids = {device.get('id') for device in devices}
+        isolated_devices = device_ids - connected_devices
+        
+        if isolated_devices:
+            result['warnings'].append(f'Isolated devices found: {list(isolated_devices)}')
+        
+        # Check for network segments
+        segments = analyze_network_segments(devices, connections)
+        if len(segments) > 1:
+            result['warnings'].append(f'Network has {len(segments)} isolated segments')
+    
+    except Exception as e:
+        result['warnings'].append(f'Connectivity analysis error: {str(e)}')
+    
+    return result
+
+def validate_ip_addressing(network_state):
+    """Validate IP addressing scheme"""
+    result = {
+        'valid': True,
+        'errors': [],
+        'warnings': []
+    }
+    
+    try:
+        device_states = network_state.get('deviceStates', {})
+        used_ips = set()
+        networks = {}
+        
+        for device_id, device_state in device_states.items():
+            interfaces = device_state.get('interfaces', {})
+            for intf_name, intf_config in interfaces.items():
+                ip_address = intf_config.get('ip_address')
+                if not ip_address:
+                    continue
+                
+                # Parse IP and mask
+                if ' ' in ip_address:
+                    ip, mask = ip_address.split(' ')
+                else:
+                    ip = ip_address
+                    mask = '255.255.255.0'
+                
+                # Check for duplicate IPs
+                if ip in used_ips:
+                    result['errors'].append(f'Duplicate IP address: {ip}')
+                    result['valid'] = False
+                else:
+                    used_ips.add(ip)
+                
+                # Analyze network addressing
+                network_addr = get_network_address(ip, mask)
+                if network_addr not in networks:
+                    networks[network_addr] = []
+                networks[network_addr].append({
+                    'device': device_id,
+                    'interface': intf_name,
+                    'ip': ip
+                })
+        
+        # Check network consistency
+        for network, addresses in networks.items():
+            if len(addresses) == 1:
+                result['warnings'].append(f'Network {network} has only one device')
+    
+    except Exception as e:
+        result['errors'].append(f'IP addressing validation error: {str(e)}')
+        result['valid'] = False
+    
+    return result
+
+def analyze_network_segments(devices, connections):
+    """Analyze network topology to find isolated segments"""
+    device_ids = {device.get('id') for device in devices}
+    visited = set()
+    segments = []
+    
+    for device_id in device_ids:
+        if device_id not in visited:
+            segment = explore_segment(device_id, connections, visited)
+            if segment:
+                segments.append(segment)
+    
+    return segments
+
+def explore_segment(start_device, connections, visited):
+    """Explore a network segment using DFS"""
+    segment = []
+    stack = [start_device]
+    
+    while stack:
+        device_id = stack.pop()
+        if device_id in visited:
+            continue
+        
+        visited.add(device_id)
+        segment.append(device_id)
+        
+        # Add connected devices
+        for conn in connections:
+            if conn.get('from') == device_id and conn.get('to') not in visited:
+                stack.append(conn.get('to'))
+            elif conn.get('to') == device_id and conn.get('from') not in visited:
+                stack.append(conn.get('from'))
+    
+    return segment
+
+def get_network_address(ip, mask):
+    """Calculate network address from IP and subnet mask"""
+    try:
+        ip_parts = list(map(int, ip.split('.')))
+        mask_parts = list(map(int, mask.split('.')))
+        
+        network_parts = [ip_parts[i] & mask_parts[i] for i in range(4)]
+        return '.'.join(map(str, network_parts))
+    except:
+        return ip  # Return original IP if calculation fails
+
+def validate_network_connectivity_old(network_state, expected_config):
+    """Legacy connectivity validation function"""
+    if not network_state or not expected_config:
+        return False
+    
+    try:
+        device_states = network_state.get('deviceStates', {})
+        
+        for device_id, expected in expected_config.items():
+            if device_id not in device_states:
+                return False
+            
+            actual = device_states[device_id]
+            
+            # Check interfaces configuration
+            if 'interfaces' in expected:
+                actual_interfaces = actual.get('interfaces', {})
+                for intf_name, intf_config in expected['interfaces'].items():
+                    if intf_name not in actual_interfaces:
+                        return False
+                    
+                    actual_intf = actual_interfaces[intf_name]
+                    
+                    # Check IP address
+                    if 'ip' in intf_config and actual_intf.get('ip') != intf_config['ip']:
+                        return False
+                    
+                    # Check subnet mask
+                    if 'mask' in intf_config and actual_intf.get('mask') != intf_config['mask']:
+                        return False
+            
+            # Check routing table
+            if 'routes' in expected:
+                actual_routes = actual.get('routingTable', [])
+                for expected_route in expected['routes']:
+                    route_found = any(
+                        route.get('network') == expected_route.get('network') and
+                        route.get('gateway') == expected_route.get('gateway')
+                        for route in actual_routes
+                    )
+                    if not route_found:
+                        return False
+        
+        return True
+        
+    except (KeyError, AttributeError, TypeError) as e:
+        print(f"Network configuration validation error: {e}")
+        return False
+
+def validate_network_connectivity(topology, expected_topology):
+    """Validate network topology connections"""
+    if not topology or not expected_topology:
+        return False
+    
+    try:
+        actual_connections = set()
+        expected_connections = set()
+        
+        # Normalize actual connections
+        for conn in topology.get('connections', []):
+            if isinstance(conn, list) and len(conn) >= 2:
+                # Create bidirectional connection tuple (sorted for consistency)
+                connection = tuple(sorted([conn[0], conn[1]]))
+                actual_connections.add(connection)
+            elif isinstance(conn, dict) and 'from' in conn and 'to' in conn:
+                connection = tuple(sorted([conn['from'], conn['to']]))
+                actual_connections.add(connection)
+        
+        # Normalize expected connections
+        for conn in expected_topology.get('connections', []):
+            if isinstance(conn, list) and len(conn) >= 2:
+                connection = tuple(sorted([conn[0], conn[1]]))
+                expected_connections.add(connection)
+            elif isinstance(conn, dict) and 'from' in conn and 'to' in conn:
+                connection = tuple(sorted([conn['from'], conn['to']]))
+                expected_connections.add(connection)
+        
+        # Check if all expected connections exist
+        return expected_connections.issubset(actual_connections)
+        
+    except (KeyError, AttributeError, TypeError) as e:
+        print(f"Network connectivity validation error: {e}")
+        return False
+
+def validate_cli_output(cli_output, expected_patterns):
+    """Validate CLI command output against expected patterns"""
+    if not cli_output or not expected_patterns:
+        return False
+    
+    try:
+        for pattern_config in expected_patterns:
+            if isinstance(pattern_config, str):
+                # Simple string contains check
+                if pattern_config.lower() not in cli_output.lower():
+                    return False
+            elif isinstance(pattern_config, dict):
+                pattern = pattern_config.get('pattern', '')
+                match_type = pattern_config.get('type', 'contains')
+                
+                if match_type == 'regex':
+                    if not re.search(pattern, cli_output, re.IGNORECASE):
+                        return False
+                elif match_type == 'contains':
+                    if pattern.lower() not in cli_output.lower():
+                        return False
+                elif match_type == 'exact':
+                    if cli_output.strip().lower() != pattern.lower():
+                        return False
+        
+        return True
+        
+    except (re.error, KeyError, AttributeError, TypeError) as e:
+        print(f"CLI output validation error: {e}")
+        return False
 
 # Create dynamic blueprint
 dynamic_sim_bp = Blueprint('dynamic_simulations', __name__, url_prefix='/dynamic')
+
+# Feature flag for Learning Paths visibility on user side
+LEARNING_PATHS_ENABLED = False
 
 def user_login_required(f):
     """Decorator to require user login"""
@@ -148,94 +533,42 @@ class DynamicSimulationController:
     
     @staticmethod
     def get_simulation_progress(user_id, simulation_id):
-        """Get user's progress for a specific simulation"""
+        """Get user's progress for a specific simulation (based on SimulationAttempt)"""
         try:
-            progress = UserLearningProgress.query.filter_by(
+            attempts = SimulationAttempt.query.filter_by(
                 user_id=user_id,
                 simulation_id=simulation_id
-            ).first()
-            
-            if progress:
+            ).all()
+
+            if attempts:
+                latest = max(attempts, key=lambda a: a.started_at or a.id)
+                best_score = max((a.total_score or 0 for a in attempts), default=0)
+                status = 'completed' if any(a.is_completed for a in attempts) else 'in_progress'
+                completion_pct = latest.completion_percentage if latest else 0
                 return {
-                    'status': progress.status,
-                    'attempts': progress.attempts_count,
-                    'best_score': progress.best_score,
-                    'completion_percentage': 100 if progress.status == 'completed' else 0
+                    'status': status,
+                    'attempts': len(attempts),
+                    'best_score': best_score,
+                    'completion_percentage': round(completion_pct, 2)
                 }
-            
+
             return {
                 'status': 'not_started',
                 'attempts': 0,
                 'best_score': 0,
                 'completion_percentage': 0
             }
-            
+
         except Exception as e:
             print(f"Error getting simulation progress: {e}")
             return None
     
     @staticmethod
     def can_access_simulation(user_id, simulation_id):
-        """Check if user can access a simulation based on learning path requirements"""
+        """Check if user can access a simulation (simplified without Learning Paths)"""
         try:
             simulation = Simulation.query.get(simulation_id)
-            if not simulation:
-                return False
-            
-            # Check if simulation is in a learning path
-            path_associations = LearningPathSimulation.query.filter_by(
-                simulation_id=simulation_id
-            ).all()
-            
-            if not path_associations:
-                # If not in learning path, check if simulation is published
-                return simulation.is_published and simulation.is_active
-            
-            # Check learning path requirements
-            for assoc in path_associations:
-                learning_path = assoc.learning_path
-                
-                # Check if user has access to this learning path
-                user = UserModel.query.get(user_id)
-                if not user:
-                    continue
-                
-                user_classes = user.enrolled_classes.all()
-                if not user_classes:
-                    continue
-                
-                # Check if any of user's classes match the learning path
-                has_access = False
-                for user_class in user_classes:
-                    class_level = user_class.name.lower()
-                    if class_level in learning_path.course_level.lower():
-                        has_access = True
-                        break
-                
-                if not has_access:
-                    continue
-                
-                # Check if prerequisites are met
-                if assoc.order_index > 0:
-                    # Get previous simulation in path
-                    prev_assoc = LearningPathSimulation.query.filter_by(
-                        learning_path_id=assoc.learning_path_id,
-                        order_index=assoc.order_index - 1
-                    ).first()
-                    
-                    if prev_assoc:
-                        prev_progress = UserLearningProgress.query.filter_by(
-                            user_id=user_id,
-                            simulation_id=prev_assoc.simulation_id
-                        ).first()
-                        
-                        if not prev_progress or prev_progress.status != 'completed':
-                            return False
-                
-                return True
-            
-            return False
-            
+            return bool(simulation and simulation.is_published and simulation.is_active)
         except Exception as e:
             print(f"Error checking simulation access: {e}")
             return False
@@ -275,24 +608,24 @@ def simulations_dashboard():
                 simulations = Simulation.query.filter_by(is_active=True, is_published=True).filter(
                     Simulation.simulation_type.ilike('%networking 1%')
                 ).all()
-                learning_paths = LearningPath.query.filter_by(is_active=True, is_published=True).filter(
+                learning_paths = [] if not LEARNING_PATHS_ENABLED else LearningPath.query.filter_by(is_active=True, is_published=True).filter(
                     LearningPath.course_level.ilike('%networking 1%')
                 ).all()
             elif 'networking 2' in class_level:
                 simulations = Simulation.query.filter_by(is_active=True, is_published=True).filter(
                     Simulation.simulation_type.ilike('%networking 2%')
                 ).all()
-                learning_paths = LearningPath.query.filter_by(is_active=True, is_published=True).filter(
+                learning_paths = [] if not LEARNING_PATHS_ENABLED else LearningPath.query.filter_by(is_active=True, is_published=True).filter(
                     LearningPath.course_level.ilike('%networking 2%')
                 ).all()
             else:
                 # For other class types, show all simulations
                 simulations = Simulation.query.filter_by(is_active=True, is_published=True).all()
-                learning_paths = LearningPath.query.filter_by(is_active=True, is_published=True).all()
+                learning_paths = [] if not LEARNING_PATHS_ENABLED else LearningPath.query.filter_by(is_active=True, is_published=True).all()
         else:
             # If no class assigned, show all simulations
             simulations = Simulation.query.filter_by(is_active=True, is_published=True).all()
-            learning_paths = LearningPath.query.filter_by(is_active=True, is_published=True).all()
+            learning_paths = [] if not LEARNING_PATHS_ENABLED else LearningPath.query.filter_by(is_active=True, is_published=True).all()
         
         # Apply additional category filter if provided
         if category_filter:
@@ -339,7 +672,7 @@ def simulations_dashboard():
         
         # Process learning paths
         learning_paths_data = []
-        for path in learning_paths:
+        for path in (learning_paths if LEARNING_PATHS_ENABLED else []):
             # Get actual simulation count for this path
             simulation_count = path.simulation_count
             
@@ -454,12 +787,103 @@ def run_simulation(simulation_id):
         # Get simulation from database
         simulation = Simulation.query.get_or_404(simulation_id)
         
-        # Parse simulation data from the correct schema
+        # Parse simulation data with proper type handling
         simulation_config = simulation.simulation_config or {}
+        if isinstance(simulation_config, str):
+            try:
+                import json
+                simulation_config = json.loads(simulation_config)
+            except Exception:
+                simulation_config = {}
+
         step_definitions = simulation.step_definitions or []
+        if isinstance(step_definitions, str):
+            try:
+                import json
+                step_definitions = json.loads(step_definitions)
+            except Exception:
+                step_definitions = []
+
         validation_rules = simulation.validation_rules or {}
+        if isinstance(validation_rules, str):
+            try:
+                import json
+                validation_rules = json.loads(validation_rules)
+            except Exception:
+                validation_rules = {}
         
-        # Prepare simulation data for the template
+        # Ensure step_definitions is a list
+        if not isinstance(step_definitions, list):
+            step_definitions = []
+
+        # Normalize steps to UI schema with troubleshooting support
+        normalized_steps = []
+        for step in step_definitions:
+            s = dict(step) if isinstance(step, dict) else {'content': str(step)}
+            
+            # Builder field normalization
+            if 'questionText' in s and 'question_text' not in s:
+                s['question_text'] = s.get('questionText')
+            if 'questionType' in s and 'question_type' not in s:
+                s['question_type'] = s.get('questionType')
+                
+            # Troubleshooting-specific field mappings
+            if 'instruction' in s and 'question_text' not in s:
+                s['question_text'] = s.get('instruction')
+            if 'description' in s and 'content' not in s:
+                s['content'] = s.get('description')
+                
+            # Handle troubleshooting step types
+            step_type = s.get('type', 'instruction')
+            if step_type in ['content_review', 'multiple_choice', 'text_input']:
+                s['troubleshooting_type'] = step_type
+                # Map to compatible user interface types
+                if step_type == 'content_review':
+                    s['type'] = 'instruction'
+                elif step_type == 'multiple_choice':
+                    s['type'] = 'question'
+                    s['question_type'] = 'multiple_choice'
+                elif step_type == 'text_input':
+                    s['type'] = 'question'
+                    s['question_type'] = 'text'
+                    
+            # Validation mapping (inline)
+            v = s.get('validation') or {}
+            if isinstance(v, dict):
+                if 'expectedAnswer' in v and 'expected_answer' not in s:
+                    s['expected_answer'] = v.get('expectedAnswer')
+                if 'score' in v and 'score' not in s:
+                    s['score'] = v.get('score')
+                # Handle troubleshooting validation types
+                if v.get('type') in ['completion', 'contains']:
+                    s['validation_type'] = v.get('type')
+                    
+            # Handle max_score from troubleshooting editor
+            if 'max_score' in s and 'score' not in s:
+                s['score'] = s.get('max_score')
+                
+            # Ensure options are an array
+            if 'options' in s and isinstance(s['options'], list):
+                # leave as-is (template handles both string or {text,value})
+                pass
+            normalized_steps.append(s)
+
+        # Build validation dict keyed by step index (string keys)
+        validation = {}
+        if isinstance(validation_rules, dict):
+            for k, v in validation_rules.items():
+                validation[str(k)] = v
+        # Generate simple rules from steps if missing
+        if not validation and normalized_steps:
+            for idx, s in enumerate(normalized_steps):
+                if 'expected_answer' in s and s['expected_answer']:
+                    validation[str(idx)] = {
+                        'type': 'exact_match',
+                        'expected_answer': s['expected_answer'],
+                        'score': s.get('score', 10)
+                    }
+
+    # Prepare simulation data for the template with troubleshooting support
         simulation_data = {
             'id': simulation.id,
             'title': simulation.title,
@@ -471,35 +895,99 @@ def run_simulation(simulation_id):
             'learning_objectives': simulation.learning_objectives if isinstance(simulation.learning_objectives, list) else [],
             
             # Process scenario steps
-            'steps': step_definitions,
-            'validation': validation_rules,
+            'step_definitions': normalized_steps,
+            'validation': validation,
             'topology': simulation_config,
             
+            # Troubleshooting-specific data
+            'is_troubleshooting': simulation_config.get('use_troubleshoot_template', False),
+            'canvas_enabled': simulation_config.get('canvas_enabled', False),
+            'live_scoring': simulation_config.get('live_scoring', True),
+            'lesson_key': simulation_config.get('lesson_key'),
+            'source_content': simulation_config.get('source_content'),
+
+            # New structured authoring blocks (safe defaults)
+            'collab': simulation_config.get('collab') or {
+                'mode': 'Solo',
+                'enabled': False,
+                'teamSize': 0,
+                'sharedTerminal': False,
+                'individualTerminals': True,
+                'followLeader': False,
+                'roles': ['Leader', 'Observer', 'Operator'],
+                'chatEnabled': False,
+                'transcriptLogging': False,
+                'roomPolicy': {
+                    'allowLateJoin': True,
+                    'requireInstructor': False,
+                    'timeWindow': None
+                }
+            },
+            'tutorial': simulation_config.get('tutorial') or {
+                'positions': {},  # { stepId: {anchor: '#selector', offset:{x,y}, breakpoints:{}} }
+                'steps': []
+            },
+            'scoring': simulation_config.get('scoring') or {
+                'base': getattr(simulation, 'base_score', None) or 100,
+                'timeBonus': getattr(simulation, 'time_bonus', None) or 0,
+                'wrongCommandPenalty': 0,
+                'comboMultiplier': 1.0,
+                'leaderboard': {'class': True, 'global': False, 'anonymize': False}
+            },
+            'achievements': simulation_config.get('achievements') or {
+                'noHintRun': False,
+                'underTime': False,
+                'perfectCommands': False,
+                'custom': []
+            },
+            'cli_rules': simulation_config.get('cli_rules') or {},
+            
             # Default values for new fields
-            'total_steps': len(step_definitions),
+            'total_steps': len(normalized_steps),
             'base_score': simulation.base_score or 100,
             'time_bonus': simulation.time_bonus or 20,
             'perfect_completion_bonus': simulation.perfect_completion_bonus or 30
         }
         
         # Check if user has an existing attempt
-        progress = {
-            'attempted': False,
-            'completed': False,
-            'current_step': 0,
-            'best_score': 0,
-            'attempts_count': 0
-        }
+        # Basic progress snapshot (attempts summary)
+        controller = DynamicSimulationController()
+        progress = controller.get_simulation_progress(user.id, simulation.id) or {
+                'status': 'not_started',
+                'attempts': 0,
+                'best_score': 0,
+                'completion_percentage': 0
+            }
         
+        # Add current attempt state for resumption
+        current_attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+        
+        if current_attempt:
+            progress.update({
+                'last_step_index': getattr(current_attempt, 'last_step_index', 0) or 0,
+                'current_score': current_attempt.total_score or 0,
+                'answers': current_attempt.step_responses or {},  # Include step responses for answer restoration
+                'status': 'in_progress'
+            })
+
+        # Provide assignment gating info to UI
+        gating = check_assignment_gating(user, simulation.id)
+
         return render_template('user/dynamic_simulation.html',
-                             user=user,
-                             simulation=simulation_data,
-                             progress=progress)
-    
+                               user=user,
+                               simulation=simulation_data,
+                               progress=progress,
+                               gating=gating)
+
     except Exception as e:
         print(f"Error loading simulation {simulation_id}: {e}")
         flash(f'Error loading simulation: {str(e)}', 'error')
-        return redirect(url_for('dynamic_simulations.simulations_dashboard'))
+        # Don't use fallback - return error directly
+        return f"Error loading simulation: {str(e)}", 500
 
 @dynamic_sim_bp.route('/learning-path/<int:path_id>')
 @user_login_required
@@ -561,88 +1049,1474 @@ def start_simulation(simulation_id):
     try:
         user = get_user_from_session()
         controller = DynamicSimulationController()
-        
+
         if not controller.can_access_simulation(user.id, simulation_id):
             return jsonify({'error': 'Access denied'}), 403
-        
-        # Create or update progress record
-        progress = UserLearningProgress.query.filter_by(
+
+        # Enforce assignment gating if an active assignment exists for user's classes
+        gating = check_assignment_gating(user, simulation_id)
+        if not gating.get('allowed', True):
+            return jsonify({'error': gating.get('message', 'Assignment requirements not met'), 'gating': gating}), 403
+
+        # Create or reuse an ongoing SimulationAttempt
+        attempt = SimulationAttempt.query.filter_by(
             user_id=user.id,
-            simulation_id=simulation_id
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+
+        if not attempt:
+            attempt = SimulationAttempt(
+                user_id=user.id,
+                simulation_id=simulation_id
+            )
+            db.session.add(attempt)
+
+        if not attempt.started_at:
+            attempt.started_at = db.func.now()
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True, 
+            'message': 'Simulation started',
+            'attemptId': attempt.id,
+            'lastStepIndex': getattr(attempt, 'last_step_index', 0) or 0,
+            'totalScore': attempt.total_score or 0
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/submit-step', methods=['POST'])
+@user_login_required  
+def submit_step(simulation_id):
+    """Submit a single step answer and get validation results"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        step_index = data.get('stepIndex')
+        user_answer = data.get('answer', '').strip()
+        
+        if step_index is None:
+            return jsonify({'error': 'Step index required'}), 400
+            
+        # Get simulation and validation rules
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Parse validation rules  
+        validation_rules = simulation.validation_rules or {}
+        if isinstance(validation_rules, str):
+            try:
+                validation_rules = json.loads(validation_rules)
+            except Exception:
+                validation_rules = {}
+                
+        # Parse step definitions for fallback
+        step_definitions = simulation.step_definitions or []
+        if isinstance(step_definitions, str):
+            try:
+                step_definitions = json.loads(step_definitions)
+            except Exception:
+                step_definitions = []
+        
+        # Get validation rule for this step
+        step_key = str(step_index)
+        rule = validation_rules.get(step_key) or {}
+        
+        # Fallback to step expected_answer if no rule
+        if not rule and step_index < len(step_definitions):
+            step = step_definitions[step_index]
+            if isinstance(step, dict):
+                # Check for normalized expected_answer or validation.expectedAnswer
+                expected = step.get('expected_answer') or (step.get('validation', {}) or {}).get('expectedAnswer')
+                if expected:
+                    rule = {
+                        'type': 'exact_match',
+                        'expected_answer': expected,
+                        'score': step.get('score') or (step.get('validation', {}) or {}).get('score', 10)
+                    }
+        
+        # Enhanced validation with network state checking
+        is_correct = False
+        validation_type = (rule.get('type', 'exact_match') or 'exact_match').lower()
+        expected_answer = rule.get('expected_answer', '')
+        validation_detail = None
+        
+        # Handle different validation types including network configurations
+        if validation_type == 'exact_match':
+            is_correct = user_answer.lower().strip() == expected_answer.lower().strip()
+        elif validation_type == 'contains':
+            is_correct = expected_answer.lower() in user_answer.lower()
+        elif validation_type == 'regex':
+            try:
+                import re
+                # Safety limits for regex
+                if len(expected_answer) > 200:
+                    is_correct = False
+                else:
+                    pattern = re.compile(expected_answer, re.IGNORECASE)
+                    is_correct = bool(pattern.search(user_answer))
+            except (re.error, Exception):
+                is_correct = False
+        elif validation_type == 'multiple_choice':
+            # For multiple choice, expected_answer should be the correct option
+            is_correct = user_answer.strip() == expected_answer.strip()
+        elif validation_type == 'completion':
+            # Troubleshooting completion validation - any non-empty answer is correct
+            is_correct = bool(user_answer.strip())
+        elif validation_type == 'network_config':
+            # Advanced network configuration validation
+            validation_detail = validate_network_configuration(data.get('networkState'), rule.get('expected_config'))
+            is_correct = bool(validation_detail.get('valid')) if isinstance(validation_detail, dict) else bool(validation_detail)
+        elif validation_type == 'connectivity':
+            # Network connectivity validation
+            validation_detail = {'valid': validate_network_connectivity(data.get('topology'), rule.get('expected_topology')),
+                                 'errors': [], 'warnings': []}
+            is_correct = bool(validation_detail['valid'])
+        elif validation_type == 'cli_output':
+            # CLI command output validation
+            validation_detail = {'valid': validate_cli_output(user_answer, rule.get('expected_patterns', [])),
+                                 'errors': [], 'warnings': []}
+            is_correct = bool(validation_detail['valid'])
+        else:
+            # Default to exact match
+            is_correct = user_answer.lower().strip() == expected_answer.lower().strip()
+        
+        # Calculate score
+        awarded_score = 0
+        if is_correct:
+            base_score = rule.get('score', 10)
+            if validation_detail and isinstance(validation_detail, dict) and 'score' in validation_detail:
+                # Map validation_detail.score (0-100) proportionally to base_score
+                try:
+                    awarded_score = round(base_score * (float(validation_detail.get('score', 100)) / 100.0))
+                except Exception:
+                    awarded_score = base_score
+            else:
+                awarded_score = base_score
+        
+        # Get or create attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
         ).first()
         
-        if not progress:
-            # Find learning path if simulation is part of one
-            path_assoc = LearningPathSimulation.query.filter_by(
-                simulation_id=simulation_id
-            ).first()
-            
-            progress = UserLearningProgress(
-                user_id=user.id,
-                simulation_id=simulation_id,
-                learning_path_id=path_assoc.learning_path_id if path_assoc else None,
-                status='in_progress'
-            )
-            db.session.add(progress)
-        else:
-            progress.status = 'in_progress'
-            if not progress.started_at:
-                progress.started_at = db.func.now()
+        if not attempt:
+            return jsonify({'error': 'Simulation not started. Call start endpoint first.'}), 400
+        
+        # Update attempt with step response
+        if not attempt.step_responses:
+            attempt.step_responses = {}
+        
+        attempt.step_responses[step_key] = {
+            'answer': user_answer,
+            'correct': is_correct,
+            'awarded_score': awarded_score
+        }
+        
+        # Update last step index and total score
+        attempt.last_step_index = max(step_index, getattr(attempt, 'last_step_index', 0) or 0)
+        
+        # Recalculate total score from all step responses
+        total_score = 0
+        for step_resp in attempt.step_responses.values():
+            if isinstance(step_resp, dict) and step_resp.get('awarded_score'):
+                total_score += step_resp['awarded_score']
+        attempt.total_score = total_score
         
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Simulation started'})
+        # Determine if this is the final step
+        total_steps = len(step_definitions)
+        is_finished = (step_index >= total_steps - 1) if total_steps > 0 else False
+        next_index = step_index + 1 if not is_finished else None
+        
+        return jsonify({
+            'correct': is_correct,
+            'awardedScore': awarded_score,
+            'totalScore': total_score,
+            'nextIndex': next_index,
+            'finished': is_finished,
+            'message': rule.get('success_message' if is_correct else 'error_message', 
+                              'Correct! Well done.' if is_correct else 'Incorrect answer. Please try again.'),
+            'hint': rule.get('hint', '') if not is_correct else '',
+            'validation': validation_detail or {}
+        })
+        
+    except Exception as e:
+        print(f"Error in submit_step: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/network-state', methods=['POST'])
+@user_login_required
+def update_network_state(simulation_id):
+    """Update network topology and device states"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        # Get current attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+        
+        if not attempt:
+            return jsonify({'error': 'No active simulation found'}), 400
+        
+        # Update session data with network state
+        if not attempt.session_data:
+            attempt.session_data = {}
+
+        attempt.session_data.update({
+            'networkTopology': data.get('topology', attempt.session_data.get('networkTopology', {})),
+            'deviceStates': data.get('deviceStates', attempt.session_data.get('deviceStates', {})),
+            'lastUpdated': datetime.utcnow().isoformat()
+        })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Network state updated successfully'
+        })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/cli-command', methods=['POST'])
+@user_login_required
+def execute_cli_command(simulation_id):
+    """Execute CLI command and return response"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        command = data.get('command', '').strip()
+        device_id = data.get('deviceId', '')
+        
+        if not command or not device_id:
+            return jsonify({'error': 'Command and device ID required'}), 400
+        
+        # Get simulation and current attempt
+        simulation = Simulation.query.get_or_404(simulation_id)
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+        
+        if not attempt:
+            return jsonify({'error': 'No active simulation found'}), 400
+        
+        # Process CLI command based on device type and current state
+        response = process_cli_command(command, device_id, attempt.session_data)
+
+        # Evaluate against admin-authored CLI rules if present in simulation_config
+        try:
+            sim_cfg = simulation.simulation_config or {}
+            if isinstance(sim_cfg, str):
+                sim_cfg = json.loads(sim_cfg)
+        except Exception:
+            sim_cfg = {}
+
+        cli_rules = (sim_cfg or {}).get('cli_rules') or {}
+        rule_feedback = None
+        rule_score_delta = 0
+
+        try:
+            device_rules = []
+            # Support both dict keyed by device and flat list
+            if isinstance(cli_rules, dict):
+                device_rules = cli_rules.get(device_id) or cli_rules.get('*') or []
+            elif isinstance(cli_rules, list):
+                device_rules = cli_rules
+
+            def matches(rule_cmd, actual_cmd, match_type, case_sensitive=False):
+                mt = (match_type or 'exact').lower()
+                cs = bool(case_sensitive)
+                if mt == 'regex':
+                    try:
+                        flags = 0 if cs else re.IGNORECASE
+                        return bool(re.search(rule_cmd, actual_cmd, flags))
+                    except re.error:
+                        return False
+                if mt == 'contains':
+                    return (str(rule_cmd) in actual_cmd) if cs else (str(rule_cmd).lower() in actual_cmd.lower())
+                # default exact
+                if cs:
+                    return actual_cmd.strip() == str(rule_cmd).strip()
+                return actual_cmd.strip().lower() == str(rule_cmd).strip().lower()
+
+            for rule in device_rules if isinstance(device_rules, list) else []:
+                if not isinstance(rule, dict):
+                    continue
+                cmd_pat = rule.get('command') or rule.get('pattern') or ''
+                match_type = rule.get('type') or rule.get('match') or 'exact'
+                case_sensitive = bool(rule.get('caseSensitive') or rule.get('case_sensitive'))
+                if cmd_pat and matches(cmd_pat, command, match_type, case_sensitive):
+                    # On match, override/append response and collect scoring/feedback
+                    custom_output = rule.get('output') or rule.get('response')
+                    if isinstance(custom_output, str) and custom_output.strip():
+                        response = custom_output
+                    rule_feedback = rule.get('feedback') or rule.get('message')
+                    try:
+                        rule_score_delta = int(rule.get('scoreDelta') or rule.get('score') or 0)
+                    except Exception:
+                        rule_score_delta = 0
+                    # Optional expected output matchers to refine pass/fail
+                    try:
+                        expected_output = rule.get('expectedOutput') or rule.get('expected_outputs') or []
+                        if expected_output:
+                            # Normalize to list of dicts {pattern, type}
+                            checks = expected_output if isinstance(expected_output, list) else [expected_output]
+                            ok = True
+                            for chk in checks:
+                                if isinstance(chk, str):
+                                    # contains, case-insensitive by default
+                                    if chk.lower() not in response.lower():
+                                        ok = False
+                                        break
+                                elif isinstance(chk, dict):
+                                    p = chk.get('pattern', '')
+                                    t = (chk.get('type') or 'contains').lower()
+                                    cs2 = bool(chk.get('caseSensitive') or chk.get('case_sensitive'))
+                                    if t == 'regex':
+                                        try:
+                                            flags = 0 if cs2 else re.IGNORECASE
+                                            if not re.search(p, response, flags):
+                                                ok = False
+                                                break
+                                        except re.error:
+                                            ok = False
+                                            break
+                                    elif t == 'exact':
+                                        if (response == p) if cs2 else (response.lower() == p.lower()):
+                                            pass
+                                        else:
+                                            ok = False
+                                            break
+                                    else:  # contains
+                                        if (p in response) if cs2 else (p.lower() in response.lower()):
+                                            pass
+                                        else:
+                                            ok = False
+                                            break
+                            if not ok:
+                                # If expected output didn't match, zero out score delta for this rule
+                                rule_score_delta = 0
+                    except Exception:
+                        pass
+                    break
+        except Exception as _e:
+            # Fail-safe: ignore bad rules
+            rule_feedback = None
+            rule_score_delta = 0
+        
+        # Update session data with command history
+        if 'cliHistory' not in attempt.session_data:
+            attempt.session_data['cliHistory'] = {}
+        
+        if device_id not in attempt.session_data['cliHistory']:
+            attempt.session_data['cliHistory'][device_id] = []
+        
+        attempt.session_data['cliHistory'][device_id].append({
+            'command': command,
+            'response': response,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+        # Apply optional score delta and feedback note into attempt
+        if rule_score_delta:
+            try:
+                attempt.total_score = int(attempt.total_score or 0) + int(rule_score_delta)
+            except Exception:
+                pass
+        if rule_feedback:
+            fb = attempt.feedback_given or []
+            if isinstance(fb, list):
+                fb.append({'type': 'cli_rule', 'device': device_id, 'command': command, 'message': rule_feedback, 'delta': rule_score_delta, 'ts': datetime.utcnow().isoformat()})
+                attempt.feedback_given = fb
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'response': response,
+            'deviceId': device_id
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def process_cli_command(command, device_id, session_data):
+    """Process CLI command and return appropriate response"""
+    try:
+        parts = command.lower().split()
+        if not parts:
+            return "Invalid command"
+        
+        cmd = parts[0]
+        device_states = session_data.get('deviceStates', {})
+        device_state = device_states.get(device_id, {})
+        
+        # Basic command processing
+        if cmd == 'show':
+            return handle_show_command(parts[1:], device_state, device_id)
+        elif cmd == 'ping':
+            return handle_ping_command(parts[1:], device_states)
+        elif cmd == 'configure':
+            return "Entering global configuration mode"
+        elif cmd == 'interface':
+            return handle_interface_command(parts[1:], device_state)
+        elif cmd == 'ip':
+            return handle_ip_command(parts[1:], device_state)
+        elif cmd == 'help' or cmd == '?':
+            return get_help_text()
+        elif cmd == 'exit':
+            return "Exiting configuration mode"
+        else:
+            return f"% Invalid command: {command}"
+            
+    except Exception as e:
+        return f"Command processing error: {str(e)}"
+
+def handle_show_command(args, device_state, device_id):
+    """Handle 'show' commands"""
+    if not args:
+        return "Incomplete command. Use 'show ?' for help"
+    
+    subcmd = ' '.join(args)
+    
+    if subcmd in ['running-config', 'run']:
+        return generate_running_config(device_state, device_id)
+    elif subcmd in ['interfaces', 'int']:
+        return generate_interfaces_output(device_state)
+    elif subcmd in ['ip route', 'route']:
+        return generate_routing_table(device_state)
+    elif subcmd == 'version':
+        return generate_version_output(device_id)
+    elif subcmd == 'arp':
+        return generate_arp_table(device_state)
+    else:
+        return f"% Invalid show command: {subcmd}"
+
+def generate_version_output(device_id):
+    """Generate version command output for network device"""
+    return f"""
+Cisco IOS Software, IOSv Software (VIOS-ADVENTERPRISEK9-M), Version 15.6(2)T, RELEASE SOFTWARE (fc2)
+Technical Support: http://www.cisco.com/techsupport
+Copyright (c) 1986-2016 by Cisco Systems, Inc.
+Compiled Tue 22-Mar-16 16:19 by prod_rel_team
+
+ROM: Bootstrap program is IOSv
+
+{device_id} uptime is 1 day, 2 hours, 34 minutes
+System returned to ROM by reload at 21:32:45 UTC Mon Oct 14 2024
+System restarted at 21:33:12 UTC Mon Oct 14 2024
+System image file is "flash0:/vios-adventerprisek9-m"
+Last reload reason: Unknown reason
+
+This product contains cryptographic features and is subject to United
+States and local country laws governing import, export, transfer and
+use. Delivery of Cisco cryptographic products does not imply
+third-party authority to import, export, distribute or use encryption.
+Importers, exporters, distributors and users are responsible for
+compliance with U.S. and local country laws. By using this product you
+agree to comply with applicable laws and regulations. If you are unable
+to comply with U.S. and local laws, return this product immediately.
+
+Cisco IOSv (revision 1.0) with  with 2048000K/6147K bytes of memory.
+Processor board ID 9112003
+4 Gigabit Ethernet interfaces
+DRAM configuration is 72 bits wide with parity disabled.
+256K bytes of non-volatile configuration memory.
+2097152K bytes of ATA System CompactFlash 0 (Read/Write)
+0K bytes of ATA CompactFlash 1 (Read/Write)
+11264K bytes of ATA CompactFlash 2 (Read/Write)
+0K bytes of ATA CompactFlash 3 (Read/Write)
+
+Configuration register is 0x0
+"""
+
+def generate_arp_table(device_state):
+    """Generate ARP table output for network device"""
+    arp_entries = []
+    
+    # Generate realistic ARP entries based on device connections
+    for connection in device_state.get('connections', []):
+        if connection.get('status') == 'up':
+            ip_parts = connection.get('ip', '192.168.1.1').split('.')
+            mac_suffix = f"{int(ip_parts[2]):02x}:{int(ip_parts[3]):02x}"
+            arp_entries.append({
+                'protocol': 'Internet',
+                'address': connection.get('ip', '192.168.1.1'),
+                'age': '-' if connection.get('type') == 'local' else str(hash(connection.get('interface', '')) % 60),
+                'hardware_addr': f"0050.56c0.{mac_suffix}",
+                'type': 'ARPA',
+                'interface': connection.get('interface', 'GigabitEthernet0/0')
+            })
+    
+    if not arp_entries:
+        return "% No ARP entries found"
+    
+    output = "Protocol  Address          Age (min)  Hardware Addr   Type   Interface\n"
+    for entry in arp_entries:
+        output += f"{entry['protocol']:<10} {entry['address']:<16} {entry['age']:>9} {entry['hardware_addr']} {entry['type']:<7} {entry['interface']}\n"
+    
+    return output
+
+def handle_ping_command(args, device_states):
+    """Handle ping command with realistic output"""
+    if not args:
+        return "% Incomplete command."
+    
+    target = args[0]
+    
+    # Validate IP address format
+    if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', target):
+        return f"% Invalid IP address: {target}"
+    
+    # Check if target is reachable based on network topology
+    is_reachable = True  # Simplified - in real implementation, check routing
+    
+    if is_reachable:
+        return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms
+"""
+    else:
+        return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+"""
+
+def handle_interface_command(args, device_state):
+    """Handle interface configuration commands"""
+    if not args:
+        # Show all interfaces
+        interfaces = device_state.get('interfaces', {})
+        if not interfaces:
+            return "% No interfaces configured"
+        
+        output = ""
+        for int_name, int_config in interfaces.items():
+            status = "up" if int_config.get('status') == 'up' else "administratively down"
+            protocol = "up" if int_config.get('status') == 'up' else "down"
+            ip_addr = int_config.get('ip_address', 'unassigned')
+            
+            output += f"{int_name} is {status}, line protocol is {protocol}\n"
+            output += f"  Internet address is {ip_addr}\n"
+            output += f"  MTU {int_config.get('mtu', '1500')} bytes, BW {int_config.get('bandwidth', '1000000')} Kbit/sec\n"
+            output += f"  Encapsulation ARPA, loopback not set\n"
+            output += f"  Last input never, output never, output hang never\n"
+            output += f"  Last clearing of \"show interface\" counters never\n"
+            output += f"  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0\n"
+            output += f"  5 minute input rate 0 bits/sec, 0 packets/sec\n"
+            output += f"  5 minute output rate 0 bits/sec, 0 packets/sec\n\n"
+        
+        return output
+    
+    # Handle specific interface
+    interface_name = args[0]
+    interfaces = device_state.get('interfaces', {})
+    
+    if interface_name not in interfaces:
+        return f"% Invalid interface type and number: {interface_name}"
+    
+    int_config = interfaces[interface_name]
+    status = "up" if int_config.get('status') == 'up' else "administratively down"
+    protocol = "up" if int_config.get('status') == 'up' else "down"
+    ip_addr = int_config.get('ip_address', 'unassigned')
+    
+    return f"""
+{interface_name} is {status}, line protocol is {protocol}
+  Hardware is {int_config.get('hardware', 'Gigabit Ethernet')}, address is {int_config.get('mac', '0050.56c0.0001')}
+  Internet address is {ip_addr}
+  MTU {int_config.get('mtu', '1500')} bytes, BW {int_config.get('bandwidth', '1000000')} Kbit/sec, DLY {int_config.get('delay', '10')} usec,
+     reliability 255/255, txload 1/255, rxload 1/255
+  Encapsulation ARPA, loopback not set
+  Keepalive set (10 sec)
+  Full Duplex, 1000Mbps, media type is T
+  output flow-control is unsupported, input flow-control is unsupported
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Last input never, output 00:00:01, output hang never
+  Last clearing of "show interface" counters never
+  Input queue: 0/2000/0/0 (size/max/drops/flushes); Total output drops: 0
+  Queueing strategy: fifo
+  Output queue: 0/40 (size/max)
+  5 minute input rate 0 bits/sec, 0 packets/sec
+  5 minute output rate 0 bits/sec, 0 packets/sec
+     0 packets input, 0 bytes, 0 no buffer
+     Received 0 broadcasts (0 IP multicasts)
+     0 runts, 0 giants, 0 throttles
+     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+     0 watchdog, 0 multicast, 0 pause input
+     0 packets output, 0 bytes, 0 underruns
+     0 output errors, 0 collisions, 1 interface resets
+     0 unknown protocol drops
+     0 babbles, 0 late collision, 0 deferred
+     0 lost carrier, 0 no carrier, 0 pause output
+     0 output buffer failures, 0 output buffers swapped out
+"""
+
+def handle_ip_command(args, device_state):
+    """Handle IP-related commands"""
+    if not args:
+        return "% Incomplete command."
+    
+    subcommand = args[0].lower()
+    
+    if subcommand == "route":
+        # Show routing table
+        routes = device_state.get('routes', [])
+        if not routes:
+            return """Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       a - application route
+       + - replicated route, % - next hop override, p - overrides from PfR
+
+Gateway of last resort is not set
+"""
+        
+        output = """Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       a - application route
+       + - replicated route, % - next hop override, p - overrides from PfR
+
+Gateway of last resort is not set
+
+"""
+        
+        for route in routes:
+            route_type = route.get('type', 'C')
+            network = route.get('network', '192.168.1.0/24')
+            next_hop = route.get('next_hop', 'is directly connected')
+            interface = route.get('interface', 'GigabitEthernet0/0')
+            
+            if next_hop == 'is directly connected':
+                output += f"     {route_type}    {network} is directly connected, {interface}\n"
+            else:
+                output += f"     {route_type}    {network} [{route.get('admin_distance', '1')}/{route.get('metric', '0')}] via {next_hop}, {interface}\n"
+        
+        return output
+    
+    elif subcommand == "interface":
+        if len(args) < 2:
+            return "% Incomplete command."
+        return handle_interface_command(args[1:], device_state)
+    
+    else:
+        return f"% Invalid input detected at '^' marker: {subcommand}"
+
+def get_help_text():
+    """Generate help text for available CLI commands"""
+    return """Exec commands:
+  arp         ARP commands
+  clear       Reset functions
+  configure   Enter configuration mode
+  copy        Copy from one file to another
+  debug       Debugging functions (see also 'undebug')
+  disable     Turn off privileged commands
+  disconnect  Disconnect an existing network connection
+  enable      Turn on privileged commands
+  exit        Exit from the EXEC
+  logout      Exit from the EXEC
+  ping        Send echo messages
+  reload      Halt and perform a cold restart
+  resume      Resume an active network connection
+  setup       Run the SETUP command facility
+  show        Show running system information
+  ssh         Open a secure shell client connection
+  telnet      Open a telnet connection
+  terminal    Set terminal line parameters
+  traceroute  Trace route to destination
+  undebug     Disable debugging functions (see also 'debug')
+  write       Write running configuration to memory, network, or terminal
+"""
+
+def generate_running_config(device_state, device_id):
+    """Generate running configuration output"""
+    config = f"""Building configuration...
+
+Current configuration : 1234 bytes
+!
+version 15.1
+hostname {device_id.upper()}
+!
+"""
+    
+    # Add interface configurations
+    interfaces = device_state.get('interfaces', {})
+    for intf_name, intf_config in interfaces.items():
+        config += f"interface {intf_name}\n"
+        if intf_config.get('ip'):
+            config += f" ip address {intf_config['ip']} {intf_config.get('mask', '255.255.255.0')}\n"
+        if intf_config.get('status', 'up') == 'up':
+            config += " no shutdown\n"
+        config += "!\n"
+    
+    config += "end"
+    return config
+
+def generate_interfaces_output(device_state):
+    """Generate interfaces status output"""
+    output = "Interface                  IP-Address      OK? Method Status                Protocol\n"
+    
+    interfaces = device_state.get('interfaces', {})
+    if not interfaces:
+        # Default interfaces for demonstration
+        interfaces = {
+            'GigabitEthernet0/0': {'ip': 'unassigned', 'status': 'administratively down'},
+            'GigabitEthernet0/1': {'ip': 'unassigned', 'status': 'administratively down'}
+        }
+    
+    for intf_name, intf_config in interfaces.items():
+        ip = intf_config.get('ip', 'unassigned')
+        status = intf_config.get('status', 'administratively down')
+        protocol = 'up' if status == 'up' else 'down'
+        output += f"{intf_name:<25} {ip:<15} YES manual {status:<20} {protocol}\n"
+    
+    return output
+
+def generate_routing_table(device_state):
+    """Generate routing table output"""
+    output = """Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       a - application route
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+"""
+    
+    routes = device_state.get('routingTable', [])
+    for route in routes:
+        network = route.get('network', '192.168.1.0/24')
+        interface = route.get('interface', 'GigabitEthernet0/0')
+        route_type = route.get('type', 'C')
+        output += f"{route_type}        {network} is directly connected, {interface}\n"
+    
+    return output
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/validate-step', methods=['POST'])
+@user_login_required
+def validate_simulation_step(simulation_id):
+    """Validate current simulation step with enhanced network state checking"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        step_index = data.get('stepIndex', 0)
+        network_state = data.get('networkState', {})
+        topology = data.get('topology', {})
+        
+        # Get simulation and current step
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        if step_index >= len(simulation.step_definitions or []):
+            return jsonify({'error': 'Invalid step index'}), 400
+        
+        current_step = simulation.step_definitions[step_index]
+        step_key = str(step_index)
+        
+        # Get validation rule
+        validation_rule = simulation.validation_rules.get(step_key, {}) if simulation.validation_rules else {}
+        
+        # Enhanced validation based on step type
+        step_type = current_step.get('type', 'instruction')
+        is_valid = False
+        message = "Validation failed"
+        score = 0
+        
+        if step_type == 'network_config':
+            expected_config = validation_rule.get('expected_config', {})
+            is_valid = validate_network_configuration(network_state, expected_config)
+            message = "Network configuration is correct!" if is_valid else "Network configuration is incorrect. Please check your device settings."
+            score = validation_rule.get('score', 10) if is_valid else 0
+            
+        elif step_type == 'connectivity':
+            expected_topology = validation_rule.get('expected_topology', {})
+            is_valid = validate_network_connectivity(topology, expected_topology)
+            message = "Network connectivity is correct!" if is_valid else "Network connectivity is incorrect. Please check your connections."
+            score = validation_rule.get('score', 10) if is_valid else 0
+            
+        elif step_type == 'troubleshooting':
+            # Combine multiple validation criteria for troubleshooting steps
+            config_valid = validate_network_configuration(network_state, validation_rule.get('expected_config', {}))
+            connectivity_valid = validate_network_connectivity(topology, validation_rule.get('expected_topology', {}))
+            
+            is_valid = config_valid and connectivity_valid
+            if is_valid:
+                message = "Troubleshooting solution is correct!"
+                score = validation_rule.get('score', 15)
+            else:
+                errors = []
+                if not config_valid:
+                    errors.append("device configuration")
+                if not connectivity_valid:
+                    errors.append("network connectivity")
+                message = f"Issues found with: {', '.join(errors)}"
+                score = 0
+        
+        # Update attempt if validation passed
+        if is_valid:
+            attempt = SimulationAttempt.query.filter_by(
+                user_id=user.id,
+                simulation_id=simulation_id,
+                is_completed=False
+            ).first()
+            
+            if attempt:
+                # Record step completion
+                attempt.record_step_completion(step_index, "network_validation_passed", score, True)
+                db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'isValid': is_valid,
+            'message': message,
+            'score': score,
+            'nextStep': step_index + 1 if is_valid and step_index + 1 < len(simulation.step_definitions) else None
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/complete', methods=['POST'])
 @user_login_required
 def complete_simulation(simulation_id):
     """Complete a simulation and update progress"""
     try:
         user = get_user_from_session()
-        data = request.get_json()
-        
-        # Get or create progress record
-        progress = UserLearningProgress.query.filter_by(
+        data = request.get_json() or {}
+
+        # Find latest in-progress attempt
+        attempt = SimulationAttempt.query.filter_by(
             user_id=user.id,
-            simulation_id=simulation_id
-        ).first()
-        
-        if not progress:
+            simulation_id=simulation_id,
+            is_completed=False
+        ).order_by(SimulationAttempt.started_at.desc()).first()
+
+        if not attempt:
             return jsonify({'error': 'Simulation not started'}), 400
+
+        # Store time spent from client
+        attempt.time_spent_seconds = int(data.get('time_spent', 0) or 0)
+
+        # Recompute final score from stored step responses (ignore client score)
+        final_score = 0
+        if attempt.step_responses:
+            for step_resp in attempt.step_responses.values():
+                if isinstance(step_resp, dict) and step_resp.get('awarded_score'):
+                    final_score += step_resp['awarded_score']
         
-        # Update progress
-        progress.update_progress({
-            'completed': True,
-            'score': data.get('score', 0),
-            'time_spent_seconds': data.get('time_spent', 0)
-        })
-        
+        # Update attempt total to match recomputed score
+        attempt.total_score = final_score
+        attempt.complete_attempt(final_score=final_score)
+
+        # Update simulation analytics
+        sim = Simulation.query.get(simulation_id)
+        if sim:
+            sim.update_analytics({
+                'completed': True,
+                'score': attempt.total_score,
+                'duration': attempt.time_spent_seconds
+            })
+
         db.session.commit()
-        
-        # Check if this unlocks new simulations
-        unlocked_simulations = []
-        
-        # If simulation is part of learning path, check next simulation
-        if progress.learning_path_id:
-            learning_path = LearningPath.query.get(progress.learning_path_id)
-            next_sim = learning_path.get_next_simulation_for_user(user.id)
-            if next_sim:
-                unlocked_simulations.append({
-                    'id': next_sim.id,
-                    'title': next_sim.title
-                })
-        
+
         return jsonify({
             'success': True,
             'message': 'Simulation completed successfully',
-            'unlocked_simulations': unlocked_simulations
+            'totalScore': final_score,
+            'unlocked_simulations': []
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== ENHANCED VALIDATION AND TROUBLESHOOTING API ROUTES =====
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/validate-network', methods=['POST'])
+@user_login_required
+def validate_network_api(simulation_id):
+    """Enhanced network configuration validation API"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        # Get current network state from request
+        network_state = data.get('networkState', {})
+        expected_config = data.get('expectedConfig', {})
+        
+        # If no expected config provided, get from simulation
+        if not expected_config:
+            simulation = Simulation.query.get_or_404(simulation_id)
+            expected_config = simulation.expected_configuration or {}
+            if isinstance(expected_config, str):
+                try:
+                    expected_config = json.loads(expected_config)
+                except:
+                    expected_config = {}
+        
+        # Perform comprehensive validation
+        validation_result = validate_network_configuration(network_state, expected_config)
+        
+        # Log validation attempt
+        print(f"Network validation for simulation {simulation_id}: {validation_result['valid']}")
+        
+        return jsonify({
+            'success': True,
+            'validation': validation_result,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Network validation error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/validate-device', methods=['POST'])
+@user_login_required
+def validate_device_api(simulation_id):
+    """Validate a specific device configuration"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        device_id = data.get('deviceId')
+        device_state = data.get('deviceState', {})
+        expected_config = data.get('expectedConfig', {})
+        
+        if not device_id:
+            return jsonify({'error': 'Device ID required'}), 400
+        
+        # Perform single device validation
+        validation_result = validate_single_device(device_id, device_state, expected_config)
+        
+        return jsonify({
+            'success': True,
+            'validation': validation_result,
+            'deviceId': device_id,
+            'timestamp': datetime.utcnow().isoformat()
         })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/troubleshoot', methods=['POST'])
+@user_login_required
+def troubleshooting_api(simulation_id):
+    """Handle troubleshooting mode operations"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        action = data.get('action')
+        
+        if action == 'start_session':
+            # Initialize troubleshooting session
+            problem_type = data.get('problemType', 'random')
+            
+            # Generate or select a problem based on current network state
+            troubleshooting_problem = {
+                'id': f'problem_{datetime.utcnow().timestamp()}',
+                'type': problem_type,
+                'description': 'Network connectivity issues detected',
+                'hints': [
+                    'Check device interface status',
+                    'Verify IP address configuration',
+                    'Test network connectivity'
+                ],
+                'expected_solution': {
+                    'steps': [
+                        'Identify the problematic device',
+                        'Check interface configuration',
+                        'Correct the configuration',
+                        'Verify connectivity'
+                    ]
+                }
+            }
+            
+            return jsonify({
+                'success': True,
+                'problem': troubleshooting_problem,
+                'session_started': True
+            })
+        
+        elif action == 'run_diagnostic':
+            # Run diagnostic tool
+            tool_name = data.get('tool')
+            network_state = data.get('networkState', {})
+            
+            diagnostic_result = run_diagnostic_tool(tool_name, network_state)
+            
+            return jsonify({
+                'success': True,
+                'diagnostic': diagnostic_result,
+                'tool': tool_name
+            })
+        
+        elif action == 'get_hint':
+            # Provide troubleshooting hint
+            problem_id = data.get('problemId')
+            hint_level = data.get('hintLevel', 1)
+            
+            hints = {
+                1: "Start by checking the status of all network interfaces",
+                2: "Look for devices with 'down' interfaces or missing IP addresses", 
+                3: "Use the 'show interfaces' command to identify configuration issues"
+            }
+            
+            return jsonify({
+                'success': True,
+                'hint': hints.get(hint_level, "No more hints available"),
+                'hint_level': hint_level
+            })
+        
+        else:
+            return jsonify({'error': 'Invalid action'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/autosave', methods=['POST'])
+@user_login_required
+def autosave_progress(simulation_id):
+    """Auto-save simulation progress"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        progress_data = data.get('progress_data', {})
+
+        # Find or create simulation attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+
+        if not attempt:
+            attempt = SimulationAttempt(
+                user_id=user.id,
+                simulation_id=simulation_id,
+                started_at=datetime.utcnow()
+            )
+            db.session.add(attempt)
+
+        # Merge into session_data and timestamp
+        if not attempt.session_data:
+            attempt.session_data = {}
+        # Shallow merge expected keys
+        for k in ['networkTopology', 'deviceStates', 'cliHistory']:
+            if k in progress_data:
+                attempt.session_data[k] = progress_data[k]
+        attempt.session_data['lastUpdated'] = datetime.utcnow().isoformat()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress auto-saved',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def run_diagnostic_tool(tool_name, network_state):
+    """Simulate diagnostic tool execution"""
+    device_states = network_state.get('deviceStates', {})
+    
+    if tool_name == 'ping':
+        return simulate_ping_diagnostic(device_states)
+    elif tool_name == 'traceroute':
+        return simulate_traceroute_diagnostic(device_states)
+    elif tool_name == 'show-interfaces':
+        return simulate_show_interfaces_diagnostic(device_states)
+    elif tool_name == 'show-routing':
+        return simulate_show_routing_diagnostic(device_states)
+    elif tool_name == 'network-scan':
+        return simulate_network_scan_diagnostic(device_states)
+    else:
+        return {'result': f'Unknown diagnostic tool: {tool_name}'}
+
+def simulate_ping_diagnostic(device_states):
+    """Simulate ping diagnostic results"""
+    # Check for connectivity issues
+    issues_found = []
+    
+    for device_id, device_state in device_states.items():
+        interfaces = device_state.get('interfaces', {})
+        for intf_name, intf_config in interfaces.items():
+            if intf_config.get('status') == 'down':
+                issues_found.append(f'{device_id}:{intf_name} is down')
+    
+    if issues_found:
+        result = f"""PING 192.168.1.1: 56 data bytes
+Request timeout for icmp_seq 0
+Request timeout for icmp_seq 1
+Request timeout for icmp_seq 2
+
+--- 192.168.1.1 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss
+
+Issues detected: {', '.join(issues_found)}"""
+    else:
+        result = """PING 192.168.1.1: 56 data bytes
+64 bytes from 192.168.1.1: icmp_seq=0 ttl=64 time=0.123 ms
+64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.098 ms
+64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=0.145 ms
+
+--- 192.168.1.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss
+round-trip min/avg/max/stddev = 0.098/0.122/0.145/0.024 ms"""
+    
+    return {'result': result}
+
+def simulate_show_interfaces_diagnostic(device_states):
+    """Simulate show interfaces command results"""
+    result = "Interface Status Report:\n\n"
+    
+    for device_id, device_state in device_states.items():
+        result += f"Device: {device_id}\n"
+        interfaces = device_state.get('interfaces', {})
+        
+        for intf_name, intf_config in interfaces.items():
+            status = intf_config.get('status', 'down')
+            ip_addr = intf_config.get('ip_address', 'unassigned')
+            status_icon = '🟢' if status == 'up' else '🔴'
+            
+            result += f"  {intf_name}: {status_icon} {status} - IP: {ip_addr}\n"
+        
+        result += "\n"
+    
+    return {'result': result}
+
+def simulate_traceroute_diagnostic(device_states):
+    """Simulate traceroute diagnostic results"""
+    # Simple traceroute simulation
+    result = """traceroute to 192.168.1.1 (192.168.1.1), 30 hops max, 60 byte packets
+ 1  192.168.1.1 (192.168.1.1)  0.123 ms  0.089 ms  0.145 ms
+ 2  10.0.0.1 (10.0.0.1)  1.234 ms  1.156 ms  1.289 ms
+ 3  172.16.1.1 (172.16.1.1)  5.678 ms  5.234 ms  5.789 ms"""
+    
+    return {'result': result}
+
+def simulate_show_routing_diagnostic(device_states):
+    """Simulate show routing table command results"""
+    result = "Routing Table:\n\n"
+    
+    for device_id, device_state in device_states.items():
+        result += f"Device: {device_id}\n"
+        routing_table = device_state.get('routingTable', [])
+        
+        if routing_table:
+            result += "Codes: C - connected, S - static, D - EIGRP, R - RIP, O - OSPF\n\n"
+            for route in routing_table:
+                network = route.get('network', '0.0.0.0/0')
+                gateway = route.get('gateway', 'directly connected')
+                route_type = route.get('type', 'C')
+                metric = route.get('metric', 0)
+                
+                result += f"{route_type}    {network} [{metric}/0] via {gateway}\n"
+        else:
+            result += "No routes configured\n"
+        
+        result += "\n"
+    
+    return {'result': result}
+
+def simulate_network_scan_diagnostic(device_states):
+    """Simulate network discovery scan results"""
+    result = "Network Device Discovery:\n\n"
+    
+    discovered_devices = []
+    for device_id, device_state in device_states.items():
+        interfaces = device_state.get('interfaces', {})
+        for intf_name, intf_config in interfaces.items():
+            if intf_config.get('status') == 'up' and intf_config.get('ip_address'):
+                ip = intf_config.get('ip_address', '').split(' ')[0]
+                discovered_devices.append({
+                    'device': device_id,
+                    'interface': intf_name,
+                    'ip': ip,
+                    'status': 'active'
+                })
+    
+    if discovered_devices:
+        result += "Active Devices Found:\n"
+        for device in discovered_devices:
+            result += f"  {device['ip']} - {device['device']} ({device['interface']}) - {device['status']}\n"
+    else:
+        result += "No active devices found on network\n"
+    
+    result += f"\nScan completed. {len(discovered_devices)} devices discovered.\n"
+    
+    return {'result': result}
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/device-config', methods=['POST'])
+@user_login_required
+def update_device_configuration(simulation_id):
+    """API endpoint to update device configuration"""
+    try:
+        data = request.get_json()
+        device_id = data.get('device_id')
+        config = data.get('config', {})
+        
+        if not device_id:
+            return jsonify({'success': False, 'error': 'Device ID is required'}), 400
+        
+        # Get current attempt
+        user_id = session.get('user_id')
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user_id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).order_by(SimulationAttempt.started_at.desc()).first()
+        
+        if not attempt:
+            return jsonify({'success': False, 'error': 'No active simulation attempt found'}), 404
+
+        # Parse existing session data
+        network_state = attempt.session_data or {}
+        device_states = network_state.get('deviceStates', {})
+        network_devices = network_state.get('networkDevices', [])
+        
+        # Update device configuration
+        if device_id not in device_states:
+            device_states[device_id] = {}
+        
+        device_states[device_id].update(config)
+        
+        # Also update the device in networkDevices array if it exists
+        for device in network_devices:
+            if device.get('id') == device_id:
+                device['config'] = device.get('config', {})
+                device['config'].update(config)
+                break
+        
+        # Update network state
+        network_state['deviceStates'] = device_states
+        network_state['networkDevices'] = network_devices
+        network_state['lastModified'] = datetime.utcnow().isoformat()
+
+        # Save updated state
+        attempt.session_data = network_state
+        db.session.commit()
+        
+        # Validate configuration
+        validation_result = validate_device_config(device_id, config)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Device {device_id} configuration updated successfully',
+            'validation': validation_result
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/device-config/<device_id>', methods=['GET'])
+@user_login_required
+def get_device_configuration(simulation_id, device_id):
+    """API endpoint to get device configuration"""
+    try:
+        # Get current attempt
+        user_id = session.get('user_id')
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user_id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).order_by(SimulationAttempt.started_at.desc()).first()
+        
+        if not attempt:
+            return jsonify({'success': False, 'error': 'No active simulation attempt found'}), 404
+        
+        # Parse session data
+        network_state = attempt.session_data or {}
+        device_states = network_state.get('deviceStates', {})
+        
+        # Get device configuration
+        device_config = device_states.get(device_id, {})
+        
+        return jsonify({
+            'success': True,
+            'config': device_config
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def validate_device_config(device_id, config):
+    """Validate device configuration"""
+    validation_result = {
+        'valid': True,
+        'errors': [],
+        'warnings': []
+    }
+    
+    try:
+        # Validate IP addresses in interfaces
+        if 'interfaces' in config:
+            for intf_name, intf_config in config['interfaces'].items():
+                if 'ip_address' in intf_config:
+                    ip_addr = intf_config['ip_address']
+                    if ip_addr and not is_valid_ip_config(ip_addr):
+                        validation_result['errors'].append(f'Invalid IP configuration on {intf_name}: {ip_addr}')
+                        validation_result['valid'] = False
+        
+        # Validate routing table
+        if 'routes' in config:
+            for route in config['routes']:
+                if 'network' in route and route['network']:
+                    if not is_valid_network(route['network']):
+                        validation_result['errors'].append(f'Invalid route network: {route["network"]}')
+                        validation_result['valid'] = False
+                        
+                if 'gateway' in route and route['gateway']:
+                    if not is_valid_ip_address(route['gateway']):
+                        validation_result['errors'].append(f'Invalid route gateway: {route["gateway"]}')
+                        validation_result['valid'] = False
+        
+        # Validate VLANs
+        if 'vlans' in config:
+            for vlan_id, vlan_config in config['vlans'].items():
+                try:
+                    vlan_id_int = int(vlan_id)
+                    if vlan_id_int < 1 or vlan_id_int > 4094:
+                        validation_result['errors'].append(f'Invalid VLAN ID: {vlan_id} (must be 1-4094)')
+                        validation_result['valid'] = False
+                except ValueError:
+                    validation_result['errors'].append(f'Invalid VLAN ID format: {vlan_id}')
+                    validation_result['valid'] = False
+        
+    except Exception as e:
+        validation_result['errors'].append(f'Configuration validation error: {str(e)}')
+        validation_result['valid'] = False
+    
+    return validation_result
+
+def is_valid_ip_config(ip_config):
+    """Validate IP configuration string (e.g., '192.168.1.1 255.255.255.0')"""
+    try:
+        parts = ip_config.strip().split()
+        if len(parts) >= 1:
+            # Validate IP address
+            ip_parts = parts[0].split('.')
+            if len(ip_parts) != 4:
+                return False
+            for part in ip_parts:
+                if not (0 <= int(part) <= 255):
+                    return False
+        
+        if len(parts) >= 2:
+            # Validate subnet mask
+            mask_parts = parts[1].split('.')
+            if len(mask_parts) != 4:
+                return False
+            for part in mask_parts:
+                if not (0 <= int(part) <= 255):
+                    return False
+        
+        return True
+    except:
+        return False
+
+def is_valid_network(network):
+    """Validate network address (CIDR or network/mask format)"""
+    try:
+        if '/' in network:
+            # CIDR format
+            ip, prefix = network.split('/')
+            prefix_int = int(prefix)
+            if not (0 <= prefix_int <= 32):
+                return False
+            return is_valid_ip_address(ip)
+        else:
+            # Just an IP address
+            return is_valid_ip_address(network)
+    except:
+        return False
+
+def is_valid_ip_address(ip):
+    """Validate IP address format"""
+    try:
+        parts = ip.split('.')
+        if len(parts) != 4:
+            return False
+        for part in parts:
+            if not (0 <= int(part) <= 255):
+                return False
+        return True
+    except:
+        return False
+
+# ===== Helper: Assignment gating =====
+def check_assignment_gating(user, simulation_id):
+    """Check if user is allowed to start based on active assignments in their classes.
+    Returns dict: {allowed: bool, message: str, details: {...}}
+    If no assignment applies, allow by default.
+    """
+    try:
+        # Get user's enrolled class IDs
+        class_ids = [c.id for c in (user.enrolled_classes.all() if hasattr(user, 'enrolled_classes') else [])]
+        if not class_ids:
+            # No class enrollment -> allow unless policy says otherwise
+            return {'allowed': True, 'message': 'No class enrollment gating', 'details': {}}
+
+        # Find active/published assignments tied to this simulation and user's classes
+        q = SimulationAssignment.query.filter(
+            SimulationAssignment.simulation_id == simulation_id,
+            SimulationAssignment.class_id.in_(class_ids),
+            SimulationAssignment.is_active.is_(True),
+            SimulationAssignment.is_published.is_(True)
+        )
+        assignment = q.order_by(SimulationAssignment.due_date.asc().nulls_last()).first()
+        if not assignment:
+            return {'allowed': True, 'message': 'No assignment gating', 'details': {}}
+
+        # Use model's can_user_attempt to enforce attempts and availability
+        can_attempt, reason = assignment.can_user_attempt(user.id)
+        attempts = assignment.get_user_attempts(user.id)
+        return {
+            'allowed': bool(can_attempt),
+            'message': reason if not can_attempt else 'OK',
+            'details': {
+                'assignment_id': assignment.id,
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                'max_attempts': assignment.max_attempts,
+                'attempts_used': len(attempts),
+                'is_available': assignment.is_available
+            }
+        }
+    except Exception as e:
+        # Fail-open with log
+        print(f"Assignment gating error: {e}")
+        return {'allowed': True, 'message': 'Gating check failed open', 'details': {'error': str(e)}}
 
 # Register routes dynamically
 def register_dynamic_routes(app):

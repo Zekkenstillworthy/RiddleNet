@@ -216,6 +216,11 @@ try:
         app.register_blueprint(user_assignment_bp)
         print("User Assignment Blueprint registered successfully")
         
+        # Register enhanced simulation API
+        from user.api.enhanced_simulation_api import enhanced_simulation_api
+        app.register_blueprint(enhanced_simulation_api, url_prefix='/dynamic')
+        print("Enhanced Simulation API Blueprint registered successfully")
+        
         # NOTE: Dynamic simulation blueprint is registered in __init__.py to avoid duplicates
         print("Dynamic Simulation Blueprint already registered in __init__.py")
     except Exception as e:

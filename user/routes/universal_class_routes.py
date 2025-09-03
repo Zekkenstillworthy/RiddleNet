@@ -9,6 +9,8 @@ from datetime import datetime
 from user.models.user import User
 from user.models.score import Score  # Import Score to ensure SQLAlchemy relationship works
 from admin.models.class_model import Class
+from admin.models.module import Module, Lesson, LessonProgress
+from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.question_group import QuestionGroup
 from admin.models.simulation import Simulation
 from admin.models.simulation_assignment import SimulationAssignment
@@ -360,17 +362,57 @@ def module_detail(class_id, module_id):
                 print(f"Error getting module progress for module {mod.id}: {e}")
                 completion_percentage = 0
             
+            # Get lessons for this module
+            module_lessons = Lesson.query.filter_by(module_id=mod.id, is_active=True).order_by(Lesson.order_index).all()
+            lessons_data = []
+            for lesson in module_lessons:
+                lessons_data.append({
+                    'id': lesson.id,
+                    'title': lesson.title,
+                    'lesson_number': lesson.lesson_number,
+                    'order_index': lesson.order_index,
+                    'estimated_duration': lesson.estimated_duration or 30
+                })
+            
             class_modules_data.append({
                 'id': mod.id,
                 'title': mod.title,
                 'module_number': mod.module_number,
                 'estimated_duration': mod.estimated_duration,
                 'total_lessons': mod.total_lessons,
-                'completion_percentage': completion_percentage
+                'completion_percentage': completion_percentage,
+                'lessons': lessons_data  # Add actual lesson data
             })
         
         # Get module lessons
         lessons = Lesson.query.filter_by(module_id=module_id, is_active=True).order_by(Lesson.order_index).all()
+        
+        # Get simulations related to this module
+        module_simulations = []
+        try:
+            # Get simulations assigned to this class that might be related to this module
+            simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()
+            for assignment in simulation_assignments:
+                if assignment.simulation and assignment.simulation.is_published:
+                    # Check if simulation is related to this module (by title, category, or type)
+                    module_title_lower = module.title.lower()
+                    sim_title_lower = assignment.simulation.title.lower()
+                    sim_description_lower = (assignment.simulation.description or '').lower()
+                    
+                    # Simple matching logic - you can enhance this based on your needs
+                    if (str(module_id) in sim_title_lower or 
+                        any(word in sim_title_lower for word in module_title_lower.split()) or
+                        any(word in sim_description_lower for word in module_title_lower.split())):
+                        module_simulations.append({
+                            'id': assignment.simulation.id,
+                            'title': assignment.simulation.title,
+                            'description': assignment.simulation.description,
+                            'difficulty': assignment.simulation.difficulty,
+                            'estimated_duration': assignment.simulation.estimated_duration
+                        })
+        except Exception as e:
+            print(f"Error getting module simulations: {e}")
+            module_simulations = []
         
         # Get assignments for this class/module
         assignments = ClassAssignment.query.filter_by(
@@ -422,17 +464,90 @@ def module_detail(class_id, module_id):
             'percentage': 0
         }
         
+        # Get active lesson for embedded lesson content
+        active_lesson = None
+        active_lesson_progress = None
+        previous_lesson = None
+        next_lesson = None
+        simulation_progress = {}
+        lesson_simulations = []
+        
+        if lessons:
+            # Default to first lesson or use query param
+            lesson_id_param = request.args.get('lesson_id', type=int)
+            if lesson_id_param:
+                active_lesson = next((l for l in lessons if l.id == lesson_id_param), lessons[0])
+            else:
+                active_lesson = lessons[0]
+            
+            if active_lesson:
+                # Get or create lesson progress
+                active_lesson_progress = LessonProgress.query.filter_by(
+                    user_id=user_id,
+                    lesson_id=active_lesson.id
+                ).first()
+                
+                if not active_lesson_progress:
+                    active_lesson_progress = LessonProgress(
+                        user_id=user_id,
+                        lesson_id=active_lesson.id,
+                        started_at=datetime.utcnow()
+                    )
+                    db.session.add(active_lesson_progress)
+                    db.session.commit()
+                
+                # Get previous and next lessons
+                current_index = lessons.index(active_lesson)
+                if current_index > 0:
+                    previous_lesson = lessons[current_index - 1]
+                if current_index < len(lessons) - 1:
+                    next_lesson = lessons[current_index + 1]
+                
+                # Get lesson-specific simulations
+                if hasattr(active_lesson, 'simulation_ids') and active_lesson.simulation_ids:
+                    from admin.models.simulation import Simulation
+                    lesson_simulations = Simulation.query.filter(
+                        Simulation.id.in_(active_lesson.simulation_ids),
+                        Simulation.is_active == True,
+                        Simulation.is_published == True
+                    ).all()
+                    
+                    # Get simulation progress for each lesson simulation
+                    for sim in lesson_simulations:
+                        user_sim_progress = SimulationAttempt.query.filter_by(
+                            user_id=user_id,
+                            simulation_id=sim.id,
+                            is_completed=True
+                        ).first()
+                        simulation_progress[sim.id] = {
+                            'completed': user_sim_progress is not None,
+                            'score': user_sim_progress.total_score if user_sim_progress else 0,
+                            'attempts': SimulationAttempt.query.filter_by(
+                                user_id=user_id,
+                                simulation_id=sim.id
+                            ).count()
+                        }
+        
         # Render using the module detail template with sidebar navigation
         return render_template('user/module_detail.html',
                              user=user,
                              user_context=user_context,
                              class_data=class_obj,
+                             class_obj=class_obj,  # For lesson template compatibility
                              class_modules=class_modules_data,
                              module=module,
+                             module_simulations=module_simulations,
                              lessons=lessons,
                              assignments=assignment_data,
                              materials=module_materials,
                              progress=module_progress,
+                             # Lesson-specific data
+                             lesson=active_lesson,
+                             lesson_simulations=lesson_simulations,
+                             lesson_progress=active_lesson_progress,
+                             previous_lesson=previous_lesson,
+                             next_lesson=next_lesson,
+                             simulation_progress=simulation_progress,
                              is_student_view=True,
                              now=datetime.now())
     
@@ -441,3 +556,40 @@ def module_detail(class_id, module_id):
         import traceback
         traceback.print_exc()
         return redirect(url_for('universal_class.dynamic_class_detail', class_id=class_id))
+
+@universal_class_bp.route('/<int:class_id>/api/first-lesson')
+@flexible_login_required
+def api_get_first_lesson(class_id):
+    """Get the first lesson of the first module for a class"""
+    try:
+        # Get the class
+        class_obj = Class.query.get_or_404(class_id)
+        
+        # Get the first module (ordered by order_index)
+        first_module = Module.query.filter_by(
+            class_id=class_id, 
+            is_active=True
+        ).order_by(Module.order_index.asc()).first()
+        
+        if not first_module:
+            return jsonify({'error': 'No modules found'}), 404
+        
+        # Get the first lesson of the first module
+        first_lesson = Lesson.query.filter_by(
+            module_id=first_module.id,
+            is_active=True
+        ).order_by(Lesson.order_index.asc()).first()
+        
+        if not first_lesson:
+            return jsonify({'error': 'No lessons found'}), 404
+        
+        return jsonify({
+            'class_id': class_id,
+            'module_id': first_module.id,
+            'lesson_id': first_lesson.id,
+            'url': f'/class/{class_id}/module/{first_module.id}?lesson_id={first_lesson.id}'
+        })
+        
+    except Exception as e:
+        print(f"Error getting first lesson for class {class_id}: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500

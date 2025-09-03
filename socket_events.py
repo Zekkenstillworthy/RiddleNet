@@ -296,10 +296,10 @@ def handle_assignment_completed(data):
 @socketio.on('ping')
 def handle_ping(data):
     """Handle ping from client for health check"""
-    timestamp = data.get('timestamp', datetime.utcnow().timestamp() * 1000)
+    client_time = data.get('client_time') or data.get('timestamp') or (datetime.utcnow().timestamp() * 1000)
     emit('pong', {
         'server_time': datetime.utcnow().timestamp() * 1000,
-        'client_time': timestamp,
+        'client_time': client_time,
         'latency': 0  # Client will calculate
     })
 

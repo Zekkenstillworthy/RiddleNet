@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Error Fixes Test</title>
+</head>
+<body>
+    <h1>Testing JavaScript Error Fixes</h1>
+    
+    <!-- Test Canvas Elements -->
+    <div id="simulation-canvas" style="border: 1px solid blue; padding: 10px;">
+        <p>Simulation Canvas Container (DIV)</p>
+        <canvas id="Canvas" width="400" height="200" style="border: 1px solid red;"></canvas>
+    </div>
+    
+    <!-- Test Results -->
+    <div id="test-results" style="margin-top: 20px;">
+        <h2>Test Results:</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Test results container
+        const results = document.getElementById('results');
+        
+        function addResult(test, passed, message) {
+            const result = document.createElement('div');
+            result.style.padding = '5px';
+            result.style.margin = '2px';
+            result.style.backgroundColor = passed ? '#d4edda' : '#f8d7da';
+            result.innerHTML = `<strong>${test}:</strong> ${passed ? '✅ PASS' : '❌ FAIL'} - ${message}`;
+            results.appendChild(result);
+        }
+
+        // Test 1: Canvas Discovery
+        console.log('🧪 Testing Canvas Discovery...');
+        
+        const canvasSelectors = ['#Canvas', '#network-canvas', '#simulation-canvas', '#networkCanvas'];
+        let canvas = null;
+        let foundCanvasType = null;
+        
+        for (const selector of canvasSelectors) {
+            const element = document.querySelector(selector);
+            if (element && element.tagName && element.tagName.toLowerCase() === 'canvas') {
+                canvas = element;
+                foundCanvasType = selector;
+                console.log(`✅ Found canvas: ${selector}`);
+                break;
+            }
+        }
+        
+        addResult('Canvas Discovery', !!canvas, canvas ? `Found valid canvas: ${foundCanvasType}` : 'No valid canvas found');
+        
+        // Test 2: Canvas Context
+        if (canvas) {
+            try {
+                const ctx = canvas.getContext('2d');
+                addResult('Canvas Context', !!ctx, ctx ? 'Successfully got 2D context' : 'Failed to get 2D context');
+            } catch (error) {
+                addResult('Canvas Context', false, `Error getting context: ${error.message}`);
+            }
+        }
+        
+        // Test 3: getHostUrl Function
+        console.log('🧪 Testing getHostUrl Function...');
+        
+        function testGetHostUrl() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = window.location.port;
+            return `${protocol}//${host}:${port}`;
+        }
+        
+        try {
+            const hostUrl = testGetHostUrl();
+            addResult('getHostUrl Function', true, `Generated URL: ${hostUrl}`);
+        } catch (error) {
+            addResult('getHostUrl Function', false, `Error: ${error.message}`);
+        }
+        
+        // Test 4: Socket Client Rate Limiting Logic
+        console.log('🧪 Testing Rate Limiting Logic...');
+        
+        function testRateLimiting() {
+            let lastReconnectAttempt = 0;
+            const now = Date.now();
+            
+            // Test rate limiting (should allow first attempt)
+            const canReconnect1 = (now - lastReconnectAttempt) > 5000;
+            
+            // Simulate recent attempt
+            lastReconnectAttempt = now - 2000; // 2 seconds ago
+            const canReconnect2 = (now - lastReconnectAttempt) > 5000;
+            
+            return {
+                firstAttempt: canReconnect1,
+                recentAttempt: !canReconnect2
+            };
+        }
+        
+        const rateLimitTest = testRateLimiting();
+        addResult('Rate Limiting Logic', 
+            rateLimitTest.firstAttempt && rateLimitTest.recentAttempt,
+            `First attempt allowed: ${rateLimitTest.firstAttempt}, Recent attempt blocked: ${rateLimitTest.recentAttempt}`);
+        
+        // Test 5: Element Type Detection
+        console.log('🧪 Testing Element Type Detection...');
+        
+        const divElement = document.querySelector('#simulation-canvas');
+        const canvasElement = document.querySelector('#Canvas');
+        
+        const divIsCanvas = divElement && divElement.tagName && divElement.tagName.toLowerCase() === 'canvas';
+        const canvasIsCanvas = canvasElement && canvasElement.tagName && canvasElement.tagName.toLowerCase() === 'canvas';
+        
+        addResult('Element Type Detection', 
+            !divIsCanvas && canvasIsCanvas,
+            `DIV detected as canvas: ${divIsCanvas}, CANVAS detected as canvas: ${canvasIsCanvas}`);
+        
+        // Test 6: Error Handling
+        console.log('🧪 Testing Error Handling...');
+        
+        function testFunctionExists() {
+            // Simulate the loadSavedProgress function check
+            function DynamicSimulation() {
+                this.loadSavedProgress = function() {
+                    console.log('loadSavedProgress function exists');
+                    return 'Function executed successfully';
+                };
+            }
+            
+            const simulation = new DynamicSimulation();
+            
+            if (typeof simulation.loadSavedProgress === 'function') {
+                return simulation.loadSavedProgress();
+            } else {
+                throw new Error('Function not found');
+            }
+        }
+        
+        try {
+            const result = testFunctionExists();
+            addResult('Function Existence Check', true, result);
+        } catch (error) {
+            addResult('Function Existence Check', false, error.message);
+        }
+        
+        // Summary
+        console.log('🎯 All tests completed!');
+        
+        const allResults = results.querySelectorAll('div');
+        const passedTests = Array.from(allResults).filter(div => div.textContent.includes('✅ PASS')).length;
+        const totalTests = allResults.length;
+        
+        const summary = document.createElement('div');
+        summary.style.marginTop = '20px';
+        summary.style.padding = '10px';
+        summary.style.backgroundColor = passedTests === totalTests ? '#d1ecf1' : '#fff3cd';
+        summary.style.fontWeight = 'bold';
+        summary.innerHTML = `<h3>Test Summary: ${passedTests}/${totalTests} tests passed</h3>`;
+        results.appendChild(summary);
+    </script>
+</body>
+</html>

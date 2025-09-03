@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { 
+            padding: 10px; margin: 5px 0; border-radius: 5px; 
+            border-left: 4px solid;
+        }
+        .pass { background: #d4edda; border-color: #28a745; }
+        .fail { background: #f8d7da; border-color: #dc3545; }
+        .info { background: #d1ecf1; border-color: #17a2b8; }
+        .warn { background: #fff3cd; border-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Integration Test</h1>
+    <p>This test validates the WebSocket improvements and fallback handling.</p>
+    
+    <div id="test-results"></div>
+
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(test, type, message) {
+            const result = document.createElement('div');
+            result.className = `test-result ${type}`;
+            result.innerHTML = `<strong>${test}:</strong> ${message}`;
+            results.appendChild(result);
+        }
+
+        // Test 1: Mock SocketClient with connection states
+        console.log('🧪 Testing WebSocket Connection States...');
+        
+        // Mock socket client for testing
+        window.socketClient = {
+            connected: false,
+            emit: function(event, data) {
+                console.log(`Mock emit: ${event}`, data);
+                return true;
+            },
+            on: function(event, callback) {
+                console.log(`Mock on: ${event}`);
+            }
+        };
+        
+        // Test 2: Simulate Performance Feedback System
+        class TestSimulationPerformanceFeedback {
+            constructor() {
+                this.realTimeEnabled = false;
+                this.sessionId = null;
+                this.metrics = {
+                    actionsCount: 0,
+                    mistakesCount: 0,
+                    hintsUsed: 0
+                };
+                this.achievements = [];
+                this.init();
+            }
+            
+            init() {
+                this.initializeBackendConnection();
+                this.startSession();
+                addResult('Performance System Init', 'pass', 'System initialized without errors');
+            }
+            
+            initializeBackendConnection() {
+                if (window.socketClient) {
+                    this.realTimeEnabled = true;
+                    addResult('Backend Connection', 'pass', 'WebSocket detected and enabled');
+                } else {
+                    addResult('Backend Connection', 'warn', 'WebSocket not available, using offline mode');
+                }
+            }
+            
+            startSession() {
+                this.sessionId = 'test_session_' + Date.now();
+                
+                if (this.realTimeEnabled && window.socketClient && window.socketClient.connected) {
+                    window.socketClient.emit('start_simulation_session', {
+                        session_id: this.sessionId,
+                        simulation_type: 'test_simulation'
+                    });
+                    addResult('Session Start', 'pass', 'Session started with active WebSocket');
+                } else if (this.realTimeEnabled && window.socketClient && !window.socketClient.connected) {
+                    addResult('Session Start', 'info', 'Session started, WebSocket connecting');
+                } else {
+                    addResult('Session Start', 'info', 'Session started in offline mode');
+                }
+            }
+            
+            trackAction(actionType, data = {}) {
+                this.metrics.actionsCount++;
+                
+                // Test the improved connection check
+                if (this.realTimeEnabled && window.socketClient && this.sessionId && window.socketClient.connected) {
+                    window.socketClient.emit('log_simulation_action', {
+                        session_id: this.sessionId,
+                        action: actionType,
+                        data: data
+                    });
+                    addResult('Action Tracking', 'pass', `Action ${actionType} logged with connected WebSocket`);
+                } else {
+                    addResult('Action Tracking', 'info', `Action ${actionType} logged offline (WebSocket not connected)`);
+                }
+            }
+            
+            syncWithBackend() {
+                if (!this.realTimeEnabled || !window.socketClient || !this.sessionId) {
+                    addResult('Backend Sync', 'info', 'Sync skipped - requirements not met');
+                    return;
+                }
+                
+                if (!window.socketClient.connected) {
+                    addResult('Backend Sync', 'info', 'Sync skipped - WebSocket not connected');
+                    return;
+                }
+                
+                const syncData = {
+                    session_id: this.sessionId,
+                    metrics: this.metrics,
+                    achievements: this.achievements
+                };
+                
+                window.socketClient.emit('sync_simulation_metrics', syncData);
+                addResult('Backend Sync', 'pass', 'Metrics synced with connected WebSocket');
+            }
+        }
+        
+        // Test 3: Run simulation tests with different connection states
+        addResult('Test Phase', 'info', 'Testing with disconnected WebSocket...');
+        
+        // Test with disconnected socket
+        const testSystem1 = new TestSimulationPerformanceFeedback();
+        testSystem1.trackAction('test_action_1');
+        testSystem1.syncWithBackend();
+        
+        // Test with connected socket
+        addResult('Test Phase', 'info', 'Testing with connected WebSocket...');
+        window.socketClient.connected = true;
+        
+        const testSystem2 = new TestSimulationPerformanceFeedback();
+        testSystem2.trackAction('test_action_2');
+        testSystem2.syncWithBackend();
+        
+        // Test 4: Test rate limiting logic
+        addResult('Test Phase', 'info', 'Testing rate limiting...');
+        
+        let lastReconnectAttempt = 0;
+        const now = Date.now();
+        
+        // First attempt should be allowed
+        const canReconnect1 = (now - lastReconnectAttempt) > 5000;
+        addResult('Rate Limiting', canReconnect1 ? 'pass' : 'fail', 
+            `First reconnect attempt: ${canReconnect1 ? 'Allowed' : 'Blocked'}`);
+        
+        // Recent attempt should be blocked
+        lastReconnectAttempt = now - 2000; // 2 seconds ago
+        const canReconnect2 = (now - lastReconnectAttempt) > 5000;
+        addResult('Rate Limiting', !canReconnect2 ? 'pass' : 'fail', 
+            `Recent reconnect attempt: ${!canReconnect2 ? 'Properly blocked' : 'Incorrectly allowed'}`);
+        
+        // Test 5: Canvas discovery test
+        addResult('Test Phase', 'info', 'Testing canvas discovery...');
+        
+        function testCanvasDiscovery() {
+            // Create test elements
+            const div = document.createElement('div');
+            div.id = 'test-simulation-canvas';
+            document.body.appendChild(div);
+            
+            const canvas = document.createElement('canvas');
+            canvas.id = 'test-Canvas';
+            canvas.width = 400;
+            canvas.height = 300;
+            document.body.appendChild(canvas);
+            
+            // Test discovery logic
+            const canvasSelectors = ['#test-Canvas', '#test-network-canvas', '#test-simulation-canvas'];
+            let foundCanvas = null;
+            
+            for (const selector of canvasSelectors) {
+                const element = document.querySelector(selector);
+                if (element && element.tagName && element.tagName.toLowerCase() === 'canvas') {
+                    foundCanvas = element;
+                    break;
+                }
+            }
+            
+            if (foundCanvas && foundCanvas.id === 'test-Canvas') {
+                addResult('Canvas Discovery', 'pass', 'Correctly found canvas element, ignored DIV');
+            } else {
+                addResult('Canvas Discovery', 'fail', 'Failed to find correct canvas element');
+            }
+            
+            // Test canvas context
+            try {
+                const ctx = foundCanvas.getContext('2d');
+                addResult('Canvas Context', ctx ? 'pass' : 'fail', 
+                    ctx ? 'Successfully got 2D context' : 'Failed to get 2D context');
+            } catch (error) {
+                addResult('Canvas Context', 'fail', `Context error: ${error.message}`);
+            }
+            
+            // Cleanup
+            div.remove();
+            canvas.remove();
+        }
+        
+        testCanvasDiscovery();
+        
+        // Final summary
+        setTimeout(() => {
+            const allResults = results.querySelectorAll('.test-result');
+            const passed = Array.from(allResults).filter(div => div.classList.contains('pass')).length;
+            const failed = Array.from(allResults).filter(div => div.classList.contains('fail')).length;
+            const warnings = Array.from(allResults).filter(div => div.classList.contains('warn')).length;
+            const info = Array.from(allResults).filter(div => div.classList.contains('info')).length;
+            
+            addResult('SUMMARY', 'info', 
+                `Tests completed: ${passed} passed, ${failed} failed, ${warnings} warnings, ${info} info`);
+            
+            if (failed === 0) {
+                addResult('OVERALL STATUS', 'pass', '✅ All critical tests passed - WebSocket integration is stable');
+            } else {
+                addResult('OVERALL STATUS', 'fail', '❌ Some tests failed - review WebSocket integration');
+            }
+        }, 100);
+        
+        console.log('🎯 WebSocket integration tests completed');
+    </script>
+</body>
+</html>

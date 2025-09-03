@@ -7,6 +7,7 @@ from services.hybrid_simulation_service import HybridSimulationService
 from services.notification_service import NotificationService
 from services.progression_service import progression_service
 from services.troubleshooting_lobbies import lobby_manager
+from services.deadline_service import DeadlineService
 
 __all__ = [
     'DatabaseSimulationService',
@@ -14,5 +15,6 @@ __all__ = [
     'HybridSimulationService',
     'NotificationService',
     'progression_service',
-    'lobby_manager'
+    'lobby_manager',
+    'DeadlineService'
 ]

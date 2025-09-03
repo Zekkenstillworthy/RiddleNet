@@ -20,6 +20,8 @@ class TroubleshootingLobby:
     scenario_type: str  # 'easy', 'medium', 'hard'
     scenario_id: str    # specific scenario like 'network', 'passive', etc.
     max_participants: int = 6
+    # Optional scoping to a specific class (only members can join)
+    class_id: Optional[int] = None
     creator_id: str = None
     creator_name: str = None
     participants: Dict[str, dict] = field(default_factory=dict)  # user_id -> user_info
@@ -28,6 +30,8 @@ class TroubleshootingLobby:
     cli_history: Dict[str, List[dict]] = field(default_factory=dict)  # device_id -> commands
     created_at: datetime = field(default_factory=datetime.utcnow)
     is_active: bool = True
+    # When locked, no new participants may join
+    is_locked: bool = False
     progress: Dict[str, any] = field(default_factory=dict)  # shared progress tracking
     chat_history: List[dict] = field(default_factory=list)
     
@@ -56,6 +60,56 @@ class TroubleshootingLobby:
             # Release all device locks held by this user
             self._release_user_device_locks(user_id)
             del self.participants[user_id]
+
+    # ----- Moderation helpers -----
+    def _is_moderator(self, user_id: str) -> bool:
+        participant = self.participants.get(user_id)
+        if not participant:
+            return False
+        return participant.get('role') in ('creator', 'moderator')
+
+    def assign_moderator(self, target_user_id: str, by_user_id: str) -> dict:
+        """Assign moderator role to a participant (creator only)"""
+        if by_user_id != self.creator_id:
+            return {'success': False, 'error': 'Only the lobby owner can assign moderators'}
+        if target_user_id not in self.participants:
+            return {'success': False, 'error': 'User not in lobby'}
+        self.participants[target_user_id]['role'] = 'moderator'
+        return {'success': True}
+
+    def revoke_moderator(self, target_user_id: str, by_user_id: str) -> dict:
+        """Revoke moderator role from a participant (creator only)"""
+        if by_user_id != self.creator_id:
+            return {'success': False, 'error': 'Only the lobby owner can revoke moderators'}
+        if target_user_id not in self.participants:
+            return {'success': False, 'error': 'User not in lobby'}
+        # Don't allow demoting the owner
+        if target_user_id == self.creator_id:
+            return {'success': False, 'error': 'Cannot change owner role'}
+        self.participants[target_user_id]['role'] = 'participant'
+        return {'success': True}
+
+    def kick_participant(self, target_user_id: str, by_user_id: str) -> dict:
+        """Kick a participant from the lobby (owner/moderator)"""
+        if not self._is_moderator(by_user_id):
+            return {'success': False, 'error': 'Moderator or owner permissions required'}
+        if target_user_id not in self.participants:
+            return {'success': False, 'error': 'User not in lobby'}
+        if target_user_id == self.creator_id:
+            return {'success': False, 'error': 'Cannot kick the lobby owner'}
+        username = self.participants[target_user_id]['username']
+        self.remove_participant(target_user_id)
+        self.add_chat_message('system', f"{username} was removed from the session", 'system')
+        return {'success': True}
+
+    def set_locked(self, by_user_id: str, locked: bool) -> dict:
+        """Lock or unlock the lobby (owner/moderator)"""
+        if not self._is_moderator(by_user_id):
+            return {'success': False, 'error': 'Moderator or owner permissions required'}
+        self.is_locked = bool(locked)
+        state = 'locked' if self.is_locked else 'unlocked'
+        self.add_chat_message('system', f"Lobby has been {state}", 'system')
+        return {'success': True}
     
     def update_participant_cursor(self, user_id: str, position: dict):
         """Update participant's cursor position for real-time collaboration"""
@@ -343,6 +397,7 @@ class TroubleshootingLobby:
             'scenario_type': self.scenario_type,
             'scenario_id': self.scenario_id,
             'max_participants': self.max_participants,
+            'class_id': self.class_id,
             'creator_id': self.creator_id,
             'creator_name': self.creator_name,
             'participants': self.participants,
@@ -352,6 +407,7 @@ class TroubleshootingLobby:
             'cli_history': self.cli_history,
             'created_at': self.created_at.isoformat(),
             'is_active': self.is_active,
+            'is_locked': self.is_locked,
             'progress': self.progress,
             'recent_chat': self.chat_history[-5:] if self.chat_history else [],
             'last_activity': max(
@@ -399,6 +455,7 @@ class LobbyManager:
                 scenario_type=lobby_config['scenario_type'],
                 scenario_id=lobby_config['scenario_id'],
                 max_participants=lobby_config.get('max_participants', 6),
+                class_id=lobby_config.get('class_id'),
                 creator_id=creator_id,
                 creator_name=creator_name
             )
@@ -430,6 +487,9 @@ class LobbyManager:
             # Check if lobby is active
             if not lobby.is_active:
                 return {'success': False, 'error': 'Session is no longer active'}
+            # Check if lobby is locked
+            if lobby.is_locked:
+                return {'success': False, 'error': 'Session is locked'}
             
             # Check if lobby is full
             if len(lobby.participants) >= lobby.max_participants:
