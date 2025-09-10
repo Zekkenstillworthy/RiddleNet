@@ -70,8 +70,19 @@ def classes():
     
 @user_bp.route('/learning/networking-1')
 def networking_1():
-    # Redirect to class 7 instead of the old learning page
-    return redirect('/class/7/')
+    # Redirect directly to first lesson of first module of class 7
+    from admin.models.module import Module, Lesson
+    try:
+        first_module = Module.query.filter_by(class_id=7, is_active=True, is_published=True).order_by(Module.order_index.asc()).first()
+        if first_module:
+            first_lesson = Lesson.query.filter_by(module_id=first_module.id, is_active=True).order_by(Lesson.order_index.asc()).first()
+            if first_lesson:
+                return redirect(url_for('universal_class.module_detail', class_id=7, module_id=first_module.id) + f'?lesson_id={first_lesson.id}')
+        # Fallback to universal class page (which itself will redirect)
+        return redirect(url_for('universal_class.dynamic_class_detail', class_id=7))
+    except Exception as e:
+        print(f"Error redirecting networking_1: {e}")
+        return redirect(url_for('universal_class.dynamic_class_detail', class_id=7))
 
 @user_bp.route('/learning/networking-2')
 def networking_2():

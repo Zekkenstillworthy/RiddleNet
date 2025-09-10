@@ -21,6 +21,7 @@ from admin.models.assignment_submission import AssignmentSubmission
 from utils.auth_utils import flexible_login_required, get_current_user_context
 from admin import db
 from sqlalchemy import and_
+import json, ast
 
 # Create blueprint for universal class handling
 universal_class_bp = Blueprint('universal_class', __name__, url_prefix='/class')
@@ -39,6 +40,17 @@ def dynamic_class_detail(class_id):
     """
     print(f"🚀 ROUTE HIT: /class/{class_id} - dynamic_class_detail called")
     try:
+        # QUICK REDIRECT: For legacy class 7, send users directly to first module's first lesson
+        if class_id == 7:
+            try:
+                first_module = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index.asc()).first()
+                if first_module:
+                    first_lesson = Lesson.query.filter_by(module_id=first_module.id, is_active=True).order_by(Lesson.order_index.asc()).first()
+                    if first_lesson:
+                        return redirect(url_for('universal_class.module_detail', class_id=class_id, module_id=first_module.id) + f'?lesson_id={first_lesson.id}')
+            except Exception as redirect_err:
+                print(f"Redirect logic for class 7 failed: {redirect_err}")
+        
         # Get user context
         user_context = get_current_user_context()
         user_id = user_context['user_id'] if user_context['is_authenticated'] else None
@@ -67,6 +79,41 @@ def dynamic_class_detail(class_id):
         # Get class modules from database (using Module model)
         class_modules = []
         modules = Module.query.filter_by(class_id=class_id, is_active=True, is_published=True).order_by(Module.order_index).all()
+        # Normalizer to ensure objective/concept fields become lists
+        def _normalize_list_field(raw_value):
+            try:
+                if not raw_value:
+                    return []
+                if isinstance(raw_value, list):
+                    return raw_value
+                if isinstance(raw_value, (set, tuple)):
+                    return list(raw_value)
+                if isinstance(raw_value, str):
+                    s = raw_value.strip()
+                    # Try JSON / literal list
+                    if (s.startswith('[') and s.endswith(']')):
+                        try:
+                            parsed = json.loads(s)
+                            if isinstance(parsed, list):
+                                return parsed
+                        except Exception:
+                            try:
+                                parsed = ast.literal_eval(s)
+                                if isinstance(parsed, list):
+                                    return parsed
+                            except Exception:
+                                pass
+                    # Fallback split on newlines first then commas
+                    delimiter = '\n' if '\n' in s else ','
+                    parts = [p.strip().strip('"').strip("'") for p in s.split(delimiter) if p.strip()]
+                    # Remove stray brackets
+                    cleaned = [p.lstrip('[').rstrip(']') for p in parts if p not in ['[',']']]
+                    return [c for c in cleaned if c]
+                return [str(raw_value)]
+            except Exception as norm_err:
+                print(f"_normalize_list_field (class view) error: {norm_err}")
+                return []
+
         for module in modules:
             # Get module lessons
             lessons = Lesson.query.filter_by(module_id=module.id, is_active=True).order_by(Lesson.order_index).all()
@@ -83,15 +130,14 @@ def dynamic_class_detail(class_id):
             lesson_data = []
             for lesson in lessons:
                 try:
-                    # Get basic lesson data without progress queries that might fail
                     lesson_data.append({
                         'id': lesson.id,
                         'title': lesson.title,
                         'description': lesson.description,
                         'lesson_number': lesson.lesson_number,
                         'content': lesson.content,
-                        'learning_objectives': lesson.learning_objectives or [],
-                        'key_concepts': lesson.key_concepts or [],
+                        'learning_objectives': _normalize_list_field(getattr(lesson, 'learning_objectives', None)),
+                        'key_concepts': _normalize_list_field(getattr(lesson, 'key_concepts', None)),
                         'estimated_duration': lesson.estimated_duration,
                         'is_active': lesson.is_active,
                         'simulation_ids': lesson.simulation_ids or [],
@@ -100,13 +146,14 @@ def dynamic_class_detail(class_id):
                     })
                 except Exception as e:
                     print(f"Error getting lesson data for lesson {lesson.id}: {e}")
-                    # Add basic lesson info if there's an error
                     lesson_data.append({
                         'id': lesson.id,
                         'title': lesson.title,
                         'description': lesson.description or '',
                         'lesson_number': getattr(lesson, 'lesson_number', ''),
-                        'estimated_duration': getattr(lesson, 'estimated_duration', 30)
+                        'estimated_duration': getattr(lesson, 'estimated_duration', 30),
+                        'learning_objectives': [],
+                        'key_concepts': []
                     })
             
             class_modules.append({
@@ -495,6 +542,46 @@ def module_detail(class_id, module_id):
                     )
                     db.session.add(active_lesson_progress)
                     db.session.commit()
+
+                # Normalize learning_objectives & key_concepts to lists (handle strings / JSON / None)
+                def _normalize_list_field(raw_value):
+                    if not raw_value:
+                        return []
+                    if isinstance(raw_value, list):
+                        return raw_value
+                    if isinstance(raw_value, str):
+                        import json, ast
+                        s = raw_value.strip()
+                        # If it looks like JSON list
+                        if (s.startswith('[') and s.endswith(']')) or (s.startswith('"') and s.endswith('"')):
+                            try:
+                                parsed = json.loads(s)
+                                if isinstance(parsed, list):
+                                    return parsed
+                                if isinstance(parsed, str):  # A single quoted string
+                                    return [parsed]
+                            except Exception:
+                                try:
+                                    parsed = ast.literal_eval(s)
+                                    if isinstance(parsed, list):
+                                        return parsed
+                                except Exception:
+                                    pass
+                        # Fallback: split on commas
+                        return [p.strip() for p in s.split(',') if p.strip()]
+                    # Any other type -> wrap
+                    return [str(raw_value)]
+
+                try:
+                    active_lesson.learning_objectives = _normalize_list_field(getattr(active_lesson, 'learning_objectives', []))
+                except Exception as nerr:
+                    print(f"Normalization error (learning_objectives) for lesson {active_lesson.id}: {nerr}")
+                    active_lesson.learning_objectives = []
+                try:
+                    active_lesson.key_concepts = _normalize_list_field(getattr(active_lesson, 'key_concepts', []))
+                except Exception as nerr:
+                    print(f"Normalization error (key_concepts) for lesson {active_lesson.id}: {nerr}")
+                    active_lesson.key_concepts = []
                 
                 # Get previous and next lessons
                 current_index = lessons.index(active_lesson)
@@ -506,11 +593,57 @@ def module_detail(class_id, module_id):
                 # Get lesson-specific simulations
                 if hasattr(active_lesson, 'simulation_ids') and active_lesson.simulation_ids:
                     from admin.models.simulation import Simulation
-                    lesson_simulations = Simulation.query.filter(
-                        Simulation.id.in_(active_lesson.simulation_ids),
-                        Simulation.is_active == True,
-                        Simulation.is_published == True
-                    ).all()
+                    # Safely normalize simulation_ids (may be stored as list, JSON string, python repr, or comma-separated)
+                    raw_ids = active_lesson.simulation_ids
+                    normalized_ids = []
+                    try:
+                        if isinstance(raw_ids, (list, tuple, set)):
+                            normalized_ids = [int(x) for x in raw_ids if str(x).isdigit()]
+                        elif isinstance(raw_ids, int):
+                            normalized_ids = [raw_ids]
+                        elif isinstance(raw_ids, str):
+                            import json, ast, re
+                            s = raw_ids.strip()
+                            if s:
+                                parsed = None
+                                # Try JSON first
+                                try:
+                                    parsed = json.loads(s)
+                                except Exception:
+                                    # Try ast.literal_eval for python-style list
+                                    try:
+                                        parsed = ast.literal_eval(s)
+                                    except Exception:
+                                        parsed = None
+                                if isinstance(parsed, int):
+                                    normalized_ids = [parsed]
+                                elif isinstance(parsed, (list, tuple, set)):
+                                    normalized_ids = [int(x) for x in parsed if str(x).isdigit()]
+                                else:
+                                    # Fallback: split on commas / whitespace, strip brackets
+                                    s_clean = re.sub(r'[\[\]\s]+', ' ', s)
+                                    candidates = [c for token in s_clean.split(' ') for c in token.split(',')]
+                                    normalized_ids = [int(x) for x in candidates if x.isdigit()]
+                    except Exception as parse_err:
+                        print(f"⚠️ Failed to parse simulation_ids '{raw_ids}': {parse_err}")
+                        normalized_ids = []
+
+                    # Deduplicate & preserve order
+                    seen = set()
+                    ordered_ids = []
+                    for _id in normalized_ids:
+                        if _id not in seen:
+                            seen.add(_id)
+                            ordered_ids.append(_id)
+
+                    if ordered_ids:
+                        lesson_simulations = Simulation.query.filter(
+                            Simulation.id.in_(ordered_ids),
+                            Simulation.is_active == True,
+                            Simulation.is_published == True
+                        ).all()
+                    else:
+                        lesson_simulations = []
                     
                     # Get simulation progress for each lesson simulation
                     for sim in lesson_simulations:
