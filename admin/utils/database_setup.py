@@ -3,7 +3,7 @@ from admin.models.question import Question
 from werkzeug.security import generate_password_hash
 from admin.models.user import Admin
 from admin.utils.questions_data import get_networking_questions
-import sqlite3
+import os
 
 def setup_database():
     """Set up the database with initial tables and data."""
@@ -47,117 +47,13 @@ def setup_database():
     print("✅ Performance feedback tables created successfully!")
 
 def migrate_existing_tables():
-    """Add missing columns to existing tables"""
-    try:
-        from sqlalchemy import text
-        connection = db.engine.raw_connection()
-        cursor = connection.cursor()
-        
-        # Fix activity_logs table column naming issue
-        try:
-            cursor.execute("PRAGMA table_info(activity_logs)")
-            activity_columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'admin_user_id' in activity_columns and 'user_id' not in activity_columns:
-                print("Migrating activity_logs table: renaming admin_user_id to user_id...")
-                # Create new table with correct schema
-                cursor.execute('''
-                CREATE TABLE activity_logs_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    action_type VARCHAR(50) NOT NULL,
-                    message VARCHAR(255) NOT NULL,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    related_entity_type VARCHAR(50),
-                    related_entity_id INTEGER
-                )
-                ''')
-                
-                # Copy data from old table to new table
-                cursor.execute('''
-                INSERT INTO activity_logs_new (id, user_id, action_type, message, timestamp, related_entity_type, related_entity_id)
-                SELECT id, admin_user_id, action_type, message, timestamp, related_entity_type, related_entity_id
-                FROM activity_logs
-                ''')
-                
-                # Drop old table and rename new table
-                cursor.execute('DROP TABLE activity_logs')
-                cursor.execute('ALTER TABLE activity_logs_new RENAME TO activity_logs')
-                connection.commit()
-                print("Successfully migrated activity_logs table")
-        except Exception as e:
-            print(f"Activity logs table migration: {e}")
-        
-        # Check and add updated_at column to classes table
-        cursor.execute("PRAGMA table_info(classes)")
-        columns = [column[1] for column in cursor.fetchall()]
-        
-        if 'updated_at' not in columns:
-            print("Adding updated_at column to classes table...")
-            cursor.execute("ALTER TABLE classes ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-            connection.commit()
-            print("Successfully added updated_at column to classes table")
-          # Check other tables that might need updated_at column
-        tables_needing_updated_at = [
-            'topologies', 'troubleshootings', 
-            'troubleshooting_progress', 'question_groups'
-        ]
-        
-        for table_name in tables_needing_updated_at:
-            try:
-                cursor.execute(f"PRAGMA table_info({table_name})")
-                table_columns = [column[1] for column in cursor.fetchall()]
-                
-                if table_columns and 'updated_at' not in table_columns:
-                    print(f"Adding updated_at column to {table_name} table...")
-                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-                    connection.commit()
-                    print(f"Successfully added updated_at column to {table_name} table")
-            except Exception as e:
-                print(f"Table {table_name} might not exist yet: {e}")
-                continue
-        
-        # Fix module_progress table missing columns
-        try:
-            cursor.execute("PRAGMA table_info(module_progress)")
-            module_progress_columns = [column[1] for column in cursor.fetchall()]
-            
-            if module_progress_columns:  # Table exists
-                # Check for missing columns and add them
-                missing_columns = []
-                expected_columns = {
-                    'total_time_spent': 'INTEGER DEFAULT 0',
-                    'session_count': 'INTEGER DEFAULT 0',
-                    'last_session_id': 'VARCHAR(255)',
-                    'started_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-                    'completed_at': 'TIMESTAMP',
-                    'last_accessed': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
-                }
-                
-                for col_name, col_type in expected_columns.items():
-                    if col_name not in module_progress_columns:
-                        missing_columns.append((col_name, col_type))
-                
-                if missing_columns:
-                    print(f"Adding missing columns to module_progress table: {[col[0] for col in missing_columns]}")
-                    for col_name, col_type in missing_columns:
-                        try:
-                            cursor.execute(f"ALTER TABLE module_progress ADD COLUMN {col_name} {col_type}")
-                            print(f"  ✅ Added {col_name} column")
-                        except Exception as e:
-                            print(f"  ❌ Error adding {col_name} column: {e}")
-                    connection.commit()
-                    print("Successfully updated module_progress table schema")
-                else:
-                    print("module_progress table schema is up to date")
-        except Exception as e:
-            print(f"Error checking/updating module_progress table: {e}")
-        
-        connection.close()
-        print("Database migration completed successfully")
-        
-    except Exception as e:
-        print(f"Error during database migration: {e}")
+    """Previously performed ad-hoc SQLite PRAGMA based migrations.
+
+    With PostgreSQL now mandated, structural changes should be handled via
+    proper Alembic migrations (flask db migrate/upgrade). This function is
+    retained as a no-op to avoid import errors from legacy calls.
+    """
+    print("[database_setup] Skipping legacy SQLite PRAGMA migrations (PostgreSQL in use)")
 
 def import_default_questions():
     """Import default questions if the database is empty."""

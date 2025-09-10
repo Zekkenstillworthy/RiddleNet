@@ -131,19 +131,16 @@ def test_api():
         # Test database connection and check for missing columns
         from sqlalchemy import text
         
-        # Check if updated_at column exists in classes table
+        # PostgreSQL: rely on migrations; perform a lightweight check using information_schema
         try:
-            result = db.session.execute(text("PRAGMA table_info(classes)"))
-            columns = [row[1] for row in result.fetchall()]
-            
-            if 'updated_at' not in columns:
-                print("Missing updated_at column in classes table. Adding it...")
-                # Add the missing column
-                db.session.execute(text("ALTER TABLE classes ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
-                db.session.commit()
-                print("Successfully added updated_at column to classes table")
+            column_check = db.session.execute(text("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='classes' AND column_name='updated_at'
+            """)).first()
+            if not column_check:
+                print("[test_api] 'updated_at' column missing in 'classes' table; please generate a migration.")
         except Exception as e:
-            print(f"Error checking/adding updated_at column: {e}")
+            print(f"[test_api] Column existence check failed: {e}")
         
         class_count = Class.query.count()
         

@@ -37,12 +37,30 @@ def create_app(config=None):
         template_folder = config['TEMPLATE_FOLDER']
     
     app = Flask(__name__, instance_path=instance_path, template_folder=template_folder)    # Configure the app
-    # Use local config file instead of user.config
-    app.config.from_pyfile('config.py', silent=True)
-    
-    # Set sensible defaults if config file doesn't exist
+    # Use local instance config file (PostgreSQL settings) instead of user.config
+    loaded_instance_config = app.config.from_pyfile('config.py', silent=True)
+    print(f"[create_app] Attempted to load instance/config.py (silent=True). Exists: {os.path.exists(os.path.join(instance_path, 'config.py'))}")
+    # If not loaded, attempt to construct URI from env vars as emergency fallback
     if 'SQLALCHEMY_DATABASE_URI' not in app.config:
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "riddlenet.db")}'
+        print("[create_app] SQLALCHEMY_DATABASE_URI not found after from_pyfile. Building from environment variables...")
+        pg_host = os.getenv("POSTGRES_HOST", "localhost")
+        pg_port = os.getenv("POSTGRES_PORT", "5432")
+        pg_db = os.getenv("POSTGRES_DB", "riddlenet")
+        pg_user = os.getenv("POSTGRES_USER", "postgres")
+        pg_password = os.getenv("POSTGRES_PASSWORD", "")
+        pg_sslmode = os.getenv("POSTGRES_SSL_MODE")
+        if not (pg_host and pg_db and pg_user):
+            print(f"[create_app] Incomplete PostgreSQL env configuration: host={pg_host} db={pg_db} user={pg_user}")
+        auth_segment = f"{pg_user}:{pg_password}" if pg_password else pg_user
+        uri = f"postgresql+psycopg2://{auth_segment}@{pg_host}:{pg_port}/{pg_db}"
+        if pg_sslmode:
+            uri += f"?sslmode={pg_sslmode}"
+        app.config['SQLALCHEMY_DATABASE_URI'] = uri
+        print(f"[create_app] Constructed PostgreSQL URI from env: {uri}")
+    
+    # Enforce that the instance config provided a PostgreSQL URI
+    if 'SQLALCHEMY_DATABASE_URI' not in app.config:
+        raise RuntimeError("SQLALCHEMY_DATABASE_URI not set. PostgreSQL configuration required (instance/config.py or environment)")
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
