@@ -1,6 +1,17 @@
 /**
  * User Device Configurator
- * Provides device configuration interface for students in simulations
+ * Provides device configuration                                     <div class="form-group">
+                                        <label for="user-device-name">Device Name</label>
+                                        <input type="text" id="user-device-name" placeholder="Enter device name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user-device-description">Description</label>
+                                        <textarea id="user-device-description" placeholder="Enter device description" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user-device-location">Location</label>
+                                        <input type="text" id="user-device-location" placeholder="Enter physical location">
+                                    </div>r students in simulations
  * Mirrors admin enhanced-device-configurator.js functionality
  */
 
@@ -98,22 +109,22 @@ class UserDeviceConfigurator {
                                     <div id="static-config" class="ip-config-section">
                                         <div class="form-row">
                                             <div class="form-group">
-                                                <label for="ip-address">IP Address</label>
-                                                <input type="text" id="ip-address" placeholder="192.168.1.100">
+                                                <label for="user-ip-address">IP Address</label>
+                                                <input type="text" id="user-ip-address" placeholder="192.168.1.100">
                                             </div>
                                             <div class="form-group">
-                                                <label for="subnet-mask">Subnet Mask</label>
-                                                <input type="text" id="subnet-mask" placeholder="255.255.255.0">
+                                                <label for="user-subnet-mask">Subnet Mask</label>
+                                                <input type="text" id="user-subnet-mask" placeholder="255.255.255.0">
                                             </div>
                                         </div>
                                         <div class="form-row">
                                             <div class="form-group">
-                                                <label for="default-gateway">Default Gateway</label>
-                                                <input type="text" id="default-gateway" placeholder="192.168.1.1">
+                                                <label for="user-default-gateway">Default Gateway</label>
+                                                <input type="text" id="user-default-gateway" placeholder="192.168.1.1">
                                             </div>
                                             <div class="form-group">
-                                                <label for="dns-server">DNS Server</label>
-                                                <input type="text" id="dns-server" placeholder="8.8.8.8">
+                                                <label for="user-dns-server">DNS Server</label>
+                                                <input type="text" id="user-dns-server" placeholder="8.8.8.8">
                                             </div>
                                         </div>
                                     </div>
@@ -288,8 +299,8 @@ class UserDeviceConfigurator {
         const config = this.networkConfigs.get(device.id) || this.getDefaultConfig(device);
         
         // Populate basic information
-        document.getElementById('device-name').value = device.name || '';
-        document.getElementById('device-description').value = config.description || '';
+        document.getElementById('user-device-name').value = device.name || '';
+        document.getElementById('user-device-description').value = config.description || '';
         document.getElementById('user-device-location').value = config.location || '';
 
         // Populate network configuration
@@ -298,10 +309,10 @@ class UserDeviceConfigurator {
             this.toggleIPMethod('dhcp');
         } else {
             document.querySelector('input[value="static"]').checked = true;
-            document.getElementById('ip-address').value = config.ipAddress || '';
-            document.getElementById('subnet-mask').value = config.subnetMask || '255.255.255.0';
-            document.getElementById('default-gateway').value = config.gateway || '';
-            document.getElementById('dns-server').value = config.dnsServer || '';
+            document.getElementById('user-ip-address').value = config.ipAddress || '';
+            document.getElementById('user-subnet-mask').value = config.subnetMask || '255.255.255.0';
+            document.getElementById('user-default-gateway').value = config.gateway || '';
+            document.getElementById('user-dns-server').value = config.dnsServer || '';
             this.toggleIPMethod('static');
         }
 
@@ -555,18 +566,18 @@ class UserDeviceConfigurator {
         const ipMethod = document.querySelector('input[name="ip-method"]:checked').value;
         
         const config = {
-            deviceName: document.getElementById('device-name').value,
-            description: document.getElementById('device-description').value,
+            deviceName: document.getElementById('user-device-name').value,
+            description: document.getElementById('user-device-description').value,
             location: document.getElementById('user-device-location').value,
             ipMethod: ipMethod,
             timestamp: new Date().toISOString()
         };
 
         if (ipMethod === 'static') {
-            config.ipAddress = document.getElementById('ip-address').value;
-            config.subnetMask = document.getElementById('subnet-mask').value;
-            config.gateway = document.getElementById('default-gateway').value;
-            config.dnsServer = document.getElementById('dns-server').value;
+            config.ipAddress = document.getElementById('user-ip-address').value;
+            config.subnetMask = document.getElementById('user-subnet-mask').value;
+            config.gateway = document.getElementById('user-default-gateway').value;
+            config.dnsServer = document.getElementById('user-dns-server').value;
         }
 
         // Collect device-specific configurations

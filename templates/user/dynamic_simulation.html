@@ -78,14 +78,17 @@
         justify-content: space-between;
         backdrop-filter: blur(20px);
         z-index: 1000;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 1rem;
+        min-height: 80px;
     }
 
     .header-left {
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex: 1;
+        min-width: 0;
     }
 
     .back-btn {
@@ -127,6 +130,8 @@
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
     }
 
     .progress-indicator {
@@ -141,21 +146,22 @@
         backdrop-filter: blur(15px);
     }
 
-    .timer {
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: var(--cyber-glow);
-        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
-        letter-spacing: 0.5px;
-    }
-
     /* Main Content Area */
     .simulation-content {
         flex: 1;
         display: flex;
+        flex-direction: row;
         overflow: hidden;
+        transition: all 0.3s ease;
+        padding-bottom: 85px; /* Space for smaller fixed device palette */
     }
+
+    /* Adjust simulation-content when device palette is minimized */
+    body.palette-minimized .simulation-content {
+        padding-bottom: 35px; /* Reduced padding for minimized palette */
+    }
+
+    /* Removed old sibling-based layout rule (steps panel now on right) */
 
     .simulation-main {
         flex: 1;
@@ -176,18 +182,12 @@
         margin: 1rem;
         border-radius: var(--border-radius-lg);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        transition: margin-right 0.3s ease, height 0.3s ease;
     }
 
-    #simulation-canvas {
-        width: 100%;
-        height: 100%;
-        background: 
-            radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-            var(--surface);
-        position: relative;
-        overflow: hidden;
-    }
+    /* Canvas now flexes naturally; no sibling width overrides needed */
+
+   
 
     /* Network Canvas System from troubleshoot.html - Enhanced */
     #Canvas {
@@ -267,6 +267,67 @@
     box-shadow: 0 6px 20px rgba(0, 217, 255, 0.3);
     }
 
+    /* Drop Zones for Devices */
+    .drop-zone {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        background: rgba(0, 217, 255, 0.05);
+        border: 2px dashed transparent;
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(2px);
+    }
+
+    .drop-zone.active {
+        opacity: 1;
+        visibility: visible;
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+    }
+
+    .drop-zone-content {
+        text-align: center;
+        color: var(--text-primary);
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .drop-zone-icon {
+        font-size: 3rem;
+        color: var(--cyber-glow);
+        margin-bottom: 1rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    .drop-zone-text {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    }
+
+    .drop-zone-hint {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.1); opacity: 1; }
+    }
+
     .tool-btn.active {
         background: rgba(0, 217, 255, 0.25);
         border-color: var(--cyber-glow);
@@ -284,23 +345,23 @@
         border-top: 2px solid var(--glass-border);
         backdrop-filter: blur(20px);
         z-index: 1000;
-        padding: 1.5rem 2rem;
+        padding: 0.5rem 1rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         transition: all 0.3s ease;
         box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
-        min-height: 140px;
+        min-height: 70px;
         flex-wrap: wrap;
-        gap: 1.5rem;
+        gap: 0.75rem;
     }
 
     .palette-section {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        gap: 0.75rem;
         flex-wrap: wrap;
-        padding: 0.5rem;
+        padding: 0.125rem;
     }
 
     .palette-section.left-section {
@@ -655,6 +716,41 @@
         background: rgba(255, 255, 255, 0.02);
     }
 
+    .steps-header-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .steps-toggle-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .steps-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    .steps-toggle-btn i {
+        transition: transform 0.3s ease;
+    }
+
+    .steps-panel.collapsed .steps-toggle-btn i {
+        transform: rotate(180deg);
+    }
+
     .steps-title {
         font-size: 1.4rem;
         font-weight: 700;
@@ -676,6 +772,36 @@
         flex: 1;
         overflow-y: auto;
         padding: 1.5rem;
+        transition: all 0.3s ease;
+        max-height: none;
+    }
+
+    /* Collapsed state for steps panel */
+    .steps-panel.collapsed {
+        width: 60px;
+        min-width: 60px;
+    }
+
+    .steps-panel.collapsed .steps-content {
+        display: none;
+    }
+
+    .steps-panel.collapsed .steps-subtitle {
+        display: none;
+    }
+
+    .steps-panel.collapsed .steps-title {
+        display: none;
+    }
+
+    .steps-panel.collapsed .steps-header {
+        padding: 1rem 0.5rem;
+        border-bottom: none;
+    }
+
+    .steps-panel.collapsed .steps-header-content {
+        flex-direction: column;
+        margin-bottom: 0;
     }
 
     .step-item {
@@ -709,16 +835,7 @@
         margin-bottom: 1.25rem;
         padding-bottom: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .step-number {
-        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
-        color: var(--surface);
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
+    }     align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 0.9rem;
@@ -770,27 +887,28 @@
         padding: 1rem;
     }
 
-    /* Bottom Bar (like troubleshoot.html) */
-    .bottom-bar {
-        background: var(--glass-bg);
-        border-top: 2px solid var(--glass-border);
-        padding: 1.75rem 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        backdrop-filter: blur(25px);
-        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
-        min-height: 100px;
+    .simulation-header .score-display {
+        gap: 1.5rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .simulation-header .score-value {
+        font-size: 1.2rem;
+    }
+
+    .simulation-header .bottom-actions {
+        gap: 0.75rem;
     }
 
     .score-display {
         display: flex;
         align-items: center;
-        gap: 2.5rem;
-        padding: 1rem;
+        gap: 1.5rem;
+        padding: 0.5rem 1rem;
         background: var(--glass-bg-light);
         border-radius: var(--border-radius-lg);
         border: 2px solid var(--glass-border);
+        flex-shrink: 0;
     }
 
     .score-item {
@@ -817,8 +935,15 @@
 
     .bottom-actions {
         display: flex;
-        gap: 1.25rem;
+        gap: 0.75rem;
         align-items: center;
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+    }
+
+    .simulation-header .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
     }
 
     .btn {
@@ -1116,318 +1241,44 @@
         border-radius: 0 var(--border-radius) var(--border-radius) 0;
     }
 
-    /* Responsive Design */
+    /* Responsive Design (consolidated) */
     @media (max-width: 1200px) {
-        .steps-panel {
-            width: 380px;
-        }
-        
-        .canvas-container {
-            margin: 0.75rem;
-        }
-        
-        .device-categories {
-            gap: 1.5rem;
-        }
+        .steps-panel { width: 360px; }
+        .canvas-container { margin: 0.75rem; }
     }
-
     @media (max-width: 1024px) {
-        .steps-panel {
-            width: 360px;
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
-        }
-        
-        .canvas-container {
-            margin: 0.5rem;
-        }
-        
-        .simulation-header {
-            padding: 1rem 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .simulation-title {
-            font-size: 1.25rem;
-        }
-        
-        #device-palette {
-            padding: 1rem 1.5rem;
-            min-height: 120px;
-        }
-        
-        .palette-section {
-            min-width: auto;
-            flex-basis: auto;
-        }
-        
-        .palette-section.center-section {
-            flex-basis: 100%;
-            order: 3;
-        }
+        .steps-panel { width: 320px; }
+        .simulation-header { padding: 1rem 1.25rem; }
+        .simulation-title { font-size: 1.25rem; }
     }
-
     @media (max-width: 768px) {
-        .simulation-content {
-            flex-direction: column;
-        }
-        
-        .steps-panel {
-            width: 100%;
-            height: 45vh;
-            border-left: none;
-            border-top: 2px solid var(--glass-border);
-            margin: 0;
-            border-radius: 0;
-        }
-        
-        .canvas-container {
-            height: 55vh;
-            margin: 0.25rem;
-        }
+        .simulation-content { flex-direction: column; }
+        .steps-panel { width:100%; height:45vh; border-left:none; border-top:2px solid var(--glass-border); margin:0; border-radius:0; }
+        .canvas-container { height:55vh; margin:0.25rem; }
     }
-        /* ===== TROUBLESHOOTING & VALIDATION STYLES ===== */
-        
-        #troubleshooting-panel {
-            background: rgba(30, 30, 30, 0.95);
-            border: 1px solid #444;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(255, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        
-        .troubleshooting-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .troubleshooting-content {
-            padding: 15px;
-        }
-        
-        .problem-section,
-        .tools-section,
-        .results-section,
-        .hints-section,
-        .solution-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .problem-section h5,
-        .tools-section h5,
-        .results-section h5,
-        .hints-section h5,
-        .solution-section h5 {
-            color: #00D9FF;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .tool-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .tool-btn {
-            background: linear-gradient(145deg, #333, #444);
-            border: 1px solid #555;
-            border-radius: 8px;
-            color: #fff;
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-        }
-        
-        .tool-btn:hover {
-            background: linear-gradient(145deg, #444, #555);
-            border-color: #00D9FF;
-            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        .diagnostic-entry {
-            margin-bottom: 15px;
-            border-left: 3px solid #00D9FF;
-            padding-left: 10px;
-        }
-        
-        .diagnostic-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        
-        .tool-name {
-            font-weight: bold;
-            color: #00D9FF;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-        }
-        
-        .timestamp {
-            font-size: 0.75rem;
-            color: #888;
-        }
-        
-        .diagnostic-result {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 5px;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            border: 1px solid #333;
-            margin: 0;
-        }
-        
-        .validation-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .validation-status.valid {
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            color: #00FF00;
-        }
-        
-        .validation-status.invalid {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: #FF4444;
-        }
-        
-        .validation-error,
-        .validation-warning,
-        .validation-success {
-            padding: 8px 12px;
-            margin: 5px 0;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-        }
-        
-        .validation-error {
-            background: rgba(255, 0, 0, 0.1);
-            border-left: 3px solid #FF4444;
-            color: #FFB3B3;
-        }
-        
-        .validation-warning {
-            background: rgba(255, 165, 0, 0.1);
-            border-left: 3px solid #FFA500;
-            color: #FFD700;
-        }
-        
-        .validation-success {
-            background: rgba(0, 255, 0, 0.1);
-            border-left: 3px solid #00FF00;
-            color: #90EE90;
-        }
-        
-        /* Achievement Notification Styles (from troubleshoot.html) */
-        .achievement-notification {
-            position: fixed;
-            top: 20px;
-            right: -400px;
-            width: 350px;
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(59, 130, 246, 0.95));
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            color: var(--text-primary);
-            box-shadow: var(--shadow-lg), 0 0 30px rgba(16, 185, 129, 0.3);
-            z-index: 3000;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .achievement-notification.show {
-            right: 20px;
-        }
-
-        .achievement-notification .achievement-icon {
-            font-size: 32px;
-            flex-shrink: 0;
-        }
-
-        .achievement-notification .achievement-details {
-            flex: 1;
-        }
-
-        .achievement-notification .achievement-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 0 0 4px 0;
-            color: var(--text-primary);
-        }
-
-        .achievement-notification .achievement-desc {
-            font-size: 14px;
-            margin: 0;
-            opacity: 0.9;
-            color: var(--text-secondary);
-        }
-
-        /* Score Change Animation (from troubleshoot.html) */
-        .score-change {
-            position: absolute;
-            top: -30px;
-            right: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            pointer-events: none;
-            animation: scoreChange 2s ease-out forwards;
-            z-index: 1000;
-        }
-
-        .score-change.positive {
-            color: var(--success-color);
-        }
-
-        .score-change.negative {
-            color: var(--danger-color);
-        }
-
-        @keyframes scoreChange {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                transform: translateY(-15px) scale(1.2);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-30px) scale(0.8);
-            }
-        }
-        
+    /* Always show device labels in palette */
+    #device-palette .device-grid { grid-auto-rows: minmax(72px, auto); }
+    #device-palette .device-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+    #device-palette .device-item .device-label { 
+        display:block !important;
+        opacity:0.9 !important;
+        transform:none !important;
+        position:static !important;
+        font-size:0.65rem;
+        letter-spacing:.25px;
+        margin:2px 0 0 0;
+        padding:0;
+        background:transparent !important;
+        box-shadow:none !important;
+        color:var(--text-secondary, #94a3b8);
+        text-align:center;
+        max-width:70px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        pointer-events:none;
+    }
+    #device-palette .device-item:hover .device-label { color:var(--text-primary, #f1f5f9); opacity:1; }
 </style>
 {% endblock %}
 
@@ -1441,22 +1292,56 @@
                 <div class="simulation-type">{{ simulation.simulation_type }}</div>
                 <h1 class="simulation-title">{{ simulation.title }}</h1>
             </div>
-        </div>
+        </div> 
         <div class="header-right">
-            <div class="progress-indicator">
-                <i class="fas fa-clock"></i>
-                <span class="timer" id="simulation-timer">00:00</span>
+            <div class="score-display">
+                <div class="score-item">
+                    <span class="score-label">Score:</span>
+                    <span class="score-value" id="current-score">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Progress:</span>
+                    <span class="score-value" id="progress-percentage">0%</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Time:</span>
+                    <span class="score-value" id="elapsed-time">00:00</span>
+                </div>
             </div>
-            <div class="progress-indicator">
-                <i class="fas fa-chart-line"></i>
-                <span>Step <span id="current-step">1</span> of <span id="total-steps">{{ simulation.step_definitions|length }}</span></span>
+            <div class="bottom-actions">
+                <button id="validate-btn" class="btn btn-success">
+                    <i class="fas fa-check-circle"></i>
+                    Validate
+                </button>
+                <button id="reset-btn" class="btn btn-secondary">
+                    <i class="fas fa-undo"></i>
+                    Reset
+                </button>
+                <button id="hint-btn" class="btn btn-secondary">
+                    <i class="fas fa-lightbulb"></i>
+                    
+                    Hint
+                </button>
+                <button id="previous-btn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                    Previous
+                </button>
+                <button id="next-btn" class="btn btn-primary">
+                    <i class="fas fa-chevron-right"></i>
+                    Next
+                </button>
+                <button id="submit-btn" class="btn btn-success" style="display: none;">
+                    <i class="fas fa-check"></i>
+                    Submit Answer
+                </button>
             </div>
+            <!-- Removed step counter display per request -->
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="simulation-content">
-        <div class="simulation-main">
+    <div class="simulation-main">
             <!-- Enhanced Canvas Area -->
             <div class="canvas-container">
                 <div id="simulation-canvas">
@@ -1502,7 +1387,13 @@
                     </svg>
 
                     <!-- Drop Zones for Devices -->
-                    <div class="drop-zone" id="canvas-drop-zone" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10;"></div>
+                    <div class="drop-zone" id="canvas-drop-zone">
+                        <div class="drop-zone-content">
+                            <i class="fas fa-plus-circle drop-zone-icon"></i>
+                            <span class="drop-zone-text">Drop network devices here</span>
+                            <div class="drop-zone-hint">Drag devices from the palette below</div>
+                        </div>
+                    </div>
                     
                     <!-- CLI Terminal Container -->
                     <div id="cli-terminal-container" class="cli-terminal">
@@ -1526,8 +1417,8 @@
                 </div>
             </div>
         </div>
-
-        <!-- Enhanced Device Palette -->
+        
+        <!-- Enhanced Device Palette (moved outside simulation-main) -->
         <div id="device-palette">
             <div class="palette-header">
                 <div class="palette-title">
@@ -1740,64 +1631,25 @@
                     </div>
                 </div>
             </div>
-    </div>
+        </div>
 
         <!-- Steps Panel -->
         <div class="steps-panel">
             <div class="steps-header">
-                <h3 class="steps-title">
-                    <i class="fas fa-list-ol"></i>
-                    Simulation Steps
-                </h3>
+                <div class="steps-header-content">
+                    <h3 class="steps-title">
+                        <i class="fas fa-list-ol"></i>
+                        Simulation Steps
+                    </h3>
+                    <button class="steps-toggle-btn" id="steps-toggle" aria-expanded="true" title="Toggle Steps Panel">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
                 <p class="steps-subtitle">Follow each step to complete the simulation</p>
             </div>
             <div class="steps-content" id="steps-container">
                 <!-- Steps will be dynamically loaded here -->
             </div>
-        </div>
-    </div>
-
-    <!-- Bottom Bar -->
-    <div class="bottom-bar">
-        <div class="score-display">
-            <div class="score-item">
-                <span class="score-label">Score:</span>
-                <span class="score-value" id="current-score">0</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Progress:</span>
-                <span class="score-value" id="progress-percentage">0%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Time:</span>
-                <span class="score-value" id="elapsed-time">00:00</span>
-            </div>
-        </div>
-        <div class="bottom-actions">
-            <button id="validate-btn" class="btn btn-success">
-                <i class="fas fa-check-circle"></i>
-                Validate
-            </button>
-            <button id="reset-btn" class="btn btn-secondary">
-                <i class="fas fa-undo"></i>
-                Reset
-            </button>
-            <button id="hint-btn" class="btn btn-secondary">
-                <i class="fas fa-lightbulb"></i>
-                Hint
-            </button>
-            <button id="previous-btn" class="btn btn-secondary" disabled>
-                <i class="fas fa-chevron-left"></i>
-                Previous
-            </button>
-            <button id="next-btn" class="btn btn-primary">
-                <i class="fas fa-chevron-right"></i>
-                Next
-            </button>
-            <button id="submit-btn" class="btn btn-success" style="display: none;">
-                <i class="fas fa-check"></i>
-                Submit Answer
-            </button>
         </div>
     </div>
 </div>
@@ -1987,19 +1839,13 @@ class DynamicSimulation {
         this.setupCanvasTools();
         this.initializeCLI();
         this.setupEventListeners();
-        this.setupDragAndDrop();
+        // Drag and drop is handled in setupCanvasEventListeners and setupDevicePalette
         
         // Enhanced systems initialization with error handling
         try {
             initializeValidationSystem(); // Call as global function
         } catch (error) {
             console.warn('⚠️ Validation system initialization failed:', error);
-        }
-        
-        try {
-            this.initializeTroubleshootingMode();
-        } catch (error) {
-            console.warn('⚠️ Troubleshooting mode initialization failed:', error);
         }
         
         try {
@@ -2015,11 +1861,6 @@ class DynamicSimulation {
         
         // Try to restore previous progress
         this.loadSavedProgress();
-        
-        // Initialize mode-specific features
-        if (this.isTroubleshooting) {
-            this.initializeTroubleshootingMode();
-        }
         
         // Setup live features
         if (this.liveScoring) {
@@ -2079,10 +1920,18 @@ class DynamicSimulation {
         if (paletteToggle) {
             paletteToggle.addEventListener('click', () => this.togglePalette());
         }
+        
+        // Steps panel toggle
+        const stepsToggle = document.getElementById('steps-toggle');
+        if (stepsToggle) {
+            stepsToggle.addEventListener('click', () => this.toggleStepsPanel());
+        }
     }
     
+    // ===== CANVAS SYSTEM FROM TROUBLESHOOT.HTML =====
+    
     initializeCanvas() {
-        console.log('🎨 Initializing Enhanced Canvas System');
+        console.log('🎨 Initializing Canvas System (troubleshoot.html style)');
         
         this.canvas = document.getElementById('Canvas');
         if (!this.canvas) {
@@ -2092,71 +1941,117 @@ class DynamicSimulation {
         
         this.ctx = this.canvas.getContext('2d');
         
-        // Set canvas size to fill container
-        this.resizeCanvas();
+        // Adjust canvas size
+        this.canvas.width = this.canvas.clientWidth;
+        this.canvas.height = this.canvas.clientHeight;
+        
+        // Initialize canvas state
+        this.networkDevices = [];
+        this.networkConnections = [];
+        this.selectedDevice = null;
+        this.isConnectionMode = false;
+        this.firstDevice = null;
+        this.isDragging = false;
+        this.draggedDevice = null;
+        
+        // Device counter for labeling
+        this.deviceCounter = {
+            pc: 0,
+            router: 0,
+            switch: 0,
+            computer: 0,
+            laptop: 0,
+            server: 0,
+            printer: 0,
+            phone: 0,
+            tablet: 0,
+            mobile: 0,
+            'iot-device': 0,
+            'access-point': 0,
+            firewall: 0,
+            'load-balancer': 0,
+            gateway: 0,
+            bridge: 0,
+            hub: 0,
+            cloud: 0,
+            internet: 0,
+            vpn: 0,
+            vm: 0,
+            container: 0,
+            cdn: 0,
+            dns: 0,
+            database: 0
+        };
         
         // Setup canvas event listeners
         this.setupCanvasEventListeners();
         
-        // Initialize canvas state
-        this.clearCanvas();
-        this.renderCanvas();
-        
-        console.log('✅ Canvas system ready');
-    }
-    
-    resizeCanvas() {
-        // Debounce canvas resize to prevent excessive calls
-        if (this._resizeTimeout) {
-            clearTimeout(this._resizeTimeout);
-        }
-        
-        this._resizeTimeout = setTimeout(() => {
-            const container = this.canvas.parentElement;
-            const rect = container.getBoundingClientRect();
-            
-            // Set canvas size accounting for padding and borders
-            const newWidth = Math.max(800, rect.width - 4);
-            const newHeight = Math.max(600, rect.height - 4);
-            
-            // Only resize if dimensions actually changed
-            if (this.canvas.width !== newWidth || this.canvas.height !== newHeight) {
-                this.canvas.width = newWidth;
-                this.canvas.height = newHeight;
-                console.log(`📐 Canvas resized to ${this.canvas.width}x${this.canvas.height}`);
-                
-                // Re-render after resize
-                if (this.renderCanvas) {
-                    this.renderCanvas();
-                }
-            }
-        }, 100); // 100ms debounce
+        console.log('✅ Canvas system ready (troubleshoot.html style)');
     }
     
     setupCanvasEventListeners() {
-        // Mouse events
-        this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
-        this.canvas.addEventListener('dblclick', (e) => this.handleCanvasDoubleClick(e));
-        this.canvas.addEventListener('mousedown', (e) => this.handleCanvasMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
-        this.canvas.addEventListener('mouseup', (e) => this.handleCanvasMouseUp(e));
-        this.canvas.addEventListener('wheel', (e) => this.handleCanvasWheel(e));
-        this.canvas.addEventListener('contextmenu', (e) => this.handleCanvasRightClick(e));
+        // Setup enhanced event handlers from troubleshoot.html
+        this.setupEnhancedCanvasEventHandlers();
         
-    // Drag and drop events for devices are handled in setupDragAndDrop to avoid duplication
+        // Handle drag over the canvas
+        this.canvas.addEventListener("dragover", (e) => e.preventDefault());
+
+        // Handle drop on canvas
+        this.canvas.addEventListener("drop", (e) => {
+            const type = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
+            const x = e.offsetX;
+            const y = e.offsetY;
+
+            this.addDevice(type, x, y);
+            this.redrawCanvas();
+        });
+
+        // Handle canvas click for device selection and connection mode (enhanced)
+        this.canvas.addEventListener("click", (e) => {
+            const clickedDevice = this.findDeviceByPosition(e.offsetX, e.offsetY);
+            if (this.isConnectionMode) {
+                if (clickedDevice) {
+                    if (!this.firstDevice) {
+                        this.firstDevice = clickedDevice;  // Select the first device
+                        this.selectDevice(clickedDevice); // Use enhanced selection
+                    } else {
+                        this.addConnection(this.firstDevice, clickedDevice);  // Connect first and second device
+                        this.firstDevice = null;  // Reset after connecting
+                    }
+                }
+            } else if (clickedDevice) {
+                this.selectDevice(clickedDevice); // Use enhanced selection
+            } else {
+                this.selectDevice(null); // Use enhanced selection
+            }
+        });
+
+        // Double click to configure device
+        this.canvas.addEventListener("dblclick", (e) => {
+            const device = this.findDeviceByPosition(e.offsetX, e.offsetY);
+            if (device) {
+                this.showConfigModal(device);
+            }
+        });
         
-        // Window resize
-        window.addEventListener('resize', () => this.resizeCanvas());
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-        
-        console.log('⚡ Canvas event listeners configured');
+        console.log('⚡ Canvas event listeners configured (troubleshoot.html style)');
     }
     
     setupCanvasTools() {
-        console.log('🛠️ Setting up Canvas Tools');
+        console.log('🛠️ Setting up Canvas Tools (troubleshoot.html style)');
         
+        // Setup connection mode toggle
+        const connectionModeBtn = document.querySelector('[data-action="connect-mode"]');
+        if (connectionModeBtn) {
+            connectionModeBtn.addEventListener("click", () => {
+                this.isConnectionMode = !this.isConnectionMode;
+                connectionModeBtn.classList.toggle("active", this.isConnectionMode);
+                this.firstDevice = null; // Reset connection state
+                console.log(`Connection mode: ${this.isConnectionMode ? 'ON' : 'OFF'}`);
+            });
+        }
+        
+        // Setup other tool buttons
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tool = btn.dataset.tool;
@@ -2166,172 +2061,215 @@ class DynamicSimulation {
             });
         });
         
-        this.setTool('select'); // Default tool
-        console.log('✅ Canvas tools ready');
+        console.log('✅ Canvas tools ready (troubleshoot.html style)');
     }
-    
-    setupDragAndDrop() {
-        console.log('📦 Configuring Drag and Drop System');
-        
-        // Allow dropping on canvas - single event listener to prevent duplication
-        if (this.canvas) {
-            this.canvas.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                this.canvas.classList.add('drag-over');
-            });
-            
-            this.canvas.addEventListener('dragleave', (e) => {
-                this.canvas.classList.remove('drag-over');
-            });
-            
-            this.canvas.addEventListener('drop', (e) => {
-                e.preventDefault();
-                this.canvas.classList.remove('drag-over');
-                this.handleCanvasDrop(e);
-            });
-        }
-        
-        // Allow dropping on canvas drop zone (backup area)
-        const dropZone = document.getElementById('canvas-drop-zone');
-        if (dropZone) {
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('active');
-            });
-            
-            dropZone.addEventListener('dragleave', (e) => {
-                if (!dropZone.contains(e.relatedTarget)) {
-                    dropZone.classList.remove('active');
-                }
-            });
-            
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('active');
-                this.handleCanvasDrop(e);
-            });
-        }
-        
-        console.log('✅ Drag and drop system ready');
-    }
-    
-    // ===== DEVICE MANAGEMENT SYSTEM =====
-    
-    handleDeviceDragStart(e) {
-        const deviceType = e.currentTarget.dataset.deviceType;
-        if (!deviceType) return;
-        
-        e.dataTransfer.setData('text/plain', deviceType);
-        e.dataTransfer.effectAllowed = 'copy';
-        
-        // Visual feedback
-        e.currentTarget.style.opacity = '0.5';
-        
-        console.log(`📦 Started dragging device: ${deviceType}`);
-    }
-    
-    handleDeviceDragEnd(e) {
-        e.currentTarget.style.opacity = '1';
-    }
-    
-    handleCanvasDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        
-        // Show drop zone
-        const dropZone = document.getElementById('canvas-drop-zone');
-        if (dropZone) {
-            dropZone.classList.add('active');
-        }
-    }
-    
-    handleCanvasDrop(e) {
-        e.preventDefault();
-        
-        const deviceType = e.dataTransfer.getData('text/plain');
-        if (!deviceType) return;
-        
-        // Get drop coordinates relative to canvas
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // Create new device
-        this.createDeviceAtPosition(deviceType, x, y);
-        
-        // Auto-collapse the device palette after placing a device (prevents stuck open state)
-        try {
-            this.setPaletteMinimized?.(true);
-        } catch (_) {}
-        
-        // Hide drop zone
-        const dropZone = document.getElementById('canvas-drop-zone');
-        if (dropZone) {
-            dropZone.classList.remove('active');
-        }
-        
-        console.log(`✅ Created ${deviceType} at (${x}, ${y})`);
-    }
-    
-    // Enhanced device creation with achievements and configuration validation
-    createDeviceAtPosition(deviceType, x, y) {
-        const deviceInfo = this.deviceTypes[deviceType];
-        if (!deviceInfo) {
-            console.error(`❌ Unknown device type: ${deviceType}`);
-            return;
-        }
-        
+
+    // Device class definition (from troubleshoot.html)
+    createDevice(type, x, y, label) {
         const device = {
-            id: `${deviceType}_${this.deviceIdCounter++}`,
-            type: deviceType,
+            type: type,
             x: x,
             y: y,
-            label: `${deviceType.replace('-', ' ').toUpperCase()} ${this.deviceIdCounter - 1}`,
-            icon: deviceInfo.icon,
-            color: deviceInfo.color,
-            config: this.getDefaultDeviceConfig(deviceType),
-            connections: [],
-            state: 'up',
-            selected: false,
-            // Enhanced configuration properties
-            interfaces: {},
-            routingTable: [],
-            vlans: {},
-            services: [],
-            arpTable: [],
-            macTable: []
+            label: label,
+            name: label,  // Add name property for device configurator compatibility
+            ipv4: '',
+            ipv6: '',
+            subnet: '',
+            protocol: 'none',
+            speed: 'auto',
+            duplex: 'auto',
+            configured: false,
+            image: new Image(),
+            isImageLoaded: false,
+            id: this.deviceIdCounter++
         };
-        
-        console.log('Created device:', device.id, 'with label:', device.label);
-        
-        this.networkDevices.push(device);
-        this.updateNetworkStatus();
-        this.renderCanvas();
-        
-        // Auto-select new device
-        this.selectDevice(device);
-        
-        // Initialize device CLI state
-        this.initializeDeviceCLIState(device);
-        
-        // Enhanced performance tracking (similar to troubleshoot.html)
-        window.trackPerformanceAction?.('device_created', {
-            deviceType: deviceType,
-            deviceId: device.id,
-            label: device.label,
-            position: { x, y },
-            timestamp: Date.now()
-        });
-        
-        // Track performance and check achievements
-        if (this.performanceMetrics) {
-            this.performanceMetrics.correctActions++;
-            this.checkAchievements();
+
+        device.image.onload = () => {
+            device.isImageLoaded = true;
+            this.redrawCanvas();
+        };
+
+        // Set device image based on type
+        switch (type) {
+            case 'pc':
+            case 'computer':
+                device.image.src = "{{ url_for('static', filename='img/PC.png') }}";
+                break;
+            case 'router':
+                device.image.src = "{{ url_for('static', filename='img/Router.png') }}";
+                break;
+            case 'switch':
+                device.image.src = "{{ url_for('static', filename='img/Switch.png') }}";
+                break;
+            case 'laptop':
+                device.image.src = "{{ url_for('static', filename='img/PC.png') }}"; // Use PC image for laptop
+                break;
+            case 'server':
+                device.image.src = "{{ url_for('static', filename='img/Router.png') }}"; // Use router image for server
+                break;
+            default:
+                device.image.src = "{{ url_for('static', filename='img/PC.png') }}"; // Default to PC
+                break;
         }
-        
+
+        device.draw = function(ctx) {
+            if (this.isImageLoaded) {
+                ctx.drawImage(this.image, this.x - 30, this.y - 25, 60, 60);
+                // Draw device label below
+                ctx.fillStyle = "#00C3B5";
+                ctx.font = "14px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(this.label, this.x, this.y + 50);
+            }
+        };
+
         return device;
     }
+
+    // Add device to the canvas (from troubleshoot.html)
+    addDevice(type, x, y) {
+        const startTime = Date.now();
+        
+        let newDevice;
+        this.deviceCounter[type] = (this.deviceCounter[type] || 0) + 1;
+        const label = `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceCounter[type]}`;
+
+        newDevice = this.createDevice(type, x, y, label);
+        
+        // Add placement start time for feedback tracking
+        newDevice.placementStartTime = startTime;
+        
+        this.networkDevices.push(newDevice);
+        this.selectedDevice = newDevice;
+        this.redrawCanvas();
+        
+        // Track device placement for performance feedback
+        if (window.performanceFeedback) {
+            window.performanceFeedback.trackAction('device_placed', {
+                device_type: type,
+                device_label: newDevice.label
+            });
+        }
+        
+        console.log(`✅ Added device: ${label} at (${x}, ${y})`);
+    }
+
+    // Find device by position (from troubleshoot.html)
+    findDeviceByPosition(x, y) {
+        return this.networkDevices.find(device => {
+            const dx = x - device.x;
+            const dy = y - device.y;
+            return dx * dx + dy * dy <= 900; // 30px radius for device selection
+        });
+    }
+
+    // Redraw canvas with devices and connections (from troubleshoot.html)
+    redrawCanvas() {
+        if (!this.ctx) return;
+        
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.networkConnections.forEach(connection => this.drawConnection(connection));
+        this.networkDevices.forEach(device => this.drawDevice(device));
+    }
+
+    // Draw connection line between devices (from troubleshoot.html)
+    drawConnection(connection) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(connection.device1.x, connection.device1.y);
+        this.ctx.lineTo(connection.device2.x, connection.device2.y);
+        this.ctx.strokeStyle = "#00C3B5";
+        this.ctx.lineWidth = 4;
+        this.ctx.stroke();
+    }
+
+    // Draw device on the canvas (from troubleshoot.html)
+    drawDevice(device) {
+        device.draw(this.ctx);
+        if (device === this.selectedDevice) {
+            this.ctx.beginPath();
+            this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
+            this.ctx.strokeStyle = "#FFD700";
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+        }
+    }
+
+    // Add connection between devices (from troubleshoot.html)
+    addConnection(device1, device2) {
+        const existingConnection = this.networkConnections.find(conn =>
+            (conn.device1 === device1 && conn.device2 === device2) ||
+            (conn.device1 === device2 && conn.device2 === device1)
+        );
+
+        if (!existingConnection) {
+            this.networkConnections.push({ device1, device2 });
+            this.redrawCanvas();
+            
+            // Track connection creation for performance feedback
+            if (window.performanceFeedback) {
+                window.performanceFeedback.trackAction('connection_made', {
+                    device1_type: device1.type,
+                    device2_type: device2.type
+                });
+            }
+            
+            console.log(`✅ Connected ${device1.label} to ${device2.label}`);
+        }
+        this.firstDevice = null;  // Reset after connection
+    }
     
+    // Delete selected device
+    deleteSelectedDevice() {
+        if (this.selectedDevice) {
+            // Remove the selected device from the devices array
+            this.networkDevices = this.networkDevices.filter(device => device !== this.selectedDevice);
+
+            // Also remove any associated connections
+            this.networkConnections = this.networkConnections.filter(connection =>
+                connection.device1 !== this.selectedDevice && connection.device2 !== this.selectedDevice
+            );
+
+            this.selectedDevice = null;  // Clear selection
+            this.redrawCanvas();  // Redraw canvas after deletion
+            console.log('🗑️ Device deleted');
+        } else {
+            console.log('No device selected to delete');
+        }
+    }
+    
+    // Clear all devices and connections
+    clearCanvas() {
+        this.networkDevices = [];
+        this.networkConnections = [];
+        this.selectedDevice = null;
+        this.firstDevice = null;
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        console.log('🧹 Canvas cleared');
+    }
+    
+    // Show device configuration modal
+    showConfigModal(device) {
+        console.log(`⚙️ Opening configuration for ${device.label}`);
+        
+        // Use the unified device configuration panel method
+        this.openDeviceConfigPanel(device);
+    }
+    
+    // Resize canvas (simplified)
+    resizeCanvas() {
+        if (!this.canvas) return;
+        
+        this.canvas.width = this.canvas.clientWidth;
+        this.canvas.height = this.canvas.clientHeight;
+        this.redrawCanvas();
+    }
+
+    getDeviceById(id) {
+        return this.networkDevices.find(device => device.id === id);
+    }
     // Initialize CLI state for network device
     initializeDeviceCLIState(device) {
         this.deviceStates[device.id] = {
@@ -2380,347 +2318,15 @@ class DynamicSimulation {
         return config;
     }
     
-    // ===== ADVANCED TROUBLESHOOTING MODE SYSTEM =====
+    // ===== DEVICE PERFORMANCE TRACKING =====
+
+    // Enhanced connection completion with performance tracking
+
     
-    initializeTroubleshootingMode() {
-        console.log('🔧 Initializing Troubleshooting Mode');
-        
-        this.troubleshootingMode = {
-            active: false,
-            problems: [],
-            injectedFaults: {},
-            diagnosticTools: ['ping', 'traceroute', 'show', 'debug'],
-            guidedMode: true,
-            hintLevel: 1, // 1=basic, 2=detailed, 3=solution
-            currentProblem: null,
-            solutionSteps: [],
-            timeStarted: null,
-            diagnosticHistory: []
-        };
-        
-        this.createTroubleshootingUI();
-    }
     
-    createTroubleshootingUI() {
-        const troubleshootingPanel = `
-            <div id="troubleshooting-panel" class="advanced-panel" style="display: none;">
-                <div class="panel-header">
-                    <h4><i class="fas fa-tools"></i> Network Troubleshooting</h4>
-                    <div class="troubleshooting-controls">
-                        <button id="start-troubleshooting" class="btn btn-primary">
-                            <i class="fas fa-play"></i> Start Session
-                        </button>
-                        <button id="inject-fault" class="btn btn-warning">
-                            <i class="fas fa-bug"></i> Inject Fault
-                        </button>
-                        <button id="guided-mode-toggle" class="btn btn-info">
-                            <i class="fas fa-compass"></i> Guided Mode: ON
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="troubleshooting-content">
-                    <div id="problem-description" class="problem-section">
-                        <h5>Problem Description</h5>
-                        <div id="problem-text">No active troubleshooting session</div>
-                    </div>
-                    
-                    <div id="diagnostic-tools" class="tools-section">
-                        <h5>Diagnostic Tools</h5>
-                        <div class="tool-buttons">
-                            <button class="tool-btn" data-tool="ping">
-                                <i class="fas fa-broadcast-tower"></i> Ping
-                            </button>
-                            <button class="tool-btn" data-tool="traceroute">
-                                <i class="fas fa-route"></i> Traceroute
-                            </button>
-                            <button class="tool-btn" data-tool="show-interfaces">
-                                <i class="fas fa-ethernet"></i> Show Interfaces
-                            </button>
-                            <button class="tool-btn" data-tool="show-routing">
-                                <i class="fas fa-project-diagram"></i> Show Routing
-                            </button>
-                            <button class="tool-btn" data-tool="network-scan">
-                                <i class="fas fa-search"></i> Network Scan
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="diagnostic-results" class="results-section">
-                        <h5>Diagnostic Results</h5>
-                        <div id="diagnostic-output" class="command-output">
-                            Ready to run diagnostics...
-                        </div>
-                    </div>
-                    
-                    <div id="troubleshooting-hints" class="hints-section">
-                        <h5>Hints & Guidance</h5>
-                        <div id="hint-content">
-                            <div class="hint-controls">
-                                <button id="get-hint" class="btn btn-success btn-sm">
-                                    <i class="fas fa-lightbulb"></i> Get Hint
-                                </button>
-                                <button id="show-solution" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-eye"></i> Show Solution
-                                </button>
-                            </div>
-                            <div id="hint-text"></div>
-                        </div>
-                    </div>
-                    
-                    <div id="solution-tracking" class="solution-section">
-                        <h5>Solution Progress</h5>
-                        <div id="solution-checklist">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 0%"></div>
-                            </div>
-                            <ul id="solution-steps"></ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.querySelector('.control-panel').insertAdjacentHTML('beforeend', troubleshootingPanel);
-        this.bindTroubleshootingEvents();
-    }
     
-    bindTroubleshootingEvents() {
-        // Start troubleshooting session
-        document.getElementById('start-troubleshooting').addEventListener('click', () => {
-            this.startTroubleshootingSession();
-        });
-        
-        // Inject fault for practice
-        document.getElementById('inject-fault').addEventListener('click', () => {
-            this.showFaultInjectionDialog();
-        });
-        
-        // Toggle guided mode
-        document.getElementById('guided-mode-toggle').addEventListener('click', (e) => {
-            this.troubleshootingMode.guidedMode = !this.troubleshootingMode.guidedMode;
-            e.target.innerHTML = `<i class="fas fa-compass"></i> Guided Mode: ${this.troubleshootingMode.guidedMode ? 'ON' : 'OFF'}`;
-            e.target.className = `btn ${this.troubleshootingMode.guidedMode ? 'btn-info' : 'btn-secondary'}`;
-        });
-        
-        // Diagnostic tool buttons
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const tool = e.currentTarget.dataset.tool;
-                this.runDiagnosticTool(tool);
-            });
-        });
-        
-        // Hint system
-        document.getElementById('get-hint').addEventListener('click', () => {
-            this.provideHint();
-        });
-        
-        document.getElementById('show-solution').addEventListener('click', () => {
-            this.showCompleteSolution();
-        });
-    }
     
-    startTroubleshootingSession() {
-        if (this.troubleshootingMode.active) {
-            this.endTroubleshootingSession();
-            return;
-        }
-        
-        this.troubleshootingMode.active = true;
-        this.troubleshootingMode.timeStarted = Date.now();
-        
-        // Select a random problem or use the current simulation step
-        const problem = this.generateTroubleshootingProblem();
-        this.troubleshootingMode.currentProblem = problem;
-        
-        // Inject the problem into the network
-        this.injectNetworkProblem(problem);
-        
-        // Update UI
-        document.getElementById('problem-text').innerHTML = problem.description;
-        document.getElementById('start-troubleshooting').innerHTML = 
-            '<i class="fas fa-stop"></i> End Session';
-        document.getElementById('start-troubleshooting').className = 'btn btn-danger';
-        
-        // Show troubleshooting panel
-        document.getElementById('troubleshooting-panel').style.display = 'block';
-        
-        this.showNotification('Troubleshooting session started', 'info');
-        console.log('🔧 Troubleshooting session started:', problem);
-    }
     
-    generateTroubleshootingProblem() {
-        const problemTypes = [
-            {
-                id: 'ip_conflict',
-                title: 'IP Address Conflict',
-                description: 'Multiple devices have been assigned the same IP address, causing connectivity issues.',
-                category: 'network',
-                difficulty: 'medium',
-                expectedSolution: ['identify_conflict', 'change_ip_address', 'verify_connectivity'],
-                diagnosticClues: {
-                    ping: 'Intermittent or failed responses',
-                    arp: 'Multiple MAC addresses for same IP',
-                    show_interfaces: 'Duplicate IP assignments visible'
-                }
-            },
-            {
-                id: 'routing_loop',
-                title: 'Routing Loop',
-                description: 'Packets are circulating between routers without reaching their destination.',
-                category: 'routing',
-                difficulty: 'hard',
-                expectedSolution: ['analyze_routing_table', 'identify_loop', 'correct_routes'],
-                diagnosticClues: {
-                    traceroute: 'Shows repeating hop pattern',
-                    ping: 'High latency or timeouts',
-                    show_routing: 'Conflicting route entries'
-                }
-            },
-            {
-                id: 'interface_down',
-                title: 'Interface Down',
-                description: 'A critical network interface has gone down, breaking connectivity.',
-                category: 'physical',
-                difficulty: 'easy',
-                expectedSolution: ['identify_down_interface', 'check_physical_connection', 'enable_interface'],
-                diagnosticClues: {
-                    show_interfaces: 'Interface status shows down/down',
-                    ping: 'No response from directly connected devices',
-                    link_lights: 'Physical indicators show no link'
-                }
-            },
-            {
-                id: 'vlan_mismatch',
-                title: 'VLAN Configuration Mismatch',
-                description: 'Devices in the same VLAN cannot communicate due to misconfiguration.',
-                category: 'switching',
-                difficulty: 'medium',
-                expectedSolution: ['check_vlan_config', 'verify_trunk_ports', 'correct_vlan_assignment'],
-                diagnosticClues: {
-                    show_vlan: 'VLAN membership inconsistencies',
-                    ping: 'Cannot reach devices in same subnet',
-                    show_interfaces: 'Port VLAN assignments incorrect'
-                }
-            }
-        ];
-        
-        const randomProblem = problemTypes[Math.floor(Math.random() * problemTypes.length)];
-        
-        return {
-            ...randomProblem,
-            injectionTime: Date.now(),
-            solved: false,
-            hintsUsed: 0,
-            diagnosticsRun: []
-        };
-    }
-    
-    injectNetworkProblem(problem) {
-        const devices = this.networkDevices;
-        if (devices.length === 0) return;
-        
-        switch (problem.id) {
-            case 'ip_conflict':
-                this.injectIPConflict();
-                break;
-            case 'interface_down':
-                this.injectInterfaceDown();
-                break;
-            case 'routing_loop':
-                this.injectRoutingLoop();
-                break;
-            case 'vlan_mismatch':
-                this.injectVLANMismatch();
-                break;
-        }
-        
-        this.troubleshootingMode.injectedFaults[problem.id] = problem;
-    }
-    
-    injectIPConflict() {
-        const devices = this.networkDevices.filter(d => this.deviceStates[d.id]);
-        if (devices.length < 2) return;
-        
-        // Pick two random devices and give them the same IP
-        const device1 = devices[0];
-        const device2 = devices[1];
-        
-        const conflictIP = '192.168.1.10 255.255.255.0';
-        
-        // Inject the conflict
-        const interfaces1 = Object.keys(this.deviceStates[device1.id].interfaces);
-        const interfaces2 = Object.keys(this.deviceStates[device2.id].interfaces);
-        
-        if (interfaces1.length > 0 && interfaces2.length > 0) {
-            this.deviceStates[device1.id].interfaces[interfaces1[0]].ip_address = conflictIP;
-            this.deviceStates[device2.id].interfaces[interfaces2[0]].ip_address = conflictIP;
-            
-            console.log(`🐛 Injected IP conflict: ${device1.label} and ${device2.label} both have ${conflictIP}`);
-        }
-    }
-    
-    injectInterfaceDown() {
-        const devices = this.networkDevices.filter(d => this.deviceStates[d.id]);
-        if (devices.length === 0) return;
-        
-        const randomDevice = devices[Math.floor(Math.random() * devices.length)];
-        const interfaces = Object.keys(this.deviceStates[randomDevice.id].interfaces);
-        
-        if (interfaces.length > 0) {
-            const randomInterface = interfaces[Math.floor(Math.random() * interfaces.length)];
-            this.deviceStates[randomDevice.id].interfaces[randomInterface].status = 'down';
-            
-            console.log(`🐛 Injected interface down: ${randomDevice.label} ${randomInterface}`);
-        }
-    }
-    
-    injectRoutingLoop() {
-        const routers = this.networkDevices.filter(d => d.type === 'router' && this.deviceStates[d.id]);
-        if (routers.length < 2) return;
-        
-        // Create conflicting static routes that form a loop
-        const router1 = routers[0];
-        const router2 = routers[1];
-        
-        // Add routes that point to each other for the same destination
-        const loopNetwork = '10.0.0.0/8';
-        
-        this.deviceStates[router1.id].routingTable.push({
-            network: loopNetwork,
-            gateway: this.getFirstInterfaceIP(router2.id),
-            interface: null,
-            metric: 1,
-            type: 'S'
-        });
-        
-        this.deviceStates[router2.id].routingTable.push({
-            network: loopNetwork,
-            gateway: this.getFirstInterfaceIP(router1.id),
-            interface: null,
-            metric: 1,
-            type: 'S'
-        });
-        
-        console.log(`🐛 Injected routing loop between ${router1.label} and ${router2.label}`);
-    }
-    
-    injectVLANMismatch() {
-        const switches = this.networkDevices.filter(d => d.type === 'switch' && this.deviceStates[d.id]);
-        if (switches.length === 0) return;
-        
-        const randomSwitch = switches[Math.floor(Math.random() * switches.length)];
-        const interfaces = Object.keys(this.deviceStates[randomSwitch.id].interfaces);
-        
-        if (interfaces.length > 0) {
-            // Set random VLAN IDs that don't match
-            const randomInterface = interfaces[Math.floor(Math.random() * interfaces.length)];
-            this.deviceStates[randomSwitch.id].interfaces[randomInterface].vlan = 999; // Non-existent VLAN
-            
-            console.log(`🐛 Injected VLAN mismatch: ${randomSwitch.label} ${randomInterface} in VLAN 999`);
-        }
-    }
     
     runDiagnosticTool(toolName) {
         if (!this.troubleshootingMode.active) {
@@ -3015,9 +2621,13 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             this.selectedDevice = device;
             // Use the unified configurator-backed panel
             this.openDeviceConfigPanel(device);
+            // NEW: Notify CLI manager of active device
+            try { window.deviceCLI?.setActiveDevice(device); } catch (e) { console.warn('Device CLI setActiveDevice failed', e); }
         } else {
             this.selectedDevice = null;
             this.hideDeviceConfiguration();
+            // NEW: Clear active device in CLI manager
+            try { window.deviceCLI?.clearActiveDevice(); } catch (e) { /* noop */ }
         }
         
         this.renderCanvas();
@@ -3086,49 +2696,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         
         this.connectionStart = device;
         console.log(`🔗 Started connection from: ${device.id}`);
-    }
-    
-    completeConnection(targetDevice) {
-        if (!this.connectionStart || !targetDevice) return;
-        
-        if (this.connectionStart === targetDevice) {
-            console.log('❌ Cannot connect device to itself');
-            return;
-        }
-        
-        // Check if connection already exists
-        const existingConnection = this.networkConnections.find(conn => 
-            (conn.from === this.connectionStart.id && conn.to === targetDevice.id) ||
-            (conn.from === targetDevice.id && conn.to === this.connectionStart.id)
-        );
-        
-        if (existingConnection) {
-            console.log('❌ Connection already exists');
-            return;
-        }
-        
-        // Create connection
-        const connection = {
-            id: `conn_${Date.now()}`,
-            from: this.connectionStart.id,
-            to: targetDevice.id,
-            type: 'ethernet',
-            status: 'up',
-            bandwidth: '1000M',
-            color: '#00D9FF'
-        };
-        
-        this.networkConnections.push(connection);
-        
-        // Update device connection arrays
-        this.connectionStart.connections.push(targetDevice.id);
-        targetDevice.connections.push(this.connectionStart.id);
-        
-        this.connectionStart = null;
-        this.updateNetworkStatus();
-        this.renderCanvas();
-        
-        console.log(`✅ Connected ${connection.from} to ${connection.to}`);
     }
     
     deleteConnection(connection) {
@@ -3346,7 +2913,128 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 break;
         }
     }
+
+    // ===== ENHANCED CANVAS EVENT HANDLERS (from troubleshoot.html) =====
     
+    setupEnhancedCanvasEventHandlers() {
+        // Enhanced mouse down handler with device dragging support
+        this.canvas.addEventListener("mousedown", (e) => {
+            if (this.currentTool === 'connect') return; // Prevent dragging in connection mode
+            
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const clickedDevice = this.findDeviceByPosition(x, y);
+            if (clickedDevice) {
+                this.isDragging = true;
+                this.draggedDevice = clickedDevice;
+                this.selectDevice(clickedDevice);
+                this.canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        // Enhanced mouse move handler for device dragging
+        this.canvas.addEventListener("mousemove", (e) => {
+            if (this.isDragging && this.draggedDevice) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Update device position
+                this.draggedDevice.x = x;
+                this.draggedDevice.y = y;
+                this.renderCanvas(); // Redraw to show updated position
+            }
+        });
+
+        // Enhanced mouse up handler
+        this.canvas.addEventListener("mouseup", () => {
+            if (this.isDragging) {
+                this.isDragging = false;
+                this.draggedDevice = null;
+                this.canvas.style.cursor = 'default';
+            }
+        });
+    }
+
+    // Enhanced connection management (from troubleshoot.html)
+    addConnection(device1, device2) {
+        const existingConnection = this.networkConnections.find(conn =>
+            (conn.device1 === device1 && conn.device2 === device2) ||
+            (conn.device1 === device2 && conn.device2 === device1)
+        );
+
+        if (!existingConnection) {
+            this.networkConnections.push({ device1, device2 });
+            this.renderCanvas();
+            
+            // Track connection creation for performance feedback
+            if (window.performanceFeedback) {
+                window.performanceFeedback.trackAction('connection_made', {
+                    device1_type: device1.type,
+                    device2_type: device2.type
+                });
+            }
+            
+            console.log(`🔗 Connected ${device1.label} to ${device2.label}`);
+        }
+    }
+
+    // Enhanced device selection with troubleshoot.html style highlighting
+    selectDevice(device) {
+        // Clear previous selection
+        if (this.selectedDevice) {
+            this.selectedDevice.selected = false;
+        }
+        
+        this.selectedDevice = device;
+        
+        if (device) {
+            device.selected = true;
+            console.log(`🎯 Selected device: ${device.label} (${device.type})`);
+        }
+        
+        this.renderCanvas();
+    }
+
+    // Enhanced device position detection (from troubleshoot.html)
+    findDeviceByPosition(x, y) {
+        return this.networkDevices.find(device => {
+            const dx = x - device.x;
+            const dy = y - device.y;
+            return dx * dx + dy * dy <= 900; // 30px radius for device selection (increased for better usability)
+        });
+    }
+
+    // Enhanced connection drawing (from troubleshoot.html)
+    drawConnection(connection) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(connection.device1.x, connection.device1.y);
+        this.ctx.lineTo(connection.device2.x, connection.device2.y);
+        this.ctx.strokeStyle = "#00C3B5";
+        this.ctx.lineWidth = 4;
+        this.ctx.stroke();
+    }
+
+    // Enhanced device drawing (from troubleshoot.html)
+    drawDevice(device) {
+        if (device.draw) {
+            device.draw(this.ctx);
+        }
+        
+        // Enhanced selection highlighting
+        if (device.selected) {
+            this.ctx.beginPath();
+            this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
+            this.ctx.strokeStyle = "#FFD700";
+            this.ctx.lineWidth = 4;
+            this.ctx.stroke();
+            this.ctx.shadowColor = "transparent"; // No glow effect for clarity
+            this.ctx.shadowBlur = 0;
+        }
+    }
+
     // ===== CANVAS RENDERING SYSTEM =====
     
     renderCanvas() {
@@ -3412,35 +3100,53 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     renderDevice(device) {
-        const deviceInfo = this.deviceTypes[device.type] || this.deviceTypes['router'];
-        
-        // Device background
-        this.ctx.fillStyle = device.selected ? 'rgba(57, 255, 20, 0.2)' : 'rgba(15, 23, 42, 0.9)';
-        this.ctx.strokeStyle = device.selected ? '#39FF14' : '#00D9FF';
-        this.ctx.lineWidth = device.selected ? 3 : 2;
-        
-        const radius = 30;
-        this.ctx.beginPath();
-        this.ctx.roundRect(device.x - radius, device.y - radius, radius * 2, radius * 2, 12);
-        this.ctx.fill();
-        this.ctx.stroke();
-        
-        // Device icon (simplified - using text for now)
-        this.ctx.fillStyle = device.selected ? '#39FF14' : deviceInfo.color;
-        this.ctx.font = 'bold 18px FontAwesome';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        
-        // Use device type initial as icon placeholder
-        const icon = device.type.charAt(0).toUpperCase();
-        this.ctx.fillText(icon, device.x, device.y);
-        
-        // Device label
-        if (this.showLabels) {
-            this.ctx.fillStyle = '#F8FAFC';
-            this.ctx.font = '12px Inter';
+        // Enhanced device rendering with image support (from troubleshoot.html)
+        if (device.image && device.isImageLoaded) {
+            // Draw device image
+            this.ctx.drawImage(device.image, device.x - 30, device.y - 25, 60, 60);
+        } else {
+            // Fallback to geometric representation
+            const deviceInfo = this.deviceTypes[device.type] || this.deviceTypes['router'];
+            
+            // Device background
+            this.ctx.fillStyle = device.selected ? 'rgba(57, 255, 20, 0.2)' : 'rgba(15, 23, 42, 0.9)';
+            this.ctx.strokeStyle = device.selected ? '#39FF14' : '#00D9FF';
+            this.ctx.lineWidth = device.selected ? 3 : 2;
+            
+            const radius = 30;
+            this.ctx.beginPath();
+            this.ctx.roundRect(device.x - radius, device.y - radius, radius * 2, radius * 2, 12);
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            // Device icon (simplified - using text for now)
+            this.ctx.fillStyle = device.selected ? '#39FF14' : deviceInfo.color;
+            this.ctx.font = 'bold 18px FontAwesome';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(device.label, device.x, device.y + 45);
+            this.ctx.textBaseline = 'middle';
+            
+            // Use device type initial as icon placeholder
+            const icon = device.type.charAt(0).toUpperCase();
+            this.ctx.fillText(icon, device.x, device.y);
+        }
+        
+        // Device selection highlight (improved from troubleshoot.html)
+        if (device.selected) {
+            this.ctx.beginPath();
+            this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
+            this.ctx.strokeStyle = "#FFD700";
+            this.ctx.lineWidth = 4;
+            this.ctx.stroke();
+            this.ctx.shadowColor = "transparent"; // No glow effect for clarity
+            this.ctx.shadowBlur = 0;
+        }
+        
+        // Device label with improved styling
+        if (this.showLabels !== false) { // Default to showing labels
+            this.ctx.fillStyle = "#00C3B5";
+            this.ctx.font = "14px Arial";
+            this.ctx.textAlign = "center";
+            this.ctx.fillText(device.label, device.x, device.y + 50);
         }
         
         // Connection points
@@ -3628,6 +3334,10 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         const currentlyMin = palette.classList.contains('minimized');
         if (currentlyMin === minimized) return; // no-op if already desired state
         palette.classList.toggle('minimized', minimized);
+        
+        // Toggle body class to adjust simulation-content padding
+        document.body.classList.toggle('palette-minimized', minimized);
+        
         if (btn) {
             btn.setAttribute('aria-expanded', (!minimized).toString());
             const icon = btn.querySelector('i');
@@ -3644,6 +3354,63 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         if (!palette) return;
         const willMinimize = !palette.classList.contains('minimized');
         this.setPaletteMinimized(willMinimize);
+        
+        // Trigger canvas resize after the transition
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.renderCanvas();
+        }, 300);
+    }
+    
+    toggleStepsPanel() {
+        const stepsPanel = document.querySelector('.steps-panel');
+        const toggleBtn = document.getElementById('steps-toggle');
+        
+        if (!stepsPanel || !toggleBtn) return;
+        
+        const isCollapsed = stepsPanel.classList.contains('collapsed');
+        
+        // Toggle the collapsed state
+        stepsPanel.classList.toggle('collapsed', !isCollapsed);
+        
+        // Update the toggle button
+        toggleBtn.setAttribute('aria-expanded', isCollapsed.toString());
+        
+        // Update icon direction
+        const icon = toggleBtn.querySelector('i');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-right', !isCollapsed);
+            icon.classList.toggle('fa-chevron-left', isCollapsed);
+        }
+        
+        // Force layout recalculation and resize canvas
+        if (this.canvas) {
+            // Force browser to recalculate layout immediately
+            document.body.offsetHeight;
+            
+            // Trigger window resize event to force all responsive elements to recalculate
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 50);
+            
+            // Multiple resize attempts to ensure proper sizing
+            setTimeout(() => {
+                this.forceCanvasResize();
+            }, 100);
+            
+            setTimeout(() => {
+                this.forceCanvasResize();
+            }, 200);
+            
+            setTimeout(() => {
+                this.forceCanvasResize();
+            }, 350);
+        }
+        
+        // Update tooltip
+        toggleBtn.title = isCollapsed ? 'Collapse Steps Panel' : 'Expand Steps Panel';
+        
+        console.log(`🔄 Steps panel ${isCollapsed ? 'expanded' : 'collapsed'}`);
     }
     
     // Device configuration methods
@@ -4021,7 +3788,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                     <!-- Score Display -->
                     <div class="score-display">
                         <div class="score-circle">
-                            <div class="score-value" id="current-score">0%</div>
+                            <div class="score-value" id="sidebar-score">0%</div>
                             <div class="score-label">Current Score</div>
                         </div>
                     </div>
@@ -4832,69 +4599,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
     }
     
-    drawDevice(device) {
-        const { x, y, width, height, type, label, selected } = device;
-        
-        // Device background
-        this.ctx.fillStyle = selected ? 'rgba(0, 217, 255, 0.3)' : 'rgba(15, 23, 42, 0.8)';
-        this.ctx.strokeStyle = selected ? '#00D9FF' : 'rgba(255, 255, 255, 0.2)';
-        this.ctx.lineWidth = selected ? 3 : 2;
-        
-        this.ctx.beginPath();
-        this.ctx.roundRect(x - width/2, y - height/2, width, height, 8);
-        this.ctx.fill();
-        this.ctx.stroke();
-        
-        // Device icon (simplified)
-        this.ctx.fillStyle = '#00D9FF';
-        this.ctx.font = '24px Font Awesome';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        
-        const icon = this.getDeviceIcon(type);
-        this.ctx.fillText(icon, x, y - 5);
-        
-        // Device label
-        this.ctx.fillStyle = '#F8FAFC';
-        this.ctx.font = '12px Orbitron';
-        this.ctx.fillText(label, x, y + height/2 + 15);
-    }
-    
-    drawConnection(connection) {
-        const from = connection.fromDevice;
-        const to = connection.toDevice;
-        
-        this.ctx.strokeStyle = '#39FF14';
-        this.ctx.lineWidth = 3;
-        this.ctx.setLineDash([]);
-        
-        this.ctx.beginPath();
-        this.ctx.moveTo(from.x, from.y);
-        this.ctx.lineTo(to.x, to.y);
-        this.ctx.stroke();
-        
-        // Draw connection points
-        this.ctx.fillStyle = '#39FF14';
-        this.ctx.beginPath();
-        this.ctx.arc(from.x, from.y, 4, 0, 2 * Math.PI);
-        this.ctx.fill();
-        
-        this.ctx.beginPath();
-        this.ctx.arc(to.x, to.y, 4, 0, 2 * Math.PI);
-        this.ctx.fill();
-    }
-    
-    getDeviceIcon(type) {
-        const icons = {
-            'router': '⚡',
-            'switch': '🔗',
-            'host': '💻',
-            'server': '🖥️',
-            'firewall': '🛡️'
-        };
-        return icons[type] || '📱';
-    }
-    
     handleCanvasClick(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -5317,40 +5021,6 @@ Fa0/3               Desg FWD 19        128.3    P2p
 Fa0/4               Desg FWD 19        128.4    P2p`;
     }
     
-    isValidIP(ip) {
-        const parts = ip.split('.');
-        return parts.length === 4 && parts.every(part => {
-            const num = parseInt(part);
-            return num >= 0 && num <= 255;
-        });
-    }
-    
-    isValidSubnetMask(mask) {
-        const validMasks = [
-            '255.255.255.255', '255.255.255.254', '255.255.255.252', '255.255.255.248',
-            '255.255.255.240', '255.255.255.224', '255.255.255.192', '255.255.255.128',
-            '255.255.255.0', '255.255.254.0', '255.255.252.0', '255.255.248.0',
-            '255.255.240.0', '255.255.224.0', '255.255.192.0', '255.255.128.0',
-            '255.255.0.0', '255.254.0.0', '255.252.0.0', '255.248.0.0',
-            '255.240.0.0', '255.224.0.0', '255.192.0.0', '255.128.0.0', '255.0.0.0'
-        ];
-        return validMasks.includes(mask);
-    }
-    
-    subnetMaskToCIDR(mask) {
-        const cidrMap = {
-            '255.255.255.255': 32, '255.255.255.254': 31, '255.255.255.252': 30,
-            '255.255.255.248': 29, '255.255.255.240': 28, '255.255.255.224': 27,
-            '255.255.255.192': 26, '255.255.255.128': 25, '255.255.255.0': 24,
-            '255.255.254.0': 23, '255.255.252.0': 22, '255.255.248.0': 21,
-            '255.255.240.0': 20, '255.255.224.0': 19, '255.255.192.0': 18,
-            '255.255.128.0': 17, '255.255.0.0': 16, '255.254.0.0': 15,
-            '255.252.0.0': 14, '255.248.0.0': 13, '255.240.0.0': 12,
-            '255.224.0.0': 11, '255.192.0.0': 10, '255.128.0.0': 9, '255.0.0.0': 8
-        };
-        return cidrMap[mask] || 24;
-    }
-    
     getContextualHelp(deviceState) {
         const isConfigMode = deviceState.configMode;
         const isInterfaceMode = deviceState.interfaceMode;
@@ -5507,7 +5177,6 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
             clearInterval(this.timer);
             this.timer = null;
         }
-        const timerEl = document.getElementById('simulation-timer');
         const elapsedEl = document.getElementById('elapsed-time');
         const durationMin = Number(this.simulation?.estimated_duration) || 0;
         const endAt = durationMin > 0 ? (this.startTime + durationMin * 60 * 1000) : 0;
@@ -5519,13 +5188,6 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
         };
         const tick = () => {
             const now = Date.now();
-            if (timerEl) {
-                if (endAt) {
-                    timerEl.textContent = fmt(Math.max(0, endAt - now));
-                } else {
-                    timerEl.textContent = fmt(now - this.startTime);
-                }
-            }
             if (elapsedEl) {
                 elapsedEl.textContent = fmt(now - this.startTime);
             }
@@ -5544,12 +5206,26 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
         const container = document.getElementById('steps-container');
         container.innerHTML = '';
         
-        this.steps.forEach((step, index) => {
-            const stepElement = this.createStepElement(step, index);
-            container.appendChild(stepElement);
-        });
-        
-        document.getElementById('total-steps').textContent = this.steps.length;
+        if (!Array.isArray(this.steps) || this.steps.length === 0) {
+            // Graceful placeholder when no steps exist (better UX than empty panel)
+            const placeholder = document.createElement('div');
+            placeholder.className = 'no-steps-placeholder';
+            placeholder.innerHTML = `
+                <div style="padding:16px; text-align:center; opacity:0.75; font-size:0.95rem;">
+                    <i class="fas fa-info-circle" style="font-size:1.3rem; margin-bottom:8px; display:block;"></i>
+                    <strong>No simulation steps available.</strong><br/>
+                    <span style="font-size:0.85rem;">This simulation has no defined steps yet. If this is unexpected, the instructor may need to add and publish steps in the admin editor.</span>
+                </div>`;
+            container.appendChild(placeholder);
+        } else {
+            this.steps.forEach((step, index) => {
+                const stepElement = this.createStepElement(step, index);
+                container.appendChild(stepElement);
+            });
+        }
+
+        const totalStepsEl = document.getElementById('total-steps');
+        if (totalStepsEl) totalStepsEl.textContent = this.steps.length;
     }
     
     createStepElement(step, index) {
@@ -6853,144 +6529,17 @@ function saveTopology() {
     }
 }
 
-// Add enhanced methods to DynamicSimulation prototype
-DynamicSimulation.prototype.renderCanvas = function() {
-    if (!this.ctx || !this.canvas) return;
-    
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // Apply zoom and pan transformations
-    this.ctx.save();
-    this.ctx.scale(this.zoom, this.zoom);
-    this.ctx.translate(this.panOffset.x, this.panOffset.y);
-    
-    // Draw grid if enabled
-    if (this.showGrid) {
-        this.drawGrid();
-    }
-    
-    // Render connections first (so they appear behind devices)
-    this.renderConnections();
-    
-    // Render devices
-    this.renderDevices();
-    
-    this.ctx.restore();
-};
+// Enhanced step validation with network state checking
 
-DynamicSimulation.prototype.drawGrid = function() {
-    const gridSize = 20;
-    const ctx = this.ctx;
-    
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 0.5;
-    
-    const width = this.canvas.width / this.zoom;
-    const height = this.canvas.height / this.zoom;
-    
-    ctx.beginPath();
-    for (let x = 0; x <= width; x += gridSize) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-    }
-    
-    for (let y = 0; y <= height; y += gridSize) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-    }
-    
-    ctx.stroke();
-};
 
-DynamicSimulation.prototype.drawDevice = function(device) {
-    const ctx = this.ctx;
-    const x = device.x;
-    const y = device.y;
-    const size = 50;
-    
-    // Device background
-    ctx.fillStyle = device.selected ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(x - size/2, y - size/2, size, size);
-    
-    // Device border
-    ctx.strokeStyle = device.selected ? '#3B82F6' : 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = device.selected ? 2 : 1;
-    ctx.strokeRect(x - size/2, y - size/2, size, size);
-    
-    // Device icon (simplified)
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.getDeviceIcon(device.type), x, y);
-    
-    // Device label
-    if (this.showLabels) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(device.label, x, y + size/2 + 15);
-    }
-};
 
-DynamicSimulation.prototype.renderConnections = function() {
-    this.networkConnections.forEach(connection => {
-        this.drawConnection(connection);
-    });
-};
 
-DynamicSimulation.prototype.drawConnection = function(connection) {
-    const sourceDevice = this.networkDevices.find(d => d.id === connection.source);
-    const targetDevice = this.networkDevices.find(d => d.id === connection.target);
-    
-    if (!sourceDevice || !targetDevice) return;
-    
-    const ctx = this.ctx;
-    ctx.strokeStyle = connection.type === 'wireless' ? '#00D9FF' : '#10B981';
-    ctx.lineWidth = 2;
-    
-    ctx.beginPath();
-    ctx.moveTo(sourceDevice.x, sourceDevice.y);
-    ctx.lineTo(targetDevice.x, targetDevice.y);
-    ctx.stroke();
-};
 
-DynamicSimulation.prototype.getDeviceIcon = function(type) {
-    const icons = {
-        'router': '⚡',
-        'switch': '🔗',
-        'pc': '💻',
-        'laptop': '💻',
-        'server': '🖥️',
-        'firewall': '🛡️',
-        'access-point': '📶',
-        'smartphone': '📱',
-        'l3-switch': '🔗',
-        'web-server': '🌐',
-        'dns-server': '🌐',
-        'ids': '🛡️',
-        'wireless-controller': '📶',
-        'load-balancer': '⚖️',
-        'proxy': '🔄'
-    };
-    return icons[type] || '📦';
-};
 
-DynamicSimulation.prototype.nextStep = function() {
-    if (this.currentStepIndex < this.steps.length - 1) {
-        this.currentStepIndex++;
-        this.updateUI();
-        this.showToast(`Step ${this.currentStepIndex + 1} of ${this.steps.length}`, 'info');
-    }
-};
 
-DynamicSimulation.prototype.previousStep = function() {
-    if (this.currentStepIndex > 0) {
-        this.currentStepIndex--;
-        this.updateUI();
-        this.showToast(`Step ${this.currentStepIndex + 1} of ${this.steps.length}`, 'info');
-    }
-};
+
+
+
 
 DynamicSimulation.prototype.showHint = function() {
     // Enhanced contextual hint system (similar to troubleshoot.html)
@@ -7198,6 +6747,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize simulation with enhanced event system
     window.simulation = new DynamicSimulation(simulationData, progressData);
+    
+    // Initialize Device Configurators
+    if (typeof UserDeviceConfigurator !== 'undefined') {
+        window.userDeviceConfigurator = new UserDeviceConfigurator();
+        console.log('🔧 UserDeviceConfigurator initialized');
+    }
     
     // Initialize Performance Feedback System (similar to troubleshoot.html)
     window.performanceFeedback = new SimulationPerformanceFeedback();
@@ -7756,5 +7311,250 @@ window.trackPerformanceAction = function(actionType, data = {}) {
 };
 
 console.log('🎯 Enhanced dynamic simulation system ready with troubleshoot.html patterns');
+</script>
+<!-- Per-Device CLI Manager (new) -->
+<script>
+// Device CLI Manager adds per-device command contexts, validation, history, and autocomplete
+class DeviceCLIManager {
+    constructor() {
+        this.activeDevice = null;
+        this.deviceCommandProfiles = {}; // { deviceId: { prompt, commands: { canonical: { aliases:[], validator: fn, output: fn|string, help, points } } } }
+        this.globalCommands = this.buildGlobalCommands();
+        this.history = [];
+        this.historyIndex = -1;
+        this.cliOutputEl = document.getElementById('cli-output');
+        this.cliInputEl = document.getElementById('cli-input');
+        this.terminalContainer = document.getElementById('cli-terminal-container');
+        this.autocompleteMenu = null;
+        this.lastPartial = '';
+        this.initInputHandlers();
+    }
+
+    buildGlobalCommands() {
+        return {
+            'help': {
+                help: 'List available commands',
+                output: () => this.renderHelp(),
+                points: 0
+            },
+            'clear': {
+                help: 'Clear the terminal screen',
+                output: () => { this.cliOutputEl.innerHTML = ''; return ''; },
+                points: 0
+            },
+            'devices': {
+                help: 'Show devices in topology',
+                output: () => (window.simulation?.networkDevices||[]).map(d=>`${d.label||d.type} (${d.type})`).join('\n') || 'No devices',
+                points: 0
+            },
+            'show context': {
+                help: 'Show active device context',
+                output: () => this.activeDevice ? `Active device: ${this.activeDevice.label} (${this.activeDevice.type})` : 'No active device',
+                points: 0
+            }
+        };
+    }
+
+    initInputHandlers() {
+        if (!this.cliInputEl) return;
+        this.cliInputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const value = this.cliInputEl.value.trim();
+                if (value) {
+                    this.execute(value);
+                }
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                if (this.history.length) {
+                    this.historyIndex = Math.max(0, this.historyIndex - 1);
+                    this.cliInputEl.value = this.history[this.historyIndex] || '';
+                    e.preventDefault();
+                }
+            } else if (e.key === 'ArrowDown') {
+                if (this.history.length) {
+                    this.historyIndex = Math.min(this.history.length, this.historyIndex + 1);
+                    if (this.historyIndex === this.history.length) this.cliInputEl.value = ''; else this.cliInputEl.value = this.history[this.historyIndex] || '';
+                    e.preventDefault();
+                }
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                this.handleAutocomplete();
+            }
+        });
+    }
+
+    setActiveDevice(device) {
+        this.activeDevice = device;
+        this.ensureProfile(device);
+        this.printSystem(`Context switched to ${device.label || device.type}`);
+        this.updatePrompt();
+    }
+
+    clearActiveDevice() {
+        this.activeDevice = null;
+        this.updatePrompt();
+    }
+
+    ensureProfile(device) {
+        if (!device) return;
+        if (!this.deviceCommandProfiles[device.id]) {
+            // Seed with baseline commands per device type
+            const baseline = this.getBaselineCommands(device.type, device);
+            this.deviceCommandProfiles[device.id] = {
+                prompt: this.buildPrompt(device),
+                commands: baseline
+            };
+        }
+    }
+
+    getBaselineCommands(type, device) {
+        const genericShowIp = {
+            help: 'Show basic IP info',
+            aliases: ['sh ip'],
+            output: () => {
+                if (device?.config?.interfaces) {
+                    return Object.entries(device.config.interfaces).map(([intf, cfg]) => `${intf}\t${cfg.ip || cfg.ip_address || 'unassigned'}\t${cfg.status || 'up'}`).join('\n');
+                }
+                return 'No interface data';
+            },
+            points: 2
+        };
+        const typeMap = {
+            'router': {
+                'show ip interface brief': genericShowIp,
+                'show run': { help: 'Show running configuration', output: () => JSON.stringify(device.config||{}, null, 2), points: 3 },
+                'ping': { help: 'Ping <ip>', validator: (parts)=> parts.length===2, output: (parts)=>`Pinging ${parts[1]} ... Success`, points: 1 }
+            },
+            'switch': {
+                'show vlan brief': { help: 'Show VLAN information', output: () => 'VLAN Name Status\n1 default active', points: 2 },
+                'show interfaces status': { help: 'Show interface status', output: () => 'Port Name Status Vlan\nFa0/1 up 1', points: 2 },
+                'show ip interface brief': genericShowIp
+            },
+            'computer': {
+                'ipconfig': { help: 'Display IP configuration', output: () => genericShowIp.output(), points: 1 },
+                'ping': { help: 'Ping <ip>', validator: (p)=>p.length===2, output: (p)=>`Pinging ${p[1]} with 32 bytes of data:\nReply from ${p[1]}: bytes=32 time<1ms TTL=64`, points: 1 }
+            },
+            'server': {
+                'netstat -an': { help: 'List network ports', output: () => 'Proto Local Address Foreign Address State\nTCP 0.0.0.0:80 LISTENING', points: 2 },
+                'show services': { help: 'List enabled services', output: () => (device.config?.services||['HTTP']).join(', '), points: 1 },
+                'ping': { help: 'Ping <ip>', validator: (p)=>p.length===2, output: (p)=>`Pinging ${p[1]} ... Success`, points: 1 }
+            }
+        };
+        return typeMap[type] || { 'echo': { help: 'Echo text', validator: (p)=>p.length>1, output: (p)=>p.slice(1).join(' '), points: 0 } };
+    }
+
+    buildPrompt(device) {
+        if (!device) return 'SIM>'; 
+        const host = (device.config?.hostname) || (device.label || device.type || 'device');
+        switch (device.type) {
+            case 'router': return host + '>'; 
+            case 'switch': return host + '>'; 
+            case 'computer': return host + '$';
+            case 'server': return host + '#';
+            default: return host + ':';
+        }
+    }
+
+    updatePrompt() {
+        if (!this.cliInputEl) return;
+        const prompt = this.activeDevice ? this.buildPrompt(this.activeDevice) : 'NOCTX>';
+        this.cliInputEl.setAttribute('data-prompt', prompt);
+        // Optionally visually show prompt inside output when context changes
+    }
+
+    execute(line) {
+        this.history.push(line);
+        this.historyIndex = this.history.length;
+        this.printCommand(line);
+        this.cliInputEl.value = '';
+        const parts = line.split(/\s+/);
+        const canonical = this.resolveCommand(parts);
+        if (!canonical) {
+            this.printError('% Unknown command or invalid input');
+            window.trackPerformanceAction?.('mistake_made', { command: line });
+            return;
+        }
+        const profile = this.activeDevice ? this.deviceCommandProfiles[this.activeDevice.id] : null;
+        const cmdObj = (profile?.commands && profile.commands[canonical]) || this.globalCommands[canonical];
+        if (!cmdObj) {
+            this.printError('% Command not implemented');
+            return;
+        }
+        if (cmdObj.validator && !cmdObj.validator(parts)) {
+            this.printError('% Invalid syntax');
+            return;
+        }
+        let out = '';
+        try {
+            out = typeof cmdObj.output === 'function' ? cmdObj.output(parts) : (cmdObj.output || '');
+        } catch (e) {
+            out = '% Execution error';
+            console.error(e);
+        }
+        if (out) this.printOutput(out);
+        if (cmdObj.points) {
+            window.trackPerformanceAction?.('command_executed', { command: canonical, points: cmdObj.points });
+        }
+    }
+
+    resolveCommand(parts) {
+        const raw = parts[0];
+        const profile = this.activeDevice ? this.deviceCommandProfiles[this.activeDevice.id] : null;
+        const deviceCmds = profile?.commands || {};
+        const all = { ...this.globalCommands, ...deviceCmds };
+        // Direct match
+        if (all[raw]) return raw;
+        // Multi-word canonical (e.g., show ip interface brief)
+        const line = parts.join(' ');
+        if (all[line]) return line;
+        // Check aliases
+        for (const [k,v] of Object.entries(all)) {
+            if (v.aliases && v.aliases.includes(raw)) return k;
+        }
+        return null;
+    }
+
+    handleAutocomplete() {
+        const value = this.cliInputEl.value;
+        const parts = value.split(/\s+/);
+        const profile = this.activeDevice ? this.deviceCommandProfiles[this.activeDevice.id] : null;
+        const all = { ...this.globalCommands, ...(profile?.commands||{}) };
+        const candidates = Object.keys(all).filter(cmd => cmd.startsWith(value));
+        if (candidates.length === 1) {
+            this.cliInputEl.value = candidates[0] + ' ';
+        } else if (candidates.length > 1) {
+            this.printSystem(candidates.join('    '));
+        }
+    }
+
+    renderHelp() {
+        const profile = this.activeDevice ? this.deviceCommandProfiles[this.activeDevice.id] : null;
+        const rows = [];
+        rows.push('Available Commands:');
+        const collect = (obj, scope) => {
+            Object.entries(obj).forEach(([k,v]) => rows.push(`${k.padEnd(28)} ${v.help || ''} ${scope}`));
+        };
+        collect(this.globalCommands, '(global)');
+        if (profile?.commands) collect(profile.commands, '(device)');
+        return rows.join('\n');
+    }
+
+    // Output Helpers
+    printCommand(line) { this.appendLine(`<span class="cli-cmd">${this.escape(this.currentPrompt())} ${this.escape(line)}</span>`); }
+    printOutput(text) { this.appendLine(`<pre class="cli-out">${this.escape(text)}</pre>`); }
+    printError(text) { this.appendLine(`<span class="cli-err">${this.escape(text)}</span>`); }
+    printSystem(text) { this.appendLine(`<span class="cli-sys">${this.escape(text)}</span>`); }
+    currentPrompt() { return this.cliInputEl.getAttribute('data-prompt') || 'SIM>'; }
+    appendLine(html) { if (!this.cliOutputEl) return; const div=document.createElement('div'); div.className='cli-line'; div.innerHTML=html; this.cliOutputEl.appendChild(div); this.cliOutputEl.scrollTop=this.cliOutputEl.scrollHeight; }
+    escape(t) { return (t||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+}
+
+// Initialize device CLI after DOM + simulation engine ready
+window.addEventListener('DOMContentLoaded', () => {
+    if (!window.deviceCLI) {
+        window.deviceCLI = new DeviceCLIManager();
+        console.log('🖥️ Device CLI Manager initialized');
+    }
+});
 </script>
 {% endblock %}

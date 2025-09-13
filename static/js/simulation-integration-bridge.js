@@ -58,6 +58,31 @@ class SimulationEngineIntegration {
             return;
         }
         
+        // If the legacy SimulationEngine is already running on the found canvas (common id: 'Canvas'),
+        // create a dedicated canvas for the NetworkSimulationEngine to prevent double rendering / stacked drawings.
+        // This fixes the "double canvas of devices when holding click" issue caused by two engines sharing one <canvas>.
+        if (canvas && canvas.id === 'Canvas') {
+            // Only create a new canvas if we don't already have one
+            let existingNew = document.getElementById('network-canvas');
+            if (!existingNew) {
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = 'network-canvas';
+                if (canvas.width) newCanvas.width = canvas.width;
+                if (canvas.height) newCanvas.height = canvas.height;
+                newCanvas.className = canvas.className ? canvas.className + ' network-engine-canvas' : 'network-engine-canvas';
+                canvas.parentElement.insertBefore(newCanvas, canvas.nextSibling);
+                console.log('🧹 Created dedicated network canvas and removing legacy canvas');
+                // Remove the legacy canvas entirely
+                try {
+                    canvas.remove();
+                } catch (remErr) {
+                    console.warn('⚠️ Could not remove legacy canvas cleanly:', remErr);
+                    canvas.style.display = 'none';
+                }
+            }
+            canvas = document.getElementById('network-canvas');
+        }
+
         // Initialize the comprehensive network engine
         try {
             // Find the canvas and get its ID
@@ -69,6 +94,16 @@ class SimulationEngineIntegration {
             }
             
             this.engineInstance = new NetworkSimulationEngine(canvasId);
+
+            // Attempt to gracefully stop legacy SimulationEngine if present to reduce event noise
+            if (window.simulationEngine && typeof window.simulationEngine.destroy === 'function') {
+                try {
+                    window.simulationEngine.destroy();
+                    console.log('🛑 Legacy SimulationEngine destroyed after network engine init');
+                } catch (e) {
+                    console.warn('⚠️ Failed to fully destroy legacy SimulationEngine (non-fatal):', e);
+                }
+            }
             
             // Connect with existing simulation data if available
             if (this.existingSimulation) {

@@ -326,7 +326,7 @@ class NetworkSimulationEngine {
             color: typeInfo.color,
             selected: false,
             config: this.getDefaultDeviceConfig(type),
-            interfaces: this.generateInterfaces(typeInfo.defaultPorts),
+            interfaces: this.generateInterfaces(typeInfo.defaultPorts, type),
             connections: []
         };
         
@@ -356,7 +356,7 @@ class NetworkSimulationEngine {
         };
     }
     
-    generateInterfaces(count) {
+    generateInterfaces(count, type) {
         const interfaces = {};
         const typeInfo = this.deviceTypes[type];
         
@@ -990,7 +990,7 @@ class NetworkSimulationEngine {
         
         // Trigger device configurator modal
         if (window.userDeviceConfigurator) {
-            window.userDeviceConfigurator.openConfigPanel(device);
+            window.userDeviceConfigurator.openDeviceConfiguration(device);
         } else {
             // Fallback: create and show device config modal
             this.showDeviceConfigModal(device);
