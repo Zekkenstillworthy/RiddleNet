@@ -29,7 +29,7 @@ def flexible_login_required(f):
                 # Admin trying to access user route - block it
                 print(f"🚫 BLOCKED: Admin {current_user.username} attempting to access user route: {request.path}")
                 flash('Admins cannot access student portals. Please use the admin panel instead.', 'warning')
-                return redirect('/admin/dashboard')
+                return redirect('/admin/')
         
         # Check if regular user is authenticated via Flask-Login
         if current_user.is_authenticated:

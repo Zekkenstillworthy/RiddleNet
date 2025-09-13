@@ -11,11 +11,27 @@ auth_bp = Blueprint('auth', __name__)
 
 class AuthController:
     @staticmethod
+    @auth_bp.route('/')
+    def admin_root():
+        """Handle /admin/ root access - redirect to dashboard"""
+        # NOTE: Admin model imported at module level. Avoid re-importing inside
+        # the function; inner imports would create a function-local binding.
+        # (Keeping logic simple & consistent with login() fix below.)
+        if current_user.is_authenticated and isinstance(current_user, Admin):
+            return redirect('/admin/dashboard')
+        return redirect('/admin/login')
+
+    @staticmethod
     @auth_bp.route('/login', methods=['GET', 'POST'])
     def login():
-        # Check if admin is already logged in
+        # If someone is already authenticated, ensure it's an Admin; otherwise logout to prevent redirect loops
         if current_user.is_authenticated:
-            return redirect(url_for('dashboard.index'))
+            if isinstance(current_user, Admin):
+                return redirect(url_for('dashboard.index'))
+            else:  # Different user namespace -> force logout & show admin login
+                logout_user()
+                session.pop('auth_namespace', None)
+                flash('You were logged out of the student session. Please log in with admin credentials.', 'info')
             
         if request.method == 'POST':
             username = request.form.get('username')
@@ -23,12 +39,21 @@ class AuthController:
             
             # Debug logging
             print(f"Login attempt for username: {username}")
-                  # Try to find the user in the Admin table
+            # IMPORTANT BUGFIX EXPLANATION:
+            # Previously this function had an inner "from admin.models.user import Admin" inside
+            # the authenticated branch above. Because of that import statement, Python treated
+            # "Admin" as a local variable for the entire function body. When an unauthenticated
+            # request hit this POST route, that branch (and thus the import) was skipped, and
+            # the later reference to Admin below raised:
+            #   UnboundLocalError: cannot access local variable 'Admin' where it is not associated with a value
+            # Removing the function-scoped import (we already have a module-level import) resolves this.
+            # Try to find the user in the Admin table
             admin = Admin.query.filter_by(username=username).first()
             
             if admin and admin.check_password(password):
                 # CRITICAL FIX: Set admin namespace BEFORE login_user
                 session['auth_namespace'] = 'admin'
+                session.permanent = True  # Make session permanent to persist across requests
                 
                 # Use Flask-Login to log in the user with remember=True
                 login_user(admin, remember=True)
@@ -44,10 +69,11 @@ class AuthController:
                 
                 # Check if there's a next parameter in the query string or form data
                 next_url = request.args.get('next') or request.form.get('next')
-                if next_url:
-                    # Only redirect to URLs within the same site
+                if next_url and next_url.startswith('/admin'):
+                    # Only redirect to admin URLs to prevent open redirects
                     return redirect(next_url)
-                return redirect(url_for('dashboard.index'))
+                # Redirect to the canonical admin dashboard
+                return redirect('/admin/dashboard')
             else:
                 flash('Invalid admin credentials', 'error')
         

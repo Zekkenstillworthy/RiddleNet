@@ -36,7 +36,9 @@ analytics_service = AnalyticsService()
 
 @dashboard_bp.route('/')
 @login_required
-def index():    # Get basic stats - ensure we're using the correct tables
+def index():
+    """Admin dashboard root - accessible via /admin/"""
+    # Get basic stats - ensure we're using the correct tables
     total_users = User.query.count()
     total_scores = Score.query.count()
     
@@ -245,6 +247,14 @@ def index():    # Get basic stats - ensure we're using the correct tables
                            system_alerts=system_alerts,
                            active_page='dashboard')
 
+# Direct route for /admin/dashboard - handle it directly instead of redirecting
+@dashboard_bp.route('/dashboard')
+@login_required
+def dashboard_alias():
+    """Handle /admin/dashboard directly to avoid redirect loops."""
+    # Call the same logic as index() but avoid redirect
+    return index()
+
 @dashboard_bp.route('/api/chart-data')
 @login_required
 def chart_data():
@@ -377,26 +387,7 @@ def export_data():
     
     return jsonify(response)
 
-@dashboard_bp.route('/websocket-panel')
-@login_required
-def websocket_panel():
-    """WebSocket monitoring and real-time panel"""
-    return render_safe_template('admin/websocket_panel.html', 
-                               active_page='websocket')
 
-@dashboard_bp.route('/websocket-test')
-@login_required
-def websocket_test():
-    """Simple WebSocket connection test page"""
-    return render_safe_template('admin/websocket_test_simple.html', 
-                               active_page='websocket_test')
-
-@dashboard_bp.route('/websocket-test-center')
-@login_required
-def websocket_test_center():
-    """Comprehensive WebSocket test center for admin functionality"""
-    return render_safe_template('admin/websocket_test_center.html', 
-                               active_page='websocket_test_center')
 
 @dashboard_bp.route('/manage-simulations')
 @login_required

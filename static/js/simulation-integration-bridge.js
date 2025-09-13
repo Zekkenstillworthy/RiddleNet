@@ -1,3 +1,4 @@
+
 /**
  * Integration Bridge for Network Simulation Engine
  * Connects the new comprehensive network simulation engine with existing dynamic simulation
@@ -122,10 +123,247 @@ class SimulationEngineIntegration {
             
             // Trigger integration complete event
             this.dispatchIntegrationEvent();
+
+            // --- Robust double-click configuration fallback wrapper ---
+            try {
+                const engine = this.engineInstance;
+                if (engine && typeof engine.openDeviceConfig === 'function' && !engine.__configWrapperApplied) {
+                    const originalOpenDeviceConfig = engine.openDeviceConfig.bind(engine);
+                    engine.openDeviceConfig = function(device) {
+                        let primaryError = null;
+                        try {
+                            originalOpenDeviceConfig(device);
+                        } catch (err) {
+                            primaryError = err;
+                            console.warn('⚠️ Primary openDeviceConfig threw - will attempt fallbacks:', err);
+                        }
+                        // If modal already visible, skip fallback
+                        const existingModal = document.getElementById('device-config-modal');
+                        const visible = existingModal && (existingModal.style.display === 'flex' || existingModal.classList.contains('active'));
+                        if (visible) return; // already opened successfully
+                        if (!device) return;
+                        // Infrastructure types should prefer the network (admin) configurator UI for richer interface settings
+                        const infraTypes = new Set(['router','switch','firewall','access-point','load-balancer','gateway','bridge','hub']);
+                        if (infraTypes.has(device.type) && window.networkDeviceConfigurator?.openConfigPanel) {
+                            try {
+                                window.networkDeviceConfigurator.openConfigPanel(device);
+                                return;
+                            } catch (e) {
+                                console.warn('⚠️ Infra preferred networkDeviceConfigurator failed, continuing:', e);
+                            }
+                        }
+                        // Preferred student configurator
+                        if (window.userDeviceConfigurator?.openDeviceConfiguration) {
+                            try {
+                                window.userDeviceConfigurator.openDeviceConfiguration(device);
+                                return;
+                            } catch (e) {
+                                console.warn('⚠️ Student configurator fallback failed:', e);
+                            }
+                        }
+                        // Network (admin) configurator fallback
+                        if (window.networkDeviceConfigurator?.openConfigPanel) {
+                            try { window.networkDeviceConfigurator.openConfigPanel(device); return; } catch (e) { console.warn('⚠️ NetworkDeviceConfigurator fallback failed:', e); }
+                        }
+                        // Built-in minimal modal if exposed
+                        if (typeof engine.showDeviceConfigModal === 'function') {
+                            try { engine.showDeviceConfigModal(device); return; } catch (e) { console.warn('⚠️ Built-in modal fallback failed:', e); }
+                        }
+                        if (primaryError) {
+                            console.error('❌ All configuration popup strategies failed.', primaryError);
+                        } else {
+                            console.error('❌ Unable to open configuration popup; no strategies succeeded.');
+                        }
+                    };
+                    engine.__configWrapperApplied = true;
+                    console.log('🛡️ Applied robust configuration popup fallback wrapper');
+                }
+            } catch (wrapErr) {
+                console.warn('⚠️ Failed to apply configuration fallback wrapper (non-fatal):', wrapErr);
+            }
+
+            // MVP Camera Controller (hold + sway + drag + inertia)
+            this.setupMVPCameraController(canvas);
             
         } catch (error) {
             console.error('❌ Failed to initialize network simulation engine:', error);
         }
+    }
+
+    // ================= MVP CAMERA CONTROLLER =================
+    setupMVPCameraController(canvas) {
+        if (!canvas || !this.engineInstance || this._mvpCameraReady) return;
+
+        const engine = this.engineInstance;
+        // Guard: ensure panOffset exists
+        if (!engine.panOffset) {
+            engine.panOffset = { x: 0, y: 0 };
+        }
+
+        // State
+        let isPanning = false;
+        let panStart = { x: 0, y: 0 };
+        let lastPointer = { x: 0, y: 0 };
+        let panVelocity = { x: 0, y: 0 };
+        let inertiaFrame = null;
+        let holdSway = false;
+        let holdSwayRAF = null;
+        let holdOriginPan = { x: 0, y: 0 };
+        let hasPanMoved = false;
+        const HOLD_SWAY_DELAY = 180; // ms
+        const SWAY_AMPLITUDE = 6; // px
+        const SWAY_SPEED_X = 1.2; // radians/sec factor
+        const SWAY_SPEED_Y = 1.6;
+        const INERTIA_DAMPING = 0.92;
+        const MIN_VELOCITY = 0.25;
+
+        const stopInertia = () => {
+            if (inertiaFrame) cancelAnimationFrame(inertiaFrame);
+            inertiaFrame = null;
+        };
+
+        const renderIfNeeded = () => {
+            engine.needsRender = true; // engine render loop will pick this up
+        };
+
+        const startHoldSway = () => {
+            holdSway = true;
+            holdOriginPan = { x: engine.panOffset.x, y: engine.panOffset.y };
+            const start = performance.now();
+            const swayLoop = () => {
+                if (!holdSway) return;
+                const t = (performance.now() - start) / 1000;
+                engine.panOffset.x = holdOriginPan.x + Math.sin(t * SWAY_SPEED_X) * SWAY_AMPLITUDE;
+                engine.panOffset.y = holdOriginPan.y + Math.cos(t * SWAY_SPEED_Y) * SWAY_AMPLITUDE;
+                renderIfNeeded();
+                holdSwayRAF = requestAnimationFrame(swayLoop);
+            };
+            swayLoop();
+        };
+
+        const stopHoldSway = () => {
+            holdSway = false;
+            if (holdSwayRAF) cancelAnimationFrame(holdSwayRAF);
+            holdSwayRAF = null;
+            // Snap back to original pan
+            engine.panOffset.x = holdOriginPan.x;
+            engine.panOffset.y = holdOriginPan.y;
+            renderIfNeeded();
+        };
+
+        const startInertia = () => {
+            const step = () => {
+                engine.panOffset.x += panVelocity.x;
+                engine.panOffset.y += panVelocity.y;
+                panVelocity.x *= INERTIA_DAMPING;
+                panVelocity.y *= INERTIA_DAMPING;
+                renderIfNeeded();
+                if (Math.abs(panVelocity.x) > MIN_VELOCITY || Math.abs(panVelocity.y) > MIN_VELOCITY) {
+                    inertiaFrame = requestAnimationFrame(step);
+                } else {
+                    inertiaFrame = null;
+                }
+            };
+            step();
+        };
+
+        const isPointerOnDevice = (canvasX, canvasY) => {
+            // Convert to world coords (inverse of render transforms)
+            const worldX = (canvasX / engine.zoom) - engine.panOffset.x;
+            const worldY = (canvasY / engine.zoom) - engine.panOffset.y;
+            if (typeof engine.getDeviceAt === 'function') {
+                return !!engine.getDeviceAt(worldX, worldY);
+            }
+            return false;
+        };
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = e.clientX - rect.left;
+            const canvasY = e.clientY - rect.top;
+            if (isPointerOnDevice(canvasX, canvasY)) return; // let engine handle device drag
+
+            stopInertia();
+            isPanning = true;
+            panStart = { x: canvasX, y: canvasY };
+            lastPointer = { x: canvasX, y: canvasY };
+            panVelocity = { x: 0, y: 0 };
+            hasPanMoved = false;
+
+            setTimeout(() => {
+                if (isPanning && !hasPanMoved) {
+                    startHoldSway();
+                }
+            }, HOLD_SWAY_DELAY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const dx = (x - lastPointer.x) / engine.zoom;
+            const dy = (y - lastPointer.y) / engine.zoom;
+
+            if (Math.abs(x - panStart.x) > 3 || Math.abs(y - panStart.y) > 3) {
+                if (holdSway) stopHoldSway();
+                hasPanMoved = true;
+            }
+
+            if (!holdSway) {
+                engine.panOffset.x += dx;
+                engine.panOffset.y += dy;
+                panVelocity.x = dx;
+                panVelocity.y = dy;
+                renderIfNeeded();
+            }
+
+            lastPointer = { x, y };
+        });
+
+        const endPan = () => {
+            if (!isPanning) return;
+            isPanning = false;
+            if (holdSway) {
+                stopHoldSway();
+                return; // no inertia after pure hold
+            }
+            if (Math.abs(panVelocity.x) > 0.5 || Math.abs(panVelocity.y) > 0.5) {
+                startInertia();
+            }
+        };
+
+        canvas.addEventListener('mouseup', endPan);
+        canvas.addEventListener('mouseleave', endPan);
+
+        // Touch support basic MVP
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            const t = e.touches[0];
+            canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY, button: 0 }));
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length !== 1) return;
+            const t = e.touches[0];
+            canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY, button: 0 }));
+            e.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            canvas.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
+        }, { passive: false });
+
+        // Stop sway/inertia when window loses focus (nice-to-have for MVP stability)
+        window.addEventListener('blur', () => {
+            if (holdSway) stopHoldSway();
+            stopInertia();
+            isPanning = false;
+        });
+
+        this._mvpCameraReady = true;
+        console.log('🎥 MVP camera controller active (hold + sway + drag + inertia)');
     }
     
     bridgeExistingData() {

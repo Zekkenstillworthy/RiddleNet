@@ -118,6 +118,14 @@ def create_app(config=None):
     #         except (ImportError, AttributeError):
     #             return None
 
+    # Install split session interface to isolate admin/user auth states
+    try:
+        from utils.split_session_interface import SplitSessionInterface
+        app.session_interface = SplitSessionInterface()
+        print("[create_app] SplitSessionInterface enabled (admin_session / user_session cookies)")
+    except Exception as e:
+        print(f"[create_app] WARNING: Could not enable SplitSessionInterface: {e}")
+
     # Register blueprints
     try:
         from user.views import user_bp

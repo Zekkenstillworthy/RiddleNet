@@ -22,8 +22,15 @@ class UserDeviceConfigurator {
         this.validationRules = new Map();
         this.modal = null;
         this.isInitialized = false;
-        
+        // Prevent double construction logic if script included twice
+        if (window.__UserDeviceConfiguratorInitialized) {
+            console.warn('🔁 UserDeviceConfigurator constructor invoked again – skipping init');
+            this.isInitialized = true;
+            this.modal = document.getElementById('device-config-modal');
+            return;
+        }
         this.init();
+        window.__UserDeviceConfiguratorInitialized = true;
     }
 
     init() {
@@ -34,9 +41,16 @@ class UserDeviceConfigurator {
     }
 
     createConfigurationModal() {
-        // Create modal HTML structure
+        // If modal already exists (e.g., script loaded twice), reuse it
+        const existing = document.getElementById('device-config-modal');
+        if (existing) {
+            this.modal = existing;
+            return; // Avoid injecting duplicate structure / duplicate IDs
+        }
+
+        // Create modal HTML structure (ensure IDs align with JS expectations)
         const modalHTML = `
-            <div id="device-config-modal" class="config-modal" style="display: none;">
+            <div id="device-config-modal" class="config-modal" style="display: none;" data-origin="user-device-configurator">
                 <div class="config-modal-backdrop"></div>
                 <div class="config-modal-container">
                     <div class="config-modal-header">
@@ -77,12 +91,12 @@ class UserDeviceConfigurator {
                                 <div class="config-section">
                                     <h4><i class="fas fa-tag"></i> Device Information</h4>
                                     <div class="form-group">
-                                        <label for="device-name">Device Name</label>
-                                        <input type="text" id="device-name" placeholder="Enter device name">
+                                        <label for="user-device-name">Device Name</label>
+                                        <input type="text" id="user-device-name" placeholder="Enter device name">
                                     </div>
                                     <div class="form-group">
-                                        <label for="device-description">Description</label>
-                                        <textarea id="device-description" placeholder="Enter device description" rows="3"></textarea>
+                                        <label for="user-device-description">Description</label>
+                                        <textarea id="user-device-description" placeholder="Enter device description" rows="3"></textarea>
                                     </div>
                                     <div class="form-group">
                                         <label for="user-device-location">Location</label>
@@ -293,15 +307,19 @@ class UserDeviceConfigurator {
 
     loadDeviceConfiguration(device) {
         // Set device title
-        document.getElementById('config-device-title').textContent = `Configure ${device.name || device.type}`;
+        const titleEl = document.getElementById('config-device-title');
+        if (titleEl) titleEl.textContent = `Configure ${device.name || device.type}`;
 
         // Load existing configuration
         const config = this.networkConfigs.get(device.id) || this.getDefaultConfig(device);
         
         // Populate basic information
-        document.getElementById('user-device-name').value = device.name || '';
-        document.getElementById('user-device-description').value = config.description || '';
-        document.getElementById('user-device-location').value = config.location || '';
+        const nameEl = document.getElementById('user-device-name') || document.getElementById('device-name');
+        const descEl = document.getElementById('user-device-description') || document.getElementById('device-description');
+        const locEl = document.getElementById('user-device-location');
+        if (nameEl) nameEl.value = device.name || '';
+        if (descEl) descEl.value = config.description || '';
+        if (locEl) locEl.value = config.location || '';
 
         // Populate network configuration
         if (config.ipMethod === 'dhcp') {
@@ -309,10 +327,14 @@ class UserDeviceConfigurator {
             this.toggleIPMethod('dhcp');
         } else {
             document.querySelector('input[value="static"]').checked = true;
-            document.getElementById('user-ip-address').value = config.ipAddress || '';
-            document.getElementById('user-subnet-mask').value = config.subnetMask || '255.255.255.0';
-            document.getElementById('user-default-gateway').value = config.gateway || '';
-            document.getElementById('user-dns-server').value = config.dnsServer || '';
+            const ipEl = document.getElementById('user-ip-address');
+            const maskEl = document.getElementById('user-subnet-mask');
+            const gwEl = document.getElementById('user-default-gateway');
+            const dnsEl = document.getElementById('user-dns-server');
+            if (ipEl) ipEl.value = config.ipAddress || '';
+            if (maskEl) maskEl.value = config.subnetMask || '255.255.255.0';
+            if (gwEl) gwEl.value = config.gateway || '';
+            if (dnsEl) dnsEl.value = config.dnsServer || '';
             this.toggleIPMethod('static');
         }
 
@@ -376,6 +398,10 @@ class UserDeviceConfigurator {
                 break;
             case 'switch':
                 vlanConfig.style.display = 'block';
+                interfaceConfig.style.display = 'block';
+                break;
+            case 'firewall':
+            case 'access-point':
                 interfaceConfig.style.display = 'block';
                 break;
         }

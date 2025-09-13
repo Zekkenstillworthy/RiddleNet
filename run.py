@@ -121,36 +121,8 @@ def load_user(user_id):
         print(f"❌ No user found in any table for ID {user_id_int}")
         return None
 
-@app.before_request
-def block_admin_access_to_user_routes():
-    """FIXED: Block admin access to user routes to prevent session contamination"""
-    from flask import request, session, redirect, url_for, flash
-    from flask_login import current_user, logout_user
-    
-    # Define user-only routes that admins should NOT access
-    user_only_routes = [
-        '/class/',
-        '/user/',
-        '/classes',
-        '/dynamic/',
-        '/learning/',
-        '/quiz/',
-        '/troubleshooting',
-        '/leaderboard',
-        '/profile'
-    ]
-    
-    # Check if this is a user route
-    is_user_route = any(request.path.startswith(route) for route in user_only_routes)
-    
-    if is_user_route and not request.path.startswith('/admin'):
-        # If admin is logged in, block access to user routes
-        if current_user.is_authenticated:
-            from admin.models.user import Admin
-            if isinstance(current_user, Admin):
-                print(f"🚫 BLOCKED: Admin {current_user.username} trying to access user route: {request.path}")
-                flash('Admins cannot access student portals. Please access the admin panel instead.', 'warning')
-                return redirect('/admin/dashboard')
+from utils.route_guards import enforce_admin_namespace
+enforce_admin_namespace(app)
 
 @app.before_request
 def check_admin_auth():

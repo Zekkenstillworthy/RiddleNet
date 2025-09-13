@@ -322,6 +322,8 @@ class NetworkSimulationEngine {
             width: 60,
             height: 60,
             label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceIdCounter - 1}`,
+            // Provide a name alias for configurators expecting device.name
+            name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceIdCounter - 1}`,
             icon: typeInfo.icon,
             color: typeInfo.color,
             selected: false,
@@ -987,14 +989,173 @@ class NetworkSimulationEngine {
     
     openDeviceConfig(device) {
         console.log('⚙️ Opening device config for:', device.id);
-        
-        // Trigger device configurator modal
-        if (window.userDeviceConfigurator) {
+        // If interface panel feature enabled and device has interfaces, show interface summary first
+        if (this.enableInterfacePanel !== false && device && device.interfaces && Object.keys(device.interfaces).length) {
+            this.showInterfacePanel(device);
+            return;
+        }
+
+        // Trigger full configurator directly
+        if (window.userDeviceConfigurator?.openDeviceConfiguration) {
             window.userDeviceConfigurator.openDeviceConfiguration(device);
-        } else {
-            // Fallback: create and show device config modal
+        } else if (typeof this.showDeviceConfigModal === 'function') {
             this.showDeviceConfigModal(device);
         }
+    }
+
+    // ===== DEVICE INTERFACE PANEL (Quick View) =====
+    showInterfacePanel(device) {
+        // Remove any existing panels first to prevent duplicates
+        const existingPanels = document.querySelectorAll('#device-interface-panel');
+        existingPanels.forEach(panel => panel.remove());
+        
+        let panel = document.getElementById('device-interface-panel');
+        if (!panel) {
+            panel = this.createInterfacePanel();
+        }
+        this.populateInterfacePanel(panel, device);
+        panel.classList.add('active');
+    }
+
+    createInterfacePanel() {
+        // Ensure we don't create multiple panels
+        const existingPanel = document.getElementById('device-interface-panel');
+        if (existingPanel) {
+            existingPanel.remove();
+        }
+        
+        const panel = document.createElement('div');
+        panel.id = 'device-interface-panel';
+        panel.className = 'device-interface-panel';
+        panel.innerHTML = `
+            <div class="dip-backdrop"></div>
+            <div class="dip-header">
+                <h3 id="dip-title"><i class="fas fa-network-wired"></i> Interfaces</h3>
+                <div class="dip-actions">
+                    <button id="dip-open-config" class="btn btn-primary btn-sm"><i class="fas fa-cog"></i> Configure</button>
+                    <button id="dip-close" class="btn btn-secondary btn-sm">Close</button>
+                </div>
+            </div>
+            <div class="dip-body">
+                <div id="dip-interface-list" class="dip-interface-list"></div>
+            </div>`;
+        document.body.appendChild(panel);
+        
+        // Event listeners
+        panel.querySelector('#dip-close').addEventListener('click', () => {
+            panel.classList.remove('active');
+        });
+        panel.querySelector('#dip-open-config').addEventListener('click', () => {
+            const deviceId = panel.dataset.deviceId;
+            const device = this.devices.find(d => d.id === deviceId);
+            panel.classList.remove('active');
+            if (window.userDeviceConfigurator?.openDeviceConfiguration) {
+                window.userDeviceConfigurator.openDeviceConfiguration(device);
+            } else if (typeof this.showDeviceConfigModal === 'function') {
+                this.showDeviceConfigModal(device);
+            }
+        });
+        panel.querySelector('.dip-backdrop').addEventListener('click', () => {
+            panel.classList.remove('active');
+        });
+
+        // Add CSS styles
+        if (!document.getElementById('dip-styles')) {
+            const style = document.createElement('style');
+            style.id = 'dip-styles';
+            style.textContent = `
+                .device-interface-panel { position:fixed; inset:0; display:none; z-index:2100; }
+                .device-interface-panel.active { display:flex; align-items:center; justify-content:center; }
+                .device-interface-panel .dip-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px); }
+                .device-interface-panel.active > .dip-header,
+                .device-interface-panel.active > .dip-body { position:relative; width:640px; max-width:90%; max-height:80vh; background:var(--glass-bg, #0F172A); border:1px solid var(--glass-border, rgba(255,255,255,0.15)); box-shadow:0 20px 50px -10px rgba(0,0,0,0.6); }
+                .device-interface-panel.active > .dip-header { border-radius:16px 16px 0 0; }
+                .device-interface-panel.active > .dip-body { border-radius:0 0 16px 16px; border-top:none; }
+                .dip-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.08); }
+                .dip-header h3 { margin:0; font-size:1.05rem; display:flex; gap:8px; align-items:center; font-weight:600; color:var(--text-primary,#F8FAFC); }
+                .dip-actions { display:flex; gap:8px; }
+                .dip-body { padding:14px 18px 18px; overflow:auto; }
+                .dip-interface-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+                .dip-iface-card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:12px 12px 10px; position:relative; display:flex; flex-direction:column; gap:6px; }
+                .dip-iface-card.up { border-color:#10B981; box-shadow:0 0 0 1px rgba(16,185,129,0.4), 0 4px 12px -2px rgba(16,185,129,0.25); }
+                .dip-iface-card.down { border-color:#EF4444; box-shadow:0 0 0 1px rgba(239,68,68,0.4), 0 4px 12px -2px rgba(239,68,68,0.25); filter:saturate(.85); }
+                .dip-iface-header { display:flex; justify-content:space-between; align-items:center; font-size:.75rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; color:var(--text-secondary,#94A3B8); }
+                .dip-iface-name { font-size:.8rem; font-weight:600; color:var(--text-primary,#F8FAFC); }
+                .dip-meta { font-size:.65rem; line-height:1.15; color:var(--text-secondary,#94A3B8); }
+                .dip-status-chip { padding:2px 6px; border-radius:8px; font-size:.55rem; font-weight:600; letter-spacing:.5px; background:rgba(255,255,255,0.08); }
+                .dip-status-chip.up { background:rgba(16,185,129,0.15); color:#10B981; }
+                .dip-status-chip.down { background:rgba(239,68,68,0.18); color:#EF4444; }
+                .dip-actions-row { display:flex; gap:6px; margin-top:4px; }
+                .dip-btn-mini { flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 6px; font-size:.55rem; cursor:pointer; color:var(--text-primary,#F8FAFC); font-weight:600; letter-spacing:.4px; transition:.18s; }
+                .dip-btn-mini:hover { background:rgba(255,255,255,0.12); }
+                .dip-btn-mini.toggle-up { border-color:#10B981; }
+                .dip-btn-mini.toggle-down { border-color:#EF4444; }
+                @media (max-width:720px){ .device-interface-panel.active > .dip-header, .device-interface-panel.active > .dip-body { width:94%; } .dip-interface-list { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); } }
+            `;
+            document.head.appendChild(style);
+        }
+
+        return panel;
+    }
+
+   
+
+    populateInterfacePanel(panel, device) {
+        panel.dataset.deviceId = device.id;
+        const title = panel.querySelector('#dip-title');
+        if (title) title.innerHTML = `<i class="fas fa-network-wired"></i> Interfaces – ${device.label}`;
+        const container = panel.querySelector('#dip-interface-list');
+        if (!container) return;
+        container.innerHTML = '';
+        const interfaces = device.interfaces || {};
+        Object.keys(interfaces).forEach(intName => {
+            const intData = interfaces[intName];
+            const status = intData.status || (intData.connected ? 'up' : 'down');
+            const card = document.createElement('div');
+            card.className = `dip-iface-card ${status}`;
+            card.innerHTML = `
+                <div class="dip-iface-header">
+                    <span class="dip-iface-name">${intName}</span>
+                    <span class="dip-status-chip ${status}">${status.toUpperCase()}</span>
+                </div>
+                <div class="dip-meta">${intData.ipAddress ? `IP: ${intData.ipAddress}` : 'No IP assigned'}</div>
+                <div class="dip-meta">${intData.subnetMask ? `${intData.subnetMask}` : ''}</div>
+                <div class="dip-meta">${intData.vlan ? `VLAN ${intData.vlan}` : (device.type === 'switch' ? 'VLAN 1' : '')}</div>
+                <div class="dip-meta">${intData.connected ? 'Linked' : 'Disconnected'}</div>
+                <div class="dip-actions-row">
+                    <button class="dip-btn-mini toggle-${status === 'up' ? 'down' : 'up'}" data-action="toggle" data-int="${intName}">${status === 'up' ? 'Shutdown' : 'No Shut'}</button>
+                    <button class="dip-btn-mini" data-action="details" data-int="${intName}">Details</button>
+                </div>`;
+            container.appendChild(card);
+        });
+
+        // Interaction handlers
+        container.querySelectorAll('button[data-action="toggle"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const intName = btn.dataset.int;
+                const iface = device.interfaces[intName];
+                if (!iface) return;
+                // Toggle status
+                iface.status = (iface.status === 'up') ? 'down' : 'up';
+                // Re-render
+                this.populateInterfacePanel(panel, device);
+                this.needsRender = true;
+            });
+        });
+
+        container.querySelectorAll('button[data-action="details"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // For now, open full configurator on details
+                const deviceId = panel.dataset.deviceId;
+                const dev = this.devices.find(d => d.id === deviceId);
+                panel.classList.remove('active');
+                if (window.userDeviceConfigurator?.openDeviceConfiguration) {
+                    window.userDeviceConfigurator.openDeviceConfiguration(dev);
+                } else if (typeof this.showDeviceConfigModal === 'function') {
+                    this.showDeviceConfigModal(dev);
+                }
+            });
+        });
     }
     
     showDeviceConfigModal(device) {
