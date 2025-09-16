@@ -27,6 +27,9 @@ class NetworkSimulationEngine {
         this.connectionStart = null;
         this.connectionPreview = null;
         
+        // MVP Presenter State
+        this.currentConfigDevice = null;
+        
         // Viewport Management
         this.zoom = 1.0;
         this.panOffset = { x: 0, y: 0 };
@@ -111,12 +114,37 @@ class NetworkSimulationEngine {
                 defaultPorts: 1,
                 canRoute: false,
                 hasConsole: false 
+            },
+            // Mobile & Communication Devices
+            phone: { 
+                icon: 'fas fa-phone', 
+                color: '#10B981', 
+                defaultPorts: 1,
+                canRoute: false,
+                hasConsole: false 
+            },
+            tablet: { 
+                icon: 'fas fa-tablet-alt', 
+                color: '#8B5CF6', 
+                defaultPorts: 1,
+                canRoute: false,
+                hasConsole: false 
+            },
+            mobile: { 
+                icon: 'fas fa-mobile-alt', 
+                color: '#F59E0B', 
+                defaultPorts: 1,
+                canRoute: false,
+                hasConsole: false 
             }
         };
         
         // Animation and Rendering
         this.animationFrame = null;
         this.needsRender = true;
+
+        // Simple event system for integration bridge
+        this._events = {};
         
         this.init();
     }
@@ -138,6 +166,23 @@ class NetworkSimulationEngine {
         console.log('✅ Network Simulation Engine initialized');
     }
     
+    // ===== LIGHTWEIGHT EVENT EMITTER =====
+    on(event, handler) {
+        if (!this._events[event]) this._events[event] = [];
+        this._events[event].push(handler);
+    }
+
+    off(event, handler) {
+        if (!this._events[event]) return;
+        this._events[event] = this._events[event].filter(h => h !== handler);
+    }
+
+    emit(event, payload) {
+        (this._events[event] || []).forEach(h => {
+            try { h(payload); } catch (e) { console.warn('Event handler error for', event, e); }
+        });
+    }
+
     setupCanvas() {
         // Set canvas size to fill container
         const container = this.canvas.parentElement;
@@ -214,8 +259,14 @@ class NetworkSimulationEngine {
     
     setTool(tool) {
         // Update tool state
+        // If leaving connect mode, cancel any in-progress connection
+        if (this.currentTool === 'connect' && tool !== 'connect') {
+            this.cancelConnection?.();
+        }
         this.currentTool = tool;
-        this.isConnecting = (tool === 'connect');
+        // Do NOT mark isConnecting just by selecting the tool.
+        // isConnecting should become true only after first device click.
+        this.isConnecting = false;
         
         // Update UI
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -260,7 +311,7 @@ class NetworkSimulationEngine {
                 break;
             case 'configure-mode':
                 if (this.selectedDevice) {
-                    this.openDeviceConfig(this.selectedDevice);
+                    this.presentDeviceConfiguration(this.selectedDevice);
                 }
                 break;
             case 'terminal-mode':
@@ -338,6 +389,7 @@ class NetworkSimulationEngine {
         this.needsRender = true;
         
         console.log('✅ Created device:', device.id);
+        this.emit('device-added', device);
         return device;
     }
     
@@ -448,6 +500,7 @@ class NetworkSimulationEngine {
         this.needsRender = true;
         
         console.log('🔗 Created connection:', connection.id);
+        this.emit('connection-created', connection);
         return connection;
     }
     
@@ -476,6 +529,7 @@ class NetworkSimulationEngine {
         this.needsRender = true;
         
         console.log('🗑️ Deleted connection:', connection.id);
+        this.emit('connection-deleted', connection);
     }
     
     // ===== MOUSE INTERACTION HANDLERS =====
@@ -507,7 +561,7 @@ class NetworkSimulationEngine {
         } else if (this.currentTool === 'connect') {
             if (clickedDevice && !this.isConnecting) {
                 this.startConnection(clickedDevice, mouseX, mouseY);
-            } else if (clickedDevice && this.isConnecting && clickedDevice !== this.connectionStart.device) {
+            } else if (clickedDevice && this.isConnecting && this.connectionStart && clickedDevice !== this.connectionStart.device) {
                 this.completeConnection(clickedDevice);
             }
         } else if (this.currentTool === 'delete') {
@@ -555,7 +609,8 @@ class NetworkSimulationEngine {
         const clickedDevice = this.getDeviceAt(mouseX, mouseY);
         
         if (clickedDevice) {
-            this.openDeviceConfig(clickedDevice);
+            // Route through Presenter pattern instead of direct View call
+            this.presentDeviceConfiguration(clickedDevice);
         }
     }
     
@@ -732,6 +787,7 @@ class NetworkSimulationEngine {
         this.needsRender = true;
         
         console.log('🗑️ Deleted device:', device.id);
+        this.emit('device-deleted', device);
     }
     
     // ===== CONNECTION INTERACTION =====
@@ -926,7 +982,11 @@ class NetworkSimulationEngine {
             server: '🖥️',
             printer: '🖨️',
             cloud: '☁️',
-            internet: '🌐'
+            internet: '🌐',
+            // Mobile & Communication devices
+            phone: '📞',
+            tablet: '📱',
+            mobile: '📱'
         };
         
         return iconMap[deviceType] || '📦';
@@ -987,8 +1047,184 @@ class NetworkSimulationEngine {
     
     // ===== ADVANCED FEATURES =====
     
+    // ===== MVP (MODEL-VIEW-PRESENTER) PATTERN IMPLEMENTATION =====
+    
+    /**
+     * Presenter method for device configuration
+     * Manages the Model-View-Presenter pattern properly
+     * 
+     * MVP Flow:
+     * 1. User interaction (double-click, button click) goes to Presenter
+     * 2. Presenter clears existing Views to prevent duplicates  
+     * 3. Presenter loads appropriate View for the Model (device)
+     * 4. View handles user input and communicates back through Presenter
+     */
+    presentDeviceConfiguration(device) {
+        console.log('⚙️ Presenter: Opening device config for:', device.id);
+        
+        // Store current device in Presenter state
+        this.currentConfigDevice = device;
+        
+        // Clear any existing Views first (MVP pattern)
+        this.clearExistingDeviceViews();
+        
+        // Route to appropriate View through Presenter
+        this.openDeviceConfig(device);
+    }
+    
+    /**
+     * Presenter method to close device configuration Views
+     * Properly manages View state without breaking reinitialization
+     */
+    closeDeviceConfiguration() {
+        console.log('🔒 Presenter: Closing device configuration Views');
+        
+        // Hide all device configuration Views but keep them in DOM for reuse
+        const modalSelectors = [
+            '#device-config-modal',
+            '#enhanced-device-config-modal', 
+            '#network-device-config-modal',
+            '#ipConfigModal',
+            '#device-interface-panel'
+        ];
+        
+        modalSelectors.forEach(selector => {
+            const modal = document.querySelector(selector);
+            if (modal) {
+                // Hide View but preserve it for reuse
+                modal.classList.remove('active', 'show');
+                modal.style.display = 'none';
+                
+                // Clear any device-specific data
+                if (modal.dataset.deviceId) {
+                    delete modal.dataset.deviceId;
+                }
+                
+                // Only remove interface panels since they're dynamically created
+                if (selector === '#device-interface-panel') {
+                    modal.remove();
+                }
+            }
+        });
+        
+        // Reset Presenter state
+        this.currentConfigDevice = null;
+        
+        console.log('✅ Presenter: Device configuration Views closed and ready for reuse');
+    }
+    
+    /**
+     * Clear existing device configuration Views to prevent duplicates
+     * Part of MVP Presenter responsibility
+     */
+    clearExistingDeviceViews() {
+        // Hide existing device config modals (but keep them for reuse)
+        const existingModals = [
+            '#device-config-modal',
+            '#enhanced-device-config-modal', 
+            '#network-device-config-modal',
+            '#ipConfigModal'
+        ];
+        
+        // Always remove interface panels since they're recreated each time
+        const panelsToRemove = ['#device-interface-panel'];
+        
+        existingModals.forEach(selector => {
+            const modal = document.querySelector(selector);
+            if (modal) {
+                // Hide View but preserve for reuse
+                modal.classList.remove('active', 'show');
+                modal.style.display = 'none';
+            }
+        });
+        
+        panelsToRemove.forEach(selector => {
+            const panel = document.querySelector(selector);
+            if (panel) {
+                panel.remove(); // These are recreated each time
+            }
+        });
+        
+        console.log('🧹 Presenter: Hidden existing device Views (preserved for reuse)');
+    }
+    
+    /**
+     * Check if any device configuration Views are currently open
+     * Useful for Presenter state management
+     */
+    hasOpenDeviceViews() {
+        const modalSelectors = [
+            '#device-config-modal',
+            '#enhanced-device-config-modal', 
+            '#network-device-config-modal',
+            '#ipConfigModal',
+            '#device-interface-panel'
+        ];
+        
+        return modalSelectors.some(selector => {
+            const modal = document.querySelector(selector);
+            return modal && (modal.classList.contains('active') || modal.classList.contains('show') || modal.style.display === 'flex');
+        });
+    }
+    
+    /**
+     * Test method to verify Presenter can reopen Views after closing
+     * Useful for debugging MVP pattern issues
+     */
+    testDeviceViewReinitialization() {
+        console.log('🧪 Testing device View reinitialization...');
+        
+        // Find a test device
+        const testDevice = this.devices.length > 0 ? this.devices[0] : null;
+        if (!testDevice) {
+            console.warn('⚠️ No devices available for testing');
+            return false;
+        }
+        
+        // Test 1: Open device config
+        console.log('📋 Test 1: Opening device config');
+        this.presentDeviceConfiguration(testDevice);
+        
+        setTimeout(() => {
+            // Test 2: Close device config
+            console.log('📋 Test 2: Closing device config');
+            this.closeDeviceConfiguration();
+            
+            setTimeout(() => {
+                // Test 3: Reopen device config
+                console.log('📋 Test 3: Reopening device config');
+                this.presentDeviceConfiguration(testDevice);
+                
+                console.log('✅ Device View reinitialization test completed');
+            }, 500);
+        }, 1000);
+        
+        return true;
+    }
+    
+    /**
+     * Presenter method to check and reinitialize Views if needed
+     * Ensures Views are available for reuse
+     */
+    ensureViewsAvailable() {
+        // Check if the main device config modal exists, create if not
+        if (!document.getElementById('device-config-modal')) {
+            console.log('🔄 Presenter: Reinitializing device config modal');
+            this.createDeviceConfigModal();
+        }
+        
+        // Note: Other configurators (enhanced, network, etc.) create their own modals
+        // Interface panels are always recreated, so no need to check for them
+        
+        return true;
+    }
+    
     openDeviceConfig(device) {
         console.log('⚙️ Opening device config for:', device.id);
+        
+        // Ensure Views are available for reuse
+        this.ensureViewsAvailable();
+        
         // If interface panel feature enabled and device has interfaces, show interface summary first
         if (this.enableInterfacePanel !== false && device && device.interfaces && Object.keys(device.interfaces).length) {
             this.showInterfacePanel(device);
@@ -1005,9 +1241,8 @@ class NetworkSimulationEngine {
 
     // ===== DEVICE INTERFACE PANEL (Quick View) =====
     showInterfacePanel(device) {
-        // Remove any existing panels first to prevent duplicates
-        const existingPanels = document.querySelectorAll('#device-interface-panel');
-        existingPanels.forEach(panel => panel.remove());
+        // Presenter ensures no duplicate Views exist
+        this.clearExistingDeviceViews();
         
         let panel = document.getElementById('device-interface-panel');
         if (!panel) {
@@ -1029,34 +1264,114 @@ class NetworkSimulationEngine {
         panel.className = 'device-interface-panel';
         panel.innerHTML = `
             <div class="dip-backdrop"></div>
-            <div class="dip-header">
-                <h3 id="dip-title"><i class="fas fa-network-wired"></i> Interfaces</h3>
-                <div class="dip-actions">
-                    <button id="dip-open-config" class="btn btn-primary btn-sm"><i class="fas fa-cog"></i> Configure</button>
-                    <button id="dip-close" class="btn btn-secondary btn-sm">Close</button>
+            <div class="dip-container">
+                <div class="dip-header">
+                    <div class="dip-header-info">
+                        <h3 id="dip-title"><i class="fas fa-network-wired"></i> Device Interfaces</h3>
+                        <div class="dip-device-info">
+                            <span id="dip-device-name">Device Name</span>
+                            <span id="dip-device-type">Device Type</span>
+                        </div>
+                    </div>
+                    <div class="dip-actions">
+                        <button id="dip-refresh" class="btn btn-info btn-sm" title="Refresh Interfaces">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button id="dip-open-config" class="btn btn-primary btn-sm">
+                            <i class="fas fa-cog"></i> Configure
+                        </button>
+                        <button id="dip-close" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="dip-body">
-                <div id="dip-interface-list" class="dip-interface-list"></div>
+                
+                <div class="dip-body">
+                    <!-- Device Overview Section -->
+                    <div class="dip-overview-section">
+                        <div class="dip-section-title">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Device Overview</span>
+                        </div>
+                        <div class="dip-overview-grid">
+                            <div class="dip-stat-card">
+                                <div class="dip-stat-icon">
+                                    <i class="fas fa-ethernet"></i>
+                                </div>
+                                <div class="dip-stat-content">
+                                    <div class="dip-stat-value" id="dip-total-interfaces">0</div>
+                                    <div class="dip-stat-label">Total Interfaces</div>
+                                </div>
+                            </div>
+                            <div class="dip-stat-card">
+                                <div class="dip-stat-icon active">
+                                    <i class="fas fa-arrow-up"></i>
+                                </div>
+                                <div class="dip-stat-content">
+                                    <div class="dip-stat-value" id="dip-active-interfaces">0</div>
+                                    <div class="dip-stat-label">Active</div>
+                                </div>
+                            </div>
+                            <div class="dip-stat-card">
+                                <div class="dip-stat-icon connected">
+                                    <i class="fas fa-link"></i>
+                                </div>
+                                <div class="dip-stat-content">
+                                    <div class="dip-stat-value" id="dip-connected-interfaces">0</div>
+                                    <div class="dip-stat-label">Connected</div>
+                                </div>
+                            </div>
+                            <div class="dip-stat-card">
+                                <div class="dip-stat-icon device-health">
+                                    <i class="fas fa-heartbeat"></i>
+                                </div>
+                                <div class="dip-stat-content">
+                                    <div class="dip-stat-value" id="dip-device-health">Good</div>
+                                    <div class="dip-stat-label">Health</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interface List Section -->
+                    <div class="dip-interfaces-section">
+                        <div class="dip-section-title">
+                            <i class="fas fa-list"></i>
+                            <span>Interface Details</span>
+                            <div class="dip-section-actions">
+                                <button class="dip-filter-btn active" data-filter="all">All</button>
+                                <button class="dip-filter-btn" data-filter="up">Active</button>
+                                <button class="dip-filter-btn" data-filter="down">Inactive</button>
+                                <button class="dip-filter-btn" data-filter="connected">Connected</button>
+                            </div>
+                        </div>
+                        <div id="dip-interface-list" class="dip-interface-list"></div>
+                    </div>
+                </div>
             </div>`;
         document.body.appendChild(panel);
         
         // Event listeners
         panel.querySelector('#dip-close').addEventListener('click', () => {
-            panel.classList.remove('active');
+            this.closeDeviceConfiguration();
+        });
+        panel.querySelector('#dip-refresh').addEventListener('click', () => {
+            const deviceId = panel.dataset.deviceId;
+            const device = this.devices.find(d => d.id === deviceId);
+            if (device) {
+                this.populateInterfacePanel(panel, device);
+            }
         });
         panel.querySelector('#dip-open-config').addEventListener('click', () => {
             const deviceId = panel.dataset.deviceId;
             const device = this.devices.find(d => d.id === deviceId);
-            panel.classList.remove('active');
-            if (window.userDeviceConfigurator?.openDeviceConfiguration) {
-                window.userDeviceConfigurator.openDeviceConfiguration(device);
-            } else if (typeof this.showDeviceConfigModal === 'function') {
-                this.showDeviceConfigModal(device);
-            }
+            // Close current View through Presenter
+            this.closeDeviceConfiguration();
+            // Open new View through Presenter
+            this.presentDeviceConfiguration(device);
         });
         panel.querySelector('.dip-backdrop').addEventListener('click', () => {
-            panel.classList.remove('active');
+            this.closeDeviceConfiguration();
         });
 
         // Add CSS styles
@@ -1064,33 +1379,343 @@ class NetworkSimulationEngine {
             const style = document.createElement('style');
             style.id = 'dip-styles';
             style.textContent = `
-                .device-interface-panel { position:fixed; inset:0; display:none; z-index:2100; }
-                .device-interface-panel.active { display:flex; align-items:center; justify-content:center; }
-                .device-interface-panel .dip-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(4px); }
-                .device-interface-panel.active > .dip-header,
-                .device-interface-panel.active > .dip-body { position:relative; width:640px; max-width:90%; max-height:80vh; background:var(--glass-bg, #0F172A); border:1px solid var(--glass-border, rgba(255,255,255,0.15)); box-shadow:0 20px 50px -10px rgba(0,0,0,0.6); }
-                .device-interface-panel.active > .dip-header { border-radius:16px 16px 0 0; }
-                .device-interface-panel.active > .dip-body { border-radius:0 0 16px 16px; border-top:none; }
-                .dip-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,0.08); }
-                .dip-header h3 { margin:0; font-size:1.05rem; display:flex; gap:8px; align-items:center; font-weight:600; color:var(--text-primary,#F8FAFC); }
-                .dip-actions { display:flex; gap:8px; }
-                .dip-body { padding:14px 18px 18px; overflow:auto; }
-                .dip-interface-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
-                .dip-iface-card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:12px 12px 10px; position:relative; display:flex; flex-direction:column; gap:6px; }
-                .dip-iface-card.up { border-color:#10B981; box-shadow:0 0 0 1px rgba(16,185,129,0.4), 0 4px 12px -2px rgba(16,185,129,0.25); }
-                .dip-iface-card.down { border-color:#EF4444; box-shadow:0 0 0 1px rgba(239,68,68,0.4), 0 4px 12px -2px rgba(239,68,68,0.25); filter:saturate(.85); }
-                .dip-iface-header { display:flex; justify-content:space-between; align-items:center; font-size:.75rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; color:var(--text-secondary,#94A3B8); }
-                .dip-iface-name { font-size:.8rem; font-weight:600; color:var(--text-primary,#F8FAFC); }
-                .dip-meta { font-size:.65rem; line-height:1.15; color:var(--text-secondary,#94A3B8); }
-                .dip-status-chip { padding:2px 6px; border-radius:8px; font-size:.55rem; font-weight:600; letter-spacing:.5px; background:rgba(255,255,255,0.08); }
-                .dip-status-chip.up { background:rgba(16,185,129,0.15); color:#10B981; }
-                .dip-status-chip.down { background:rgba(239,68,68,0.18); color:#EF4444; }
-                .dip-actions-row { display:flex; gap:6px; margin-top:4px; }
-                .dip-btn-mini { flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 6px; font-size:.55rem; cursor:pointer; color:var(--text-primary,#F8FAFC); font-weight:600; letter-spacing:.4px; transition:.18s; }
-                .dip-btn-mini:hover { background:rgba(255,255,255,0.12); }
-                .dip-btn-mini.toggle-up { border-color:#10B981; }
-                .dip-btn-mini.toggle-down { border-color:#EF4444; }
-                @media (max-width:720px){ .device-interface-panel.active > .dip-header, .device-interface-panel.active > .dip-body { width:94%; } .dip-interface-list { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); } }
+                /* Device Interface Panel Base Styles */
+                .device-interface-panel { 
+                    position: fixed; 
+                    inset: 0; 
+                    display: none; 
+                    z-index: 2100; 
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                }
+                .device-interface-panel.active { 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    animation: fadeIn 0.3s ease-out;
+                }
+                .device-interface-panel .dip-backdrop { 
+                    position: absolute; 
+                    inset: 0; 
+                    background: rgba(0, 0, 0, 0.65); 
+                    backdrop-filter: blur(8px); 
+                    -webkit-backdrop-filter: blur(8px);
+                }
+                
+                /* Main Container */
+                .dip-container {
+                    position: relative; 
+                    width: 900px; 
+                    max-width: 95vw; 
+                    max-height: 85vh; 
+                    background: linear-gradient(145deg, #0F172A 0%, #1E293B 100%);
+                    border: 1px solid rgba(59, 130, 246, 0.2); 
+                    border-radius: 20px; 
+                    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 
+                                0 0 0 1px rgba(255, 255, 255, 0.05);
+                    overflow: hidden;
+                    transform: scale(0.9);
+                    animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                }
+                
+                /* Header Styles */
+                .dip-header { 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: space-between; 
+                    padding: 20px 24px; 
+                    background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
+                }
+                .dip-header-info h3 { 
+                    margin: 0 0 4px 0; 
+                    font-size: 1.25rem; 
+                    display: flex; 
+                    gap: 10px; 
+                    align-items: center; 
+                    font-weight: 700; 
+                    color: #F8FAFC; 
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+                }
+                .dip-device-info {
+                    display: flex;
+                    gap: 12px;
+                    font-size: 0.85rem;
+                    color: #94A3B8;
+                }
+                .dip-device-info span {
+                    padding: 2px 8px;
+                    background: rgba(255, 255, 255, 0.08);
+                    border-radius: 6px;
+                    font-weight: 500;
+                }
+                .dip-actions { 
+                    display: flex; 
+                    gap: 8px; 
+                }
+                .dip-actions .btn {
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 0.85rem;
+                    transition: all 0.2s ease;
+                    border: none;
+                    cursor: pointer;
+                }
+                .dip-actions .btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                }
+                
+                /* Body Styles */
+                .dip-body { 
+                    padding: 24px; 
+                    overflow-y: auto; 
+                    max-height: calc(85vh - 90px);
+                }
+                
+                /* Section Styles */
+                .dip-overview-section,
+                .dip-interfaces-section {
+                    margin-bottom: 24px;
+                }
+                .dip-section-title {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 16px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: #E2E8F0;
+                }
+                .dip-section-title i {
+                    margin-right: 8px;
+                    color: #3B82F6;
+                }
+                
+                /* Overview Grid */
+                .dip-overview-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+                .dip-stat-card {
+                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 12px;
+                    padding: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    transition: all 0.3s ease;
+                }
+                .dip-stat-card:hover {
+                    background: rgba(255, 255, 255, 0.08);
+                    border-color: rgba(59, 130, 246, 0.3);
+                    transform: translateY(-2px);
+                }
+                .dip-stat-icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(59, 130, 246, 0.2);
+                    color: #3B82F6;
+                    font-size: 1.1rem;
+                }
+                .dip-stat-icon.active {
+                    background: rgba(16, 185, 129, 0.2);
+                    color: #10B981;
+                }
+                .dip-stat-icon.connected {
+                    background: rgba(139, 92, 246, 0.2);
+                    color: #8B5CF6;
+                }
+                .dip-stat-icon.device-health {
+                    background: rgba(245, 158, 11, 0.2);
+                    color: #F59E0B;
+                }
+                .dip-stat-value {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: #F8FAFC;
+                    line-height: 1;
+                }
+                .dip-stat-label {
+                    font-size: 0.8rem;
+                    color: #94A3B8;
+                    font-weight: 500;
+                }
+                
+                /* Filter Buttons */
+                .dip-section-actions {
+                    display: flex;
+                    gap: 6px;
+                }
+                .dip-filter-btn {
+                    padding: 4px 12px;
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: #94A3B8;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .dip-filter-btn:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    color: #F8FAFC;
+                }
+                .dip-filter-btn.active {
+                    background: rgba(59, 130, 246, 0.2);
+                    border-color: #3B82F6;
+                    color: #3B82F6;
+                }
+                
+                /* Interface List */
+                .dip-interface-list { 
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+                    gap: 16px; 
+                }
+                .dip-iface-card { 
+                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.12); 
+                    border-radius: 12px; 
+                    padding: 16px; 
+                    position: relative; 
+                    display: flex; 
+                    flex-direction: column; 
+                    gap: 8px; 
+                    transition: all 0.3s ease;
+                }
+                .dip-iface-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                }
+                .dip-iface-card.up { 
+                    border-color: #10B981; 
+                    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3), 0 4px 16px rgba(16, 185, 129, 0.15); 
+                }
+                .dip-iface-card.down { 
+                    border-color: #EF4444; 
+                    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3), 0 4px 16px rgba(239, 68, 68, 0.15); 
+                    opacity: 0.85;
+                }
+                .dip-iface-header { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center; 
+                    margin-bottom: 8px;
+                }
+                .dip-iface-name { 
+                    font-size: 0.9rem; 
+                    font-weight: 700; 
+                    color: #F8FAFC; 
+                }
+                .dip-meta { 
+                    font-size: 0.75rem; 
+                    line-height: 1.4; 
+                    color: #94A3B8; 
+                    margin-bottom: 4px;
+                }
+                .dip-meta strong {
+                    color: #E2E8F0;
+                }
+                .dip-status-chip { 
+                    padding: 4px 8px; 
+                    border-radius: 6px; 
+                    font-size: 0.65rem; 
+                    font-weight: 700; 
+                    letter-spacing: 0.5px; 
+                    text-transform: uppercase;
+                }
+                .dip-status-chip.up { 
+                    background: rgba(16, 185, 129, 0.2); 
+                    color: #10B981; 
+                    border: 1px solid rgba(16, 185, 129, 0.3);
+                }
+                .dip-status-chip.down { 
+                    background: rgba(239, 68, 68, 0.2); 
+                    color: #EF4444; 
+                    border: 1px solid rgba(239, 68, 68, 0.3);
+                }
+                .dip-actions-row { 
+                    display: flex; 
+                    gap: 8px; 
+                    margin-top: 12px; 
+                }
+                .dip-btn-mini { 
+                    flex: 1; 
+                    background: rgba(255, 255, 255, 0.08); 
+                    border: 1px solid rgba(255, 255, 255, 0.15); 
+                    border-radius: 6px; 
+                    padding: 6px 8px; 
+                    font-size: 0.7rem; 
+                    cursor: pointer; 
+                    color: #F8FAFC; 
+                    font-weight: 600; 
+                    transition: all 0.2s ease; 
+                }
+                .dip-btn-mini:hover { 
+                    background: rgba(255, 255, 255, 0.15); 
+                    transform: translateY(-1px);
+                }
+                .dip-btn-mini.toggle-up { 
+                    border-color: #10B981; 
+                    color: #10B981;
+                }
+                .dip-btn-mini.toggle-down { 
+                    border-color: #EF4444; 
+                    color: #EF4444;
+                }
+                
+                /* Animations */
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes modalSlideIn {
+                    from { 
+                        transform: scale(0.9) translateY(-20px); 
+                        opacity: 0; 
+                    }
+                    to { 
+                        transform: scale(1) translateY(0); 
+                        opacity: 1; 
+                    }
+                }
+                
+                /* Responsive Design */
+                @media (max-width: 768px) { 
+                    .dip-container { 
+                        width: 95vw; 
+                        margin: 20px;
+                    }
+                    .dip-header {
+                        padding: 16px 20px;
+                        flex-direction: column;
+                        gap: 12px;
+                        align-items: flex-start;
+                    }
+                    .dip-body {
+                        padding: 20px;
+                    }
+                    .dip-interface-list { 
+                        grid-template-columns: 1fr; 
+                    }
+                    .dip-overview-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                    .dip-section-title {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 8px;
+                    }
+                }
             `;
             document.head.appendChild(style);
         }
@@ -1102,34 +1727,170 @@ class NetworkSimulationEngine {
 
     populateInterfacePanel(panel, device) {
         panel.dataset.deviceId = device.id;
+        
+        // Update header information
         const title = panel.querySelector('#dip-title');
-        if (title) title.innerHTML = `<i class="fas fa-network-wired"></i> Interfaces – ${device.label}`;
+        if (title) title.innerHTML = `<i class="fas fa-network-wired"></i> Device Interfaces`;
+        
+        const deviceName = panel.querySelector('#dip-device-name');
+        if (deviceName) deviceName.textContent = device.label || device.name;
+        
+        const deviceType = panel.querySelector('#dip-device-type');
+        if (deviceType) deviceType.textContent = device.type.charAt(0).toUpperCase() + device.type.slice(1);
+        
+        // Calculate interface statistics
+        const interfaces = device.interfaces || {};
+        const interfaceKeys = Object.keys(interfaces);
+        const totalInterfaces = interfaceKeys.length;
+        const activeInterfaces = interfaceKeys.filter(key => 
+            interfaces[key].status === 'up' || (!interfaces[key].status && interfaces[key].connected)
+        ).length;
+        const connectedInterfaces = interfaceKeys.filter(key => interfaces[key].connected).length;
+        
+        // Update overview statistics
+        const totalEl = panel.querySelector('#dip-total-interfaces');
+        if (totalEl) totalEl.textContent = totalInterfaces;
+        
+        const activeEl = panel.querySelector('#dip-active-interfaces');
+        if (activeEl) activeEl.textContent = activeInterfaces;
+        
+        const connectedEl = panel.querySelector('#dip-connected-interfaces');
+        if (connectedEl) connectedEl.textContent = connectedInterfaces;
+        
+        const healthEl = panel.querySelector('#dip-device-health');
+        if (healthEl) {
+            const healthRatio = totalInterfaces > 0 ? activeInterfaces / totalInterfaces : 1;
+            if (healthRatio >= 0.8) {
+                healthEl.textContent = 'Excellent';
+                healthEl.style.color = '#10B981';
+            } else if (healthRatio >= 0.6) {
+                healthEl.textContent = 'Good';
+                healthEl.style.color = '#F59E0B';
+            } else if (healthRatio >= 0.3) {
+                healthEl.textContent = 'Fair';
+                healthEl.style.color = '#F97316';
+            } else {
+                healthEl.textContent = 'Poor';
+                healthEl.style.color = '#EF4444';
+            }
+        }
+        
+        // Populate interface list
         const container = panel.querySelector('#dip-interface-list');
         if (!container) return;
         container.innerHTML = '';
-        const interfaces = device.interfaces || {};
-        Object.keys(interfaces).forEach(intName => {
+        
+        interfaceKeys.forEach(intName => {
             const intData = interfaces[intName];
             const status = intData.status || (intData.connected ? 'up' : 'down');
             const card = document.createElement('div');
             card.className = `dip-iface-card ${status}`;
+            card.dataset.filter = status;
+            if (intData.connected) card.dataset.filter += ' connected';
+            
+            // Generate additional interface details
+            const speed = this.getInterfaceSpeed(device.type, intName);
+            const duplex = intData.duplex || 'Full';
+            const mtu = intData.mtu || '1500';
+            const lastChange = this.getRandomLastChange();
+            const packetsIn = this.generateTrafficStats();
+            const packetsOut = this.generateTrafficStats();
+            
             card.innerHTML = `
                 <div class="dip-iface-header">
                     <span class="dip-iface-name">${intName}</span>
                     <span class="dip-status-chip ${status}">${status.toUpperCase()}</span>
                 </div>
-                <div class="dip-meta">${intData.ipAddress ? `IP: ${intData.ipAddress}` : 'No IP assigned'}</div>
-                <div class="dip-meta">${intData.subnetMask ? `${intData.subnetMask}` : ''}</div>
-                <div class="dip-meta">${intData.vlan ? `VLAN ${intData.vlan}` : (device.type === 'switch' ? 'VLAN 1' : '')}</div>
-                <div class="dip-meta">${intData.connected ? 'Linked' : 'Disconnected'}</div>
+                <div class="dip-meta"><strong>IP:</strong> ${intData.ipAddress || 'Not assigned'}</div>
+                <div class="dip-meta"><strong>Subnet:</strong> ${intData.subnetMask || 'Not configured'}</div>
+                <div class="dip-meta"><strong>VLAN:</strong> ${intData.vlan || (device.type === 'switch' ? '1' : 'N/A')}</div>
+                <div class="dip-meta"><strong>Speed:</strong> ${speed}</div>
+                <div class="dip-meta"><strong>Duplex:</strong> ${duplex}</div>
+                <div class="dip-meta"><strong>MTU:</strong> ${mtu} bytes</div>
+                <div class="dip-meta"><strong>Link:</strong> ${intData.connected ? 'Connected' : 'Disconnected'}</div>
+                <div class="dip-meta"><strong>Last Change:</strong> ${lastChange}</div>
+                <div class="dip-meta"><strong>In:</strong> ${packetsIn.packets} pkts (${packetsIn.bytes})</div>
+                <div class="dip-meta"><strong>Out:</strong> ${packetsOut.packets} pkts (${packetsOut.bytes})</div>
                 <div class="dip-actions-row">
-                    <button class="dip-btn-mini toggle-${status === 'up' ? 'down' : 'up'}" data-action="toggle" data-int="${intName}">${status === 'up' ? 'Shutdown' : 'No Shut'}</button>
+                    <button class="dip-btn-mini toggle-${status === 'up' ? 'down' : 'up'}" data-action="toggle" data-int="${intName}">
+                        ${status === 'up' ? 'Shutdown' : 'No Shut'}
+                    </button>
                     <button class="dip-btn-mini" data-action="details" data-int="${intName}">Details</button>
+                    <button class="dip-btn-mini" data-action="stats" data-int="${intName}">Stats</button>
                 </div>`;
             container.appendChild(card);
         });
 
-        // Interaction handlers
+        // Add filter functionality
+        this.setupInterfaceFilters(panel);
+
+        // Setup interface action handlers
+        this.setupInterfaceActions(panel, device);
+    }
+    
+    getInterfaceSpeed(deviceType, interfaceName) {
+        const speedMap = {
+            'router': '100 Mbps',
+            'switch': '1 Gbps',
+            'hub': '10 Mbps',
+            'access-point': '300 Mbps',
+            'firewall': '1 Gbps',
+            'computer': '100 Mbps',
+            'laptop': '100 Mbps',
+            'server': '1 Gbps',
+            'tablet': '300 Mbps',
+            'mobile': '150 Mbps',
+            'phone': '100 Mbps'
+        };
+        return speedMap[deviceType] || '100 Mbps';
+    }
+    
+    getRandomLastChange() {
+        const timeUnits = ['seconds', 'minutes', 'hours', 'days'];
+        const randomTime = Math.floor(Math.random() * 60) + 1;
+        const randomUnit = timeUnits[Math.floor(Math.random() * timeUnits.length)];
+        return `${randomTime} ${randomUnit} ago`;
+    }
+    
+    generateTrafficStats() {
+        const packets = Math.floor(Math.random() * 10000) + 100;
+        const bytes = Math.floor(packets * (Math.random() * 1000 + 64));
+        const formattedBytes = bytes > 1024 * 1024 ? 
+            `${(bytes / (1024 * 1024)).toFixed(1)}MB` : 
+            bytes > 1024 ? 
+                `${(bytes / 1024).toFixed(1)}KB` : 
+                `${bytes}B`;
+        return { packets, bytes: formattedBytes };
+    }
+    
+    setupInterfaceFilters(panel) {
+        const filterButtons = panel.querySelectorAll('.dip-filter-btn');
+        const interfaceCards = panel.querySelectorAll('.dip-iface-card');
+        
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filter = btn.dataset.filter;
+                
+                interfaceCards.forEach(card => {
+                    if (filter === 'all' || card.dataset.filter.includes(filter)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+    
+    setupInterfaceActions(panel, device) {
+        const container = panel.querySelector('#dip-interface-list');
+        if (!container) return;
+
+        // Interaction handlers for toggle buttons
         container.querySelectorAll('button[data-action="toggle"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const intName = btn.dataset.int;
@@ -1143,36 +1904,139 @@ class NetworkSimulationEngine {
             });
         });
 
+        // Interaction handlers for details and stats buttons
         container.querySelectorAll('button[data-action="details"]').forEach(btn => {
             btn.addEventListener('click', () => {
-                // For now, open full configurator on details
+                // Get device and close current View through Presenter
                 const deviceId = panel.dataset.deviceId;
                 const dev = this.devices.find(d => d.id === deviceId);
-                panel.classList.remove('active');
-                if (window.userDeviceConfigurator?.openDeviceConfiguration) {
-                    window.userDeviceConfigurator.openDeviceConfiguration(dev);
-                } else if (typeof this.showDeviceConfigModal === 'function') {
-                    this.showDeviceConfigModal(dev);
-                }
+                this.closeDeviceConfiguration();
+                // Open new View through Presenter
+                this.presentDeviceConfiguration(dev);
+            });
+        });
+
+        container.querySelectorAll('button[data-action="stats"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const intName = btn.dataset.int;
+                this.showInterfaceStats(device, intName);
             });
         });
     }
     
+    showInterfaceStats(device, interfaceName) {
+        const intData = device.interfaces[interfaceName];
+        if (!intData) return;
+        
+        // Create a simple stats popup
+        const statsModal = document.createElement('div');
+        statsModal.className = 'interface-stats-modal';
+        statsModal.innerHTML = `
+            <div class="stats-backdrop"></div>
+            <div class="stats-content">
+                <div class="stats-header">
+                    <h4><i class="fas fa-chart-line"></i> ${interfaceName} Statistics</h4>
+                    <button class="stats-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="stats-body">
+                    <div class="stat-row">
+                        <span>Status:</span>
+                        <span class="stat-value ${intData.status || 'down'}">${(intData.status || 'down').toUpperCase()}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Link Status:</span>
+                        <span class="stat-value">${intData.connected ? 'Connected' : 'Disconnected'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Speed:</span>
+                        <span class="stat-value">${this.getInterfaceSpeed(device.type, interfaceName)}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Duplex:</span>
+                        <span class="stat-value">${intData.duplex || 'Full'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>MTU:</span>
+                        <span class="stat-value">${intData.mtu || '1500'} bytes</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Packets In:</span>
+                        <span class="stat-value">${Math.floor(Math.random() * 10000) + 100}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Packets Out:</span>
+                        <span class="stat-value">${Math.floor(Math.random() * 10000) + 100}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Errors:</span>
+                        <span class="stat-value">${Math.floor(Math.random() * 10)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add styles if not exist
+        if (!document.getElementById('stats-modal-styles')) {
+            const style = document.createElement('style');
+            style.id = 'stats-modal-styles';
+            style.textContent = `
+                .interface-stats-modal { position: fixed; inset: 0; z-index: 2200; display: flex; align-items: center; justify-content: center; }
+                .stats-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+                .stats-content { position: relative; background: #1E293B; border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; width: 400px; max-width: 90vw; }
+                .stats-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+                .stats-header h4 { margin: 0; color: #F8FAFC; font-size: 1rem; display: flex; gap: 8px; align-items: center; }
+                .stats-close { background: none; border: none; color: #94A3B8; cursor: pointer; padding: 4px; }
+                .stats-body { padding: 20px; }
+                .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+                .stat-row:last-child { border-bottom: none; }
+                .stat-row span:first-child { color: #94A3B8; }
+                .stat-value { color: #F8FAFC; font-weight: 600; }
+                .stat-value.up { color: #10B981; }
+                .stat-value.down { color: #EF4444; }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(statsModal);
+        
+        // Event listeners
+        statsModal.querySelector('.stats-close').addEventListener('click', () => statsModal.remove());
+        statsModal.querySelector('.stats-backdrop').addEventListener('click', () => statsModal.remove());
+    }
+    
     showDeviceConfigModal(device) {
-        // Create modal if it doesn't exist
+        // Presenter ensures clean View state
+        this.clearExistingDeviceViews();
+        
+        // Ensure modal exists and is available for reuse
         let modal = document.getElementById('device-config-modal');
         if (!modal) {
             modal = this.createDeviceConfigModal();
         }
+        
+        // Reset modal to clean state
+        modal.classList.remove('active');
+        modal.style.display = 'none';
         
         // Populate modal with device data
         this.populateDeviceConfigModal(modal, device);
         
         // Show modal
         modal.classList.add('active');
+        modal.style.display = 'flex';
+        
+        // Store current device reference in Presenter
+        this.currentConfigDevice = device;
     }
     
     createDeviceConfigModal() {
+        // Ensure we don't create duplicate modals
+        const existingModal = document.getElementById('device-config-modal');
+        if (existingModal) {
+            console.log('♻️ Reusing existing device config modal');
+            return existingModal;
+        }
+        
         const modal = document.createElement('div');
         modal.id = 'device-config-modal';
         modal.className = 'device-config-modal';
@@ -1210,13 +2074,15 @@ class NetworkSimulationEngine {
             </div>
         `;
         
-        // Add event listeners
-        modal.querySelector('.close-btn').addEventListener('click', () => this.closeDeviceConfigModal());
-        modal.querySelector('.cancel-btn').addEventListener('click', () => this.closeDeviceConfigModal());
+        // Add event listeners using Presenter pattern
+        modal.querySelector('.close-btn').addEventListener('click', () => this.closeDeviceConfiguration());
+        modal.querySelector('.cancel-btn').addEventListener('click', () => this.closeDeviceConfiguration());
         modal.querySelector('.save-btn').addEventListener('click', () => this.saveDeviceConfig());
-        modal.querySelector('.modal-backdrop').addEventListener('click', () => this.closeDeviceConfigModal());
+        modal.querySelector('.modal-backdrop').addEventListener('click', () => this.closeDeviceConfiguration());
         
         document.body.appendChild(modal);
+        
+        console.log('✅ Created new device config modal with Presenter event handlers');
         return modal;
     }
     
@@ -1231,10 +2097,8 @@ class NetworkSimulationEngine {
     }
     
     closeDeviceConfigModal() {
-        const modal = document.getElementById('device-config-modal');
-        if (modal) {
-            modal.classList.remove('active');
-        }
+        // Route through Presenter instead of direct View manipulation
+        this.closeDeviceConfiguration();
     }
     
     saveDeviceConfig() {
@@ -1424,12 +2288,133 @@ class NetworkSimulationEngine {
             cancelAnimationFrame(this.animationFrame);
         }
         
+        // Presenter cleanup - remove all managed Views
+        this.clearExistingDeviceViews();
+        
         this.devices = [];
         this.connections = [];
         this.ctx = null;
         this.canvas = null;
         
         console.log('🗑️ Network Simulation Engine destroyed');
+    }
+
+    // ===== INTEGRATION HELPERS (Bridge compatibility) =====
+
+    /**
+     * Get device by id, label/name, or return the object if already a device
+     */
+    getDevice(idOrObj) {
+        if (!idOrObj) return null;
+        if (typeof idOrObj === 'object' && idOrObj.id) {
+            // Try to find the engine instance for the same id
+            const found = this.devices.find(d => d.id === idOrObj.id) || null;
+            return found || idOrObj;
+        }
+        const id = String(idOrObj);
+        return this.devices.find(d => d.id === id || d.label === id || d.name === id) || null;
+    }
+
+    /**
+     * Import an external device shape into the engine
+     */
+    importDevice(external) {
+        if (!external) return null;
+        const type = external.type || 'computer';
+        const x = typeof external.x === 'number' ? external.x : 100;
+        const y = typeof external.y === 'number' ? external.y : 100;
+        const device = this.createDevice(type, x, y);
+        if (!device) return null;
+
+        // Preserve identifiers/labels when provided
+        if (external.id) device.id = String(external.id);
+        if (external.label) device.label = external.label;
+        if (external.name) device.name = external.name;
+        // Preserve simple config if present
+        if (external.config) {
+            device.config = { ...device.config, ...external.config };
+        }
+        // Width/height fallback
+        device.width = external.width || device.width || 60;
+        device.height = external.height || device.height || 60;
+        this.needsRender = true;
+        return device;
+    }
+
+    /**
+     * Import a connection between two devices using many possible shapes
+     */
+    importConnection(external) {
+        if (!external) return null;
+        const aRef = external.from ?? external.source ?? external.device1 ?? external.a ?? null;
+        const bRef = external.to ?? external.target ?? external.device2 ?? external.b ?? null;
+        const devA = this.getDevice(aRef);
+        const devB = this.getDevice(bRef);
+        if (!devA || !devB) {
+            console.warn('⚠️ importConnection: devices not found', external);
+            return null;
+        }
+        const port1 = external.port1 ?? null;
+        const port2 = external.port2 ?? null;
+        return this.createConnection(devA, devB, port1, port2);
+    }
+
+    /**
+     * Export current simulation data in a generic shape
+     */
+    exportSimulation() {
+        return {
+            topology: {
+                devices: this.devices.map(d => ({ ...d })),
+                connections: this.connections.map(c => ({
+                    id: c.id,
+                    device1: c.device1.id,
+                    device2: c.device2.id,
+                    port1: c.port1,
+                    port2: c.port2,
+                    type: c.type,
+                    status: c.status
+                }))
+            },
+            devices: this.devices.map(d => ({ ...d })),
+            connections: this.connections.map(c => ({ ...c })),
+            configuration: {}
+        };
+    }
+
+    /**
+     * Update device configuration by id
+     */
+    updateDeviceConfiguration(deviceId, config) {
+        const dev = this.getDevice(deviceId);
+        if (!dev) return false;
+        dev.config = { ...dev.config, ...(config || {}) };
+        this.needsRender = true;
+        this.emit('device-configured', dev);
+        return true;
+    }
+
+    /**
+     * Optional compatibility wrappers
+     */
+    setCurrentStep(_step) { /* no-op for now */ }
+    handleStepCompletion(_data) { /* no-op for now */ }
+    showStepGuidance(_type, _data) { /* no-op for now */ }
+
+    validateNetworkConfiguration() {
+        // Reuse existing validateConfiguration and adapt result
+        const res = this.validateConfiguration();
+        return Promise.resolve({
+            isValid: res.validDevices === res.configuredDevices,
+            errors: [],
+            warnings: [],
+            summary: res
+        });
+    }
+
+    reset() {
+        // Alias for integration bridge
+        this.resetNetwork();
     }
 }
 

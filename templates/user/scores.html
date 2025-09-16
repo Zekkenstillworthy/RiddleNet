@@ -511,10 +511,6 @@
         <i class="fas fa-chart-line section-icon"></i>
         <h2>My Scores</h2>
       </div>
-      <a href="{{ url_for('user.dashboard') }}" class="back-button">
-        <i class="fas fa-arrow-left"></i>
-        Back to Dashboard
-      </a>
     </div>
 
     <!-- Score Statistics -->
@@ -564,7 +560,6 @@
               <th><i class="fas fa-trophy"></i> Score</th>
               <th><i class="fas fa-tags"></i> Category</th>
               <th><i class="fas fa-calendar"></i> Date</th>
-              <th><i class="fas fa-cogs"></i> Action</th>
             </tr>
           </thead>
           <tbody id="scores-tbody">
@@ -583,19 +578,11 @@
                   </span>
                 </td>
                 <td class="date-cell">{{ score_item.date_attempted.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                <td>
-                  <form action="{{ url_for('user.delete_score', score_id=score_item.id) }}" method="POST" style="display: inline">
-                    <button type="submit" class="delete-button" onclick="return confirm('Are you sure you want to delete this score?')">
-                      <i class="fas fa-trash"></i>
-                      Delete
-                    </button>
-                  </form>
-                </td>
               </tr>
               {% endfor %}
             {% else %}
               <tr class="empty-state-row">
-                <td colspan="4" class="empty-state">
+                <td colspan="3" class="empty-state">
                   <i class="fas fa-chart-line"></i>
                   <h3>No Scores Yet</h3>
                   <p>Complete some challenges to see your scores here!</p>
@@ -721,11 +708,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updatePaginationControls();
         updatePaginationInfo();
-        
-        // Ensure delete button listeners are set up for visible rows
-        setTimeout(() => {
-            setupDeleteButtonListeners();
-        }, 500); // Wait for animations to complete
     }
 
     function updatePaginationControls() {
@@ -873,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Expose refresh function globally for use in other parts of the script
     window.refreshPagination = refreshPagination;
+    
     // Add fade-in animation to the page
     const card = document.querySelector('.modern-card');
     card.style.opacity = '0';
@@ -883,49 +866,6 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.opacity = '1';
         card.style.transform = 'translateY(0)';
     }, 100);
-
-    // Confirm deletion with better UX
-    function setupDeleteButtonListeners() {
-        const deleteButtons = document.querySelectorAll('.delete-button');
-        deleteButtons.forEach(button => {
-            if (button.dataset.listenerAdded) return; // Avoid duplicate listeners
-            button.dataset.listenerAdded = 'true';
-            
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const form = this.closest('form');
-                
-                // Create custom confirmation dialog
-                const confirmDialog = document.createElement('div');
-                confirmDialog.innerHTML = `
-                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-                        <div style="background: var(--dark-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 32px; max-width: 400px; text-align: center;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f59e0b; margin-bottom: 16px;"></i>
-                            <h3 style="color: var(--text-primary); margin-bottom: 16px;">Delete Score?</h3>
-                            <p style="color: var(--text-secondary); margin-bottom: 24px;">This action cannot be undone. Are you sure you want to delete this score?</p>
-                            <div style="display: flex; gap: 12px; justify-content: center;">
-                                <button class="cancel-btn" style="padding: 10px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer;">Cancel</button>
-                                <button class="confirm-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 8px; color: white; cursor: pointer;">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(confirmDialog);
-                
-                confirmDialog.querySelector('.cancel-btn').addEventListener('click', () => {
-                    document.body.removeChild(confirmDialog);
-                });
-                
-                confirmDialog.querySelector('.confirm-btn').addEventListener('click', () => {
-                    form.submit();
-                });
-            });
-        });
-    }
-
-    // Initial setup of delete button listeners
-    setupDeleteButtonListeners();
     
     // WebSocket Integration for Scores Page
     if (window.socketClient) {
@@ -996,14 +936,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </span>
             </td>
             <td class="date-cell">${new Date().toLocaleString()}</td>
-            <td>
-                <form action="/user/delete_score/${scoreData.id}" method="POST" style="display: inline">
-                    <button type="submit" class="delete-button" onclick="return confirm('Are you sure you want to delete this score?')">
-                        <i class="fas fa-trash"></i>
-                        Delete
-                    </button>
-                </form>
-            </td>
         `;
         
         // Add to the beginning of the table
@@ -1013,9 +945,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.refreshPagination) {
             window.refreshPagination();
         }
-        
-        // Set up delete button listener for new score
-        setupDeleteButtonListeners();
     }
     
     function updateScoreInTable(scoreData) {
@@ -1062,7 +991,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (tbody && tbody.querySelectorAll('.score-row').length === 0) {
                         tbody.innerHTML = `
                             <tr class="empty-state-row">
-                                <td colspan="4" class="empty-state">
+                                <td colspan="3" class="empty-state">
                                     <i class="fas fa-chart-line"></i>
                                     <h3>No Scores Yet</h3>
                                     <p>Complete some challenges to see your scores here!</p>

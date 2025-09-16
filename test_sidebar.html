@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidebar Toggle Test</title>
+    <style>
+        :root {
+            --glass-border: rgba(0, 217, 255, 0.3);
+            --border-radius-lg: 12px;
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0f172a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .performance-sidebar {
+            position: fixed;
+            top: 5%;
+            right: 0;
+            transform: translateY(-5%);
+            width: 350px;
+            height: 80vh;
+            max-height: 800px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-right: none;
+            border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+            z-index: 1500;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-5%) translateX(100%);
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .performance-sidebar.active {
+            transform: translateY(-5%) translateX(0);
+            opacity: 1;
+        }
+        
+        .sidebar-content {
+            padding: 20px;
+        }
+        
+        .toggle-btn {
+            background: #1e40af;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        
+        .toggle-btn:hover {
+            background: #2563eb;
+        }
+        
+        .close-sidebar {
+            background: #dc2626;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sidebar Toggle Test</h1>
+    
+    <button class="toggle-btn" id="performance-toggle">Toggle Performance Sidebar</button>
+    <button class="toggle-btn" id="mobile-performance-toggle">Mobile Toggle</button>
+    
+    <div id="performance-sidebar" class="performance-sidebar">
+        <div class="sidebar-content">
+            <button class="close-sidebar" id="close-performance-sidebar">×</button>
+            <h3>Performance Sidebar</h3>
+            <p>This is the sidebar content.</p>
+            <p>It should slide in from the right when activated.</p>
+        </div>
+    </div>
+
+    <script>
+        class TestSidebar {
+            constructor() {
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                const performanceToggle = document.getElementById('performance-toggle');
+                const performanceSidebar = document.getElementById('performance-sidebar');
+                const mobilePerformanceToggle = document.getElementById('mobile-performance-toggle');
+                const closePerformanceBtn = document.getElementById('close-performance-sidebar');
+                
+                console.log('🔧 Setting up performance sidebar event listeners...');
+                console.log('Performance toggle:', performanceToggle ? 'found' : 'not found');
+                console.log('Performance sidebar:', performanceSidebar ? 'found' : 'not found');
+                console.log('Mobile toggle:', mobilePerformanceToggle ? 'found' : 'not found');
+                console.log('Close button:', closePerformanceBtn ? 'found' : 'not found');
+                
+                if (performanceToggle && performanceSidebar) {
+                    performanceToggle.addEventListener('click', () => {
+                        console.log('🖱️ Performance toggle clicked');
+                        this.togglePerformanceSidebar();
+                    });
+                }
+                
+                if (mobilePerformanceToggle && performanceSidebar) {
+                    mobilePerformanceToggle.addEventListener('click', () => {
+                        console.log('🖱️ Mobile performance toggle clicked');
+                        this.togglePerformanceSidebar();
+                    });
+                }
+                
+                if (closePerformanceBtn && performanceSidebar) {
+                    closePerformanceBtn.addEventListener('click', () => {
+                        console.log('🖱️ Close performance button clicked');
+                        this.closePerformanceSidebar();
+                    });
+                }
+            }
+            
+            togglePerformanceSidebar() {
+                console.log('🔧 togglePerformanceSidebar called');
+                const sidebar = document.getElementById('performance-sidebar');
+                if (!sidebar) {
+                    console.log('❌ Performance sidebar element not found');
+                    return;
+                }
+                
+                const isActive = sidebar.classList.contains('active');
+                console.log(`📊 Sidebar current state: ${isActive ? 'active' : 'inactive'}`);
+                
+                if (isActive) {
+                    this.closePerformanceSidebar();
+                } else {
+                    this.showPerformanceSidebar();
+                }
+            }
+            
+            showPerformanceSidebar() {
+                const sidebar = document.getElementById('performance-sidebar');
+                if (!sidebar) {
+                    console.log('❌ Cannot show sidebar - element not found');
+                    return;
+                }
+                
+                console.log('📊 Adding active class to sidebar');
+                sidebar.classList.add('active');
+                
+                console.log('📊 Performance sidebar opened');
+            }
+            
+            closePerformanceSidebar() {
+                const sidebar = document.getElementById('performance-sidebar');
+                if (!sidebar) {
+                    console.log('❌ Cannot close sidebar - element not found');
+                    return;
+                }
+                
+                console.log('📊 Removing active class from sidebar');
+                sidebar.classList.remove('active');
+                
+                console.log('📊 Performance sidebar closed');
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            window.testSidebar = new TestSidebar();
+            console.log('🎯 Test sidebar initialized');
+        });
+    </script>
+</body>
+</html>

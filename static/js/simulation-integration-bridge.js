@@ -185,9 +185,35 @@ class SimulationEngineIntegration {
             // MVP Camera Controller (hold + sway + drag + inertia)
             this.setupMVPCameraController(canvas);
             
+            // After engine init, monitor for DynamicSimulation instance replacement
+            // Some pages set window.simulation to JSON first, then later replace with a class instance.
+            // We adopt the instance when it appears and bridge its in-memory devices.
+            this.monitorDynamicSimulationInstance();
+            
         } catch (error) {
             console.error('❌ Failed to initialize network simulation engine:', error);
         }
+    }
+
+    monitorDynamicSimulationInstance() {
+        if (this._monitoringSimInstance) return;
+        this._monitoringSimInstance = true;
+        let checks = 0;
+        const maxChecks = 60; // ~6s at 100ms
+        const timer = setInterval(() => {
+            checks++;
+            const sim = window.simulation;
+            const looksLikeInstance = sim && (Array.isArray(sim.networkDevices) || typeof sim.addNetworkDevice === 'function');
+            if (looksLikeInstance && sim !== this.existingSimulation) {
+                console.log('🔁 Detected DynamicSimulation instance, adopting for integration');
+                this.existingSimulation = sim;
+                try { this.bridgeExistingData(); } catch (e) { console.warn('⚠️ Re-bridge from instance failed:', e); }
+                try { this.overrideConfigurationMethods(); } catch (e) { console.warn('⚠️ Re-override config methods failed:', e); }
+                clearInterval(timer);
+            } else if (checks >= maxChecks) {
+                clearInterval(timer);
+            }
+        }, 100);
     }
 
     // ================= MVP CAMERA CONTROLLER =================
@@ -371,29 +397,49 @@ class SimulationEngineIntegration {
         
         try {
             // Transfer existing simulation data to new engine
-            const existingData = this.existingSimulation.data || {};
+            const existingData = this.existingSimulation.data || this.existingSimulation.simulation || {};
             const existingProgress = this.existingSimulation.progress || {};
-            
-            // Map existing devices to new engine format
-            if (existingData.topology && existingData.topology.devices) {
-                Object.values(existingData.topology.devices).forEach(device => {
-                    this.engineInstance.importDevice(device);
-                });
+
+            const importedIds = new Set((this.engineInstance.devices || []).map(d => String(d.id)));
+            const importDeviceOnce = (dev) => {
+                if (!dev) return;
+                const key = String(dev.id || dev.label || dev.name || Math.random());
+                if (importedIds.has(key)) return;
+                const created = this.engineInstance.importDevice(dev);
+                if (created && created.id) importedIds.add(String(created.id));
+            };
+
+            // A) From JSON topology (preferred)
+            const topo = existingData.topology || existingData.simulation_config || null;
+            if (topo && topo.devices) {
+                const devsArr = Array.isArray(topo.devices) ? topo.devices : Object.values(topo.devices);
+                devsArr.forEach(importDeviceOnce);
             }
-            
-            // Map existing connections
-            if (existingData.topology && existingData.topology.connections) {
-                Object.values(existingData.topology.connections).forEach(connection => {
-                    this.engineInstance.importConnection(connection);
-                });
+            // Connections from JSON topology
+            const rawLinks = topo ? (topo.links || topo.connections || []) : [];
+            const linksArr = Array.isArray(rawLinks) ? rawLinks : Object.values(rawLinks);
+            linksArr.forEach(link => this.engineInstance.importConnection(link));
+
+            // B) From running DynamicSimulation instance state (networkDevices/networkConnections)
+            const ds = this.existingSimulation;
+            if (Array.isArray(ds.networkDevices) && ds.networkDevices.length) {
+                ds.networkDevices.forEach(importDeviceOnce);
             }
-            
+            if (Array.isArray(ds.networkConnections) && ds.networkConnections.length) {
+                ds.networkConnections.forEach(conn => this.engineInstance.importConnection(conn));
+            }
+
             // Transfer progress data
             if (existingProgress.currentStep) {
                 this.engineInstance.setCurrentStep(existingProgress.currentStep);
             }
-            
-            console.log('🔄 Existing simulation data bridged to new engine');
+
+            // Helpful viewport fit for MVP
+            if ((this.engineInstance.devices || []).length) {
+                try { this.engineInstance.zoomToFit(); } catch(_) {}
+            }
+
+            console.log(`🔄 Bridged data → devices: ${(this.engineInstance.devices||[]).length}, connections: ${(this.engineInstance.connections||[]).length}`);
             
         } catch (error) {
             console.error('❌ Failed to bridge existing data:', error);
@@ -447,6 +493,20 @@ class SimulationEngineIntegration {
         
         // Bridge engine events to existing simulation
         this.engineInstance.on('device-added', (device) => {
+            // Keep DynamicSimulation arrays in sync (UI counters, legacy renderers)
+            if (this.existingSimulation && Array.isArray(this.existingSimulation.networkDevices)) {
+                const already = this.existingSimulation.networkDevices.some(d => String(d.id) === String(device.id));
+                if (!already) {
+                    this.existingSimulation.networkDevices.push({
+                        id: device.id,
+                        type: device.type,
+                        x: device.x,
+                        y: device.y,
+                        label: device.label,
+                        config: device.config
+                    });
+                }
+            }
             if (this.existingSimulation && this.existingSimulation.emit) {
                 this.existingSimulation.emit('device-added', device);
             }
@@ -461,6 +521,23 @@ class SimulationEngineIntegration {
         });
         
         this.engineInstance.on('connection-created', (connection) => {
+            // Mirror into DynamicSimulation's networkConnections if present
+            if (this.existingSimulation && Array.isArray(this.existingSimulation.networkConnections)) {
+                const from = connection.device1?.id || connection.from || connection.a;
+                const to = connection.device2?.id || connection.to || connection.b;
+                const exists = this.existingSimulation.networkConnections.some(c =>
+                    (c.from === from && c.to === to) || (c.from === to && c.to === from)
+                );
+                if (!exists && from && to) {
+                    this.existingSimulation.networkConnections.push({
+                        id: connection.id,
+                        from,
+                        to,
+                        type: connection.type || 'ethernet',
+                        status: connection.status || 'up'
+                    });
+                }
+            }
             if (this.existingSimulation && this.existingSimulation.emit) {
                 this.existingSimulation.emit('connection-created', connection);
             }

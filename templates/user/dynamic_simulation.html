@@ -58,14 +58,20 @@
         margin: 0;
         padding: 0;
         height: 100vh;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
         color: var(--text-primary);
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .simulation-wrapper {
         display: flex;
         flex-direction: column;
         height: 100vh;
+        overflow: hidden;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     /* Top Header */
@@ -144,6 +150,67 @@
         border: 2px solid var(--glass-border);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         backdrop-filter: blur(15px);
+    }
+
+    /* Header Canvas Tools Styles */
+    .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(15px);
+    }
+
+    .header-tools .tool-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+    }
+
+    .header-tools .tool-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: var(--cyber-glow);
+        color: var(--text-primary);
+        transform: translateY(-1px);
+    }
+
+    .header-tools .tool-btn.active {
+        background: var(--cyber-glow);
+        border-color: var(--cyber-glow);
+        color: var(--surface);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+    }
+
+    .header-tools .tool-btn .label {
+        font-size: 0.7rem;
+        margin-left: 0.25rem;
+        white-space: nowrap;
+    }
+
+    .header-tools .tool-btn:has(.label) {
+        width: auto;
+        min-width: 36px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .header-tools .tool-separator {
+        width: 1px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 0 0.25rem;
     }
 
     /* Main Content Area */
@@ -345,15 +412,18 @@
         border-top: 2px solid var(--glass-border);
         backdrop-filter: blur(20px);
         z-index: 1000;
-        padding: 0.5rem 1rem;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
         transition: all 0.3s ease;
         box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
-        min-height: 70px;
-        flex-wrap: wrap;
-        gap: 0.75rem;
+        overflow: hidden;
+    }
+
+    .palette-top-bar {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        padding: 0.5rem 1rem;
+        flex-shrink: 0;
     }
 
     .palette-section {
@@ -387,8 +457,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        width: 100%;
     }
 
     .palette-title {
@@ -417,17 +486,22 @@
 
     .device-categories {
         display: flex;
-        gap: 2.5rem;
-        overflow-x: auto;
-        padding: 1rem 0;
-        scrollbar-width: thin;
-        scrollbar-color: var(--cyber-glow) transparent;
+        gap: 1.5rem;
+        overflow: hidden;
+        padding: 0.75rem 1rem;
         align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+        width: 100%;
+        max-width: 100vw;
+        min-height: 65px;
     }
 
     .device-category {
-        min-width: 200px;
-        flex-shrink: 0;
+        min-width: 180px;
+        flex-shrink: 1;
+        flex: 1;
+        max-width: 220px;
     }
 
     .category-title {
@@ -445,7 +519,10 @@
     .device-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 0.5rem;
+        gap: 0.75rem;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 0.5rem;
     }
 
     .device-item {
@@ -453,7 +530,7 @@
         height: 70px;
         background: rgba(15, 23, 42, 0.9);
         border: 2px solid rgba(255, 255, 255, 0.15);
-        border-radius: 10px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -462,8 +539,9 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        margin: 0.25rem;
-        padding: 4px;
+        margin: 0;
+        padding: 6px;
+        box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
@@ -485,8 +563,20 @@
         transition: all 0.3s ease;
     }
 
+    .device-item img {
+        width: 20px;
+        height: 20px;
+        filter: brightness(1.1);
+        transition: all 0.3s ease;
+    }
+
     .device-item:hover .device-icon {
         color: var(--cyber-glow);
+        transform: scale(1.1);
+    }
+
+    .device-item:hover img {
+        filter: brightness(1.3) drop-shadow(0 0 3px rgba(0, 217, 255, 0.5));
         transform: scale(1.1);
     }
 
@@ -534,8 +624,7 @@
 
     /* Minimized palette state */
     #device-palette.minimized {
-        min-height: 40px;
-        padding: 0.5rem 1rem;
+        min-height: 45px;
     }
 
     #device-palette.minimized .device-categories {
@@ -696,9 +785,192 @@
         background: var(--glass-bg-light);
     }
 
+    /* ===== PERFORMANCE FEEDBACK SIDEBAR STYLES ===== */
+    
+    /* Mobile Performance Toggle Button */
+    .mobile-performance-toggle {
+        display: none;
+        position: fixed;
+        bottom: 160px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1600;
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3), 0 0 20px rgba(0, 217, 255, 0.2);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .mobile-performance-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.3);
+    }
+
+    .mobile-performance-toggle:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-performance-toggle i {
+        color: var(--cyber-glow);
+        font-size: 24px;
+    }
+    
+    .performance-sidebar {
+        position: fixed;
+        top: 5%;
+        right: 0;
+        transform: translateY(-5%);
+        width: 350px;
+        height: 80vh;
+        max-height: 800px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        z-index: 1500;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(-5%) translateX(100%);
+        opacity: 0;
+        overflow: hidden;
+    }
+
+    .performance-sidebar.active {
+        transform: translateY(-5%) translateX(0);
+        opacity: 1;
+    }
+
+    .performance-sidebar.flash {
+        animation: flashSidebar 2s ease-in-out;
+    }
+    
+    @keyframes flashSidebar {
+        0%, 100% { 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
+        }
+        50% { 
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
+                       0 0 20px rgba(76, 175, 80, 0.3); 
+        }
+    }
+
+    .performance-toggle {
+        position: absolute;
+        left: -60px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 120px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .performance-toggle:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: translateY(-50%) translateX(-5px);
+    }
+
+    .performance-toggle i {
+        font-size: 24px;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+        transform: rotate(90deg);
+    }
+
+    .toggle-text {
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .sidebar-content {
+        height: 100%;
+        overflow-y: auto;
+        padding: 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-glow) rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 24px 16px;
+        border-bottom: 1px solid var(--glass-border);
+        background: rgba(0, 217, 255, 0.05);
+    }
+
+    .sidebar-header h3 {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .close-sidebar {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .close-sidebar:hover {
+        color: var(--danger-color);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
     /* Steps Panel */
     .steps-panel {
+        position: fixed;
+        top: 5%;
+        right: 0;
+        transform: translateY(-5%);
         width: 420px;
+        height: 80vh;
+        max-height: 800px;
         background: var(--glass-bg);
         border-left: 2px solid var(--glass-border);
         display: flex;
@@ -708,12 +980,15 @@
         border-radius: var(--border-radius-lg);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(25px);
+        z-index: 1500;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .steps-header {
         padding: 2rem 1.5rem 1.5rem 1.5rem;
         border-bottom: 2px solid var(--glass-border);
         background: rgba(255, 255, 255, 0.02);
+        flex-shrink: 0;
     }
 
     .steps-header-content {
@@ -766,14 +1041,29 @@
         color: var(--text-secondary);
         font-size: 1rem;
         font-weight: 500;
+        margin: 0;
     }
 
     .steps-content {
         flex: 1;
         overflow-y: auto;
-        padding: 1.5rem;
+        padding: 0;
         transition: all 0.3s ease;
-        max-height: none;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-glow) rgba(255, 255, 255, 0.1);
+    }
+
+    .steps-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .steps-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .steps-content::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
     }
 
     /* Collapsed state for steps panel */
@@ -802,6 +1092,234 @@
     .steps-panel.collapsed .steps-header-content {
         flex-direction: column;
         margin-bottom: 0;
+    }
+
+    /* Feedback section styles from troubleshoot.html */
+    .feedback-section {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feedback-section:last-child {
+        border-bottom: none;
+    }
+
+    .feedback-section h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .feedback-section h4 i {
+        color: var(--cyber-glow);
+        font-size: 16px;
+    }
+
+    /* Score Display */
+    .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--cyber-glow);
+        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .score-unit {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .score-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        font-size: 0.9rem;
+    }
+
+    .score-item span:first-child {
+        color: var(--text-secondary);
+    }
+
+    .score-item span:last-child {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    /* Progress Meter */
+    .progress-meter {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .progress-circle {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    .progress-text span {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--cyber-glow);
+    }
+
+    .progress-details {
+        flex: 1;
+    }
+
+    .progress-status {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .estimated-time {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    /* Hints Container */
+    .hints-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .hint-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        border-left: 4px solid var(--cyber-glow);
+    }
+
+    .hint-icon {
+        color: var(--cyber-glow);
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .hint-text {
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 16px 12px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--cyber-glow);
+    }
+
+    .metric-icon {
+        font-size: 1.5rem;
+        color: var(--cyber-glow);
+        margin-bottom: 8px;
+    }
+
+    .metric-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .metric-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .quick-action-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    .quick-action-btn i {
+        font-size: 1rem;
     }
 
     .step-item {
@@ -835,7 +1353,16 @@
         margin-bottom: 1.25rem;
         padding-bottom: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }     align-items: center;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        background: var(--cyber-glow);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 0.9rem;
@@ -1250,11 +1777,24 @@
         .steps-panel { width: 320px; }
         .simulation-header { padding: 1rem 1.25rem; }
         .simulation-title { font-size: 1.25rem; }
+        .device-categories { gap: 1rem; }
+        .device-category { min-width: 160px; max-width: 200px; }
     }
     @media (max-width: 768px) {
         .simulation-content { flex-direction: column; }
         .steps-panel { width:100%; height:45vh; border-left:none; border-top:2px solid var(--glass-border); margin:0; border-radius:0; }
         .canvas-container { height:55vh; margin:0.25rem; }
+        .device-categories { gap: 0.75rem; padding: 0.5rem 0.75rem; }
+        .device-category { min-width: 140px; max-width: 180px; }
+        .device-grid { grid-template-columns: repeat(3, 1fr); }
+        .palette-top-bar { padding: 0.25rem 0.75rem; }
+    }
+    @media (max-width: 600px) {
+        .device-categories { flex-wrap: wrap; justify-content: center; padding: 0.5rem; }
+        .device-category { min-width: 120px; max-width: 160px; }
+        .device-grid { grid-template-columns: repeat(2, 1fr); }
+        .palette-top-bar { padding: 0.25rem 0.5rem; }
+        .palette-title { font-size: 0.8rem; }
     }
     /* Always show device labels in palette */
     #device-palette .device-grid { grid-auto-rows: minmax(72px, auto); }
@@ -1279,6 +1819,61 @@
         pointer-events:none;
     }
     #device-palette .device-item:hover .device-label { color:var(--text-primary, #f1f5f9); opacity:1; }
+
+    /* Achievement Notifications */
+    .achievement-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, var(--cyber-glow) 0%, var(--network-purple) 100%);
+        color: var(--background);
+        padding: 16px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        box-shadow: 0 8px 32px rgba(0, 217, 255, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 10000;
+    }
+
+    .achievement-notification.show {
+        transform: translateX(0);
+    }
+
+    .achievement-notification .achievement-icon {
+        font-size: 32px;
+        line-height: 1;
+    }
+
+    .achievement-notification .achievement-details {
+        flex: 1;
+    }
+
+    .achievement-notification .achievement-name {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .achievement-notification .achievement-desc {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 4px;
+    }
+
+    .achievement-notification .achievement-points {
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 8px;
+        display: inline-block;
+    }
 </style>
 {% endblock %}
 
@@ -1294,48 +1889,54 @@
             </div>
         </div> 
         <div class="header-right">
-            <div class="score-display">
-                <div class="score-item">
-                    <span class="score-label">Score:</span>
-                    <span class="score-value" id="current-score">0</span>
-                </div>
-                <div class="score-item">
-                    <span class="score-label">Progress:</span>
-                    <span class="score-value" id="progress-percentage">0%</span>
-                </div>
-                <div class="score-item">
-                    <span class="score-label">Time:</span>
-                    <span class="score-value" id="elapsed-time">00:00</span>
-                </div>
+            <!-- Canvas Tools moved from canvas area -->
+            <div class="canvas-tools header-tools">
+                <button class="tool-btn active" data-tool="select" title="Select Tool">
+                    <i class="fas fa-mouse-pointer"></i>
+                </button>
+                <button class="tool-btn" data-tool="move" title="Move Tool">
+                    <i class="fas fa-arrows-alt"></i>
+                </button>
+                <button class="tool-btn" data-tool="delete" title="Delete Tool">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="tool-btn" id="connection-mode-btn" title="Connection Mode">
+                    <i class="fas fa-link"></i>
+                    <span class="label">Connect</span>
+                </button>
+                <div class="tool-separator"></div>
+                <button class="tool-btn" data-tool="zoom-in" title="Zoom In">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="tool-btn" data-tool="zoom-out" title="Zoom Out">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="tool-btn" data-tool="zoom-fit" title="Zoom to Fit">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+                <div class="tool-separator"></div>
+                <button class="tool-btn" data-tool="grid" title="Toggle Grid">
+                    <i class="fas fa-border-all"></i>
+                </button>
+                <button class="tool-btn" data-tool="labels" title="Toggle Labels">
+                    <i class="fas fa-tags"></i>
+                </button>
             </div>
             <div class="bottom-actions">
                 <button id="validate-btn" class="btn btn-success">
                     <i class="fas fa-check-circle"></i>
                     Validate
                 </button>
-                <button id="reset-btn" class="btn btn-secondary">
-                    <i class="fas fa-undo"></i>
-                    Reset
-                </button>
                 <button id="hint-btn" class="btn btn-secondary">
                     <i class="fas fa-lightbulb"></i>
                     
                     Hint
-                </button>
-                <button id="previous-btn" class="btn btn-secondary" disabled>
-                    <i class="fas fa-chevron-left"></i>
-                    Previous
-                </button>
-                <button id="next-btn" class="btn btn-primary">
-                    <i class="fas fa-chevron-right"></i>
-                    Next
                 </button>
                 <button id="submit-btn" class="btn btn-success" style="display: none;">
                     <i class="fas fa-check"></i>
                     Submit Answer
                 </button>
             </div>
-            <!-- Removed step counter display per request -->
         </div>
     </div>
 
@@ -1348,44 +1949,6 @@
                     <!-- Network Canvas for topology visualization -->
                     <canvas id="Canvas" width="800" height="600"></canvas>
                     
-                    <!-- Canvas Tools -->
-                    <div class="canvas-tools">
-                        <button class="tool-btn active" data-tool="select" title="Select Tool">
-                            <i class="fas fa-mouse-pointer"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="move" title="Move Tool">
-                            <i class="fas fa-arrows-alt"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="connect" title="Connect Tool">
-                            <i class="fas fa-link"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="delete" title="Delete Tool">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <div style="height: 1px; background: rgba(255,255,255,0.2); margin: 0.5rem 0;"></div>
-                        <button class="tool-btn" data-tool="zoom-in" title="Zoom In">
-                            <i class="fas fa-search-plus"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="zoom-out" title="Zoom Out">
-                            <i class="fas fa-search-minus"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="zoom-fit" title="Zoom to Fit">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
-                        <div style="height: 1px; background: rgba(255,255,255,0.2); margin: 0.5rem 0;"></div>
-                        <button class="tool-btn" data-tool="grid" title="Toggle Grid">
-                            <i class="fas fa-border-all"></i>
-                        </button>
-                        <button class="tool-btn" data-tool="labels" title="Toggle Labels">
-                            <i class="fas fa-tags"></i>
-                        </button>
-                    </div>
-
-                    <!-- Connection Line Preview (for drawing connections) -->
-                    <svg id="connection-preview" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99;">
-                        <line id="preview-line" x1="0" y1="0" x2="0" y2="0" stroke="rgba(0, 217, 255, 0.8)" stroke-width="3" stroke-dasharray="5,5" style="opacity: 0;"/>
-                    </svg>
-
                     <!-- Drop Zones for Devices -->
                     <div class="drop-zone" id="canvas-drop-zone">
                         <div class="drop-zone-content">
@@ -1409,8 +1972,6 @@
                 <div class="network-status-bar" style="position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; padding: 0 1rem; font-size: 0.8rem; color: var(--text-secondary); z-index: 200;">
                     <span id="device-count">Devices: 0</span>
                     <span style="margin: 0 1rem;">|</span>
-                    <span id="connection-count">Connections: 0</span>
-                    <span style="margin: 0 1rem;">|</span>
                     <span id="canvas-coords">Cursor: (0, 0)</span>
                     <span style="flex: 1;"></span>
                     <span id="canvas-mode">Mode: Select</span>
@@ -1420,22 +1981,26 @@
         
         <!-- Enhanced Device Palette (moved outside simulation-main) -->
         <div id="device-palette">
-            <div class="palette-header">
-                <div class="palette-title">
-                    <i class="fas fa-layer-group"></i>
-                    Network Devices
+            <!-- Device Palette Top Bar -->
+            <div class="palette-top-bar">
+                <div class="palette-header">
+                    <div class="palette-title">
+                        <i class="fas fa-layer-group"></i>
+                        Network Devices
+                    </div>
+                    <button class="palette-toggle" aria-expanded="true">
+                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                    </button>
                 </div>
-                <button class="palette-toggle" aria-expanded="true">
-                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                </button>
             </div>
 
+            <!-- Device Categories Content -->
             <div class="device-categories">
                 <!-- Network Infrastructure -->
                 <div class="device-category">
                     <div class="category-title">
                         <i class="fas fa-network-wired"></i>
-                        Infrastructure
+                        Network Infrastructure
                     </div>
                     <div class="device-grid">
                         <div class="device-item" data-device-type="router" draggable="true">
@@ -1448,46 +2013,31 @@
                             <span class="device-label">Switch</span>
                             <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                         </div>
-                        <div class="device-item" data-device-type="hub" draggable="true">
-                            <i class="fas fa-circle-nodes device-icon"></i>
-                            <span class="device-label">Hub</span>
-                            <div class="device-tooltip">Network Hub - Basic connectivity device</div>
-                        </div>
                         <div class="device-item" data-device-type="access-point" draggable="true">
                             <i class="fas fa-wifi device-icon"></i>
                             <span class="device-label">Access Point</span>
                             <div class="device-tooltip">Wireless Access Point - Provides WiFi connectivity</div>
                         </div>
-                        <div class="device-item" data-device-type="firewall" draggable="true">
-                            <i class="fas fa-shield-alt device-icon"></i>
-                            <span class="device-label">Firewall</span>
-                            <div class="device-tooltip">Network Firewall - Security filtering device</div>
-                        </div>
-                        <div class="device-item" data-device-type="load-balancer" draggable="true">
-                            <i class="fas fa-balance-scale device-icon"></i>
-                            <span class="device-label">Load Balancer</span>
-                            <div class="device-tooltip">Load Balancer - Distributes network traffic</div>
-                        </div>
-                        <div class="device-item" data-device-type="gateway" draggable="true">
-                            <i class="fas fa-door-open device-icon"></i>
-                            <span class="device-label">Gateway</span>
-                            <div class="device-tooltip">Network Gateway - Connects different networks</div>
-                        </div>
-                        <div class="device-item" data-device-type="bridge" draggable="true">
-                            <i class="fas fa-road-bridge device-icon"></i>
-                            <span class="device-label">Bridge</span>
-                            <div class="device-tooltip">Network Bridge - Connects network segments</div>
+                        <div class="device-item" data-device-type="hub" draggable="true">
+                            <i class="fas fa-circle-nodes device-icon"></i>
+                            <span class="device-label">Hub</span>
+                            <div class="device-tooltip">Network Hub - Basic connectivity device</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- End Devices -->
+                <!-- Computing Devices -->
                 <div class="device-category">
                     <div class="category-title">
                         <i class="fas fa-desktop"></i>
-                        End Devices
+                        Computing Devices
                     </div>
                     <div class="device-grid">
+                        <div class="device-item" data-device-type="server" draggable="true">
+                            <i class="fas fa-server device-icon"></i>
+                            <span class="device-label">Server</span>
+                            <div class="device-tooltip">Server - Provides network services</div>
+                        </div>
                         <div class="device-item" data-device-type="computer" draggable="true">
                             <i class="fas fa-desktop device-icon"></i>
                             <span class="device-label">Computer</span>
@@ -1498,16 +2048,16 @@
                             <span class="device-label">Laptop</span>
                             <div class="device-tooltip">Laptop Computer - Portable end user device</div>
                         </div>
-                        <div class="device-item" data-device-type="server" draggable="true">
-                            <i class="fas fa-server device-icon"></i>
-                            <span class="device-label">Server</span>
-                            <div class="device-tooltip">Server - Provides network services</div>
-                        </div>
-                        <div class="device-item" data-device-type="printer" draggable="true">
-                            <i class="fas fa-print device-icon"></i>
-                            <span class="device-label">Printer</span>
-                            <div class="device-tooltip">Network Printer - Shared printing device</div>
-                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile & Communication -->
+                <div class="device-category">
+                    <div class="category-title">
+                        <i class="fas fa-mobile-alt"></i>
+                        Mobile & Communication
+                    </div>
+                    <div class="device-grid">
                         <div class="device-item" data-device-type="phone" draggable="true">
                             <i class="fas fa-phone device-icon"></i>
                             <span class="device-label">IP Phone</span>
@@ -1523,33 +2073,16 @@
                             <span class="device-label">Mobile</span>
                             <div class="device-tooltip">Mobile Phone - Wireless communication device</div>
                         </div>
-                        <div class="device-item" data-device-type="iot-device" draggable="true">
-                            <i class="fas fa-microchip device-icon"></i>
-                            <span class="device-label">IoT Device</span>
-                            <div class="device-tooltip">IoT Device - Internet of Things sensor/device</div>
-                        </div>
                     </div>
                 </div>
 
-                
-
-                <!-- Tools & Actions -->
+                <!-- Network Tools -->
                 <div class="device-category">
                     <div class="category-title">
                         <i class="fas fa-tools"></i>
-                        Tools
+                        Network Tools
                     </div>
                     <div class="device-grid">
-                        <div class="device-item" data-action="connect-mode" style="background: rgba(57, 255, 20, 0.1);">
-                            <i class="fas fa-link device-icon"></i>
-                            <span class="device-label">Connect</span>
-                            <div class="device-tooltip">Connect Mode - Link devices together</div>
-                        </div>
-                        <div class="device-item" data-action="configure-mode" style="background: rgba(245, 158, 11, 0.1);">
-                            <i class="fas fa-cog device-icon"></i>
-                            <span class="device-label">Configure</span>
-                            <div class="device-tooltip">Configure - Set device parameters</div>
-                        </div>
                         <div class="device-item" data-action="terminal-mode" style="background: rgba(139, 92, 246, 0.1);">
                             <i class="fas fa-terminal device-icon"></i>
                             <span class="device-label">Terminal</span>
@@ -1560,48 +2093,209 @@
                             <span class="device-label">Test</span>
                             <div class="device-tooltip">Test Network - Validate connectivity</div>
                         </div>
-                        <div class="device-item" data-action="reset" style="background: rgba(239, 68, 68, 0.1);">
-                            <i class="fas fa-undo device-icon"></i>
-                            <span class="device-label">Reset</span>
-                            <div class="device-tooltip">Reset - Clear all devices</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Performance Feedback Sidebar - Based on troubleshoot.html -->
+        <div id="performance-sidebar" class="performance-sidebar">
+            <!-- Performance Toggle Button -->
+            <div id="performance-toggle" class="performance-toggle" title="Toggle Performance Feedback">
+                <i class="fas fa-chart-line"></i>
+                <span class="toggle-text">LIVE PERFORMANCE</span>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-chart-line"></i> LIVE PERFORMANCE</h3>
+                    <button class="close-sidebar" id="close-performance-sidebar" title="Close Performance Panel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Real-time Score Display -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-trophy"></i> Current Score</h4>
+                    <div class="score-display">
+                        <span class="score-value" id="current-score-sidebar">0</span>
+                        <span class="score-unit">pts</span>
+                    </div>
+                    <div class="score-breakdown">
+                        <div class="score-item">
+                            <span>Devices Placed:</span>
+                            <span id="devices-score">0/5</span>
                         </div>
-                        <div class="device-item" data-action="save" style="background: rgba(16, 185, 129, 0.1);">
-                            <i class="fas fa-save device-icon"></i>
-                            <span class="device-label">Save</span>
-                            <div class="device-tooltip">Save Topology - Save current network layout</div>
+                        <div class="score-item">
+                            <span>Configurations:</span>
+                            <span id="config-score">0/2</span>
                         </div>
-                        <div class="device-item" data-action="zoom-in">
-                            <i class="fas fa-search-plus device-icon"></i>
-                            <span class="device-label">Zoom In</span>
-                            <div class="device-tooltip">Zoom In - Enlarge view</div>
+                    </div>
+                </div>
+
+                <!-- Progress Meter with Advanced Tracking -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-clock"></i> Progress</h4>
+                    <div class="progress-meter">
+                        <div class="progress-circle">
+                            <svg class="progress-ring" width="80" height="80">
+                                <circle class="progress-ring-background" 
+                                        cx="40" cy="40" r="30" 
+                                        stroke="rgba(255,255,255,0.1)" 
+                                        stroke-width="6" 
+                                        fill="transparent"/>
+                                <circle class="progress-ring-fill" 
+                                        cx="40" cy="40" r="30" 
+                                        stroke="var(--cyber-glow)" 
+                                        stroke-width="6" 
+                                        fill="transparent"
+                                        stroke-dasharray="188.5"
+                                        stroke-dashoffset="188.5"
+                                        id="progress-ring"/>
+                            </svg>
+                            <div class="progress-text">
+                                <span id="progress-percentage-sidebar">0%</span>
+                            </div>
                         </div>
-                        <div class="device-item" data-action="zoom-out">
-                            <i class="fas fa-search-minus device-icon"></i>
-                            <span class="device-label">Zoom Out</span>
-                            <div class="device-tooltip">Zoom Out - Reduce view</div>
+                        <div class="progress-details">
+                            <div class="progress-status" id="progress-status">Getting Started</div>
+                            <div class="estimated-time">
+                                <i class="fas fa-clock"></i>
+                                <span id="estimated-completion">Est. 15 min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Hints Container -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-lightbulb"></i> Smart Hints</h4>
+                    <div class="hints-container" id="hints-container">
+                        <div class="hint-item">
+                            <i class="fas fa-info-circle hint-icon"></i>
+                            <div class="hint-text">
+                                Start by placing network devices on the canvas
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Performance Metrics Grid -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-chart-line"></i> Metrics</h4>
+                    <div class="metrics-grid">
+                        <div class="metric-card primary-timer">
+                            <i class="fas fa-stopwatch metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="time-spent">0:00</span>
+                                <span class="metric-label">Time</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="fas fa-mouse metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="actions-count">0</span>
+                                <span class="metric-label">Actions</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="fas fa-exclamation-triangle metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="mistakes-count">0</span>
+                                <span class="metric-label">Errors</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i class="fas fa-question-circle metric-icon"></i>
+                            <div class="metric-content">
+                                <span class="metric-value" id="hints-used">0</span>
+                                <span class="metric-label">Hints</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Steps Navigation -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-tasks"></i> Steps</h4>
+                    <div id="steps-container">
+                        <!-- Steps will be dynamically loaded here -->
+                        <div class="step-item active">
+                            <div class="step-header">
+                                <div class="step-number">1</div>
+                                <div class="step-title">Place Network Devices</div>
+                                <div class="step-status status-active">Active</div>
+                            </div>
+                            <div class="step-description">
+                                Drag and drop network devices from the palette below onto the canvas.
+                            </div>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-header">
+                                <div class="step-number">2</div>
+                                <div class="step-title">Configure Settings</div>
+                                <div class="step-status status-pending">Pending</div>
+                            </div>
+                            <div class="step-description">
+                                Configure IP addresses and network settings.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions for Enhanced Workflow -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" id="get-hint-btn">
+                            <i class="fas fa-lightbulb"></i>
+                            Get Smart Hint
+                        </button>
+                        <button class="quick-action-btn" id="check-solution-btn">
+                            <i class="fas fa-check-circle"></i>
+                            Validate Network
+                        </button>
+                        <button class="quick-action-btn" id="reset-progress-btn">
+                            <i class="fas fa-undo"></i>
+                            Reset Progress
+                        </button>
+                        <button class="quick-action-btn" id="save-simulation-btn">
+                            <i class="fas fa-save"></i>
+                            Save Simulation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Achievement System -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-medal"></i> Achievements</h4>
+                    <div class="achievements-container">
+                        <div class="achievement-badge locked" id="first-device-achievement">
+                            <i class="fas fa-star achievement-icon"></i>
+                            <span class="achievement-text">First Device</span>
+                        </div>
+                        <div class="achievement-badge locked" id="network-builder-achievement">
+                            <i class="fas fa-network-wired achievement-icon"></i>
+                            <span class="achievement-text">Network Builder</span>
+                        </div>
+                        <div class="achievement-badge locked" id="speed-demon-achievement">
+                            <i class="fas fa-bolt achievement-icon"></i>
+                            <span class="achievement-text">Speed Demon</span>
+                        </div>
+                        <div class="achievement-badge locked" id="perfectionist-achievement">
+                            <i class="fas fa-crown achievement-icon"></i>
+                            <span class="achievement-text">Perfectionist</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Steps Panel -->
-        <div class="steps-panel">
-            <div class="steps-header">
-                <div class="steps-header-content">
-                    <h3 class="steps-title">
-                        <i class="fas fa-list-ol"></i>
-                        Simulation Steps
-                    </h3>
-                    <button class="steps-toggle-btn" id="steps-toggle" aria-expanded="true" title="Toggle Steps Panel">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-                <p class="steps-subtitle">Follow each step to complete the simulation</p>
-            </div>
-            <div class="steps-content" id="steps-container">
-                <!-- Steps will be dynamically loaded here -->
-            </div>
+        <!-- Mobile Performance Toggle Button -->
+        <div class="mobile-performance-toggle" id="mobile-performance-toggle">
+            <i class="fas fa-chart-line"></i>
         </div>
     </div>
 </div>
@@ -1703,34 +2397,111 @@ class DynamicSimulation {
         this.simulation = simulationData;
         this.currentStepIndex = 0;
         this.steps = this.simulation.step_definitions || [];
-        this.score = 0;
-        this.startTime = Date.now();
-        this.timer = null;
-        this.userAnswers = {};
+        
+        // ===== CENTRALIZED STATE MANAGEMENT SYSTEM =====
+        this.state = {
+            // Core simulation state
+            score: 0,
+            startTime: Date.now(),
+            timer: null,
+            userAnswers: {},
+            
+            // Canvas and UI state
+            currentTool: 'select',
+            isConfigureMode: false,
+            isDragging: false,
+            dragOffset: { x: 0, y: 0 },
+            zoom: 1.0,
+            panOffset: { x: 0, y: 0 },
+            showGrid: true,
+            showLabels: true,
+            
+            // Network topology state
+            networkDevices: [],
+            networkConnections: [],
+            selectedDevice: null,
+            
+            // Connection mode state
+            isConnectionMode: false,
+            firstDevice: null,
+            connections: [], // Legacy support
+            
+            
+            // Performance tracking
+            performanceMetrics: {
+                startTime: Date.now(),
+                actionsCount: 0,
+                mistakesMade: 0,
+                hintsUsed: 0,
+                efficiencyScore: 100,
+                timeSpent: 0
+            },
+            
+            // Device management
+            deviceStates: new Map(),
+            deviceConfigurations: new Map(),
+            deviceIdCounter: 1,
+            deviceCounter: {},
+            
+            // CLI system
+            cliHistory: [],
+            currentCLIDevice: null,
+            
+            // UI visibility states
+            isPerformanceSidebarVisible: false,
+            isStepsPanelVisible: true,
+            isPaletteVisible: true
+        };
+        
+        // Legacy compatibility - proxy to centralized state
+        Object.defineProperty(this, 'score', {
+            get: () => this.state.score,
+            set: (value) => this.updateState({ score: value })
+        });
+        Object.defineProperty(this, 'networkDevices', {
+            get: () => this.state.networkDevices,
+            set: (value) => this.updateState({ networkDevices: value })
+        });
+        Object.defineProperty(this, 'networkConnections', {
+            get: () => this.state.networkConnections,
+            set: (value) => this.updateState({ networkConnections: value })
+        });
+        Object.defineProperty(this, 'selectedDevice', {
+            get: () => this.state.selectedDevice,
+            set: (value) => this.updateState({ selectedDevice: value })
+        });
+        Object.defineProperty(this, 'currentTool', {
+            get: () => this.state.currentTool,
+            set: (value) => this.updateState({ currentTool: value })
+        });
+        Object.defineProperty(this, 'isConfigureMode', {
+            get: () => this.state.isConfigureMode,
+            set: (value) => this.updateState({ isConfigureMode: value })
+        });
+        Object.defineProperty(this, 'performanceMetrics', {
+            get: () => this.state.performanceMetrics,
+            set: (value) => this.updateState({ performanceMetrics: value })
+        });
+        
+        // MVP: Add proxy properties for zoom and pan for renderCanvas safety
+        Object.defineProperty(this, 'zoom', {
+            get: () => this.state.zoom || 1.0,
+            set: (value) => this.updateState({ zoom: value })
+        });
+        Object.defineProperty(this, 'panOffset', {
+            get: () => this.state.panOffset || { x: 0, y: 0 },
+            set: (value) => this.updateState({ panOffset: value })
+        });
+        Object.defineProperty(this, 'showGrid', {
+            get: () => this.state.showGrid !== undefined ? this.state.showGrid : true,
+            set: (value) => this.updateState({ showGrid: value })
+        });
+        
+        this.startTime = this.state.startTime; // Keep for backward compatibility
         
         // Enhanced Network Canvas System
         this.canvas = null;
         this.ctx = null;
-        this.networkDevices = [];
-        this.networkConnections = [];
-        this.selectedDevice = null;
-        this.selectedConnection = null;
-        this.currentTool = 'select';
-        this.isConnectMode = false;
-        this.isConfigureMode = false;
-        this.isDragging = false;
-        this.dragOffset = { x: 0, y: 0 };
-        this.connectionStart = null;
-        this.zoom = 1.0;
-        this.panOffset = { x: 0, y: 0 };
-        this.showGrid = true;
-        this.showLabels = true;
-        
-        // Device Configuration System
-        this.deviceStates = new Map();
-        this.deviceConfigurations = new Map();
-        this.cliHistory = [];
-        this.currentCLIDevice = null;
         
         // Network Validation Engine
         this.validationRules = [];
@@ -1739,10 +2510,6 @@ class DynamicSimulation {
         
         // Palette mode management
         this.currentPaletteMode = 'devices';
-        
-        // Performance tracking
-        this.deviceIdCounter = 1;
-        this.connectionIdCounter = 1;
         
         // Device Palette System
         this.deviceTypes = {
@@ -1781,6 +2548,112 @@ class DynamicSimulation {
         this.init();
     }
     
+    // ===== CENTRALIZED STATE MANAGEMENT METHODS =====
+    
+    updateState(newState) {
+        // Update state with new values
+        const oldState = { ...this.state };
+        Object.assign(this.state, newState);
+        
+        // Trigger state change events
+        this.onStateChange(oldState, this.state, newState);
+        
+        // Update UI if needed
+        this.updateUIFromState(newState);
+    }
+    
+    getState(path = null) {
+        if (path) {
+            return path.split('.').reduce((obj, key) => obj && obj[key], this.state);
+        }
+        return { ...this.state }; // Return copy to prevent external mutation
+    }
+    
+    setState(path, value) {
+        if (typeof path === 'string') {
+            const keys = path.split('.');
+            let current = this.state;
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!current[keys[i]]) current[keys[i]] = {};
+                current = current[keys[i]];
+            }
+            const oldValue = current[keys[keys.length - 1]];
+            current[keys[keys.length - 1]] = value;
+            
+            // Trigger change events
+            this.onStateChange({ [path]: oldValue }, this.state, { [path]: value });
+        } else {
+            this.updateState(path); // If first argument is object
+        }
+    }
+    
+    onStateChange(oldState, newState, changedKeys) {
+        
+        if ('networkDevices' in changedKeys) {
+            this.updatePerformanceDisplay();
+            this.redrawCanvas();
+        }
+        
+        if ('selectedDevice' in changedKeys) {
+            this.redrawCanvas();
+        }
+        
+        if ('performanceMetrics' in changedKeys) {
+            this.updatePerformanceDisplay();
+        }
+        
+        // Debug logging
+        console.log('🔄 State changed:', changedKeys);
+    }
+    
+    updateUIFromState(changedState) {
+        // Update UI elements based on state changes
+        if ('isPerformanceSidebarVisible' in changedState) {
+            const sidebar = document.getElementById('performance-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('active', this.state.isPerformanceSidebarVisible);
+            }
+        }
+        
+        if ('isStepsPanelVisible' in changedState) {
+            const panel = document.querySelector('.simulation-steps');
+            if (panel) {
+                panel.style.display = this.state.isStepsPanelVisible ? 'block' : 'none';
+            }
+        }
+        
+        if ('isPaletteVisible' in changedState) {
+            const palette = document.querySelector('.device-palette');
+            if (palette) {
+                palette.style.display = this.state.isPaletteVisible ? 'block' : 'none';
+            }
+        }
+    }
+    
+    resetState() {
+        // Reset to initial state
+        this.updateState({
+            score: 0,
+            networkDevices: [],
+            selectedDevice: null,
+            isConfigureMode: false,
+            performanceMetrics: {
+                startTime: Date.now(),
+                actionsCount: 0,
+                mistakesMade: 0,
+                hintsUsed: 0,
+                efficiencyScore: 100,
+                timeSpent: 0
+            },
+            deviceStates: new Map(),
+            deviceConfigurations: new Map(),
+            deviceIdCounter: 1,
+            deviceCounter: {}
+        });
+        
+        console.log('🔄 State reset to initial values');
+    }
+
     init() {
         console.log('🚀 Initializing Comprehensive Simulation System v2.0');
         
@@ -1857,11 +2730,46 @@ class DynamicSimulation {
         if (submitBtn) submitBtn.addEventListener('click', () => this.submitAnswer());
         if (hintBtn) hintBtn.addEventListener('click', () => this.showHint());
         if (resetBtn) resetBtn.addEventListener('click', () => {
-            if (confirm('Reset topology? This will clear all devices and connections.')) {
+            if (confirm('Reset topology? This will clear all devices.')) {
                 this.resetTopology();
             }
         });
         if (validateBtn) validateBtn.addEventListener('click', () => this.validateConfiguration());
+        
+        // MVP Connection mode button (troubleshoot.html style)
+        const connectionModeBtn = document.getElementById('connection-mode-btn');
+        if (connectionModeBtn) {
+            connectionModeBtn.addEventListener('click', () => {
+                this.state.isConnectionMode = !this.state.isConnectionMode;
+                connectionModeBtn.classList.toggle('active', this.state.isConnectionMode);
+                this.state.firstDevice = null; // Reset selection when toggling mode
+                
+                // MVP-style clear feedback messages (troubleshoot.html pattern)
+                if (this.state.isConnectionMode) {
+                    console.log('🔗 MVP Connection mode ENABLED - Click two devices to connect them');
+                    this.showToast?.('MVP: Connection mode enabled - Click two devices to connect', 'info');
+                } else {
+                    console.log('🔗 MVP Connection mode DISABLED - Back to selection mode');
+                    this.showToast?.('MVP: Connection mode disabled', 'info');
+                }
+                
+                // Bridge to NetworkSimulationEngine if present so engine-managed canvas handles connections
+                try {
+                    const engine = window.simulationEngineIntegration?.getEngine?.();
+                    if (engine && typeof engine.setTool === 'function') {
+                        engine.setTool(this.state.isConnectionMode ? 'connect' : 'select');
+                        console.log(`🛠️ MVP Engine tool updated: ${this.state.isConnectionMode ? 'connect' : 'select'}`);
+                        if (!this.state.isConnectionMode && typeof engine.cancelConnection === 'function') {
+                            engine.cancelConnection();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ MVP Connect-mode engine bridge failed (non-fatal):', e);
+                }
+                
+                this.redrawCanvas();
+            });
+        }
         
         const terminalBtn = document.getElementById('terminal-btn');
         if (terminalBtn) {
@@ -1873,10 +2781,50 @@ class DynamicSimulation {
             paletteToggle.addEventListener('click', () => this.togglePalette());
         }
         
-        // Steps panel toggle
+        // Setup event listeners
         const stepsToggle = document.getElementById('steps-toggle');
         if (stepsToggle) {
             stepsToggle.addEventListener('click', () => this.toggleStepsPanel());
+        }
+        
+        // Performance Sidebar Management
+        const performanceToggle = document.getElementById('performance-toggle');
+        const performanceSidebar = document.getElementById('performance-sidebar');
+        const mobilePerformanceToggle = document.getElementById('mobile-performance-toggle');
+        const closePerformanceBtn = document.getElementById('close-performance-sidebar');
+        
+        console.log('🔧 Setting up performance sidebar event listeners...');
+        console.log('Performance toggle:', performanceToggle ? 'found' : 'not found');
+        console.log('Performance sidebar:', performanceSidebar ? 'found' : 'not found');
+        console.log('Mobile toggle:', mobilePerformanceToggle ? 'found' : 'not found');
+        console.log('Close button:', closePerformanceBtn ? 'found' : 'not found');
+        
+        if (performanceToggle && performanceSidebar) {
+            performanceToggle.addEventListener('click', () => {
+                console.log('🖱️ Performance toggle clicked');
+                this.togglePerformanceSidebar();
+            });
+        }
+        
+        if (mobilePerformanceToggle && performanceSidebar) {
+            mobilePerformanceToggle.addEventListener('click', () => {
+                console.log('🖱️ Mobile performance toggle clicked');
+                this.togglePerformanceSidebar();
+            });
+        }
+        
+        if (closePerformanceBtn && performanceSidebar) {
+            closePerformanceBtn.addEventListener('click', () => {
+                console.log('🖱️ Close performance button clicked');
+                this.closePerformanceSidebar();
+            });
+        }
+        
+        // Auto-show performance sidebar on first device placement
+        if (this.networkDevices.length === 0) {
+            setTimeout(() => {
+                this.showPerformanceSidebar();
+            }, 2000);
         }
     }
     
@@ -1897,13 +2845,13 @@ class DynamicSimulation {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
         
-        // Initialize canvas state
-        this.networkDevices = [];
-        this.networkConnections = [];
-        this.selectedDevice = null;
-        this.isConnectionMode = false;
-        this.firstDevice = null;
-        this.isDragging = false;
+        // Initialize canvas state using proper state management
+        this.updateState({
+            networkDevices: [],
+            networkConnections: [],
+            selectedDevice: null,
+            isDragging: false
+        });
         this.draggedDevice = null;
         
         // Device counter for labeling
@@ -1935,6 +2883,9 @@ class DynamicSimulation {
             database: 0
         };
         
+        // Connection counter for unique IDs
+        this.connectionIdCounter = 1;
+        
         // Setup canvas event listeners
         this.setupCanvasEventListeners();
         
@@ -1949,69 +2900,56 @@ class DynamicSimulation {
         this.canvas.addEventListener("dragover", (e) => e.preventDefault());
 
         // Handle drop on canvas
+        // Enhanced canvas drop handler with mobile device support
         this.canvas.addEventListener("drop", (e) => {
+            e.preventDefault();
             const type = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
             const x = e.offsetX;
             const y = e.offsetY;
 
+            // Validate device type
+            if (!type || !this.deviceTypes[type]) {
+                console.error('❌ Invalid device type for drop:', type);
+                this.showToast('Invalid device type', 'error');
+                return;
+            }
+
+            // Add device with enhanced feedback
             this.addDevice(type, x, y);
             this.redrawCanvas();
-        });
-
-        // Handle canvas click for device selection and connection mode (enhanced)
-        this.canvas.addEventListener("click", (e) => {
-            const clickedDevice = this.findDeviceByPosition(e.offsetX, e.offsetY);
-            if (this.isConnectionMode) {
-                if (clickedDevice) {
-                    if (!this.firstDevice) {
-                        this.firstDevice = clickedDevice;  // Select the first device
-                        this.selectDevice(clickedDevice); // Use enhanced selection
-                    } else {
-                        this.addConnection(this.firstDevice, clickedDevice);  // Connect first and second device
-                        this.firstDevice = null;  // Reset after connecting
-                    }
-                }
-            } else if (clickedDevice) {
-                this.selectDevice(clickedDevice); // Use enhanced selection
+            
+            // Special handling for mobile devices
+            if (['phone', 'tablet', 'mobile'].includes(type)) {
+                console.log(`📱 Mobile device "${type}" successfully dropped at (${x}, ${y})`);
             } else {
-                this.selectDevice(null); // Use enhanced selection
+                console.log(`🔧 Device "${type}" successfully dropped at (${x}, ${y})`);
+            }
+            
+            // Hide drop zone
+            const dropZone = document.getElementById('canvas-drop-zone');
+            if (dropZone) {
+                dropZone.style.opacity = '0';
+                dropZone.style.transform = 'scale(1)';
             }
         });
 
-        // Double click to configure device
-        this.canvas.addEventListener("dblclick", (e) => {
-            const device = this.findDeviceByPosition(e.offsetX, e.offsetY);
-            if (device) {
-                this.showConfigModal(device);
-            }
-        });
-        
         console.log('⚡ Canvas event listeners configured (troubleshoot.html style)');
     }
     
     setupCanvasTools() {
-        console.log('🛠️ Setting up Canvas Tools (troubleshoot.html style)');
+        console.log('🛠️ Setting up Canvas Tools');
         
-        // Setup connection mode toggle
-        const connectionModeBtn = document.querySelector('[data-action="connect-mode"]');
-        if (connectionModeBtn) {
-            connectionModeBtn.addEventListener("click", () => {
-                this.isConnectionMode = !this.isConnectionMode;
-                connectionModeBtn.classList.toggle("active", this.isConnectionMode);
-                this.firstDevice = null; // Reset connection state
-                console.log(`Connection mode: ${this.isConnectionMode ? 'ON' : 'OFF'}`);
+        // Setup configure mode toggle
+        const configureModeBtn = document.getElementById('configure-mode-btn');
+        if (configureModeBtn) {
+            configureModeBtn.addEventListener('click', () => {
+                this.isConfigureMode = !this.isConfigureMode;
+                
+                // Update visual state
+                
+                console.log(`⚙️ Configure mode: ${this.isConfigureMode ? 'ON' : 'OFF'}`);
             });
         }
-        
-        // Setup other tool buttons
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const tool = btn.dataset.tool;
-                if (tool) {
-                    this.setTool(tool);
-                }
-            });
-        });
         
         console.log('✅ Canvas tools ready (troubleshoot.html style)');
     }
@@ -2041,7 +2979,7 @@ class DynamicSimulation {
             this.redrawCanvas();
         };
 
-        // Set device image based on type
+        // Enhanced device image mapping for all device types
         switch (type) {
             case 'pc':
             case 'computer':
@@ -2053,11 +2991,33 @@ class DynamicSimulation {
             case 'switch':
                 device.image.src = "{{ url_for('static', filename='img/Switch.png') }}";
                 break;
+            case 'hub':
+                // Hub uses switch image as it's more similar to a hub than a router
+                device.image.src = "{{ url_for('static', filename='img/Switch.png') }}";
+                device.image.onerror = () => {
+                    // Fallback to router if switch image fails
+                    device.image.src = "{{ url_for('static', filename='img/Router.png') }}";
+                };
+                break;
             case 'laptop':
                 device.image.src = "{{ url_for('static', filename='img/PC.png') }}"; // Use PC image for laptop
                 break;
             case 'server':
                 device.image.src = "{{ url_for('static', filename='img/Router.png') }}"; // Use router image for server
+                break;
+            case 'access-point':
+            case 'firewall':
+            case 'load-balancer':
+            case 'gateway':
+            case 'bridge':
+                device.image.src = "{{ url_for('static', filename='img/Router.png') }}"; // Use router image for infrastructure
+                break;
+            case 'printer':
+            case 'phone':
+            case 'tablet':
+            case 'mobile':
+            case 'iot-device':
+                device.image.src = "{{ url_for('static', filename='img/PC.png') }}"; // Use PC image for endpoints
                 break;
             default:
                 device.image.src = "{{ url_for('static', filename='img/PC.png') }}"; // Default to PC
@@ -2072,6 +3032,74 @@ class DynamicSimulation {
                 ctx.font = "14px Arial";
                 ctx.textAlign = "center";
                 ctx.fillText(this.label, this.x, this.y + 50);
+            } else {
+                // Enhanced fallback rendering with proper device type support
+                const deviceInfo = window.simulation?.deviceTypes?.[this.type] || { 
+                    icon: 'fas fa-desktop', 
+                    color: '#6B7280' 
+                };
+                
+                // Device background with proper styling
+                ctx.fillStyle = this.selected ? 'rgba(57, 255, 20, 0.2)' : 'rgba(15, 23, 42, 0.9)';
+                ctx.strokeStyle = this.selected ? '#39FF14' : deviceInfo.color;
+                ctx.lineWidth = this.selected ? 3 : 2;
+                
+                const radius = 30;
+                ctx.beginPath();
+                ctx.roundRect(this.x - radius, this.y - radius, radius * 2, radius * 2, 12);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Device type indicator
+                ctx.fillStyle = this.selected ? '#39FF14' : deviceInfo.color;
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Use device type initial or special symbol
+                let symbol;
+                switch (this.type) {
+                    case 'hub':
+                        symbol = 'H';
+                        break;
+                    case 'router':
+                        symbol = 'R';
+                        break;
+                    case 'switch':
+                        symbol = 'S';
+                        break;
+                    case 'computer':
+                    case 'pc':
+                        symbol = 'C';
+                        break;
+                    case 'server':
+                        symbol = 'Sv';
+                        break;
+                    case 'phone':
+                        symbol = '📞';
+                        break;
+                    case 'tablet':
+                        symbol = '📱';
+                        break;
+                    case 'mobile':
+                        symbol = '📱';
+                        break;
+                    case 'laptop':
+                        symbol = 'L';
+                        break;
+                    case 'printer':
+                        symbol = 'P';
+                        break;
+                    default:
+                        symbol = this.type.charAt(0).toUpperCase();
+                }
+                
+                ctx.fillText(symbol, this.x, this.y);
+                
+                // Device label
+                ctx.fillStyle = "#00C3B5";
+                ctx.font = "12px Arial";
+                ctx.fillText(this.label, this.x, this.y + 45);
             }
         };
 
@@ -2084,7 +3112,22 @@ class DynamicSimulation {
         
         let newDevice;
         this.deviceCounter[type] = (this.deviceCounter[type] || 0) + 1;
-        const label = `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceCounter[type]}`;
+        
+        // Enhanced label generation for mobile devices
+        let label;
+        switch (type) {
+            case 'phone':
+                label = `IP Phone ${this.deviceCounter[type]}`;
+                break;
+            case 'tablet':
+                label = `Tablet ${this.deviceCounter[type]}`;
+                break;
+            case 'mobile':
+                label = `Mobile ${this.deviceCounter[type]}`;
+                break;
+            default:
+                label = `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceCounter[type]}`;
+        }
 
         newDevice = this.createDevice(type, x, y, label);
         
@@ -2095,15 +3138,95 @@ class DynamicSimulation {
         this.selectedDevice = newDevice;
         this.redrawCanvas();
         
-        // Track device placement for performance feedback
+        // Enhanced performance tracking with mobile device support
         if (window.performanceFeedback) {
             window.performanceFeedback.trackAction('device_placed', {
                 device_type: type,
-                device_label: newDevice.label
+                device_label: newDevice.label,
+                is_mobile: ['phone', 'tablet', 'mobile'].includes(type)
             });
         }
         
+        // Enhanced user feedback for mobile devices
+        if (['phone', 'tablet', 'mobile'].includes(type)) {
+            console.log(`📱 Mobile/Communication device added: ${label}`);
+            this.showToast(`Added ${label} to network`, 'success');
+        } else {
+            console.log(`🔧 Device added: ${label}`);
+        }
+        
+        // Update performance sidebar
+        this.updatePerformanceDisplay();
+        
+        // Show achievement for first device
+        if (this.networkDevices.length === 1) {
+            this.unlockAchievement('first-device-achievement');
+        }
+        
         console.log(`✅ Added device: ${label} at (${x}, ${y})`);
+    }
+    
+    // Test function for mobile device drag and drop functionality
+    testMobileDevices() {
+        console.log('🧪 Testing Mobile Device Functionality');
+        
+        // Test each mobile device type
+        const mobileTypes = ['phone', 'tablet', 'mobile'];
+        const testPositions = [
+            { x: 200, y: 200 },
+            { x: 300, y: 200 },
+            { x: 400, y: 200 }
+        ];
+        
+        mobileTypes.forEach((type, index) => {
+            const pos = testPositions[index];
+            console.log(`📱 Testing ${type} device creation...`);
+            
+            // Test device creation
+            const testDevice = this.createDevice(type, pos.x, pos.y, `Test ${type}`);
+            
+            // Verify device properties
+            if (testDevice && testDevice.type === type) {
+                console.log(`✅ ${type} device created successfully`);
+                console.log(`   - Type: ${testDevice.type}`);
+                console.log(`   - Label: ${testDevice.label}`);
+                console.log(`   - Position: (${testDevice.x}, ${testDevice.y})`);
+                console.log(`   - Has image: ${testDevice.image ? 'Yes' : 'No'}`);
+            } else {
+                console.error(`❌ Failed to create ${type} device`);
+            }
+        });
+        
+        // Test device type configuration
+        mobileTypes.forEach(type => {
+            const config = this.deviceTypes[type];
+            if (config) {
+                console.log(`✅ ${type} configuration found:`, config);
+            } else {
+                console.error(`❌ Missing configuration for ${type}`);
+            }
+        });
+        
+        console.log('🧪 Mobile device test completed');
+        return true;
+    }
+    
+    // Manually add mobile devices for testing (can be called from browser console)
+    addMobileDeviceTest(deviceType = 'phone') {
+        const mobileTypes = ['phone', 'tablet', 'mobile'];
+        if (!mobileTypes.includes(deviceType)) {
+            console.error(`❌ Invalid mobile device type: ${deviceType}. Valid types: ${mobileTypes.join(', ')}`);
+            return false;
+        }
+        
+        // Add device at center of canvas
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        console.log(`📱 Manually adding ${deviceType} device for testing...`);
+        this.addDevice(deviceType, centerX, centerY);
+        
+        return true;
     }
 
     // Find device by position (from troubleshoot.html)
@@ -2115,60 +3238,51 @@ class DynamicSimulation {
         });
     }
 
-    // Redraw canvas with devices and connections (from troubleshoot.html)
+    // Redraw canvas with devices
     redrawCanvas() {
         if (!this.ctx) return;
         
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.networkConnections.forEach(connection => this.drawConnection(connection));
+        // Render connections first (behind devices)
+        this.renderConnections();
+        
+        // Render devices on top
         this.networkDevices.forEach(device => this.drawDevice(device));
     }
 
-    // Draw connection line between devices (from troubleshoot.html)
-    drawConnection(connection) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(connection.device1.x, connection.device1.y);
-        this.ctx.lineTo(connection.device2.x, connection.device2.y);
-        this.ctx.strokeStyle = "#00C3B5";
-        this.ctx.lineWidth = 4;
-        this.ctx.stroke();
+    // Helper function to check if device is mobile
+    isMobileDevice(device) {
+        return ['phone', 'tablet', 'mobile'].includes(device.type);
     }
+    
+    // Helper function to calculate distance from point to line (from troubleshoot.html)
+    pointToLineDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
 
-    // Draw device on the canvas (from troubleshoot.html)
-    drawDevice(device) {
-        device.draw(this.ctx);
-        if (device === this.selectedDevice) {
-            this.ctx.beginPath();
-            this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
-            this.ctx.strokeStyle = "#FFD700";
-            this.ctx.lineWidth = 3;
-            this.ctx.stroke();
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        const param = lenSq !== 0 ? dot / lenSq : -1;
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
         }
-    }
 
-    // Add connection between devices (from troubleshoot.html)
-    addConnection(device1, device2) {
-        const existingConnection = this.networkConnections.find(conn =>
-            (conn.device1 === device1 && conn.device2 === device2) ||
-            (conn.device1 === device2 && conn.device2 === device1)
-        );
-
-        if (!existingConnection) {
-            this.networkConnections.push({ device1, device2 });
-            this.redrawCanvas();
-            
-            // Track connection creation for performance feedback
-            if (window.performanceFeedback) {
-                window.performanceFeedback.trackAction('connection_made', {
-                    device1_type: device1.type,
-                    device2_type: device2.type
-                });
-            }
-            
-            console.log(`✅ Connected ${device1.label} to ${device2.label}`);
-        }
-        this.firstDevice = null;  // Reset after connection
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
     }
     
     // Delete selected device
@@ -2176,11 +3290,6 @@ class DynamicSimulation {
         if (this.selectedDevice) {
             // Remove the selected device from the devices array
             this.networkDevices = this.networkDevices.filter(device => device !== this.selectedDevice);
-
-            // Also remove any associated connections
-            this.networkConnections = this.networkConnections.filter(connection =>
-                connection.device1 !== this.selectedDevice && connection.device2 !== this.selectedDevice
-            );
 
             this.selectedDevice = null;  // Clear selection
             this.redrawCanvas();  // Redraw canvas after deletion
@@ -2190,12 +3299,10 @@ class DynamicSimulation {
         }
     }
     
-    // Clear all devices and connections
+    // Clear all devices
     clearCanvas() {
         this.networkDevices = [];
-        this.networkConnections = [];
         this.selectedDevice = null;
-        this.firstDevice = null;
         if (this.ctx) {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
@@ -2272,8 +3379,8 @@ class DynamicSimulation {
     
     // ===== DEVICE PERFORMANCE TRACKING =====
 
-    // Enhanced connection completion with performance tracking
-
+    
+    
     
     
     
@@ -2462,64 +3569,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         return '192.168.1.1';
     }
     
-    // Enhanced connection completion with performance tracking
-    completeConnection(targetDevice) {
-        if (!this.connectionStart || !targetDevice) return;
-        
-        if (this.connectionStart === targetDevice) {
-            console.log('❌ Cannot connect device to itself');
-            this.performanceMetrics.mistakesMade++;
-            return;
-        }
-        
-        // Check if connection already exists
-        const existingConnection = this.networkConnections.find(conn => 
-            (conn.from === this.connectionStart.id && conn.to === targetDevice.id) ||
-            (conn.from === targetDevice.id && conn.to === this.connectionStart.id)
-        );
-        
-        if (existingConnection) {
-            console.log('❌ Connection already exists');
-            this.performanceMetrics.mistakesMade++;
-            return;
-        }
-        
-        // Create connection
-        const connection = {
-            id: `conn_${Date.now()}`,
-            from: this.connectionStart.id,
-            to: targetDevice.id,
-            type: 'ethernet',
-            status: 'up',
-            bandwidth: '1000M',
-            color: '#00D9FF'
-        };
-        
-        this.networkConnections.push(connection);
-        
-        // Update device connection arrays
-        this.connectionStart.connections.push(targetDevice.id);
-        targetDevice.connections.push(this.connectionStart.id);
-        
-        // Enhanced performance tracking (similar to troubleshoot.html)
-        window.trackPerformanceAction?.('connection_made', {
-            fromDevice: this.connectionStart.id,
-            toDevice: targetDevice.id,
-            connectionType: 'ethernet',
-            timestamp: Date.now()
-        });
-        
-        this.connectionStart = null;
-        this.updateNetworkStatus();
-        this.renderCanvas();
-        
-        // Track performance and check achievements
-        this.performanceMetrics.correctActions++;
-        this.checkAchievements();
-        
-        console.log(`✅ Connected ${connection.from} to ${connection.to}`);
-    }
-    
     getDefaultDeviceConfig(deviceType) {
         const configs = {
             'router': {
@@ -2589,26 +3638,14 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         if (!device) return;
         
         // Confirmation dialog for destructive action (like troubleshoot.html)
-        if (!confirm(`Delete ${device.label}? This will also remove all its connections.`)) {
+        if (!confirm(`Delete ${device.label}?`)) {
             return;
         }
         
         // Save history state before deletion
         this.saveHistoryState?.('device_deleted', {
-            device: JSON.parse(JSON.stringify(device)),
-            connectionsRemoved: this.networkConnections.filter(conn => 
-                conn.from === device.id || conn.to === device.id
-            ).length
+            device: JSON.parse(JSON.stringify(device))
         });
-        
-        // Remove all connections to this device
-        const removedConnections = this.networkConnections.filter(conn => 
-            conn.from === device.id || conn.to === device.id
-        ).length;
-        
-        this.networkConnections = this.networkConnections.filter(conn => 
-            conn.from !== device.id && conn.to !== device.id
-        );
         
         // Remove device
         const index = this.networkDevices.findIndex(d => d.id === device.id);
@@ -2626,50 +3663,16 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         window.trackPerformanceAction?.('device_deleted', {
             deviceType: device.type,
             deviceId: device.id,
-            connectionsRemoved: removedConnections,
             timestamp: Date.now()
         });
         
         this.updateNetworkStatus();
         this.renderCanvas();
         
-        // User feedback with enhanced messaging
-        this.showToast(`Deleted ${device.label}${removedConnections > 0 ? ` and ${removedConnections} connections` : ''}`, 'info');
+        // User feedback
+        this.showToast(`Deleted ${device.label}`, 'info');
         
-        console.log(`🗑️ Deleted device: ${device.id} with ${removedConnections} connections`);
-    }
-    
-    // ===== CONNECTION MANAGEMENT =====
-    
-    startConnection(device) {
-        if (this.currentTool !== 'connect') {
-            this.setTool('connect');
-        }
-        
-        this.connectionStart = device;
-        console.log(`🔗 Started connection from: ${device.id}`);
-    }
-    
-    deleteConnection(connection) {
-        const index = this.networkConnections.findIndex(c => c.id === connection.id);
-        if (index !== -1) {
-            // Remove from connection arrays
-            const fromDevice = this.getDeviceById(connection.from);
-            const toDevice = this.getDeviceById(connection.to);
-            
-            if (fromDevice) {
-                fromDevice.connections = fromDevice.connections.filter(id => id !== connection.to);
-            }
-            if (toDevice) {
-                toDevice.connections = toDevice.connections.filter(id => id !== connection.from);
-            }
-            
-            this.networkConnections.splice(index, 1);
-            this.updateNetworkStatus();
-            this.renderCanvas();
-            
-            console.log(`🗑️ Deleted connection: ${connection.id}`);
-        }
+        console.log(`🗑️ Deleted device: ${device.id}`);
     }
     
     getDeviceById(id) {
@@ -2677,45 +3680,8 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     // ===== CANVAS EVENT HANDLERS =====
-    
-    handleCanvasClick(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        const clickedDevice = this.getDeviceAtPosition(x, y);
-        
-        switch (this.currentTool) {
-            case 'select':
-                if (clickedDevice) {
-                    this.selectDevice(clickedDevice);
-                } else {
-                    this.selectDevice(null);
-                }
-                break;
-                
-            case 'connect':
-                if (clickedDevice) {
-                    if (this.connectionStart) {
-                        this.completeConnection(clickedDevice);
-                    } else {
-                        this.startConnection(clickedDevice);
-                    }
-                } else {
-                    this.connectionStart = null;
-                }
-                break;
-                
-            case 'delete':
-                if (clickedDevice) {
-                    this.deleteDevice(clickedDevice);
-                }
-                break;
-        }
-        
-        this.updateCanvasCoords(x, y);
-    }
-    
+    // MVP: Removed duplicate handleCanvasClick - using enhanced version in setupEnhancedCanvasEventHandlers
+
     handleCanvasDoubleClick(e) {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -2769,11 +3735,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             return;
         }
         
-        // Handle connection preview
-        if (this.currentTool === 'connect' && this.connectionStart) {
-            this.updateConnectionPreview(x, y);
-        }
-        
         // Update cursor based on what's under mouse
         const hoveredDevice = this.getDeviceAtPosition(x, y);
         if (hoveredDevice) {
@@ -2781,9 +3742,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 case 'select':
                 case 'move':
                     this.canvas.style.cursor = 'grab';
-                    break;
-                case 'connect':
-                    this.canvas.style.cursor = 'crosshair';
                     break;
                 case 'delete':
                     this.canvas.style.cursor = 'not-allowed';
@@ -2861,7 +3819,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 break;
             case 'Escape':
                 this.setTool('select');
-                this.connectionStart = null;
                 break;
         }
     }
@@ -2869,68 +3826,205 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     // ===== ENHANCED CANVAS EVENT HANDLERS (from troubleshoot.html) =====
     
     setupEnhancedCanvasEventHandlers() {
-        // Enhanced mouse down handler with device dragging support
+        // Enhanced mouse down handler with mobile device dragging support
         this.canvas.addEventListener("mousedown", (e) => {
-            if (this.currentTool === 'connect') return; // Prevent dragging in connection mode
+            if (this.state.isConnectionMode) return; // Prevent dragging in connection mode
             
-            const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
+            const { x, y } = this.toWorldCoordsFromEvent(e);
+            console.debug(`🧭 mousedown world coords: (${x.toFixed(1)}, ${y.toFixed(1)}) [zoom=${this.zoom.toFixed(2)}, pan=(${this.panOffset.x.toFixed(1)},${this.panOffset.y.toFixed(1)})]`);
             const clickedDevice = this.findDeviceByPosition(x, y);
             if (clickedDevice) {
                 this.isDragging = true;
                 this.draggedDevice = clickedDevice;
                 this.selectDevice(clickedDevice);
                 this.canvas.style.cursor = 'grabbing';
+                
+                // Enhanced feedback for mobile device dragging
+                if (this.isMobileDevice(clickedDevice)) {
+                    console.log(`📱 Started dragging mobile device: ${clickedDevice.label}`);
+                } else {
+                    console.log(`🔧 Started dragging device: ${clickedDevice.label}`);
+                }
             }
         });
 
-        // Enhanced mouse move handler for device dragging
+        // Enhanced mouse move handler with mobile device support
         this.canvas.addEventListener("mousemove", (e) => {
             if (this.isDragging && this.draggedDevice) {
-                const rect = this.canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                // Update device position
-                this.draggedDevice.x = x;
-                this.draggedDevice.y = y;
+                const { x, y } = this.toWorldCoordsFromEvent(e);
+                // Keep device within canvas bounds (world space)
+                const boundedX = Math.max(30, Math.min((this.canvas.width / this.zoom) - 30 - this.panOffset.x, x));
+                const boundedY = Math.max(30, Math.min((this.canvas.height / this.zoom) - 30 - this.panOffset.y, y));
+
+                // Update device position in world space
+                this.draggedDevice.x = boundedX;
+                this.draggedDevice.y = boundedY;
                 this.renderCanvas(); // Redraw to show updated position
+                
+                // Track mobile device movement for performance feedback
+                if (this.isMobileDevice(this.draggedDevice) && window.performanceFeedback) {
+                    // Throttled tracking to avoid spam
+                    clearTimeout(this.dragTrackingTimeout);
+                    this.dragTrackingTimeout = setTimeout(() => {
+                        window.performanceFeedback.trackAction('mobile_device_moved', {
+                            device_type: this.draggedDevice.type,
+                            device_label: this.draggedDevice.label,
+                            new_position: { x: boundedX, y: boundedY }
+                        });
+                    }, 200); // Track every 200ms while dragging
+                }
             }
         });
 
-        // Enhanced mouse up handler
+        // Enhanced mouse up handler with mobile device feedback
         this.canvas.addEventListener("mouseup", () => {
-            if (this.isDragging) {
+            if (this.isDragging && this.draggedDevice) {
+                // Enhanced completion feedback for mobile devices
+                if (this.isMobileDevice(this.draggedDevice)) {
+                    console.log(`📱 Finished dragging mobile device: ${this.draggedDevice.label} to (${this.draggedDevice.x}, ${this.draggedDevice.y})`);
+                    this.showToast(`Moved ${this.draggedDevice.label} to new position`, 'success');
+                } else {
+                    console.log(`🔧 Finished dragging device: ${this.draggedDevice.label} to (${this.draggedDevice.x}, ${this.draggedDevice.y})`);
+                }
+                
                 this.isDragging = false;
                 this.draggedDevice = null;
                 this.canvas.style.cursor = 'default';
             }
         });
+
+        // Enhanced canvas click handler with comprehensive connection mode support (troubleshoot.html style)
+        // Canvas click handler (troubleshoot.html approach)
+        this.canvas.addEventListener("click", (e) => {
+            const { x, y } = this.toWorldCoordsFromEvent(e);
+            const clickedDevice = this.findDeviceByPosition(x, y);
+            
+            if (this.state.isConnectionMode) {
+                if (clickedDevice) {
+                    if (!this.state.firstDevice) {
+                        this.state.firstDevice = clickedDevice;  // Select the first device
+                        console.log(`🟡 MVP First device selected for connection: ${clickedDevice.label}`);
+                        this.showToast?.(`MVP: Selected ${clickedDevice.label} - Click second device to connect`, 'info');
+                    } else {
+                        this.addConnection(this.state.firstDevice, clickedDevice);  // Connect first and second device
+                        this.state.firstDevice = null;  // Reset after connecting
+                        console.log(`� Connection completed`);
+                    }
+                }
+            } else if (clickedDevice) {
+                this.selectedDevice = clickedDevice;
+                this.selectDevice(clickedDevice);
+            } else {
+                this.selectedDevice = null;
+                this.selectDevice(null);
+            }
+            this.redrawCanvas();
+            
+            // MVP Debug: Log current state after canvas click
+            console.log(`📊 MVP After click - ConnectionMode: ${this.state.isConnectionMode}, Tool: ${this.currentTool}, FirstDevice: ${this.state.firstDevice?.label || 'none'}, SelectedDevice: ${this.selectedDevice?.label || 'none'}`);
+        });
+
+        // Double click to configure device
+        this.canvas.addEventListener("dblclick", (e) => {
+            const device = this.findDeviceByPosition(e.offsetX, e.offsetY);
+            if (device) {
+                this.showConfigModal(device);
+            }
+        });
+
+        console.log('✅ Unified canvas event handlers configured');
     }
 
-    // Enhanced connection management (from troubleshoot.html)
-    addConnection(device1, device2) {
-        const existingConnection = this.networkConnections.find(conn =>
-            (conn.device1 === device1 && conn.device2 === device2) ||
-            (conn.device1 === device2 && conn.device2 === device1)
-        );
+    // Enhanced connection management with comprehensive debugging (troubleshoot.html style)
+    // Normalizes inputs (device objects or ids) and stores canonical from/to ids
+    addConnection(a, b) {
+        // Normalize inputs to device objects first
+        const devA = (a && typeof a === 'object') ? a : this.getDeviceById?.(a);
+        const devB = (b && typeof b === 'object') ? b : this.getDeviceById?.(b);
 
-        if (!existingConnection) {
-            this.networkConnections.push({ device1, device2 });
-            this.renderCanvas();
-            
-            // Track connection creation for performance feedback
-            if (window.performanceFeedback) {
-                window.performanceFeedback.trackAction('connection_made', {
-                    device1_type: device1.type,
-                    device2_type: device2.type
-                });
-            }
-            
-            console.log(`🔗 Connected ${device1.label} to ${device2.label}`);
+        console.log(`🔗 MVP addConnection:`, {
+            inputA: a, inputB: b,
+            devALabel: devA?.label, devBLabel: devB?.label,
+            totalConnections: this.networkConnections?.length || 0
+        });
+
+        // Validation checks
+        if (!devA || !devB) {
+            console.error('❌ MVP Connection failed: One or both devices not found');
+            this.showToast?.('MVP Error: Cannot connect - missing device', 'error');
+            return false;
         }
+
+        if (devA === devB || devA.id === devB.id) {
+            console.error('❌ MVP Connection failed: Cannot connect a device to itself');
+            this.showToast?.('MVP Error: Cannot connect device to itself', 'error');
+            return false;
+        }
+
+        const idA = devA.id ?? devA.label;
+        const idB = devB.id ?? devB.label;
+
+        // Check for existing connection across both shapes (from/to or device1/device2)
+        const exists = (this.networkConnections || []).some(conn => {
+            const from = conn.from ?? conn.device1?.id ?? conn.device1;
+            const to = conn.to ?? conn.device2?.id ?? conn.device2;
+            return (from === idA && to === idB) || (from === idB && to === idA);
+        });
+
+        if (exists) {
+            console.warn(`⚠️ MVP Connection duplicate: ${devA.label} ↔ ${devB.label}`);
+            this.showToast?.(`MVP: Connection already exists between ${devA.label} and ${devB.label}`, 'warning');
+            return false;
+        }
+
+        // Create canonical connection using from/to ids
+        const newConnection = {
+            id: `conn_${this.connectionIdCounter++}`,
+            from: idA,
+            to: idB,
+            type: 'ethernet',
+            status: 'active',
+            created: Date.now()
+        };
+
+        // Keep object refs for compatibility with any legacy drawing routines
+        newConnection.device1 = devA;
+        newConnection.device2 = devB;
+
+        console.log('🛠️ MVP Creating connection object:', newConnection);
+        this.networkConnections.push(newConnection);
+
+        // Update per-device connection lists (optional UI helpers)
+        if (!devA.connections) devA.connections = [];
+        if (!devB.connections) devB.connections = [];
+        devA.connections.push(idB);
+        devB.connections.push(idA);
+
+        // Update UI and performance
+        this.updateNetworkStatus?.();
+        console.log('🎨 MVP Re-render after connection');
+        this.renderCanvas?.();
+
+        // Mirror into NetworkSimulationEngine (engine-managed canvas)
+        try {
+            const engine = window.simulationEngineIntegration?.getEngine?.();
+            if (engine && typeof engine.importConnection === 'function') {
+                engine.importConnection({ device1: devA.id, device2: devB.id });
+            }
+        } catch (e) {
+            console.warn('⚠️ MVP: Engine mirror of connection failed (non-fatal):', e);
+        }
+
+        window.trackPerformanceAction?.('mvp_connection_made', {
+            device1_type: devA.type, device2_type: devB.type,
+            device1_label: devA.label, device2_label: devB.label,
+            connection_id: newConnection.id,
+            total_connections: this.networkConnections.length
+        });
+
+        console.log(`✅ MVP Connection success: ${devA.label} ↔ ${devB.label} (ID: ${newConnection.id})`);
+        this.showToast?.(`MVP: Connected ${devA.label} to ${devB.label}`, 'success');
+        return true;
     }
 
     // Enhanced device selection with troubleshoot.html style highlighting
@@ -2950,25 +4044,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         this.renderCanvas();
     }
 
-    // Enhanced device position detection (from troubleshoot.html)
-    findDeviceByPosition(x, y) {
-        return this.networkDevices.find(device => {
-            const dx = x - device.x;
-            const dy = y - device.y;
-            return dx * dx + dy * dy <= 900; // 30px radius for device selection (increased for better usability)
-        });
-    }
-
-    // Enhanced connection drawing (from troubleshoot.html)
-    drawConnection(connection) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(connection.device1.x, connection.device1.y);
-        this.ctx.lineTo(connection.device2.x, connection.device2.y);
-        this.ctx.strokeStyle = "#00C3B5";
-        this.ctx.lineWidth = 4;
-        this.ctx.stroke();
-    }
-
     // Enhanced device drawing (from troubleshoot.html)
     drawDevice(device) {
         if (device.draw) {
@@ -2976,7 +4051,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
         
         // Enhanced selection highlighting
-        if (device.selected) {
+        if (device.selected || device === this.selectedDevice) {
             this.ctx.beginPath();
             this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
             this.ctx.strokeStyle = "#FFD700";
@@ -2990,15 +4065,31 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     // ===== CANVAS RENDERING SYSTEM =====
     
     renderCanvas() {
-        if (!this.ctx) return;
+        // MVP: Enhanced canvas safety checks
+        if (!this.ctx) {
+            console.warn('⚠️ MVP renderCanvas: No canvas context available');
+            return;
+        }
+        
+        // Ensure arrays are initialized
+        if (!Array.isArray(this.networkDevices)) {
+            console.warn('⚠️ MVP renderCanvas: networkDevices not initialized, setting to empty array');
+            this.networkDevices = [];
+        }
+        if (!Array.isArray(this.networkConnections)) {
+            console.warn('⚠️ MVP renderCanvas: networkConnections not initialized, setting to empty array');
+            this.networkConnections = [];
+        }
         
         // Clear canvas
         this.clearCanvas();
         
-        // Apply zoom and pan transformations
+        // Apply zoom and pan transformations with safety checks
         this.ctx.save();
-        this.ctx.scale(this.zoom, this.zoom);
-        this.ctx.translate(this.panOffset.x, this.panOffset.y);
+        const zoom = this.zoom || 1.0;
+        const panOffset = this.panOffset || { x: 0, y: 0 };
+        this.ctx.scale(zoom, zoom);
+        this.ctx.translate(panOffset.x, panOffset.y);
         
         // Render grid if enabled
         if (this.showGrid) {
@@ -3010,11 +4101,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         
         // Render devices
         this.renderDevices();
-        
-        // Render connection preview if in connect mode
-        if (this.currentTool === 'connect' && this.connectionStart) {
-            this.renderConnectionPreview();
-        }
         
         // Restore transformation
         this.ctx.restore();
@@ -3048,10 +4134,28 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     renderDevices() {
-        this.networkDevices.forEach(device => this.renderDevice(device));
+        // MVP: Enhanced device validation before rendering
+        if (!this.networkDevices || !Array.isArray(this.networkDevices)) {
+            console.warn('⚠️ MVP renderDevices: networkDevices is not a valid array');
+            return;
+        }
+        
+        this.networkDevices.forEach(device => {
+            if (device && typeof device.x === 'number' && typeof device.y === 'number') {
+                this.renderDevice(device);
+            } else {
+                console.debug('ℹ️ MVP Skipping invalid device during render:', device);
+            }
+        });
     }
     
     renderDevice(device) {
+        // Validate device object before rendering
+        if (!device || typeof device.x === 'undefined' || typeof device.y === 'undefined') {
+            console.warn('⚠️ Skipping invalid device:', device);
+            return;
+        }
+        
         // Enhanced device rendering with image support (from troubleshoot.html)
         if (device.image && device.isImageLoaded) {
             // Draw device image
@@ -3060,10 +4164,27 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             // Fallback to geometric representation
             const deviceInfo = this.deviceTypes[device.type] || this.deviceTypes['router'];
             
-            // Device background
-            this.ctx.fillStyle = device.selected ? 'rgba(57, 255, 20, 0.2)' : 'rgba(15, 23, 42, 0.9)';
-            this.ctx.strokeStyle = device.selected ? '#39FF14' : '#00D9FF';
-            this.ctx.lineWidth = device.selected ? 3 : 2;
+            // Enhanced device background with connection mode highlighting
+            let fillStyle = 'rgba(15, 23, 42, 0.9)';
+            let strokeStyle = '#00D9FF';
+            let lineWidth = 2;
+            
+            if (device.isConnectionStart || (this.firstDevice && device === this.firstDevice)) {
+                // First device selected for connection (from troubleshoot.html)
+                fillStyle = 'rgba(0, 217, 255, 0.3)';
+                strokeStyle = '#39FF14';
+                lineWidth = 4;
+                console.log(`🎯 Rendering connection start device: ${device.label}`);
+            } else if (device.selected) {
+                // Regular selection
+                fillStyle = 'rgba(57, 255, 20, 0.2)';
+                strokeStyle = '#39FF14';
+                lineWidth = 3;
+            }
+            
+            this.ctx.fillStyle = fillStyle;
+            this.ctx.strokeStyle = strokeStyle;
+            this.ctx.lineWidth = lineWidth;
             
             const radius = 30;
             this.ctx.beginPath();
@@ -3072,7 +4193,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             this.ctx.stroke();
             
             // Device icon (simplified - using text for now)
-            this.ctx.fillStyle = device.selected ? '#39FF14' : deviceInfo.color;
+            this.ctx.fillStyle = (device.selected || device.isConnectionStart) ? '#39FF14' : deviceInfo.color;
             this.ctx.font = 'bold 18px FontAwesome';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
@@ -3082,7 +4203,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             this.ctx.fillText(icon, device.x, device.y);
         }
         
-        // Device selection highlight (improved from troubleshoot.html)
+        // Enhanced device selection highlight (improved from troubleshoot.html)
         if (device.selected) {
             this.ctx.beginPath();
             this.ctx.arc(device.x, device.y, 35, 0, 2 * Math.PI);
@@ -3099,11 +4220,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             this.ctx.font = "14px Arial";
             this.ctx.textAlign = "center";
             this.ctx.fillText(device.label, device.x, device.y + 50);
-        }
-        
-        // Connection points
-        if (device.selected || this.currentTool === 'connect') {
-            this.renderConnectionPoints(device);
         }
     }
     
@@ -3124,43 +4240,55 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     renderConnections() {
-        this.networkConnections.forEach(connection => this.renderConnection(connection));
+        // MVP: Enhanced connection validation before rendering
+        if (!this.networkConnections || !Array.isArray(this.networkConnections)) {
+            console.warn('⚠️ MVP renderConnections: networkConnections is not a valid array');
+            return;
+        }
+        
+        this.networkConnections.forEach(connection => {
+            if (connection && (connection.from || connection.device1) && (connection.to || connection.device2)) {
+                this.renderConnection(connection);
+            } else {
+                console.debug('ℹ️ MVP Skipping invalid connection during render:', connection);
+            }
+        });
     }
     
     renderConnection(connection) {
-        const fromDevice = this.getDeviceById(connection.from);
-        const toDevice = this.getDeviceById(connection.to);
-        
-        if (!fromDevice || !toDevice) return;
-        
+        // Support both shapes: {from,to} ids or {device1,device2} objects
+        const fromDevice = connection.device1 || this.getDeviceById?.(connection.from);
+        const toDevice = connection.device2 || this.getDeviceById?.(connection.to);
+
+        if (!fromDevice || !toDevice) {
+            // Soft log to help detect broken references without spamming
+            console.debug('ℹ️ MVP renderConnection: missing endpoint(s)', {
+                from: connection.from, to: connection.to,
+                hasDevice1: !!connection.device1, hasDevice2: !!connection.device2
+            });
+            return;
+        }
+
+        // MVP: Validate device coordinates before rendering
+        if (typeof fromDevice.x !== 'number' || typeof fromDevice.y !== 'number' || 
+            typeof toDevice.x !== 'number' || typeof toDevice.y !== 'number') {
+            console.warn('⚠️ MVP renderConnection: invalid device coordinates', {
+                fromDevice: {id: fromDevice.id, x: fromDevice.x, y: fromDevice.y},
+                toDevice: {id: toDevice.id, x: toDevice.x, y: toDevice.y}
+            });
+            return;
+        }
+
         this.ctx.strokeStyle = connection.color || '#00D9FF';
         this.ctx.lineWidth = 3;
         this.ctx.setLineDash([5, 5]);
-        
+
         this.ctx.beginPath();
         this.ctx.moveTo(fromDevice.x, fromDevice.y);
         this.ctx.lineTo(toDevice.x, toDevice.y);
         this.ctx.stroke();
-        
+
         this.ctx.setLineDash([]); // Reset dash
-    }
-    
-    renderConnectionPreview() {
-        const preview = document.getElementById('preview-line');
-        if (preview && this.connectionStart) {
-            preview.style.opacity = '1';
-        }
-    }
-    
-    updateConnectionPreview(x, y) {
-        const preview = document.getElementById('preview-line');
-        if (preview && this.connectionStart) {
-            preview.setAttribute('x1', this.connectionStart.x);
-            preview.setAttribute('y1', this.connectionStart.y);
-            preview.setAttribute('x2', x);
-            preview.setAttribute('y2', y);
-            preview.style.opacity = '1';
-        }
     }
     
     // ===== TOOL MANAGEMENT =====
@@ -3277,6 +4405,16 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
         return null;
     }
+
+    // Convert a mouse event's screen coordinates to world/canvas coordinates accounting for zoom and pan
+    toWorldCoordsFromEvent(e) {
+        // Use offsetX/Y which are relative to the canvas element already
+        const sx = e.offsetX;
+        const sy = e.offsetY;
+        const wx = (sx / this.zoom) - this.panOffset.x;
+        const wy = (sy / this.zoom) - this.panOffset.y;
+        return { x: wx, y: wy };
+    }
     
     // Deterministic palette state setter (prevents double toggles)
     setPaletteMinimized(minimized) {
@@ -3363,6 +4501,391 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         toggleBtn.title = isCollapsed ? 'Collapse Steps Panel' : 'Expand Steps Panel';
         
         console.log(`🔄 Steps panel ${isCollapsed ? 'expanded' : 'collapsed'}`);
+    }
+    
+    // Enhanced Performance Sidebar Management
+    togglePerformanceSidebar() {
+        console.log('🔧 togglePerformanceSidebar called');
+        const sidebar = document.getElementById('performance-sidebar');
+        if (!sidebar) {
+            console.log('❌ Performance sidebar element not found');
+            return;
+        }
+        
+        const isActive = sidebar.classList.contains('active');
+        console.log(`📊 Sidebar current state: ${isActive ? 'active' : 'inactive'}`);
+        
+        if (isActive) {
+            this.closePerformanceSidebar();
+        } else {
+            this.showPerformanceSidebar();
+        }
+    }
+    
+    showPerformanceSidebar() {
+        const sidebar = document.getElementById('performance-sidebar');
+        if (!sidebar) {
+            console.log('❌ Cannot show sidebar - element not found');
+            return;
+        }
+        
+        console.log('📊 Adding active class to sidebar');
+        sidebar.classList.add('active');
+        
+        // Update centralized state
+        this.setState('isPerformanceSidebarVisible', true);
+        
+        // Update progress data
+        this.updatePerformanceDisplay();
+        
+        console.log('📊 Performance sidebar opened');
+    }
+    
+    closePerformanceSidebar() {
+        const sidebar = document.getElementById('performance-sidebar');
+        if (!sidebar) {
+            console.log('❌ Cannot close sidebar - element not found');
+            return;
+        }
+        
+        console.log('📊 Removing active class from sidebar');
+        sidebar.classList.remove('active');
+        
+        // Update centralized state
+        this.setState('isPerformanceSidebarVisible', false);
+        
+        console.log('📊 Performance sidebar closed');
+    }
+    
+    updatePerformanceDisplay() {
+        // Consolidated performance display update
+        // Update score display (multiple score elements)
+        const scoreEl = document.getElementById('current-score-sidebar');
+        const scoreMainEl = document.getElementById('current-score');
+        const currentScore = this.score || this.calculateCurrentScore();
+        
+        if (scoreEl) {
+            scoreEl.textContent = currentScore;
+        }
+        if (scoreMainEl) {
+            scoreMainEl.textContent = `${currentScore}%`;
+        }
+        
+        // Update progress percentage
+        const progressEl = document.getElementById('progress-percentage-sidebar');
+        const progressRing = document.getElementById('progress-ring');
+        if (progressEl && progressRing) {
+            const percentage = this.calculateProgress();
+            progressEl.textContent = `${percentage}%`;
+            
+            // Update progress ring
+            const circumference = 188.5; // 2 * π * r (where r = 30)
+            const offset = circumference - (percentage / 100) * circumference;
+            progressRing.style.strokeDashoffset = offset;
+        }
+        
+        // Update device and connection counts
+        const devicesScoreEl = document.getElementById('devices-score');
+        const connectionsScoreEl = document.getElementById('connections-score');
+        if (devicesScoreEl) {
+            devicesScoreEl.textContent = `${this.networkDevices.length}/5`;
+        }
+        if (connectionsScoreEl) {
+            connectionsScoreEl.textContent = `${this.networkConnections.length}/3`;
+        }
+        
+        // Update time displays (both time-spent and time-elapsed)
+        const elapsed = Date.now() - (this.performanceMetrics?.startTime || this.startTime || Date.now());
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        const timeDisplay = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const timeElapsedEl = document.getElementById('time-elapsed');
+        const timeSpentEl = document.getElementById('time-spent');
+        if (timeElapsedEl) {
+            timeElapsedEl.textContent = timeDisplay;
+        }
+        if (timeSpentEl) {
+            timeSpentEl.textContent = timeDisplay;
+        }
+        
+        // Update actions count
+        const actionsEl = document.getElementById('actions-count');
+        if (actionsEl) {
+            const actionsCount = this.performanceMetrics?.actionsCount || this.actionsCount || 0;
+            actionsEl.textContent = actionsCount.toString();
+        }
+        
+        // Update efficiency score
+        const efficiencyEl = document.getElementById('efficiency-score');
+        if (efficiencyEl) {
+            const efficiency = this.performanceMetrics?.efficiencyScore || this.calculateEfficiency();
+            efficiencyEl.textContent = `${efficiency}%`;
+        }
+        
+        // Update hints used
+        const hintsEl = document.getElementById('hints-used');
+        if (hintsEl) {
+            const hintsUsed = this.performanceMetrics?.hintsUsed || this.hintsUsed || 0;
+            hintsEl.textContent = hintsUsed.toString();
+        }
+        
+        // Update mistakes count
+        const mistakesEl = document.getElementById('mistakes-count');
+        if (mistakesEl) {
+            const mistakes = this.performanceMetrics?.mistakes || this.mistakesCount || 0;
+            mistakesEl.textContent = mistakes.toString();
+        }
+        
+        // Update configuration score
+        const configScoreEl = document.getElementById('config-score');
+        if (configScoreEl) {
+            const configuredDevices = this.networkDevices.filter(d => d.configured).length;
+            const totalDevices = Math.max(this.networkDevices.length, 2);
+            configScoreEl.textContent = `${configuredDevices}/${totalDevices}`;
+        }
+        
+        // Update progress status
+        const progressStatusEl = document.getElementById('progress-status');
+        if (progressStatusEl) {
+            const status = this.getProgressStatus();
+            progressStatusEl.textContent = status;
+        }
+        
+        // Update estimated completion time
+        const estimatedEl = document.getElementById('estimated-completion');
+        if (estimatedEl) {
+            const estimation = this.getEstimatedCompletion();
+            estimatedEl.textContent = estimation;
+        }
+        
+        // Update score circle and other visual elements
+        this.updateScoreCircle();
+        this.updateMetrics();
+        this.updateSmartHints();
+    }
+    
+    getProgressStatus() {
+        const devicesCount = this.networkDevices.length;
+        const connectionsCount = this.networkConnections.length;
+        const configuredCount = this.networkDevices.filter(d => d.configured).length;
+        
+        if (devicesCount === 0) {
+            return 'Getting Started';
+        } else if (devicesCount < 3) {
+            return 'Adding Devices';
+        } else if (connectionsCount === 0) {
+            return 'Ready to Connect';
+        } else if (connectionsCount < 2) {
+            return 'Building Network';
+        } else if (configuredCount === 0) {
+            return 'Ready to Configure';
+        } else if (configuredCount < devicesCount) {
+            return 'Configuring Devices';
+        } else {
+            return 'Network Complete';
+        }
+    }
+    
+    getEstimatedCompletion() {
+        const elapsed = Date.now() - (this.performanceMetrics?.startTime || this.startTime || Date.now());
+        const progress = this.calculateProgress();
+        
+        if (progress <= 0) {
+            return 'Est. 15 min';
+        } else if (progress >= 100) {
+            return 'Complete!';
+        } else {
+            const elapsedMinutes = elapsed / 60000;
+            const estimatedTotal = elapsedMinutes / (progress / 100);
+            const remaining = Math.max(0, estimatedTotal - elapsedMinutes);
+            
+            if (remaining < 1) {
+                return 'Almost done!';
+            } else if (remaining < 60) {
+                return `Est. ${Math.ceil(remaining)} min`;
+            } else {
+                const hours = Math.floor(remaining / 60);
+                const mins = Math.ceil(remaining % 60);
+                return `Est. ${hours}h ${mins}m`;
+            }
+        }
+    }
+    
+    updateMetrics() {
+        const timeEl = document.getElementById('time-spent');
+        const actionsEl = document.getElementById('actions-count');
+        const mistakesEl = document.getElementById('mistakes-count');
+        const hintsEl = document.getElementById('hints-used');
+        
+        if (timeEl) {
+            const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            timeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        if (actionsEl) {
+            actionsEl.textContent = this.performanceMetrics?.correctActions || 0;
+        }
+        
+        if (mistakesEl) {
+            mistakesEl.textContent = this.performanceMetrics?.mistakesMade || 0;
+        }
+        
+        if (hintsEl) {
+            hintsEl.textContent = this.hintsUsed || 0;
+        }
+    }
+    
+    updateSmartHints() {
+        const hintsContainer = document.getElementById('hints-container');
+        if (!hintsContainer) return;
+        
+        const hints = this.generateSmartHints();
+        
+        hintsContainer.innerHTML = hints.map(hint => `
+            <div class="hint-item">
+                <i class="fas fa-${hint.icon} hint-icon"></i>
+                <div class="hint-text">${hint.text}</div>
+            </div>
+        `).join('');
+    }
+    
+    generateSmartHints() {
+        const hints = [];
+        
+        if (this.networkDevices.length === 0) {
+            hints.push({
+                icon: 'plus-circle',
+                text: 'Start by dragging devices from the palette below onto the canvas'
+            });
+        } else if (this.networkDevices.length > 0 && this.networkConnections.length === 0) {
+            hints.push({
+                icon: 'link',
+                text: 'Connect your devices using the connection tool'
+            });
+        } else if (this.networkConnections.length > 0) {
+            hints.push({
+                icon: 'cog',
+                text: 'Double-click devices to configure their network settings'
+            });
+        }
+        
+        // Check for isolated devices
+        const isolatedDevices = this.networkDevices.filter(device => 
+            !this.networkConnections.some(conn => 
+                conn.from === device.id || conn.to === device.id
+            )
+        );
+        
+        if (isolatedDevices.length > 0) {
+            hints.push({
+                icon: 'exclamation-triangle',
+                text: `${isolatedDevices.length} device(s) are not connected to the network`
+            });
+        }
+        
+        return hints;
+    }
+    
+    calculateProgress() {
+        let progress = 0;
+        const totalSteps = 3; // Device placement, connections, configuration
+        
+        // Ensure arrays are initialized and exist
+        const devices = this.networkDevices || [];
+        const connections = this.networkConnections || [];
+        
+        // Step 1: Device placement (33% of progress)
+        if (devices.length > 0) {
+            progress += 33;
+        }
+        
+        // Step 2: Connections (33% of progress)
+        if (connections.length > 0) {
+            progress += 33;
+        }
+        
+        // Step 3: Configuration (34% of progress)
+        const configuredDevices = devices.filter(device => device && device.configured).length;
+        if (configuredDevices > 0) {
+            progress += 34;
+        }
+        
+        return Math.min(progress, 100);
+    }
+    
+    // Achievement System
+    unlockAchievement(achievementId) {
+        const achievement = document.getElementById(achievementId);
+        if (!achievement || !achievement.classList.contains('locked')) return;
+        
+        achievement.classList.remove('locked');
+        achievement.classList.add('unlocked');
+        
+        // Flash the performance sidebar
+        const sidebar = document.getElementById('performance-sidebar');
+        if (sidebar) {
+            sidebar.classList.add('flash');
+            setTimeout(() => sidebar.classList.remove('flash'), 2000);
+        }
+        
+        // Show achievement notification
+        this.showAchievementNotification(achievementId);
+        
+        console.log(`🏆 Achievement unlocked: ${achievementId}`);
+    }
+    
+    showAchievementNotification(achievementId) {
+        const achievements = {
+            'first-device-achievement': {
+                name: 'First Device',
+                description: 'Placed your first network device!',
+                icon: 'fas fa-star'
+            },
+            'network-builder-achievement': {
+                name: 'Network Builder',
+                description: 'Created your first network connection!',
+                icon: 'fas fa-network-wired'
+            },
+            'speed-demon-achievement': {
+                name: 'Speed Demon',
+                description: 'Completed simulation in record time!',
+                icon: 'fas fa-bolt'
+            },
+            'perfectionist-achievement': {
+                name: 'Perfectionist',
+                description: 'Completed without any mistakes!',
+                icon: 'fas fa-crown'
+            }
+        };
+        
+        const achievement = achievements[achievementId];
+        if (!achievement) return;
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'achievement-notification';
+        notification.innerHTML = `
+            <i class="${achievement.icon} achievement-icon"></i>
+            <div class="achievement-details">
+                <div class="achievement-name">${achievement.name}</div>
+                <div class="achievement-desc">${achievement.description}</div>
+                <div class="achievement-points">+100 pts</div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        // Hide notification
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
     
     // Device configuration methods
@@ -3646,6 +5169,102 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 .btn-close:hover {
                     background: rgba(255, 255, 255, 0.2);
                 }
+                
+                /* Device Configuration Modal */
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2000;
+                }
+                
+                .config-section {
+                    margin: 1rem 0;
+                }
+                
+                .config-section label {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    color: var(--text-primary);
+                    font-weight: 500;
+                }
+                
+                .config-section input {
+                    width: 100%;
+                    padding: 0.75rem;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(0, 217, 255, 0.3);
+                    border-radius: 8px;
+                    color: var(--text-primary);
+                    font-size: 1rem;
+                }
+                
+                .config-section input:focus {
+                    outline: none;
+                    border-color: var(--cyber-glow);
+                    box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+                }
+                
+                .modal-footer {
+                    padding: 1rem;
+                    border-top: 1px solid rgba(0, 217, 255, 0.3);
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 1rem;
+                }
+                
+                .btn {
+                    padding: 0.75rem 1.5rem;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+                
+                .btn-primary {
+                    background: var(--cyber-glow);
+                    color: #000;
+                    font-weight: 600;
+                }
+                
+                .btn-primary:hover {
+                    background: #00E5FF;
+                    transform: translateY(-1px);
+                }
+                
+                .btn-secondary {
+                    background: rgba(255, 255, 255, 0.1);
+                    color: var(--text-primary);
+                }
+                
+                .btn-secondary:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+                
+                .close-btn {
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 2rem;
+                    height: 2rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .close-btn:hover {
+                    color: var(--text-primary);
+                }
             `;
             document.head.appendChild(styles);
         }
@@ -3654,12 +5273,13 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     resetTopology() {
-        this.networkDevices = [];
-        this.networkConnections = [];
-        this.selectedDevice = null;
+        // Use centralized state management
+        this.resetState();
+        
+        // Reset additional non-centralized state
         this.currentDevice = null;
         this.connectionStart = null;
-        this.deviceIdCounter = 1;
+        this.connectionIdCounter = 1;
         
         // Clear CLI output
         const output = document.getElementById('cli-output');
@@ -3854,10 +5474,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 transition: transform 0.3s ease;
             }
             
-            .performance-sidebar.collapsed {
-                transform: translateX(280px);
-            }
-            
             .sidebar-header {
                 padding: 1rem;
                 border-bottom: 1px solid rgba(0, 217, 255, 0.3);
@@ -3881,10 +5497,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 cursor: pointer;
                 padding: 0.25rem;
                 transition: transform 0.3s ease;
-            }
-            
-            .performance-sidebar.collapsed .sidebar-toggle i {
-                transform: rotate(180deg);
             }
             
             .sidebar-content {
@@ -4145,40 +5757,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             this.performanceMetrics.actionsCount++;
         });
     }
-    
-    updatePerformanceDisplay() {
-        const elapsed = Date.now() - this.performanceMetrics.startTime;
-        const minutes = Math.floor(elapsed / 60000);
-        const seconds = Math.floor((elapsed % 60000) / 1000);
-        
-        // Update time display
-        const timeEl = document.getElementById('time-elapsed');
-        if (timeEl) {
-            timeEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-        
-        // Update actions count
-        const actionsEl = document.getElementById('actions-count');
-        if (actionsEl) {
-            actionsEl.textContent = this.performanceMetrics.actionsCount.toString();
-        }
-        
-        // Update efficiency
-        const efficiencyEl = document.getElementById('efficiency-score');
-        if (efficiencyEl) {
-            efficiencyEl.textContent = `${this.performanceMetrics.efficiencyScore}%`;
-        }
-        
-        // Update hints used
-        const hintsEl = document.getElementById('hints-used');
-        if (hintsEl) {
-            hintsEl.textContent = this.performanceMetrics.hintsUsed.toString();
-        }
-        
-        // Update score circle
-        this.updateScoreCircle();
-    }
-    
+
     updateScoreCircle() {
         const scoreEl = document.getElementById('current-score');
         const circle = document.querySelector('.score-circle');
@@ -4238,13 +5817,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             
             container.appendChild(progressBar);
         });
-    }
-    
-    togglePerformanceSidebar() {
-        const sidebar = document.getElementById('performance-sidebar');
-        if (sidebar) {
-            sidebar.classList.toggle('collapsed');
-        }
     }
     
     getNextHint() {
@@ -4456,6 +6028,20 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         
         console.log('Adding network device:', device.id, 'with label:', device.label);
         this.networkDevices.push(device);
+
+        // Also import into the NetworkSimulationEngine if available (so engine-managed canvas knows about it)
+        try {
+            const engine = window.simulationEngineIntegration?.getEngine?.();
+            if (engine && typeof engine.importDevice === 'function') {
+                engine.importDevice(device);
+                // Fit view slightly for better UX when first devices are added
+                if ((engine.devices || []).length === 1 && typeof engine.zoomToFit === 'function') {
+                    setTimeout(() => engine.zoomToFit(), 0);
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ MVP: Failed to import device into engine (non-fatal):', e);
+        }
         
         // Initialize device state for CLI
         this.deviceStates[device.id] = {
@@ -4469,64 +6055,143 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         return device;
     }
     
-    addConnection(fromDeviceId, toDeviceId) {
-        const fromDevice = this.networkDevices.find(d => d.id === fromDeviceId);
-        const toDevice = this.networkDevices.find(d => d.id === toDeviceId);
+
+
+    activateDeleteConnectionMode() {
+        this.isDeleteConnectionMode = true;
+        this.isConnectMode = false;
+        this.isConfigureMode = false;
+        
+        // Update visual feedback
+        this.canvas.style.cursor = 'crosshair';
+        this.showToast('Click on a connection to delete it. Click anywhere else to cancel.', 'info');
+        
+        // Add temporary canvas click handler for connection deletion
+        this.canvas.addEventListener('click', this.handleDeleteConnectionClick, { once: true });
+        
+        console.log('🗑️ Delete connection mode activated');
+    }
+
+    handleDeleteConnectionClick = (e) => {
+        if (!this.isDeleteConnectionMode) return;
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Find connection near click point
+        const clickedConnection = this.findConnectionNearPoint(x, y);
+        
+        if (clickedConnection) {
+            this.deleteConnection(clickedConnection);
+        } else {
+            this.showToast('Delete connection mode cancelled', 'info');
+        }
+        
+        // Reset mode
+        this.isDeleteConnectionMode = false;
+        this.canvas.style.cursor = 'default';
+    }
+
+    findConnectionNearPoint(x, y, threshold = 10) {
+        return this.networkConnections.find(connection => {
+            const fromDevice = this.networkDevices.find(d => d.id === connection.from);
+            const toDevice = this.networkDevices.find(d => d.id === connection.to);
+            
+            if (!fromDevice || !toDevice) return false;
+            
+            // Calculate distance from click point to connection line
+            const distance = this.distanceFromPointToLine(
+                x, y,
+                fromDevice.x + fromDevice.width / 2, fromDevice.y + fromDevice.height / 2,
+                toDevice.x + toDevice.width / 2, toDevice.y + toDevice.height / 2
+            );
+            
+            return distance <= threshold;
+        });
+    }
+
+    distanceFromPointToLine(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+        
+        if (lenSq !== 0) {
+            param = dot / lenSq;
+        }
+        
+        let xx, yy;
+        
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+        
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    deleteConnection(connection) {
+        const fromDevice = this.networkDevices.find(d => d.id === connection.from);
+        const toDevice = this.networkDevices.find(d => d.id === connection.to);
         
         if (!fromDevice || !toDevice) {
-            console.warn('Invalid devices for connection:', fromDeviceId, toDeviceId);
-            this.showToast('Cannot create connection - invalid devices', 'error');
+            this.showToast('Cannot delete connection - invalid devices', 'error');
             return false;
         }
         
-        // Check for duplicate connections
-        const existingConnection = this.networkConnections.find(conn => 
-            (conn.from === fromDeviceId && conn.to === toDeviceId) ||
-            (conn.from === toDeviceId && conn.to === fromDeviceId)
-        );
-        
-        if (existingConnection) {
-            this.showToast(`Connection already exists between ${fromDevice.label} and ${toDevice.label}`, 'warning');
+        // Confirm deletion
+        if (!confirm(`Delete connection between ${fromDevice.label} and ${toDevice.label}?`)) {
             return false;
         }
         
         // Save history state
-        this.saveHistoryState?.('connection_added', {
-            fromDevice: fromDeviceId,
-            toDevice: toDeviceId,
-            timestamp: Date.now()
-        });
-        
-        // Create connection
-        const connection = {
-            from: fromDeviceId,
-            to: toDeviceId,
-            fromDevice: fromDevice,
-            toDevice: toDevice,
-            id: this.generateId(),
-            created: Date.now()
-        };
-        
-        this.networkConnections.push(connection);
-        
-        // Enhanced performance tracking
-        window.trackPerformanceAction?.('connection_created', {
-            fromType: fromDevice.type,
-            toType: toDevice.type,
+        this.saveHistoryState?.('connection_deleted', {
+            fromDevice: connection.from,
+            toDevice: connection.to,
             connectionId: connection.id,
-            totalConnections: this.networkConnections.length,
             timestamp: Date.now()
         });
         
-        // Update network status and render
-        this.updateNetworkStatus();
-        this.renderCanvas();
+        // Remove connection
+        const connectionIndex = this.networkConnections.findIndex(c => c.id === connection.id);
+        if (connectionIndex !== -1) {
+            this.networkConnections.splice(connectionIndex, 1);
+            
+            // Enhanced performance tracking
+            window.trackPerformanceAction?.('connection_deleted', {
+                fromType: fromDevice.type,
+                toType: toDevice.type,
+                connectionId: connection.id,
+                totalConnections: this.networkConnections.length,
+                timestamp: Date.now()
+            });
+            
+            // Update network status and render
+            this.updateNetworkStatus();
+            this.renderCanvas();
+            
+            // User feedback
+            this.showToast(`Deleted connection between ${fromDevice.label} and ${toDevice.label}`, 'success');
+            
+            console.log(`🗑️ Deleted connection: ${fromDevice.label} ↔ ${toDevice.label}`);
+            return true;
+        }
         
-        // User feedback
-        this.showToast(`Connected ${fromDevice.label} to ${toDevice.label}`, 'success');
-        
-        console.log(`🔗 Created connection: ${fromDevice.label} → ${toDevice.label}`);
-        return true;
+        this.showToast('Connection not found', 'error');
+        return false;
     }
 
     drawGrid() {
@@ -4551,42 +6216,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
     }
     
-    handleCanvasClick(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // Check if clicking on a device
-        let clickedDevice = null;
-        for (let device of this.networkDevices) {
-            if (x >= device.x - device.width/2 && 
-                x <= device.x + device.width/2 && 
-                y >= device.y - device.height/2 && 
-                y <= device.y + device.height/2) {
-                clickedDevice = device;
-                break;
-            }
-        }
-        
-        if (clickedDevice) {
-            // Handle device selection
-            this.networkDevices.forEach(d => d.selected = false);
-            clickedDevice.selected = true;
-            this.selectedDevice = clickedDevice;
-            
-            // If in configure mode, open config panel
-            if (this.isConfigureMode) {
-                this.openDeviceConfigPanel(clickedDevice);
-            }
-            
-            // Set as current CLI device
-            this.currentDevice = clickedDevice;
-        } else {
-            // Clear selection
-            this.networkDevices.forEach(d => d.selected = false);
-            this.selectedDevice = null;
-        }
-    }
+    // MVP: Removed duplicate handleCanvasClick method - using enhanced troubleshoot.html pattern in setupEnhancedCanvasEventHandlers
     
     setupDevicePalette() {
         console.log('🔧 Setting up Enhanced Device Palette');
@@ -4595,37 +6225,55 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         const devices = document.querySelectorAll('.device-item[draggable="true"]');
         devices.forEach(device => {
             device.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', device.dataset.deviceType);
-                console.log('Dragging device:', device.dataset.deviceType);
+                const deviceType = device.dataset.deviceType;
+                e.dataTransfer.setData('text/plain', deviceType);
+                
+                // Enhanced visual feedback during drag
+                device.style.opacity = '0.5';
+                device.style.transform = 'scale(0.95)';
+                
+                // Add mobile device specific feedback
+                if (['phone', 'tablet', 'mobile'].includes(deviceType)) {
+                    console.log('🔄 Dragging Mobile/Communication device:', deviceType);
+                    device.style.borderColor = '#059669'; // Green border for mobile devices
+                } else {
+                    console.log('🔄 Dragging device:', deviceType);
+                }
+                
+                // Show drop zone indicator
+                const dropZone = document.getElementById('canvas-drop-zone');
+                if (dropZone) {
+                    dropZone.style.opacity = '1';
+                    dropZone.style.transform = 'scale(1.02)';
+                }
+            });
+            
+            device.addEventListener('dragend', (e) => {
+                // Reset visual feedback
+                device.style.opacity = '1';
+                device.style.transform = 'scale(1)';
+                device.style.borderColor = '';
+                
+                // Hide drop zone indicator
+                const dropZone = document.getElementById('canvas-drop-zone');
+                if (dropZone) {
+                    dropZone.style.opacity = '0';
+                    dropZone.style.transform = 'scale(1)';
+                }
+                
+                console.log('✅ Drag operation completed');
             });
         });
         
         // NOTE: Canvas drop events are handled in setupDragAndDrop method to avoid duplication
         
-        // Setup mode buttons with null checks
-        const connectModeBtn = document.getElementById('connect-mode-btn');
-        if (connectModeBtn) {
-            connectModeBtn.addEventListener('click', () => {
-                this.isConnectMode = !this.isConnectMode;
-                this.isConfigureMode = false;
-                this.updateModeButtons();
-            });
-        }
-        
-        const configureModeBtn = document.getElementById('configure-mode-btn');
-        if (configureModeBtn) {
-            configureModeBtn.addEventListener('click', () => {
-                this.isConfigureMode = !this.isConfigureMode;
-                this.isConnectMode = false;
-                this.updateModeButtons();
-            });
-        }
+        // NOTE: Mode buttons are handled in setupCanvasTools to avoid duplication
 
         // Wire palette action items
         const paletteReset = document.querySelector('.device-item[data-action="reset"]');
         if (paletteReset) {
             paletteReset.addEventListener('click', () => {
-                if (confirm('Reset topology? This will clear all devices and connections.')) {
+                if (confirm('Reset topology? This will clear all devices.')) {
                     this.resetTopology();
                 }
             });
@@ -4634,6 +6282,15 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         const paletteTest = document.querySelector('.device-item[data-action="test-mode"]');
         if (paletteTest) {
             paletteTest.addEventListener('click', () => this.validateConfiguration());
+        }
+
+        // Handle delete connection action
+        const deleteConnectionBtn = document.querySelector('.device-item[data-action="delete-connection"]');
+        if (deleteConnectionBtn) {
+            deleteConnectionBtn.addEventListener('click', () => {
+                console.log('🗑️ Delete connection mode activated');
+                this.activateDeleteConnectionMode();
+            });
         }
     }
     
@@ -5670,7 +7327,10 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
                     }
                     if (result.totalScore !== undefined) {
                         this.score = result.totalScore;
-                        document.getElementById('current-score').textContent = this.score;
+                        const scoreElement = document.getElementById('current-score');
+                        if (scoreElement) {
+                            scoreElement.textContent = this.score;
+                        }
                     }
                     
                     // Refresh display to show current step after resumption
@@ -5995,16 +7655,46 @@ DynamicSimulation.prototype.restoreProgressData = function(progressData) {
     }
     
     if (progressData.networkDevices && Array.isArray(progressData.networkDevices)) {
-        this.networkDevices = progressData.networkDevices;
+        // Filter out invalid devices before restoring
+        this.networkDevices = progressData.networkDevices.filter(device => 
+            device && 
+            typeof device.x === 'number' && 
+            typeof device.y === 'number' && 
+            device.id && 
+            device.type
+        );
+        console.log(`📂 Restored ${this.networkDevices.length} valid devices`);
     }
     
     if (progressData.networkConnections && Array.isArray(progressData.networkConnections)) {
-        this.networkConnections = progressData.networkConnections;
+        // Filter out invalid connections before restoring
+        this.networkConnections = progressData.networkConnections.filter(connection =>
+            connection &&
+            connection.from &&
+            connection.to &&
+            connection.id
+        );
+        console.log(`📂 Restored ${this.networkConnections.length} valid connections`);
     }
     
     // Update UI to reflect restored progress
     this.updateProgressDisplay();
-    this.renderCanvas();
+    
+    // MVP: Safe canvas rendering with error handling
+    try {
+        this.renderCanvas();
+    } catch (error) {
+        console.warn('⚠️ MVP Failed to render canvas after restoring progress:', error);
+        // Clear potentially corrupted data and retry with empty state
+        this.networkDevices = [];
+        this.networkConnections = [];
+        try {
+            this.renderCanvas();
+            console.log('✅ MVP Canvas recovered after clearing corrupted data');
+        } catch (retryError) {
+            console.error('❌ MVP Canvas render failed even after clearing data:', retryError);
+        }
+    }
 };
 
 // Auto-save progress
@@ -6150,41 +7840,88 @@ function initializeValidationSystem() {
 // Device configuration panel integration
 DynamicSimulation.prototype.openDeviceConfigPanel = function(device) {
     if (!device) return;
+    
+    console.log(`🔧 Opening configuration for ${device.label} (${device.type})`);
 
-    // Prefer student configurator if present
+    // Use single unified configuration system
     if (window.userDeviceConfigurator && typeof window.userDeviceConfigurator.openDeviceConfiguration === 'function') {
         try {
             window.userDeviceConfigurator.openDeviceConfiguration(device);
             return;
         } catch (e) {
-            console.warn('UserDeviceConfigurator failed, falling back:', e);
+            console.error('Device configuration failed:', e);
         }
     }
 
-    // Fallback to admin-style configurator if available
-    if (window.networkDeviceConfigurator && typeof window.networkDeviceConfigurator.openConfigPanel === 'function') {
-        try {
-            window.networkDeviceConfigurator.openConfigPanel(device);
-            return;
-        } catch (e) {
-            console.warn('NetworkDeviceConfigurator failed, falling back:', e);
-        }
-    }
+    // Fallback to built-in configuration modal
+    this.showBuiltInConfigModal(device);
+};
 
-    // Last resort: if IP Manager exists, open that for basic config
-    if (window.ipManager && typeof window.ipManager.openConfigModal === 'function') {
-        try {
-            window.ipManager.openConfigModal(device);
-            return;
-        } catch (e) {
-            console.warn('IP Manager failed, falling back:', e);
-        }
+DynamicSimulation.prototype.showBuiltInConfigModal = function(device) {
+    // Create a simple built-in configuration modal as fallback
+    const modalHtml = `
+        <div id="device-config-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Configure ${device.label}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="config-section">
+                        <label>Device Name:</label>
+                        <input type="text" id="device-name" value="${device.label || device.name || ''}">
+                    </div>
+                    <div class="config-section">
+                        <label>IP Address:</label>
+                        <input type="text" id="device-ip" value="${device.ipv4 || ''}" placeholder="192.168.1.1">
+                    </div>
+                    <div class="config-section">
+                        <label>Subnet Mask:</label>
+                        <input type="text" id="device-subnet" value="${device.subnet || ''}" placeholder="255.255.255.0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="window.simulation.saveDeviceConfig('${device.id}')">Save</button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('device-config-modal');
+    if (existingModal) {
+        existingModal.remove();
     }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
 
-    // Built-in minimal modal
-    if (typeof this.showDeviceConfigModal === 'function') {
-        this.showDeviceConfigModal(device);
-    }
+DynamicSimulation.prototype.saveDeviceConfig = function(deviceId) {
+    const device = this.networkDevices.find(d => d.id == deviceId);
+    if (!device) return;
+    
+    // Get values from modal
+    const nameInput = document.getElementById('device-name');
+    const ipInput = document.getElementById('device-ip');
+    const subnetInput = document.getElementById('device-subnet');
+    
+    if (nameInput) device.label = device.name = nameInput.value;
+    if (ipInput) device.ipv4 = ipInput.value;
+    if (subnetInput) device.subnet = subnetInput.value;
+    
+    // Mark as configured
+    device.configured = true;
+    
+    // Close modal
+    const modal = document.getElementById('device-config-modal');
+    if (modal) modal.remove();
+    
+    // Redraw canvas to show updated device
+    this.redrawCanvas();
+    
+    console.log(`✅ Device ${device.label} configured`);
 };
 
 DynamicSimulation.prototype.updateDeviceConfiguration = function(deviceId, config) {
@@ -6536,12 +8273,6 @@ DynamicSimulation.prototype.generateContextualHint = function() {
         hints.push('Use the connection tool to link your devices together.');
     }
     
-    // Tool-specific hints
-    if (this.currentTool === 'connect' && !this.connectionStart) {
-        hints.push('Click on a device to start creating a connection.');
-    } else if (this.currentTool === 'connect' && this.connectionStart) {
-        hints.push('Click on another device to complete the connection.');
-    }
     
     // Configuration hints
     if (this.selectedDevice) {
@@ -6700,6 +8431,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize simulation with enhanced event system
     window.simulation = new DynamicSimulation(simulationData, progressData);
     
+    // Test mobile device functionality (for development/debugging)
+    setTimeout(() => {
+        if (window.simulation && typeof window.simulation.testMobileDevices === 'function') {
+            console.log('🔍 Running mobile device functionality test...');
+            window.simulation.testMobileDevices();
+        }
+    }, 1000); // Wait 1 second for full initialization
+    
+    
     // Initialize Device Configurators
     if (typeof UserDeviceConfigurator !== 'undefined') {
         window.userDeviceConfigurator = new UserDeviceConfigurator();
@@ -6809,7 +8549,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ctrl+R for reset topology
         if (e.ctrlKey && e.key === 'r') {
             e.preventDefault();
-            if (window.simulation && window.simulation.resetTopology && confirm('Reset topology? This will clear all devices and connections.')) {
+            if (window.simulation && window.simulation.resetTopology && confirm('Reset topology? This will clear all devices.')) {
                 window.simulation.resetTopology();
             }
         }
@@ -7508,5 +9248,41 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('🖥️ Device CLI Manager initialized');
     }
 });
+
+// Test button state debugging function
+function testButtonState() {
+    const sim = window.simulation;
+    if (!sim) {
+        console.log('❌ No simulation instance found');
+        return;
+    }
+    
+    console.log('🔍 Current Button State:');
+    console.log(`   Current Tool: ${sim.currentTool}`);
+    console.log(`   First Device: ${sim.firstDevice?.label || 'none'}`);
+    console.log(`   Selected Device: ${sim.selectedDevice?.label || 'none'}`);
+    console.log(`   Devices Count: ${sim.networkDevices?.length || 0}`);
+    
+    const connectBtn = document.getElementById('connection-mode-btn');
+    console.log(`   Connect Button Active: ${connectBtn?.classList.contains('active')}`);
+    
+    if (sim.networkDevices && sim.networkDevices.length > 0) {
+        console.log('📱 Available devices for connection:');
+        sim.networkDevices.forEach((device, index) => {
+            console.log(`     ${index + 1}. ${device.label} at (${device.x.toFixed(1)}, ${device.y.toFixed(1)})`);
+        });
+    }
+    
+    return {
+        currentTool: sim.currentTool,
+        firstDevice: sim.firstDevice?.label,
+        selectedDevice: sim.selectedDevice?.label,
+        deviceCount: sim.networkDevices?.length || 0,
+        buttonActive: connectBtn?.classList.contains('active')
+    };
+}
+
+// Add test function to window for debugging
+window.testButtonState = testButtonState;
 </script>
 {% endblock %}
