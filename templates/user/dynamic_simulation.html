@@ -1874,6 +1874,192 @@
         border-radius: 8px;
         display: inline-block;
     }
+    
+    /* Topology Configuration Styles */
+    .topology-config-section {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        backdrop-filter: blur(16px);
+    }
+    
+    .selected-topology-info {
+        margin-top: 12px;
+    }
+    
+    .topology-name {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+    }
+    
+    .topology-requirements {
+        margin: 12px 0;
+    }
+    
+    .requirement-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .requirement-item:last-child {
+        border-bottom: none;
+    }
+    
+    .device-name {
+        font-weight: 500;
+    }
+    
+    .device-count {
+        color: var(--accent-color);
+        font-size: 0.9em;
+    }
+    
+    .topology-btn {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    .topology-progress {
+        margin-top: 16px;
+        padding: 12px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+    }
+    
+    .progress-label {
+        font-size: 0.9em;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+        font-size: 0.85em;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+    
+    /* Topology Selection Modal */
+    .topology-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        padding: 16px 0;
+    }
+    
+    .topology-option {
+        background: var(--glass-bg);
+        border: 2px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(16px);
+    }
+    
+    .topology-option:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .topology-option.selected {
+        border-color: var(--accent-color);
+        background: linear-gradient(135deg, 
+            rgba(var(--primary-rgb), 0.1), 
+            rgba(var(--accent-rgb), 0.1));
+    }
+    
+    .topology-icon {
+        text-align: center;
+        margin-bottom: 12px;
+    }
+    
+    .topology-icon i {
+        font-size: 2.5em;
+        color: var(--primary-color);
+    }
+    
+    .topology-option .topology-name {
+        font-size: 1.2em;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+    
+    .topology-description {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-bottom: 12px;
+        line-height: 1.4;
+    }
+    
+    .topology-option .topology-requirements {
+        font-size: 0.8em;
+        color: var(--accent-color);
+        text-align: center;
+    }
+    
+    .topology-option .requirement {
+        display: inline-block;
+        background: rgba(255,255,255,0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin: 2px;
+    }
+    
+    /* Topology Feedback */
+    .topology-feedback {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 0.9em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .topology-feedback.success {
+        background: rgba(40, 167, 69, 0.2);
+        border: 1px solid rgba(40, 167, 69, 0.4);
+        color: #28a745;
+    }
+    
+    .topology-feedback.warning {
+        background: rgba(255, 193, 7, 0.2);
+        border: 1px solid rgba(255, 193, 7, 0.4);
+        color: #ffc107;
+    }
+    
+    .topology-feedback.error {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, 0.4);
+        color: #dc3545;
+    }
+
 </style>
 {% endblock %}
 
@@ -1981,6 +2167,44 @@
         
         <!-- Enhanced Device Palette (moved outside simulation-main) -->
         <div id="device-palette">
+            <!-- Topology Configuration Section (only shown if topology is enabled) -->
+            {% if simulation.topology_enabled %}
+            <div class="topology-config-section">
+                <div class="palette-section-header">
+                    <i class="fas fa-project-diagram"></i>
+                    Topology Setup
+                </div>
+                
+                {% if simulation.selected_topology %}
+                <div class="selected-topology-info">
+                    <div class="topology-name">{{ simulation.selected_topology|title }} Topology</div>
+                    <div class="topology-requirements" id="topology-requirements">
+                        <!-- Requirements will be loaded dynamically -->
+                    </div>
+                    <button class="btn-palette topology-btn" id="validate-topology-btn">
+                        <i class="fas fa-check-circle"></i>
+                        Validate Topology
+                    </button>
+                </div>
+                {% else %}
+                <div class="topology-selection">
+                    <button class="btn-palette topology-btn" id="select-topology-btn">
+                        <i class="fas fa-list"></i>
+                        Select Topology
+                    </button>
+                </div>
+                {% endif %}
+                
+                <div class="topology-progress" id="topology-progress" style="display: none;">
+                    <div class="progress-label">Topology Progress</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text">0% Complete</div>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Device Palette Top Bar -->
             <div class="palette-top-bar">
                 <div class="palette-header">
@@ -2391,6 +2615,283 @@
     }
 })();
 
+// Topology Selection Modal HTML
+const topologyModalHTML = `
+<div id="topology-selection-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="topologyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="topologyModalLabel">
+                    <i class="fas fa-project-diagram"></i> Select Network Topology
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="topology-grid" id="topology-grid">
+                    <!-- Topology options will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+`;
+
+// Add modal to document if it doesn't exist
+if (!document.getElementById('topology-selection-modal')) {
+    document.body.insertAdjacentHTML('beforeend', topologyModalHTML);
+}
+
+// Topology Management Functions
+window.topologyManager = {
+    selectedTopology: null,
+    simulationId: null,
+    
+    // Initialize topology functionality
+    init() {
+        // Get simulation ID from the URL or simulation data
+        const pathParts = window.location.pathname.split('/');
+        this.simulationId = pathParts[pathParts.indexOf('simulation') + 1];
+        
+        this.bindEvents();
+        this.loadTopologyRequirements();
+    },
+    
+    // Bind event handlers
+    bindEvents() {
+        const selectBtn = document.getElementById('select-topology-btn');
+        const validateBtn = document.getElementById('validate-topology-btn');
+        
+        if (selectBtn) {
+            selectBtn.addEventListener('click', () => this.showTopologyModal());
+        }
+        
+        if (validateBtn) {
+            validateBtn.addEventListener('click', () => this.validateTopology());
+        }
+    },
+    
+    // Show topology selection modal
+    showTopologyModal() {
+        try {
+            // Use the available_topologies data that's already loaded
+            const topologies = window.simulation?.available_topologies || [
+                {
+                    name: 'star',
+                    description: 'Star topology with central hub',
+                    icon: 'fa-star',
+                    requirements: { 'Switch': 1, 'Computer': 4 }
+                },
+                {
+                    name: 'bus',
+                    description: 'Linear bus topology',
+                    icon: 'fa-minus',
+                    requirements: { 'Computer': 3, 'Hub': 1 }
+                },
+                {
+                    name: 'ring',
+                    description: 'Ring topology configuration',
+                    icon: 'fa-circle-notch',
+                    requirements: { 'Computer': 4, 'Cable': 4 }
+                }
+            ];
+            
+            const grid = document.getElementById('topology-grid');
+            grid.innerHTML = topologies.map(topology => `
+                <div class="topology-option" data-topology="${topology.name}">
+                    <div class="topology-icon">
+                        <i class="fas ${topology.icon || 'fa-network-wired'}"></i>
+                    </div>
+                    <div class="topology-name">${topology.name}</div>
+                    <div class="topology-description">${topology.description || ''}</div>
+                    <div class="topology-requirements">
+                        ${topology.requirements ? Object.entries(topology.requirements).map(([device, count]) => 
+                            `<span class="requirement">${count}x ${device}</span>`
+                        ).join(', ') : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add click handlers
+            grid.querySelectorAll('.topology-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    grid.querySelectorAll('.topology-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    this.selectTopology(option.dataset.topology);
+                });
+            });
+            
+            $('#topology-selection-modal').modal('show');
+            
+        } catch (error) {
+            console.error('Failed to load topologies:', error);
+        }
+    },
+    
+    // Select a topology
+    selectTopology(topologyName) {
+        this.selectedTopology = topologyName;
+        
+        // Update the simulation object
+        if (window.simulation) {
+            window.simulation.selected_topology = topologyName;
+        }
+        
+        // Close modal and update UI
+        $('#topology-selection-modal').modal('hide');
+        this.updateTopologyUI();
+        this.loadTopologyRequirements();
+    },
+    
+    // Update topology UI elements
+    updateTopologyUI() {
+        const configSection = document.querySelector('.topology-config-section');
+        if (configSection && this.selectedTopology) {
+            configSection.innerHTML = `
+                <div class="palette-section-header">
+                    <i class="fas fa-project-diagram"></i>
+                    Topology Setup
+                </div>
+                <div class="selected-topology-info">
+                    <div class="topology-name">${this.selectedTopology} Topology</div>
+                    <div class="topology-requirements" id="topology-requirements">
+                        <!-- Requirements will be loaded dynamically -->
+                    </div>
+                    <button class="btn-palette topology-btn" id="validate-topology-btn">
+                        <i class="fas fa-check-circle"></i>
+                        Validate Topology
+                    </button>
+                </div>
+                <div class="topology-progress" id="topology-progress" style="display: none;">
+                    <div class="progress-label">Topology Progress</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text">0% Complete</div>
+                </div>
+            `;
+            
+            // Rebind events
+            this.bindEvents();
+        }
+    },
+    
+    // Load topology requirements
+    async loadTopologyRequirements() {
+        if (!this.selectedTopology || !this.simulationId) return;
+        
+        try {
+            const response = await fetch(`/dynamic/api/simulation/${this.simulationId}/topology`);
+            const result = await response.json();
+            
+            const reqContainer = document.getElementById('topology-requirements');
+            if (reqContainer && result.requirements) {
+                reqContainer.innerHTML = Object.entries(result.requirements).map(([device, count]) => 
+                    `<div class="requirement-item">
+                        <span class="device-name">${device}</span>
+                        <span class="device-count">${count} required</span>
+                    </div>`
+                ).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load topology requirements:', error);
+        }
+    },
+    
+    // Validate current topology
+    async validateTopology() {
+        if (!this.selectedTopology || !this.simulationId) return;
+        
+        try {
+            // Get current network state from the simulation
+            const networkState = this.getCurrentNetworkState();
+            
+            const response = await fetch(`/dynamic/api/simulation/${this.simulationId}/topology/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topology: this.selectedTopology,
+                    network_state: networkState
+                })
+            });
+            
+            const result = await response.json();
+            this.updateTopologyProgress(result);
+            
+        } catch (error) {
+            console.error('Failed to validate topology:', error);
+        }
+    },
+    
+    // Get current network state
+    getCurrentNetworkState() {
+        // This would integrate with the existing simulation engine
+        if (window.dynamicSim && window.dynamicSim.state) {
+            return {
+                devices: window.dynamicSim.state.networkDevices || [],
+                connections: window.dynamicSim.state.networkConnections || []
+            };
+        }
+        return { devices: [], connections: [] };
+    },
+    
+    // Update topology progress display
+    updateTopologyProgress(validationResult) {
+        const progressDiv = document.getElementById('topology-progress');
+        if (progressDiv) {
+            progressDiv.style.display = 'block';
+            
+            const percentage = validationResult.completion_percentage || 0;
+            const progressFill = progressDiv.querySelector('.progress-fill');
+            const progressText = progressDiv.querySelector('.progress-text');
+            
+            if (progressFill) progressFill.style.width = percentage + '%';
+            if (progressText) progressText.textContent = percentage + '% Complete';
+            
+            // Show validation messages
+            if (validationResult.missing_devices && validationResult.missing_devices.length > 0) {
+                this.showTopologyFeedback('warning', `Missing devices: ${validationResult.missing_devices.join(', ')}`);
+            } else if (percentage === 100) {
+                this.showTopologyFeedback('success', 'Topology requirements met!');
+            }
+        }
+    },
+    
+    // Show topology feedback
+    showTopologyFeedback(type, message) {
+        // Create or update feedback display
+        let feedback = document.getElementById('topology-feedback');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.id = 'topology-feedback';
+            feedback.className = 'topology-feedback';
+            const configSection = document.querySelector('.topology-config-section');
+            if (configSection) {
+                configSection.appendChild(feedback);
+            }
+        }
+        
+        feedback.className = `topology-feedback ${type}`;
+        feedback.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+            ${message}
+        `;
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (feedback) feedback.remove();
+        }, 5000);
+    }
+};
+
+// Initialize topology manager when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.topologyManager.init();
+});
+
 // Enhanced Dynamic Simulation Engine - Complete Admin Parity Implementation
 class DynamicSimulation {
     constructor(simulationData, progressData) {
@@ -2711,6 +3212,9 @@ class DynamicSimulation {
         setInterval(() => {
             this.autoSaveProgress();
         }, 30000); // Save every 30 seconds
+        
+        // Start topology auto-save
+        this.startAutoSave();
         
         // Mark simulation as started
         this.markSimulationStarted();
@@ -5299,22 +5803,156 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     
     saveTopology() {
         const topology = {
-            devices: this.networkDevices,
-            connections: this.networkConnections,
+            devices: this.networkDevices.map(device => ({
+                id: device.id,
+                type: device.type,
+                label: device.label,
+                position: { x: device.x, y: device.y },
+                config: device.config || {},
+                ip: device.ip,
+                subnet: device.subnet,
+                interfaces: device.interfaces || [],
+                meta: device.meta || {}
+            })),
+            connections: this.networkConnections.map(connection => ({
+                id: connection.id || `conn_${Math.random().toString(36).substr(2, 9)}`,
+                from: { deviceId: connection.from || connection.device1 },
+                to: { deviceId: connection.to || connection.device2 },
+                cable: connection.cable || 'copper',
+                meta: connection.meta || {}
+            })),
             metadata: {
                 created: new Date().toISOString(),
                 version: '2.0',
-                author: 'RiddleNet'
+                author: 'RiddleNet',
+                action: 'manual-save'
             }
         };
         
-        // Save to localStorage for now
+        // Show saving status
+        this.showNotification('Saving topology...', 'info');
+        
+        // Save to localStorage for instant UX
         localStorage.setItem(`topology_sim_${this.simulation.id}`, JSON.stringify(topology));
         
-        // Show save confirmation
-        this.showNotification('Topology saved successfully!', 'success');
+        // Also save to server
+        this.saveTopologyToServer(topology)
+            .then(() => {
+                this.showNotification('Topology saved successfully!', 'success');
+                console.log('💾 Topology saved to server');
+            })
+            .catch(error => {
+                console.error('Failed to save topology to server:', error);
+                this.showNotification('Topology saved locally (server sync failed)', 'warning');
+            });
         
         console.log('💾 Topology saved');
+    }
+    
+    async saveTopologyToServer(topology, retryCount = 0) {
+        const maxRetries = 3;
+        
+        try {
+            const response = await fetch(`/dynamic/api/simulation/${this.simulation.id}/network-state`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topology: topology,
+                    deviceStates: this.getDeviceStates(),
+                    metadata: {
+                        action: 'save',
+                        timestamp: new Date().toISOString(),
+                        source: 'user-manual'
+                    }
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Unknown server error');
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error(`Save attempt ${retryCount + 1} failed:`, error);
+            
+            if (retryCount < maxRetries) {
+                // Exponential backoff for retries
+                const delay = Math.pow(2, retryCount) * 1000;
+                console.log(`Retrying in ${delay}ms...`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return this.saveTopologyToServer(topology, retryCount + 1);
+            } else {
+                throw error;
+            }
+        }
+    }
+    
+    getDeviceStates() {
+        // Collect current device configuration states
+        const deviceStates = {};
+        
+        this.networkDevices.forEach(device => {
+            deviceStates[device.id] = {
+                config: device.config || {},
+                position: { x: device.x, y: device.y },
+                status: 'configured',
+                interfaces: device.interfaces || [],
+                lastModified: new Date().toISOString()
+            };
+        });
+        
+        return deviceStates;
+    }
+    
+    // Auto-save topology periodically
+    startAutoSave() {
+        if (this.autoSaveInterval) {
+            clearInterval(this.autoSaveInterval);
+        }
+        
+        this.autoSaveInterval = setInterval(() => {
+            if (this.networkDevices.length > 0 || this.networkConnections.length > 0) {
+                this.autoSaveTopology();
+            }
+        }, 60000); // Auto-save every minute
+    }
+    
+    async autoSaveTopology() {
+        try {
+            const topology = {
+                devices: this.networkDevices.map(device => ({
+                    id: device.id,
+                    type: device.type,
+                    label: device.label,
+                    position: { x: device.x, y: device.y },
+                    config: device.config || {}
+                })),
+                connections: this.networkConnections.map(connection => ({
+                    from: { deviceId: connection.from || connection.device1 },
+                    to: { deviceId: connection.to || connection.device2 }
+                })),
+                metadata: {
+                    created: new Date().toISOString(),
+                    action: 'auto-save'
+                }
+            };
+            
+            await this.saveTopologyToServer(topology);
+            console.log('� Auto-saved topology');
+            
+        } catch (error) {
+            console.warn('Auto-save failed:', error);
+        }
     }
     
     // ===== PHASE 3: USER EXPERIENCE ENHANCEMENTS =====
@@ -5983,7 +6621,96 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     loadTopologyFromConfig() {
-        const topology = this.simulation.topology || this.simulation.simulation_config;
+        // Enhanced topology loading with priority order:
+        // 1. Attempt-specific topology (from progress data)
+        // 2. Admin-defined topology (from simulation.topology.network_topology)
+        // 3. Legacy topology (from simulation.topology or simulation_config)
+        
+        let topology = null;
+        let source = 'none';
+        
+        // First, try to get attempt-specific topology from API
+        this.getAttemptTopology().then(attemptTopology => {
+            if (attemptTopology && (attemptTopology.devices || attemptTopology.connections)) {
+                topology = attemptTopology;
+                source = 'attempt';
+            } else {
+                // Fall back to admin-defined or legacy topology
+                const adminTopology = this.simulation.topology;
+                const configTopology = this.simulation.simulation_config;
+                
+                // Check if we have network_topology in simulation config
+                if (configTopology && configTopology.network_topology && 
+                    (configTopology.network_topology.devices || configTopology.network_topology.connections)) {
+                    topology = configTopology.network_topology;
+                    source = 'admin';
+                } else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
+                    topology = adminTopology;
+                    source = adminTopology === configTopology ? 'legacy' : 'admin';
+                } else if (configTopology && (configTopology.devices || configTopology.connections || configTopology.links)) {
+                    topology = configTopology;
+                    source = 'legacy';
+                }
+            }
+            
+            console.log(`🔧 Loading topology from ${source}:`, topology);
+            
+            if (topology) {
+                this.loadTopologyData(topology);
+            } else {
+                console.log('ℹ️ No topology data found - starting with empty canvas');
+                this.showTopologyHelperText();
+            }
+        }).catch(error => {
+            console.warn('Failed to get attempt topology, using fallback:', error);
+            
+            // Fallback to admin/legacy topology
+            const adminTopology = this.simulation.topology;
+            const configTopology = this.simulation.simulation_config;
+            
+            if (configTopology && configTopology.network_topology) {
+                topology = configTopology.network_topology;
+                source = 'admin';
+            } else {
+                topology = adminTopology || configTopology;
+                source = 'legacy';
+            }
+            
+            if (topology) {
+                console.log(`🔧 Loading fallback topology from ${source}:`, topology);
+                this.loadTopologyData(topology);
+            }
+        });
+    }
+    
+    async getAttemptTopology() {
+        // Try to get topology from current attempt
+        try {
+            const response = await fetch(`/dynamic/api/simulation/${this.simulation.id}/topology`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.source === 'attempt' && data.topology) {
+                    return data.topology;
+                }
+            }
+        } catch (error) {
+            console.log('Could not fetch attempt topology:', error);
+        }
+        
+        return null;
+    }
+    
+    loadTopologyData(topology) {
+        // Clear existing topology
+        this.networkDevices = [];
+        this.networkConnections = [];
+        
         if (topology) {
             // Load devices from config
             if (topology.devices) {
@@ -5991,10 +6718,14 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                     this.addNetworkDevice({
                         id: device.id || `device_${index}`,
                         type: device.type || 'router',
-                        x: device.x || 100 + (index * 150),
-                        y: device.y || 100 + (index % 3) * 150,
+                        x: device.x || device.position?.x || 100 + (index * 150),
+                        y: device.y || device.position?.y || 100 + (index % 3) * 150,
                         label: device.label || device.id || `Device ${index + 1}`,
-                        config: device.config || {}
+                        config: device.config || {},
+                        ip: device.ip,
+                        subnet: device.subnet,
+                        interfaces: device.interfaces || [],
+                        meta: device.meta || {}
                     });
                 });
             }
@@ -6006,10 +6737,31 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                     if (Array.isArray(link) && link.length >= 2) {
                         this.addConnection(link[0], link[1]);
                     } else if (link.from && link.to) {
-                        this.addConnection(link.from, link.to);
+                        // Handle both string device IDs and object format
+                        const fromDevice = typeof link.from === 'string' ? link.from : link.from.deviceId;
+                        const toDevice = typeof link.to === 'string' ? link.to : link.to.deviceId;
+                        this.addConnection(fromDevice, toDevice);
                     }
                 });
             }
+        }
+        
+        // Render the loaded topology
+        this.render();
+    }
+    
+    showTopologyHelperText() {
+        // Show a helpful message when no topology is available
+        const canvas = document.getElementById('networkCanvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.save();
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Add network devices from the palette on the left', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillText('to start building your network topology', canvas.width / 2, canvas.height / 2 + 20);
+            ctx.restore();
         }
     }
     
@@ -8052,6 +8804,283 @@ DynamicSimulation.prototype.isValidSubnetMask = function(mask) {
         '255.0.0.0'
     ];
     return validMasks.includes(mask);
+};
+
+// ===== TOPOLOGY VALIDATION FUNCTIONS =====
+
+DynamicSimulation.prototype.validateTopologyStructure = function(topology) {
+    const validation = {
+        isValid: true,
+        errors: [],
+        warnings: []
+    };
+    
+    if (!topology || typeof topology !== 'object') {
+        validation.isValid = false;
+        validation.errors.push('Topology must be an object');
+        return validation;
+    }
+    
+    const devices = topology.devices || [];
+    const connections = topology.connections || [];
+    
+    if (!Array.isArray(devices)) {
+        validation.isValid = false;
+        validation.errors.push('Devices must be an array');
+    }
+    
+    if (!Array.isArray(connections)) {
+        validation.isValid = false;
+        validation.errors.push('Connections must be an array');
+    }
+    
+    if (!validation.isValid) {
+        return validation;
+    }
+    
+    // Validate devices
+    const deviceIds = new Set();
+    devices.forEach((device, index) => {
+        if (!device || typeof device !== 'object') {
+            validation.errors.push(`Device ${index} must be an object`);
+            validation.isValid = false;
+            return;
+        }
+        
+        const deviceId = device.id;
+        if (!deviceId) {
+            validation.errors.push(`Device ${index} must have an id`);
+            validation.isValid = false;
+            return;
+        }
+        
+        if (deviceIds.has(deviceId)) {
+            validation.errors.push(`Duplicate device id: ${deviceId}`);
+            validation.isValid = false;
+        }
+        deviceIds.add(deviceId);
+        
+        if (!device.type) {
+            validation.errors.push(`Device ${deviceId} must have a type`);
+            validation.isValid = false;
+        }
+        
+        // Validate device position
+        if (device.position && typeof device.position === 'object') {
+            if (typeof device.position.x !== 'number' || typeof device.position.y !== 'number') {
+                validation.warnings.push(`Device ${deviceId} position should have numeric x and y coordinates`);
+            }
+        }
+        
+        // Validate IP address if provided
+        if (device.ip && !this.isValidIP(device.ip)) {
+            validation.warnings.push(`Device ${deviceId} has invalid IP address: ${device.ip}`);
+        }
+    });
+    
+    // Validate connections
+    connections.forEach((connection, index) => {
+        if (!connection || typeof connection !== 'object') {
+            validation.errors.push(`Connection ${index} must be an object`);
+            validation.isValid = false;
+            return;
+        }
+        
+        let fromDevice, toDevice;
+        
+        // Handle array format [device1, device2]
+        if (Array.isArray(connection) && connection.length >= 2) {
+            fromDevice = connection[0];
+            toDevice = connection[1];
+        } else {
+            // Handle object format with from/to
+            const from = connection.from;
+            const to = connection.to;
+            
+            if (typeof from === 'string') {
+                fromDevice = from;
+            } else if (from && typeof from === 'object') {
+                fromDevice = from.deviceId;
+            }
+            
+            if (typeof to === 'string') {
+                toDevice = to;
+            } else if (to && typeof to === 'object') {
+                toDevice = to.deviceId;
+            }
+        }
+        
+        if (!fromDevice || !toDevice) {
+            validation.errors.push(`Connection ${index} must specify both from and to devices`);
+            validation.isValid = false;
+            return;
+        }
+        
+        if (!deviceIds.has(fromDevice)) {
+            validation.warnings.push(`Connection ${index} references non-existent device: ${fromDevice}`);
+        }
+        
+        if (!deviceIds.has(toDevice)) {
+            validation.warnings.push(`Connection ${index} references non-existent device: ${toDevice}`);
+        }
+        
+        if (fromDevice === toDevice) {
+            validation.warnings.push(`Connection ${index} connects device to itself: ${fromDevice}`);
+        }
+    });
+    
+    return validation;
+};
+
+DynamicSimulation.prototype.validateCurrentTopology = function() {
+    const topology = {
+        devices: this.networkDevices,
+        connections: this.networkConnections
+    };
+    
+    return this.validateTopologyStructure(topology);
+};
+
+DynamicSimulation.prototype.showTopologyValidationResults = function(validation) {
+    if (validation.isValid && validation.warnings.length === 0) {
+        this.showNotification('Topology validation passed!', 'success');
+        return;
+    }
+    
+    let message = 'Topology validation results:\n';
+    
+    if (validation.errors.length > 0) {
+        message += '\nErrors:\n';
+        validation.errors.forEach(error => {
+            message += `• ${error}\n`;
+        });
+    }
+    
+    if (validation.warnings.length > 0) {
+        message += '\nWarnings:\n';
+        validation.warnings.forEach(warning => {
+            message += `• ${warning}\n`;
+        });
+    }
+    
+    const type = validation.isValid ? 'warning' : 'error';
+    this.showNotification(message, type, 8000);
+};
+
+DynamicSimulation.prototype.checkTopologyConnectivity = function() {
+    // Check for isolated devices (devices with no connections)
+    const connectedDevices = new Set();
+    
+    this.networkConnections.forEach(connection => {
+        const from = connection.from || connection.device1;
+        const to = connection.to || connection.device2;
+        if (from) connectedDevices.add(from);
+        if (to) connectedDevices.add(to);
+    });
+    
+    const isolatedDevices = this.networkDevices.filter(device => 
+        !connectedDevices.has(device.id)
+    );
+    
+    if (isolatedDevices.length > 0) {
+        const deviceNames = isolatedDevices.map(d => d.label || d.id).join(', ');
+        this.showNotification(
+            `Warning: ${isolatedDevices.length} isolated device(s): ${deviceNames}`, 
+            'warning',
+            5000
+        );
+    }
+    
+    return {
+        totalDevices: this.networkDevices.length,
+        connectedDevices: connectedDevices.size,
+        isolatedDevices: isolatedDevices.length,
+        connectivity: connectedDevices.size / Math.max(this.networkDevices.length, 1)
+    };
+};
+
+// Graceful degradation for missing topology
+DynamicSimulation.prototype.handleMissingTopology = function() {
+    console.log('ℹ️ No topology data available - initializing empty workspace');
+    
+    // Show helpful instructions
+    this.showNotification(
+        'No network topology found. Start by adding devices from the palette.',
+        'info',
+        5000
+    );
+    
+    // Clear any existing topology
+    this.networkDevices = [];
+    this.networkConnections = [];
+    
+    // Show helper text on canvas
+    this.showTopologyHelperText();
+    
+    // Initialize with sample topology if this is a new simulation
+    if (this.simulation && this.simulation.category === 'Networking' && this.networkDevices.length === 0) {
+        this.offerSampleTopology();
+    }
+};
+
+DynamicSimulation.prototype.offerSampleTopology = function() {
+    const modal = document.createElement('div');
+    modal.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px;">
+                <h3>Start with a Sample Topology?</h3>
+                <p>Would you like to begin with a sample network topology to get started?</p>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-secondary">Skip</button>
+                    <button onclick="window.simulation.loadSampleTopology(); this.parentElement.parentElement.parentElement.remove();" class="btn btn-primary">Yes, Load Sample</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+DynamicSimulation.prototype.loadSampleTopology = function() {
+    // Add sample devices
+    this.addNetworkDevice({
+        id: 'router1',
+        type: 'router',
+        x: 200,
+        y: 150,
+        label: 'Router 1'
+    });
+    
+    this.addNetworkDevice({
+        id: 'switch1',
+        type: 'switch',
+        x: 100,
+        y: 250,
+        label: 'Switch 1'
+    });
+    
+    this.addNetworkDevice({
+        id: 'pc1',
+        type: 'pc',
+        x: 50,
+        y: 350,
+        label: 'PC 1'
+    });
+    
+    this.addNetworkDevice({
+        id: 'pc2',
+        type: 'pc',
+        x: 150,
+        y: 350,
+        label: 'PC 2'
+    });
+    
+    // Add connections
+    this.addConnection('router1', 'switch1');
+    this.addConnection('switch1', 'pc1');
+    this.addConnection('switch1', 'pc2');
+    
+    this.showNotification('Sample topology loaded!', 'success');
+    this.render();
 };
 
 // Global functions

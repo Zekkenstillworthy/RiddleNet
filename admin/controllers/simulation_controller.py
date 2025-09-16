@@ -139,7 +139,12 @@ class SimulationController:
                 'collab': template_data.get('collab', {}) if isinstance(template_data, dict) else {},
                 'tutorial': template_data.get('tutorial', {}) if isinstance(template_data, dict) else {},
                 'achievements': template_data.get('achievements', {}) if isinstance(template_data, dict) else {},
-                'scoring': template_data.get('scoring', {}) if isinstance(template_data, dict) else {}
+                'scoring': template_data.get('scoring', {}) if isinstance(template_data, dict) else {},
+                # Add topology configuration for network simulations
+                'topology_config': template_data.get('topology_config', {}) if isinstance(template_data, dict) else {},
+                'selected_topology': template_data.get('selected_topology', '') if isinstance(template_data, dict) else '',
+                'topology_requirements': template_data.get('topology_requirements', {}) if isinstance(template_data, dict) else {},
+                'topology_enabled': bool(template_data.get('topology_enabled', False)) if isinstance(template_data, dict) else False
             }
             
             # Create the simulation
@@ -287,6 +292,16 @@ class SimulationController:
             simulation_config = payload.get('simulation_config') or {}
             if not isinstance(simulation_config, dict):
                 simulation_config = {}
+            
+            # Handle topology configuration if present
+            if payload.get('topology_config'):
+                simulation_config['topology_config'] = payload.get('topology_config')
+            if payload.get('selected_topology'):
+                simulation_config['selected_topology'] = payload.get('selected_topology')
+            if payload.get('topology_requirements'):
+                simulation_config['topology_requirements'] = payload.get('topology_requirements')
+            if 'topology_enabled' in payload:
+                simulation_config['topology_enabled'] = bool(payload.get('topology_enabled'))
 
             # Optional tags
             tags = payload.get('tags') or []

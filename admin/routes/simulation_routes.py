@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for
+from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from admin.controllers.simulation_controller import SimulationController
 # Learning controller removed - Learning Paths feature disabled
@@ -60,7 +60,64 @@ def edit_simulation(simulation_id):
         
         # Convert simulation data to troubleshooting format if needed
         simulation = simulation_data['simulation']
+
+        # Some legacy paths may return JSON strings; normalize to dict
+        if isinstance(simulation, str):
+            try:
+                loaded = json.loads(simulation)
+                simulation = loaded if isinstance(loaded, dict) else {}
+            except Exception:
+                simulation = {}
+        elif not isinstance(simulation, dict):
+            simulation = {}
+
+        # Normalize potential JSON string fields to dict/list
+        sim_config = simulation.get('simulation_config') if isinstance(simulation, dict) else None
+        if isinstance(sim_config, str):
+            try:
+                sim_config = json.loads(sim_config)
+            except Exception:
+                sim_config = {}
+        elif not isinstance(sim_config, dict):
+            sim_config = {}
+
+        step_defs = simulation.get('step_definitions') if isinstance(simulation, dict) else None
+        if isinstance(step_defs, str):
+            try:
+                step_defs = json.loads(step_defs)
+            except Exception:
+                step_defs = []
+        elif not isinstance(step_defs, list):
+            step_defs = []
+
+        # Normalize hints field (may be stored as JSON string)
+        hints = simulation.get('hints', []) if isinstance(simulation, dict) else []
+        if isinstance(hints, str):
+            try:
+                hints = json.loads(hints)
+            except Exception:
+                hints = []
+        if not isinstance(hints, list):
+            hints = []
+
+        # Ensure nested optional dict blocks are dicts (not strings)
+        def ensure_dict(d, key):
+            val = d.get(key, {}) if isinstance(d, dict) else {}
+            if isinstance(val, str):
+                try:
+                    return json.loads(val) or {}
+                except Exception:
+                    return {}
+            return val if isinstance(val, dict) else {}
         
+        # Log types for diagnostics
+        try:
+            current_app.logger.info(
+                f"[edit_simulation] ID={simulation_id} types: sim={type(simulation)}, sim_config={type(sim_config)}, steps={type(step_defs)}, hints={type(hints)}"
+            )
+        except Exception:
+            pass
+
         # Create a troubleshooting-compatible simulation object
         troubleshooting_sim = TroubleshootingSimulation(
             id=simulation.get('id'),
@@ -73,16 +130,16 @@ def edit_simulation(simulation_id):
             time_limit=simulation.get('estimated_duration', 15),
             base_score=simulation.get('base_score', 50),
             time_bonus=simulation.get('time_bonus', 10),
-            hints=simulation.get('hints', []),
-            initial_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
-            solution_topology=simulation.get('simulation_config', {}).get('network_topology', {}) if simulation.get('simulation_config') else {},
-            cli_rules=simulation.get('simulation_config', {}).get('cli_rules', {}) if simulation.get('simulation_config') else {},
+            hints=hints,
+            initial_topology=ensure_dict(sim_config, 'network_topology'),
+            solution_topology=ensure_dict(sim_config, 'solution_topology') or ensure_dict(sim_config, 'network_topology'),
+            cli_rules=ensure_dict(sim_config, 'cli_rules'),
             # New nested blocks for enhanced authoring
-            collab=simulation.get('simulation_config', {}).get('collab', {}) if simulation.get('simulation_config') else {},
-            tutorial=simulation.get('simulation_config', {}).get('tutorial', {}) if simulation.get('simulation_config') else {},
-            achievements=simulation.get('simulation_config', {}).get('achievements', {}) if simulation.get('simulation_config') else {},
-            scoring=simulation.get('simulation_config', {}).get('scoring', {}) if simulation.get('simulation_config') else {},
-            required_steps=simulation.get('step_definitions', []),
+            collab=ensure_dict(sim_config, 'collab'),
+            tutorial=ensure_dict(sim_config, 'tutorial'),
+            achievements=ensure_dict(sim_config, 'achievements'),
+            scoring=ensure_dict(sim_config, 'scoring'),
+            required_steps=step_defs,
             created_at=simulation.get('created_at'),
             updated_at=simulation.get('updated_at'),
             is_active=simulation.get('is_active', True)
@@ -368,6 +425,114 @@ def get_simulation_templates(simulation_type):
         return jsonify(templates)
     except Exception as e:
         return jsonify({'error': f'Failed to load templates: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/topologies', methods=['GET'])
+@login_required
+@teacher_required
+def get_available_topologies():
+    """Get available topologies for simulation creation"""
+    try:
+        from admin.models.topology import Topology
+        
+        # Get all active topologies from database
+        topologies = Topology.query.filter_by(is_active=True).all()
+        
+        topology_list = []
+        for topology in topologies:
+            topology_list.append({
+                'id': topology.id,
+                'title': topology.title,
+                'description': topology.description,
+                'topology_type': topology.topology_type,
+                'difficulty': topology.difficulty,
+                'device_requirements': topology.device_requirements,
+                'scoring_metrics': topology.scoring_metrics,
+                'base_score': topology.base_score
+            })
+        
+        # If no topologies in database, provide default options
+        if not topology_list:
+            default_topologies = [
+                {
+                    'id': 'point-to-point',
+                    'title': 'Point-to-Point',
+                    'description': 'Direct connection between two devices',
+                    'topology_type': 'point-to-point',
+                    'difficulty': 'easy',
+                    'device_requirements': {'pc': 2, 'router': 0, 'switch': 0},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 10
+                },
+                {
+                    'id': 'star',
+                    'title': 'Star Topology',
+                    'description': 'Central hub connecting multiple devices',
+                    'topology_type': 'star',
+                    'difficulty': 'medium',
+                    'device_requirements': {'pc': 3, 'router': 0, 'switch': 1},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 15
+                },
+                {
+                    'id': 'mesh',
+                    'title': 'Mesh Topology',
+                    'description': 'Every device connected to every other device',
+                    'topology_type': 'mesh',
+                    'difficulty': 'hard',
+                    'device_requirements': {'pc': 0, 'router': 4, 'switch': 0},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 25
+                },
+                {
+                    'id': 'bus',
+                    'title': 'Bus Topology',
+                    'description': 'All devices connected to a single communication line',
+                    'topology_type': 'bus',
+                    'difficulty': 'medium',
+                    'device_requirements': {'pc': 4, 'router': 0, 'switch': 0},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 15
+                },
+                {
+                    'id': 'ring',
+                    'title': 'Ring Topology',
+                    'description': 'Devices connected in a circular fashion',
+                    'topology_type': 'ring',
+                    'difficulty': 'medium',
+                    'device_requirements': {'pc': 0, 'router': 0, 'switch': 4},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 15
+                },
+                {
+                    'id': 'tree',
+                    'title': 'Tree Topology',
+                    'description': 'Hierarchical structure with branches',
+                    'topology_type': 'tree',
+                    'difficulty': 'hard',
+                    'device_requirements': {'pc': 4, 'router': 1, 'switch': 2},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 20
+                },
+                {
+                    'id': 'hybrid',
+                    'title': 'Hybrid Topology',
+                    'description': 'Combination of multiple topology types',
+                    'topology_type': 'hybrid',
+                    'difficulty': 'hard',
+                    'device_requirements': {'pc': 3, 'router': 1, 'switch': 2, 'server': 1},
+                    'scoring_metrics': {'time_efficiency': 10, 'config_process': 25, 'design_layout': 20, 'completeness': 20, 'correctness': 25},
+                    'base_score': 30
+                }
+            ]
+            topology_list = default_topologies
+        
+        return jsonify({
+            'success': True,
+            'topologies': topology_list
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get topologies: {str(e)}'}), 500
 
 @admin_simulation_bp.route('/api/validate-step', methods=['POST'])
 @login_required
@@ -761,25 +926,25 @@ def create_simulation_with_auto_assign():
     """Create simulation and automatically assign to relevant classes"""
     try:
         data = request.get_json()
-        
+
         # Create the simulation first
         result = simulation_controller.create_simulation(data)
-        
+
         if 'error' in result:
             return jsonify(result), 400
-        
+
         simulation_id = result['simulation_id']
-        
+
         # Auto-assign to relevant classes
         assignments = assignment_service.auto_assign_new_simulation(simulation_id)
-        
+
         # Send real-time notification
         emit_new_simulation_available(
-            simulation_id, 
+            simulation_id,
             data.get('category', 'general'),
             [a.class_id for a in assignments]
         )
-        
+
         return jsonify({
             'success': True,
             'simulation_id': simulation_id,
@@ -799,7 +964,7 @@ def quick_create_simulation():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         # Build simulation data from quick form
         simulation_data = {
             'basic': {
@@ -849,13 +1014,13 @@ def quick_create_simulation():
                 'totalPoints': 100
             }
         }
-        
+
         # Create the simulation
         result = simulation_controller.create_simulation_from_builder(simulation_data, current_user.id)
-        
+
         if 'error' in result:
             return jsonify(result), 400
-        
+
         # Auto-assign to specified class if requested
         if data.get('auto_assign') and data.get('class_id'):
             try:
@@ -866,18 +1031,18 @@ def quick_create_simulation():
                     description=data.get('description', ''),
                     max_attempts=3
                 )
-                
+
                 # Send notification
                 emit_assignment_created(
                     assignment.id,
                     assignment.class_id,
                     assignment.simulation_id
                 )
-                
+
             except Exception as e:
                 # Log but don't fail the creation
                 print(f"Warning: Failed to auto-assign simulation: {e}")
-        
+
         return jsonify({
             'success': True,
             'simulation': result['simulation'],

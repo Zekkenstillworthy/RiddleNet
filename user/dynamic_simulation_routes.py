@@ -3,7 +3,7 @@ Dynamic Simulation Routes Generator
 Automatically creates routes for admin-created simulations - Learning Paths feature removed
 """
 
-from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash, current_app
 from user.models.user import User as UserModel
 from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.class_model import Class
@@ -415,6 +415,157 @@ def get_user_from_session():
     if 'user_id' in session:
         return UserModel.query.get(session['user_id'])
     return None
+
+def validate_topology_data(topology):
+    """Validate topology structure and return validation result with enhanced MVP schema support"""
+    validation_result = {
+        'isValid': True,
+        'errors': [],
+        'warnings': []
+    }
+    
+    if not isinstance(topology, dict):
+        validation_result['isValid'] = False
+        validation_result['errors'].append("Topology must be an object")
+        return validation_result
+    
+    devices = topology.get('devices', [])
+    connections = topology.get('connections', [])
+    
+    if not isinstance(devices, list):
+        validation_result['isValid'] = False
+        validation_result['errors'].append("Devices must be an array")
+        return validation_result
+        
+    if not isinstance(connections, list):
+        validation_result['isValid'] = False
+        validation_result['errors'].append("Connections must be an array")
+        return validation_result
+    
+    # Validate device structure with enhanced MVP schema
+    device_ids = set()
+    valid_device_types = {'pc', 'switch', 'router', 'server', 'hub', 'firewall', 'printer', 'wireless-ap'}
+    
+    for i, device in enumerate(devices):
+        if not isinstance(device, dict):
+            validation_result['errors'].append(f"Device {i} must be an object")
+            validation_result['isValid'] = False
+            continue
+            
+        device_id = device.get('id')
+        if not device_id:
+            validation_result['errors'].append(f"Device {i} must have an id")
+            validation_result['isValid'] = False
+            continue
+            
+        if device_id in device_ids:
+            validation_result['errors'].append(f"Duplicate device id: {device_id}")
+            validation_result['isValid'] = False
+        device_ids.add(device_id)
+        
+        # Validate device type
+        device_type = device.get('type')
+        if not device_type:
+            validation_result['errors'].append(f"Device {device_id} must have a type")
+            validation_result['isValid'] = False
+        elif device_type not in valid_device_types:
+            validation_result['warnings'].append(f"Device {device_id} has uncommon type: {device_type}")
+            
+        # Validate optional fields
+        if 'interfaces' in device:
+            interfaces = device['interfaces']
+            if not isinstance(interfaces, list):
+                validation_result['warnings'].append(f"Device {device_id} interfaces should be an array")
+            else:
+                for j, interface in enumerate(interfaces):
+                    if not isinstance(interface, dict):
+                        validation_result['warnings'].append(f"Device {device_id} interface {j} should be an object")
+                    elif not interface.get('name'):
+                        validation_result['warnings'].append(f"Device {device_id} interface {j} should have a name")
+        
+        # Validate IP address format
+        if 'ip' in device:
+            ip = device['ip']
+            if not isinstance(ip, str) or not _is_valid_ip(ip):
+                validation_result['warnings'].append(f"Device {device_id} has invalid IP address: {ip}")
+        
+        # Validate position
+        if 'position' in device:
+            position = device['position']
+            if not isinstance(position, dict):
+                validation_result['warnings'].append(f"Device {device_id} position should be an object")
+            elif not all(isinstance(position.get(coord), (int, float)) for coord in ['x', 'y']):
+                validation_result['warnings'].append(f"Device {device_id} position should have numeric x and y coordinates")
+    
+    # Validate connections structure with enhanced MVP schema
+    for i, connection in enumerate(connections):
+        if not isinstance(connection, dict):
+            validation_result['errors'].append(f"Connection {i} must be an object")
+            validation_result['isValid'] = False
+            continue
+            
+        # Support both object format {from: {deviceId, port}, to: {deviceId, port}} and legacy formats
+        from_device = None
+        to_device = None
+        
+        if 'from' in connection and 'to' in connection:
+            # MVP format
+            from_spec = connection['from']
+            to_spec = connection['to']
+            
+            if isinstance(from_spec, dict):
+                from_device = from_spec.get('deviceId')
+                from_port = from_spec.get('port')
+            else:
+                from_device = from_spec
+                from_port = None
+                
+            if isinstance(to_spec, dict):
+                to_device = to_spec.get('deviceId')
+                to_port = to_spec.get('port')
+            else:
+                to_device = to_spec
+                to_port = None
+                
+        elif 'device1' in connection and 'device2' in connection:
+            # Legacy format
+            from_device = connection['device1']
+            to_device = connection['device2']
+            
+        if not from_device or not to_device:
+            validation_result['errors'].append(f"Connection {i} must specify both from and to devices")
+            validation_result['isValid'] = False
+            continue
+            
+        # Validate device references
+        if from_device not in device_ids:
+            validation_result['warnings'].append(f"Connection {i} references unknown device: {from_device}")
+        if to_device not in device_ids:
+            validation_result['warnings'].append(f"Connection {i} references unknown device: {to_device}")
+        if from_device == to_device:
+            validation_result['warnings'].append(f"Connection {i} connects device to itself: {from_device}")
+            
+        # Validate cable type
+        if 'cable' in connection:
+            cable = connection['cable']
+            valid_cables = {'copper', 'fiber', 'ethernet', 'serial', 'console'}
+            if cable not in valid_cables:
+                validation_result['warnings'].append(f"Connection {i} has uncommon cable type: {cable}")
+    
+    return validation_result
+
+def _is_valid_ip(ip):
+    """Helper function to validate IP address format"""
+    try:
+        parts = ip.split('.')
+        if len(parts) != 4:
+            return False
+        for part in parts:
+            if not 0 <= int(part) <= 255:
+                return False
+        return True
+    except (ValueError, AttributeError):
+        return False
 
 class DynamicSimulationController:
     """Controller for handling dynamic simulations and learning paths"""
@@ -883,7 +1034,21 @@ def run_simulation(simulation_id):
                         'score': s.get('score', 10)
                     }
 
-    # Prepare simulation data for the template with troubleshooting support
+        # Enhanced topology mapping with fallback support
+        network_topology = simulation_config.get('network_topology', {})
+        topology_config = simulation_config.get('topology_config', {})
+        selected_topology = simulation_config.get('selected_topology', '')
+        topology_requirements = simulation_config.get('topology_requirements', {})
+        topology_enabled = simulation_config.get('topology_enabled', False)
+        
+        if network_topology and (network_topology.get('devices') or network_topology.get('connections')):
+            # Use the canonical network topology structure
+            simulation_topology = network_topology
+        else:
+            # Fallback to legacy root-level fields
+            simulation_topology = simulation_config
+            
+        # Prepare simulation data for the template with troubleshooting support
         simulation_data = {
             'id': simulation.id,
             'title': simulation.title,
@@ -897,7 +1062,8 @@ def run_simulation(simulation_id):
             # Process scenario steps
             'step_definitions': normalized_steps,
             'validation': validation,
-            'topology': simulation_config,
+            'topology': simulation_topology,
+            'simulation_config': simulation_config,  # Include full config for backward compatibility
             
             # Troubleshooting-specific data
             'is_troubleshooting': simulation_config.get('use_troubleshoot_template', False),
@@ -905,6 +1071,13 @@ def run_simulation(simulation_id):
             'live_scoring': simulation_config.get('live_scoring', True),
             'lesson_key': simulation_config.get('lesson_key'),
             'source_content': simulation_config.get('source_content'),
+
+            # Topology configuration for network simulations
+            'topology_enabled': topology_enabled,
+            'selected_topology': selected_topology,
+            'topology_config': topology_config,
+            'topology_requirements': topology_requirements,
+            'available_topologies': [],  # Will be populated if topology_enabled is True
 
             # New structured authoring blocks (safe defaults)
             'collab': simulation_config.get('collab') or {
@@ -948,6 +1121,44 @@ def run_simulation(simulation_id):
             'time_bonus': simulation.time_bonus or 20,
             'perfect_completion_bonus': simulation.perfect_completion_bonus or 30
         }
+        
+        # Load available topologies if topology is enabled
+        if topology_enabled:
+            try:
+                from admin.models.topology import Topology
+                topologies = Topology.query.filter_by(is_active=True).all()
+                
+                available_topologies = []
+                for topo in topologies:
+                    available_topologies.append({
+                        'id': topo.id,
+                        'title': topo.title,
+                        'description': topo.description,
+                        'topology_type': topo.topology_type,
+                        'difficulty': topo.difficulty,
+                        'device_requirements': topo.device_requirements,
+                        'scoring_metrics': topo.scoring_metrics,
+                        'base_score': topo.base_score
+                    })
+                
+                # If no topologies in database, provide defaults
+                if not available_topologies:
+                    default_topologies = [
+                        {'id': 'point-to-point', 'title': 'Point-to-Point', 'topology_type': 'point-to-point', 'difficulty': 'easy'},
+                        {'id': 'star', 'title': 'Star Topology', 'topology_type': 'star', 'difficulty': 'medium'},
+                        {'id': 'mesh', 'title': 'Mesh Topology', 'topology_type': 'mesh', 'difficulty': 'hard'},
+                        {'id': 'bus', 'title': 'Bus Topology', 'topology_type': 'bus', 'difficulty': 'medium'},
+                        {'id': 'ring', 'title': 'Ring Topology', 'topology_type': 'ring', 'difficulty': 'medium'},
+                        {'id': 'tree', 'title': 'Tree Topology', 'topology_type': 'tree', 'difficulty': 'hard'},
+                        {'id': 'hybrid', 'title': 'Hybrid Topology', 'topology_type': 'hybrid', 'difficulty': 'hard'}
+                    ]
+                    available_topologies = default_topologies
+                
+                simulation_data['available_topologies'] = available_topologies
+                
+            except Exception as e:
+                print(f"Error loading topologies: {e}")
+                simulation_data['available_topologies'] = []
         
         # Check if user has an existing attempt
         # Basic progress snapshot (attempts summary)
@@ -1253,7 +1464,7 @@ def submit_step(simulation_id):
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/network-state', methods=['POST'])
 @user_login_required
 def update_network_state(simulation_id):
-    """Update network topology and device states"""
+    """Update network topology and device states with enhanced validation"""
     try:
         user = get_user_from_session()
         data = request.get_json() or {}
@@ -1268,27 +1479,253 @@ def update_network_state(simulation_id):
         if not attempt:
             return jsonify({'error': 'No active simulation found'}), 400
         
+        # Validate topology if provided and topology is enabled for this simulation
+        topology_validation = {'isValid': True, 'errors': [], 'warnings': []}
+        topology_data = data.get('topology')
+        
+        # Get simulation to check if topology validation is needed
+        simulation = Simulation.query.get(simulation_id)
+        simulation_config = simulation.simulation_config or {} if simulation else {}
+        topology_enabled = simulation_config.get('topology_enabled', False)
+        selected_topology = simulation_config.get('selected_topology', '')
+        
+        if topology_data and topology_enabled:
+            topology_validation = validate_topology_data(topology_data)
+            if not topology_validation['isValid']:
+                print(f"Topology validation failed for simulation {simulation_id}: {topology_validation['errors']}")
+                return jsonify({
+                    'error': 'Invalid topology data', 
+                    'validation': topology_validation
+                }), 400
+            
+            # Additional validation against selected topology type if specified
+            if selected_topology:
+                try:
+                    from admin.models.topology import Topology as TopologyModel
+                    topology_model = TopologyModel.query.filter_by(topology_type=selected_topology).first()
+                    if topology_model:
+                        # Validate device requirements
+                        device_requirements = topology_model.device_requirements
+                        if device_requirements:
+                            devices = topology_data.get('devices', [])
+                            device_counts = {}
+                            for device in devices:
+                                device_type = device.get('type', 'unknown')
+                                device_counts[device_type] = device_counts.get(device_type, 0) + 1
+                            
+                            for req_type, req_count in device_requirements.items():
+                                actual_count = device_counts.get(req_type, 0)
+                                if actual_count < req_count:
+                                    topology_validation['warnings'].append(
+                                        f'Topology requires {req_count} {req_type} devices, but only {actual_count} found'
+                                    )
+                except Exception as e:
+                    print(f"Error validating topology requirements: {e}")
+        elif topology_data:
+            # Basic validation even if topology not explicitly enabled
+            topology_validation = validate_topology_data(topology_data)
+            if not topology_validation['isValid']:
+                print(f"Topology validation failed for simulation {simulation_id}: {topology_validation['errors']}")
+                return jsonify({
+                    'error': 'Invalid topology data', 
+                    'validation': topology_validation
+                }), 400
+        
         # Update session data with network state
         if not attempt.session_data:
             attempt.session_data = {}
 
-        attempt.session_data.update({
-            'networkTopology': data.get('topology', attempt.session_data.get('networkTopology', {})),
-            'deviceStates': data.get('deviceStates', attempt.session_data.get('deviceStates', {})),
+        # Prepare update data
+        update_data = {
             'lastUpdated': datetime.utcnow().isoformat()
-        })
+        }
+        
+        # Update topology if provided and valid
+        if topology_data:
+            update_data['networkTopology'] = topology_data
+            print(f"Updated topology for simulation {simulation_id}, attempt {attempt.id}")
+        
+        # Update device states if provided
+        device_states = data.get('deviceStates')
+        if device_states:
+            update_data['deviceStates'] = device_states
+            print(f"Updated device states for simulation {simulation_id}, attempt {attempt.id}")
+        
+        # Include metadata if provided
+        metadata = data.get('metadata', {})
+        if metadata:
+            update_data['metadata'] = metadata
+        
+        attempt.session_data.update(update_data)
         
         db.session.commit()
+
+        # Enhanced response matching MVP API contract
+        return jsonify({
+            'success': True,
+            'attemptId': attempt.id,
+            'lastUpdated': update_data['lastUpdated'],
+            'validation': {
+                'errors': topology_validation.get('errors', []),
+                'warnings': topology_validation.get('warnings', [])
+            },
+            'metadata': {
+                'action': metadata.get('action', 'save'),
+                'timestamp': update_data['lastUpdated'],
+                'topologyUpdated': 'networkTopology' in update_data,
+                'deviceStatesUpdated': 'deviceStates' in update_data,
+                'dataSize': len(str(update_data))
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error updating network state for simulation {simulation_id}: {e}")
+        return jsonify({
+            'error': 'Failed to update network state',
+            'details': str(e) if current_app.debug else 'Internal server error'
+        }), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/topology', methods=['GET'])
+@user_login_required
+def get_simulation_topology_config(simulation_id):
+    """Get topology configuration for a specific simulation"""
+    try:
+        user = get_user_from_session()
+        
+        # Get simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        if not simulation_config.get('topology_enabled', False):
+            return jsonify({'error': 'Topology not enabled for this simulation'}), 400
+        
+        # Get selected topology details
+        selected_topology = simulation_config.get('selected_topology', '')
+        topology_config = simulation_config.get('topology_config', {})
+        topology_requirements = simulation_config.get('topology_requirements', {})
+        
+        # Get topology model data if available
+        topology_data = None
+        if selected_topology:
+            try:
+                from admin.models.topology import Topology
+                topology_model = Topology.query.filter_by(topology_type=selected_topology).first()
+                if topology_model:
+                    topology_data = {
+                        'id': topology_model.id,
+                        'title': topology_model.title,
+                        'description': topology_model.description,
+                        'topology_type': topology_model.topology_type,
+                        'difficulty': topology_model.difficulty,
+                        'device_requirements': topology_model.device_requirements,
+                        'scoring_metrics': topology_model.scoring_metrics,
+                        'base_score': topology_model.base_score,
+                        'expected_config': topology_model.expected_config
+                    }
+            except Exception as e:
+                print(f"Error loading topology model: {e}")
         
         return jsonify({
             'success': True,
-            'message': 'Network state updated successfully'
+            'topology_enabled': True,
+            'selected_topology': selected_topology,
+            'topology_config': topology_config,
+            'topology_requirements': topology_requirements,
+            'topology_data': topology_data
         })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/cli-command', methods=['POST'])
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/topology/validate', methods=['POST'])
+@user_login_required
+def validate_simulation_topology(simulation_id):
+    """Validate user's topology against expected configuration"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        user_topology = data.get('topology', {})
+        if not user_topology:
+            return jsonify({'error': 'No topology data provided'}), 400
+        
+        # Get simulation and topology configuration
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        if not simulation_config.get('topology_enabled', False):
+            return jsonify({'error': 'Topology validation not enabled for this simulation'}), 400
+        
+        selected_topology = simulation_config.get('selected_topology', '')
+        
+        # Basic topology validation
+        topology_validation = validate_topology_data(user_topology)
+        
+        # Topology-specific validation
+        topology_score = 0
+        topology_feedback = []
+        
+        if selected_topology and topology_validation['isValid']:
+            try:
+                from admin.models.topology import Topology
+                topology_model = Topology.query.filter_by(topology_type=selected_topology).first()
+                
+                if topology_model:
+                    expected_config = topology_model.expected_config
+                    device_requirements = topology_model.device_requirements
+                    scoring_metrics = topology_model.scoring_metrics
+                    
+                    # Validate device requirements
+                    devices = user_topology.get('devices', [])
+                    connections = user_topology.get('connections', [])
+                    
+                    device_counts = {}
+                    for device in devices:
+                        device_type = device.get('type', 'unknown')
+                        device_counts[device_type] = device_counts.get(device_type, 0) + 1
+                    
+                    # Check device requirements
+                    requirements_met = True
+                    for req_type, req_count in (device_requirements or {}).items():
+                        actual_count = device_counts.get(req_type, 0)
+                        if actual_count < req_count:
+                            requirements_met = False
+                            topology_feedback.append(f'Missing {req_count - actual_count} {req_type} device(s)')
+                        elif actual_count > req_count:
+                            topology_feedback.append(f'Extra {actual_count - req_count} {req_type} device(s)')
+                    
+                    # Validate topology structure using existing validator
+                    if hasattr(validate_network_connectivity, '__call__'):
+                        connectivity_valid = validate_network_connectivity(user_topology, expected_config)
+                        if not connectivity_valid:
+                            topology_feedback.append('Network connectivity does not match expected topology')
+                            requirements_met = False
+                    
+                    # Calculate score based on correctness
+                    base_score = topology_model.base_score or 100
+                    if requirements_met and len(topology_feedback) == 0:
+                        topology_score = base_score
+                        topology_feedback.append('Perfect topology! All requirements met.')
+                    elif requirements_met:
+                        topology_score = int(base_score * 0.8)  # 80% for meeting requirements with warnings
+                    else:
+                        topology_score = int(base_score * 0.4)  # 40% for partial completion
+                        
+            except Exception as e:
+                print(f"Error in topology-specific validation: {e}")
+                topology_feedback.append('Error validating topology requirements')
+        
+        return jsonify({
+            'success': True,
+            'valid': topology_validation['isValid'] and len(topology_validation['errors']) == 0,
+            'score': topology_score,
+            'feedback': topology_feedback,
+            'validation': topology_validation,
+            'requirements_met': len([f for f in topology_feedback if 'Missing' not in f and 'Extra' not in f]) == len(topology_feedback)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @user_login_required
 def execute_cli_command(simulation_id):
     """Execute CLI command and return response"""
@@ -2339,6 +2776,85 @@ def update_device_configuration(simulation_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/topology', methods=['GET'])
+@user_login_required
+def get_simulation_topology(simulation_id):
+    """Get topology data for a simulation with attempt-specific overrides"""
+    try:
+        user = get_user_from_session()
+        
+        # Get simulation from database
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Parse simulation config
+        simulation_config = simulation.simulation_config or {}
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except Exception:
+                simulation_config = {}
+        
+        # Get admin-defined topology
+        network_topology = simulation_config.get('network_topology', {})
+        admin_topology = network_topology if (network_topology.get('devices') or network_topology.get('connections')) else simulation_config
+        
+        # Check for attempt-specific topology
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).order_by(SimulationAttempt.started_at.desc()).first()
+        
+        attempt_topology = None
+        if attempt and attempt.session_data:
+            attempt_topology = attempt.session_data.get('networkTopology')
+        
+        # Determine source and topology to return
+        if attempt_topology:
+            topology = attempt_topology
+            source = 'attempt'
+            last_modified = attempt.updated_at.isoformat() if attempt.updated_at else None
+        else:
+            topology = admin_topology
+            source = 'admin' if network_topology else 'legacy'
+            last_modified = simulation.updated_at.isoformat() if simulation.updated_at else None
+        
+        # Validate topology structure
+        if not isinstance(topology, dict):
+            return jsonify({'error': 'Invalid topology data format'}), 400
+        
+        # Ensure devices and connections are arrays
+        devices = topology.get('devices', [])
+        connections = topology.get('connections', topology.get('links', []))
+        
+        if not isinstance(devices, list):
+            devices = []
+        if not isinstance(connections, list):
+            connections = []
+        
+        return jsonify({
+            'topology': {
+                'devices': devices,
+                'connections': connections
+            },
+            'source': source,
+            'lastModified': last_modified,
+            'metadata': {
+                'simulationId': simulation_id,
+                'attemptId': attempt.id if attempt else None,
+                'hasAttemptData': attempt_topology is not None,
+                'deviceCount': len(devices),
+                'connectionCount': len(connections)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting topology for simulation {simulation_id}: {e}")
+        return jsonify({
+            'error': 'Failed to retrieve topology data',
+            'details': str(e) if current_app.debug else 'Internal server error'
+        }), 500
 
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/device-config/<device_id>', methods=['GET'])
 @user_login_required

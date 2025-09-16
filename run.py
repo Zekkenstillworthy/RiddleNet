@@ -141,14 +141,18 @@ def check_admin_auth():
         
         if not current_user.is_authenticated:
             flash('Please log in to access the admin area', 'warning')
-            return redirect('/admin/login')
+            # Preserve intended destination so we return here after login
+            next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+            return redirect(url_for('auth.login', next=next_url))
         
         # Only check admin instance if user is authenticated
         if current_user.is_authenticated:
             from admin.models.user import Admin
             if not isinstance(current_user, Admin):
                 flash('Access denied. Admin credentials required.', 'error')
-                return redirect('/admin/login')
+                # Preserve intended destination so we return here after login
+                next_url = (request.full_path if request.query_string else request.path).rstrip('?')
+                return redirect(url_for('auth.login', next=next_url))
 
 try:
     import sys
