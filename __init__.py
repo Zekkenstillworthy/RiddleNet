@@ -184,6 +184,13 @@ def create_app(config=None):
         except Exception as e:
             print(f"⚠️ Error registering admin class content controller blueprint: {e}")
             
+        try:
+            from admin.controllers.essay_controller import essay_bp
+            app.register_blueprint(essay_bp, url_prefix='/admin')
+            print("✅ Admin essay controller blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin essay controller blueprint: {e}")
+            
         '''
         
         # Print registered rules for debugging        print("Registered URL rules:")

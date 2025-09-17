@@ -38,7 +38,7 @@
         --border-radius-xl: 24px;
         --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-        --transition-speed: 0.3s;
+        --transition-speed: 0s;
         
         /* Troubleshoot-specific gradients */
         --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
@@ -82,34 +82,51 @@
         --font-size-lg: 16px;
         --font-size-xl: 18px;
 
-        /* Enhanced z-index system */
-        --z-palette: 1002;
+    /* Enhanced z-index system */
+    --z-palette: 100; /* Updated per request */
+        /* Performance sidebar should sit below palette but above base content */
+        --z-performance-sidebar: 50;
         --z-modal: 2000;
-        --z-tooltip: 3000;
+    --z-tooltip: 3000;
+    /* dynamically adjusted performance sidebar width */
+    --performance-sidebar-width: 350px;
+    }
+    
+    /* DISABLE ALL ANIMATIONS AND TRANSITIONS */
+    *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
     }
     
     /* Critical device palette positioning - Load immediately to prevent jitter */
+    /* Consolidated device palette styling (duplicates removed) */
     #device-palette {
-        position: fixed !important;
-        left: 280px !important;
-        bottom: 0 !important;
-        width: calc(100vw - 280px) !important;
-        min-height: 88px !important; /* Optimized vertical space usage */
-        background: rgba(30, 41, 71, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        border-top: 2px solid rgba(0, 217, 255, 0.3) !important;
-        color: var(--contrast-high) !important;
-        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.1) !important;
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        z-index: var(--z-palette) !important;
-        padding: var(--space-md) var(--space-lg) !important; /* Consistent spacing */
-        gap: 0 !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        transition: none !important; /* Prevent any transitions initially */
+        position: fixed;
+        left: var(--current-sidebar-width);
+        bottom: 0;
+        width: calc(100vw - var(--current-sidebar-width));
+        min-height: 88px; /* Optimized vertical space usage */
+        background: rgba(30, 41, 71, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 2px solid rgba(0, 217, 255, 0.3);
+        color: var(--contrast-high);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.1);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        z-index: var(--z-palette);
+        padding: var(--space-md) var(--space-lg); /* Consistent spacing */
+        gap: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
+
+    /* When sidebar is collapsed (body has .sidebar-collapsed), we already update --current-sidebar-width.
+       Add a safeguard class in case we need transitions independent of variable changes */
+    /* #device-palette.sidebar-collapsed-adjust intentionally left without declarations.
+       Removed empty block to satisfy linters; class is toggled for future extension. */
 
     /* Body blur fix for lobby modals */
     body.modal-open {
@@ -125,12 +142,8 @@
 
     /* Critical responsive rules - Load immediately */
     @media (max-width: 1024px) {
-        #device-palette {
-            left: 80px !important;
-            width: calc(100vw - 80px) !important;
-            padding: var(--space-sm) var(--space-md) !important;
-            min-height: 84px !important;
-        }
+        /* Tablet adjustments */
+        /* (duplicate tablet #device-palette rule removed; base rule already handles positioning) */
 
         /* Tablet optimizations */
         .palette-section {
@@ -178,12 +191,8 @@
     }
 
     @media (max-width: 768px) {
-        #device-palette {
-            left: 0 !important;
-            width: 100vw !important;
-            padding: var(--space-sm) var(--space-sm) !important;
-            min-height: 80px !important;
-        }
+        /* Mobile adjustments */
+        /* (duplicate mobile #device-palette rule removed; width/left become 0 via base media queries) */
 
         /* Mobile optimizations with accessibility focus */
         .palette-section {
@@ -261,16 +270,10 @@
         cursor: pointer;
         z-index: 1600;
         box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3), 0 0 20px rgba(0, 217, 255, 0.2);
-        transition: all var(--transition-speed) ease;
     }
 
     .mobile-performance-toggle:hover {
-        transform: scale(1.1);
         box-shadow: 0 12px 35px rgba(0, 217, 255, 0.4), 0 0 30px rgba(0, 217, 255, 0.3);
-    }
-
-    .mobile-performance-toggle:active {
-        transform: scale(0.95);
     }
 
     .mobile-performance-toggle i {
@@ -284,74 +287,26 @@
         right: 0;
         transform: translateY(-5%);
         width: 350px;
-        height: 80vh;
+        height: calc(100vh - 120px); /* Increased clearance to prevent device palette overlap */
         max-height: 800px;
         background: rgba(15, 23, 42, 0.95);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
         border-right: none;
         border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
-        z-index: 1500;
+        z-index: var(--z-performance-sidebar);
         box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(-5%) translateX(320px);
-        opacity: 0;
+        transform: translateY(-5%) translateX(0);
+        opacity: 1;
         overflow: hidden;
     }
 
-    .performance-sidebar.active {
-        transform: translateY(-5%) translateX(0);
-        opacity: 1;
-    }
-
-    .performance-sidebar.flash {
-        animation: flashSidebar 2s ease-in-out;
-    }
-    
-    @keyframes flashSidebar {
-        0%, 100% { 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
-        }
-        50% { 
-            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
-                       0 0 20px rgba(76, 175, 80, 0.3); 
-        }
-    }
     
     .performance-sidebar .hint.success {
         background: linear-gradient(135deg, 
             rgba(76, 175, 80, 0.1) 0%, 
             rgba(76, 175, 80, 0.05) 100%);
         border-left: 4px solid #4CAF50;
-        animation: slideInRight 0.5s ease-out;
-    }
-    
-    @keyframes slideInRight {
-        from {
-            transform: translateX(20px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    .performance-sidebar .progress-ring.complete {
-        animation: pulseComplete 1s ease-in-out;
-    }
-    
-    @keyframes pulseComplete {
-        0%, 100% { 
-            transform: scale(1); 
-        }
-        50% { 
-            transform: scale(1.05); 
-        }
-    }
-    
-    .performance-sidebar .achievement.unlocked {
-        animation: achievementUnlock 0.6s ease-out;
     }
     
     @keyframes achievementUnlock {
@@ -939,6 +894,8 @@
             transform: translateY(-5%) translateX(0);
         }
         
+        /* Width already handled earlier for performance/sidebar active states (300px variant) */
+        
         .feedback-section {
             padding: 16px 20px;
         }
@@ -967,6 +924,8 @@
         .performance-sidebar.active {
             transform: translateX(0);
         }
+        
+        /* (Removed duplicate mobile width rule; handled earlier) */
         
         .performance-toggle {
             display: none;
@@ -1146,6 +1105,66 @@
             left: 10px;
             min-width: unset;
         }
+    }
+
+    /* Achievement Notification Styles */
+    .achievement-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 150, 255, 0.15));
+        border: 1px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 280px;
+        backdrop-filter: blur(20px);
+        box-shadow: 
+            0 8px 32px rgba(0, 217, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        z-index: 10000;
+        transform: translateX(100%);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .achievement-notification.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .achievement-icon {
+        font-size: 32px;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+        animation: achievementBounce 0.6s ease-out;
+    }
+
+    .achievement-text {
+        flex: 1;
+    }
+
+    .achievement-title {
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .achievement-name {
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    @keyframes achievementBounce {
+        0% { transform: scale(0.5) rotate(-12deg); }
+        50% { transform: scale(1.2) rotate(6deg); }
+        100% { transform: scale(1) rotate(0deg); }
     }
 </style>
 
@@ -2075,6 +2094,141 @@
         }
     }
 </style>
+<script>
+// --- Device Palette Dynamic Adjustment (added) ---
+document.addEventListener('DOMContentLoaded', () => {
+    const devicePalette = document.getElementById('device-palette');
+    const perfSidebar = document.getElementById('performance-sidebar');
+    if (!devicePalette || !perfSidebar) return;
+    const body = document.body;
+
+    const syncPerformanceWidth = (function(){
+        let rafId = null;
+        function parsePx(v){ return parseFloat(String(v).replace('px',''))||0; }
+        function doSync(trigger){
+            const isActive = perfSidebar.classList.contains('active');
+            body.classList.toggle('performance-sidebar-open', isActive);
+            const rect = perfSidebar.getBoundingClientRect();
+            if(rect.width){
+                document.documentElement.style.setProperty('--performance-sidebar-width', rect.width + 'px');
+            }
+            const rootStyles = getComputedStyle(document.documentElement);
+            const bodyStyles = getComputedStyle(document.body);
+            let currentVar = bodyStyles.getPropertyValue('--current-sidebar-width').trim();
+            if(!currentVar){
+                const fallback = body.classList.contains('sidebar-collapsed') ?
+                    rootStyles.getPropertyValue('--sidebar-collapsed-width').trim() :
+                    rootStyles.getPropertyValue('--sidebar-width').trim();
+                document.documentElement.style.setProperty('--current-sidebar-width', fallback);
+                currentVar = fallback;
+            } else {
+                const rootVar = rootStyles.getPropertyValue('--current-sidebar-width').trim();
+                if(rootVar !== currentVar){
+                    document.documentElement.style.setProperty('--current-sidebar-width', currentVar);
+                }
+            }
+            console.log('🔄 Palette sync', {
+                trigger,
+                collapsed: body.classList.contains('sidebar-collapsed'),
+                perfOpen: body.classList.contains('performance-sidebar-open'),
+                currentSidebarWidth: currentVar,
+                perfSidebarWidth: rootStyles.getPropertyValue('--performance-sidebar-width').trim()
+            });
+            // Corrective pass: if palette still shows an old left after collapse/expand, force reflow by toggling a data attribute
+            try {
+                const paletteEl = document.getElementById('device-palette');
+                if(paletteEl){
+                    const paletteLeft = parsePx(getComputedStyle(paletteEl).left);
+                    const expectedLeft = parsePx(currentVar);
+                    if(Math.abs(paletteLeft - expectedLeft) > 1){
+                        // Force style invalidation
+                        paletteEl.dataset.repositionTs = Date.now();
+                        // Reading offsetWidth after data change prompts reflow
+                        void paletteEl.offsetWidth;
+                        // Last resort: temporarily apply inline then remove (rarely needed)
+                        paletteEl.style.left = expectedLeft + 'px';
+                        requestAnimationFrame(()=>{ paletteEl.style.left=''; });
+                        console.log('♻️ Palette corrective adjustment applied', {paletteLeft, expectedLeft});
+                    }
+                }
+            } catch(e){ console.warn('Palette corrective pass failed', e); }
+            // Call global integrity logger if exists
+            window.logSidebarIntegrity && window.logSidebarIntegrity('performance-sidebar-change');
+        }
+        return function(trigger='manual'){
+            if(rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(()=>doSync(trigger));
+        }
+    })();
+
+    // Observe class changes on performance sidebar
+    const perfObserver = new MutationObserver(mutations => {
+        for (const m of mutations) {
+            if (m.type === 'attributes' && m.attributeName === 'class') {
+                syncPerformanceWidth('perfSidebar-mutation');
+                break;
+            }
+        }
+    });
+    perfObserver.observe(perfSidebar, { attributes: true });
+
+    // Observe body for sidebar collapse state changes
+    const bodyObserver = new MutationObserver(mutations => {
+        for (const m of mutations) {
+            if (m.type === 'attributes' && m.attributeName === 'class') {
+                syncPerformanceWidth('body-class-mutation');
+                break;
+            }
+        }
+    });
+    bodyObserver.observe(body, { attributes: true });
+
+    // ResizeObserver in case layout changes width (future-proof)
+    const ro = new ResizeObserver(() => syncPerformanceWidth('resize-observer'));
+    ro.observe(perfSidebar);
+
+    let resizeTimer; window.addEventListener('resize', ()=>{clearTimeout(resizeTimer); resizeTimer = setTimeout(()=>syncPerformanceWidth('window-resize'),120);});
+
+    // Initial sync
+    syncPerformanceWidth('initial');
+    
+    // Add debug function to window for troubleshooting
+    window.debugDevicePalette = function() {
+        const palette = document.getElementById('device-palette');
+        const computedStyle = getComputedStyle(palette);
+        const bodyClasses = document.body.className;
+        
+        // Force a sync before debugging
+        syncPerformanceWidth();
+        
+        console.log('🔍 Device Palette Debug Info:');
+        console.log('Body classes:', bodyClasses);
+        console.log('Palette computed left:', computedStyle.left);
+        console.log('Palette computed width:', computedStyle.width);
+        console.log('CSS Variables:', {
+            currentSidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--current-sidebar-width'),
+            performanceSidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--performance-sidebar-width'),
+            sidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'),
+            sidebarCollapsedWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-collapsed-width')
+        });
+        
+        return {
+            element: palette,
+            style: computedStyle,
+            bodyClasses: bodyClasses
+        };
+    };
+    
+    // Add manual sync function
+    window.forcePaletteSync = function() {
+        console.log('🔧 Forcing palette sync...');
+        syncPerformanceWidth();
+        return window.debugDevicePalette();
+    };
+    
+    console.log('🛠️ Debug function added: window.debugDevicePalette()');
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -2433,14 +2587,9 @@
         outline-offset: 2px;
     }
 
-    /* Ultra-wide screen optimizations */
+    /* Ultra-wide screen optimizations (keep dynamic sidebar width via variable) */
     @media (min-width: 1440px) {
-        #device-palette {
-            left: 280px !important;
-            width: calc(100vw - 280px) !important;
-            padding: var(--space-lg) var(--space-xl) !important;
-            min-height: 96px !important;
-        }
+        /* Device palette large-screen padding adjustment previously here removed for duplication; consider reintroducing only if needed */
 
         .palette-section {
             gap: var(--space-lg); /* 24px - spacious on large screens */
@@ -4404,7 +4553,7 @@
         </div>
 
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
-        <div id="device-palette">
+    <div id="device-palette">
             <div class="palette-section left-section">
                 <div class="action-btn" id="collaborative-session-btn" onclick="activateCollaborationMode()">
                     <i class='bx bx-group'></i>
@@ -5104,6 +5253,7 @@
             showSidebar() {
                 this.sidebar.classList.add('active');
                 this.isVisible = true;
+                // Device palette now adjusts purely via body.performance-sidebar-open + CSS variables
                 
                 // Start session if not already started
                 if (!this.startTime) {
@@ -5119,6 +5269,8 @@
             hideSidebar() {
                 this.sidebar.classList.remove('active');
                 this.isVisible = false;
+                // Device palette width reverts automatically; no class manipulation needed
+                
                 console.log('📊 Performance sidebar hidden');
             }
 
@@ -5962,21 +6114,104 @@
                 const instance = PerformanceFeedbackSystem.getInstance();
                 return instance.getPerformanceData();
             }
+
+            // Achievement system
+            checkAchievements() {
+                const achievementChecks = [
+                    {
+                        id: 'first-device',
+                        name: 'First Device Placed',
+                        condition: () => this.metrics.devicesPlaced >= 1,
+                        points: 25
+                    },
+                    {
+                        id: 'network-builder',
+                        name: 'Network Builder',
+                        condition: () => this.metrics.connectionsMade >= 3,
+                        points: 50
+                    },
+                    {
+                        id: 'speed-demon',
+                        name: 'Speed Demon',
+                        condition: () => this.metrics.timeSpent > 0 && this.metrics.actionsCount / (this.metrics.timeSpent / 60) >= 10,
+                        points: 75
+                    },
+                    {
+                        id: 'perfectionist',
+                        name: 'Perfectionist',
+                        condition: () => this.metrics.mistakesCount === 0 && this.metrics.actionsCount >= 5,
+                        points: 100
+                    }
+                ];
+
+                achievementChecks.forEach(achievement => {
+                    if (!this.achievements[achievement.id] && achievement.condition()) {
+                        this.unlockAchievement(achievement);
+                    }
+                });
+            }
+
+            unlockAchievement(achievement) {
+                this.achievements[achievement.id] = true;
+                this.metrics.score += achievement.points;
+                
+                // Update UI
+                this.updateScoreDisplay();
+                this.showAchievementNotification(achievement.name);
+                
+                // Send to backend if connected
+                if (this.realTimeEnabled && this.sessionId) {
+                    this.sendActionToBackend('achievement_unlocked', {
+                        achievement_id: achievement.id,
+                        achievement_name: achievement.name,
+                        points: achievement.points
+                    });
+                }
+                
+                console.log(`🏆 Achievement unlocked: ${achievement.name} (+${achievement.points} points)`);
+            }
+
+            showAchievementNotification(achievementName) {
+                // Create achievement notification
+                const notification = document.createElement('div');
+                notification.className = 'achievement-notification';
+                notification.innerHTML = `
+                    <div class="achievement-icon">🏆</div>
+                    <div class="achievement-text">
+                        <div class="achievement-title">Achievement Unlocked!</div>
+                        <div class="achievement-name">${achievementName}</div>
+                    </div>
+                `;
+                
+                // Add to page
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                // Auto-remove after 4 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 4000);
+            }
         }
 
         // Initialize Performance Feedback System
         let performanceFeedback = null;
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for other systems to load first
-            setTimeout(() => {
-                performanceFeedback = new PerformanceFeedbackSystem();
-                
-                // Make it globally accessible
-                window.performanceFeedback = performanceFeedback;
-                
-                console.log('🎯 Performance Feedback System ready');
-            }, 2000);
+            // Initialize immediately without delay
+            performanceFeedback = new PerformanceFeedbackSystem();
+            
+            // Make it globally accessible
+            window.performanceFeedback = performanceFeedback;
+            
+            console.log('🎯 Performance Feedback System ready');
         });
 
         // Integration hooks for existing code
@@ -10262,9 +10497,11 @@
 
             const progress = getCurrentProgress();
             
-            // Trigger existing solution check with current state
-            if (typeof checkSolution === 'function') {
+            // Only trigger solution check if we have an active scenario
+            if (typeof checkSolution === 'function' && currentScenario && currentScenario.difficulty) {
                 checkSolution(currentScenario, true); // true flag for auto-submit
+            } else {
+                console.log('ℹ️ No active scenario to check - completing timer only');
             }
 
             // Complete the timer
@@ -10285,8 +10522,10 @@
                 // Fallback calculation based on devices and connections
                 const deviceCount = devices ? devices.length : 0;
                 const connectionCount = connections ? connections.length : 0;
-                const requiredDevices = getCurrentScenarioRequirements()?.devices?.length || 5;
-                const requiredConnections = getCurrentScenarioRequirements()?.connections?.length || 3;
+                
+                // Use reasonable defaults for scenario requirements
+                const requiredDevices = 5;
+                const requiredConnections = 3;
 
                 completionPercentage = Math.min(100, 
                     ((deviceCount / requiredDevices) * 50) + 
@@ -10536,15 +10775,16 @@
                 };
             }
 
-            // Initialize stopwatch mode for general troubleshooting
-            if (!scenarioTimer.isActive) {
-                initializeTimer({
-                    timeLimit: 0, // No time limit - stopwatch mode
-                    difficulty: 'medium',
-                    scenarioType: 'troubleshooting',
-                    scenarioId: 'general-troubleshooting'
-                });
-            }
+            // Initialize stopwatch mode for general troubleshooting only when needed
+            // Timer will be started when user actually begins a scenario
+            // if (!scenarioTimer.isActive) {
+            //     initializeTimer({
+            //         timeLimit: 0, // No time limit - stopwatch mode
+            //         difficulty: 'medium',
+            //         scenarioType: 'troubleshooting',
+            //         scenarioId: 'general-troubleshooting'
+            //     });
+            // }
         }
 
         function getTimerConfigForDifficulty(difficulty) {
@@ -10607,46 +10847,7 @@
                 timerStatus.textContent = 'Ready';
                 timerStatus.classList.remove('paused', 'expired');
             }
-        }
-
-                    // Start timer after scenario setup
-                    setTimeout(() => {
-                        const timeLimits = {
-                            'easy': 900,     // 15 minutes
-                            'medium': 1800,  // 30 minutes
-                            'hard': 2700     // 45 minutes
-                        };
-
-                        initializeTimer({
-                            scenarioId: `${difficulty}_${problemType}`,
-                            scenarioType: 'troubleshooting',
-                            difficulty: difficulty,
-                            timeLimit: timeLimits[difficulty] || 1800,
-                            lobbyId: currentLobby ? currentLobby.id : null,
-                            isCollaborative: !!currentLobby
-                        });
-                    }, 1000);
-                };
-            }
-
-            // Override checkSolution to include timer completion
-            const originalCheckSolution = window.checkSolution;
-            if (originalCheckSolution) {
-                window.checkSolution = function(scenario, autoSubmit = false) {
-                    const result = originalCheckSolution.call(this, scenario);
-                    
-                    if (result || autoSubmit) {
-                        // Calculate final score and completion percentage
-                        const progress = getCurrentProgress();
-                        const finalScore = autoSubmit ? progress.current_score : 100;
-                        
-                        completeScenario(finalScore, progress.completion_percentage);
-                    }
-                    
-                    return result;
-                };
-            }
-        }
+    }
 
         // Initialize timer system when page loads
         document.addEventListener('DOMContentLoaded', function() {

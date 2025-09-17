@@ -116,64 +116,16 @@ def dashboard():
     user = UserModel.query.get(session['user_id'])
     user_score = UserScore.query.filter_by(user_id=user.id).all()
 
-    # Overall leaderboard data
-    leaderboard_data = (
-        db.session.query(
-            UserModel.username, 
-            func.max(UserScore.score).label('highest_score'), 
-            func.max(UserScore.date_attempted).label('latest_attempt')
-        )
-        .join(UserScore)
-        .group_by(UserModel.id)
-        .order_by(func.max(UserScore.score).desc())
-        .all()
-    )
-
-    # Category-specific leaderboards
-    categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
-    category_leaderboards = {}
-    
-    for category in categories:
-        category_leaderboards[f"{category}_leaderboard"] = (
-            db.session.query(
-                UserModel.username, 
-                func.max(UserScore.score).label('highest_score'), 
-                func.max(UserScore.date_attempted).label('latest_attempt')
-            )
-            .join(UserScore)
-            .filter(UserScore.category == category)
-            .group_by(UserModel.id)
-            .order_by(func.max(UserScore.score).desc())
-            .all()
-        )
-
-    return render_template(
-        'user/dashboard.html', 
-        user=user, 
-        score=user_score, 
-        leaderboard=leaderboard_data,
-        **category_leaderboards
-    )
-
-@user_bp.route('/leaderboard')
-def leaderboard():
-    if 'user_id' not in session:
-        return render_template('user/index.html', message='You need to log in first!')
-    
-    user = UserModel.query.get(session['user_id'])
-    
     try:
-        print("DEBUG: Starting leaderboard query...")
-        # Get each user's highest score across all categories with proper attribute names
+        # Enhanced leaderboard data with user details and profile images (migrated from leaderboard route)
         user_best_scores = []
-          # Get all users with scores including profile image
+        # Get all users with scores including profile image
         users_with_scores = (
             db.session.query(UserModel.id, UserModel.username, UserModel.profile_img)
             .join(UserScore)
             .distinct()
             .all()
         )
-        print(f"DEBUG: Found {len(users_with_scores)} users with scores")
         
         # For each user, get their highest score entry
         for user_id, username, profile_img in users_with_scores:
@@ -204,17 +156,11 @@ def leaderboard():
                     profile_img=profile_img
                 )
                 user_best_scores.append(entry)
-                print(f"DEBUG: Created entry for {username}: score={entry.score}, category={entry.category}, profile_img='{profile_img}'")
         
         # Sort by score (highest first)
         leaderboard_data = sorted(user_best_scores, key=lambda x: x.score, reverse=True)
-        print(f"DEBUG: Final leaderboard has {len(leaderboard_data)} entries")
         
-        # Verify the data structure
-        for i, item in enumerate(leaderboard_data[:3]):
-            print(f"DEBUG: Entry {i+1}: {type(item)}, username={item.username}, score={item.score}")
-        
-        # Category-specific leaderboards
+        # Category-specific leaderboards with enhanced data
         categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
         category_leaderboards = {}
         for category in categories:
@@ -232,20 +178,20 @@ def leaderboard():
                 .all()
             )
     except Exception as e:
-        print(f"ERROR in leaderboard: {e}")
+        print(f"ERROR in dashboard leaderboard: {e}")
         import traceback
         traceback.print_exc()
         leaderboard_data = []
         category_leaderboards = {}
-    
-    print(f"DEBUG: About to render template with {len(leaderboard_data)} leaderboard entries")
-    if leaderboard_data:
-        print(f"DEBUG: First entry type: {type(leaderboard_data[0])}, has score: {hasattr(leaderboard_data[0], 'score')}")
-    
-    return render_template('user/leaderboard.html', 
-                         user=user,
-                         leaderboard=leaderboard_data, 
-                         **category_leaderboards)
+
+    return render_template(
+        'user/dashboard.html', 
+        user=user, 
+        score=user_score, 
+        leaderboard=leaderboard_data,
+        category_leaderboards=category_leaderboards,
+        **category_leaderboards
+    )
 
 @user_bp.route('/profile')
 def profile():

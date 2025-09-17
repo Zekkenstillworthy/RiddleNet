@@ -911,17 +911,18 @@
           <!-- Left side - Profile Image -->
           <div class="profile-image-section">
             <div class="profile-image-container">
-              {% if user.profile_img %}
+              {% if user and user.profile_img %}
               <img id="profile-img-preview" 
                    src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}" 
                    alt="Profile Image" 
                    style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); background-color: #fff; object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
                    class="profile-image"
                    data-original-src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}"
-                   onclick="document.getElementById('profile_img').click()">
+                   onclick="document.getElementById('profile_img').click()"
+                   onerror="this.src='{{ url_for('static', filename='img/Logo.png') }}'; this.style.padding='10px';">
               {% else %}
               <img id="profile-img-preview"
-                   style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
+                   style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); object-fit: cover; cursor: pointer; transition: all 0.3s ease; padding: 10px; background-color: #fff;"
                    draggable="false"
                    src="{{ url_for('static', filename='img/Logo.png') }}"
                    alt="Profile Image"

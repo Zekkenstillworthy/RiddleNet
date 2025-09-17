@@ -16,7 +16,6 @@ def clean_admin_session_contamination():
         '/user/',
         '/quiz/',
         '/troubleshooting',
-        '/leaderboard',
         '/profile'
     ]
     

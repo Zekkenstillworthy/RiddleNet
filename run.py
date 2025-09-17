@@ -222,7 +222,6 @@ try:
     blueprints_to_register = [        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
         ('admin.controllers.user_controller', 'user_bp', '/admin', 'admin_user_bp'),
-        ('admin.controllers.question_controller', 'question_bp', '/admin/questions', None),
         ('admin.controllers.score_controller', 'score_bp', '/admin', None),
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
 

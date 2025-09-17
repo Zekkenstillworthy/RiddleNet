@@ -14,7 +14,17 @@ essay_bp = Blueprint('essay', __name__)
 @essay_bp.route('/essays')
 @login_required
 def index():
-    """Display classes, students, and essay responses with pagination"""
+    """Redirect to class content manager - Essays feature has been migrated"""
+    # Flash a message about the migration
+    flash('Essay management has been moved to the Class Content Manager. Redirecting...', 'info')
+    
+    # If a specific class is requested, redirect directly to that class
+    class_id = request.args.get('class_id', type=int)
+    if class_id:
+        return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id) + '?tab=essays')
+    
+    # Otherwise, redirect to the class selector
+    return redirect(url_for('dashboard.class_content_manager'))
     # Get current step from query parameters
     step = request.args.get('step', 'classes')  # classes, students, essays
     class_id = request.args.get('class_id', type=int)
@@ -507,3 +517,90 @@ def edit(essay_id):
         'success': True,
         'message': 'Essay updated successfully'
     })
+
+@essay_bp.route('/api/essays/class/<int:class_id>')
+@login_required
+def get_class_essays(class_id):
+    """Get all essays for a specific class with statistics"""
+    print(f"🔍 Essay API called for class_id: {class_id}")
+    print(f"🔍 Current user: {current_user}")
+    print(f"🔍 User role: {getattr(current_user, 'role', 'No role')}")
+    
+    try:
+        # Import class_students here to avoid circular imports
+        from admin.models.class_model import class_students
+        
+        # Verify class access
+        if hasattr(current_user, 'role') and current_user.role == 'super_admin':
+            target_class = Class.query.get_or_404(class_id)
+        else:
+            target_class = Class.query.filter_by(id=class_id, created_by=current_user.id).first()
+            if not target_class:
+                return jsonify({'error': 'Class not found or access denied'}), 404
+
+        # Get all essays for students in this class using the association table
+        essays_query = db.session.query(
+            EssayResponse.id,
+            EssayResponse.question_text.label('essay_question'),
+            EssayResponse.response_text,
+            EssayResponse.graded_score.label('grade'),
+            EssayResponse.feedback.label('grade_comments'),
+            EssayResponse.submission_date.label('created_at'),
+            EssayResponse.category,
+            EssayResponse.is_graded,
+            User.username.label('student_name'),
+            User.id.label('student_id')
+        ).join(
+            User, EssayResponse.user_id == User.id
+        ).join(
+            class_students, User.id == class_students.c.user_id
+        ).filter(
+            class_students.c.class_id == class_id
+        ).order_by(EssayResponse.submission_date.desc())
+
+        essays_data = essays_query.all()
+
+        # Calculate statistics
+        total_essays = len(essays_data)
+        graded_essays = sum(1 for essay in essays_data if essay.grade is not None)
+        pending_essays = total_essays - graded_essays
+        
+        # Calculate average score
+        graded_scores = [essay.grade for essay in essays_data if essay.grade is not None]
+        avg_score = sum(graded_scores) / len(graded_scores) if graded_scores else 0
+
+        # Calculate word count for each essay
+        essays_list = []
+        for essay in essays_data:
+            word_count = len(essay.response_text.split()) if essay.response_text else 0
+            essays_list.append({
+                'id': essay.id,
+                'essay_question': essay.essay_question,
+                'response_text': essay.response_text,
+                'grade': essay.grade,
+                'grade_comments': essay.grade_comments,
+                'created_at': essay.created_at.isoformat() if essay.created_at else None,
+                'category': essay.category,
+                'student_name': essay.student_name,
+                'student_id': essay.student_id,
+                'word_count': word_count,
+                'is_graded': essay.is_graded
+            })
+
+        return jsonify({
+            'success': True,
+            'essays': essays_list,
+            'statistics': {
+                'total_essays': total_essays,
+                'graded_essays': graded_essays,
+                'pending_essays': pending_essays,
+                'avg_score': round(avg_score, 1)
+            },
+            'class_info': {
+                'id': target_class.id,
+                'name': target_class.name
+            }
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

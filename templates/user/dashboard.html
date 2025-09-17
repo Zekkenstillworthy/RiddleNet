@@ -99,6 +99,72 @@
   }
 
   /* Network-themed decorative elements */
+  .data-node::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--gradient-primary);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .data-node:hover::before {
+    opacity: 1;
+  }
+
+  /* Enhanced leaderboard styles for dashboard integration */
+  .filter-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--cyber-glow);
+    transform: translateY(-2px);
+  }
+
+  .filter-btn.active {
+    background: var(--gradient-primary);
+    border-color: var(--cyber-glow);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .leaderboard-entry {
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.15);
+    border-color: var(--cyber-glow);
+  }
+
+  .leaderboard-content {
+    transition: all 0.3s ease;
+  }
+
+  .leaderboard-content.active {
+    display: block !important;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
   .network-node {
     position: absolute;
     width: 8px;
@@ -574,30 +640,143 @@
       </div>
     </div>
 
-    <!-- Live Leaderboard Widget - Compact -->
+    <!-- Full Leaderboard Section - Comprehensive View -->
     <div class="modern-card" style="margin-bottom: 24px;">
-      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div>
           <i class="fas fa-trophy section-icon"></i>
-          <h2 style="margin: 0; font-size: 1.3rem;">Live Leaderboard</h2>
+          <h2 style="margin: 0; font-size: 1.5rem;">Live Leaderboard</h2>
+          <p style="color: rgba(255, 255, 255, 0.6); margin: 4px 0 0; font-size: 0.9rem;">Real-time rankings and achievements across all categories</p>
         </div>
         <div class="live-indicator" style="display: flex; align-items: center; gap: 8px;">
           <div class="live-dot" style="width: 8px; height: 8px; background: #00ff00; border-radius: 50%; animation: pulse 2s infinite;"></div>
           <span style="color: #00ff00; font-size: 0.85rem; font-weight: 500;">LIVE</span>
         </div>
       </div>
-      
-      <div id="dashboard-leaderboard" style="margin-top: 16px;">
-        <div class="leaderboard-loading" style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.6);">
-          <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
-          <p>Loading live leaderboard...</p>
-        </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-filters" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+        <button class="filter-btn active" data-category="all" onclick="showCategory('all')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-globe"></i>
+          Overall
+        </button>
+        <button class="filter-btn" data-category="topology" onclick="showCategory('topology')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-project-diagram"></i>
+          Topology
+        </button>
+        <button class="filter-btn" data-category="crimping" onclick="showCategory('crimping')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-plug"></i>
+          Crimping
+        </button>
+        <button class="filter-btn" data-category="troubleshoot" onclick="showCategory('troubleshoot')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-tools"></i>
+          Troubleshoot
+        </button>
+        <button class="filter-btn" data-category="riddle" onclick="showCategory('riddle')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-question-circle"></i>
+          Riddles
+        </button>
       </div>
       
-      <div style="text-align: center; margin-top: 16px;">
-        <a href="{{ url_for('user.leaderboard') }}" class="btn-primary" style="padding: 8px 16px; font-size: 0.9rem; text-decoration: none; border-radius: 6px;">
-          View Full Leaderboard
-        </a>
+      <!-- Leaderboard Content -->
+      <div class="leaderboard-wrapper">
+        <!-- Overall Leaderboard -->
+        <div id="all-leaderboard" class="leaderboard-content active">
+          <div class="leaderboard-list" id="leaderboard-list">
+            {% if leaderboard %}
+              {% for entry in leaderboard %}
+              <div class="leaderboard-entry" data-rank="{{ loop.index }}" data-user-id="{{ entry.user_id }}" style="display: flex; align-items: center; padding: 16px; margin: 8px 0; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden;">
+                
+                <!-- Rank Badge -->
+                <div class="rank-badge" style="flex-shrink: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 20px; font-weight: 700; font-size: 1.2rem; color: var(--text-primary); background: var(--glass-bg); border: 2px solid var(--border-color); border-radius: 50%; {% if loop.index <= 3 %}width: 60px; height: 60px; font-size: 1.4rem;{% endif %}">
+                  {% if loop.index == 1 %}
+                    <i class="fas fa-crown" style="color: #ffd700;"></i>
+                  {% elif loop.index == 2 %}
+                    <i class="fas fa-medal" style="color: #c0c0c0;"></i>
+                  {% elif loop.index == 3 %}
+                    <i class="fas fa-medal" style="color: #cd7f32;"></i>
+                  {% else %}
+                    {{ loop.index }}
+                  {% endif %}
+                </div>
+                
+                <!-- User Info -->
+                <div class="user-info" style="display: flex; align-items: center; flex: 1;">
+                  <div class="user-avatar" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--cyber-glow); overflow: hidden; margin-right: 16px; box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);">
+                    {% if entry.profile_img %}
+                      <img src="{{ url_for('static', filename='img/profiles/' + entry.profile_img) }}" alt="{{ entry.username }}'s avatar" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      <span class="avatar-text" style="display: none; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.2rem; color: #ffffff; background: var(--gradient-primary);">{{ entry.username[0].upper() }}</span>
+                    {% else %}
+                      <span class="avatar-text" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.2rem; color: #ffffff; background: var(--gradient-primary);">{{ entry.username[0].upper() }}</span>
+                    {% endif %}
+                  </div>
+                  
+                  <div class="user-details" style="flex: 1;">
+                    <h4 class="user-name" style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ entry.username }}</h4>
+                    <div class="user-score" style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); display: flex; flex-direction: column; gap: 2px;">
+                      <span class="category-badge" style="font-size: 0.75rem; font-weight: 600; color: var(--cyber-glow); background: rgba(59, 130, 246, 0.15); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; width: fit-content;">{{ entry.category|title }}</span>
+                      <span class="attempt-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">{{ entry.date_attempted.strftime('%b %d, %Y') if entry.date_attempted else 'Recent' }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Score Display -->
+                <div class="score-display" style="margin-left: auto; text-align: right; padding: 12px 16px; background: var(--glass-bg); border-radius: 8px; border: 1px solid var(--border-color); backdrop-filter: blur(10px); min-width: 100px;">
+                  <div class="score-value" style="font-size: 1.5rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1;">{{ entry.score }}%</div>
+                  <div class="score-label" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; font-weight: 500;">Best Score</div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-leaderboard" style="text-align: center; padding: 60px 20px; color: rgba(255, 255, 255, 0.6);">
+                <i class="fas fa-trophy" style="font-size: 3rem; margin-bottom: 16px; color: var(--cyber-glow);"></i>
+                <h3 style="margin: 16px 0 8px; color: var(--text-primary);">No Entries Yet</h3>
+                <p style="margin: 0; font-size: 0.9rem;">Be the first to complete challenges and claim your spot on the leaderboard!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Category-specific leaderboards -->
+        {% for category in ['topology', 'crimping', 'troubleshoot', 'riddle'] %}
+        <div id="{{ category }}-leaderboard" class="leaderboard-content" style="display: none;">
+          <div class="leaderboard-list">
+            {% set category_data = category_leaderboards.get(category + '_leaderboard', []) %}
+            {% if category_data %}
+              {% for entry in category_data %}
+              <div class="leaderboard-entry" data-rank="{{ loop.index }}" style="display: flex; align-items: center; padding: 16px; margin: 8px 0; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; transition: all 0.3s ease;">
+                <div class="rank-badge" style="flex-shrink: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 20px; font-weight: 700; font-size: 1.2rem; color: var(--text-primary); background: var(--glass-bg); border: 2px solid var(--border-color); border-radius: 50%;">
+                  {{ loop.index }}
+                </div>
+                <div class="user-info" style="display: flex; align-items: center; flex: 1;">
+                  <div class="user-avatar" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--cyber-glow); overflow: hidden; margin-right: 16px;">
+                    {% if entry.profile_img %}
+                      <img src="{{ url_for('static', filename='img/profiles/' + entry.profile_img) }}" alt="{{ entry.username }}'s avatar" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                      <span class="avatar-text" style="display: none; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.2rem; color: #ffffff; background: var(--gradient-primary);">{{ entry.username[0].upper() }}</span>
+                    {% else %}
+                      <span class="avatar-text" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.2rem; color: #ffffff; background: var(--gradient-primary);">{{ entry.username[0].upper() }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="user-details">
+                    <h4 class="user-name" style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ entry.username }}</h4>
+                    <span class="attempt-date" style="font-size: 0.75rem; color: var(--text-muted);">{{ entry.latest_attempt.strftime('%b %d, %Y') if entry.latest_attempt else 'Recent' }}</span>
+                  </div>
+                </div>
+                <div class="score-display" style="margin-left: auto; text-align: right; padding: 12px 16px; background: var(--glass-bg); border-radius: 8px;">
+                  <div class="score-value" style="font-size: 1.5rem; font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ entry.highest_score }}%</div>
+                  <div class="score-label" style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Best Score</div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-leaderboard" style="text-align: center; padding: 40px 20px; color: rgba(255, 255, 255, 0.6);">
+                <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 12px; color: var(--cyber-glow);"></i>
+                <p>No {{ category|title }} scores yet. Be the first!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
 
@@ -626,6 +805,27 @@
       output.style.display = 'block';
     };
     reader.readAsDataURL(event.target.files[0]);
+  }
+
+  // Category switching function for leaderboard
+  function showCategory(category) {
+    // Update active button
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-category="${category}"]`).classList.add('active');
+    
+    // Show the selected leaderboard
+    const leaderboardContents = document.querySelectorAll('.leaderboard-content');
+    leaderboardContents.forEach(content => {
+      content.style.display = 'none';
+      content.classList.remove('active');
+    });
+    
+    const targetContent = document.getElementById(`${category}-leaderboard`);
+    if (targetContent) {
+      targetContent.style.display = 'block';
+      targetContent.classList.add('active');
+    }
   }
 
   document.addEventListener('DOMContentLoaded', function () {

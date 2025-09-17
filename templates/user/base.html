@@ -49,6 +49,8 @@
         --border-radius-xl: 24px;
         --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
         --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
+    /* Dynamic sidebar width variable (updated via body classes & media queries) */
+    --current-sidebar-width: var(--sidebar-width);
 
         /* Gradients */
         --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
@@ -97,24 +99,13 @@
         animation: none !important;
     }
 
-    /* Ensure device palette is immediately positioned correctly */
-    .preload #device-palette {
-        left: 280px !important;
-        width: calc(100vw - 280px) !important;
-    }
+    /* Removed .preload #device-palette hard overrides because body retained class, freezing palette position. */
+    /* Instead we rely on CSS variables and remove preload class quickly via JS. */
 
-    @media (max-width: 1024px) {
-        .preload #device-palette {
-            left: 80px !important;
-            width: calc(100vw - 80px) !important;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .preload #device-palette {
-            left: 0 !important;
-            width: 100vw !important;
-        }
+    /* Optional: helper to disable transitions only during first paint */
+    body.preload *, body.preload {
+        transition: none !important;
+        animation: none !important;
     }
 
     /* Network Grid Background Animation */
@@ -179,8 +170,8 @@
         color: var(--text-primary);
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 100;
-        overflow-y: auto;
-        overflow-x: hidden;
+        /* Allow toggle to protrude */
+        overflow: visible;
         box-shadow: var(--shadow-lg);
     }
 
@@ -273,6 +264,77 @@
         font-size: 24px;
         font-weight: 800;
         margin-bottom: -2px;
+    }
+
+    /* Sidebar Toggle Button - Enhanced Canva Style */
+    .sidebar-toggle {
+        position: absolute;
+        right: -18px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        background: var(--surface);
+        border: 3px solid var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        /* raise above scroll wrapper */
+        z-index: 300;
+        box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
+        }
+        50% {
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5), 0 0 0 4px rgba(0, 212, 255, 0.2);
+        }
+    }
+
+    .sidebar-toggle:hover {
+        background: var(--cyber-glow);
+        border-color: white;
+        box-shadow: 0 0 25px rgba(0, 212, 255, 0.6), 0 0 0 6px rgba(0, 212, 255, 0.3);
+        transform: translateY(-50%) scale(1.15);
+        animation: none;
+    }
+
+    .sidebar-toggle i {
+        font-size: 14px;
+        color: var(--cyber-glow);
+        transition: all var(--transition-speed) ease;
+        font-weight: 900;
+    }
+
+    .sidebar-toggle:hover i {
+        color: white;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    #sidebar.collapsed .sidebar-toggle {
+        right: -18px;
+        background: var(--primary-color);
+        border-color: var(--cyber-glow);
+    }
+
+    #sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+        color: var(--cyber-glow);
+    }
+
+    #sidebar.collapsed .sidebar-toggle:hover {
+        background: var(--cyber-glow);
+        border-color: white;
+    }
+
+    #sidebar.collapsed .sidebar-toggle:hover i {
+        color: white;
     }
 
     /* Mobile Toggle Button */
@@ -419,160 +481,25 @@
 
     #sidebar.collapsed ul li a i {
         margin-right: 0;
-    }    /* User Profile Section */
-    .user-profile {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 20px;
-        background: rgba(0, 0, 0, 0.2);
-        border-top: 1px solid var(--border-color);
-        backdrop-filter: blur(10px);
     }
-
-    /* User Profile at Top */
-    .user-profile-top {
-        border-bottom: 1px solid var(--border-color);
-        position: relative;
-    }
-
-    .user-profile-top::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 20px;
-        right: 20px;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--cyber-glow), transparent);
-    }    .user-profile .profile-info {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background: rgba(0, 212, 255, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(0, 212, 255, 0.2);
-        transition: all var(--transition-speed) ease;
-        cursor: pointer;
-    }
-
-    .user-profile .profile-info:hover {
-        background: rgba(0, 212, 255, 0.15);
-        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
-    }
-
-    /* Styles for top user profile */
-    .user-profile-top .profile-info {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background: rgba(0, 212, 255, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(0, 212, 255, 0.2);
-        transition: all var(--transition-speed) ease;
-        cursor: pointer;
-    }
-
-    .user-profile-top .profile-info:hover {
-        background: rgba(0, 212, 255, 0.15);
-        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
-    }    .user-profile .profile-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--gradient-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-        font-weight: 600;
-        color: white;
-        font-size: 1.1rem;
-        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-    }
-
-    .user-profile-top .profile-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--gradient-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-        font-weight: 600;
-        color: white;
-        font-size: 1.1rem;
-        box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-    }    .user-profile .profile-details {
-        flex: 1;
-        transition: opacity var(--transition-speed) ease;
-    }
-
-    #sidebar.collapsed .user-profile .profile-details {
-        opacity: 0;
-        width: 0;
-    }
-
-    .user-profile-top .profile-details {
-        flex: 1;
-        transition: opacity var(--transition-speed) ease;
-    }
-
-    #sidebar.collapsed .user-profile-top .profile-details {
-        opacity: 0;
-        width: 0;
-    }    .user-profile .profile-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--text-primary);
-        margin-bottom: 2px;
-    }
-
-    .user-profile .profile-status {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .user-profile .status-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--success-color);
-        box-shadow: 0 0 8px var(--success-color);
-        animation: pulse 2s ease-in-out infinite;
-    }
-
-    .user-profile-top .profile-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--text-primary);
-        margin-bottom: 2px;
-    }
-
-    .user-profile-top .profile-status {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .user-profile-top .status-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--success-color);
-        box-shadow: 0 0 8px var(--success-color);
-        animation: pulse 2s ease-in-out infinite;
-    }
+    
+    /* User Profile at Top (Refactored) */
+    .user-profile-top {position:relative;padding:10px 14px 14px;border-bottom:1px solid var(--border-color);}    
+    .user-profile-top::after {content:'';position:absolute;bottom:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--cyber-glow),transparent);}    
+    .user-profile-top .profile-info {display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.07);border-radius:14px;text-decoration:none;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease;cursor:pointer;position:relative;overflow:hidden;}
+    .user-profile-top .profile-info:hover,.user-profile-top .profile-info:focus-visible {background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.4);box-shadow:0 4px 14px -2px rgba(0,212,255,0.25);outline:none;}
+    .user-profile-top .profile-avatar {width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--cyber-glow),var(--network-purple));display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;font-size:.95rem;box-shadow:0 0 0 2px rgba(255,255,255,0.05),0 0 12px -2px rgba(0,212,255,0.4);position:relative;overflow:hidden;flex-shrink:0;}
+    .user-profile-top .profile-avatar img {width:100%;height:100%;object-fit:cover;display:block;}
+    .user-profile-top .avatar-fallback {width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+    .user-profile-top .profile-meta {display:flex;flex-direction:column;min-width:0;}
+    .user-profile-top .profile-name {font-weight:600;font-size:.9rem;line-height:1.1;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;letter-spacing:.25px;}
+    .user-profile-top .profile-status-line {display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:500;letter-spacing:.35px;color:var(--text-secondary);opacity:.9;}
+    .user-profile-top .status-indicator {width:9px;height:9px;border-radius:50%;background:var(--success-color);box-shadow:0 0 6px var(--success-color);animation:pulse 2s ease-in-out infinite;}
+    #sidebar.collapsed .user-profile-top .profile-meta {opacity:0;width:0;}
 
     /* Main Content Area */
     .main-content {
-        margin-left: var(--sidebar-width);
+        margin-left: var(--current-sidebar-width);
         min-height: 100vh;
         padding: 20px;
         transition: margin-left var(--transition-speed) ease;
@@ -582,8 +509,17 @@
         overflow-x: hidden;
     }
 
-    .sidebar-collapsed .main-content {
-        margin-left: var(--sidebar-collapsed-width);
+    /* Update CSS variable when sidebar is collapsed */
+    body.sidebar-collapsed {
+        --current-sidebar-width: var(--sidebar-collapsed-width);
+    }
+
+    /* Responsive adjustments update the variable instead of scripting */
+    @media (max-width: 1024px) {
+        body { --current-sidebar-width: var(--sidebar-collapsed-width); }
+    }
+    @media (max-width: 768px) {
+        body { --current-sidebar-width: 0px; }
     }
 
     /* Enhanced Card Styles for Content */
@@ -623,10 +559,10 @@
     @media (max-width: 1024px) {
         #sidebar {
             width: var(--sidebar-collapsed-width);
-        }        #sidebar .logo-name,
-        #sidebar ul li a span,
-        .user-profile .profile-details,
-        .user-profile-top .profile-details {
+    }        #sidebar .logo-name,
+    #sidebar ul li a span,
+    .user-profile-top .profile-details,
+    .user-profile-top .profile-meta {
             opacity: 0;
             width: 0;
         }
@@ -657,10 +593,10 @@
 
         #sidebar.mobile-open {
             transform: translateX(0);
-        }        #sidebar.mobile-open .logo-name,
-        #sidebar.mobile-open ul li a span,
-        #sidebar.mobile-open .user-profile .profile-details,
-        #sidebar.mobile-open .user-profile-top .profile-details {
+    }        #sidebar.mobile-open .logo-name,
+    #sidebar.mobile-open ul li a span,
+    #sidebar.mobile-open .user-profile-top .profile-details,
+    #sidebar.mobile-open .user-profile-top .profile-meta {
             opacity: 1;
             width: auto;
         }
@@ -810,6 +746,11 @@
     <!-- Mobile Backdrop -->
     <div class="mobile-backdrop" id="mobileBackdrop"></div>    <!-- Sidebar Navigation -->
     <nav id="sidebar">
+        <!-- Sidebar Toggle Button - Canva Style -->
+        <div class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        <div class="sidebar-scroll">
         <div class="logo-details">
             <div class="logo-icon">
                 <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="" style="width: 60px; height: 60px;" >
@@ -820,35 +761,22 @@
             </div>
         </div>
 
-        <!-- User Profile Section at Top -->
+        <!-- User Profile Section at Top (Refactored) -->
         <div class="user-profile-top">
-            <div class="profile-info" onclick="window.location.href='{{ url_for('user.profile') }}'">
+            <a class="profile-info" href="{{ url_for('user.profile') }}" aria-label="View Profile">
                 <div class="profile-avatar">
-                    {% if user %}
-                    {% if user.profile_img %}
-                    <img src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}" alt="{{ user.username }}"
-                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                    {% if user and user.profile_img %}
+                        <img src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}" alt="Avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="avatar-fallback" style="display:none;">{{ user.username[0].upper() }}</div>
                     {% else %}
-                    {{ user.username[0].upper() }}
-                    {% endif %}
-                    {% else %}
-                    U
+                        <div class="avatar-fallback">{{ user.username[0].upper() if user else 'U' }}</div>
                     {% endif %}
                 </div>
-                <div class="profile-details">
-                    <div class="profile-name">
-                        {% if user %}
-                        {{ user.username }}
-                        {% else %}
-                        User
-                        {% endif %}
-                    </div>
-                    <div class="profile-status">
-                        <span class="status-indicator"></span>
-                        Online
-                    </div>
+                <div class="profile-meta">
+                    <span class="profile-name" title="{{ user.username if user else 'User' }}">{{ user.username if user else 'User' }}</span>
+                    <span class="profile-status-line"><span class="status-indicator" aria-hidden="true"></span>Online</span>
                 </div>
-            </div>
+            </a>
         </div>
 
         <ul class="nav-links">
@@ -877,13 +805,6 @@
                     <span>Troubleshooting</span>
                 </a>
             </li>
-            <li class="nav-item {% if request.endpoint == 'user.leaderboard' %}active{% endif %}">
-                <a href="{{ url_for('user.leaderboard') }}">
-                    <i class="fas fa-trophy"></i>
-                    <span>Leaderboard</span>
-                </a>
-            </li>
-
             <li class="nav-item {% if request.endpoint == 'user.profile' %}active{% endif %}">
                 <a href="{{ url_for('user.profile') }}">
                     <i class="fas fa-user-circle"></i>
@@ -910,6 +831,7 @@
                     <span>Logout</span>
                 </a>
             </li>        </ul>
+        </div> <!-- end sidebar-scroll -->
     </nav>
 
     <!-- Main Content -->
@@ -920,47 +842,94 @@
     <script>
         // Sidebar functionality
         document.addEventListener('DOMContentLoaded', function () {
-            // Immediately set device palette position based on viewport
-            const devicePalette = document.getElementById('device-palette');
-            if (devicePalette) {
-                function setDevicePalettePosition() {
-                    const windowWidth = window.innerWidth;
-                    if (windowWidth <= 768) {
-                        devicePalette.style.left = '0px';
-                        devicePalette.style.width = '100vw';
-                    } else if (windowWidth <= 1024) {
-                        devicePalette.style.left = 'var(--sidebar-collapsed-width)';
-                        devicePalette.style.width = 'calc(100vw - var(--sidebar-collapsed-width))';
-                    } else {
-                        devicePalette.style.left = 'var(--sidebar-width)';
-                        devicePalette.style.width = 'calc(100vw - var(--sidebar-width))';
-                    }
-                }
-                
-                // Set position immediately
-                setDevicePalettePosition();
-                
-                // Update on resize
-                window.addEventListener('resize', setDevicePalettePosition);
-            }
-            
-            // Remove preload class to enable transitions after positioning is set
-            // Note: Body transitions remain disabled permanently
-            setTimeout(() => {
-                const preloadElements = document.querySelectorAll(':not(body)');
-                preloadElements.forEach(el => {
-                    if (el.classList.contains('preload')) {
-                        el.classList.remove('preload');
-                    }
-                });
-                // Keep body with disabled transitions
-                document.body.style.transition = 'none';
-            }, 150);
-            
+            // Get sidebar element first to avoid initialization errors
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
             const mobileToggle = document.getElementById('mobileToggle');
             const mobileBackdrop = document.getElementById('mobileBackdrop');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            // Device palette now uses CSS variable --current-sidebar-width; no JS positioning needed
+            
+            // Remove preload class (including on body) after first frame so palette can respond to variable changes
+            requestAnimationFrame(() => {
+                document.body.classList.remove('preload');
+            });
+
+            // Global integrity logger (one log per toggle) comparing expected vs computed palette positioning
+            (function initSidebarIntegrityAndVarSync(){
+                const state = { lastToggleId: 0 };
+                function parsePx(v){ return parseFloat(String(v).replace('px','')) || 0; }
+                function computeTargetWidth(){
+                    const rootStyles = getComputedStyle(document.documentElement);
+                    return document.body.classList.contains('sidebar-collapsed')
+                        ? rootStyles.getPropertyValue('--sidebar-collapsed-width').trim()
+                        : rootStyles.getPropertyValue('--sidebar-width').trim();
+                }
+                function syncSidebarVar(){
+                    const target = computeTargetWidth();
+                    if(target){
+                        document.documentElement.style.setProperty('--current-sidebar-width', target);
+                    }
+                }
+                // Initial sync (in case server-side rendered body already has class)
+                syncSidebarVar();
+                // Observe body class changes (covers any external toggles outside this script)
+                const bodyObserver = new MutationObserver(muts => {
+                    for(const m of muts){
+                        if(m.type==='attributes' && m.attributeName==='class'){
+                            syncSidebarVar();
+                            window.logSidebarIntegrity && window.logSidebarIntegrity('body-class-observer');
+                            break;
+                        }
+                    }
+                });
+                bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+                window.logSidebarIntegrity = function(source){
+                    const palette = document.getElementById('device-palette');
+                    const bodyStyles = getComputedStyle(document.body); // includes body overrides
+                    const rootStyles = getComputedStyle(document.documentElement);
+                    const expectedLeft = parsePx(bodyStyles.getPropertyValue('--current-sidebar-width').trim());
+                    // Defer two frames for layout settle
+                    const toggleId = ++state.lastToggleId;
+                    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+                        if(toggleId !== state.lastToggleId) return;
+                        if(!palette){
+                            console.log('🧪 Sidebar Integrity', { source, expectedLeft, palette:'missing' });
+                            return;
+                        }
+                        const paletteStyles = getComputedStyle(palette);
+                        const actualLeft = parsePx(paletteStyles.left);
+                        const width = parsePx(paletteStyles.width);
+                        const perfWidth = parsePx(rootStyles.getPropertyValue('--performance-sidebar-width').trim());
+                        console.log('🧪 Sidebar Integrity', {
+                            source,
+                            bodyHasCollapsed: document.body.classList.contains('sidebar-collapsed'),
+                            perfOpen: document.body.classList.contains('performance-sidebar-open'),
+                            expectedLeft,
+                            actualLeft,
+                            delta: +(actualLeft - expectedLeft).toFixed(2),
+                            paletteWidth: width,
+                            perfSidebarWidth: perfWidth,
+                            vw: window.innerWidth
+                        });
+                    }));
+                };
+                // Expose manual sync for debugging
+                window.syncSidebarVar = syncSidebarVar;
+            })();
+            
+            // Desktop sidebar toggle functionality
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('collapsed');
+                    document.body.classList.toggle('sidebar-collapsed');
+                    // Variable auto-sync handled by MutationObserver; just schedule integrity log.
+                    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+                        window.logSidebarIntegrity && window.logSidebarIntegrity('main-sidebar-toggle');
+                    }));
+                });
+            }
 
             // Mobile toggle functionality
             if (mobileToggle) {
@@ -1056,6 +1025,16 @@
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }, 100);
                 });
+            });
+
+            // Add keyboard shortcut for sidebar toggle (Ctrl+B)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    if (sidebarToggle) {
+                        sidebarToggle.click();
+                    }
+                }
             });
         });
 

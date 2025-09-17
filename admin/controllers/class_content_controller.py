@@ -4,6 +4,7 @@ from utils.auth_decorators import admin_required
 from admin.models.class_model import Class
 from admin.models.simulation import Simulation
 from admin.models.question_group import QuestionGroup
+from admin.models.question import Question
 from admin.models.module import Module, Lesson
 from admin.models.class_content import ClassAnnouncement, ClassAssignment, ClassMaterial
 # ClassTopic removed - content now organized under Modules
@@ -11,7 +12,7 @@ from admin import db
 from datetime import datetime
 
 # Create a blueprint for class content related routes
-class_content_controller_old = Blueprint('class_content_controller_old', __name__, url_prefix='/admin')
+class_content_controller_old = Blueprint('class_content_controller_old', __name__)
 
 
 def _is_super_admin():
@@ -78,6 +79,9 @@ def manage_content(class_id):
         assigned_sim_ids = [sim.id for sim in assigned_simulations]
         available_simulations = [sim for sim in all_simulations if sim.id not in assigned_sim_ids]
         
+        # Get question groups assigned to this class
+        class_question_groups = cls.question_groups.all()
+        
         # Prepare class content data structure for the template
         class_content = {
             'modules': [module.to_dict(include_content=True) if hasattr(module, 'to_dict') else {
@@ -115,7 +119,14 @@ def manage_content(class_id):
                 'id': sim.id,
                 'title': sim.title,
                 'description': sim.description
-            } for sim in assigned_simulations]
+            } for sim in assigned_simulations],
+            'question_groups': [group.to_dict() if hasattr(group, 'to_dict') else {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'question_count': len(group.questions),
+                'is_active': group.is_active
+            } for group in class_question_groups]
         }
         
         # Use class_content_manager template
@@ -134,13 +145,13 @@ def manage_content(class_id):
                              class_statistics={  # Add required statistics
                                  'total_students': 0,
                                  'total_simulations': len(assigned_simulations),
-                                 'total_question_groups': 0,
+                                 'total_question_groups': len(class_question_groups),
                                  'total_modules': len(class_modules),
                                  'total_announcements': len(class_announcements),
                                  'total_assignments': len(class_assignments),
                                  'total_materials': len(class_materials),
                                  # 'total_topics': 0,  # Topics removed
-                                 'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules),
+                                 'total_content': len(class_announcements) + len(class_assignments) + len(class_materials) + len(class_modules) + len(class_question_groups),
                                  'completion_rate': 0,
                                  'average_score': 0
                              },
@@ -1297,37 +1308,389 @@ def delete_class_material(class_id, material_id):
         return jsonify({'error': str(e)}), 500
 
 # ========================================
-# QUIZ MANAGEMENT ENDPOINTS  
+# QUESTION GROUP MANAGEMENT ENDPOINTS  
 # ========================================
 
-@class_content_controller_old.route('/api/classes/<int:class_id>/quizs', methods=['POST'])
-@login_required  
-def create_class_quiz(class_id):
-    """Create a new quiz (creates a question group)"""
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['GET'])
+@login_required
+def get_class_question_groups(class_id):
+    """Get all question groups assigned to a class"""
+    try:
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        # Get assigned question groups for this class
+        assigned_groups = cls.question_groups.all()
+        
+        question_groups_data = []
+        for group in assigned_groups:
+            question_groups_data.append({
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'question_count': len(group.questions),
+                'is_active': group.is_active,
+                'created_at': group.created_at.isoformat() if group.created_at else None
+            })
+        
+        return jsonify({'success': True, 'question_groups': question_groups_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
+@login_required
+def create_class_question_group(class_id):
+    """Create a new question group and assign it to the class"""
     try:
         data = request.json
-        cls = Class.query.get_or_404(class_id)
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
         
-        # Create a new question group for the quiz
-        new_quiz = QuestionGroup(
-            name=data['title'],
+        # Create a new question group
+        new_group = QuestionGroup(
+            name=data['name'],
             description=data.get('description', ''),
-            class_id=class_id,
-            created_by=current_user.id
+            created_by=getattr(current_user, 'id', None)
         )
         
-        db.session.add(new_quiz)
+        db.session.add(new_group)
+        db.session.flush()  # Get the ID without committing
+        
+        # Assign the new group to the class
+        cls.question_groups.append(new_group)
+        
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'Quiz "{new_quiz.name}" created successfully!',
-            'quiz': {
-                'id': new_quiz.id,
-                'title': new_quiz.name,
-                'description': new_quiz.description
+            'message': f'Question group "{new_group.name}" created and assigned to class successfully!',
+            'question_group': {
+                'id': new_group.id,
+                'name': new_group.name,
+                'description': new_group.description,
+                'question_count': 0
             }
         })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def unassign_question_group_from_class(class_id, group_id):
+    """Unassign a question group from a class"""
+    try:
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Remove the group from the class
+        if group in cls.question_groups:
+            cls.question_groups.remove(group)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Question group "{group.name}" unassigned from class successfully!'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/available', methods=['GET'])
+@login_required
+def get_available_question_groups(class_id):
+    """Get question groups available to assign to the class"""
+    try:
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        # Get all question groups
+        all_groups = QuestionGroup.query.filter_by(is_active=True).all()
+        
+        # Get groups already assigned to this class
+        assigned_group_ids = [group.id for group in cls.question_groups.all()]
+        
+        # Filter out already assigned groups
+        available_groups = [group for group in all_groups if group.id not in assigned_group_ids]
+        
+        available_groups_data = []
+        for group in available_groups:
+            available_groups_data.append({
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'question_count': len(group.questions),
+                'created_at': group.created_at.isoformat() if group.created_at else None
+            })
+        
+        return jsonify({'success': True, 'available_groups': available_groups_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>/assign', methods=['POST'])
+@login_required
+def assign_question_group_to_class(class_id, group_id):
+    """Assign an existing question group to a class"""
+    try:
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Check if already assigned
+        if group in cls.question_groups:
+            return jsonify({'error': 'Question group already assigned to this class'}), 400
+        
+        # Assign the group to the class
+        cls.question_groups.append(group)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Question group "{group.name}" assigned to class successfully!',
+            'question_group': {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'question_count': len(group.questions)
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['GET'])
+@login_required
+def get_question_group_details(class_id, group_id):
+    """Get detailed information about a question group"""
+    try:
+        cls = _require_class_owner(class_id)
+        if not cls:
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Check if group is assigned to this class
+        if group not in cls.question_groups:
+            return jsonify({'error': 'Question group not assigned to this class'}), 403
+        
+        # Get questions in the group
+        questions_data = []
+        for question in group.questions:
+            questions_data.append({
+                'id': question.id,
+                'numb': question.numb,
+                'question': question.question[:100] + ('...' if len(question.question) > 100 else ''),
+                'category': question.category,
+                'question_type': getattr(question, 'question_type', 'multiple_choice')
+            })
+        
+        return jsonify({
+            'success': True,
+            'question_group': {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'question_count': len(group.questions),
+                'is_active': group.is_active,
+                'created_at': group.created_at.isoformat() if group.created_at else None,
+                'questions': questions_data
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/question-groups/<int:group_id>', methods=['GET'])
+@login_required
+def get_question_group_info(group_id):
+    """Get detailed information about a question group (general endpoint)"""
+    try:
+        group = QuestionGroup.query.get_or_404(group_id)
+        
+        # Get questions in the group
+        questions_data = []
+        for question in group.questions:
+            questions_data.append({
+                'id': question.id,
+                'question_text': question.question[:100] + ('...' if len(question.question) > 100 else ''),
+                'question_type': getattr(question, 'question_type', 'multiple_choice')
+            })
+        
+        return jsonify({
+            'success': True,
+            'question_group': {
+                'id': group.id,
+                'title': group.name,
+                'description': group.description,
+                'question_count': len(group.questions),
+                'questions': questions_data
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ========================================
+# QUESTION MANAGEMENT ENDPOINTS
+# ========================================
+
+@class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['GET'])
+@login_required
+def get_questions_in_group(group_id):
+    """Get all questions in a specific question group"""
+    try:
+        group = QuestionGroup.query.get_or_404(group_id)
+        
+        questions_data = []
+        for question in group.questions:
+            questions_data.append({
+                'id': question.id,
+                'numb': question.numb,
+                'question_text': question.question,
+                'answer': question.answer,
+                'options': question.options,
+                'explanation': question.explanation,
+                'category': question.category,
+                'question_type': question.question_type
+            })
+        
+        return jsonify({
+            'success': True,
+            'questions': questions_data,
+            'group_name': group.name
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['POST'])
+@login_required
+def create_question_in_group(group_id):
+    """Create a new question in a question group"""
+    try:
+        group = QuestionGroup.query.get_or_404(group_id)
+        data = request.json
+        
+        # Validate required fields
+        if not data.get('question_text'):
+            return jsonify({'error': 'Question text is required'}), 400
+        
+        # Get the next question number
+        max_numb = db.session.query(db.func.max(Question.numb)).scalar() or 0
+        
+        # Create new question
+        new_question = Question(
+            numb=max_numb + 1,
+            question=data['question_text'],
+            answer=data.get('answer', ''),
+            explanation=data.get('explanation', ''),
+            category=data.get('category', 'general'),
+            question_type=data.get('question_type', 'multiple_choice'),
+            options=data.get('options', [])
+        )
+        
+        db.session.add(new_question)
+        db.session.flush()  # Get the ID
+        
+        # Add question to group
+        group.questions.append(new_question)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Question created successfully',
+            'question': new_question.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/questions/<int:question_id>', methods=['PUT'])
+@login_required
+def update_question(question_id):
+    """Update an existing question"""
+    try:
+        question = Question.query.get_or_404(question_id)
+        data = request.json
+        
+        # Update question fields
+        if 'question_text' in data:
+            question.question = data['question_text']
+        if 'answer' in data:
+            question.answer = data['answer']
+        if 'explanation' in data:
+            question.explanation = data['explanation']
+        if 'category' in data:
+            question.category = data['category']
+        if 'question_type' in data:
+            question.question_type = data['question_type']
+        if 'options' in data:
+            question.options = data['options']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Question updated successfully',
+            'question': question.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/questions/<int:question_id>', methods=['DELETE'])
+@login_required
+def delete_question(question_id):
+    """Delete a question"""
+    try:
+        question = Question.query.get_or_404(question_id)
+        
+        db.session.delete(question)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Question deleted successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@class_content_controller_old.route('/api/question-groups/<int:group_id>/questions/<int:question_id>/remove', methods=['DELETE'])
+@login_required
+def remove_question_from_group(group_id, question_id):
+    """Remove a question from a group (doesn't delete the question)"""
+    try:
+        group = QuestionGroup.query.get_or_404(group_id)
+        question = Question.query.get_or_404(question_id)
+        
+        if question in group.questions:
+            group.questions.remove(question)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Question removed from group successfully'
+            })
+        else:
+            return jsonify({'error': 'Question not in this group'}), 400
         
     except Exception as e:
         db.session.rollback()
