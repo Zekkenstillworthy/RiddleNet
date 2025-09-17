@@ -3,7 +3,6 @@
 {% block head %}
 <title>{{ simulation.title }} | RiddleNet</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user-device-configurator.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/network-device-configurator.css') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 
@@ -41,7 +40,6 @@
         --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
         --shadow-cyber: 0 0 30px rgba(0, 217, 255, 0.4);
-        --transition-speed: 0.3s;
 
         /* Missing device and spacing variables */
         --space-xs: 8px;
@@ -50,6 +48,14 @@
         --space-lg: 24px;
         --space-xl: 32px;
         --device-size-md: 60px;
+    }
+
+    /* DISABLE ALL ANIMATIONS AND TRANSITIONS */
+    *, *::before, *::after {
+        animation-duration: 0s !important;
+        animation-delay: 0s !important;
+        transition-duration: 0s !important;
+        transition-delay: 0s !important;
     }
 
     body {
@@ -107,7 +113,6 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        transition: all 0.3s ease;
     }
 
     .back-btn:hover {
@@ -373,7 +378,7 @@
         font-size: 3rem;
         color: var(--cyber-glow);
         margin-bottom: 1rem;
-        animation: pulse 2s ease-in-out infinite;
+        /* animation removed for performance */
     }
 
     .drop-zone-text {
@@ -390,11 +395,6 @@
         opacity: 0.7;
     }
 
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.8; }
-        50% { transform: scale(1.1); opacity: 1; }
-    }
-
     .tool-btn.active {
         background: rgba(0, 217, 255, 0.25);
         border-color: var(--cyber-glow);
@@ -406,7 +406,7 @@
     #device-palette {
         position: fixed;
         bottom: 0;
-        left: 0;
+        left: var(--current-sidebar-width);
         right: 0;
         background: var(--glass-bg);
         border-top: 2px solid var(--glass-border);
@@ -414,7 +414,7 @@
         z-index: 1000;
         display: flex;
         flex-direction: column;
-        transition: all 0.3s ease;
+        transition: all 0.3s ease, left var(--transition-speed) ease;
         box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
         overflow: hidden;
     }
@@ -849,17 +849,8 @@
     }
 
     .performance-sidebar.flash {
-        animation: flashSidebar 2s ease-in-out;
-    }
-    
-    @keyframes flashSidebar {
-        0%, 100% { 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
-        }
-        50% { 
-            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
-                       0 0 20px rgba(76, 175, 80, 0.3); 
-        }
+        box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
+                   0 0 20px rgba(76, 175, 80, 0.3);
     }
 
     .performance-toggle {
@@ -1596,20 +1587,9 @@
         border-color: var(--cyber-glow);
     }
 
-    /* Animation for step transitions */
+    /* Animation for step transitions disabled */
     .step-item {
-        animation: slideInRight 0.3s ease;
-    }
-
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        /* animation removed for performance */
     }
 
     /* Troubleshooting-specific styles */
@@ -2068,7 +2048,9 @@
     <!-- Header -->
     <div class="simulation-header">
         <div class="header-left">
-            
+            <button class="back-btn" onclick="window.location.href='/class/7/module/15'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
             <div>
                 <div class="simulation-type">{{ simulation.simulation_type }}</div>
                 <h1 class="simulation-title">{{ simulation.title }}</h1>
@@ -6306,11 +6288,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 display: block;
             }
             
-            @keyframes achievementUnlock {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-                100% { transform: scale(1); }
-            }
+            /* Achievement animation disabled for performance */
             
             .hint-container {
                 background: rgba(139, 92, 246, 0.1);
@@ -6360,10 +6338,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 background: rgba(0, 217, 255, 0.2);
             }
             
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.7; }
-            }
+            /* Pulse animation disabled for performance */
             
             /* Mobile responsiveness */
             @media (max-width: 1024px) {

@@ -434,7 +434,7 @@
     align-items: center;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .wire-slot::before {
@@ -528,6 +528,43 @@
   button:hover::before {
     left: 100%;
   }
+
+  /* Check Wiring Button - Crimping Challenge Color Palette */
+  .lowered-button button[onclick="checkWiring()"] {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 
+      0 4px 12px rgba(0, 212, 255, 0.2),
+      inset 0 1px 0 rgba(0, 212, 255, 0.1);
+    color: #00d4ff;
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  }
+
+  .lowered-button button[onclick="checkWiring()"]::before {
+    display: none; /* Remove animation */
+  }
+
+  .lowered-button button[onclick="checkWiring()"] i {
+    color: #00d4ff;
+    text-shadow: 0 0 6px rgba(0, 212, 255, 0.5);
+  }
+
+  .lowered-button button[onclick="checkWiring()"]:hover {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border-color: #00d4ff;
+    box-shadow: 
+      0 6px 16px rgba(0, 212, 255, 0.3),
+      inset 0 1px 0 rgba(0, 212, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .lowered-button button[onclick="checkWiring()"]:active {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 8px rgba(0, 212, 255, 0.2),
+      inset 0 1px 0 rgba(0, 212, 255, 0.1);
+  }
   button i {
     font-size: 23px;
     transition: transform 0.3s ease;
@@ -595,6 +632,20 @@
   }
 
   .lowered-button button:nth-child(3) {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 
+      0 4px 12px rgba(99, 102, 241, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .lowered-button button:nth-child(3):hover {
+    box-shadow: 
+      0 8px 20px rgba(99, 102, 241, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .lowered-button button:nth-child(4) {
     background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     box-shadow: 
       0 4px 12px rgba(139, 92, 246, 0.3),
@@ -602,7 +653,7 @@
     border: 1px solid rgba(139, 92, 246, 0.3);
   }
 
-  .lowered-button button:nth-child(3):hover {
+  .lowered-button button:nth-child(4):hover {
     box-shadow: 
       0 8px 20px rgba(139, 92, 246, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -803,7 +854,9 @@
     .wires, .wire-slots {
       gap: 1px;
     }
-  }/* Gamified UI Elements */
+  }
+
+  /* Gamified UI Elements */
   .game-header {
     display: flex;
     justify-content: space-between;
@@ -845,19 +898,6 @@
     color: #8892b0;
     text-transform: uppercase;
     letter-spacing: 1px;
-  }
-
-  .level-display {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    border-radius: 6px;
-    color: #000;
-    font-weight: 700;    font-size: 17px;
-  }  .level-icon {
-    font-size: 17px;
   }
 
   .progress-container {
@@ -918,42 +958,6 @@
   @keyframes progressShimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
-  }  .achievement-notification {
-    position: fixed;
-    top: 120px; /* Moved further down to not block timer */
-    right: 20px;
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    color: #000;
-    padding: 16px 20px;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
-    transform: translateX(350px);
-    transition: transform 0.5s ease;
-    z-index: 3000; /* Lower than timer to ensure timer stays on top */
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-    max-width: 350px;
-    min-width: 280px;
-    word-wrap: break-word;
-    pointer-events: none;
-    white-space: nowrap;
-    overflow: visible;
-  }
-
-  .achievement-notification.show {
-    transform: translateX(0);
-  }
-
-  .achievement-icon {
-    font-size: 24px;
-    animation: bounce 1s infinite;
-  }
-  @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-10px); }
-    60% { transform: translateY(-5px); }
   }
   /* Scoring Description Modal */
   .scoring-description-modal {
@@ -1381,6 +1385,51 @@
   .wiring-option:hover::before {
     left: 100%;
   }
+  .wiring-option.locked {
+    background: linear-gradient(135deg, #4a5568, #2d3748);
+    color: #a0aec0;
+    cursor: not-allowed;
+    opacity: 0.6;
+    border-color: rgba(160, 174, 192, 0.3);
+  }
+
+  .wiring-option.locked:hover {
+    transform: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #4a5568, #2d3748);
+    border-color: rgba(160, 174, 192, 0.3);
+  }
+
+  .wiring-option.locked::before {
+    display: none;
+  }
+
+  .difficulty-info {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+  }
+
+  .difficulty-info h3 {
+    color: #00d4ff;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .difficulty-info p {
+    color: #b8b8d1;
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
   .wiring-option:hover {
     transform: translateY(-8px) scale(1.05) perspective(1000px) rotateX(5deg);
     box-shadow: 
@@ -1515,24 +1564,14 @@
     
     .wiring-selection-content p {
       font-size: 14px;
-    }    .wiring-option .icon {
-      font-size: 20px;
-    }    .achievement-notification {
-      top: 90px; /* Adjusted for mobile to stay below timer */
-      right: 10px;
-      left: 10px;
-      max-width: none;
-      min-width: auto;
-      white-space: normal;
-      text-align: center;
-      transform: translateX(100vw);
-      z-index: 3000; /* Lower than timer on mobile too */
     }
     
-    .achievement-notification.show {
-      transform: translateX(0);
+    .wiring-option .icon {
+      font-size: 20px;
     }
-  }  .timer-display {
+  }
+  
+  .timer-display {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1563,6 +1602,8 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.5);
     transition: all 0.5s ease;
+    text-align: center;
+    border: 3px solid rgba(255, 255, 255, 0.3);
   }
 
   .combo-display.show {
@@ -1570,9 +1611,111 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
+  .combo-display.mega {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e53, #ff6b6b);
+    border: 3px solid #ffd93d;
+    animation: megaPulse 0.6s ease infinite alternate;
+    font-size: 32px;
+    padding: 20px 32px;
+  }
+
+  .combo-display.super {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    border: 3px solid #96e6a1;
+    animation: superGlow 0.8s ease infinite alternate;
+    font-size: 28px;
+    padding: 18px 28px;
+  }
+
+  .combo-display.normal {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: 3px solid #a8e6cf;
+    animation: normalBounce 0.5s ease;
+    font-size: 24px;
+  }
+
+  @keyframes megaPulse {
+    0% { 
+      transform: translate(-50%, -50%) scale(1);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6), 0 0 30px rgba(255, 107, 107, 0.4);
+    }
+    100% { 
+      transform: translate(-50%, -50%) scale(1.1);
+      box-shadow: 0 12px 35px rgba(255, 107, 107, 0.8), 0 0 50px rgba(255, 107, 107, 0.6);
+    }
+  }
+
+  @keyframes superGlow {
+    0% { 
+      box-shadow: 0 8px 25px rgba(78, 205, 196, 0.6);
+      filter: brightness(1);
+    }
+    100% { 
+      box-shadow: 0 12px 35px rgba(78, 205, 196, 0.8), 0 0 40px rgba(78, 205, 196, 0.5);
+      filter: brightness(1.2);
+    }
+  }
+
+  @keyframes normalBounce {
+    0% { transform: translate(-50%, -50%) scale(0.3); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+
+  @keyframes screenShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+  }
+
+  /* Combo multiplier text animation */
+  .combo-multiplier {
+    display: inline-block;
+    animation: comboMultiplier 0.3s ease;
+  }
+
+  @keyframes comboMultiplier {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); color: #ffd93d; }
+    100% { transform: scale(1); }
+  }
+
+  /* Combo particle effects */
+  .combo-particles {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    pointer-events: none;
+    z-index: 1999;
+  }
+
+  .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #ffd93d, #ff6b6b);
+    border-radius: 50%;
+    animation: particleFloat 2s ease-out forwards;
+  }
+
+  @keyframes particleFloat {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(0);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0) translateY(-100px);
+    }
+  }
+
   .wire-placement-feedback {
     position: absolute;
-    top: -40px;
+    top: -50px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, #10b981, #059669);
@@ -1585,6 +1728,8 @@
     transform: translateX(-50%) translateY(10px);
     transition: all 0.3s ease;
     z-index: 1500;
+    white-space: nowrap;
+    min-width: max-content;
   }
 
   .wire-placement-feedback.show {
@@ -1594,6 +1739,14 @@
 
   .wire-placement-feedback.error {
     background: linear-gradient(135deg, #ef4444, #dc2626);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 12px 20px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    border: 2px solid #fca5a5;
+    top: -60px;
+    min-width: 80px;
+    text-align: center;
   }
   /* Main Game Area Layout */  .game-content {
     flex: 1;
@@ -1644,6 +1797,549 @@
     gap: 6px;
     flex-wrap: wrap;
   }
+
+  /* Simulation Result Modal Styles */
+  .simulation-result-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(25px);
+    z-index: 30000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .simulation-result-content {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    border-radius: 24px;
+    padding: 0;
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    overflow: hidden;
+    position: relative;
+    animation: slideInUp 0.5s ease-out;
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.7),
+      0 0 0 1px rgba(0, 212, 255, 0.3),
+      0 0 100px rgba(0, 212, 255, 0.1);
+    border: 2px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .result-header {
+    background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+  }
+
+  .result-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .close-result-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-result-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg) scale(1.1);
+  }
+
+  .result-body {
+    padding: 30px;
+    max-height: calc(90vh - 200px);
+    overflow-y: auto;
+  }
+
+  .score-showcase {
+    text-align: center;
+    margin-bottom: 35px;
+    padding: 25px;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 20px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .main-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 15px;
+  }
+
+  .score-number {
+    font-size: 4rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  }
+
+  .score-suffix {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #00d4ff;
+  }
+
+  .score-grade {
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 10px;
+    padding: 10px 20px;
+    border-radius: 15px;
+    display: inline-block;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .score-grade.A {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .score-grade.B {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+
+  .score-grade.C {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+  }
+
+  .score-grade.D {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+  }
+
+  .score-grade.F {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+  }
+
+  .score-message {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-top: 10px;
+  }
+
+  .performance-breakdown {
+    display: grid;
+    gap: 25px;
+  }
+
+  .breakdown-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .breakdown-section h3 {
+    color: #00d4ff;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 15px;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .stat-label {
+    display: block;
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 800;
+    color: #00d4ff;
+  }
+
+  .achievements-list, .recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    color: #ffd700;
+  }
+
+  .achievement-icon {
+    font-size: 20px;
+  }
+
+  .recommendation-item {
+    padding: 12px 15px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 10px;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+
+  .result-actions {
+    padding: 25px 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  .retry-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+  }
+
+  .tutorial-btn {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+  }
+
+  .next-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .dashboard-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Tutorial Modal Styles */
+  .tutorial-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(20px);
+    z-index: 25000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .tutorial-content {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    border-radius: 20px;
+    max-width: 900px;
+    width: 95%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideInUp 0.5s ease-out;
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 212, 255, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+  }
+
+  .tutorial-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .tutorial-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tutorial-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .progress-text {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tutorial-progress-bar {
+    width: 200px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .tutorial-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4ff, #ffd700);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 16.67%; /* Default to step 1 of 6 */
+  }
+
+  .close-tutorial-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-tutorial-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+  }
+
+  .tutorial-body {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    color: #e2e8f0;
+  }
+
+  .tutorial-step-content {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .tutorial-step-content h3 {
+    color: #00d4ff;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tutorial-step-content p {
+    margin-bottom: 15px;
+  }
+
+  .tutorial-step-content ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+  }
+
+  .tutorial-step-content li {
+    margin-bottom: 8px;
+  }
+
+  .tutorial-highlight-box {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+
+  .tutorial-navigation {
+    padding: 20px 25px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .tutorial-nav-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+  }
+
+  .tutorial-nav-btn:disabled {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .tutorial-nav-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .tutorial-controls {
+    display: flex;
+    gap: 10px;
+  }
+
+  .tutorial-control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tutorial-control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  /* Responsive Design for New Modals */
+  @media (max-width: 768px) {
+    .simulation-result-content, .tutorial-content {
+      max-width: 98%;
+      margin: 10px;
+    }
+
+    .result-header, .tutorial-header {
+      padding: 20px;
+    }
+
+    .result-header h2, .tutorial-header h2 {
+      font-size: 22px;
+    }
+
+    .result-body, .tutorial-body {
+      padding: 20px;
+    }
+
+    .score-number {
+      font-size: 3rem;
+    }
+
+    .score-suffix {
+      font-size: 2rem;
+    }
+
+    .score-grade {
+      font-size: 2.5rem;
+    }
+
+    .stat-grid {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+
+    .result-actions, .tutorial-navigation {
+      padding: 15px 20px;
+      flex-direction: column;
+    }
+
+    .action-btn, .tutorial-nav-btn {
+      width: 100%;
+      max-width: 200px;
+    }
+
+    .tutorial-controls {
+      order: -1;
+      width: 100%;
+      justify-content: center;
+    }
+  }
 </style>
 {% endblock %} 
 
@@ -1664,10 +2360,10 @@
           <span class="score-value" id="wireCount">0/16</span>
           <span class="score-label">Wires</span>
         </div>
-      </div>
-      <div class="level-display">
-        <i class="level-icon">🏆</i>
-        <span>Level <span id="currentLevel">1</span></span>
+        <div class="score-item">
+          <span class="score-value" id="comboCount">0x</span>
+          <span class="score-label">Combo</span>
+        </div>
       </div>
       <div class="timer-display">
         <i class="fas fa-clock"></i>
@@ -1686,7 +2382,7 @@
       </div>
     </div>
 
-    <h1 id="mainTitle">UTP Cable Crimping Simulation</h1>
+    <h1 id="mainTitle">First Simulation - UTP Cable Crimping</h1>
 
     <div class="game-content">      <!-- Wiring Type Selection (Hidden - now handled by popup) -->
       <div class="wiring-type" style="display: none;">
@@ -1769,39 +2465,66 @@
         <div class="lowered-button">
           <button onclick="resetSimulation()"><i class="fa-solid fa-arrow-rotate-right"></i> Reset</button>
           <button onclick="checkWiring()"><i class="fa-solid fa-ethernet"></i> Check Wiring</button>
-          <button onclick="showTutorial()"><i class='bx bx-question-mark'></i> Tutorial</button>
+          <button onclick="openTutorial()"><i class="fas fa-graduation-cap"></i> Tutorial</button>
+          <button onclick="showDifficultySelector()"><i class="fa-solid fa-arrow-left"></i> Back to Selection</button>
         </div>
       </div>
     </div>
 
-    <!-- Achievement Notification -->
-    <div class="achievement-notification" id="achievementNotification">
-      <i class="achievement-icon">🎯</i>
-      <span id="achievementText">Achievement Unlocked!</span>
-    </div>    <!-- Combo Display -->
+    <!-- Combo Display -->
     <div class="combo-display" id="comboDisplay">
       <span id="comboText">Perfect Combo!</span>
+    </div>
+
+    <!-- Additional Combo Popups -->
+    <div class="combo-display mega" id="megaComboDisplay" style="display: none;">
+      <span id="megaComboText">🔥 MEGA COMBO! 🔥</span>
+    </div>
+
+    <div class="combo-display super" id="superComboDisplay" style="display: none;">
+      <span id="superComboText">⚡ SUPER COMBO! ⚡</span>
+    </div>
+
+    <div class="combo-display normal" id="normalComboDisplay" style="display: none;">
+      <span id="normalComboText">✨ Combo! ✨</span>
+    </div>
+
+    <!-- Perfect Sequence Combo Popup -->
+    <div class="combo-display mega" id="perfectComboDisplay" style="display: none;">
+      <span id="perfectComboText">💎 PERFECT SEQUENCE! 💎</span>
     </div><!-- Wiring Type Selection Modal -->
     <div class="wiring-selection-modal" id="wiringSelectionModal">      <div class="wiring-selection-content">
-        <h2>🔌 Welcome to UTP Cable Crimping Simulation</h2>
-        <p>Master the art of professional UTP cable crimping with our interactive simulation. Choose your wiring standard and begin your journey to becoming a networking expert!</p>
+        <h2>🔌 First Simulation - Choose Difficulty Level</h2>
+        <p>Master UTP cable crimping with our progressive difficulty system. Start with Easy and unlock higher levels!</p>
         
         <div class="wiring-options">
-          <button class="wiring-option" onclick="selectWiringType('straightthrough')">
+          <button class="wiring-option" onclick="selectWiringType('straightthrough')" id="easyOption">
             <span class="icon">🔗</span>
-            <span class="title">Straight-Through</span>
-            <span class="description">T568B Standard<br><small>Most common for patch cables & workstation connections</small></span>
+            <span class="title">Easy - Straight-Through</span>
+            <span class="description">T568B Standard<br><small>Perfect for beginners - most common cable type</small></span>
           </button>
-          <button class="wiring-option" onclick="selectWiringType('crossover')">
+          <button class="wiring-option locked" onclick="selectWiringType('crossover')" id="mediumOption">
             <span class="icon">🔄</span>
-            <span class="title">Crossover</span>
-            <span class="description">T568A to T568B<br><small>For direct device-to-device connections</small></span>
+            <span class="title">Medium - Crossover</span>
+            <span class="description">T568A to T568B<br><small>Unlocks after completing Easy level</small></span>
+          </button>
+          <button class="wiring-option locked" onclick="selectWiringType('rollover')" id="hardOption">
+            <span class="icon">🔁</span>
+            <span class="title">Hard - Rollover</span>
+            <span class="description">Advanced Pattern<br><small>Unlocks after completing Medium level</small></span>
           </button>
         </div>
         
+        <div class="difficulty-info">
+          <h3>🎯 Progression System</h3>
+          <p>• <strong>Easy (Straight-Through):</strong> Always available - learn the basics</p>
+          <p>• <strong>Medium (Crossover):</strong> Requires 75%+ score on Easy</p>
+          <p>• <strong>Hard (Rollover):</strong> Requires 75%+ score on Medium</p>
+        </div>
+        
         <p style="font-size: 14px; color: #888; margin-top: 20px; line-height: 1.6;">
-          💡 <strong>New to crimping?</strong> Start with Straight-Through - it's the industry standard! 
-          <br>You'll learn about our comprehensive scoring system in the next step.
+          💡 <strong>New to crimping?</strong> Start with Easy to learn the fundamentals! 
+          <br>Complete each level to unlock the next challenge.
         </p>
       </div></div>    <!-- Scoring Description Modal -->
     <div class="scoring-description-modal" id="scoringDescriptionModal">
@@ -1858,30 +2581,125 @@
       </div>
     </div>
 
-    <!-- Result Modal -->
-    <div id="resultModal" class="modal">
-      <div class="modal-content">
-        <h2>Simulation Result</h2>
-        <p id="modalMessage">Result message will appear here</p>
-        <div class="close-modal">
-          <button onclick="closeModal()">Continue</button>
+    <!-- Simulation Result Modal -->
+    <div class="simulation-result-modal" id="simulationResultModal" style="display: none;">
+      <div class="simulation-result-content">
+        <div class="result-header">
+          <h2><i class="fas fa-chart-line"></i> Simulation Complete!</h2>
+          <button class="close-result-btn" onclick="closeResultModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="result-body">
+          <div class="score-showcase">
+            <div class="main-score">
+              <span class="score-number" id="resultScore">0</span>
+              <span class="score-suffix">%</span>
+            </div>
+            <div class="score-grade" id="resultGrade">F</div>
+            <div class="score-message" id="resultMessage">Keep practicing!</div>
+          </div>
+          
+          <div class="performance-breakdown">
+            <div class="breakdown-section">
+              <h3><i class="fas fa-bullseye"></i> Performance Details</h3>
+              <div class="stat-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Correct Wires</span>
+                  <span class="stat-value" id="correctWires">0/16</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Accuracy</span>
+                  <span class="stat-value" id="finalAccuracy">0%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Time Taken</span>
+                  <span class="stat-value" id="timeTaken">00:00</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Best Combo</span>
+                  <span class="stat-value" id="bestCombo">0x</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="breakdown-section">
+              <h3><i class="fas fa-medal"></i> Achievements</h3>
+              <div class="achievements-list" id="achievementsList">
+                <!-- Dynamic achievements will be inserted here -->
+              </div>
+            </div>
+            
+            <div class="breakdown-section">
+              <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+              <div class="recommendations" id="recommendations">
+                <!-- Dynamic recommendations will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="result-actions">
+          <button class="action-btn retry-btn" onclick="retrySimulation()">
+            <i class="fas fa-redo"></i> Try Again
+          </button>
+          <button class="action-btn tutorial-btn" onclick="openTutorialFromResult()">
+            <i class="fas fa-graduation-cap"></i> Tutorial
+          </button>
+          <button class="action-btn next-btn" onclick="goToNextLevel()" id="nextLevelBtn" style="display: none;">
+            <i class="fas fa-arrow-right"></i> Next Level
+          </button>
+          <button class="action-btn dashboard-btn" onclick="goToDashboard()">
+            <i class="fas fa-home"></i> Dashboard
+          </button>
         </div>
       </div>
     </div>
-  <div id="tutorialModal" class="modal">
-    <div class="modal-content">
-      <i id="closeTutorial" onclick="closeTutorial()" class="bx bx-x profile-exit-btn"></i>
 
-      <h2>Tutorial</h2>
-      <div id="tutorialStep">
-        <p>Welcome to the UTP Cable Crimping Simulation! Follow these steps to learn how to play:</p>
-      </div>
-      <div class="tutorial-buttons">
-        <button id="prevStep" onclick="prevTutorialStep()" disabled><i class='bx bxs-left-arrow'></i></button>
-        <button id="nextStep" onclick="nextTutorialStep()"><i class='bx bxs-right-arrow'></i></button>
+    <!-- Tutorial Modal -->
+    <div class="tutorial-modal" id="tutorialModal" style="display: none;">
+      <div class="tutorial-content">
+        <div class="tutorial-header">
+          <h2><i class="fas fa-graduation-cap"></i> Crimping Tutorial</h2>
+          <div class="tutorial-progress">
+            <span class="progress-text">Step <span id="currentStepNumber">1</span> of <span id="totalSteps">6</span></span>
+            <div class="tutorial-progress-bar">
+              <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
+            </div>
+          </div>
+          <button class="close-tutorial-btn" onclick="closeTutorial()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="tutorial-body">
+          <div class="tutorial-step-content" id="tutorialStepContent">
+            <!-- Dynamic tutorial content will be inserted here -->
+          </div>
+        </div>
+        
+        <div class="tutorial-navigation">
+          <button class="tutorial-nav-btn" id="prevStepBtn" onclick="previousTutorialStep()" disabled>
+            <i class="fas fa-arrow-left"></i> Previous
+          </button>
+          
+          <div class="tutorial-controls">
+            <button class="tutorial-control-btn" onclick="skipTutorial()">
+              <i class="fas fa-forward"></i> Skip
+            </button>
+            <button class="tutorial-control-btn" onclick="restartTutorial()">
+              <i class="fas fa-refresh"></i> Restart
+            </button>
+          </div>
+          
+          <button class="tutorial-nav-btn" id="nextStepBtn" onclick="nextTutorialStep()">
+            Next <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+
   <script>
     // Correct wire patterns
     const wirePatterns = {
@@ -1892,18 +2710,90 @@
       crossover: {
         endA: ['white-green', 'green', 'white-orange', 'blue', 'white-blue', 'orange', 'white-brown', 'brown'],
         endB: ['white-orange', 'orange', 'white-green', 'blue', 'white-blue', 'green', 'white-brown', 'brown']
+      },
+      rollover: {
+        // End B uses T568B. Rollover means pins are reversed: 1↔8, 2↔7, 3↔6, 4↔5.
+        // Therefore End A must be the exact reverse of T568B to satisfy the rollover mapping.
+        endA: ['brown', 'white-brown', 'green', 'white-blue', 'blue', 'white-green', 'orange', 'white-orange'],
+        endB: ['white-orange', 'orange', 'white-green', 'blue', 'white-blue', 'green', 'white-brown', 'brown']
       }
-    };    window.onload = function () {
+    };    // Game progression tracking
+    let gameProgress = {
+      easyCompleted: false,
+      mediumCompleted: false,
+      hardCompleted: false,
+      easyScore: 0,
+      mediumScore: 0,
+      hardScore: 0
+    };
+
+    // Load progress from localStorage
+    function loadGameProgress() {
+      const savedProgress = localStorage.getItem('crimpingProgress');
+      if (savedProgress) {
+        gameProgress = {...gameProgress, ...JSON.parse(savedProgress)};
+      }
+      updateDifficultyLocks();
+    }
+
+    // Save progress to localStorage
+    function saveGameProgress() {
+      localStorage.setItem('crimpingProgress', JSON.stringify(gameProgress));
+    }
+
+    // Update which difficulties are unlocked
+    function updateDifficultyLocks() {
+      const easyOption = document.getElementById('easyOption');
+      const mediumOption = document.getElementById('mediumOption');
+      const hardOption = document.getElementById('hardOption');
+
+      // Easy is always available
+      if (easyOption) {
+        easyOption.classList.remove('locked');
+      }
+
+      // Medium unlocks after easy completion with 75%+
+      if (mediumOption) {
+        if (gameProgress.easyCompleted && gameProgress.easyScore >= 75) {
+          mediumOption.classList.remove('locked');
+          mediumOption.querySelector('.description').innerHTML = 'T568A to T568B<br><small>Unlocked! Ready for Medium challenge</small>';
+        } else {
+          mediumOption.classList.add('locked');
+        }
+      }
+
+      // Hard unlocks after medium completion with 75%+
+      if (hardOption) {
+        if (gameProgress.mediumCompleted && gameProgress.mediumScore >= 75) {
+          hardOption.classList.remove('locked');
+          hardOption.querySelector('.description').innerHTML = 'Advanced Pattern<br><small>Unlocked! Ready for Hard challenge</small>';
+        } else {
+          hardOption.classList.add('locked');
+        }
+      }
+    }
+
+    window.onload = function () {
+      // Load saved progress first
+      loadGameProgress();
+      
       // Show wiring type selection popup automatically after a short delay
       setTimeout(() => {
         document.getElementById("wiringSelectionModal").style.display = "flex";
       }, 100);
     };    // Handle wiring type selection from popup
     function selectWiringType(type) {
+      const selectedButton = event.target.closest('.wiring-option');
+      
+      // Check if the difficulty is locked
+      if (selectedButton.classList.contains('locked')) {
+        // // showAchievement('Complete the previous level first!', '🔒');
+        return;
+      }
+      
       const modal = document.getElementById("wiringSelectionModal");
       
       // Add a selection animation before closing
-      const selectedButton = event.target.closest('.wiring-option');
       selectedButton.style.transform = 'scale(1.1)';
       selectedButton.style.background = 'linear-gradient(135deg, #00ff88, #0066cc)';
       
@@ -1926,35 +2816,47 @@
           // Show success message
         let typeName;
         if (type === 'straightthrough') {
-          typeName = 'Straight-Through (T568B)';
+          typeName = 'Easy - Straight-Through (T568B)';
+        } else if (type === 'crossover') {
+          typeName = 'Medium - Crossover (T568A to T568B)';
         } else {
-          typeName = 'Crossover (T568A to T568B)';
+          typeName = 'Hard - Rollover (Advanced)';
         }
-        showAchievement(`Selected: ${typeName}`, '🎯');
+        // // showAchievement(`Selected: ${typeName}`, '🎯');
       }, 500);
     }
 
     // Update the main title with selected wiring type using if-else
     function updateMainTitle(type) {
       const mainTitle = document.getElementById('mainTitle');
-      let icon, typeName;
+      let icon, typeName, difficultyLabel, difficultyColor;
       
       // If-else logic to determine the display content
       if (type === 'straightthrough') {
         icon = '🔗';
         typeName = 'Straight-Through (T568B)';
-      } else {
+        difficultyLabel = 'Easy';
+        difficultyColor = '#10b981'; // Green
+      } else if (type === 'crossover') {
         icon = '🔄';
         typeName = 'Crossover (T568A→T568B)';
+        difficultyLabel = 'Medium';
+        difficultyColor = '#f59e0b'; // Yellow
+      } else {
+        icon = '🔁';
+        typeName = 'Rollover (Advanced)';
+        difficultyLabel = 'Hard';
+        difficultyColor = '#ef4444'; // Red
       }
       
       // Update the h1 content with the indicator
       mainTitle.innerHTML = `
-        UTP Cable Crimping Simulation
+        First Simulation - UTP Cable Crimping
         <div class="selected-type">
           <span class="type-icon">${icon}</span>
-          <span>Selected: </span>
-          <span class="type-name">${typeName}</span>
+          <span>Difficulty: </span>
+          <span class="type-name" style="color: ${difficultyColor}">${difficultyLabel}</span>
+          <span> - ${typeName}</span>
         </div>
       `;
     }
@@ -1976,24 +2878,18 @@
         
         // Initialize game timer and start the simulation
         initGameTimer();
-        showAchievement("Good luck! Start crimping!", '🚀');
+        // // showAchievement("Good luck! Start crimping!", '🚀');
       }, 300);
     }
 
 
-    function showModal(message) {
-      document.getElementById("modalMessage").innerText = message;
-      document.getElementById("resultModal").style.display = "flex";
-    }
-
-    function closeModal() {
-      document.getElementById("resultModal").style.display = "none";
-    }
-
     function disableInteractions() {
       // Disable all buttons by class instead of by ID to match button setup in HTML
-      document.querySelector(".action-buttons button").disabled = true;
-      document.querySelector(".lowered-button button").disabled = true;
+      const actionButton = document.querySelector(".action-buttons button");
+      const loweredButton = document.querySelector(".lowered-button button");
+      
+      if (actionButton) actionButton.disabled = true;
+      if (loweredButton) loweredButton.disabled = true;
 
       // Disable drag and drop functionality
       const wires = document.querySelectorAll(".wire");
@@ -2058,6 +2954,7 @@
       document.getElementById('currentScore').textContent = '0';
       document.getElementById('accuracy').textContent = '100%';
       document.getElementById('wireCount').textContent = '0/16';
+      document.getElementById('comboCount').textContent = '0x';
       document.getElementById('progressFill').style.width = '0%';
       document.getElementById('progressPercentage').textContent = '0%';
 
@@ -2066,6 +2963,12 @@
       if (resultElement) {
         resultElement.innerText = "";
       }
+
+      // Clear visual feedback from wire slots
+      document.querySelectorAll('.wire-slot').forEach(slot => {
+        slot.style.border = '';
+        slot.style.boxShadow = '';
+      });
 
       // Restart timer
       if (gameStats.timerInterval) {
@@ -2077,7 +2980,7 @@
       enableInteractions();
       
       // Show reset notification
-      showAchievement('Simulation Reset!', '🔄');
+      // // showAchievement('Simulation Reset!', '🔄');
     }    function goToHome() {
       window.location.href = "{{ url_for('user.dashboard') }}";
     }
@@ -2088,7 +2991,7 @@
       const pattern = wirePatterns[wiringType];
       
       if (!pattern) {
-        showModal("Please select a valid wiring type.");
+        // showAchievement("Please select a valid wiring type.", "⚠️");
         return;
       }
 
@@ -2143,16 +3046,40 @@
       gameStats.score = scorePercentage;
       document.getElementById('currentScore').textContent = scorePercentage;
       
+      // Update progression based on completion
+      if (scorePercentage >= 75) {
+        if (wiringType === 'straightthrough') {
+          gameProgress.easyCompleted = true;
+          gameProgress.easyScore = Math.max(gameProgress.easyScore, scorePercentage);
+        } else if (wiringType === 'crossover') {
+          gameProgress.mediumCompleted = true;
+          gameProgress.mediumScore = Math.max(gameProgress.mediumScore, scorePercentage);
+        } else if (wiringType === 'rollover') {
+          gameProgress.hardCompleted = true;
+          gameProgress.hardScore = Math.max(gameProgress.hardScore, scorePercentage);
+        }
+        saveGameProgress();
+        updateDifficultyLocks();
+      }
+      
       // Show result
       if (scorePercentage === 100) {
-        showModal(`Perfect! You correctly crimped the ${wiringType} cable with 100% accuracy!`);
+        let nextLevel = '';
+        if (wiringType === 'straightthrough') nextLevel = ' Try Medium next!';
+        else if (wiringType === 'crossover') nextLevel = ' Try Hard next!';
+        else nextLevel = ' You\'ve mastered all levels!';
+        
+        // showAchievement(`Perfect! You correctly crimped the ${getDifficultyName(wiringType)} cable with 100% accuracy!${nextLevel}`, '🏆');
         saveCrimpingScore(scorePercentage, wiringType);
-        showAchievement('Perfect Crimping!', '🏆');
       } else if (scorePercentage >= 75) {
-        showModal(`Good job! You scored ${scorePercentage}% on the ${wiringType} cable. A few wires need adjustment.`);
+        let nextLevel = '';
+        if (wiringType === 'straightthrough') nextLevel = ' Medium difficulty unlocked!';
+        else if (wiringType === 'crossover') nextLevel = ' Hard difficulty unlocked!';
+        
+        // showAchievement(`Good job! You scored ${scorePercentage}% on the ${getDifficultyName(wiringType)} cable.${nextLevel}`, '🎯');
         saveCrimpingScore(scorePercentage, wiringType);
       } else {
-        showModal(`Score: ${scorePercentage}%. Please review the ${wiringType} wiring standard and try again.`);
+        // showAchievement(`Score: ${scorePercentage}%. Please review the ${getDifficultyName(wiringType)} wiring standard and try again.`, '📝');
       }
       
       // Reset border colors after 3 seconds
@@ -2161,6 +3088,40 @@
           slot.style.border = '';
         });
       }, 3000);
+      
+      // Show simulation result popup if at least some wires are placed
+      const wiresPlaced = document.querySelectorAll('.wire-slot:not(:empty)').length;
+      console.log('Wires placed:', wiresPlaced);
+      console.log('Score percentage:', scorePercentage);
+      console.log('Total correct:', totalCorrect);
+      
+      if (wiresPlaced > 0) {
+        const timeTaken = document.getElementById('timer').textContent;
+        const bestCombo = gameStats.combo;
+        
+        console.log('Calling showSimulationResult in 3.5 seconds...');
+        setTimeout(() => {
+          console.log('About to show simulation result popup');
+          showSimulationResult(scorePercentage, wiringType, timeTaken, totalCorrect, bestCombo);
+        }, 3500); // Show after border colors reset
+      } else {
+        console.log('No wires placed, popup will not show');
+      }
+    }
+
+    // Helper function to get difficulty name
+    function getDifficultyName(type) {
+      if (type === 'straightthrough') return 'Easy (Straight-Through)';
+      if (type === 'crossover') return 'Medium (Crossover)';
+      if (type === 'rollover') return 'Hard (Rollover)';
+      return type;
+    }
+
+    // Show difficulty selection modal
+    function showDifficultySelector() {
+      // Update difficulty locks before showing
+      updateDifficultyLocks();
+      document.getElementById("wiringSelectionModal").style.display = "flex";
     }
 
     // Save crimping score to backend
@@ -2192,7 +3153,34 @@
     function drag(ev) {
       ev.dataTransfer.setData("text", ev.target.id);
       ev.target.classList.add("dragging");
-    }    // Handle drop
+      
+      // If wire is being moved from a slot, clear the slot's visual feedback
+      const currentSlot = ev.target.parentElement;
+      if (currentSlot.classList.contains("wire-slot")) {
+        currentSlot.style.border = '';
+        currentSlot.style.boxShadow = '';
+        // Decrease wire count since we're removing a placed wire
+        gameStats.wiresPlaced = Math.max(0, gameStats.wiresPlaced - 1);
+        updateWireProgressDisplay();
+      }
+    }    // Validate wire placement in real-time
+    function validateWirePlacement(wireId, slotIndex, endType) {
+      const wiringType = document.getElementById('wiring-select').value;
+      const pattern = wirePatterns[wiringType];
+      
+      if (!pattern) return false;
+      
+      // Remove -A or -B suffix to get the wire color
+      const wireColor = wireId.replace('-A', '').replace('-B', '');
+      
+      // Get the expected pattern for this end
+      const expectedPattern = endType === 'A' ? pattern.endA : pattern.endB;
+      
+      // Check if this wire belongs in this slot position
+      return expectedPattern[slotIndex] === wireColor;
+    }
+
+    // Handle drop
     function drop(ev) {
       ev.preventDefault();
       const data = ev.dataTransfer.getData("text");
@@ -2203,17 +3191,39 @@
         targetSlot.classList.contains("wire-slot") &&
         targetSlot.children.length === 0
       ) {
-        targetSlot.appendChild(document.getElementById(data));
+        const wire = document.getElementById(data);
+        targetSlot.appendChild(wire);
         
-        // Gamification: Update progress and show feedback
+        // Determine which end this slot belongs to and get slot index
+        const endType = targetSlot.closest('#endA') ? 'A' : 'B';
+        const slotIndex = parseInt(targetSlot.getAttribute('data-slot'));
+        
+        // Validate if the wire is in the correct position
+        const isCorrect = validateWirePlacement(data, slotIndex, endType);
+        
+        // Update gamification based on correctness
         updateWireProgress();
-        showWireFeedback(targetSlot, true);
-        updateAccuracy(true);
+        updateAccuracy(isCorrect);
+        
+        // Visual feedback for correct/incorrect placement
+        if (isCorrect) {
+          targetSlot.style.border = '2px solid #4ade80'; // Green for correct
+          targetSlot.style.boxShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
+          showWireFeedback(targetSlot, true, '✓ Correct!');
+        } else {
+          targetSlot.style.border = '2px solid #ef4444'; // Red for incorrect
+          targetSlot.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
+          showWireFeedback(targetSlot, false, 'ERROR');
+        }
         
         // Add placement effect
         targetSlot.style.animation = 'wireSlotPulse 0.5s ease';
         setTimeout(() => {
           targetSlot.style.animation = '';
+          // Keep the border color but remove the glow after animation
+          setTimeout(() => {
+            targetSlot.style.boxShadow = '';
+          }, 2000);
         }, 500);
         
       } else {
@@ -2224,7 +3234,7 @@
         
         // Show error feedback
         if (targetSlot.classList.contains("wire-slot")) {
-          showWireFeedback(targetSlot, false);
+          showWireFeedback(targetSlot, false, 'Slot occupied');
           updateAccuracy(false);
         }
       }
@@ -2410,42 +3420,52 @@
     }
     
     // Override existing functions to emit WebSocket events
-    const originalCheckWiring = window.checkWiring;
-    if (originalCheckWiring) {
-        window.checkWiring = function() {
-            const result = originalCheckWiring();
-            
-            // Emit wiring check event
-            if (window.socketClient) {
-                window.socketClient.emit('crimping_wiring_checked', {
-                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-                    wiring_type: document.getElementById('wiring-select').value,
-                    success: result,
-                    timestamp: new Date().toISOString()
-                });
-            }
-            
-            return result;
-        };
+    if (window.socketClient) {
+        // Emit wiring check event
+        window.socketClient.emit('crimping_wiring_checked', {
+            user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+            wiring_type: document.getElementById('wiring-select').value,
+            success: true,
+            timestamp: new Date().toISOString()
+        });
     }
     
-    const originalSaveCrimpingScore = window.saveCrimpingScore;
-    if (originalSaveCrimpingScore) {
-        window.saveCrimpingScore = function(score, category) {
-            const result = originalSaveCrimpingScore(score, category);
+    // Save crimping score function with WebSocket integration
+    function saveCrimpingScore(score, category) {
+      const scoreData = {
+        score: score,
+        wiring_type: category,
+        completion_time: Math.round((Date.now() - gameStats.startTime) / 1000) // in seconds
+      };      
+
+      fetch('{{ url_for("user.save_crimping_score") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scoreData)
+      })      
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          showCrimpingNotification('Score Saved!', `Your crimping score of ${score}% has been recorded.`, 'success');
+        } else {
+          showCrimpingNotification('Score Save Failed', data.message || 'Failed to save score', 'error');
+        }
+      })
+      .catch(error => {
+        showCrimpingNotification('Network Error', 'Failed to save score due to network error', 'error');
+      });
             
-            // Emit score save event
-            if (window.socketClient) {
-                window.socketClient.emit('crimping_score_saved', {
-                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-                    score: score,
-                    category: category,
-                    timestamp: new Date().toISOString()
-                });
-            }
-            
-            return result;
-        };
+      // Emit score save event
+      if (window.socketClient) {
+        window.socketClient.emit('crimping_score_saved', {
+          user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+          score: score,
+          category: category,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
     
     // Add real-time wire placement tracking
@@ -2510,78 +3530,186 @@
       const newLevel = Math.floor(gameStats.score / 1000) + 1;
       if (newLevel > gameStats.level) {
         gameStats.level = newLevel;
-        document.getElementById('currentLevel').textContent = gameStats.level;
-        showAchievement(`Level Up! Reached Level ${gameStats.level}`, '⭐');
+        // showAchievement(`Level Up! Reached Level ${gameStats.level}`, '⭐');
       }
     }
 
-    // Update accuracy
+    // Update accuracy with enhanced combo system
     function updateAccuracy(correct) {
       if (correct) {
         gameStats.combo++;
         updateScore(100 + (gameStats.combo * 10)); // Bonus for combo
-        if (gameStats.combo >= 3) {
-          showCombo(`${gameStats.combo}x Combo!`);
+        
+        // Update combo display with animation
+        const comboElement = document.getElementById('comboCount');
+        comboElement.textContent = `${gameStats.combo}x`;
+        comboElement.classList.add('combo-multiplier');
+        setTimeout(() => {
+          comboElement.classList.remove('combo-multiplier');
+        }, 300);
+        
+        // Enhanced combo messaging with different popup levels
+        if (gameStats.combo >= 8) {
+          showCombo(`🔥 ${gameStats.combo}x MEGA COMBO! 🔥`, 'mega');
+          // showAchievement('Mega Combo Master!', '🏆');
+          createComboParticles(15); // Add particle effects
+          // Add screen shake effect for mega combo
+          document.body.style.animation = 'screenShake 0.5s ease';
+          setTimeout(() => {
+            document.body.style.animation = '';
+          }, 500);
+        } else if (gameStats.combo >= 5) {
+          showCombo(`⚡ ${gameStats.combo}x SUPER COMBO! ⚡`, 'super');
+          // showAchievement('Super Combo!', '🌟');
+          createComboParticles(8); // Smaller particle effect
+        } else if (gameStats.combo >= 3) {
+          showCombo(`✨ ${gameStats.combo}x Combo! ✨`, 'normal');
+        } else if (gameStats.combo === 2) {
+          showCombo(`🎯 ${gameStats.combo}x Combo Started!`, 'normal');
+        }
+        
+        // Special milestone combos
+        if (gameStats.combo === 10) {
+          showCombo(`💎 PERFECT SEQUENCE! 💎`, 'perfect');
+          // showAchievement('Perfect Sequence Master!', '💎');
+          createComboParticles(20); // Maximum particles for perfect sequence
+        } else if (gameStats.combo === 15) {
+          showCombo(`🌟 LEGENDARY COMBO! 🌟`, 'perfect');
+          // showAchievement('Legendary Crimper!', '🌟');
+          createComboParticles(25); // Epic particle explosion
         }
       } else {
+        // Reset combo on incorrect placement
+        if (gameStats.combo > 0) {
+          // showAchievement('Combo broken! Keep trying!', '💔');
+          // Show combo break popup
+          showCombo('💔 Combo Broken!', 'normal');
+        }
         gameStats.combo = 0;
+        document.getElementById('comboCount').textContent = '0x';
         updateScore(-50);
       }
       
-      // Recalculate accuracy
-      const totalAttempts = gameStats.wiresPlaced;
-      gameStats.accuracy = totalAttempts > 0 ? Math.round((gameStats.score / (totalAttempts * 100)) * 100) : 100;
+      // Recalculate accuracy based on correct placements vs total attempts
+      const totalAttempts = Math.max(1, gameStats.wiresPlaced); // Avoid division by zero
+      const correctPlacements = Math.max(0, gameStats.score / 100); // Assuming 100 points per correct
+      gameStats.accuracy = Math.round((correctPlacements / totalAttempts) * 100);
       gameStats.accuracy = Math.max(0, Math.min(100, gameStats.accuracy));
       document.getElementById('accuracy').textContent = `${gameStats.accuracy}%`;
     }
 
-    // Update wire count and progress
+    // Update wire count and progress (for new placements)
     function updateWireProgress() {
       gameStats.wiresPlaced++;
+      updateWireProgressDisplay();
+      
+      // Check for completion
+      if (gameStats.wiresPlaced === gameStats.totalWires) {
+        // showAchievement('All Wires Placed!', '🎯');
+      }
+    }
+
+    // Update wire progress display only
+    function updateWireProgressDisplay() {
       document.getElementById('wireCount').textContent = `${gameStats.wiresPlaced}/${gameStats.totalWires}`;
       
       const progress = (gameStats.wiresPlaced / gameStats.totalWires) * 100;
       document.getElementById('progressFill').style.width = `${progress}%`;
       document.getElementById('progressPercentage').textContent = `${Math.round(progress)}%`;
-      
-      // Check for completion
-      if (gameStats.wiresPlaced === gameStats.totalWires) {
-        showAchievement('All Wires Placed!', '🎯');
-      }
     }    // Show achievement notification
-    function showAchievement(text, icon = '🎯') {
-      const notification = document.getElementById('achievementNotification');
-      const textElement = document.getElementById('achievementText');
-      const iconElement = notification.querySelector('.achievement-icon');
-      
-      textElement.textContent = text;
-      iconElement.textContent = icon;
-      notification.classList.add('show');
-      
-      // Auto-hide after 4 seconds (increased from 3 for better visibility)
-      setTimeout(() => {
-        notification.classList.remove('show');
-      }, 4000);
-    }
-
     // Show combo display
-    function showCombo(text) {
-      const comboDisplay = document.getElementById('comboDisplay');
-      const textElement = document.getElementById('comboText');
+    // Enhanced combo display function
+    function showCombo(text, level = 'normal') {
+      let comboDisplay, textElement, duration;
       
+      // Choose the appropriate combo display based on level
+      switch(level) {
+        case 'perfect':
+          comboDisplay = document.getElementById('perfectComboDisplay');
+          textElement = document.getElementById('perfectComboText');
+          duration = 4000; // Longest display for perfect sequence
+          break;
+        case 'mega':
+          comboDisplay = document.getElementById('megaComboDisplay');
+          textElement = document.getElementById('megaComboText');
+          duration = 3000; // Longer display for mega combo
+          break;
+        case 'super':
+          comboDisplay = document.getElementById('superComboDisplay');
+          textElement = document.getElementById('superComboText');
+          duration = 2500;
+          break;
+        case 'normal':
+          comboDisplay = document.getElementById('normalComboDisplay');
+          textElement = document.getElementById('normalComboText');
+          duration = 2000;
+          break;
+        default:
+          comboDisplay = document.getElementById('comboDisplay');
+          textElement = document.getElementById('comboText');
+          duration = 2000;
+      }
+      
+      // Update text and show
       textElement.textContent = text;
-      comboDisplay.classList.add('show');
+      comboDisplay.style.display = 'block';
       
+      // Add show class with slight delay for smooth animation
+      setTimeout(() => {
+        comboDisplay.classList.add('show');
+      }, 50);
+      
+      // Hide after duration
       setTimeout(() => {
         comboDisplay.classList.remove('show');
-      }, 2000);
+        setTimeout(() => {
+          comboDisplay.style.display = 'none';
+        }, 500); // Wait for fade out animation
+      }, duration);
+    }
+
+    // Create particle effects for special combos
+    function createComboParticles(count = 12) {
+      const container = document.createElement('div');
+      container.className = 'combo-particles';
+      document.body.appendChild(container);
+
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random position around the center
+        const angle = (i / count) * 360;
+        const distance = 50 + Math.random() * 100;
+        const x = Math.cos(angle * Math.PI / 180) * distance;
+        const y = Math.sin(angle * Math.PI / 180) * distance;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.animationDelay = `${i * 0.1}s`;
+        
+        container.appendChild(particle);
+      }
+
+      // Remove particles after animation
+      setTimeout(() => {
+        if (container.parentNode) {
+          container.parentNode.removeChild(container);
+        }
+      }, 2500);
     }
 
     // Show wire placement feedback
-    function showWireFeedback(element, correct) {
+    function showWireFeedback(element, correct, customMessage = null) {
       const feedback = document.createElement('div');
       feedback.className = `wire-placement-feedback ${correct ? '' : 'error'}`;
-      feedback.textContent = correct ? 'Perfect!' : 'Try Again!';
+      
+      // Use custom message if provided, otherwise use default
+      if (customMessage) {
+        feedback.textContent = customMessage;
+      } else {
+        feedback.textContent = correct ? 'Perfect!' : 'Try Again!';
+      }
       
       element.style.position = 'relative';
       element.appendChild(feedback);
@@ -2599,7 +3727,7 @@
 
     // End game
     function endGame() {
-      showAchievement(`Game Complete! Final Score: ${gameStats.score}`, '🏆');
+      // showAchievement(`Game Complete! Final Score: ${gameStats.score}`, '🏆');
       disableInteractions();
     }
 
@@ -2607,6 +3735,524 @@
     window.addEventListener('load', function() {
       initGameTimer();
     });
+
+    // Simulation Result Modal Functions
+    function showSimulationResult(score, wiringType, timeTaken, correctWires, bestCombo) {
+      console.log('showSimulationResult called with:', { score, wiringType, timeTaken, correctWires, bestCombo });
+      
+      const modal = document.getElementById('simulationResultModal');
+      console.log('Modal element found:', modal);
+      
+      const scoreElement = document.getElementById('resultScore');
+      const gradeElement = document.getElementById('resultGrade');
+      const messageElement = document.getElementById('resultMessage');
+      const correctWiresElement = document.getElementById('correctWires');
+      const finalAccuracyElement = document.getElementById('finalAccuracy');
+      const timeTakenElement = document.getElementById('timeTaken');
+      const bestComboElement = document.getElementById('bestCombo');
+      const achievementsElement = document.getElementById('achievementsList');
+      const recommendationsElement = document.getElementById('recommendations');
+      const nextLevelBtn = document.getElementById('nextLevelBtn');
+
+      // Update score and grade
+      scoreElement.textContent = score;
+      
+      // Determine grade and message
+      let grade, message, gradeClass;
+      if (score >= 95) {
+        grade = 'A+';
+        message = 'Outstanding! Perfect crimping skills!';
+        gradeClass = 'A';
+      } else if (score >= 90) {
+        grade = 'A';
+        message = 'Excellent work! Nearly perfect!';
+        gradeClass = 'A';
+      } else if (score >= 80) {
+        grade = 'B';
+        message = 'Good job! Strong understanding!';
+        gradeClass = 'B';
+      } else if (score >= 70) {
+        grade = 'C';
+        message = 'Fair work. Keep practicing!';
+        gradeClass = 'C';
+      } else if (score >= 60) {
+        grade = 'D';
+        message = 'Needs improvement. Review the standards!';
+        gradeClass = 'D';
+      } else {
+        grade = 'F';
+        message = 'Keep practicing! You\'ll get it!';
+        gradeClass = 'F';
+      }
+      
+      gradeElement.textContent = grade;
+      gradeElement.className = `score-grade ${gradeClass}`;
+      messageElement.textContent = message;
+
+      // Update performance stats
+      correctWiresElement.textContent = `${correctWires}/16`;
+      finalAccuracyElement.textContent = `${gameStats.accuracy}%`;
+      timeTakenElement.textContent = timeTaken;
+      bestComboElement.textContent = `${bestCombo}x`;
+
+      // Generate achievements
+      const achievements = generateAchievements(score, wiringType, bestCombo, timeTaken);
+      achievementsElement.innerHTML = achievements.map(achievement => 
+        `<div class="achievement-item">
+          <span class="achievement-icon">${achievement.icon}</span>
+          <span>${achievement.text}</span>
+        </div>`
+      ).join('');
+
+      // Generate recommendations
+      const recommendations = generateRecommendations(score, wiringType);
+      recommendationsElement.innerHTML = recommendations.map(rec => 
+        `<div class="recommendation-item">${rec}</div>`
+      ).join('');
+
+      // Show/hide next level button
+      if (score >= 75) {
+        nextLevelBtn.style.display = 'block';
+        if (wiringType === 'straightthrough') {
+          nextLevelBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Try Medium Level';
+        } else if (wiringType === 'crossover') {
+          nextLevelBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Try Hard Level';
+        } else {
+          nextLevelBtn.style.display = 'none'; // No next level after hard
+        }
+      } else {
+        nextLevelBtn.style.display = 'none';
+      }
+
+      // Show modal
+      console.log('About to show modal, modal element:', modal);
+      modal.style.display = 'flex';
+      console.log('Modal display set to flex');
+    }
+
+    function generateAchievements(score, wiringType, bestCombo, timeTaken) {
+      const achievements = [];
+      
+      if (score === 100) {
+        achievements.push({ icon: '🏆', text: 'Perfect Score!' });
+      }
+      if (score >= 90) {
+        achievements.push({ icon: '⭐', text: 'Excellence in Crimping' });
+      }
+      if (bestCombo >= 8) {
+        achievements.push({ icon: '🔥', text: 'Combo Master' });
+      }
+      if (bestCombo >= 5) {
+        achievements.push({ icon: '⚡', text: 'Speed Demon' });
+      }
+      if (score >= 75 && wiringType === 'straightthrough') {
+        achievements.push({ icon: '🎯', text: 'Easy Mode Conquered' });
+      }
+      if (score >= 75 && wiringType === 'crossover') {
+        achievements.push({ icon: '🥉', text: 'Medium Mode Mastered' });
+      }
+      if (score >= 75 && wiringType === 'rollover') {
+        achievements.push({ icon: '🥇', text: 'Hard Mode Hero' });
+      }
+      
+      // Time-based achievements
+      const timeInSeconds = parseTimeToSeconds(timeTaken);
+      if (timeInSeconds <= 120) { // 2 minutes
+        achievements.push({ icon: '⏱️', text: 'Speed Runner' });
+      }
+      
+      if (achievements.length === 0) {
+        achievements.push({ icon: '💪', text: 'Keep Trying!' });
+      }
+      
+      return achievements;
+    }
+
+    function generateRecommendations(score, wiringType) {
+      const recommendations = [];
+      
+      if (score < 75) {
+        recommendations.push('Review the T568B wiring standard diagram');
+        recommendations.push('Practice placing wires systematically from position 1 to 8');
+        recommendations.push('Take your time - accuracy is more important than speed');
+      } else if (score < 90) {
+        recommendations.push('Great progress! Focus on building longer combos');
+        recommendations.push('Try to complete the task in under 3 minutes');
+      } else {
+        if (wiringType === 'straightthrough') {
+          recommendations.push('Ready for the Medium level - try Crossover wiring!');
+        } else if (wiringType === 'crossover') {
+          recommendations.push('Excellent! Challenge yourself with Hard level Rollover wiring');
+        } else {
+          recommendations.push('Perfect! You\'ve mastered all crimping levels!');
+        }
+      }
+      
+      return recommendations;
+    }
+
+    function parseTimeToSeconds(timeString) {
+      const parts = timeString.split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function closeResultModal() {
+      document.getElementById('simulationResultModal').style.display = 'none';
+    }
+
+    function retrySimulation() {
+      closeResultModal();
+      resetSimulation();
+    }
+
+    function openTutorialFromResult() {
+      closeResultModal();
+      openTutorial();
+    }
+
+    function goToNextLevel() {
+      closeResultModal();
+      const currentWiring = document.getElementById('wiring-select').value;
+      if (currentWiring === 'straightthrough') {
+        selectWiringType('crossover');
+      } else if (currentWiring === 'crossover') {
+        selectWiringType('rollover');
+      }
+    }
+
+    function goToDashboard() {
+      window.location.href = "{{ url_for('user.dashboard') }}";
+    }
+
+    // Tutorial Modal Functions
+    let currentTutorialStep = 1;
+    const totalTutorialSteps = 6;
+
+    const tutorialSteps = [
+      {
+        title: "Welcome to UTP Cable Crimping",
+        content: `
+          <h3><i class="fas fa-play-circle"></i> Welcome to UTP Cable Crimping</h3>
+          <p>Learn how to properly crimp Unshielded Twisted Pair (UTP) cables! This tutorial will guide you through the essential concepts and techniques.</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>What you'll learn:</strong>
+            <ul>
+              <li>T568B wiring standard</li>
+              <li>Proper wire arrangement</li>
+              <li>Color coding patterns</li>
+              <li>Best practices for crimping</li>
+            </ul>
+          </div>
+          
+          <p>UTP cables are essential for network connectivity. Proper crimping ensures reliable data transmission and prevents connection issues.</p>
+        `
+      },
+      {
+        title: "Understanding Wire Colors",
+        content: `
+          <h3><i class="fas fa-palette"></i> Understanding Wire Colors</h3>
+          <p>UTP cables contain 8 colored wires arranged in 4 twisted pairs. Each wire has a specific purpose:</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>Wire Colors:</strong>
+            <ul>
+              <li><strong style="color: #fb923c;">Orange</strong> - Data transmission</li>
+              <li><strong style="color: #fb923c;">White-Orange</strong> - Data transmission pair</li>
+              <li><strong style="color: #22c55e;">Green</strong> - Data transmission</li>
+              <li><strong style="color: #22c55e;">White-Green</strong> - Data transmission pair</li>
+              <li><strong style="color: #3b82f6;">Blue</strong> - Data transmission</li>
+              <li><strong style="color: #3b82f6;">White-Blue</strong> - Data transmission pair</li>
+              <li><strong style="color: #a16207;">Brown</strong> - Power over Ethernet (PoE)</li>
+              <li><strong style="color: #a16207;">White-Brown</strong> - Power over Ethernet pair</li>
+            </ul>
+          </div>
+          
+          <p>The twisted pair design reduces electromagnetic interference and crosstalk.</p>
+        `
+      },
+      {
+        title: "T568B Wiring Standard",
+        content: `
+          <h3><i class="fas fa-list-ol"></i> T568B Wiring Standard</h3>
+          <p>The T568B standard defines the order of wires in an RJ45 connector. This is the most common standard used in North America.</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>T568B Pin Layout (Left to Right):</strong>
+            <ol>
+              <li><strong style="color: #fb923c;">White-Orange</strong></li>
+              <li><strong style="color: #fb923c;">Orange</strong></li>
+              <li><strong style="color: #22c55e;">White-Green</strong></li>
+              <li><strong style="color: #3b82f6;">Blue</strong></li>
+              <li><strong style="color: #3b82f6;">White-Blue</strong></li>
+              <li><strong style="color: #22c55e;">Green</strong></li>
+              <li><strong style="color: #a16207;">White-Brown</strong></li>
+              <li><strong style="color: #a16207;">Brown</strong></li>
+            </ol>
+          </div>
+          
+          <p>Remember: Both ends of a straight-through cable use the same T568B pattern!</p>
+        `
+      },
+      {
+        title: "Drag and Drop Interface",
+        content: `
+          <h3><i class="fas fa-mouse-pointer"></i> How to Use the Interface</h3>
+          <p>The crimping simulator uses an intuitive drag and drop interface:</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>Interface Elements:</strong>
+            <ul>
+              <li><strong>Wire Pool:</strong> Colored wires available for placement</li>
+              <li><strong>RJ45 Slots:</strong> 8 numbered positions (1-8 from left to right)</li>
+              <li><strong>End A & End B:</strong> Both ends of your cable</li>
+              <li><strong>Progress Tracker:</strong> Shows completion status</li>
+            </ul>
+          </div>
+          
+          <p><strong>How to place wires:</strong></p>
+          <ol>
+            <li>Click and hold a wire from the wire pool</li>
+            <li>Drag it to the desired RJ45 slot</li>
+            <li>Release to place the wire</li>
+            <li>Correct placements turn green, incorrect ones turn red</li>
+          </ol>
+        `
+      },
+      {
+        title: "Scoring and Feedback",
+        content: `
+          <h3><i class="fas fa-chart-line"></i> Scoring System</h3>
+          <p>The simulation tracks your performance with multiple metrics:</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>Scoring Breakdown:</strong>
+            <ul>
+              <li><strong>Accuracy:</strong> Percentage of correct wire placements</li>
+              <li><strong>Live Score:</strong> Points earned during the simulation</li>
+              <li><strong>Combo System:</strong> Consecutive correct placements</li>
+              <li><strong>Time Tracking:</strong> How long it takes to complete</li>
+            </ul>
+          </div>
+          
+          <p><strong>Points System:</strong></p>
+          <ul>
+            <li>+100 points for each correct wire placement</li>
+            <li>+10 bonus points per combo multiplier</li>
+            <li>-50 points for incorrect placements</li>
+          </ul>
+          
+          <p>Aim for 75% accuracy or higher to unlock the next difficulty level!</p>
+        `
+      },
+      {
+        title: "Ready to Start!",
+        content: `
+          <h3><i class="fas fa-rocket"></i> You're Ready to Begin!</h3>
+          <p>You now have all the knowledge needed to successfully crimp UTP cables!</p>
+          
+          <div class="tutorial-highlight-box">
+            <strong>Quick Tips for Success:</strong>
+            <ul>
+              <li>Start with Easy mode (Straight-Through T568B)</li>
+              <li>Work systematically from position 1 to 8</li>
+              <li>Take your time - accuracy beats speed</li>
+              <li>Use the visual feedback to learn</li>
+              <li>Build combos for higher scores</li>
+            </ul>
+          </div>
+          
+          <p>Remember the T568B pattern: <strong>White-Orange, Orange, White-Green, Blue, White-Blue, Green, White-Brown, Brown</strong></p>
+          
+          <p>Good luck with your crimping challenge! Click "Start Tutorial" to begin practicing.</p>
+        `
+      }
+    ];
+
+    function openTutorial() {
+      currentTutorialStep = 1;
+      updateTutorialStep();
+      document.getElementById('tutorialModal').style.display = 'flex';
+    }
+
+    function closeTutorial() {
+      document.getElementById('tutorialModal').style.display = 'none';
+    }
+
+    function nextTutorialStep() {
+      if (currentTutorialStep < totalTutorialSteps) {
+        currentTutorialStep++;
+        updateTutorialStep();
+      }
+    }
+
+    function previousTutorialStep() {
+      if (currentTutorialStep > 1) {
+        currentTutorialStep--;
+        updateTutorialStep();
+      }
+    }
+
+    function skipTutorial() {
+      closeTutorial();
+      // showAchievement('Tutorial skipped. Good luck!', '📚');
+    }
+
+    function restartTutorial() {
+      currentTutorialStep = 1;
+      updateTutorialStep();
+    }
+
+    function updateTutorialStep() {
+      const stepContent = document.getElementById('tutorialStepContent');
+      const currentStepNumber = document.getElementById('currentStepNumber');
+      const totalStepsSpan = document.getElementById('totalSteps');
+      const progressFill = document.getElementById('tutorialProgressFill');
+      const prevBtn = document.getElementById('prevStepBtn');
+      const nextBtn = document.getElementById('nextStepBtn');
+
+      // Update step content
+      stepContent.innerHTML = tutorialSteps[currentTutorialStep - 1].content;
+      
+      // Update progress
+      currentStepNumber.textContent = currentTutorialStep;
+      totalStepsSpan.textContent = totalTutorialSteps;
+      progressFill.style.width = `${(currentTutorialStep / totalTutorialSteps) * 100}%`;
+
+      // Update navigation buttons
+      prevBtn.disabled = currentTutorialStep === 1;
+      
+      if (currentTutorialStep === totalTutorialSteps) {
+        nextBtn.innerHTML = 'Start Practice <i class="fas fa-play"></i>';
+        nextBtn.onclick = function() {
+          closeTutorial();
+          // showAchievement('Tutorial completed! Start practicing!', '🎓');
+        };
+      } else {
+        nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+        nextBtn.onclick = nextTutorialStep;
+      }
+    }
+
+    // Update the existing checkWiring function to show results
+    checkWiring = function() {
+      const wiringType = document.getElementById('wiring-select').value;
+      const pattern = wirePatterns[wiringType];
+      
+      if (!pattern) {
+        // showAchievement("Please select a valid wiring type.", "⚠️");
+        return;
+      }
+
+      let endAScore = 0;
+      let endBScore = 0;
+      let totalSlots = 8;
+      
+      // Check End A
+      const endASlots = document.querySelectorAll('#endA .wire-slot');
+      for (let i = 0; i < endASlots.length; i++) {
+        const slot = endASlots[i];
+        const wire = slot.children[0];
+        
+        if (wire) {
+          const wireColor = wire.id.replace('-A', '').replace('-B', '');
+          const expectedColor = pattern.endA[i];
+          
+          if (wireColor === expectedColor) {
+            endAScore++;
+            slot.style.border = '2px solid #4ade80'; // Green for correct
+          } else {
+            slot.style.border = '2px solid #ef4444'; // Red for incorrect
+          }
+        }
+      }
+      
+      // Check End B
+      const endBSlots = document.querySelectorAll('#endB .wire-slot');
+      for (let i = 0; i < endBSlots.length; i++) {
+        const slot = endBSlots[i];
+        const wire = slot.children[0];
+        
+        if (wire) {
+          const wireColor = wire.id.replace('-A', '').replace('-B', '');
+          const expectedColor = pattern.endB[i];
+          
+          if (wireColor === expectedColor) {
+            endBScore++;
+            slot.style.border = '2px solid #4ade80'; // Green for correct
+          } else {
+            slot.style.border = '2px solid #ef4444'; // Red for incorrect
+          }
+        }
+      }
+      
+      // Calculate total score
+      const totalCorrect = endAScore + endBScore;
+      const totalPossible = totalSlots * 2; // 8 slots per end * 2 ends
+      const scorePercentage = Math.round((totalCorrect / totalPossible) * 100);
+      
+      // Update game stats
+      gameStats.score = scorePercentage;
+      document.getElementById('currentScore').textContent = scorePercentage;
+      
+      // Update progression based on completion
+      if (scorePercentage >= 75) {
+        if (wiringType === 'straightthrough') {
+          gameProgress.easyCompleted = true;
+          gameProgress.easyScore = Math.max(gameProgress.easyScore, scorePercentage);
+        } else if (wiringType === 'crossover') {
+          gameProgress.mediumCompleted = true;
+          gameProgress.mediumScore = Math.max(gameProgress.mediumScore, scorePercentage);
+        } else if (wiringType === 'rollover') {
+          gameProgress.hardCompleted = true;
+          gameProgress.hardScore = Math.max(gameProgress.hardScore, scorePercentage);
+        }
+        saveGameProgress();
+        updateDifficultyLocks();
+      }
+      
+      // Show result
+      if (scorePercentage === 100) {
+        let nextLevel = '';
+        if (wiringType === 'straightthrough') nextLevel = ' Try Medium next!';
+        else if (wiringType === 'crossover') nextLevel = ' Try Hard next!';
+        else nextLevel = ' You\'ve mastered all levels!';
+        
+        // showAchievement(`Perfect! You correctly crimped the ${getDifficultyName(wiringType)} cable with 100% accuracy!${nextLevel}`, '🏆');
+        saveCrimpingScore(scorePercentage, wiringType);
+      } else if (scorePercentage >= 75) {
+        let nextLevel = '';
+        if (wiringType === 'straightthrough') nextLevel = ' Medium difficulty unlocked!';
+        else if (wiringType === 'crossover') nextLevel = ' Hard difficulty unlocked!';
+        
+        // showAchievement(`Good job! You scored ${scorePercentage}% on the ${getDifficultyName(wiringType)} cable.${nextLevel}`, '🎯');
+        saveCrimpingScore(scorePercentage, wiringType);
+      } else {
+        // showAchievement(`Score: ${scorePercentage}%. Please review the ${getDifficultyName(wiringType)} wiring standard and try again.`, '📝');
+      }
+      
+      // Reset border colors after 3 seconds
+      setTimeout(() => {
+        document.querySelectorAll('.wire-slot').forEach(slot => {
+          slot.style.border = '';
+        });
+      }, 3000);
+      
+      // After checking, show results modal if game is complete
+      const allSlotsFilled = document.querySelectorAll('.wire-slot:not(:empty)').length === 16;
+      if (allSlotsFilled) {
+        const score = scorePercentage;
+        const timeTaken = document.getElementById('timer').textContent;
+        const correctWires = totalCorrect;
+        const bestCombo = gameStats.combo;
+        
+        setTimeout(() => {
+          showSimulationResult(score, wiringType, timeTaken, correctWires, bestCombo);
+        }, 2000); // Show after 2 seconds to let user see the validation
+      }
+    };
+
+    // Tutorial button is now integrated into the main button interface
 
     // ...existing code...
   </script>
