@@ -281,6 +281,46 @@ def create_app(config=None):
         print(f"Context processor [{path}]: No user found (namespace: {auth_namespace})")
         return dict(user=None)
     
+    # Add context processor for admin sidebar classes
+    @app.context_processor
+    def inject_admin_sidebar_context():
+        """Inject classes for admin sidebar display"""
+        from flask import request
+        from flask_login import current_user
+        
+        try:
+            path = request.path if request else "unknown"
+        except:
+            path = "unknown"
+        
+        # Only inject for admin routes
+        if path.startswith('/admin'):
+            try:
+                from admin.models.class_model import Class
+                
+                # Check if user is authenticated admin
+                if current_user.is_authenticated and hasattr(current_user, 'role'):
+                    # If super_admin, show all classes
+                    if current_user.role == 'super_admin':
+                        all_classes_query = Class.query.all()
+                    else:
+                        all_classes_query = Class.query.filter_by(created_by=getattr(current_user, 'id', None)).all()
+                    
+                    # Filter for active classes, but include all if no active ones found
+                    active_classes = [cls for cls in all_classes_query if getattr(cls, 'status', None) == 'active']
+                    all_classes = active_classes if active_classes else all_classes_query
+                    all_classes = sorted(all_classes, key=lambda x: x.name) if all_classes else []
+                    
+                    print(f"Context processor [{path}]: Injected {len(all_classes)} classes for sidebar")
+                    return dict(all_classes=all_classes)
+                else:
+                    return dict(all_classes=[])
+            except Exception as e:
+                print(f"Context processor [{path}]: Error loading classes for sidebar: {e}")
+                return dict(all_classes=[])
+        
+        return dict()
+    
     # Register template helpers
     try:
         from user.template_helpers import register_template_helpers
