@@ -163,12 +163,17 @@
         top: 0;
         left: 0;
         width: var(--sidebar-width);
-        height: 100vh;
+        height: 100vh; /* keep full viewport height */
+        min-height: 100vh; /* ensure height never shrinks on collapse */
         background: var(--surface);
         backdrop-filter: blur(20px);
         border-right: 2px solid var(--border-color);
         color: var(--text-primary);
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        /* Only animate width/transform to avoid any height animation on collapse */
+        transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+                    transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow var(--transition-speed) ease,
+                    border-color var(--transition-speed) ease;
         z-index: 100;
         /* Allow toggle to protrude */
         overflow: visible;
@@ -198,6 +203,15 @@
 
     #sidebar.collapsed {
         width: var(--sidebar-collapsed-width);
+    }
+
+    /* Sidebar inner scroll container: maintain fixed sidebar height and scroll content instead */
+    .sidebar-scroll {
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        /* Prevent layout shift from children when collapsing */
+        will-change: scroll-position;
     }
 
     #sidebar .logo-details {

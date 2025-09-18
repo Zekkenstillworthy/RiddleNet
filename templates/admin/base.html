@@ -97,7 +97,10 @@
         backdrop-filter: blur(20px);
         border-right: 1px solid var(--border-color);
         color: var(--text-primary);
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1), 
+                    background var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+                    border-right var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 100;
         overflow: hidden;
         box-shadow: var(--shadow-lg);
@@ -244,7 +247,7 @@
     }      /* Dropdown & Icon Styles */
     #sidebar li:nth-child(3),
     #sidebar li:nth-child(4),
-    #sidebar li:nth-child(5) {
+    #sidebar .class-content-item {
         display: none;
         margin-left: 12px;
         border-left: 2px solid rgba(59, 130, 246, 0.3);
@@ -252,7 +255,7 @@
     
     #sidebar li:nth-child(3) a,
     #sidebar li:nth-child(4) a,
-    #sidebar li:nth-child(5) a {
+    #sidebar .class-content-item a {
         padding-left: 24px;
         font-size: 13px;
         color: var(--text-muted);
@@ -261,7 +264,7 @@
 
     #sidebar li:nth-child(3) a:hover,
     #sidebar li:nth-child(4) a:hover,
-    #sidebar li:nth-child(5) a:hover {
+    #sidebar .class-content-item a:hover {
         color: var(--text-secondary);
         background: rgba(59, 130, 246, 0.05);
     }
@@ -471,11 +474,28 @@
                 </a>
             </li>
             <li {% if active_page=='module_builder' %}class="active" {% endif %}>
-                <a href="{{ url_for('dashboard.class_content_manager') }}">
+                <a href="javascript:void(0);" class="dropdown-toggle" onclick="toggleClassContentDropdown(this)">
                     <i class='bx bx-layer'></i>
                     <span>Class Content Manager</span>
                 </a>
             </li>
+            {% if all_classes %}
+            {% for cls in all_classes %}
+            <li class="class-content-item" {% if selected_class and cls.id == selected_class.id %}class="active"{% endif %}>
+                <a href="{{ url_for('dashboard.class_content_manager') }}?class_id={{ cls.id }}">
+                    <i class='bx bx-book-content'></i>
+                    <span>{{ cls.name }} ({{ cls.code }})</span>
+                </a>
+            </li>
+            {% endfor %}
+            {% else %}
+            <li class="class-content-item">
+                <a href="{{ url_for('dashboard.class_content_manager') }}">
+                    <i class='bx bx-info-circle'></i>
+                    <span>No Classes Available</span>
+                </a>
+            </li>
+            {% endif %}
             <li {% if active_page=='users' %}class="active" {% endif %}>
                 <a href="{{ url_for('dashboard.user_management') }}">
                     <i class='bx bx-user'></i>
@@ -519,6 +539,9 @@
             document.querySelector('#sidebar li:nth-child(4)')  // Class Content Manager
         ];
 
+        // Get all class content items
+        const classContentItems = document.querySelectorAll('#sidebar .class-content-item');
+
         function toggleDropdown(element) {
             const isExpanded = element.getAttribute('data-expanded') === 'true';
             element.setAttribute('data-expanded', !isExpanded);
@@ -548,16 +571,53 @@
                 element.style.transform = 'scale(1)';
             }, 150);
         }
+
+        function toggleClassContentDropdown(element) {
+            const isExpanded = element.getAttribute('data-expanded') === 'true';
+            element.setAttribute('data-expanded', !isExpanded);
+            
+            // Smooth animation for class content items
+            classContentItems.forEach((item, index) => {
+                if (isExpanded) {
+                    setTimeout(() => {
+                        item.style.display = 'none';
+                    }, index * 30);
+                } else {
+                    item.style.display = 'block';
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-10px)';
+                    
+                    setTimeout(() => {
+                        item.style.transition = 'all 0.3s ease';
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateX(0)';
+                    }, index * 30);
+                }
+            });
+            
+            // Add visual feedback to the dropdown toggle
+            element.style.transform = isExpanded ? 'scale(1)' : 'scale(1.05)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 150);
+        }
         
         // Initialize dropdown state and add network-themed interactions
         document.addEventListener('DOMContentLoaded', function() {
             const classesLink = document.querySelector('#sidebar li:nth-child(2) a.dropdown-toggle');
+            const classContentLink = document.querySelector('#sidebar li:nth-child(4) a.dropdown-toggle');
             
-            // Check if any submenu items are active
+            // Check if any submenu items are active for Classes dropdown
             const isSubmenuActive = classesDropdownItems.some(item => 
                 item && item.classList.contains('active')
             );
             
+            // Check if any class content items are active
+            const isClassContentActive = Array.from(classContentItems).some(item => 
+                item && item.classList.contains('active')
+            );
+            
+            // Initialize Classes dropdown
             if (isSubmenuActive || document.querySelector('#sidebar li:nth-child(2)').classList.contains('active')) {
                 classesLink.setAttribute('data-expanded', 'true');
                 classesDropdownItems.forEach(item => {
@@ -572,6 +632,23 @@
                         item.style.display = 'none';
                     }
                 });
+            }
+
+            // Initialize Class Content Manager dropdown
+            if (isClassContentActive || (classContentLink && document.querySelector('#sidebar li:nth-child(4)').classList.contains('active'))) {
+                if (classContentLink) {
+                    classContentLink.setAttribute('data-expanded', 'true');
+                    classContentItems.forEach(item => {
+                        item.style.display = 'block';
+                    });
+                }
+            } else {
+                if (classContentLink) {
+                    classContentLink.setAttribute('data-expanded', 'false');
+                    classContentItems.forEach(item => {
+                        item.style.display = 'none';
+                    });
+                }
             }
 
             // Add network pulse effect to active items

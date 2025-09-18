@@ -5514,6 +5514,225 @@ function closeModal(modalId) {
     }
 }
 
+// Essay Modal Functions
+let currentEssayId = null;
+
+function viewEssay(essayId) {
+    console.log('📄 Opening view modal for essay:', essayId);
+    currentEssayId = essayId;
+    
+    // Fetch essay details from API
+    fetch(`/admin/api/essays/${essayId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const essay = data.essay;
+                
+                // Find student name from current essays list
+                const studentName = getStudentNameFromEssaysList(essayId) || 'Unknown Student';
+                
+                // Populate view modal
+                document.getElementById('viewEssayStudent').textContent = studentName;
+                document.getElementById('viewEssayQuestion').textContent = essay.question_text || 'No question available';
+                document.getElementById('viewEssayResponse').textContent = essay.response_text || 'No response available';
+                document.getElementById('viewEssayDate').textContent = formatDate(essay.submission_date);
+                document.getElementById('viewEssayCategory').textContent = essay.category || 'General';
+                document.getElementById('viewEssayStatus').textContent = essay.is_graded ? 'Graded' : 'Pending';
+                document.getElementById('viewEssayGrade').textContent = essay.graded_score ? `${essay.graded_score}%` : 'Not graded';
+                
+                // Show/hide feedback section
+                const feedbackGroup = document.getElementById('viewEssayFeedbackGroup');
+                const feedbackContent = document.getElementById('viewEssayFeedback');
+                if (essay.feedback && essay.feedback.trim()) {
+                    feedbackContent.textContent = essay.feedback;
+                    feedbackGroup.style.display = 'block';
+                } else {
+                    feedbackGroup.style.display = 'none';
+                }
+                
+                // Show modal
+                document.getElementById('essayViewModal').style.display = 'flex';
+                document.getElementById('essayViewModal').classList.add('show');
+            } else {
+                alert('Error loading essay details: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching essay:', error);
+            alert('Error loading essay details. Please try again.');
+        });
+}
+
+function gradeEssay(essayId) {
+    console.log('✏️ Opening grade modal for essay:', essayId);
+    currentEssayId = essayId;
+    
+    // Fetch essay details from API
+    fetch(`/admin/api/essays/${essayId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const essay = data.essay;
+                
+                // Find student name from current essays list
+                const studentName = getStudentNameFromEssaysList(essayId) || 'Unknown Student';
+                
+                // Populate grade modal
+                document.getElementById('gradeEssayId').value = essay.id;
+                document.getElementById('gradeEssayStudent').textContent = studentName;
+                document.getElementById('gradeEssayQuestion').textContent = essay.question_text || 'No question available';
+                document.getElementById('gradeEssayResponse').textContent = essay.response_text || 'No response available';
+                document.getElementById('gradeEssayDate').textContent = formatDate(essay.submission_date);
+                
+                // Pre-fill current grade if exists
+                if (essay.graded_score) {
+                    document.getElementById('essayGradeScore').value = essay.graded_score;
+                }
+                
+                // Clear previous values
+                document.getElementById('essayGradeFeedback').value = essay.feedback || '';
+                clearRubric();
+                
+                // Show modal
+                document.getElementById('essayGradeModal').style.display = 'flex';
+                document.getElementById('essayGradeModal').classList.add('show');
+            } else {
+                alert('Error loading essay details: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching essay:', error);
+            alert('Error loading essay details. Please try again.');
+        });
+}
+
+function openGradeModal(essayId) {
+    // Close view modal first
+    closeModal('essayViewModal');
+    // Open grade modal
+    setTimeout(() => gradeEssay(essayId), 100);
+}
+
+function saveEssayGrade() {
+    const essayId = document.getElementById('gradeEssayId').value;
+    const grade = document.getElementById('essayGradeScore').value;
+    const feedback = document.getElementById('essayGradeFeedback').value;
+    
+    if (!grade || grade < 0 || grade > 100) {
+        alert('Please enter a valid grade between 0 and 100.');
+        return;
+    }
+    
+    // Prepare rubric data if filled
+    const rubric = getRubricData();
+    
+    console.log('💾 Saving grade for essay:', essayId, 'Grade:', grade);
+    
+    // Send grade to API
+    fetch(`/admin/essays/api/essays/${essayId}/grade`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            grade: parseFloat(grade),
+            feedback: feedback,
+            rubric: rubric.total > 0 ? rubric : null,
+            rubric_total: rubric.total > 0 ? rubric.total : null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Grade saved successfully');
+            alert('Grade saved successfully!');
+            
+            // Close modal
+            closeModal('essayGradeModal');
+            
+            // Refresh the essays list
+            if (typeof loadEssayData === 'function') {
+                loadEssayData();
+            }
+        } else {
+            alert('Error saving grade: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error saving grade:', error);
+        alert('Error saving grade. Please try again.');
+    });
+}
+
+// Helper functions
+function getStudentNameFromEssaysList(essayId) {
+    // Try to find student name from the current essays data
+    if (window.currentEssaysData && window.currentEssaysData.essays) {
+        const essay = window.currentEssaysData.essays.find(e => e.id == essayId);
+        return essay ? essay.student_name : null;
+    }
+    return null;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown date';
+    try {
+        return new Date(dateString).toLocaleString();
+    } catch (e) {
+        return dateString;
+    }
+}
+
+function clearRubric() {
+    document.getElementById('rubricClarity').value = '';
+    document.getElementById('rubricAccuracy').value = '';
+    document.getElementById('rubricDepth').value = '';
+    document.getElementById('rubricWriting').value = '';
+    updateRubricTotal();
+}
+
+function updateRubricTotal() {
+    const clarity = parseFloat(document.getElementById('rubricClarity').value) || 0;
+    const accuracy = parseFloat(document.getElementById('rubricAccuracy').value) || 0;
+    const depth = parseFloat(document.getElementById('rubricDepth').value) || 0;
+    const writing = parseFloat(document.getElementById('rubricWriting').value) || 0;
+    
+    const total = clarity + accuracy + depth + writing;
+    document.getElementById('rubricTotal').textContent = total;
+    
+    return total;
+}
+
+function applyRubricScore() {
+    const total = updateRubricTotal();
+    document.getElementById('essayGradeScore').value = total;
+}
+
+function getRubricData() {
+    const clarity = parseFloat(document.getElementById('rubricClarity').value) || 0;
+    const accuracy = parseFloat(document.getElementById('rubricAccuracy').value) || 0;
+    const depth = parseFloat(document.getElementById('rubricDepth').value) || 0;
+    const writing = parseFloat(document.getElementById('rubricWriting').value) || 0;
+    
+    return {
+        clarity: clarity,
+        accuracy: accuracy,
+        depth: depth,
+        writing: writing,
+        total: clarity + accuracy + depth + writing
+    };
+}
+
+// Add event listeners for rubric auto-calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const rubricInputs = document.querySelectorAll('.rubric-input');
+    rubricInputs.forEach(input => {
+        input.addEventListener('input', updateRubricTotal);
+    });
+});
+
+// End Essay Modal Functions
+
 // Close modal when clicking on overlay
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal-overlay')) {
@@ -8006,6 +8225,7 @@ async function loadEssayData() {
         
         if (response.ok) {
             essayData = await response.json();
+            window.currentEssaysData = essayData; // Make globally accessible for modal functions
             console.log('✅ Essay data loaded:', essayData);
             
             // Check if we have any essays
@@ -8164,14 +8384,18 @@ function updateEssaysList() {
                     </div>
                 </div>
                 <div class="essay-actions">
-                    <a href="/admin/essays/view/${essay.id}" class="essay-action-btn view" title="View Essay">
+                    <button onclick="viewEssay(${essay.id})" class="essay-action-btn view" title="View Essay">
                         <i class="fas fa-eye"></i> View
-                    </a>
+                    </button>
                     ${status === 'pending' ? `
-                        <a href="/admin/essays/grade/${essay.id}" class="essay-action-btn grade" title="Grade Essay">
+                        <button onclick="gradeEssay(${essay.id})" class="essay-action-btn grade" title="Grade Essay">
                             <i class="fas fa-star"></i> Grade
-                        </a>
-                    ` : ''}
+                        </button>
+                    ` : `
+                        <button onclick="gradeEssay(${essay.id})" class="essay-action-btn grade" title="Edit Grade">
+                            <i class="fas fa-edit"></i> Edit Grade
+                        </button>
+                    `}
                 </div>
             </div>
         `;
@@ -8384,4 +8608,141 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="{{ url_for('static', filename='js/deadline-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/collaboration-manager.js') }}"></script>
 </script>
+
+<!-- Essay View Modal -->
+<div class="modal-overlay" id="essayViewModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h5 class="modal-title">Essay Response Details</h5>
+            <button type="button" class="modal-close" onclick="closeModal('essayViewModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="essay-details">
+                <div class="detail-group">
+                    <h6>Student</h6>
+                    <p id="viewEssayStudent"></p>
+                </div>
+                
+                <div class="detail-group">
+                    <h6>Question</h6>
+                    <p id="viewEssayQuestion"></p>
+                </div>
+                
+                <div class="detail-group">
+                    <h6>Response</h6>
+                    <div id="viewEssayResponse" style="background: var(--surface-hover); color: var(--text-primary); padding: 15px; border-radius: 8px; border-left: 4px solid var(--cyber-glow); white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 1px solid var(--glass-border);"></div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-group">
+                        <h6>Submission Date</h6>
+                        <p id="viewEssayDate"></p>
+                    </div>
+                    <div class="detail-group">
+                        <h6>Category</h6>
+                        <p id="viewEssayCategory"></p>
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-group">
+                        <h6>Status</h6>
+                        <p id="viewEssayStatus"></p>
+                    </div>
+                    <div class="detail-group">
+                        <h6>Current Grade</h6>
+                        <p id="viewEssayGrade"></p>
+                    </div>
+                </div>
+                
+                <div class="detail-group" id="viewEssayFeedbackGroup" style="display: none;">
+                    <h6>Feedback</h6>
+                    <div id="viewEssayFeedback" style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('essayViewModal')">Close</button>
+            <button type="button" class="btn btn-primary" onclick="openGradeModal(currentEssayId)">Grade Essay</button>
+        </div>
+    </div>
+</div>
+
+<!-- Essay Grade Modal -->
+<div class="modal-overlay" id="essayGradeModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h5 class="modal-title">Grade Essay Response</h5>
+            <button type="button" class="modal-close" onclick="closeModal('essayGradeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="essayGradeForm">
+                <input type="hidden" id="gradeEssayId" name="essay_id">
+                
+                <div class="detail-group">
+                    <h6>Student</h6>
+                    <p id="gradeEssayStudent"></p>
+                </div>
+                
+                <div class="detail-group">
+                    <h6>Question</h6>
+                    <p id="gradeEssayQuestion"></p>
+                </div>
+                
+                <div class="detail-group">
+                    <h6>Response</h6>
+                    <div id="gradeEssayResponse" style="background: var(--surface-hover); color: var(--text-primary); padding: 15px; border-radius: 8px; border-left: 4px solid var(--cyber-glow); white-space: pre-wrap; max-height: 300px; overflow-y: auto; border: 1px solid var(--glass-border);"></div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-group">
+                        <label for="essayGradeScore"><h6>Score (0-100)</h6></label>
+                        <input type="number" id="essayGradeScore" name="grade" min="0" max="100" class="form-control" placeholder="Enter score" required>
+                    </div>
+                    <div class="detail-group">
+                        <h6>Submission Date</h6>
+                        <p id="gradeEssayDate"></p>
+                    </div>
+                </div>
+                
+                <div class="detail-group">
+                    <label for="essayGradeFeedback"><h6>Feedback (Optional)</h6></label>
+                    <textarea id="essayGradeFeedback" name="feedback" class="form-control" rows="4" placeholder="Provide feedback for the student..."></textarea>
+                </div>
+                
+                <!-- Rubric Section -->
+                <div class="detail-group">
+                    <h6>Grading Rubric (Optional)</h6>
+                    <div class="rubric-section" style="background: var(--surface-hover); color: var(--text-primary); padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--glass-border);">
+                        <div class="rubric-row">
+                            <label>Clarity (0-25):</label>
+                            <input type="number" id="rubricClarity" min="0" max="25" class="form-control rubric-input" style="width: 80px; display: inline-block; margin-left: 10px;">
+                        </div>
+                        <div class="rubric-row" style="margin-top: 10px;">
+                            <label>Accuracy (0-25):</label>
+                            <input type="number" id="rubricAccuracy" min="0" max="25" class="form-control rubric-input" style="width: 80px; display: inline-block; margin-left: 10px;">
+                        </div>
+                        <div class="rubric-row" style="margin-top: 10px;">
+                            <label>Depth (0-25):</label>
+                            <input type="number" id="rubricDepth" min="0" max="25" class="form-control rubric-input" style="width: 80px; display: inline-block; margin-left: 10px;">
+                        </div>
+                        <div class="rubric-row" style="margin-top: 10px;">
+                            <label>Writing Quality (0-25):</label>
+                            <input type="number" id="rubricWriting" min="0" max="25" class="form-control rubric-input" style="width: 80px; display: inline-block; margin-left: 10px;">
+                        </div>
+                        <div class="rubric-row" style="margin-top: 15px; font-weight: bold;">
+                            <label>Rubric Total: <span id="rubricTotal">0</span>/100</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="applyRubricScore()" style="margin-left: 15px;">Apply to Score</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('essayGradeModal')">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="saveEssayGrade()">Save Grade</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
