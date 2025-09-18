@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from __init__ import db
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
 from flask_login import UserMixin
+import secrets
 
 class AdminUser(db.Model, UserMixin):
     """
@@ -95,3 +96,64 @@ class Admin(db.Model, UserMixin):
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'last_login': self.last_login.strftime('%Y-%m-%d %H:%M:%S') if self.last_login else None,
         }
+
+class AdminPasswordReset(db.Model):
+    """
+    Model for storing password reset tokens for admin users
+    """
+    __tablename__ = 'admin_password_resets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationship to admin user
+    admin = db.relationship('Admin', backref=db.backref('password_resets', lazy=True))
+    
+    def __init__(self, admin_id, expiry_hours=1):
+        self.admin_id = admin_id
+        self.token = secrets.token_urlsafe(32)
+        self.expires_at = datetime.utcnow() + timedelta(hours=expiry_hours)
+    
+    @property
+    def is_expired(self):
+        """Check if the token has expired"""
+        return datetime.utcnow() > self.expires_at
+    
+    @property
+    def is_valid(self):
+        """Check if the token is valid (not used and not expired)"""
+        return not self.used and not self.is_expired
+    
+    def mark_as_used(self):
+        """Mark the token as used"""
+        self.used = True
+        self.used_at = datetime.utcnow()
+        db.session.commit()
+    
+    @classmethod
+    def create_token(cls, admin_id, expiry_hours=1):
+        """Create a new password reset token for an admin user"""
+        # Invalidate any existing tokens for this admin
+        existing_tokens = cls.query.filter_by(admin_id=admin_id, used=False).all()
+        for token in existing_tokens:
+            token.used = True
+            token.used_at = datetime.utcnow()
+        
+        # Create new token
+        new_token = cls(admin_id=admin_id, expiry_hours=expiry_hours)
+        db.session.add(new_token)
+        db.session.commit()
+        return new_token
+    
+    @classmethod
+    def get_valid_token(cls, token_string):
+        """Get a valid token by token string"""
+        token = cls.query.filter_by(token=token_string).first()
+        if token and token.is_valid:
+            return token
+        return None

@@ -12,6 +12,7 @@ from admin.models.class_model import Class
 from admin.models.module import Module, Lesson, LessonProgress
 from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.question_group import QuestionGroup
+from admin.models.question import Question, StandardQuestion
 from admin.models.simulation import Simulation
 from admin.models.simulation_assignment import SimulationAssignment
 from admin.models.module import Module, Lesson
@@ -436,11 +437,24 @@ def module_detail(class_id, module_id):
         
         # Get simulations related to this module
         module_simulations = []
+        seen_simulation_ids = set()  # Track unique simulation IDs to prevent duplicates
         try:
             # Get simulations assigned to this class that might be related to this module
-            simulation_assignments = SimulationAssignment.query.filter_by(class_id=class_id).all()
+            # Only consider assignments that are active and published
+            simulation_assignments = SimulationAssignment.query.filter_by(
+                class_id=class_id,
+                is_active=True,
+                is_published=True
+            ).all()
             for assignment in simulation_assignments:
-                if assignment.simulation and assignment.simulation.is_published:
+                # Ensure assignment is actually available now and simulation is usable
+                if not assignment.is_available:
+                    continue
+                if assignment.simulation and getattr(assignment.simulation, 'is_active', True) and assignment.simulation.is_published:
+                    # Skip if we've already added this simulation
+                    if assignment.simulation.id in seen_simulation_ids:
+                        continue
+                        
                     # Check if simulation is related to this module (by title, category, or type)
                     module_title_lower = module.title.lower()
                     sim_title_lower = assignment.simulation.title.lower()
@@ -450,6 +464,9 @@ def module_detail(class_id, module_id):
                     if (str(module_id) in sim_title_lower or 
                         any(word in sim_title_lower for word in module_title_lower.split()) or
                         any(word in sim_description_lower for word in module_title_lower.split())):
+                        
+                        # Add to seen set and append to list
+                        seen_simulation_ids.add(assignment.simulation.id)
                         module_simulations.append({
                             'id': assignment.simulation.id,
                             'title': assignment.simulation.title,
@@ -457,6 +474,8 @@ def module_detail(class_id, module_id):
                             'difficulty': assignment.simulation.difficulty,
                             'estimated_duration': assignment.simulation.estimated_duration
                         })
+                        
+            print(f"Found {len(module_simulations)} unique simulations for module {module_id}")
         except Exception as e:
             print(f"Error getting module simulations: {e}")
             module_simulations = []
@@ -661,6 +680,60 @@ def module_detail(class_id, module_id):
                             ).count()
                         }
         
+        # Get questions from database with module-specific filtering
+        lesson_questions = []
+        try:
+            # Determine question category based on module characteristics
+            question_category = None
+            
+            # Module-based category mapping logic
+            if module:
+                module_title_lower = module.title.lower()
+                course_type_lower = module.course_type.lower()
+                
+                # Networking modules get networking questions
+                if ('network' in module_title_lower or 
+                    'networking' in course_type_lower or 
+                    'tcp' in module_title_lower or 
+                    'osi' in module_title_lower or
+                    'ethernet' in module_title_lower or
+                    'routing' in module_title_lower):
+                    question_category = 'networking'
+                # Default to riddle questions for other modules
+                else:
+                    question_category = 'riddle'
+                
+                print(f"Module '{module.title}' mapped to question category: '{question_category}'")
+            else:
+                # Fallback to networking if no module found
+                question_category = 'networking'
+            
+            # Get questions from the 'question' table (Question model) with category filter
+            questions_1 = Question.query.filter_by(category=question_category).all()
+            # Get questions from the 'questions' table (StandardQuestion model) with category filter
+            questions_2 = StandardQuestion.query.filter_by(category=question_category).all()
+            
+            # Combine questions and convert to dict format
+            all_questions = []
+            for q in questions_1:
+                question_dict = q.to_dict()
+                question_dict['source_table'] = 'question'
+                all_questions.append(question_dict)
+            for q in questions_2:
+                question_dict = q.to_dict()
+                question_dict['source_table'] = 'questions'
+                all_questions.append(question_dict)
+            
+            # Sort by question number if available
+            all_questions.sort(key=lambda x: x.get('numb', 0))
+            lesson_questions = all_questions
+            
+            print(f"Found {len(lesson_questions)} questions for category '{question_category}' in module {module_id}")
+            
+        except Exception as e:
+            print(f"Error fetching questions: {e}")
+            lesson_questions = []
+
         # Render using the module detail template with sidebar navigation
         return render_template('user/module_detail.html',
                              user=user,
@@ -681,6 +754,8 @@ def module_detail(class_id, module_id):
                              previous_lesson=previous_lesson,
                              next_lesson=next_lesson,
                              simulation_progress=simulation_progress,
+                             # Questions data
+                             lesson_questions=lesson_questions,
                              is_student_view=True,
                              now=datetime.now())
     

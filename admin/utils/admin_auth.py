@@ -39,6 +39,8 @@ def protect_admin_routes(app):
             '/static/', 
             '/admin/login',
             '/admin/signup',  # Add admin signup route
+            '/admin/forgot-password',  # Add forgot password route
+            '/admin/reset-password/',  # Add reset password route (with token)
             '/admin/auth/login',
             '/admin/auth/signup',  # Add admin auth signup route
             '/admin/logout',

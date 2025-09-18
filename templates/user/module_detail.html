@@ -891,6 +891,10 @@ html {
             </div>
             
             <!-- Lesson-Specific Simulation Buttons -->
+            <!-- NOTE: For future maintenance, consider using CSS classes from learning_class_common.css:
+                 .simulation-btn-primary for large simulation buttons
+                 .simulation-btn-card for smaller card-based simulation buttons
+                 .simulation-grid-card for simulation card containers -->
             {% if lesson_simulations and lesson_simulations|length > 0 %}
             <div style="margin-top: 24px;">
                 <h4 style="color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
@@ -900,7 +904,7 @@ html {
                 <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
                     {% for simulation in lesson_simulations %}
                     <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=simulation.id) }}" 
-                       style="background: linear-gradient(135deg, #ff6b6b, #4ecdc4); 
+                       style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
                               color: white; 
                               padding: 16px 32px; 
                               border-radius: 12px; 
@@ -910,16 +914,16 @@ html {
                               display: flex; 
                               align-items: center; 
                               gap: 12px;
-                              box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+                              box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
                               transition: all 0.3s ease;
                               border: 2px solid transparent;
                               position: relative;"
-                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(255, 107, 107, 0.4)'; this.style.borderColor='#ff6b6b';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(255, 107, 107, 0.3)'; this.style.borderColor='transparent';">
+                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'; this.style.borderColor='transparent';">
                         <i class="fas fa-play" style="font-size: 1.2rem;"></i>
                         <span>{{ simulation.title }}</span>
                         {% if simulation_progress.get(simulation.id, {}).get('completed') %}
-                        <i class="fas fa-check-circle" style="color: #10B981; margin-left: 8px;" title="Completed"></i>
+                        <i class="fas fa-check-circle" style="color: var(--success-color); margin-left: 8px;" title="Completed"></i>
                         {% endif %}
                     </a>
                     {% endfor %}
@@ -934,7 +938,7 @@ html {
             <div style="margin-top: 24px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
                 {% if module_simulations and module_simulations|length > 0 %}
                     <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=module_simulations[0].id) }}" 
-                       style="background: linear-gradient(135deg, #ff6b6b, #4ecdc4); 
+                       style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
                               color: white; 
                               padding: 16px 32px; 
                               border-radius: 12px; 
@@ -944,11 +948,11 @@ html {
                               display: flex; 
                               align-items: center; 
                               gap: 12px;
-                              box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+                              box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
                               transition: all 0.3s ease;
                               border: 2px solid transparent;"
-                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(255, 107, 107, 0.4)'; this.style.borderColor='#ff6b6b';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(255, 107, 107, 0.3)'; this.style.borderColor='transparent';">
+                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'; this.style.borderColor='transparent';">
                         <i class="fas fa-play" style="font-size: 1.2rem;"></i>
                         <span>Start: {{ module_simulations[0].title }}</span>
                     </a>
@@ -999,7 +1003,7 @@ html {
         {% endif %}
 
         <!-- Module Simulations -->
-        {% if module_simulations and module_simulations|length > 1 %}
+        {% if module_simulations and module_simulations|length > 0 %}
         <div class="content-section">
             <h3 class="section-title">
                 <i class="fas fa-flask"></i>
@@ -1012,7 +1016,7 @@ html {
                             border-radius: 12px; 
                             padding: 20px; 
                             transition: all 0.3s ease;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='var(--cyber-glow)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.2)';"
+                     onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='var(--cyber-glow)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)';"
                      onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-glow)'; this.style.boxShadow='none';">
                     <h4 style="color: var(--text-primary); margin: 0 0 12px 0; font-size: 1.1rem;">{{ simulation.title }}</h4>
                     <p style="color: var(--text-secondary); margin: 0 0 16px 0; font-size: 0.9rem; line-height: 1.5;">
@@ -1031,17 +1035,19 @@ html {
                     <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=simulation.id) }}" 
                        style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
                               color: white; 
-                              padding: 10px 20px; 
+                              padding: 12px 24px; 
                               border-radius: 8px; 
                               text-decoration: none; 
                               font-weight: 600; 
-                              font-size: 0.9rem;
+                              font-size: 0.95rem;
                               display: inline-flex; 
                               align-items: center; 
                               gap: 8px;
-                              transition: all 0.3s ease;"
-                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0, 217, 255, 0.3)';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                              transition: all 0.3s ease;
+                              box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
+                              border: 2px solid transparent;"
+                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 217, 255, 0.2)'; this.style.borderColor='transparent';">
                         <i class="fas fa-play"></i>
                         <span>Start Simulation</span>
                     </a>
@@ -1060,6 +1066,112 @@ html {
             </h3>
             <div class="lesson-main-content">
                 {{ lesson.content|safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Questions Section -->
+        {% if lesson_questions and lesson_questions|length > 0 %}
+        <div class="content-section">
+            <h3 class="section-title">
+                <i class="fas fa-question-circle"></i>
+                Practice Questions
+            </h3>
+            <div class="questions-container">
+                <div class="questions-header" style="margin-bottom: 24px; padding: 16px; background: var(--surface-light); border-radius: 8px; border: 1px solid var(--border-glow);">
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 1rem; line-height: 1.5;">
+                        <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                        Test your understanding with these practice questions. Click on an answer to see if it's correct.
+                    </p>
+                </div>
+                
+                {% for question in lesson_questions %}
+                <div class="question-card" style="background: var(--surface-light); border: 1px solid var(--border-glow); border-radius: 12px; padding: 24px; margin-bottom: 20px; transition: all 0.3s ease;">
+                    <div class="question-header" style="margin-bottom: 16px;">
+                        <span class="question-number" style="background: var(--cyber-glow); color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-right: 12px;">
+                            Q{{ question.numb or loop.index }}
+                        </span>
+                        {% if question.category %}
+                        <span class="question-category" style="background: rgba(139, 92, 246, 0.2); color: var(--network-purple); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">
+                            {{ question.category|title }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="question-text" style="color: var(--text-primary); font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; line-height: 1.6;">
+                        {{ question.question }}
+                    </div>
+                    
+                    {% if question.options %}
+                    <div class="question-options" style="margin-bottom: 16px;">
+                        {% for option in question.options %}
+                        <div class="option-item" 
+                             onclick="selectAnswer({{ loop.index0 }}, '{{ question.answer }}', '{{ option }}', {{ question.id }}, '{{ question.explanation or '' }}')"
+                             style="background: rgba(255, 255, 255, 0.05); 
+                                    border: 1px solid rgba(255, 255, 255, 0.2); 
+                                    border-radius: 8px; 
+                                    padding: 12px 16px; 
+                                    margin-bottom: 8px; 
+                                    cursor: pointer; 
+                                    transition: all 0.3s ease;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 12px;"
+                             onmouseover="this.style.background='rgba(0, 217, 255, 0.1)'; this.style.borderColor='var(--cyber-glow)';"
+                             onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.2)';"
+                             data-question-id="{{ question.id }}"
+                             data-option-index="{{ loop.index0 }}">
+                            <span class="option-letter" style="background: var(--dark-bg); color: var(--cyber-glow); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; flex-shrink: 0;">
+                                {{ ['A', 'B', 'C', 'D'][loop.index0] if loop.index0 < 4 else loop.index }}
+                            </span>
+                            <span class="option-text" style="color: var(--text-secondary); flex: 1;">{{ option }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="question-answer" id="answer-{{ question.id }}" style="display: none; margin-top: 16px; padding: 16px; border-radius: 8px; border-left: 4px solid var(--neon-green);">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <i class="fas fa-check-circle" style="color: var(--neon-green); font-size: 1.1rem;"></i>
+                            <strong style="color: var(--neon-green); font-size: 1rem;">Correct Answer:</strong>
+                            <span style="color: var(--text-primary); font-weight: 600;">{{ question.answer }}</span>
+                        </div>
+                        {% if question.explanation %}
+                        <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-top: 8px;">
+                            <strong style="color: var(--text-primary);">Explanation:</strong> {{ question.explanation }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="question-feedback" id="feedback-{{ question.id }}" style="display: none; margin-top: 16px; padding: 16px; border-radius: 8px;">
+                        <!-- Feedback will be populated by JavaScript -->
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="questions-summary" style="margin-top: 32px; padding: 20px; background: var(--surface-light); border-radius: 12px; border: 1px solid var(--border-glow); text-align: center;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 12px 0; font-size: 1.2rem;">Questions Summary</h4>
+                    <p style="color: var(--text-secondary); margin: 0; font-size: 1rem;">
+                        Total Questions: <strong style="color: var(--cyber-glow);">{{ lesson_questions|length }}</strong>
+                    </p>
+                    <div id="score-summary" style="margin-top: 12px; display: none;">
+                        <p style="color: var(--text-secondary); margin: 0;">
+                            Your Score: <span id="score-text" style="color: var(--neon-green); font-weight: 600; font-size: 1.1rem;"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="content-section">
+            <h3 class="section-title">
+                <i class="fas fa-question-circle"></i>
+                Practice Questions
+            </h3>
+            <div style="text-align: center; padding: 48px; color: var(--text-muted);">
+                <i class="fas fa-question-circle" style="font-size: 4rem; margin-bottom: 16px; opacity: 0.5;"></i>
+                <h4 style="color: var(--text-secondary); margin-bottom: 8px;">No Questions Available</h4>
+                <p style="margin: 0;">Questions for this lesson will be added soon.</p>
             </div>
         </div>
         {% endif %}
@@ -1125,6 +1237,118 @@ html {
 document.addEventListener('DOMContentLoaded', function() {
     // Page loaded - additional functionality can be added here
 });
+
+// Question scoring variables
+let totalQuestions = {{ lesson_questions|length if lesson_questions else 0 }};
+let answeredQuestions = 0;
+let correctAnswers = 0;
+
+function selectAnswer(optionIndex, correctAnswer, selectedOption, questionId, explanation) {
+    // Check if this question was already answered
+    const questionElement = document.querySelector(`[data-question-id="${questionId}"]`);
+    const allOptionsForQuestion = document.querySelectorAll(`[data-question-id="${questionId}"]`);
+    
+    // Check if already answered
+    const alreadyAnswered = Array.from(allOptionsForQuestion).some(opt => 
+        opt.classList.contains('correct-answer') || opt.classList.contains('wrong-answer')
+    );
+    
+    if (alreadyAnswered) {
+        return; // Don't allow re-answering
+    }
+    
+    // Mark this question as answered
+    answeredQuestions++;
+    
+    // Check if the answer is correct
+    const isCorrect = selectedOption.trim() === correctAnswer.trim();
+    
+    if (isCorrect) {
+        correctAnswers++;
+    }
+    
+    // Update all options styling for this question
+    allOptionsForQuestion.forEach((opt, index) => {
+        const optionText = opt.querySelector('.option-text').textContent.trim();
+        if (optionText === correctAnswer.trim()) {
+            // Mark correct answer in green
+            opt.style.background = 'rgba(16, 185, 129, 0.2)';
+            opt.style.borderColor = '#10B981';
+            opt.style.cursor = 'default';
+            opt.classList.add('correct-answer');
+        } else if (opt === questionElement) {
+            // Mark selected wrong answer in red
+            opt.style.background = 'rgba(239, 68, 68, 0.2)';
+            opt.style.borderColor = '#EF4444';
+            opt.style.cursor = 'default';
+            opt.classList.add('wrong-answer');
+        } else {
+            // Dim other options
+            opt.style.background = 'rgba(255, 255, 255, 0.02)';
+            opt.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            opt.style.cursor = 'default';
+            opt.style.opacity = '0.6';
+        }
+        
+        // Remove hover effects
+        opt.onmouseover = null;
+        opt.onmouseout = null;
+        opt.onclick = null;
+    });
+    
+    // Show the answer section
+    const answerSection = document.getElementById(`answer-${questionId}`);
+    if (answerSection) {
+        answerSection.style.display = 'block';
+        
+        // Add feedback based on whether answer was correct
+        const feedbackSection = document.getElementById(`feedback-${questionId}`);
+        if (feedbackSection) {
+            feedbackSection.style.display = 'block';
+            if (isCorrect) {
+                feedbackSection.style.background = 'rgba(16, 185, 129, 0.1)';
+                feedbackSection.style.borderLeft = '4px solid #10B981';
+                feedbackSection.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; color: #10B981;">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Correct!</strong> Well done.
+                    </div>
+                `;
+            } else {
+                feedbackSection.style.background = 'rgba(239, 68, 68, 0.1)';
+                feedbackSection.style.borderLeft = '4px solid #EF4444';
+                feedbackSection.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; color: #EF4444;">
+                        <i class="fas fa-times-circle"></i>
+                        <strong>Incorrect.</strong> Try again next time.
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    // Update score summary if all questions are answered
+    if (answeredQuestions === totalQuestions && totalQuestions > 0) {
+        const scoreSummary = document.getElementById('score-summary');
+        const scoreText = document.getElementById('score-text');
+        
+        if (scoreSummary && scoreText) {
+            const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+            scoreText.textContent = `${correctAnswers}/${totalQuestions} (${percentage}%)`;
+            
+            // Color based on performance
+            if (percentage >= 80) {
+                scoreText.style.color = '#10B981'; // Green
+            } else if (percentage >= 60) {
+                scoreText.style.color = '#F59E0B'; // Yellow
+            } else {
+                scoreText.style.color = '#EF4444'; // Red
+            }
+            
+            scoreSummary.style.display = 'block';
+        }
+    }
+}
 
 function toggleModuleDropdown(moduleId) {
     event.preventDefault();

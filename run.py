@@ -130,6 +130,8 @@ def check_admin_auth():
         exempt_routes = [
             '/admin/login',
             '/admin/signup',  # Add signup route to exempt routes
+            '/admin/forgot-password',  # Add forgot password route
+            '/admin/reset-password/',  # Add reset password route (with token)
             '/admin/logout',
             '/admin/static/',
             '/admin/topology/',

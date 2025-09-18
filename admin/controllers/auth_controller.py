@@ -2,8 +2,9 @@ from flask import Blueprint, request, redirect, url_for, flash, session, current
 from datetime import datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_user, logout_user, current_user, login_required
-from __init__ import db  # Use the main app's db instance
-from admin.models.user import Admin
+from flask_mail import Message
+from __init__ import db, mail  # Use the main app's db instance and mail
+from admin.models.user import Admin, AdminPasswordReset
 from utils.render_utils import render_safe_template
 import os
 
@@ -182,6 +183,114 @@ class AuthController:
         
         # Ensure we redirect to admin login, not user login
         return redirect(url_for('auth.login'))
+
+    @staticmethod
+    @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+    def forgot_password():
+        """Handle forgot password requests"""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.index'))
+            
+        if request.method == 'POST':
+            email = request.form.get('email', '').strip()
+            
+            if not email:
+                flash('Email address is required', 'error')
+                return render_safe_template('admin/forgot_password.html')
+            
+            # Find admin by email
+            admin = Admin.query.filter_by(email=email).first()
+            
+            if admin:
+                try:
+                    # Create password reset token
+                    reset_token = AdminPasswordReset.create_token(admin.id, expiry_hours=1)
+                    
+                    # Send email with reset link
+                    reset_url = url_for('auth.reset_password', token=reset_token.token, _external=True)
+                    
+                    msg = Message(
+                        subject='RiddleNet Admin - Password Reset Request',
+                        recipients=[email],
+                        body=f'''Hello {admin.username},
+
+You have requested a password reset for your RiddleNet admin account.
+
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 1 hour.
+
+If you did not request this password reset, please ignore this email.
+
+Best regards,
+RiddleNet Team'''
+                    )
+                    
+                    mail.send(msg)
+                    flash('If an admin account with that email exists, you will receive password reset instructions.', 'success')
+                    
+                except Exception as e:
+                    print(f"Error sending password reset email: {str(e)}")
+                    flash('An error occurred while sending the password reset email. Please try again later.', 'error')
+            else:
+                # Don't reveal whether the email exists or not for security
+                flash('If an admin account with that email exists, you will receive password reset instructions.', 'success')
+            
+            return redirect(url_for('auth.login'))
+        
+        return render_safe_template('admin/forgot_password.html')
+
+    @staticmethod
+    @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+    def reset_password(token):
+        """Handle password reset with token"""
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.index'))
+        
+        # Validate the token
+        reset_token = AdminPasswordReset.get_valid_token(token)
+        if not reset_token:
+            flash('Invalid or expired password reset token.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        if request.method == 'POST':
+            password = request.form.get('password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
+            
+            # Validation
+            if not password:
+                flash('Password is required', 'error')
+                return render_safe_template('admin/reset_password.html', token=token)
+            
+            if len(password) < 6:
+                flash('Password must be at least 6 characters long', 'error')
+                return render_safe_template('admin/reset_password.html', token=token)
+            
+            if password != confirm_password:
+                flash('Passwords do not match', 'error')
+                return render_safe_template('admin/reset_password.html', token=token)
+            
+            try:
+                # Update the admin's password
+                admin = reset_token.admin
+                admin.set_password(password)
+                
+                # Mark the token as used
+                reset_token.mark_as_used()
+                
+                db.session.commit()
+                
+                flash('Your password has been reset successfully. You can now log in with your new password.', 'success')
+                return redirect(url_for('auth.login'))
+                
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error resetting password: {str(e)}")
+                flash('An error occurred while resetting your password. Please try again.', 'error')
+                return render_safe_template('admin/reset_password.html', token=token)
+        
+        return render_safe_template('admin/reset_password.html', token=token)
 
 # Add a context processor to help with URL generation
 @auth_bp.context_processor

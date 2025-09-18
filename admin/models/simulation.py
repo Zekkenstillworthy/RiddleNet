@@ -54,8 +54,9 @@ class Simulation(db.Model):
     average_duration = db.Column(db.Float, default=0.0)
     
     
-    # Learning Path Integration
-    learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=True)
+    # Learning Path Integration (temporarily disabled due to missing table)
+    # learning_path_id = db.Column(db.Integer, db.ForeignKey('learning_paths.id'), nullable=True)
+    learning_path_id = db.Column(db.Integer, nullable=True)  # Temp fix: removed foreign key constraint
     order_in_path = db.Column(db.Integer, nullable=True)
     
     # Advanced Features

@@ -212,7 +212,7 @@
   }
   .data-table thead th {
     padding: 12px;
-    text-align: left;
+    text-align: center;
     font-weight: 600;
     color: var(--cyber-glow);
     border-bottom: 2px solid var(--cyber-glow);
@@ -1580,14 +1580,6 @@
                       cls.id
                     }">
                       <i class="bx bx-edit" style="margin-right: 4px;"></i>Edit</a>
-                    <a href="#" class="action-link overview-link" data-id="${
-                      cls.id
-                    }" title="View Class Overview" style="color: var(--neon-green);">
-                      <i class="bx bx-show" style="margin-right: 4px;"></i>Overview</a>
-                    <a href="#" class="action-link template-link" data-id="${
-                      cls.id
-                    }" title="Regenerate Template">
-                      <i class="bx bx-refresh" style="margin-right: 4px;"></i>Template</a>
                     <a href="#" class="action-link delete-link" data-id="${
                       cls.id
                     }" data-name="${cls.name}">
@@ -1626,24 +1618,6 @@
           e.preventDefault();
           const classId = this.getAttribute("data-id");
           editClass(classId);
-        });
-      });
-
-      // Add event listeners for Overview buttons
-      document.querySelectorAll(".overview-link").forEach((btn) => {
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          const classId = this.getAttribute("data-id");
-          openClassOverview(classId);
-        });
-      });
-
-      // Add event listeners for Template buttons  
-      document.querySelectorAll(".template-link").forEach((btn) => {
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          const classId = this.getAttribute("data-id");
-          regenerateTemplate(classId);
         });
       });
 
@@ -2012,18 +1986,6 @@
         });
     }
 
-    // Open class overview in same tab
-    function openClassOverview(classId) {
-      console.log('Opening class overview for class with ID:', classId);
-      
-      // Open the class overview page in the same tab
-      const classUrl = `/admin/class/${classId}/overview`;
-      window.location.href = classUrl;
-      
-      // Optional: Show notification that overview is opening
-      showNotification(`Opening class overview...`, 'info');
-    }
-
     // Edit class function
     function editClass(classId) {
       // Fetch class details for editing
@@ -2219,58 +2181,6 @@
           console.error("Error deleting class:", error);
           showNotification("Error deleting class: " + error.message, 'error');
         });    }
-
-    // Regenerate template for class
-    function regenerateTemplate(classId) {
-      console.log('Regenerating template for class with ID:', classId);
-      
-      // Show loading indicator
-      const templateBtn = document.querySelector(`[data-id="${classId}"].template-link`);
-      const originalText = templateBtn.textContent;
-      templateBtn.textContent = 'Generating...';
-      templateBtn.style.pointerEvents = 'none';
-      
-      // API call to regenerate template
-      fetch(`/admin/api/classes/${classId}/regenerate-template`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-        .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error || "Failed to regenerate template");
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Template regenerated successfully:', data);
-          showNotification(`Template regenerated: ${data.template}`, 'success');
-          
-          // Reset button
-          templateBtn.textContent = originalText;
-          templateBtn.style.pointerEvents = 'auto';
-          
-          // Emit WebSocket event for real-time updates
-          if (window.socketClient) {
-            window.socketClient.emit('template_regenerated', { 
-              classId: classId,
-              template: data.template,
-              routes: data.routes
-            });
-          }
-        })
-        .catch(error => {
-          console.error("Error regenerating template:", error);
-          showNotification("Error regenerating template: " + error.message, 'error');
-          
-          // Reset button
-          templateBtn.textContent = originalText;
-          templateBtn.style.pointerEvents = 'auto';
-        });
-    }
 
     // Notification System
     function showNotification(message, type = 'info') {
