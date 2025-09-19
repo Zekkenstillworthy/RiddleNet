@@ -701,6 +701,141 @@ html {
 .class-sidebar::-webkit-scrollbar-thumb:hover {
     background: var(--neon-green);
 }
+
+/* Sidebar Toggle Styles */
+.sidebar-toggle {
+    display: flex;
+    background: var(--surface-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.toggle-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.toggle-btn.active {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.toggle-btn:hover:not(.active) {
+    background: rgba(0, 217, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.sidebar-section {
+    display: none;
+}
+
+.sidebar-section.active {
+    display: block;
+}
+
+/* Assignment Styles */
+.assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.assignment-item {
+    background: rgba(26, 35, 126, 0.4);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.assignment-item:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--cyber-glow);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 217, 255, 0.2);
+}
+
+.assignment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.assignment-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin: 0;
+}
+
+.assignment-status {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.assignment-status.not_submitted {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning-color);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.assignment-status.submitted {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent-color);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.assignment-status.graded {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.assignment-status.overdue {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.assignment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.assignment-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.assignment-meta i {
+    color: var(--cyber-glow);
+    width: 12px;
+}
 </style>
 {% endblock %}
 
@@ -714,12 +849,20 @@ html {
             <p class="class-subtitle">{{ class_data.description or 'Foundations of Computer Networking' }}</p>
         </div>
 
-        <!-- Module Navigation -->
-        <div class="module-navigation">
-            <div class="nav-section-title">
+        <!-- Sidebar Toggle -->
+        <div class="sidebar-toggle">
+            <button class="toggle-btn active" onclick="switchSidebarView('modules')" id="modules-toggle">
                 <i class="fas fa-book"></i>
                 Course Modules
-            </div>
+            </button>
+            <button class="toggle-btn" onclick="switchSidebarView('assignments')" id="assignments-toggle">
+                <i class="fas fa-tasks"></i>
+                Assignments
+            </button>
+        </div>
+
+        <!-- Module Navigation -->
+        <div class="sidebar-section active" id="modules-section">
             <div class="module-nav-list">
                 {% if class_modules and class_modules|length > 0 %}
                     {% for nav_module in class_modules %}
@@ -839,6 +982,55 @@ html {
                         </div>
                     </div>
                     {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Assignments Section -->
+        <div class="sidebar-section" id="assignments-section">
+            <div class="assignment-list">
+                {% if assignments and assignments|length > 0 %}
+                    {% for assignment_item in assignments %}
+                    <div class="assignment-item">
+                        <div class="assignment-header">
+                            <h4 class="assignment-title">{{ assignment_item.assignment.title }}</h4>
+                            <span class="assignment-status {{ assignment_item.status }}">
+                                {% if assignment_item.status == 'not_submitted' %}Not Submitted
+                                {% elif assignment_item.status == 'submitted' %}Submitted
+                                {% elif assignment_item.status == 'graded' %}Graded
+                                {% elif assignment_item.status == 'overdue' %}Overdue
+                                {% elif assignment_item.status == 'resubmitted' %}Resubmitted
+                                {% else %}{{ assignment_item.status|title }}{% endif %}
+                            </span>
+                        </div>
+                        <div class="assignment-meta">
+                            {% if assignment_item.assignment.due_date %}
+                            <span>
+                                <i class="fas fa-calendar-alt"></i>
+                                Due: {{ assignment_item.assignment.due_date.strftime('%m/%d/%Y') }}
+                            </span>
+                            {% endif %}
+                            {% if assignment_item.assignment.assignment_type %}
+                            <span>
+                                <i class="fas fa-tag"></i>
+                                {{ assignment_item.assignment.assignment_type|title }}
+                            </span>
+                            {% endif %}
+                            {% if assignment_item.submission and assignment_item.submission.grade %}
+                            <span>
+                                <i class="fas fa-star"></i>
+                                Grade: {{ assignment_item.submission.grade }}/{{ assignment_item.assignment.total_points or 100 }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <i class="fas fa-tasks" style="font-size: 2.5rem; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <h4 style="color: var(--text-secondary); margin-bottom: 8px; font-size: 1rem;">No Assignments</h4>
+                        <p style="margin: 0; font-size: 0.9rem;">No assignments have been posted for this class yet.</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -1002,60 +1194,7 @@ html {
         </div>
         {% endif %}
 
-        <!-- Module Simulations -->
-        {% if module_simulations and module_simulations|length > 0 %}
-        <div class="content-section">
-            <h3 class="section-title">
-                <i class="fas fa-flask"></i>
-                Available Simulations
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
-                {% for simulation in module_simulations %}
-                <div style="background: var(--surface-light); 
-                            border: 1px solid var(--border-glow); 
-                            border-radius: 12px; 
-                            padding: 20px; 
-                            transition: all 0.3s ease;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='var(--cyber-glow)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='var(--border-glow)'; this.style.boxShadow='none';">
-                    <h4 style="color: var(--text-primary); margin: 0 0 12px 0; font-size: 1.1rem;">{{ simulation.title }}</h4>
-                    <p style="color: var(--text-secondary); margin: 0 0 16px 0; font-size: 0.9rem; line-height: 1.5;">
-                        {{ simulation.description or 'Interactive simulation for hands-on learning' }}
-                    </p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">
-                            <i class="fas fa-signal" style="color: var(--cyber-glow); margin-right: 4px;"></i>
-                            {{ simulation.difficulty or 'Beginner' }}
-                        </span>
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">
-                            <i class="fas fa-clock" style="color: var(--cyber-glow); margin-right: 4px;"></i>
-                            {{ simulation.estimated_duration or 30 }} min
-                        </span>
-                    </div>
-                    <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=simulation.id) }}" 
-                       style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
-                              color: white; 
-                              padding: 12px 24px; 
-                              border-radius: 8px; 
-                              text-decoration: none; 
-                              font-weight: 600; 
-                              font-size: 0.95rem;
-                              display: inline-flex; 
-                              align-items: center; 
-                              gap: 8px;
-                              transition: all 0.3s ease;
-                              box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
-                              border: 2px solid transparent;"
-                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 217, 255, 0.2)'; this.style.borderColor='transparent';">
-                        <i class="fas fa-play"></i>
-                        <span>Start Simulation</span>
-                    </a>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+
 
         <!-- Main Lesson Content -->
         {% if lesson.content %}
@@ -1398,6 +1537,27 @@ function completeLesson() {
         });
     }
     {% endif %}
+}
+
+function switchSidebarView(view) {
+    // Remove active class from all toggle buttons
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Hide all sidebar sections
+    document.querySelectorAll('.sidebar-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Show selected section and activate corresponding button
+    if (view === 'modules') {
+        document.getElementById('modules-toggle').classList.add('active');
+        document.getElementById('modules-section').classList.add('active');
+    } else if (view === 'assignments') {
+        document.getElementById('assignments-toggle').classList.add('active');
+        document.getElementById('assignments-section').classList.add('active');
+    }
 }
 </script>
 {% endblock %}

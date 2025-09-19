@@ -948,6 +948,437 @@
         }
     }
 
+    /* ===== NETWORK GAMIFICATION LEVEL SYSTEM ===== */
+    
+    /* Level Progress Bar */
+    .level-progress-container {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+    }
+
+    .level-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .level-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: white;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+    }
+
+    .level-badge i {
+        font-size: 16px;
+        filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .xp-display {
+        color: var(--text-primary);
+        font-family: 'Orbitron', monospace;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .level-progress-bar {
+        width: 100%;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .level-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple), var(--neon-green));
+        border-radius: 6px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .level-progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: progressShine 2s ease-in-out infinite;
+    }
+
+    @keyframes progressShine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .level-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .next-level-preview {
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 10px;
+        color: var(--cyber-glow);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Level Up Animation */
+    .level-up-notification {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.95), rgba(139, 92, 246, 0.95));
+        border: 2px solid var(--neon-green);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        text-align: center;
+        z-index: 10001;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 60px rgba(0, 217, 255, 0.5), 0 0 100px rgba(57, 255, 20, 0.3);
+        color: white;
+        min-width: 400px;
+        opacity: 0;
+        transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .level-up-notification.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .level-up-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        animation: levelUpGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes levelUpGlow {
+        0% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+        100% { text-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 40px var(--neon-green); }
+    }
+
+    .level-up-details {
+        font-size: 16px;
+        margin-bottom: 20px;
+        opacity: 0.9;
+    }
+
+    .level-up-rewards {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+    }
+
+    .level-up-rewards h4 {
+        margin: 0 0 12px 0;
+        color: var(--neon-green);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .rewards-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .reward-item {
+        background: rgba(57, 255, 20, 0.2);
+        border: 1px solid var(--neon-green);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Network Skill Trees */
+    .skill-trees-container {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        margin-top: 16px;
+    }
+
+    .skill-tree {
+        margin-bottom: 20px;
+    }
+
+    .skill-tree-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .skill-tree-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+    }
+
+    .skill-tree-title {
+        color: var(--text-primary);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+    }
+
+    .skill-node {
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .skill-node.unlocked {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .skill-node.locked {
+        opacity: 0.4;
+        filter: grayscale(1);
+        cursor: not-allowed;
+    }
+
+    .skill-node.mastered {
+        background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(0, 217, 255, 0.2));
+        border-color: var(--neon-green);
+        box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+    }
+
+    .skill-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+        display: block;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .skill-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+    }
+
+    .skill-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .skill-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--cyber-glow), var(--neon-green));
+        transition: width 0.5s ease;
+    }
+
+    /* Challenge Cards for Network Scenarios */
+    .challenge-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .challenge-card {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .challenge-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .challenge-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.25);
+    }
+
+    .challenge-card:hover::before {
+        opacity: 1;
+    }
+
+    .challenge-card.completed {
+        border-color: var(--neon-green);
+        background: rgba(57, 255, 20, 0.05);
+    }
+
+    .challenge-card.locked {
+        opacity: 0.5;
+        filter: grayscale(0.8);
+        cursor: not-allowed;
+    }
+
+    .challenge-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .challenge-level {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .challenge-difficulty {
+        display: flex;
+        gap: 2px;
+    }
+
+    .difficulty-star {
+        width: 12px;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+
+    .difficulty-star.filled {
+        background: var(--warning-color);
+        box-shadow: 0 0 4px var(--warning-color);
+    }
+
+    .challenge-title {
+        color: var(--text-primary);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .challenge-description {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .challenge-rewards {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .challenge-xp {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--cyber-glow);
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .challenge-badges {
+        display: flex;
+        gap: 4px;
+    }
+
+    .mini-badge {
+        width: 20px;
+        height: 20px;
+        background: rgba(57, 255, 20, 0.2);
+        border: 1px solid var(--neon-green);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
     /* Achievement Notifications */
     .achievement-notification {
         position: fixed;
@@ -3190,6 +3621,189 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
+        <!-- Level Up Notification -->
+        <div id="levelUpNotification" class="level-up-notification">
+            <div class="level-up-title">Level Up!</div>
+            <div class="level-up-details">
+                <div>Congratulations! You've reached <strong id="new-level-text">Level 2</strong></div>
+                <div id="level-title-text">Junior Network Technician</div>
+            </div>
+            <div class="level-up-rewards">
+                <h4>New Unlocks:</h4>
+                <div class="rewards-list" id="rewards-list">
+                    <div class="reward-item">🔧 Advanced Tools</div>
+                    <div class="reward-item">📊 Protocol Analyzer</div>
+                    <div class="reward-item">🏆 New Challenges</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Challenges Modal -->
+        <div id="challengesModal" class="scenario-popup" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h2>Network Configuration Challenges</h2>
+            <div class="challenge-cards-container">
+                <!-- Level 1 Challenges -->
+                <div class="challenge-card" data-level="1" data-challenge="basic-connectivity">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 1</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star"></div>
+                            <div class="difficulty-star"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">Basic Network Connectivity</div>
+                    <div class="challenge-description">
+                        Create a simple network with 2 PCs and 1 switch. Configure IP addresses and test connectivity using ping.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>50 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🌐</div>
+                            <div class="mini-badge">⚡</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="challenge-card" data-level="1" data-challenge="router-setup">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 1</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">First Router Configuration</div>
+                    <div class="challenge-description">
+                        Set up a router with basic configuration. Configure interfaces and establish routing between subnets.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>75 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🔄</div>
+                            <div class="mini-badge">📡</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 2 Challenges -->
+                <div class="challenge-card locked" data-level="2" data-challenge="rip-protocol">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 2</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">RIP Protocol Configuration</div>
+                    <div class="challenge-description">
+                        Configure RIP v1 and v2 on multiple routers. Troubleshoot routing table issues and network convergence.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>100 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🔁</div>
+                            <div class="mini-badge">📊</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="challenge-card locked" data-level="2" data-challenge="vlan-basics">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 2</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">VLAN Segmentation</div>
+                    <div class="challenge-description">
+                        Create and configure VLANs on switches. Set up trunk ports and test inter-VLAN communication.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>120 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🔀</div>
+                            <div class="mini-badge">🏢</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level 3 Challenges -->
+                <div class="challenge-card locked" data-level="3" data-challenge="ospf-config">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 3</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">OSPF Implementation</div>
+                    <div class="challenge-description">
+                        Configure OSPF areas, analyze LSA databases, and optimize network convergence for enterprise networks.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>200 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🏗️</div>
+                            <div class="mini-badge">⚡</div>
+                            <div class="mini-badge">🔥</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="challenge-card locked" data-level="3" data-challenge="network-troubleshooting">
+                    <div class="challenge-header">
+                        <div class="challenge-level">Level 3</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star filled"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">Advanced Troubleshooting</div>
+                    <div class="challenge-description">
+                        Diagnose complex network issues including routing loops, spanning tree problems, and protocol misconfigurations.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>250 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🔧</div>
+                            <div class="mini-badge">🔍</div>
+                            <div class="mini-badge">🏆</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="back-btn" onclick="closeChallengesModal()">
+                    <i class='bx bx-x'></i> Close
+                </button>
+            </div>
+        </div>
+
 
 
 
@@ -3211,6 +3825,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="action-btn" id="solo-scenario-btn" onclick="activateSoloMode()">
                     <i class='bx bx-user'></i>
                     <span class="label">Solo Mode</span>
+                </div>
+                <div class="action-btn" id="challenges-btn" onclick="openChallengesModal()">
+                    <i class='bx bx-target-lock'></i>
+                    <span class="label">Challenges</span>
                 </div>
                 <div class="action-btn" id="troubleshoot-btn">
                     <i class='bx bx-check-shield'></i>
@@ -3269,6 +3887,122 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="close-sidebar" id="close-performance-sidebar">
                         <i class="bx bx-x"></i>
                     </button>
+                </div>
+
+                <!-- Network Engineer Level Progress -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-trophy"></i> Network Engineer Level</h4>
+                    <div class="level-progress-container">
+                        <div class="level-header">
+                            <div class="level-badge">
+                                <i class="bx bx-shield-alt-2"></i>
+                                <span id="current-level">Level 1</span>
+                            </div>
+                            <div class="xp-display">
+                                <span id="current-xp">0</span> / <span id="next-level-xp">100</span> XP
+                            </div>
+                        </div>
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="level-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="level-info">
+                            <span id="level-title">Networking Novice</span>
+                            <div class="next-level-preview" id="next-level-preview">
+                                Next: Junior Technician
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Skill Trees -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-git-branch"></i> Network Skills</h4>
+                    <div class="skill-trees-container">
+                        <!-- Routing Skills -->
+                        <div class="skill-tree">
+                            <div class="skill-tree-header">
+                                <div class="skill-tree-icon">
+                                    <i class="bx bx-git-merge"></i>
+                                </div>
+                                <div class="skill-tree-title">Routing Protocols</div>
+                            </div>
+                            <div class="skills-grid">
+                                <div class="skill-node unlocked" data-skill="basic-routing">
+                                    <i class="bx bx-sitemap skill-icon"></i>
+                                    <div class="skill-name">Basic Routing</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-node locked" data-skill="rip-protocol">
+                                    <i class="bx bx-refresh skill-icon"></i>
+                                    <div class="skill-name">RIP Protocol</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-node locked" data-skill="ospf-protocol">
+                                    <i class="bx bx-network-chart skill-icon"></i>
+                                    <div class="skill-name">OSPF</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Switching Skills -->
+                        <div class="skill-tree">
+                            <div class="skill-tree-header">
+                                <div class="skill-tree-icon">
+                                    <i class="bx bx-shuffle"></i>
+                                </div>
+                                <div class="skill-tree-title">Switching & VLANs</div>
+                            </div>
+                            <div class="skills-grid">
+                                <div class="skill-node unlocked" data-skill="basic-switching">
+                                    <i class="bx bx-category skill-icon"></i>
+                                    <div class="skill-name">Layer 2 Switching</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 80%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-node locked" data-skill="vlan-config">
+                                    <i class="bx bx-layer-group skill-icon"></i>
+                                    <div class="skill-name">VLAN Config</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Troubleshooting Skills -->
+                        <div class="skill-tree">
+                            <div class="skill-tree-header">
+                                <div class="skill-tree-icon">
+                                    <i class="bx bx-wrench"></i>
+                                </div>
+                                <div class="skill-tree-title">Troubleshooting</div>
+                            </div>
+                            <div class="skills-grid">
+                                <div class="skill-node unlocked" data-skill="connectivity-troubleshooting">
+                                    <i class="bx bx-wifi skill-icon"></i>
+                                    <div class="skill-name">Connectivity</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                                <div class="skill-node locked" data-skill="protocol-analysis">
+                                    <i class="bx bx-search-alt skill-icon"></i>
+                                    <div class="skill-name">Protocol Analysis</div>
+                                    <div class="skill-progress">
+                                        <div class="skill-progress-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Real-time Progress -->
@@ -3972,7 +4706,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             onDeviceAdded() {
-                this.metrics.devicesPlaced = devices ? devices.length : 0;
+                // Use getElementsByClassName to count devices instead of undefined 'devices' variable
+                const deviceElements = document.getElementsByClassName('device');
+                this.metrics.devicesPlaced = deviceElements ? deviceElements.length : 0;
                 this.metrics.actionsCount++;
                 
                 // Update UI
@@ -4059,6 +4795,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (scoreValue) {
                     scoreValue.textContent = this.metrics.score;
                 }
+            }
+
+            updateScoreDisplay() {
+                // Alias for updateScoreMetric for compatibility
+                this.updateScoreMetric();
             }
 
             updateTimeMetric() {
@@ -5351,6 +6092,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 scenarioModal.classList.add('active');
             }
         }
+        
+        // Ensure tutorial functions are globally accessible
+        window.showTutorial = showTutorial;
+        window.closeTutorial = closeTutorial;
+        window.updateTutorialStep = updateTutorialStep;
 
         window.onload = function () {
             // Restore mode preference first
@@ -6413,6 +7159,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('✅ Solo Mode setup complete');
         }
+        
+        // Ensure activateSoloMode is globally accessible
+        window.activateSoloMode = activateSoloMode;
 
 
 
@@ -6466,6 +7215,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('✅ All solo features are now available');
         }
+        
+        // Ensure all key functions are globally accessible
+        window.updateModeButtons = updateModeButtons;
+        window.showSoloFeatures = showSoloFeatures;
 
         // hideSoloFeatures function removed - no longer needed
 
@@ -8016,6 +8769,770 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         console.log('🎯 Performance feedback system ready with full backend integration');
+    </script>
+
+    <!-- ===== NETWORK GAMIFICATION LEVEL SYSTEM ===== -->
+    <script>
+        class NetworkLevelSystem {
+            constructor() {
+                this.currentLevel = 1;
+                this.currentXP = 0;
+                this.levelData = this.initializeLevelData();
+                this.skills = this.initializeSkills();
+                this.challenges = this.initializeChallenges();
+                this.achievements = new Set();
+                this.completedChallenges = new Set();
+                this.sessionStart = Date.now();
+                
+                this.init();
+            }
+
+            initializeLevelData() {
+                return {
+                    1: { title: "Networking Novice", xpRequired: 100, rewards: ["Basic Tools", "Help System"] },
+                    2: { title: "Junior Technician", xpRequired: 250, rewards: ["Protocol Analyzer", "Advanced Routing"] },
+                    3: { title: "Network Engineer", xpRequired: 500, rewards: ["VLAN Tools", "Security Features"] },
+                    4: { title: "Senior Engineer", xpRequired: 1000, rewards: ["OSPF Configuration", "QoS Tools"] },
+                    5: { title: "Network Architect", xpRequired: 2000, rewards: ["Network Design", "Performance Optimization"] },
+                    6: { title: "Master Engineer", xpRequired: 3500, rewards: ["Advanced Troubleshooting", "Automation Tools"] },
+                    7: { title: "Network Guru", xpRequired: 5000, rewards: ["Expert Mode", "All Protocols"] }
+                };
+            }
+
+            initializeSkills() {
+                return {
+                    routing: {
+                        name: "Routing Protocols",
+                        icon: "bx-git-merge",
+                        skills: {
+                            "basic-routing": { name: "Basic Routing", unlocked: true, progress: 100, level: 1 },
+                            "rip-protocol": { name: "RIP Protocol", unlocked: false, progress: 0, level: 2 },
+                            "ospf-protocol": { name: "OSPF", unlocked: false, progress: 0, level: 4 }
+                        }
+                    },
+                    switching: {
+                        name: "Switching & VLANs",
+                        icon: "bx-shuffle",
+                        skills: {
+                            "basic-switching": { name: "Layer 2 Switching", unlocked: true, progress: 80, level: 1 },
+                            "vlan-config": { name: "VLAN Config", unlocked: false, progress: 0, level: 3 }
+                        }
+                    },
+                    troubleshooting: {
+                        name: "Troubleshooting",
+                        icon: "bx-wrench",
+                        skills: {
+                            "connectivity-troubleshooting": { name: "Connectivity", unlocked: true, progress: 60, level: 1 },
+                            "protocol-analysis": { name: "Protocol Analysis", unlocked: false, progress: 0, level: 3 }
+                        }
+                    }
+                };
+            }
+
+            initializeChallenges() {
+                return [
+                    {
+                        id: "basic-connectivity",
+                        title: "Basic Network Connectivity",
+                        level: 1,
+                        difficulty: 1,
+                        xp: 50,
+                        description: "Create a simple network with 2 PCs and 1 switch. Configure IP addresses and test connectivity.",
+                        requirements: ["Place 2 PCs", "Place 1 Switch", "Connect devices", "Configure IPs"],
+                        unlocked: true,
+                        badge: "🌐"
+                    },
+                    {
+                        id: "router-setup",
+                        title: "First Router Configuration",
+                        level: 1,
+                        difficulty: 2,
+                        xp: 75,
+                        description: "Set up a router with basic configuration. Configure interfaces and establish routing.",
+                        requirements: ["Place router", "Configure interfaces", "Set up routing table"],
+                        unlocked: true,
+                        badge: "🔄"
+                    },
+                    {
+                        id: "rip-protocol",
+                        title: "RIP Protocol Configuration",
+                        level: 2,
+                        difficulty: 2,
+                        xp: 100,
+                        description: "Configure RIP v1 and v2 on multiple routers. Troubleshoot routing issues.",
+                        requirements: ["Multiple routers", "RIP configuration", "Network convergence"],
+                        unlocked: false,
+                        badge: "🔁"
+                    },
+                    {
+                        id: "vlan-basics",
+                        title: "VLAN Segmentation",
+                        level: 2,
+                        difficulty: 2,
+                        xp: 120,
+                        description: "Create and configure VLANs on switches. Set up trunk ports.",
+                        requirements: ["VLAN creation", "Trunk configuration", "Inter-VLAN routing"],
+                        unlocked: false,
+                        badge: "🔀"
+                    },
+                    {
+                        id: "ospf-config",
+                        title: "OSPF Implementation",
+                        level: 3,
+                        difficulty: 3,
+                        xp: 200,
+                        description: "Configure OSPF areas and analyze LSA databases for enterprise networks.",
+                        requirements: ["OSPF areas", "LSA analysis", "Network optimization"],
+                        unlocked: false,
+                        badge: "🏗️"
+                    },
+                    {
+                        id: "network-troubleshooting",
+                        title: "Advanced Troubleshooting",
+                        level: 3,
+                        difficulty: 3,
+                        xp: 250,
+                        description: "Diagnose complex network issues including routing loops and protocol misconfigurations.",
+                        requirements: ["Problem diagnosis", "Root cause analysis", "Solution implementation"],
+                        unlocked: false,
+                        badge: "🔧"
+                    }
+                ];
+            }
+
+            init() {
+                this.loadProgress();
+                this.updateUI();
+                this.bindEvents();
+                console.log('🎮 Network Level System initialized');
+            }
+
+            loadProgress() {
+                const savedData = localStorage.getItem('networkLevelProgress');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    this.currentLevel = data.level || 1;
+                    this.currentXP = data.xp || 0;
+                    this.achievements = new Set(data.achievements || []);
+                    this.completedChallenges = new Set(data.completedChallenges || []);
+                    
+                    // Update skills progress
+                    if (data.skills) {
+                        Object.keys(data.skills).forEach(category => {
+                            if (this.skills[category]) {
+                                Object.keys(data.skills[category]).forEach(skillId => {
+                                    if (this.skills[category].skills[skillId]) {
+                                        Object.assign(this.skills[category].skills[skillId], data.skills[category][skillId]);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+
+            saveProgress() {
+                const data = {
+                    level: this.currentLevel,
+                    xp: this.currentXP,
+                    achievements: Array.from(this.achievements),
+                    completedChallenges: Array.from(this.completedChallenges),
+                    skills: this.skills,
+                    lastSaved: Date.now()
+                };
+                localStorage.setItem('networkLevelProgress', JSON.stringify(data));
+            }
+
+            awardXP(amount, reason = '') {
+                const oldLevel = this.currentLevel;
+                this.currentXP += amount;
+                
+                // Check for level up
+                while (this.shouldLevelUp()) {
+                    this.levelUp();
+                }
+                
+                this.updateUI();
+                this.saveProgress();
+                
+                // Show XP notification
+                this.showXPNotification(amount, reason);
+                
+                console.log(`🌟 Awarded ${amount} XP: ${reason}`);
+            }
+
+            shouldLevelUp() {
+                const nextLevel = this.currentLevel + 1;
+                const nextLevelData = this.levelData[nextLevel];
+                return nextLevelData && this.currentXP >= nextLevelData.xpRequired;
+            }
+
+            levelUp() {
+                this.currentLevel++;
+                const levelInfo = this.levelData[this.currentLevel];
+                
+                // Unlock new skills and challenges
+                this.unlockContentForLevel(this.currentLevel);
+                
+                // Show level up notification
+                this.showLevelUpNotification(levelInfo);
+                
+                // Award achievement
+                this.unlockAchievement(`level_${this.currentLevel}`);
+                
+                console.log(`🎉 Level up! Now level ${this.currentLevel}: ${levelInfo.title}`);
+            }
+
+            unlockContentForLevel(level) {
+                // Unlock skills
+                Object.values(this.skills).forEach(category => {
+                    Object.values(category.skills).forEach(skill => {
+                        if (skill.level <= level) {
+                            skill.unlocked = true;
+                        }
+                    });
+                });
+                
+                // Unlock challenges
+                this.challenges.forEach(challenge => {
+                    if (challenge.level <= level) {
+                        challenge.unlocked = true;
+                    }
+                });
+            }
+
+            completeChallenge(challengeId) {
+                const challenge = this.challenges.find(c => c.id === challengeId);
+                if (!challenge || this.completedChallenges.has(challengeId)) {
+                    return false;
+                }
+                
+                this.completedChallenges.add(challengeId);
+                this.awardXP(challenge.xp, `Completed: ${challenge.title}`);
+                
+                // Update related skills
+                this.updateSkillsFromChallenge(challenge);
+                
+                // Show completion notification
+                this.showChallengeCompletionNotification(challenge);
+                
+                return true;
+            }
+
+            updateSkillsFromChallenge(challenge) {
+                // Map challenges to skills and award progress
+                const skillMappings = {
+                    "basic-connectivity": ["connectivity-troubleshooting", "basic-switching"],
+                    "router-setup": ["basic-routing"],
+                    "rip-protocol": ["rip-protocol"],
+                    "vlan-basics": ["vlan-config"],
+                    "ospf-config": ["ospf-protocol"],
+                    "network-troubleshooting": ["protocol-analysis"]
+                };
+                
+                const skillsToUpdate = skillMappings[challenge.id] || [];
+                skillsToUpdate.forEach(skillId => {
+                    this.updateSkillProgress(skillId, 25);
+                });
+            }
+
+            updateSkillProgress(skillId, progress) {
+                // Find the skill across all categories
+                let targetSkill = null;
+                let categoryKey = null;
+                
+                Object.keys(this.skills).forEach(category => {
+                    Object.keys(this.skills[category].skills).forEach(skill => {
+                        if (skill === skillId) {
+                            targetSkill = this.skills[category].skills[skill];
+                            categoryKey = category;
+                        }
+                    });
+                });
+                
+                if (targetSkill && targetSkill.unlocked) {
+                    targetSkill.progress = Math.min(100, targetSkill.progress + progress);
+                    
+                    // If skill mastered, award bonus XP
+                    if (targetSkill.progress >= 100 && targetSkill.progress - progress < 100) {
+                        this.awardXP(25, `Mastered: ${targetSkill.name}`);
+                        this.unlockAchievement(`skill_${skillId}_mastered`);
+                    }
+                }
+            }
+
+            unlockAchievement(achievementId) {
+                if (this.achievements.has(achievementId)) {
+                    return false;
+                }
+                
+                this.achievements.add(achievementId);
+                this.showAchievementNotification(achievementId);
+                return true;
+            }
+
+            trackAction(actionType, data = {}) {
+                // Award XP based on action type
+                const xpValues = {
+                    'device_placed': 5,
+                    'connection_made': 8,
+                    'device_configured': 15,
+                    'problem_solved': 30,
+                    'scenario_completed': 50,
+                    'perfect_score': 100,
+                    'speed_bonus': 20
+                };
+                
+                const xp = xpValues[actionType] || 0;
+                if (xp > 0) {
+                    this.awardXP(xp, this.getActionDescription(actionType));
+                }
+                
+                // Check for specific achievements
+                this.checkActionAchievements(actionType, data);
+            }
+
+            getActionDescription(actionType) {
+                const descriptions = {
+                    'device_placed': 'Device Placement',
+                    'connection_made': 'Network Connection',
+                    'device_configured': 'Device Configuration',
+                    'problem_solved': 'Problem Solved',
+                    'scenario_completed': 'Scenario Completed',
+                    'perfect_score': 'Perfect Score!',
+                    'speed_bonus': 'Speed Bonus'
+                };
+                return descriptions[actionType] || 'Network Action';
+            }
+
+            checkActionAchievements(actionType, data) {
+                // Achievement logic based on actions
+                if (actionType === 'device_placed' && !this.achievements.has('first_device')) {
+                    this.unlockAchievement('first_device');
+                }
+                
+                if (actionType === 'scenario_completed' && data.time < 300 && !this.achievements.has('speed_demon')) {
+                    this.unlockAchievement('speed_demon');
+                }
+                
+                if (actionType === 'perfect_score' && !this.achievements.has('perfectionist')) {
+                    this.unlockAchievement('perfectionist');
+                }
+            }
+
+            updateUI() {
+                this.updateLevelProgress();
+                this.updateSkillTrees();
+                this.updateChallenges();
+            }
+
+            updateLevelProgress() {
+                const levelElement = document.getElementById('current-level');
+                const xpElement = document.getElementById('current-xp');
+                const nextXpElement = document.getElementById('next-level-xp');
+                const titleElement = document.getElementById('level-title');
+                const previewElement = document.getElementById('next-level-preview');
+                const progressFill = document.getElementById('level-progress-fill');
+                
+                const currentLevelData = this.levelData[this.currentLevel];
+                const nextLevelData = this.levelData[this.currentLevel + 1];
+                
+                if (levelElement) levelElement.textContent = `Level ${this.currentLevel}`;
+                if (xpElement) xpElement.textContent = this.currentXP;
+                if (titleElement) titleElement.textContent = currentLevelData?.title || 'Network Engineer';
+                
+                if (nextLevelData) {
+                    if (nextXpElement) nextXpElement.textContent = nextLevelData.xpRequired;
+                    if (previewElement) previewElement.textContent = `Next: ${nextLevelData.title}`;
+                    
+                    if (progressFill) {
+                        const currentLevelXP = this.currentLevel > 1 ? this.levelData[this.currentLevel].xpRequired : 0;
+                        const progress = ((this.currentXP - currentLevelXP) / (nextLevelData.xpRequired - currentLevelXP)) * 100;
+                        progressFill.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+                    }
+                } else {
+                    if (nextXpElement) nextXpElement.textContent = 'MAX';
+                    if (previewElement) previewElement.textContent = 'Max Level Reached!';
+                    if (progressFill) progressFill.style.width = '100%';
+                }
+            }
+
+            updateSkillTrees() {
+                Object.keys(this.skills).forEach(categoryKey => {
+                    const category = this.skills[categoryKey];
+                    Object.keys(category.skills).forEach(skillId => {
+                        const skill = category.skills[skillId];
+                        const skillElement = document.querySelector(`[data-skill="${skillId}"]`);
+                        
+                        if (skillElement) {
+                            skillElement.classList.remove('locked', 'unlocked', 'mastered');
+                            
+                            if (!skill.unlocked) {
+                                skillElement.classList.add('locked');
+                            } else if (skill.progress >= 100) {
+                                skillElement.classList.add('mastered');
+                            } else {
+                                skillElement.classList.add('unlocked');
+                            }
+                            
+                            const progressBar = skillElement.querySelector('.skill-progress-fill');
+                            if (progressBar) {
+                                progressBar.style.width = `${skill.progress}%`;
+                            }
+                        }
+                    });
+                });
+            }
+
+            updateChallenges() {
+                this.challenges.forEach(challenge => {
+                    const challengeElement = document.querySelector(`[data-challenge="${challenge.id}"]`);
+                    if (challengeElement) {
+                        challengeElement.classList.remove('locked', 'completed');
+                        
+                        if (!challenge.unlocked) {
+                            challengeElement.classList.add('locked');
+                        } else if (this.completedChallenges.has(challenge.id)) {
+                            challengeElement.classList.add('completed');
+                        }
+                    }
+                });
+            }
+
+            showXPNotification(amount, reason) {
+                // Create floating XP notification
+                const notification = document.createElement('div');
+                notification.className = 'xp-notification';
+                notification.innerHTML = `
+                    <div class="xp-amount">+${amount} XP</div>
+                    <div class="xp-reason">${reason}</div>
+                `;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 380px;
+                    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
+                    color: white;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    z-index: 10000;
+                    transform: translateY(-20px);
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(0)';
+                    notification.style.opacity = '1';
+                }, 100);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(-20px)';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            showLevelUpNotification(levelInfo) {
+                const notification = document.getElementById('levelUpNotification');
+                if (!notification) return;
+                
+                const newLevelText = document.getElementById('new-level-text');
+                const levelTitleText = document.getElementById('level-title-text');
+                const rewardsList = document.getElementById('rewards-list');
+                
+                if (newLevelText) newLevelText.textContent = `Level ${this.currentLevel}`;
+                if (levelTitleText) levelTitleText.textContent = levelInfo.title;
+                
+                if (rewardsList) {
+                    rewardsList.innerHTML = '';
+                    levelInfo.rewards.forEach(reward => {
+                        const rewardElement = document.createElement('div');
+                        rewardElement.className = 'reward-item';
+                        rewardElement.textContent = `🎁 ${reward}`;
+                        rewardsList.appendChild(rewardElement);
+                    });
+                }
+                
+                notification.classList.add('show');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+                
+                // Add click to dismiss
+                notification.onclick = () => notification.classList.remove('show');
+            }
+
+            showChallengeCompletionNotification(challenge) {
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.addHint(
+                        `🎉 Challenge Completed: ${challenge.title} (+${challenge.xp} XP)`,
+                        'success'
+                    );
+                }
+            }
+
+            showAchievementNotification(achievementId) {
+                const achievements = {
+                    'first_device': { name: 'First Steps', icon: '🌟', description: 'Placed your first device' },
+                    'speed_demon': { name: 'Speed Demon', icon: '⚡', description: 'Completed scenario in under 5 minutes' },
+                    'perfectionist': { name: 'Perfectionist', icon: '💎', description: 'Achieved perfect score' },
+                    'level_2': { name: 'Rising Star', icon: '⭐', description: 'Reached Level 2' },
+                    'level_3': { name: 'Network Engineer', icon: '🔧', description: 'Reached Level 3' },
+                    'level_4': { name: 'Senior Engineer', icon: '👨‍💻', description: 'Reached Level 4' },
+                    'level_5': { name: 'Network Architect', icon: '🏗️', description: 'Reached Level 5' }
+                };
+                
+                const achievement = achievements[achievementId];
+                if (!achievement) return;
+                
+                // Update the achievement badge in the sidebar
+                const badgeElement = document.querySelector(`[data-achievement="${achievementId}"]`);
+                if (badgeElement) {
+                    badgeElement.classList.remove('locked');
+                    badgeElement.classList.add('unlocked');
+                }
+                
+                // Show notification
+                const notification = document.createElement('div');
+                notification.className = 'achievement-notification';
+                notification.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-text">
+                        <div class="achievement-title">Achievement Unlocked!</div>
+                        <div class="achievement-name">${achievement.name}</div>
+                    </div>
+                `;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 150, 255, 0.15));
+                    border: 1px solid #00D9FF;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    min-width: 280px;
+                    backdrop-filter: blur(20px);
+                    box-shadow: 0 8px 32px rgba(0, 217, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    z-index: 10000;
+                    transform: translateX(100%);
+                    opacity: 0;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    color: white;
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                    notification.style.opacity = '1';
+                }, 100);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 5000);
+            }
+
+            bindEvents() {
+                // Bind challenge click events
+                document.addEventListener('click', (e) => {
+                    const challengeCard = e.target.closest('[data-challenge]');
+                    if (challengeCard) {
+                        const challengeId = challengeCard.dataset.challenge;
+                        this.startChallenge(challengeId);
+                    }
+                });
+                
+                // Bind skill node events
+                document.addEventListener('click', (e) => {
+                    const skillNode = e.target.closest('[data-skill]');
+                    if (skillNode) {
+                        const skillId = skillNode.dataset.skill;
+                        this.showSkillDetails(skillId);
+                    }
+                });
+            }
+
+            startChallenge(challengeId) {
+                const challenge = this.challenges.find(c => c.id === challengeId);
+                if (!challenge || !challenge.unlocked || this.completedChallenges.has(challengeId)) {
+                    return;
+                }
+                
+                console.log(`🎯 Starting challenge: ${challenge.title}`);
+                
+                // Close challenges modal
+                closeChallengesModal();
+                
+                // Start the challenge scenario
+                this.loadChallengeScenario(challenge);
+                
+                // Show performance sidebar with challenge tracking
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.showSidebar();
+                    window.performanceFeedback.addHint(`🎯 Challenge Started: ${challenge.title}`, 'info');
+                }
+            }
+
+            loadChallengeScenario(challenge) {
+                // Map challenges to scenario configurations
+                const scenarioMappings = {
+                    "basic-connectivity": { difficulty: 'easy', type: 'network' },
+                    "router-setup": { difficulty: 'easy', type: 'router' },
+                    "rip-protocol": { difficulty: 'medium', type: 'rip' },
+                    "vlan-basics": { difficulty: 'medium', type: 'vlan' },
+                    "ospf-config": { difficulty: 'hard', type: 'ospf' },
+                    "network-troubleshooting": { difficulty: 'hard', type: 'troubleshooting' }
+                };
+                
+                const scenario = scenarioMappings[challenge.id];
+                if (scenario && typeof window.startScenario === 'function') {
+                    // Store current challenge for completion tracking
+                    this.currentChallenge = challenge;
+                    window.startScenario(scenario.difficulty, scenario.type);
+                }
+            }
+
+            showSkillDetails(skillId) {
+                // Find the skill
+                let skill = null;
+                Object.values(this.skills).forEach(category => {
+                    if (category.skills[skillId]) {
+                        skill = category.skills[skillId];
+                    }
+                });
+                
+                if (skill && window.performanceFeedback) {
+                    const message = skill.unlocked ? 
+                        `📊 ${skill.name}: ${skill.progress}% Complete` :
+                        `🔒 ${skill.name}: Unlock at Level ${skill.level}`;
+                    window.performanceFeedback.addHint(message, 'info');
+                }
+            }
+
+            // Integration with existing scenario system
+            onScenarioCompleted(difficulty, problemType, score, timeBonus) {
+                // Award XP based on performance
+                let baseXP = { easy: 50, medium: 100, hard: 200 }[difficulty] || 50;
+                let bonusXP = Math.floor(score / 10) + timeBonus;
+                
+                this.awardXP(baseXP + bonusXP, `${difficulty.toUpperCase()} Scenario Completed`);
+                
+                // Check if this was a challenge completion
+                if (this.currentChallenge) {
+                    this.completeChallenge(this.currentChallenge.id);
+                    this.currentChallenge = null;
+                }
+                
+                // Award achievements based on performance
+                if (score >= 100) {
+                    this.unlockAchievement('perfectionist');
+                }
+                
+                if (timeBonus > 50) {
+                    this.unlockAchievement('speed_demon');
+                }
+            }
+
+            // Public API
+            getStats() {
+                return {
+                    level: this.currentLevel,
+                    xp: this.currentXP,
+                    title: this.levelData[this.currentLevel]?.title,
+                    achievements: Array.from(this.achievements),
+                    completedChallenges: Array.from(this.completedChallenges),
+                    skills: this.skills
+                };
+            }
+
+            reset() {
+                if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                    localStorage.removeItem('networkLevelProgress');
+                    location.reload();
+                }
+            }
+        }
+
+        // Global functions for modals
+        function openChallengesModal() {
+            const modal = document.getElementById('challengesModal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeChallengesModal() {
+            const modal = document.getElementById('challengesModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        }
+
+        // Initialize the level system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize after a short delay to ensure all other systems are ready
+            setTimeout(() => {
+                window.networkLevelSystem = new NetworkLevelSystem();
+                
+                // Integrate with existing performance feedback system
+                if (window.performanceFeedback) {
+                    const originalTrackAction = window.performanceFeedback.trackAction;
+                    window.performanceFeedback.trackAction = function(actionType, data) {
+                        if (originalTrackAction) {
+                            originalTrackAction.call(this, actionType, data);
+                        }
+                        // Also track with level system
+                        window.networkLevelSystem.trackAction(actionType, data);
+                    };
+                }
+                
+                // Override scenario completion to include level system
+                const originalCheckSolution = window.checkSolution;
+                if (originalCheckSolution) {
+                    window.checkSolution = function(scenario, autoSubmit = false) {
+                        const result = originalCheckSolution.call(this, scenario, autoSubmit);
+                        
+                        if (result && window.networkLevelSystem) {
+                            // Calculate score and time bonus (you may need to adjust this based on your existing scoring system)
+                            const score = 85; // Example score
+                            const timeBonus = 15; // Example time bonus
+                            window.networkLevelSystem.onScenarioCompleted(
+                                scenario.difficulty || 'medium',
+                                scenario.problemType || 'general',
+                                score,
+                                timeBonus
+                            );
+                        }
+                        
+                        return result;
+                    };
+                }
+                
+                console.log('🎮 Network Level System fully integrated!');
+            }, 1000);
+        });
+
+        // Export for global access
+        window.openChallengesModal = openChallengesModal;
+        window.closeChallengesModal = closeChallengesModal;
     </script>
 
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>

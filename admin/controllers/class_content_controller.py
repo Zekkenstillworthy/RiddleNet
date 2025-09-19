@@ -56,9 +56,11 @@ def class_content_manager_redirect():
 @admin_required
 def manage_content(class_id):
     """Display class content manager interface for managing modules, simulations, assignments, etc."""
+    print(f"🔍 MANAGE_CONTENT ROUTE HIT for class_id: {class_id}")
     try:
         # Get the class details
         cls = Class.query.get_or_404(class_id)
+        print(f"🔍 Found class: {cls.name} ({cls.code})")
 
         # Ownership check: only the creator or super_admin can manage content
         if not (hasattr(current_user, 'role') and current_user.role == 'super_admin') and cls.created_by != getattr(current_user, 'id', None):
@@ -97,6 +99,11 @@ def manage_content(class_id):
         
         # Get question groups assigned to this class
         class_question_groups = cls.question_groups.all()
+        
+        # Get enrolled students and their details
+        enrolled_students = cls.students.all() if cls.students else []
+        student_count = len(enrolled_students)
+        print(f"🔍 Found {student_count} students in class {cls.name}")
         
         # Prepare class content data structure for the template
         class_content = {
@@ -142,7 +149,9 @@ def manage_content(class_id):
                 'description': group.description,
                 'question_count': len(group.questions),
                 'is_active': group.is_active
-            } for group in class_question_groups]
+            } for group in class_question_groups],
+            'student_count': student_count,
+            'students': [{'id': student.id, 'username': student.username, 'email': student.email} for student in enrolled_students]
         }
         
         # Use class_content_manager template
@@ -159,7 +168,7 @@ def manage_content(class_id):
                              available_simulations=available_simulations,
                              all_classes=[cls],  # Add this for template compatibility
                              class_statistics={  # Add required statistics
-                                 'total_students': 0,
+                                 'total_students': student_count,
                                  'total_simulations': len(assigned_simulations),
                                  'total_question_groups': len(class_question_groups),
                                  'total_modules': len(class_modules),
@@ -608,6 +617,31 @@ def preview_module_page(class_id, module_id):
             except Exception as e:
                 pass
         
+        # Parse learning objectives if they're stored as JSON string
+        import json
+        learning_objectives = []
+        print(f"DEBUG: Raw learning_objectives type: {type(module.learning_objectives)}")
+        print(f"DEBUG: Raw learning_objectives content: {repr(module.learning_objectives)}")
+        
+        if module.learning_objectives:
+            try:
+                if isinstance(module.learning_objectives, str):
+                    learning_objectives = json.loads(module.learning_objectives)
+                    print(f"DEBUG: Parsed as JSON string: {learning_objectives}")
+                elif isinstance(module.learning_objectives, list):
+                    learning_objectives = module.learning_objectives
+                    print(f"DEBUG: Already a list: {learning_objectives}")
+                else:
+                    learning_objectives = []
+                    print(f"DEBUG: Unknown type, defaulting to empty list")
+            except (json.JSONDecodeError, TypeError) as e:
+                learning_objectives = []
+                print(f"DEBUG: JSON parsing failed: {e}")
+        else:
+            print(f"DEBUG: No learning_objectives found")
+        
+        print(f"DEBUG: Final learning_objectives: {learning_objectives}")
+        
         # Create a copy of the module object with lessons as a list to avoid template errors
         module_data = {
             'id': module.id,
@@ -616,7 +650,7 @@ def preview_module_page(class_id, module_id):
             'module_number': module.module_number,
             'estimated_duration': module.estimated_duration or 60,
             'level': module.level,
-            'learning_objectives': module.learning_objectives or [],
+            'learning_objectives': learning_objectives,
             'is_published': module.is_published,
             'lessons': lessons,  # Pass lessons as a proper list
             'class_id': module.class_id
@@ -1355,7 +1389,7 @@ def get_class_question_groups(class_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
+@class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/create', methods=['POST'])
 @admin_required
 def create_class_question_group(class_id):
     """Create a new question group and assign it to the class"""
@@ -1368,8 +1402,7 @@ def create_class_question_group(class_id):
         # Create a new question group
         new_group = QuestionGroup(
             name=data['name'],
-            description=data.get('description', ''),
-            created_by=getattr(current_user, 'id', None)
+            description=data.get('description', '')
         )
         
         db.session.add(new_group)
@@ -1727,29 +1760,162 @@ def get_student_progress(class_id, student_id):
         
         # Import User model to get student info
         from user.models.user import User
+        from admin.models.module import Module, ModuleProgress, Lesson, LessonProgress
+        from admin.models.class_content import ClassAssignment
         student = User.query.get_or_404(student_id)
         
-        # Get progress data (this would need to be implemented based on your progress tracking)
-        progress_data = {
-            'modules_completed': 0,  # Count completed modules
-            'assignments_submitted': 0,  # Count submitted assignments
-            'average_score': 0,  # Calculate average score
-            'recent_activity': []  # Recent activity list
-        }
+        # Verify student is enrolled in this class
+        if student not in cls.students:
+            return jsonify({'error': 'Student not enrolled in this class'}), 404
         
-        # You can expand this with actual progress tracking logic
+        # Get all modules for this class
+        modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
+        
+        # Calculate overall progress
+        total_modules = len(modules)
+        completed_modules = 0
+        total_lessons = 0
+        completed_lessons = 0
+        total_time_spent = 0
+        
+        modules_data = []
+        for module in modules:
+            # Get module progress
+            module_progress = ModuleProgress.query.filter_by(
+                user_id=student_id, 
+                module_id=module.id
+            ).first()
+            
+            if module_progress and module_progress.is_completed:
+                completed_modules += 1
+            
+            # Get lessons for this module
+            lessons = Lesson.query.filter_by(module_id=module.id, is_active=True).order_by(Lesson.order_index).all()
+            total_lessons += len(lessons)
+            
+            lessons_data = []
+            module_time_spent = 0
+            module_completed_lessons = 0
+            
+            for lesson in lessons:
+                lesson_progress = LessonProgress.query.filter_by(
+                    user_id=student_id,
+                    lesson_id=lesson.id
+                ).first()
+                
+                if lesson_progress:
+                    if lesson_progress.is_completed:
+                        completed_lessons += 1
+                        module_completed_lessons += 1
+                    
+                    if lesson_progress.total_time_spent:
+                        lesson_time = lesson_progress.total_time_spent
+                        total_time_spent += lesson_time
+                        module_time_spent += lesson_time
+                    
+                    lessons_data.append({
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'progress_percentage': lesson_progress.progress_percentage or 0,
+                        'is_completed': lesson_progress.is_completed,
+                        'time_spent_minutes': lesson_progress.total_time_minutes,
+                        'last_accessed': lesson_progress.last_accessed.isoformat() if lesson_progress.last_accessed else None
+                    })
+                else:
+                    lessons_data.append({
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'progress_percentage': 0,
+                        'is_completed': False,
+                        'time_spent_minutes': 0,
+                        'last_accessed': None
+                    })
+            
+            # Calculate module completion percentage
+            module_completion = (module_completed_lessons / len(lessons) * 100) if lessons else 0
+            
+            modules_data.append({
+                'id': module.id,
+                'title': module.title,
+                'progress_percentage': module_completion,
+                'completed_lessons': module_completed_lessons,
+                'total_lessons': len(lessons),
+                'is_completed': module_progress.is_completed if module_progress else False,
+                'time_spent_minutes': round(module_time_spent / 60, 1) if module_time_spent else 0,
+                'lessons': lessons_data
+            })
+        
+        # Get assignments for this class
+        assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
+        assignments_submitted = 0
+        total_assignments = len(assignments)
+        assignment_scores = []
+        
+        assignments_data = []
+        for assignment in assignments:
+            # Note: You might need to implement assignment submission tracking
+            # For now, we'll use placeholder data
+            assignments_data.append({
+                'id': assignment.id,
+                'title': assignment.title,
+                'is_submitted': False,  # Implement submission tracking
+                'score': None,  # Implement scoring system
+                'due_date': assignment.due_date.isoformat() if assignment.due_date else None
+            })
+        
+        # Calculate overall statistics
+        overall_progress = 0
+        if total_modules > 0:
+            overall_progress = (completed_modules / total_modules) * 100
+        
+        average_score = sum(assignment_scores) / len(assignment_scores) if assignment_scores else 0
+        
+        # Get recent activity (last 10 lesson accesses)
+        recent_activity = []
+        recent_lesson_progress = LessonProgress.query.filter_by(user_id=student_id)\
+            .join(Lesson).join(Module)\
+            .filter(Module.class_id == class_id)\
+            .order_by(LessonProgress.last_accessed.desc())\
+            .limit(10).all()
+        
+        for progress in recent_lesson_progress:
+            if progress.last_accessed:
+                recent_activity.append({
+                    'type': 'lesson_access',
+                    'title': f"Accessed {progress.lesson.title}",
+                    'description': f"Module: {progress.lesson.module.title}",
+                    'timestamp': progress.last_accessed.isoformat(),
+                    'icon': 'fas fa-book-open'
+                })
+        
+        progress_data = {
+            'overview': {
+                'overall_progress': round(overall_progress, 1),
+                'modules_completed': f"{completed_modules}/{total_modules}",
+                'lessons_completed': f"{completed_lessons}/{total_lessons}",
+                'assignments_submitted': f"{assignments_submitted}/{total_assignments}",
+                'average_score': round(average_score, 1),
+                'total_time_spent_hours': round(total_time_spent / 3600, 1) if total_time_spent else 0
+            },
+            'modules': modules_data,
+            'assignments': assignments_data,
+            'recent_activity': recent_activity
+        }
         
         return jsonify({
             'success': True,
             'student': {
                 'id': student.id,
-                'name': f"{student.first_name} {student.last_name}",
-                'email': student.email
+                'name': f"{student.first_name} {student.last_name}" if student.first_name and student.last_name else student.username,
+                'email': student.email or 'No email provided',
+                'username': student.username
             },
             'progress': progress_data
         })
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/students/<int:student_id>/message', methods=['POST'])

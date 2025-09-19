@@ -387,6 +387,20 @@ def get_module_preview_data(class_id, module_id):
                 'error': 'Module not found'
             }), 404
         
+        # Parse learning objectives if they're stored as JSON string
+        import json
+        learning_objectives = []
+        if module.learning_objectives:
+            try:
+                if isinstance(module.learning_objectives, str):
+                    learning_objectives = json.loads(module.learning_objectives)
+                elif isinstance(module.learning_objectives, list):
+                    learning_objectives = module.learning_objectives
+                else:
+                    learning_objectives = []
+            except (json.JSONDecodeError, TypeError):
+                learning_objectives = []
+        
         # Convert module to dict with all preview data
         module_data = {
             'id': module.id,
@@ -395,7 +409,7 @@ def get_module_preview_data(class_id, module_id):
             'module_number': module.module_number,
             'estimated_duration': module.estimated_duration,
             'level': getattr(module, 'level', 'Beginner'),
-            'learning_objectives': module.learning_objectives or [],
+            'learning_objectives': learning_objectives,
             'lessons': [],
             'materials': [],
             'assessments': [],
