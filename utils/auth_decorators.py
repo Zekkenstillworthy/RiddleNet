@@ -15,7 +15,16 @@ def admin_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        print("=" * 80)
+        print(f"🚨 ADMIN_REQUIRED DECORATOR CALLED FOR: {request.path}")
+        print("=" * 80)
+        print(f"🔍 Admin decorator: current_user={current_user}")
+        print(f"🔍 Admin decorator: is_authenticated={current_user.is_authenticated}")
+        print(f"🔍 Admin decorator: user type={type(current_user)}")
+        print(f"🔍 Admin decorator: request path={request.path}")
+        
         if not current_user.is_authenticated:
+            print("❌ Admin decorator: User not authenticated, redirecting to login")
             if request.is_json:
                 return jsonify({'error': 'Authentication required'}), 401
             # For admin routes, redirect to admin login instead of user login
@@ -31,6 +40,7 @@ def admin_required(f):
             from admin.models.user import Admin
             if isinstance(current_user, Admin):
                 is_admin = True
+                print(f"✅ Admin decorator: Admin model instance detected for {current_user.username}")
                 current_app.logger.debug(f"Admin validation successful: {current_user.username} (Admin model instance)")
         except ImportError:
             pass
@@ -38,11 +48,13 @@ def admin_required(f):
         # Method 2: Check is_admin attribute
         if not is_admin and hasattr(current_user, 'is_admin') and current_user.is_admin:
             is_admin = True
+            print(f"✅ Admin decorator: is_admin=True for {current_user.username}")
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (is_admin=True)")
         
         # Method 3: Check role attribute
         if not is_admin and hasattr(current_user, 'role') and current_user.role in ['admin', 'super_admin']:
             is_admin = True
+            print(f"✅ Admin decorator: role={current_user.role} for {current_user.username}")
             current_app.logger.debug(f"Admin validation successful: {current_user.username} (role={current_user.role})")
         
         # Method 4: Check if user ID is in admin table (FALLBACK)
@@ -52,11 +64,14 @@ def admin_required(f):
                 admin_user = Admin.query.filter_by(username=current_user.username).first()
                 if admin_user:
                     is_admin = True
+                    print(f"✅ Admin decorator: Found in admin table for {current_user.username}")
                     current_app.logger.debug(f"Admin validation successful: {current_user.username} (found in admin table)")
             except Exception as e:
+                print(f"❌ Admin decorator: Admin table lookup failed: {e}")
                 current_app.logger.warning(f"Admin table lookup failed: {e}")
         
         if not is_admin:
+            print(f"❌ Admin decorator: Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             current_app.logger.warning(f"Admin validation failed for user: {getattr(current_user, 'username', 'unknown')}")
             if request.is_json:
                 return jsonify({'error': 'Admin access required'}), 403
@@ -65,6 +80,7 @@ def admin_required(f):
             session['admin_login_redirect'] = request.url
             return redirect(url_for('auth.login'))
         
+        print(f"✅ Admin decorator: Access granted for {current_user.username}")
         return f(*args, **kwargs)
     return decorated_function
 

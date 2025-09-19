@@ -822,12 +822,33 @@ def create_category_auto_assignment():
 def create_explicit_assignment():
     """Create an explicit assignment with custom settings"""
     try:
-        data = request.get_json()
-        
+        data = request.get_json() or {}
+
+        # Required fields
+        simulation_id = data.get('simulation_id')
+        class_id = data.get('class_id')
+        if not simulation_id:
+            return jsonify({'error': 'simulation_id is required'}), 400
+
+        # Title is optional from the UI; generate a sensible default if missing
+        title = data.get('title')
+        if not title:
+            try:
+                # Lazy import to avoid circulars
+                from admin.models.simulation import Simulation
+                sim = Simulation.query.get(simulation_id)
+                if sim and getattr(sim, 'title', None):
+                    title = f"Assignment: {sim.title}"
+                else:
+                    title = f"Assignment for Simulation {simulation_id}"
+            except Exception:
+                # Fallback if model lookup fails for any reason
+                title = f"Assignment for Simulation {simulation_id}"
+
         assignment = assignment_service.create_explicit_assignment(
-            simulation_id=data['simulation_id'],
-            class_id=data['class_id'],
-            title=data['title'],
+            simulation_id=simulation_id,
+            class_id=class_id,
+            title=title,
             description=data.get('description', ''),
             due_date=data.get('due_date'),
             max_attempts=data.get('max_attempts', 3)

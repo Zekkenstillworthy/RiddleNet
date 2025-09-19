@@ -84,8 +84,8 @@
 
     /* Enhanced z-index system */
     --z-palette: 100; /* Updated per request */
-        /* Performance sidebar should sit below palette but above base content */
-        --z-performance-sidebar: 50;
+        /* Performance sidebar sits above base content and palette for reliable clicks, but below modals */
+        --z-performance-sidebar: 150;
         --z-modal: 2000;
     --z-tooltip: 3000;
     /* dynamically adjusted performance sidebar width */
@@ -254,7 +254,8 @@
     
     /* Mobile Performance Toggle Button */
     .mobile-performance-toggle {
-        display: none;
+        /* Make launcher available on all breakpoints */
+        display: flex;
         position: fixed;
         bottom: 160px;
         right: 20px;
@@ -285,7 +286,6 @@
         position: fixed;
         top: 5%;
         right: 0;
-        transform: translateY(-5%);
         width: 350px;
         height: calc(100vh - 120px); /* Increased clearance to prevent device palette overlap */
         max-height: 800px;
@@ -295,10 +295,18 @@
         border-right: none;
         border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
         z-index: var(--z-performance-sidebar);
-        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
-        transform: translateY(-5%) translateX(0);
+        /* No shadow when hidden to avoid any bleed */
+        box-shadow: none;
+        /* Hidden by default; move fully off-screen with safety cushion */
+        transform: translateY(-5%) translateX(calc(var(--performance-sidebar-width) + 16px));
         opacity: 1;
         overflow: hidden;
+    }
+
+    /* Visible state when toggled */
+    .performance-sidebar.active {
+        transform: translateY(-5%) translateX(0);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 217, 255, 0.1);
     }
 
     
@@ -324,28 +332,7 @@
         }
     }
 
-    .performance-toggle {
-        position: absolute;
-        left: -60px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 60px;
-        height: 120px;
-        background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-right: none;
-        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
-    }
+    .performance-toggle { display: none; }
 
     .performance-toggle:hover {
         background: rgba(0, 217, 255, 0.1);
@@ -887,11 +874,8 @@
     @media (max-width: 1200px) {
         .performance-sidebar {
             width: 300px;
-            transform: translateY(-5%) translateX(270px);
-        }
-        
-        .performance-sidebar.active {
-            transform: translateY(-5%) translateX(0);
+            /* Hidden state aligns with global rule using current width (fully off-screen) */
+            transform: translateY(-5%) translateX(calc(var(--performance-sidebar-width) + 16px));
         }
         
         /* Width already handled earlier for performance/sidebar active states (300px variant) */
@@ -916,7 +900,8 @@
             top: auto;
             bottom: 140px;
             right: 10px;
-            transform: translateX(300px);
+            /* Hide fully using current computed width with cushion */
+            transform: translateX(calc(var(--performance-sidebar-width) + 16px));
             border-radius: var(--border-radius-lg);
             border: 1px solid var(--glass-border);
         }
@@ -1168,932 +1153,7 @@
     }
 </style>
 
-<!-- Additional CSS for Collaborative Features -->
-<style>
-    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
-    
-    /* Modal Backdrop for Better Visual Hierarchy - Fixed Blur Issues */
-    .lobby-browser-backdrop {
-        display: none;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(2px); /* Reduced blur to prevent stacking */
-        z-index: 2000;
-        opacity: 0;
-        transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
-        /* Prevent blur inheritance issues */
-        isolation: isolate;
-        /* Ensure backdrop is always centered and covers canvas area */
-        margin: 0;
-        padding: 0;
-    }
 
-    .lobby-browser-backdrop.active {
-        display: block;
-        opacity: 1;
-    }
-    
-    /* Lobby Browser Modal - Enhanced Centering with Fixed Blur */
-    .lobby-browser-modal {
-        /* Perfect centering within canvas container */
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0.95);
-        
-        /* Enhanced centering */
-        margin: 0 auto;
-        
-        /* Dimensions and styling */
-        width: 70%;
-        max-width: 800px;
-        max-height: 70vh;
-        background: rgba(15, 23, 42, 0.95); /* More opaque background */
-        border: 2px solid rgba(0, 217, 255, 0.3);
-        border-radius: var(--border-radius-xl);
-        padding: 0;
-        
-        /* Visibility states */
-        display: none;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
-        
-        /* Enhanced visual effects */
-        box-shadow: 
-            0 25px 50px rgba(0, 0, 0, 0.6),
-            0 0 40px rgba(0, 217, 255, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        overflow: hidden;
-        
-        /* Prevent blur conflicts and ensure crisp content */
-        backdrop-filter: none !important;
-        filter: none !important;
-        isolation: isolate;
-        
-        /* Internal layout */
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: stretch;
-    }
-
-    .lobby-browser-modal.active {
-        display: flex !important;
-        flex-direction: column !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        transform: translate(-50%, -50%) scale(1) !important;
-    }
-
-    /* Ensure all modal content is crisp and readable */
-    .lobby-browser-modal * {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .lobby-browser-header {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 0;
-        padding: 24px 24px 18px 24px;
-        border-bottom: 2px solid rgba(0, 217, 255, 0.3);
-        background: rgba(10, 15, 35, 0.9); /* More opaque for better readability */
-        border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
-        position: relative;
-        /* Ensure crisp text rendering */
-        backdrop-filter: none !important;
-        filter: none !important;
-        isolation: isolate;
-    }
-
-    .lobby-browser-header h2 {
-        color: var(--cyber-glow);
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 700;
-        margin: 0;
-        font-size: 24px;
-        text-align: center;
-        letter-spacing: 0.5px;
-        text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
-        /* Ensure crisp text */
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    /* Enhanced close button positioning */
-    .lobby-browser-header .profile-exit-btn {
-        position: absolute;
-        top: 24px;
-        right: 24px;
-        width: 40px;
-        height: 40px;
-        background: rgba(239, 68, 68, 0.1);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-        z-index: 10;
-    }
-
-    .lobby-browser-header .profile-exit-btn:hover {
-        background: rgba(239, 68, 68, 0.2);
-        border-color: rgba(239, 68, 68, 0.6);
-        transform: scale(1.1);
-    }
-
-    .lobby-browser-header .profile-exit-btn i {
-        color: var(--danger);
-        font-size: 20px;
-    }
-
-    /* Modal content area with consistent spacing */
-    .lobby-browser-modal .modal-buttons {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
-        padding: 20px 24px;
-        margin: 0;
-        background: rgba(20, 25, 40, 0.2);
-        border-bottom: 1px solid var(--glass-border);
-    }
-
-    .lobby-browser-modal .modal-buttons .action-btn {
-        flex: 1;
-        max-width: 200px;
-        padding: 12px 24px;
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        color: var(--text-primary);
-        font-weight: 500;
-        transition: all var(--transition-speed) ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    .lobby-browser-modal .modal-buttons .action-btn:hover {
-        background: var(--glass-bg-hover);
-        border-color: var(--cyber-glow);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-    }
-
-    .lobby-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 16px;
-        overflow-y: auto;
-        max-height: 300px;
-        padding: 24px;
-        flex-grow: 1;
-    }
-
-    .lobby-card {
-        background: rgba(10, 15, 35, 0.8);
-        border: 2px solid rgba(0, 217, 255, 0.2);
-        border-radius: var(--border-radius-lg);
-        padding: 20px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 150px;
-        /* Enhanced visual hierarchy with crisp content */
-        backdrop-filter: none !important;
-        filter: none !important;
-        isolation: isolate;
-        /* Better text rendering */
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-    }
-
-    .lobby-card:hover {
-        background: rgba(5, 10, 25, 0.9);
-        border-color: var(--cyber-glow);
-        transform: translateY(-5px) scale(1.02);
-        box-shadow: 
-            0 15px 35px rgba(0, 217, 255, 0.4),
-            0 0 25px rgba(0, 217, 255, 0.3);
-    }
-
-    .lobby-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 16px;
-        gap: 12px;
-    }
-
-    .lobby-name {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-        line-height: 1.3;
-        word-wrap: break-word;
-    }
-
-    .lobby-participants {
-        background: rgba(0, 217, 255, 0.1);
-        color: var(--cyber-glow);
-        padding: 4px 8px;
-        border-radius: var(--border-radius-sm);
-        font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-    }
-
-    .lobby-scenario {
-        color: var(--text-secondary);
-        font-size: 14px;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .lobby-scenario::before {
-        content: "🎯";
-        font-size: 16px;
-    }
-
-    .lobby-creator {
-        color: var(--text-muted);
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: auto;
-    }
-
-    /* Empty state styling for better UX */
-    .lobby-grid .lobby-card[style*="dashed"] {
-        border-style: dashed !important;
-        border-width: 2px !important;
-        border-color: var(--glass-border) !important;
-        opacity: 0.6 !important;
-        background: rgba(20, 25, 40, 0.1) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-        min-height: 200px !important;
-    }
-
-    .lobby-grid .lobby-card[style*="dashed"] div {
-        padding: 40px 20px !important;
-        color: var(--text-muted) !important;
-    }
-
-    .lobby-grid .lobby-card[style*="dashed"] i {
-        font-size: 48px !important;
-        margin-bottom: 16px !important;
-        color: var(--text-muted) !important;
-        opacity: 0.8 !important;
-    }
-
-    .lobby-grid .lobby-card[style*="dashed"] p {
-        margin: 8px 0 !important;
-        font-size: 14px !important;
-        line-height: 1.4 !important;
-    }
-
-    .lobby-grid .lobby-card[style*="dashed"] p:first-of-type {
-        font-weight: 500 !important;
-        color: var(--text-secondary) !important;
-    }
-
-    .lobby-name {
-        color: var(--text-primary);
-        font-weight: 600;
-        font-size: 18px;
-        margin: 0;
-    }
-
-    .lobby-participants {
-        background: var(--cyber-glow);
-        color: var(--background);
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .lobby-scenario {
-        color: var(--text-secondary);
-        font-size: 14px;
-        margin-bottom: 8px;
-    }
-
-    .lobby-creator {
-        color: var(--text-muted);
-        font-size: 12px;
-    }
-
-    .lobby-participants-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-    }
-
-    .participant-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 14px;
-        font-weight: 600;
-        position: relative;
-        overflow: hidden;
-        border: 2px solid var(--cyber-glow);
-        box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
-    }
-
-    .participant-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-    }
-
-    .participant-avatar .avatar-text {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        background: inherit;
-        border-radius: 50%;
-    }
-
-    /* Create Lobby Modal Backdrop - Fixed Blur */
-    .create-lobby-modal-backdrop {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(2px); /* Reduced blur to prevent conflicts */
-        z-index: 2001;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        isolation: isolate; /* Prevent blur inheritance */
-    }
-
-    .create-lobby-modal-backdrop.active {
-        display: block;
-        opacity: 1;
-    }
-
-    /* Create Lobby Modal - Enhanced Readability */
-    .create-lobby-modal {
-        display: none;
-        position: fixed;
-        top: 0%;
-        left: 50%;
-        transform: translate(-50%, calc(5% - 23px));
-        width: 500px;
-        background: rgba(15, 23, 42, 0.95); /* More opaque for better readability */
-        border: 2px solid rgba(0, 217, 255, 0.3);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        z-index: 2002;
-        box-shadow: 
-            0 25px 50px rgba(0, 0, 0, 0.6), 
-            0 0 40px rgba(0, 217, 255, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-        /* Remove all blur effects from modal content for crisp text */
-        backdrop-filter: none !important;
-        filter: none !important;
-        isolation: isolate;
-    }
-
-    .create-lobby-modal.active {
-        display: flex !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        pointer-events: auto !important;
-        flex-direction: column !important;
-    }
-
-    /* Ensure all modal content is crisp and readable */
-    .create-lobby-modal *,
-    .lobby-browser-modal * {
-        backdrop-filter: none !important;
-        filter: none !important;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
-    .create-lobby-modal.active .create-lobby-form {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 16px !important;
-    }
-
-    .create-lobby-modal.active .form-group {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 8px !important;
-    }
-
-    .create-lobby-modal.active .modal-buttons {
-        display: flex !important;
-        gap: 12px !important;
-        justify-content: flex-end !important;
-    }
-
-    .create-lobby-form {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        /* Ensure all form content is crisp and readable */
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        /* Prevent any blur effects on form groups */
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .form-group label {
-        color: var(--text-primary);
-        font-weight: 500;
-        /* Ensure labels are crisp and readable */
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .form-group input,
-    .form-group select {
-        padding: 12px 16px;
-        background: rgba(10, 15, 35, 0.9);
-        border: 2px solid rgba(0, 217, 255, 0.2);
-        border-radius: var(--border-radius);
-        color: var(--text-primary);
-        font-size: 14px;
-        font-family: inherit;
-        transition: all 0.3s ease;
-        /* Ensure form fields are crisp and readable */
-        backdrop-filter: none !important;
-        filter: none !important;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: var(--cyber-glow);
-        box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
-        background: rgba(5, 10, 25, 0.95);
-        transform: scale(1.02);
-    }
-
-    .form-group input::placeholder {
-        color: var(--text-muted);
-    }
-
-    .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-        width: auto;
-    }
-
-    /* Ensure modal header and buttons are crisp and readable */
-    .create-lobby-modal .modal-header {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .create-lobby-modal .modal-header h2 {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .create-lobby-modal .modal-buttons {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .create-lobby-modal .modal-buttons button {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    .create-lobby-modal .profile-exit-btn {
-        backdrop-filter: none !important;
-        filter: none !important;
-    }
-
-    /* Collaboration UI */
-    .collaboration-panel {
-        position: fixed;
-        right: 20px;
-        top: calc(20% - 23px);
-        transform: translateY(-20%);
-        width: 300px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-lg);
-        padding: 20px;
-        z-index: 1001;
-        display: none;
-    }
-
-    .participants-list {
-        margin-bottom: 20px;
-    }
-
-    .participant-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px;
-        margin-bottom: 8px;
-        background: var(--glass-bg-light);
-        border-radius: var(--border-radius);
-    }
-
-    .participant-status {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--neon-green);
-    }
-
-    .chat-container {
-        height: 200px;
-        overflow-y: auto;
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        padding: 12px;
-        margin-bottom: 12px;
-        background: var(--glass-bg-light);
-    }
-
-    .chat-message {
-        margin-bottom: 8px;
-        font-size: 14px;
-    }
-
-    .chat-message.system {
-        color: var(--text-muted);
-        font-style: italic;
-    }
-
-    .chat-message.progress {
-        color: var(--neon-green);
-    }
-
-    .chat-input {
-        width: 100%;
-        padding: 8px 12px;
-        background: var(--glass-bg-light);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        color: var(--text-primary);
-    }
-
-    /* User Cursors */
-    .user-cursor {
-        position: absolute;
-        pointer-events: none;
-        z-index: 1000;
-        transition: all 0.1s ease;
-    }
-
-    .cursor-icon {
-        width: 20px;
-        height: 20px;
-        background: currentColor;
-        border-radius: 50% 0 50% 50%;
-        transform: rotate(-45deg);
-        position: relative;
-    }
-
-    .cursor-profile-img {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        object-fit: cover;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .cursor-profile-fallback {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(45deg);
-        font-size: 10px;
-        font-weight: 600;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    }
-
-    .cursor-label {
-        position: absolute;
-        top: 25px;
-        left: 5px;
-        background: currentColor;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    /* Enhanced Responsive Design for Collaboration UI */
-    @media (max-width: 1024px) {
-        .collaboration-panel {
-            width: 280px;
-            right: 10px;
-        }
-        
-        /* Responsive lobby browser modal */
-        .lobby-browser-modal {
-            width: 95%;
-            max-width: 900px;
-            max-height: 90vh;
-            /* Remove conflicting margin - keep transform centering */
-        }
-        
-        .lobby-browser-header {
-            padding: 24px 24px 20px 24px;
-        }
-        
-        .lobby-browser-header h2 {
-            font-size: 20px;
-        }
-        
-        .lobby-browser-header .profile-exit-btn {
-            top: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-        }
-        
-        .lobby-grid {
-            padding: 24px;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-        }
-        
-        .lobby-browser-modal .modal-buttons {
-            padding: 20px 24px;
-        }
-        
-        .create-lobby-modal {
-            width: 90%;
-            max-width: 450px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        /* Mobile-first responsive design */
-        .lobby-browser-modal {
-            width: 95%;
-            max-width: 100%;
-            max-height: 95vh;
-            /* Ensure perfect centering on mobile */
-            border-radius: var(--border-radius-lg);
-        }
-        
-        .lobby-browser-header {
-            padding: 20px 20px 16px 20px;
-        }
-        
-        .lobby-browser-header h2 {
-            font-size: 18px;
-            text-align: center;
-        }
-        
-        .lobby-browser-header .profile-exit-btn {
-            top: 16px;
-            right: 16px;
-            width: 32px;
-            height: 32px;
-        }
-        
-        .lobby-browser-header .profile-exit-btn i {
-            font-size: 16px;
-        }
-        
-        .lobby-grid {
-            padding: 20px;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            max-height: 350px;
-        }
-        
-        .lobby-card {
-            padding: 20px;
-            min-height: 160px;
-        }
-        
-        .lobby-name {
-            font-size: 16px;
-        }
-        
-        .lobby-browser-modal .modal-buttons {
-            padding: 16px 20px;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .lobby-browser-modal .modal-buttons .action-btn {
-            max-width: 100%;
-        }
-    }
-
-    @media (max-width: 480px) {
-        /* Small mobile devices */
-        .lobby-browser-modal {
-            width: 100%;
-            max-height: 100vh;
-            border-radius: 0;
-            top: 0;
-            left: 0;
-            transform: none;
-            position: fixed;
-        }
-        
-        .lobby-browser-modal.active {
-            transform: none !important;
-        }
-        
-        .lobby-browser-header h2 {
-            font-size: 16px;
-        }
-        
-        .lobby-grid {
-            padding: 16px;
-            max-height: 300px;
-        }
-        
-        .lobby-card {
-            padding: 16px;
-            min-height: 140px;
-        }
-    }
-
-        /* Tablet device palette adjustments */
-        .palette-section {
-            gap: 12px;
-            padding: 0 8px;
-        }
-        
-        .left-section {
-            min-width: 200px;
-        }
-        
-        .center-section {
-            min-width: 240px;
-        }
-        
-        .right-section {
-            min-width: 240px;
-        }
-        
-        .action-btn {
-            min-width: 95px;
-            min-height: 48px;
-            margin: 0 4px;
-            padding: 10px 12px;
-        }
-        
-        .action-btn .label {
-            font-size: 10px;
-        }
-        
-        .device {
-            min-width: 75px;
-            min-height: 75px;
-            margin: 0 6px;
-        }
-        
-        .device-icon {
-            width: 36px;
-            height: 36px;
-        }
-        
-        .device span {
-            font-size: 10px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .collaboration-panel {
-            width: 250px;
-            right: 5px;
-            top: auto;
-            bottom: 120px;
-            transform: none;
-        }
-        
-        .chat-container {
-            height: 150px;
-        }
-        
-        .lobby-grid {
-            grid-template-columns: 1fr;
-        }
-
-        /* Mobile device palette optimizations */
-        .palette-section {
-            gap: 8px;
-            padding: 0 6px;
-        }
-        
-        .left-section {
-            min-width: 160px;
-        }
-        
-        .center-section {
-            min-width: 180px;
-            max-width: 250px;
-        }
-        
-        .right-section {
-            min-width: 200px;
-        }
-        
-        .action-btn {
-            min-width: 80px;
-            min-height: 44px;
-            margin: 0 3px;
-            padding: 8px 10px;
-        }
-        
-        .action-btn i {
-            font-size: 16px;
-        }
-        
-        .action-btn .label {
-            font-size: 9px;
-        }
-        
-        .device {
-            min-width: 65px;
-            min-height: 65px;
-            margin: 0 4px;
-            padding: 8px 6px;
-        }
-        
-        .device-icon {
-            width: 32px;
-            height: 32px;
-        }
-        
-        .device span {
-            font-size: 9px;
-        }
-        
-        .palette-separator {
-            margin: 0 8px;
-            min-height: 50px;
-        }
-    }
-</style>
 <script>
 // --- Device Palette Dynamic Adjustment (added) ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -2507,14 +1567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
     }
 
-    /* Hidden elements in different modes */
-    .solo-mode-hidden {
-        display: none !important;
-    }
-
-    .collaboration-mode-hidden {
-        display: none !important;
-    }
+    /* Element visibility utility - only solo mode supported now */
 
     .device {
         padding: var(--space-sm) var(--space-sm); /* Consistent padding */
@@ -3995,308 +3048,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 0 0 60px rgba(57, 255, 20, 0.7);
         }    }
 
-    /* ===== COLLABORATIVE TROUBLESHOOTING STYLES ===== */
 
-    /* Lobby Browser Modal */
-    .lobby-browser-modal {
-        display: none;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0.9);
-        
-        /* Enhanced centering */
-        margin: 0 auto;
-        
-        width: 70%;
-        max-width: 800px;
-        max-height: 70vh;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        opacity: 0;
-        pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 217, 255, 0.2);
-        overflow: hidden;
-    }
 
-    .lobby-browser-modal.active {
-        display: flex;
-        flex-direction: column;
-        opacity: 1;
-        pointer-events: auto;
-        transform: translate(-50%, -50%) scale(1);
-    }
 
-    .lobby-browser-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--glass-border);
-    }
 
-    .lobby-browser-header h2 {
-        color: var(--cyber-glow);
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 700;
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
 
-    .lobby-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
-        overflow-y: auto;
-        max-height: 450px;
-        padding: 4px;
-    }
 
-    .lobby-card {
-        background: var(--glass-bg-light);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        padding: 20px;
-        transition: all var(--transition-speed) ease;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
 
-    .lobby-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-primary);
-        border-radius: var(--border-radius) var(--border-radius) 0 0;
-    }
 
-    .lobby-card:hover {
-        background: var(--glass-bg-hover);
-        border-color: var(--cyber-glow);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-    }
 
-    .lobby-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 12px;
-    }
 
-    .lobby-name {
-        color: var(--text-primary);
-        font-weight: 600;
-        font-size: 18px;
-        margin: 0;
-        font-family: 'Orbitron', sans-serif;
-    }
 
-    .lobby-participants {
-        background: var(--cyber-glow);
-        color: var(--background);
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-    }
 
-    .lobby-scenario {
-        color: var(--text-secondary);
-        font-size: 14px;
-        margin-bottom: 8px;
-        font-weight: 500;
-    }
 
-    .lobby-creator {
-        color: var(--text-muted);
-        font-size: 12px;
-    }
 
-    .lobby-participants-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-    }
 
-    .participant-avatar {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .participants-list {
-        margin-bottom: 20px;
-    }
-
-    .participant-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px;
-        margin-bottom: 8px;
-        background: var(--glass-bg-light);
-        border-radius: var(--border-radius);
-        transition: all var(--transition-speed) ease;
-    }
-
-    .participant-item:hover {
-        background: var(--glass-bg-hover);
-    }
-
-    .participant-status {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--neon-green);
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-
-    .chat-container {
-        height: 200px;
-        overflow-y: auto;
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        padding: 12px;
-        margin-bottom: 12px;
-        background: var(--glass-bg-light);
-    }
-
-    .chat-message {
-        margin-bottom: 8px;
-        font-size: 14px;
-        word-wrap: break-word;
-    }
-
-    .chat-message.system {
-        color: var(--text-muted);
-        font-style: italic;
-    }
-
-    .chat-message.progress {
-        color: var(--neon-green);
-        font-weight: 500;
-    }
-
-    .chat-input {
-        width: 100%;
-        padding: 8px 12px;
-        background: var(--glass-bg-light);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        color: var(--text-primary);
-        transition: all var(--transition-speed) ease;
-    }
-
-    .chat-input:focus {
-        outline: none;
-        border-color: var(--cyber-glow);
-        box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
-    }
-
-    /* User Cursors */
-    .user-cursor {
-        position: absolute;
-        pointer-events: none;
-        z-index: 1000;
-        transition: all 0.1s ease;
-    }
-
-    .cursor-icon {
-        width: 20px;
-        height: 20px;
-        background: currentColor;
-        border-radius: 50% 0 50% 50%;
-        transform: rotate(-45deg);
-    }
-
-    .cursor-label {
-        position: absolute;
-        top: 25px;
-        left: 5px;
-        background: currentColor;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    /* Connection Status Indicator */
-    .collaboration-status {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--border-radius);
-        padding: 8px 12px;
-        color: var(--text-primary);
-        font-size: 12px;
-        z-index: 1000;
-        display: none;
-    }
-
-    .collaboration-status.connected {
-        border-color: var(--neon-green);
-        color: var(--neon-green);
-    }
-
-    .collaboration-status.disconnected {
-        border-color: var(--danger-color);
-        color: var(--danger-color);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .collaboration-panel {
-            position: fixed;
-            bottom: 120px;
-            right: 10px;
-            left: 10px;
-            width: auto;
-            transform: none;
-        }
-
-        .lobby-browser-modal {
-            width: 95%;
-            max-height: 85vh;
-        }
-
-        .create-lobby-modal {
-            width: 95%;
-        }
-
-        .lobby-grid {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
 
 <div id="app">
@@ -4424,92 +3190,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-        <!-- Create Lobby Modal Backdrop -->
-        <div id="createLobbyModalBackdrop" class="create-lobby-modal-backdrop" onclick="closeCreateLobby()"></div>
 
-        <!-- Create Lobby Modal -->
-        <div id="createLobbyModal" class="create-lobby-modal collaboration-feature">
-            <div class="modal-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: var(--cyber-glow); margin: 0;">Create Collaborative Session</h2>
-                <button class="profile-exit-btn" onclick="closeCreateLobby()">
-                    <i class="bx bx-x"></i>
-                </button>
-            </div>
-            
-            <form id="createLobbyForm" class="create-lobby-form">
-                <div class="form-group">
-                    <label for="lobbyName">Session Name</label>
-                    <input type="text" id="lobbyName" name="name" placeholder="Enter session name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="scenarioType">Difficulty Level</label>
-                    <select id="scenarioType" name="scenario_type" required>
-                        <option value="easy">Easy - Basic Network Issues</option>
-                        <option value="medium">Medium - Advanced Troubleshooting</option>
-                        <option value="hard">Hard - Complex Network Problems</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="scenarioId">Specific Scenario</label>
-                    <select id="scenarioId" name="scenario_id" required>
-                        <!-- Options will be populated based on difficulty -->
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="maxParticipants">Maximum Participants</label>
-                    <select id="maxParticipants" name="max_participants">
-                        <option value="2">2 Users</option>
-                        <option value="4">4 Users</option>
-                        <option value="6" selected>6 Users</option>
-                        <option value="8">8 Users</option>
-                    </select>
-                </div>
-                
-                <!-- All sessions are now public - no private options needed -->
-                
-                <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
-                    <button type="button" class="action-btn" onclick="closeCreateLobby()" style="background: var(--surface); color: var(--text-secondary); border: 1px solid var(--glass-border);">
-                        <i class="bx bx-x"></i>
-                        <span class="label">Cancel</span>
-                    </button>
-                    <button type="submit" class="action-btn" style="background: var(--gradient-primary); color: white; border: none; min-width: 140px;">
-                        <i class="bx bx-plus"></i>
-                        <span class="label">Create Session</span>
-                    </button>
-                </div>
-            </form>
-        </div>
 
-        <!-- Collaboration Panel -->
-        <div id="collaborationPanel" class="collaboration-panel">
-            <h3 style="color: var(--cyber-glow); margin-bottom: 16px;">Team Session</h3>
-            
-            <div class="participants-list">
-                <h4 style="color: var(--text-primary); margin-bottom: 12px;">Participants</h4>
-                <div id="participantsList"></div>
-            </div>
-            
-            <div class="chat-container" id="chatContainer"></div>
-            
-            <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." 
-                   onkeypress="handleChatKeypress(event)">
-            
-            <div class="modal-buttons" style="margin-top: 16px;">
-                <button class="action-btn" onclick="leaveLobby()">
-                    <i class="bx bx-exit"></i>
-                    <span class="label">Leave Session</span>
-                </button>
-            </div>
-        </div>
 
-        <!-- Collaboration Status Indicator -->
-        <div id="collaborationStatus" class="collaboration-status">
-            <i class="bx bx-group"></i>
-            <span>Not connected</span>
-        </div>
 
 
 
@@ -4519,46 +3202,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <div id="canvas-container">
             <canvas id="Canvas"></canvas>
             
-            <!-- ===== COLLABORATIVE TROUBLESHOOTING MODALS ===== -->
-            
-            <!-- Lobby Browser Modal Backdrop -->
-            <div id="lobbyBrowserBackdrop" class="lobby-browser-backdrop" onclick="closeLobbyBrowser()"></div>
-            
-            <!-- Lobby Browser Modal -->
-            <div id="lobbyBrowserModal" class="lobby-browser-modal collaboration-feature">
-                <div class="lobby-browser-header">
-                    <h2>Join Collaborative Session</h2>
-                    <button class="profile-exit-btn" onclick="closeLobbyBrowser()">
-                        <i class="bx bx-x"></i>
-                    </button>
-                </div>
-                
-                <div class="modal-buttons" style="margin-bottom: 20px;">
-                    <button class="action-btn" onclick="showCreateLobby()">
-                        <i class="bx bx-plus"></i>
-                        <span class="label">Create Session</span>
-                    </button>
-                </div>
-                
-                <div id="lobbyGrid" class="lobby-grid">
-                    <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
-                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                            <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
-                            <p>No active sessions found</p>
-                            <p style="font-size: 14px;">Create a new session to start collaborating!</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
 
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
     <div id="device-palette">
             <div class="palette-section left-section">
-                <div class="action-btn" id="collaborative-session-btn" onclick="activateCollaborationMode()">
-                    <i class='bx bx-group'></i>
-                    <span class="label">Collaborate</span>
-                </div>
                 <div class="action-btn" id="solo-scenario-btn" onclick="activateSoloMode()">
                     <i class='bx bx-user'></i>
                     <span class="label">Solo Mode</span>
@@ -4823,7 +3472,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.realTimeEnabled = false;
                 this.socketConnected = false;
                 this.currentScenario = null;
-                this.currentLobby = null;
                 this.lastSyncTime = 0;
                 
                 // Metrics tracking (now connected to backend)
@@ -4880,15 +3528,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.startProgressMonitoring();
                 this.addInitialHint();
                 
-                // Auto-show on first visit
-                const hasSeenSidebar = localStorage.getItem('riddlenet_performance_sidebar_seen');
-                if (!hasSeenSidebar) {
-                    setTimeout(() => {
-                        this.showSidebar();
-                        this.addHint('Welcome! This sidebar tracks your progress in real-time. Click the toggle anytime to hide/show it.', 'welcome');
-                        localStorage.setItem('riddlenet_performance_sidebar_seen', 'true');
-                    }, 3000);
-                }
+                // Auto-show on first visit disabled to keep sidebar fully hidden by default
                 
                 console.log('✅ Performance Feedback System initialized with backend integration');
             }
@@ -5022,7 +3662,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     metrics: this.metrics,
                     timestamp: Date.now(),
                     scenario_id: this.currentScenario?.id || 'general',
-                    lobby_id: this.currentLobby?.id || null
+                    lobby_id: null
                 };
                 
                 window.socketClient.emit('sync_performance_metrics', syncData);
@@ -5284,7 +3924,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         session_id: this.sessionId,
                         scenario_id: window.currentScenario ? window.currentScenario.problemType : 'general',
                         scenario_type: 'troubleshooting',
-                        lobby_id: window.currentLobby ? window.currentLobby.id : null,
+                        lobby_id: null,
                         user_id: window.current_user_id || 'anonymous'
                     });
                     console.log('🎯 Started backend feedback session:', this.sessionId);
@@ -5360,7 +4000,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             updateConnectionsMetric() {
-                const currentConnections = connections ? connections.length : 0;
+                // Check if connections array exists in global scope
+                const currentConnections = (typeof connections !== 'undefined' && connections) ? connections.length : 0;
                 if (currentConnections !== this.metrics.connectionsMade) {
                     this.metrics.connectionsMade = currentConnections;
                     this.metrics.actionsCount++;
@@ -6542,12 +5183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 isDragging = true;
                 draggedDevice = clickedDevice;
                 
-                // Lock device for editing if in collaborative mode
-                if (currentLobby && window.socketClient) {
-                    window.socketClient.emit('lock_device', { 
-                        device_id: clickedDevice.id || clickedDevice.label 
-                    });
-                }
+                // Lock device for editing if in solo mode
+                console.log('🔒 Locking device for editing:', device.label);
             }
         });
 
@@ -6559,28 +5196,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 draggedDevice.x = e.offsetX;
                 draggedDevice.y = e.offsetY;
                 redrawCanvas(); // Redraw the canvas to show the updated position
-                
-                // Throttled collaborative sync of device movement
-                if (currentLobby && window.socketClient) {
-                    clearTimeout(window.deviceMoveTimeout);
-                    window.deviceMoveTimeout = setTimeout(() => {
-                        window.socketClient.emit('move_device', {
-                            device_id: draggedDevice.id || draggedDevice.label,
-                            position: { x: draggedDevice.x, y: draggedDevice.y }
-                        });
-                    }, 100); // Throttle to every 100ms
-                }
             }
         });
 
         canvas.addEventListener("mouseup", () => {
             if (isDragging && draggedDevice) {
-                // Unlock device after dragging if in collaborative mode
-                if (currentLobby && window.socketClient) {
-                    window.socketClient.emit('unlock_device', { 
-                        device_id: draggedDevice.id || draggedDevice.label 
-                    });
-                }
+                // Unlock device after dragging if in solo mode
+                console.log('🔓 Unlocking device after drag:', draggedDevice.label);
             }
             isDragging = false;
             draggedDevice = null;
@@ -6736,7 +5358,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Show initial state - no tutorial on page load
             // Tutorial will be triggered when solo mode is activated
-        }; function savetroubleshootScore(score, category) {
+        };
+        
+        function savetroubleshootScore(score, category) {
             fetch('/save_troubleshoot_score', {
                 method: 'POST',
                 headers: {
@@ -6896,7 +5520,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.performanceFeedback) {
                 window.performanceFeedback.trackAction('scenario_started', {
                     scenarioId: scenarioId,
-                    lobbyId: currentLobby?.id
+                    lobbyId: null
                 });
                 console.log('📊 Performance tracking started for scenario:', scenarioId);
             }
@@ -7078,7 +5702,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'loops':
                     // Setup for Routing Loops problem
                     let routerA = new Router(200, 100, 'Router A');
-                    let routerB = new Router(400, 100, 'Router B');zz
+                    let routerB = new Router(400, 100, 'Router B');
                     let routerC = new Router(300, 250, 'Router C');
 
                     routerA.ipv4 = '192.168.30.1';
@@ -7764,19 +6388,11 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', playExitSound);
         });
 
-        // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
+        // ===== SOLO MODE TROUBLESHOOTING JAVASCRIPT =====
         // Note: These functions must be in global scope for onclick handlers to work
         
-        // Lobby Management Variables
-        let currentLobby = null;
-        let userCursors = new Map();
-
-        // Global variables for enhanced lobby browser
-        let lobbyBrowserOpen = false;
-        let lobbyRefreshInterval = null;
-
-        // ===== MODE TOGGLE SYSTEM =====
-        let currentMode = 'none'; // 'solo', 'collaboration', or 'none'
+        // ===== SOLO MODE SYSTEM =====
+        let currentMode = 'solo'; // Always solo mode now
 
         // Mode Management Functions
         function activateSoloMode() {
@@ -7789,8 +6405,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update button states
             updateModeButtons();
             
-            // Hide collaboration features completely
-            hideCollaborationFeatures();
+            // Show solo features
+            showSoloFeatures();
             
             // Show tutorial every time solo mode is activated
             showTutorial();
@@ -7798,122 +6414,37 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✅ Solo Mode setup complete');
         }
 
-        function activateCollaborationMode() {
-            console.log('🎯 Collaboration Mode activated!');
-            currentMode = 'collaboration';
-            
-            // Save mode preference
-            localStorage.setItem('riddlenet_mode_preference', 'collaboration');
-            
-            // Update button states
-            updateModeButtons();
-            
-            // Hide solo features completely
-            hideSoloFeatures();
-            
-            // Ensure collaboration panel is properly restored
-            const collaborationPanel = document.getElementById('collaborationPanel');
-            if (collaborationPanel) {
-                collaborationPanel.classList.remove('solo-mode-hidden');
-                // If user was in a collaboration session before switching modes, restore the panel
-                if (window.currentLobbyId || collaborationPanel.style.display === 'none') {
-                    collaborationPanel.style.display = window.currentLobbyId ? 'block' : '';
-                }
-                console.log('✅ Collaboration panel restored - session active:', !!window.currentLobbyId);
-            }
-            
-            // Show collaboration interface
-            showLobbyBrowser();
-            
-            console.log('✅ Collaboration Mode setup complete');
-        }
+
 
         function updateModeButtons() {
             const soloBtn = document.getElementById('solo-scenario-btn');
-            const collabBtn = document.getElementById('collaborative-session-btn');
             
-            // Reset all button states
+            // Reset button state
             soloBtn.classList.remove('mode-active', 'mode-inactive', 'mode-neutral');
-            collabBtn.classList.remove('mode-active', 'mode-inactive', 'mode-neutral');
             
             if (currentMode === 'solo') {
                 soloBtn.classList.add('mode-active');
-                collabBtn.classList.add('mode-inactive');
                 soloBtn.title = 'Solo Mode Active - Individual Learning';
-                collabBtn.title = 'Switch to Collaboration Mode';
                 
                 // Update button text to show active mode
                 const soloLabel = soloBtn.querySelector('.label');
                 if (soloLabel) soloLabel.textContent = 'Solo Active';
                 
-            } else if (currentMode === 'collaboration') {
-                collabBtn.classList.add('mode-active');
-                soloBtn.classList.add('mode-inactive');
-                collabBtn.title = 'Collaboration Mode Active - Team Learning';
-                soloBtn.title = 'Switch to Solo Mode';
-                
-                // Update button text to show active mode
-                const collabLabel = collabBtn.querySelector('.label');
-                if (collabLabel) collabLabel.textContent = 'Collab Active';
-                
             } else {
                 // Default state - no mode selected
                 soloBtn.classList.add('mode-neutral');
-                collabBtn.classList.add('mode-neutral');
                 soloBtn.title = 'Activate Solo Mode - Individual Learning';
-                collabBtn.title = 'Activate Collaboration Mode - Team Learning';
                 
                 // Reset button text to default
                 const soloLabel = soloBtn.querySelector('.label');
-                const collabLabel = collabBtn.querySelector('.label');
                 if (soloLabel) soloLabel.textContent = 'Solo Mode';
-                if (collabLabel) collabLabel.textContent = 'Collaborate';
             }
         }
 
-        function hideCollaborationFeatures() {
-            // Hide collaboration-specific elements
-            const elementsToHide = [
-                '#lobbyBrowserModal',
-                '#createLobbyModal',
-                '#collaborationPanel',
-                '#collaborationStatus',
-                '.user-cursor',
-                '.collaboration-feature',
-                '.collab-notification'
-            ];
-            
-            elementsToHide.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(el => {
-                    el.classList.add('solo-mode-hidden');
-                    // Force hide with display none for critical elements
-                    if (selector.includes('Modal') || selector.includes('Panel') || selector.includes('Status')) {
-                        el.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Close any open collaboration modals and clear intervals
-            closeLobbyBrowser();
-            closeCreateLobby();
-            if (lobbyRefreshInterval) {
-                clearInterval(lobbyRefreshInterval);
-                lobbyRefreshInterval = null;
-            }
-            
-            // Clear any active collaboration state
-            currentLobby = null;
-            userCursors.clear();
-            
-            // Show solo features
-            showSoloFeatures();
-            
-            console.log('🔒 All collaboration features hidden for Solo Mode');
-        }
+
 
         function showSoloFeatures() {
-            // Show solo-specific elements by removing collaboration-mode-hidden class
+            // Show solo-specific elements (no longer needed in solo-only mode)
             const soloElementsToShow = [
                 '#scenarioModal',
                 '#easyDescModal',
@@ -7926,7 +6457,6 @@ document.addEventListener('DOMContentLoaded', () => {
             soloElementsToShow.forEach(selector => {
                 const elements = document.querySelectorAll(selector);
                 elements.forEach(el => {
-                    el.classList.remove('collaboration-mode-hidden');
                     // Remove any forced display none
                     if (el.style.display === 'none' && !el.classList.contains('active')) {
                         el.style.display = '';
@@ -7937,778 +6467,58 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✅ All solo features are now available');
         }
 
-        function hideSoloFeatures() {
-            // Hide solo-specific elements when in collaboration mode
-            const soloElementsToHide = [
-                '#scenarioModal',
-                '#easyDescModal',
-                '#mediumDescModal',
-                '#hardDescModal',
-                '#tutorialModal',
-                '#problemPopup',
-                '.tutorial-step',
-                '.scenario-button'
-            ];
-            
-            soloElementsToHide.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(el => {
-                    el.classList.add('collaboration-mode-hidden');
-                    // Force hide critical solo elements in collaboration mode
-                    if (selector.includes('Modal') || selector.includes('Popup')) {
-                        el.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Close any open solo modals
-            const scenarioModal = document.getElementById("scenarioModal");
-            if (scenarioModal) {
-                scenarioModal.classList.remove('active');
-                scenarioModal.style.display = "none";
-            }
-            
-            // Close tutorial and description modals
-            const tutorialModal = document.getElementById("tutorialModal");
-            if (tutorialModal) tutorialModal.style.display = "none";
-            
-            document.getElementById('easyDescModal').style.display = "none";
-            document.getElementById('mediumDescModal').style.display = "none";
-            document.getElementById('hardDescModal').style.display = "none";
-            
-            // Clear any solo-specific tutorials in progress
-            if (window.currentTutorial) {
-                window.currentTutorial = null;
-            }
-            
-            // Show collaboration features
-            showCollaborationFeatures();
-            
-            console.log('🔒 All solo features are now hidden for collaboration mode');
-        }
+        // hideSoloFeatures function removed - no longer needed
 
-        function showCollaborationFeatures() {
-            // Show collaboration-specific elements by removing solo-mode-hidden class
-            const collabElementsToShow = [
-                '#lobbyBrowserModal',
-                '#createLobbyModal',
-                '#collaborationPanel',
-                '#collaborationStatus'
-            ];
-            
-            collabElementsToShow.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(el => {
-                    el.classList.remove('solo-mode-hidden');
-                    // Remove forced display none styles when showing collaboration features
-                    if (el.style.display === 'none' && !el.classList.contains('active')) {
-                        el.style.display = '';
-                    }
-                });
-            });
-            
-            // Show collaboration elements with specific selectors
-            const allCollabElements = document.querySelectorAll('.collaboration-feature');
-            allCollabElements.forEach(el => {
-                el.classList.remove('solo-mode-hidden');
-                if (el.style.display === 'none') {
-                    el.style.display = '';
-                }
-            });
-            
-            // Special handling for collaboration panel - it has display:none by default in CSS
-            const collaborationPanel = document.getElementById('collaborationPanel');
-            if (collaborationPanel && window.currentLobbyId) {
-                // Only show the panel if user is actually in a collaboration session
-                collaborationPanel.style.display = 'block';
-                console.log('✅ Collaboration panel made visible for active session');
-            }
-            
-            console.log('✅ Collaboration features are now available');
-        }
+
 
         function resetToNeutralMode() {
-            // Reset to neutral state - no mode selected
-            currentMode = 'none';
-            localStorage.removeItem('riddlenet_mode_preference');
+            // Reset to neutral state - solo mode only
+            currentMode = 'solo';
+            localStorage.setItem('riddlenet_mode_preference', 'solo');
             
-            // Show both sets of features
+            // Show solo features
             showSoloFeatures();
-            showCollaborationFeatures();
             
             // Update button states
             updateModeButtons();
             
-            console.log('🔄 Reset to neutral mode - both modes available');
+            console.log('🔄 Reset to solo mode');
         }
 
         function restoreMode() {
-            // Restore mode from localStorage on page load
-            const savedMode = localStorage.getItem('riddlenet_mode_preference');
-            if (savedMode === 'solo') {
-                currentMode = 'solo';
-                updateModeButtons();
-                hideCollaborationFeatures();
-                console.log('🔄 Restored Solo Mode');
-            } else if (savedMode === 'collaboration') {
-                currentMode = 'collaboration';
-                updateModeButtons();
-                hideSoloFeatures();
-                console.log('🔄 Restored Collaboration Mode');
-            } else {
-                // Default state - show both modes as available
-                updateModeButtons();
-                console.log('🔄 No mode preference saved - showing neutral state');
-            }
+            // Always use solo mode since collaboration is removed
+            currentMode = 'solo';
+            localStorage.setItem('riddlenet_mode_preference', 'solo');
+            updateModeButtons();
+            showSoloFeatures();
+            console.log('🔄 Solo Mode activated by default');
         }
 
-        // Lobby Browser Functions
-        function showLobbyBrowser() {
-            console.log('🎯 Lobby browser requested!');
-            
-            // Ensure we're in collaboration mode
-            if (currentMode !== 'collaboration') {
-                console.log('⚠️ Not in collaboration mode, activating collaboration mode first');
-                activateCollaborationMode();
-                return; // activateCollaborationMode will call this function again
-            }
-            
-            // Check if socket client is available
-            if (!window.socketClient) {
-                console.error('❌ SocketClient not available. Please refresh the page.');
-                alert('WebSocket connection not available. Please refresh the page and try again.');
-                return;
-            }
-            
-            console.log('✅ SocketClient is available');
-            
-            // Show collaboration intro if first time
-            const hasSeenIntro = localStorage.getItem('riddlenet_collaboration_intro');
-            if (!hasSeenIntro) {
-                console.log('📋 Showing collaboration intro for first-time user');
-                showCollaborationIntro();
-                return;
-            }
-            
-            console.log('🔍 Opening lobby browser modal');
-            const modal = document.getElementById('lobbyBrowserModal');
-            const backdrop = document.getElementById('lobbyBrowserBackdrop');
-            
-            if (!modal) {
-                console.error('❌ Lobby browser modal not found');
-                alert('Collaboration interface not loaded properly. Please refresh the page.');
-                return;
-            }
-            
-            // Clear any existing styles that might interfere
-            document.body.style.filter = 'none';
-            document.body.style.backdropFilter = 'none';
-            
-            // Show backdrop first with proper isolation
-            if (backdrop) {
-                backdrop.style.display = 'block';
-                backdrop.classList.add('active');
-                console.log('✅ Backdrop shown with proper isolation');
-            }
-            
-            // Show modal with enhanced visibility
-            modal.style.display = 'flex';
-            modal.style.flexDirection = 'column';
-            modal.style.opacity = '1';
-            modal.style.visibility = 'visible';
-            modal.style.pointerEvents = 'auto';
-            modal.classList.add('active');
-            
-            lobbyBrowserOpen = true;
-            console.log('✅ Modal opened successfully with enhanced visibility');
-            
-            // Join lobby browser room and set up auto-refresh
-            console.log('🌐 Joining lobby browser room...');
-            try {
-                window.socketClient.joinLobbyBrowser();
-                refreshLobbies();
-                console.log('✅ Successfully joined lobby browser and refreshed lobbies');
-                
-                // Set up automatic refresh every 60 seconds while browser is open
-                if (lobbyRefreshInterval) {
-                    clearInterval(lobbyRefreshInterval);
-                }
-                lobbyRefreshInterval = setInterval(() => {
-                    if (lobbyBrowserOpen) {
-                        console.log('🔄 Auto-refreshing lobby list...');
-                        refreshLobbies();
-                    }
-                }, 60000); // 60 seconds
-                
-            } catch (error) {
-                console.error('❌ Error joining lobby browser:', error);
-                alert('Failed to connect to collaboration system. Please try again.');
-            }
-        }
+        // Removed collaboration functionality
 
-        function showCollaborationIntro() {
-            const introHtml = `
-                <div class="collaboration-intro-modal" style="
-                    position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                    background: rgba(0,0,0,0.8); z-index: 9999; 
-                    display: flex; align-items: center; justify-content: center;
-                ">
-                    <div style="
-                        background: var(--glass-bg); backdrop-filter: blur(20px);
-                        border: 1px solid var(--glass-border); border-radius: 16px;
-                        padding: 40px; max-width: 600px; margin: 20px;
-                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-                    ">
-                        <div style="text-align: center; margin-bottom: 24px;">
-                            <i class="bx bx-group" style="font-size: 64px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
-                            <h2 style="color: var(--cyber-glow); margin: 0;">Welcome to Collaboration!</h2>
-                        </div>
-                        
-                        <div style="color: var(--text-primary); line-height: 1.6; margin-bottom: 24px;">
-                            <p><strong>🚀 Revolutionary Team Learning:</strong></p>
-                            <p>Work together in real-time on network troubleshooting scenarios, just like professional IT teams!</p>
-                            
-                            <p><strong>✨ Key Features:</strong></p>
-                            <ul style="margin: 16px 0; padding-left: 20px;">
-                                <li>👥 Real-time cursor tracking</li>
-                                <li>🔄 Synchronized network topology</li>
-                                <li>💬 Built-in team chat</li>
-                                <li>📊 Shared progress tracking</li>
-                            </ul>
-                            
-                            <p><strong>🎯 Getting Started:</strong></p>
-                            <p>• <strong>Join Session:</strong> Browse available team sessions<br>
-                            • <strong>Create Session:</strong> Start your own collaborative workspace</p>
-                        </div>
-                        
-                        <div style="display: flex; gap: 12px; justify-content: center;">
-                            <button onclick="closeCollaborationIntro()" class="action-btn" style="
-                                background: var(--glass-bg); border: 1px solid var(--glass-border);
-                            ">Maybe Later</button>
-                            <button onclick="startCollaboration()" class="action-btn" style="
-                                background: var(--gradient-primary); color: white;
-                            ">🚀 Start Collaborating!</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', introHtml);
-        }
+        // closeLobbyBrowser function removed
 
-        function closeCollaborationIntro() {
-            const modal = document.querySelector('.collaboration-intro-modal');
-            if (modal) modal.remove();
-        }
 
-        function startCollaboration() {
-            localStorage.setItem('riddlenet_collaboration_intro', 'seen');
-            closeCollaborationIntro();
-            
-            // Now show the actual lobby browser
-            const modal = document.getElementById('lobbyBrowserModal');
-            modal.classList.add('active');
-            
-            if (window.socketClient) {
-                window.socketClient.joinLobbyBrowser();
-                refreshLobbies();
-            }
-        }
 
-        function closeLobbyBrowser() {
-            const modal = document.getElementById('lobbyBrowserModal');
-            const backdrop = document.getElementById('lobbyBrowserBackdrop');
-            
-            if (modal) {
-                modal.classList.remove('active');
-                modal.style.display = 'none';
-                modal.style.opacity = '0';
-                modal.style.visibility = 'hidden';
-                modal.style.pointerEvents = 'none';
-            }
-            
-            if (backdrop) {
-                backdrop.classList.remove('active');
-                backdrop.style.display = 'none';
-            }
-            
-            // Clear any global filter effects
-            document.body.style.filter = '';
-            document.body.style.backdropFilter = '';
-            
-            // Clear auto-refresh interval
-            if (lobbyRefreshInterval) {
-                clearInterval(lobbyRefreshInterval);
-                lobbyRefreshInterval = null;
-                console.log('🛑 Stopped auto-refresh for lobby browser');
-            }
-            
-            lobbyBrowserOpen = false;
-            
-            // Leave lobby browser room
-            if (window.socketClient) {
-                window.socketClient.leaveLobbyBrowser();
-            }
-            
-            console.log('✅ Lobby browser closed with proper cleanup');
-        }
 
-        function showCreateLobby() {
-            console.log('🎯 Opening create lobby modal');
-            
-            // Close any existing browser modal first
-            const browserModal = document.getElementById('lobbyBrowserModal');
-            if (browserModal) {
-                browserModal.style.display = 'none';
-                browserModal.classList.remove('active');
-            }
-            
-            const modal = document.getElementById('createLobbyModal');
-            const backdrop = document.getElementById('createLobbyModalBackdrop');
-            
-            if (modal && backdrop) {
-                // Show backdrop first
-                backdrop.style.display = 'block';
-                backdrop.classList.add('active');
-                
-                // Show modal with clean, crisp styling (no blur on content)
-                modal.style.display = 'flex';
-                modal.style.flexDirection = 'column';
-                modal.style.opacity = '1';
-                modal.style.visibility = 'visible';
-                modal.style.pointerEvents = 'auto';
-                modal.classList.add('active');
-                
-                // Ensure form is visible
-                const form = document.getElementById('createLobbyForm');
-                if (form) {
-                    form.style.display = 'flex';
-                    form.style.flexDirection = 'column';
-                    console.log('✅ Form visibility ensured');
-                }
-                
-                // Update scenario options and ensure dropdown is populated
-                updateScenarioOptions();
-                
-                // Ensure all form elements are visible
-                const formElements = modal.querySelectorAll('.form-group');
-                formElements.forEach(group => {
-                    group.style.display = 'flex';
-                    group.style.flexDirection = 'column';
-                });
-                
-                console.log('✅ Create lobby modal opened with crisp, readable content');
-            } else {
-                console.error('❌ Create lobby modal or backdrop not found');
-            }
-        }
 
-        function closeCreateLobby() {
-            console.log('🔒 Closing create lobby modal');
-            const modal = document.getElementById('createLobbyModal');
-            const backdrop = document.getElementById('createLobbyModalBackdrop');
-            
-            if (modal) {
-                modal.style.display = 'none';
-                modal.classList.remove('active');
-                console.log('✅ Create lobby modal closed');
-            }
-            
-            if (backdrop) {
-                backdrop.style.display = 'none';
-                backdrop.classList.remove('active');
-            }
-        }
 
-        function updateScenarioOptions() {
-            console.log('🔄 Updating scenario options...');
-            const scenarioType = document.getElementById('scenarioType').value;
-            const scenarioSelect = document.getElementById('scenarioId');
-            
-            if (!scenarioType || !scenarioSelect) {
-                console.error('❌ Scenario elements not found', { scenarioType, scenarioSelect });
-                return;
-            }
-            
-            const scenarios = {
-                easy: [
-                    { id: 'network', name: 'Misconfigured Network Address' },
-                    { id: 'passive', name: 'Passive Interface' },
-                    { id: 'version', name: 'Incorrect Version' }
-                ],
-                medium: [
-                    { id: 'split', name: 'Split Horizon' },
-                    { id: 'hopcount', name: 'Maximum Hop Count Reached' },
-                    { id: 'timers', name: 'Timers Mismatch' }
-                ],
-                hard: [
-                    { id: 'flapping', name: 'Route Flapping' },
-                    { id: 'loops', name: 'Routing Loops' },
-                    { id: 'summarization', name: 'Incorrect Route Summarization' },
-                    { id: 'auth', name: 'Authentication Failure (RIP v2)' }
-                ]
-            };
-            
-            scenarioSelect.innerHTML = '';
-            const selectedScenarios = scenarios[scenarioType];
-            
-            if (!selectedScenarios) {
-                console.error('❌ No scenarios found for type:', scenarioType);
-                return;
-            }
-            
-            selectedScenarios.forEach(scenario => {
-                const option = document.createElement('option');
-                option.value = scenario.id;
-                option.textContent = scenario.name;
-                scenarioSelect.appendChild(option);
-            });
-            
-            console.log('✅ Scenario options updated:', selectedScenarios.length, 'options for', scenarioType);
-        }
 
-        function refreshLobbies() {
-            console.log('🔄 Refreshing lobbies...');
-            if (window.socketClient) {
-                window.socketClient.getPublicLobbies();
-                console.log('✅ Lobby refresh request sent');
-            } else {
-                console.error('❌ SocketClient not available for lobby refresh');
-            }
-        }
 
-        function joinLobby(lobbyId, requiresPassword = false) {
-            console.log('🎯 Attempting to join lobby:', lobbyId);
-            
-            // All lobbies are now public, no password needed
-            if (window.socketClient) {
-                console.log('✅ SocketClient available, sending join request...');
-                window.socketClient.joinTroubleshootingLobby(lobbyId);
-            } else {
-                console.error('❌ SocketClient not available!');
-                alert('WebSocket connection not available. Please refresh the page and try again.');
-            }
-        }
 
-        function leaveLobby() {
-            if (window.socketClient && currentLobby) {
-                window.socketClient.leaveTroubleshootingLobby();
-            }
-        }
 
-        // Chat functionality
-        function handleChatKeypress(event) {
-            if (event.key === 'Enter') {
-                const input = event.target;
-                const message = input.value.trim();
-                
-                if (message && window.socketClient) {
-                    window.socketClient.sendLobbyChat(message, 'text');
-                    input.value = '';
-                }
-            }
-        }
 
-        function addChatMessage(messageData) {
-            console.log('💬 Adding chat message:', messageData);
-            console.log('📋 Message data keys:', Object.keys(messageData));
-            console.log('📋 Message type:', messageData.type);
-            console.log('📋 Message content:', messageData.message);
-            
-            const container = document.getElementById('chatContainer');
-            if (!container) {
-                console.error('❌ Chat container not found! Cannot display message.');
-                return;
-            }
-            
-            console.log('✅ Chat container found, adding message...');
-            
-            // Always ensure collaboration panel is visible when adding chat messages
-            const collaborationPanel = document.getElementById('collaborationPanel');
-            if (collaborationPanel) {
-                if (collaborationPanel.style.display === 'none' || !collaborationPanel.style.display) {
-                    console.log('⚠️ Collaboration panel was hidden. Making it visible to display chat.');
-                    collaborationPanel.style.display = 'block';
-                }
-                console.log('✅ Collaboration panel is now visible');
-            }
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${messageData.type || 'text'}`;
-            
-            const time = new Date(messageData.timestamp).toLocaleTimeString();
-            
-            if (messageData.type === 'system') {
-                console.log('🤖 Creating system message');
-                messageDiv.innerHTML = `<span style="color: var(--text-muted);">[${time}] ${messageData.message}</span>`;
-            } else {
-                console.log('👤 Creating user message');
-                const username = messageData.username || 'Unknown User';
-                const message = messageData.message || '';
-                
-                // Create profile image or fallback
-                let avatarHtml = '';
-                if (messageData.profile_image) {
-                    avatarHtml = `
-                        <img src="/static/img/profiles/${messageData.profile_image}" 
-                             alt="${username}" 
-                             style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle;"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
-                        <div style="display: none; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
-                            ${username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                } else {
-                    avatarHtml = `
-                        <div style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background-color: var(--cyber-glow); color: white; font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle; align-items: center; justify-content: center;">
-                            ${username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                }
-                
-                messageDiv.innerHTML = `
-                    <div style="display: flex; align-items: flex-start; margin-bottom: 4px;">
-                        ${avatarHtml}
-                        <div style="flex: 1;">
-                            <div style="margin-bottom: 2px;">
-                                <strong style="color: var(--cyber-glow);">${username}</strong>
-                                <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">[${time}]</span>
-                            </div>
-                            <div style="color: var(--text-primary);">${message}</div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-            
-            console.log('✅ Chat message added successfully');
-        }
 
-        function updateParticipantsList(participants) {
-            const container = document.getElementById('participantsList');
-            container.innerHTML = '';
-            
-            Object.values(participants).forEach(participant => {
-                const item = document.createElement('div');
-                item.className = 'participant-item';
-                
-                // Create avatar with profile image or fallback to initial
-                let avatarContent = '';
-                if (participant.profile_image) {
-                    avatarContent = `
-                        <img src="/static/img/profiles/${participant.profile_image}" 
-                             alt="${participant.username}" 
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="avatar-text" style="display: none; background-color: ${participant.color};">
-                            ${participant.username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                } else {
-                    avatarContent = `
-                        <div class="avatar-text" style="background-color: ${participant.color};">
-                            ${participant.username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                }
-                
-                item.innerHTML = `
-                    <div class="participant-status"></div>
-                    <div class="participant-avatar">
-                        ${avatarContent}
-                    </div>
-                    <span style="color: var(--text-primary);">${participant.username}</span>
-                `;
-                container.appendChild(item);
-            });
-        }
 
-        // User cursor management
-        function updateUserCursor(userId, username, position, color, profileImage = null) {
-            let cursor = userCursors.get(userId);
-            
-            if (!cursor) {
-                cursor = document.createElement('div');
-                cursor.className = 'user-cursor';
-                cursor.style.color = color;
-                
-                // Create cursor content with profile image or fallback
-                let cursorIconContent = '';
-                if (profileImage) {
-                    cursorIconContent = `
-                        <img src="/static/img/profiles/${profileImage}" 
-                             class="cursor-profile-img"
-                             alt="${username}" 
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="cursor-profile-fallback" style="display: none;">
-                            ${username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                } else {
-                    cursorIconContent = `
-                        <div class="cursor-profile-fallback">
-                            ${username.charAt(0).toUpperCase()}
-                        </div>
-                    `;
-                }
-                
-                cursor.innerHTML = `
-                    <div class="cursor-icon">
-                        ${cursorIconContent}
-                    </div>
-                    <div class="cursor-label">${username}</div>
-                `;
-                document.body.appendChild(cursor);
-                userCursors.set(userId, cursor);
-            }
-            
-            cursor.style.left = position.x + 'px';
-            cursor.style.top = position.y + 'px';
-        }
 
-        function removeUserCursor(userId) {
-            const cursor = userCursors.get(userId);
-            if (cursor) {
-                cursor.remove();
-                userCursors.delete(userId);
-            }
-        }
 
-        function updateLobbyGrid(lobbies) {
-            const grid = document.getElementById('lobbyGrid');
-            
-            if (!grid) {
-                console.error('❌ Lobby grid element not found! Cannot update lobby list.');
-                return;
-            }
-            
-            console.log('🔄 Updating lobby grid with', lobbies.length, 'lobbies');
-            
-            if (lobbies.length === 0) {
-                grid.innerHTML = `
-                    <div class="lobby-card" style="border: 2px dashed var(--glass-border); opacity: 0.6;">
-                        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                            <i class="bx bx-search" style="font-size: 48px; margin-bottom: 16px;"></i>
-                            <p>No active sessions found</p>
-                            <p style="font-size: 14px;">Create a new session to start collaborating!</p>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-            
-            grid.innerHTML = lobbies.map(lobby => `
-                <div class="lobby-card" onclick="joinLobby('${lobby.id}', false)">
-                    <div class="lobby-card-header">
-                        <h3 class="lobby-name">${lobby.name}</h3>
-                        <span class="lobby-participants">${lobby.participant_count}/${lobby.max_participants}</span>
-                    </div>
-                    <div class="lobby-scenario">
-                        ${lobby.scenario_type.toUpperCase()}: ${lobby.scenario_id}
-                    </div>
-                    <div class="lobby-creator">Created by ${lobby.creator_name}</div>
-                    <div class="lobby-participants-list">
-                        ${Object.values(lobby.participants).map(p => {
-                            let avatarContent = '';
-                            if (p.profile_image) {
-                                avatarContent = `
-                                    <img src="/static/img/profiles/${p.profile_image}" 
-                                         alt="${p.username}" 
-                                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                    <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background-color: ${p.color}; border-radius: 50%; font-size: 10px; font-weight: 600; color: white;">
-                                        ${p.username.charAt(0).toUpperCase()}
-                                    </div>
-                                `;
-                            } else {
-                                avatarContent = `
-                                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: ${p.color}; border-radius: 50%; font-size: 10px; font-weight: 600; color: white;">
-                                        ${p.username.charAt(0).toUpperCase()}
-                                    </div>
-                                `;
-                            }
-                            
-                            return `<div class="participant-avatar">${avatarContent}</div>`;
-                        }).join('')}
-                    </div>
-                    <div style="margin-top: 8px; color: var(--success-color); font-size: 12px;">
-                        <i class="bx bx-group"></i> Public Session - Click to Join
-                    </div>
-                </div>
-            `).join('');
-            
-            console.log('✅ Lobby grid HTML updated');
-        }
 
-        function showCollaborationIntro() {
-            const introHtml = `
-                <div class="collaboration-intro-modal" style="
-                    position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                    background: rgba(0,0,0,0.8); z-index: 9999; 
-                    display: flex; align-items: center; justify-content: center;
-                ">
-                    <div style="
-                        background: var(--glass-bg); backdrop-filter: blur(20px);
-                        border: 1px solid var(--glass-border); border-radius: 16px;
-                        padding: 40px; max-width: 600px; margin: 20px;
-                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-                    ">
-                        <div style="text-align: center; margin-bottom: 24px;">
-                            <i class="bx bx-group" style="font-size: 64px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
-                            <h2 style="color: var(--cyber-glow); margin: 0;">Welcome to Collaboration!</h2>
-                        </div>
-                        
-                        <div style="color: var(--text-primary); line-height: 1.6; margin-bottom: 24px;">
-                            <p><strong>🚀 Revolutionary Team Learning:</strong></p>
-                            <p>Work together in real-time on network troubleshooting scenarios, just like professional IT teams!</p>
-                            
-                            <p><strong>✨ Key Features:</strong></p>
-                            <ul style="margin: 16px 0; padding-left: 20px;">
-                                <li>👥 Real-time cursor tracking</li>
-                                <li>🔄 Synchronized network topology</li>
-                                <li>💬 Built-in team chat</li>
-                                <li>📊 Shared progress tracking</li>
-                            </ul>
-                            
-                            <p><strong>🎯 Getting Started:</strong></p>
-                            <p>• <strong>Join Session:</strong> Browse available team sessions<br>
-                            • <strong>Create Session:</strong> Start your own collaborative workspace</p>
-                        </div>
-                        
-                        <div style="display: flex; gap: 12px; justify-content: center;">
-                            <button onclick="closeCollaborationIntro()" class="action-btn" style="
-                                background: var(--glass-bg); border: 1px solid var(--glass-border);
-                            ">Maybe Later</button>
-                            <button onclick="startCollaboration()" class="action-btn" style="
-                                background: var(--gradient-primary); color: white;
-                            ">🚀 Start Collaborating!</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', introHtml);
-        }
 
-        function closeCollaborationIntro() {
-            const modal = document.querySelector('.collaboration-intro-modal');
-            if (modal) modal.remove();
-        }
 
-        function startCollaboration() {
-            localStorage.setItem('riddlenet_collaboration_intro', 'seen');
-            closeCollaborationIntro();
-            
-            // Now show the actual lobby browser
-            const modal = document.getElementById('lobbyBrowserModal');
-            modal.classList.add('active');
-            
-            if (window.socketClient) {
-                window.socketClient.joinLobbyBrowser();
-                refreshLobbies();
-            }
-        }
+
+
+
+        // Duplicate collaboration intro functions removed
         
         // Function to join a troubleshooting-specific room when scenario is selected
         function joinTroubleshootingRoom(scenarioId) {
@@ -8758,7 +6568,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
         
         // Lobby Management Variables
-        const currentLobby = null; // Using a single global instance
+
 
                 // The collaborative-session-btn is already set up with onclick="showLobbyBrowser()"
                 // All duplicate functions have been removed and consolidated
@@ -8777,55 +6587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('❌ Scenario type select not found');
             }
 
-            // Handle create lobby form submission
-            const createLobbyForm = document.getElementById('createLobbyForm');
-            if (createLobbyForm) {
-                createLobbyForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const lobbyData = {
-                        name: formData.get('name'),
-                        scenario_type: formData.get('scenario_type'),
-                        scenario_id: formData.get('scenario_id'),
-                        max_participants: parseInt(formData.get('max_participants'))
-                        // Removed is_private and password - all lobbies are now public
-                    };
-                    
-                    if (window.socketClient) {
-                        console.log('🏗️ Creating public lobby with data:', lobbyData);
-                        window.socketClient.createTroubleshootingLobby(lobbyData);
-                    } else {
-                        console.error('❌ SocketClient not available for lobby creation');
-                        alert('WebSocket connection not available. Please refresh the page.');
-                    }
-                });
-            }
 
-            // Update initial scenario options
-            updateScenarioOptions();
-            
-            // Test modal elements on page load
-            console.log('🔍 Testing modal elements on page load:');
-            const modalElementsTest = [
-                'createLobbyModal',
-                'createLobbyForm', 
-                'lobbyName',
-                'scenarioType',
-                'scenarioId',
-                'maxParticipants'
-            ];
-            
-            modalElementsTest.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    console.log(`✅ ${id} found:`, element.tagName);
-                } else {
-                    console.error(`❌ ${id} NOT FOUND`);
-                }
-            });
-            
-            console.log('Modal elements test complete');
             
             // --- WebSocket Event Listeners for Troubleshooting ---
             if (window.socketClient) {
@@ -8852,327 +6614,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // Handle new lobby availability broadcast
-                window.socketClient.on('new_lobby_available', function(data) {
-                    console.log('🆕 New lobby available:', data);
-                    // Refresh the lobby list to include the new lobby
-                    if (lobbyBrowserOpen) {
-                        refreshLobbies();
-                    }
-                });
 
-                // Handle lobby creation success
-                window.socketClient.on('lobby_created', function(data) {
-                    console.log('🏗️ Lobby created successfully:', data);
-                    if (data.success) {
-                        // Close create lobby modal and backdrop
-                        closeCreateLobby();
-                        
-                        // Show success notification
-                        if (window.socketClient.showNotification) {
-                            window.socketClient.showNotification(
-                                'Session Created!',
-                                `"${data.lobby.name}" has been created successfully. Opening lobby browser...`,
-                                'success'
-                            );
-                        }
-                        
-                        // Automatically open the lobby browser to show the newly created lobby
-                        console.log('🎯 Auto-opening lobby browser to show newly created session');
-                        setTimeout(() => {
-                            showLobbyBrowser();
-                        }, 500); // Small delay to allow modal transitions to complete
-                    }
-                });
 
-                // Handle checking for existing lobby (when page loads)
-                window.socketClient.on('my_lobby', function(data) {
-                    console.log('🔍 My lobby check result:', data);
-                    if (data.success && data.lobby) {
-                        console.log('✅ User is already in lobby:', data.lobby.name);
-                        console.log('📊 Existing lobby data:', JSON.stringify(data, null, 2));
-                        
-                        // Set current lobby
-                        currentLobby = data.lobby;
-                        
-                        // Update collaboration status
-                        const statusIndicator = document.getElementById('collaborationStatus');
-                        if (statusIndicator) {
-                            statusIndicator.className = 'collaboration-status connected';
-                            statusIndicator.innerHTML = `<i class="bx bx-group"></i><span>In "${data.lobby.name}"</span>`;
-                        }
-                        
-                        // Update participants list
-                        if (data.lobby.participants) {
-                            updateParticipantsList(data.lobby.participants);
-                        }
-                        
-                        // Show collaboration panel
-                        const collabPanel = document.getElementById('collaborationPanel');
-                        if (collabPanel) {
-                            collabPanel.style.display = 'block';
-                            console.log('✅ Collaboration panel is now visible (existing lobby)');
-                        }
-                        
-                        // Load existing chat history
-                        const chatContainer = document.getElementById('chatContainer');
-                        if (chatContainer) {
-                            chatContainer.innerHTML = ''; // Clear first
-                            console.log('🧹 Chat container cleared for existing lobby content');
-                        }
-                        
-                        // Load recent chat history
-                        if (data.lobby.recent_chat && data.lobby.recent_chat.length > 0) {
-                            console.log('💬 Loading existing chat history:', data.lobby.recent_chat);
-                            console.log('📊 Number of existing messages:', data.lobby.recent_chat.length);
-                            data.lobby.recent_chat.forEach((chatMessage, index) => {
-                                console.log(`📝 Processing existing message ${index + 1}:`, chatMessage);
-                                addChatMessage(chatMessage);
-                            });
-                            console.log('✅ Existing chat history loading completed');
-                        } else {
-                            console.log('ℹ️ No existing chat history to load');
-                        }
-                        
-                        // Add a system message to indicate reconnection
-                        addChatMessage({
-                            type: 'system',
-                            message: 'Reconnected to the session',
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                    } else {
-                        console.log('ℹ️ User is not in any lobby currently');
-                    }
-                });
 
-                // Handle lobby join success
-                window.socketClient.on('lobby_joined', function(data) {
-                    console.log('🚪 Successfully joined lobby:', data);
-                    console.log('📊 Lobby data structure:', JSON.stringify(data, null, 2));
-                    
-                    if (data.success) {
-                        currentLobby = data.lobby;
-                        
-                        // Close lobby browser modal and backdrop completely
-                        closeLobbyBrowser();
-                        
-                        // Show collaboration panel
-                        const collaborationPanel = document.getElementById('collaborationPanel');
-                        if (collaborationPanel) {
-                            collaborationPanel.style.display = 'block';
-                        }
-                        
-                        // Update collaboration status
-                        const statusIndicator = document.getElementById('collaborationStatus');
-                        if (statusIndicator) {
-                            statusIndicator.className = 'collaboration-status connected';
-                            statusIndicator.innerHTML = '<i class="bx bx-group"></i><span>Connected to ' + data.lobby.name + '</span>';
-                        }
-                        
-                        // Update participants list
-                        if (data.lobby.participants) {
-                            updateParticipantsList(data.lobby.participants);
-                        }
-                        
-                        // Show collaboration panel
-                        const collabPanel = document.getElementById('collaborationPanel');
-                        if (collabPanel) {
-                            collabPanel.style.display = 'block';
-                            console.log('✅ Collaboration panel is now visible');
-                        }
-                        
-                        // Clear any existing chat before loading new content
-                        const chatContainer = document.getElementById('chatContainer');
-                        if (chatContainer) {
-                            chatContainer.innerHTML = '';
-                            console.log('🧹 Chat container cleared for new lobby content');
-                        }
-                        
-                        // Load recent chat history
-                        if (data.lobby.recent_chat && data.lobby.recent_chat.length > 0) {
-                            console.log('💬 Loading recent chat history:', data.lobby.recent_chat);
-                            console.log('📊 Number of recent messages:', data.lobby.recent_chat.length);
-                            data.lobby.recent_chat.forEach((chatMessage, index) => {
-                                console.log(`📝 Processing message ${index + 1}:`, chatMessage);
-                                addChatMessage(chatMessage);
-                            });
-                            console.log('✅ Chat history loading completed');
-                        } else {
-                            console.log('ℹ️ No recent chat history to load');
-                        }
-                        
-                        // ===== AUTOMATICALLY START THE COLLABORATIVE SCENARIO =====
-                        // Get scenario information from the lobby
-                        const scenarioType = data.lobby.scenario_type; // 'easy', 'medium', 'hard'
-                        const scenarioId = data.lobby.scenario_id;     // specific scenario like 'network', 'passive', etc.
-                        
-                        console.log(`🎯 Starting collaborative scenario: ${scenarioType} - ${scenarioId}`);
-                        console.log('🔍 Checking if startScenario function exists:', typeof startScenario);
-                        
-                        // Automatically select and start the scenario
-                        if (scenarioType && scenarioId) {
-                            // Try to update the scenario button to show selection
-                            const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
-                            if (selectScenarioBtn) {
-                                // Update the label span within the button
-                                const labelSpan = selectScenarioBtn.querySelector('.label');
-                                if (labelSpan) {
-                                    labelSpan.textContent = `${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
-                                } else {
-                                    selectScenarioBtn.textContent = `Collaborative: ${scenarioType.charAt(0).toUpperCase() + scenarioType.slice(1)} - ${scenarioId}`;
-                                }
-                                selectScenarioBtn.classList.add('selected');
-                                console.log('✅ Updated scenario button text');
-                            } else {
-                                console.log('ℹ️ No scenario button found to update - this is OK for collaborative mode');
-                            }
-                            
-                            // Start the scenario simulation
-                            if (typeof startScenario === 'function') {
-                                console.log('🚀 Calling startScenario function...');
-                                try {
-                                    startScenario(scenarioType, scenarioId);
-                                    console.log('✅ Collaborative scenario started successfully');
-                                } catch (error) {
-                                    console.error('❌ Error starting scenario:', error);
-                                }
-                            } else {
-                                console.error('❌ startScenario function not found or not a function');
-                                console.log('🔍 Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
-                            }
-                        } else {
-                            console.error('❌ Missing scenario information:', { scenarioType, scenarioId });
-                        }
-                        
-                        // Show success notification
-                        if (window.socketClient.showNotification) {
-                            window.socketClient.showNotification(
-                                'Session Joined!',
-                                `You've joined "${data.lobby.name}" - Starting ${scenarioType} scenario: ${scenarioId}`,
-                                'success'
-                            );
-                        }
-                        
-                        // Add system message to chat
-                        addChatMessage({
-                            type: 'system',
-                            message: `You joined the session "${data.lobby.name}" - ${scenarioType} scenario: ${scenarioId}`,
-                            timestamp: new Date().toISOString()
-                        });
-                    } else {
-                        // Handle join failure
-                        console.error('❌ Failed to join lobby:', data.error);
-                        if (window.socketClient.showNotification) {
-                            window.socketClient.showNotification(
-                                'Join Failed',
-                                data.error || 'Could not join the session. It may be full or no longer available.',
-                                'error'
-                            );
-                        }
-                    }
-                });
 
-                // Handle participant joining the session
-                window.socketClient.on('participant_joined', function(data) {
-                    console.log('👤 Participant joined:', data);
-                    if (data.user_id && data.username && data.participant_data) {
-                        // Update participants list
-                        if (currentLobby && currentLobby.participants) {
-                            currentLobby.participants[data.user_id] = data.participant_data;
-                            updateParticipantsList(currentLobby.participants);
-                            
-                            // Update the collaboration panel if it exists
-                            if (typeof updateCollaborationPanel === 'function') {
-                                updateCollaborationPanel();
-                            }
-                        }
-                        
-                        // Add system message to chat
-                        addChatMessage({
-                            type: 'system',
-                            message: `${data.username} joined the session`,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        // Show notification
-                        if (window.socketClient.showNotification) {
-                            window.socketClient.showNotification(`${data.username} joined the session`, 'info');
-                        }
-                    }
-                });
 
-                // Handle participant leaving the session
-                window.socketClient.on('participant_left', function(data) {
-                    console.log('👤 Participant left:', data);
-                    if (data.user_id) {
-                        // Update participants list
-                        if (currentLobby && currentLobby.participants) {
-                            const username = data.username || currentLobby.participants[data.user_id]?.username || 'Someone';
-                            delete currentLobby.participants[data.user_id];
-                            updateParticipantsList(currentLobby.participants);
-                            
-                            // Remove user cursor if it exists
-                            removeUserCursor(data.user_id);
-                            
-                            // Add system message to chat
-                            addChatMessage({
-                                type: 'system',
-                                message: `${username} left the session`,
-                                timestamp: new Date().toISOString()
-                            });
-                        }
-                    }
-                });
 
-                // Handle chat messages in the lobby
-                window.socketClient.on('lobby_chat_message', function(data) {
-                    console.log('💬 Chat message received:', data);
-                    addChatMessage(data);
-                });
 
-                // Handle cursor movement from other participants
-                window.socketClient.on('cursor_moved', function(data) {
-                    if (data.user_id !== window.currentUserId) {
-                        updateUserCursor(data.user_id, data.username, data.position, data.color, data.profile_image);
-                    }
-                });
 
-                // Handle leaving lobby
-                window.socketClient.on('lobby_left', function(data) {
-                    console.log('🚪 Left lobby:', data);
-                    currentLobby = null;
-                    
-                    // Hide collaboration panel
-                    const collaborationPanel = document.getElementById('collaborationPanel');
-                    if (collaborationPanel) {
-                        collaborationPanel.style.display = 'none';
-                    }
-                    
-                    // Update collaboration status
-                    const statusIndicator = document.getElementById('collaborationStatus');
-                    if (statusIndicator) {
-                        statusIndicator.className = 'collaboration-status disconnected';
-                        statusIndicator.innerHTML = '<i class="bx bx-group"></i><span>Not connected</span>';
-                    }
-                    
-                    // Clear participants list
-                    const participantsList = document.getElementById('participantsList');
-                    if (participantsList) {
-                        participantsList.innerHTML = '';
-                    }
-                    
-                    // Clear chat
-                    const chatContainer = document.getElementById('chatContainer');
-                    if (chatContainer) {
-                        chatContainer.innerHTML = '';
-                    }
-                    
-                    // Clear all user cursors
-                    userCursors.forEach((cursor, userId) => {
-                        removeUserCursor(userId);
-                    });
-                });
+
+
+
+
+
+
+
 
                 // === TROUBLESHOOTING EVENT HANDLERS ===
 
@@ -9497,77 +6953,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 // Handle lobby state synchronization
-                window.socketClient.on('lobby_state_sync', function(data) {
-                    console.log('🔄 Lobby state sync received:', data);
-                    
-                    if (data.lobby) {
-                        currentLobby = data.lobby;
-                        updateParticipantsList(data.lobby.participants);
-                    }
-                    
-                    if (data.network_state) {
-                        syncFullNetworkState(data.network_state);
-                    }
-                    
-                    if (data.device_locks) {
-                        currentDeviceLocks = data.device_locks;
-                        updateAllDeviceLockUI();
-                    }
-                });
+
             }
 
-            // === COLLABORATIVE STATE MANAGEMENT ===
-            let currentDeviceLocks = {};
-            let sharedCLIHistory = {}; // device_id -> commands array
-
-            // Sync network state from collaborator
-            function syncNetworkStateFromCollaborator(changes, networkState, username) {
-                try {
-                    // Handle device additions/updates
-                    if (changes.devices) {
-                        Object.entries(changes.devices).forEach(([deviceId, deviceData]) => {
-                            let existingDevice = findDeviceById(deviceId);
-                            
-                            if (!existingDevice) {
-                                // Add new device
-                                const newDevice = createDeviceFromData(deviceData);
-                                if (newDevice) {
-                                    devices.push(newDevice);
-                                }
-                            } else {
-                                // Update existing device
-                                updateDeviceFromData(existingDevice, deviceData);
-                            }
-                        });
-                    }
-                    
-                    // Handle device removal
-                    if (changes.removed_devices && changes.removed_devices.length > 0) {
-                        changes.removed_devices.forEach(deviceId => {
-                            const deviceIndex = devices.findIndex(d => d.id === deviceId);
-                            if (deviceIndex !== -1) {
-                                devices.splice(deviceIndex, 1);
-                            }
-                        });
-                    }
-                    
-                    // Handle connection changes
-                    if (changes.connections) {
-                        // For now, replace all connections - in future could be more granular
-                        connections = changes.connections.map(connData => {
-                            const device1 = findDeviceById(connData.device1_id);
-                            const device2 = findDeviceById(connData.device2_id);
-                            return { device1, device2 };
-                        }).filter(conn => conn.device1 && conn.device2);
-                    }
-                    
-                    // Redraw canvas with updates
-                    redrawCanvas();
-                    
-                } catch (error) {
-                    console.error('Error syncing network state:', error);
-                }
-            }
+            // Collaborative state management removed
 
             // Create device from network state data
             function createDeviceFromData(deviceData) {
@@ -9622,285 +7011,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return devices.find(device => device.id === deviceId);
             }
 
-            // Broadcast network changes to collaborators
-            function broadcastNetworkChange(action, changeData) {
-                if (currentLobby && window.socketClient) {
-                    const networkUpdate = {
-                        action: action,
-                        devices: {},
-                        connections: [],
-                        removed_devices: [],
-                        removed_connections: [],
-                        ...changeData
-                    };
-                    
-                    window.socketClient.emit('update_network_topology', networkUpdate);
-                }
-            }
+            // Broadcast network changes removed - collaboration functionality disabled
 
-            // Show collaborative notification
-            function showCollaborativeNotification(message, type = 'info', duration = 3000) {
-                // Create notification element
-                const notification = document.createElement('div');
-                notification.className = `collab-notification ${type}`;
-                notification.innerHTML = `
-                    <i class="bx bx-info-circle"></i>
-                    <span>${message}</span>
-                `;
-                
-                // Add to DOM
-                document.body.appendChild(notification);
-                
-                // Auto-remove after duration
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, duration);
-            }
-
-            // Update device lock UI
-            function updateDeviceLockUI(deviceId, isLocked, username) {
-                const device = findDeviceById(deviceId);
-                if (!device) return;
-                
-                if (isLocked) {
-                    currentDeviceLocks[deviceId] = { username };
-                    // Add visual indicator for locked device
-                    redrawCanvas(); // Redraw with lock indicator
-                } else {
-                    delete currentDeviceLocks[deviceId];
-                    redrawCanvas();
-                }
-            }
-
-            // Update all device lock UI
-            function updateAllDeviceLockUI() {
-                redrawCanvas(); // Redraw with all current locks
-            }
-
-            // Add shared CLI command to history
-            function addSharedCLICommand(deviceId, command, output, username, timestamp) {
-                if (!sharedCLIHistory[deviceId]) {
-                    sharedCLIHistory[deviceId] = [];
-                }
-                
-                sharedCLIHistory[deviceId].push({
-                    command,
-                    output,
-                    username,
-                    timestamp,
-                    shared: true
-                });
-                
-                // Keep only last 20 commands per device
-                if (sharedCLIHistory[deviceId].length > 20) {
-                    sharedCLIHistory[deviceId] = sharedCLIHistory[deviceId].slice(-20);
-                }
-                
-                // Update CLI display if relevant device is selected
-                if (selectedDevice && selectedDevice.id === deviceId) {
-                    updateCLIDisplay(deviceId);
-                }
-            }
+            // Collaborative notification and device locking removed
 
             // === ENHANCED CANVAS EVENT HANDLERS FOR COLLABORATION ===
 
-            // Override the original addDevice function to include collaboration and feedback
-            const originalAddDevice = window.addDevice || addDevice;
-            function addDevice(type, x, y) {
-                const startTime = Date.now();
-                const device = originalAddDevice.call(this, type, x, y);
-                
-                // Add unique ID for collaboration
-                if (device && !device.id) {
-                    device.id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                }
-                
-                // Track device placement for feedback
-                if (device && window.performanceFeedback) {
-                    window.performanceFeedback.trackAction('device_placed', {
-                        device: device,
-                        position: { x, y },
-                        startTime: startTime
-                    });
-                }
-                
-                // Broadcast device addition via specific event
-                if (currentLobby && device && window.socketClient) {
-                    const deviceData = {
-                        id: device.id,
-                        type: device.type,
-                        x: device.x,
-                        y: device.y,
-                        label: device.label,
-                        ipv4: device.ipv4 || '',
-                        ipv6: device.ipv6 || '',
-                        subnet: device.subnet || '',
-                        protocol: device.protocol || 'none',
-                        configured: device.configured || false
-                    };
-                    
-                    window.socketClient.emit('add_device', { device: deviceData });
-                }
-                
-                return device;
-            }
+            // Collaborative device and connection overrides removed
 
-            // Override the original addConnection function to include collaboration and feedback
-            const originalAddConnection = window.addConnection || addConnection;
-            function addConnection(device1, device2, connectionType = 'ethernet') {
-                const startTime = Date.now();
-                const connection = originalAddConnection.call(this, device1, device2);
-                
-                // Track connection creation for feedback
-                if (connection && window.performanceFeedback) {
-                    window.performanceFeedback.trackAction('connection_created', {
-                        device1: device1,
-                        device2: device2,
-                        connectionType: connectionType,
-                        startTime: startTime
-                    });
-                }
-                
-                // Broadcast connection addition
-                if (currentLobby && connection && window.socketClient && device1 && device2) {
-                    window.socketClient.emit('add_connection', {
-                        device1_id: device1.id || device1.label,
-                        device2_id: device2.id || device2.label,
-                        type: connectionType
-                    });
-                }
-                
-                return connection;
-            }
-
-            // Enhanced device removal with collaboration
-            function removeDeviceCollaborative(deviceToRemove) {
-                if (!deviceToRemove) return;
-                
-                // Check if device is locked by another user
-                if (currentDeviceLocks[deviceToRemove.id] && 
-                    currentDeviceLocks[deviceToRemove.id].locked_by !== window.currentUserId) {
-                    showCollaborativeNotification(
-                        `Device ${deviceToRemove.label} is locked by ${currentDeviceLocks[deviceToRemove.id].username}`, 
-                        'warning', 
-                        3000
-                    );
-                    return;
-                }
-                
-                // Remove device locally
-                devices = devices.filter(device => device !== deviceToRemove);
-                
-                // Remove associated connections
-                connections = connections.filter(connection =>
-                    connection.device1 !== deviceToRemove && connection.device2 !== deviceToRemove
-                );
-                
-                // Broadcast device removal
-                if (currentLobby && window.socketClient) {
-                    window.socketClient.emit('remove_device', { 
-                        device_id: deviceToRemove.id || deviceToRemove.label 
-                    });
-                }
-                
-                redrawCanvas();
-            }
-
-            // Enhanced connection removal with collaboration
-            function removeConnectionCollaborative(connectionToRemove) {
-                if (!connectionToRemove) return;
-                
-                // Remove connection locally
-                connections = connections.filter(conn => conn !== connectionToRemove);
-                
-                // Broadcast connection removal
-                if (currentLobby && window.socketClient) {
-                    window.socketClient.emit('remove_connection', {
-                        device1_id: connectionToRemove.device1.id || connectionToRemove.device1.label,
-                        device2_id: connectionToRemove.device2.id || connectionToRemove.device2.label
-                    });
-                }
-                
-                redrawCanvas();
-            }
-
-            // Enhanced CLI command execution with collaboration
-            function executeCliCommandCollaborative(command, device) {
-                if (!device || !command) return;
-                
-                // Execute command locally first
-                const originalOutput = handleCliCommand(command, device);
-                
-                // Broadcast CLI command execution
-                if (currentLobby && window.socketClient) {
-                    window.socketClient.emit('execute_cli_command', {
-                        device_id: device.id || device.label,
-                        command: command,
-                        output: originalOutput || `Executed: ${command}`
-                    });
-                }
-                
-                return originalOutput;
-            }
-            
-            // Set up mouse tracking for collaborative cursor sync
-            let mouseMoveThrottle = null;
-            document.addEventListener('mousemove', function(event) {
-                if (currentLobby && window.socketClient) {
-                    // Throttle mouse movement updates to prevent spam
-                    if (mouseMoveThrottle) {
-                        clearTimeout(mouseMoveThrottle);
-                    }
-                    mouseMoveThrottle = setTimeout(() => {
-                        window.socketClient.updateCursorPosition(event.clientX, event.clientY);
-                    }, 100); // Update every 100ms
-                }
-            });
+            // Collaborative device/connection removal and CLI functions removed
 
             // === COLLABORATIVE UTILITY FUNCTIONS ===
 
-            // Update progress display for collaborative scenarios
-            function updateProgressDisplay(individualProgress, teamProgress) {
-                // Update individual progress indicators
-                if (individualProgress) {
-                    const progressElements = document.querySelectorAll('.individual-progress');
-                    progressElements.forEach(element => {
-                        if (individualProgress.percentage !== undefined) {
-                            element.textContent = `${individualProgress.percentage}%`;
-                        }
-                    });
-                }
-                
-                // Update team progress indicators
-                if (teamProgress) {
-                    const teamElements = document.querySelectorAll('.team-progress');
-                    teamElements.forEach(element => {
-                        if (teamProgress.percentage !== undefined) {
-                            element.textContent = `Team: ${teamProgress.percentage}%`;
-                        }
-                    });
-                }
-            }
-
-            // Enhanced CLI handling with collaboration
-            function enhanceCliForCollaboration() {
-                const originalHandleCliCommand = window.handleCliCommand;
-                if (originalHandleCliCommand) {
-                    window.handleCliCommand = function(command, device) {
-                        // Execute command locally
-                        const result = originalHandleCliCommand.call(this, command, device);
-                        
-                        // Share with collaborators
-                        if (currentLobby && window.socketClient && device) {
-                            executeCliCommandCollaborative(command, device);
-                        }
-                        
-                        return result;
-                    };
-                }
-            }
+            // CLI collaboration enhancements and progress display removed
 
             // Sync full network state from backend
             function syncFullNetworkState(networkState) {
@@ -9948,127 +7071,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Enhanced troubleshooting scenario checking with collaboration
-            function enhanceScenarioChecking() {
-                const troubleshootBtn = document.getElementById("troubleshoot-btn");
-                if (troubleshootBtn) {
-                    const originalHandler = troubleshootBtn.onclick;
-                    troubleshootBtn.onclick = function() {
-                        // Run original scenario check
-                        const result = originalHandler ? originalHandler.call(this) : false;
-                        
-                        // Share progress with collaborators
-                        if (currentLobby && window.socketClient) {
-                            const progressData = {
-                                scenario_completed: result,
-                                timestamp: new Date().toISOString(),
-                                devices_count: devices.length,
-                                connections_count: connections.length
-                            };
-                            
-                            window.socketClient.emit('update_scenario_progress', {
-                                progress: progressData
-                            });
-                        }
-                        
-                        return result;
-                    };
-                }
-            }
-
-            // Initialize collaborative enhancements
-            function initCollaborativeEnhancements() {
-                enhanceCliForCollaboration();
-                enhanceScenarioChecking();
-                
-                console.log('✅ Collaborative enhancements initialized');
-            }
-            
-            // Test collaboration system readiness
-            setTimeout(() => {
-                console.log('🔍 Testing collaboration system readiness...');
-                
-                // Check if collaboration button exists
-                const collabBtn = document.getElementById('collaborative-session-btn');
-                if (collabBtn) {
-                    console.log('✅ Collaboration button found');
-                } else {
-                    console.error('❌ Collaboration button not found');
-                }
-                
-                // Check if modal exists
-                const modal = document.getElementById('lobbyBrowserModal');
-                if (modal) {
-                    console.log('✅ Lobby browser modal found');
-                } else {
-                    console.error('❌ Lobby browser modal not found');
-                }
-                
-                // Check if joinLobby function is accessible
-                if (typeof joinLobby === 'function') {
-                    console.log('✅ joinLobby function is accessible');
-                } else {
-                    console.error('❌ joinLobby function not accessible');
-                }
-                
-                // Check if startScenario function is accessible
-                if (typeof startScenario === 'function') {
-                    console.log('✅ startScenario function is accessible');
-                } else {
-                    console.error('❌ startScenario function not accessible');
-                }
-                
-                // Check if socket client is available
-                if (window.socketClient) {
-                    console.log('✅ SocketClient is available');
-                    console.log('✅ Collaboration system is ready!');
-                    
-                    // Add visual indicator that collaboration is ready
-                    if (collabBtn) {
-                        collabBtn.style.borderColor = 'var(--success-color)';
-                        collabBtn.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
-                    }
-                    
-                    // Add debug functions to window for manual testing
-                    window.debugCollaboration = {
-                        testJoinLobby: (lobbyId) => {
-                            console.log('🧪 Testing joinLobby with ID:', lobbyId);
-                            joinLobby(lobbyId);
-                        },
-                        testStartScenario: (type, id) => {
-                            console.log('🧪 Testing startScenario with:', type, id);
-                            startScenario(type, id);
-                        },
-                        showAvailableFunctions: () => {
-                            console.log('🔧 Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function'));
-                        }
-                    };
-                    
-                    console.log('🧪 Debug functions added to window.debugCollaboration');
-                } else {
-                    console.error('❌ SocketClient not available');
-                    console.warn('🔄 Collaboration system not ready - WebSocket client missing');
-                    
-                    // Add visual indicator that collaboration is not ready
-                    if (collabBtn) {
-                        collabBtn.style.borderColor = 'var(--warning-color)';
-                        collabBtn.style.opacity = '0.7';
-                        collabBtn.title = 'WebSocket connection required. Please refresh the page.';
-                    }
-                }
-                
-                // Initialize collaborative enhancements
-                initCollaborativeEnhancements();
-                
-                // Initialize mode system after everything else is set up
-                console.log('🎯 Initializing mode system...');
-                restoreMode();
-                
-            }, 1000);
-        });
-
-        // ===== CONSOLIDATED COLLABORATION FUNCTIONS =====
-        // (All duplicate function definitions removed and consolidated into the main DOMContentLoaded block above)
+            // Collaborative enhancements and testing code removed
     </script>
 
     <!-- ===== SCENARIO TIMER SYSTEM ===== -->

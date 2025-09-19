@@ -127,6 +127,17 @@ enforce_admin_namespace(app)
 @app.before_request
 def check_admin_auth():
     if request.path.startswith('/admin'):
+        from flask import session
+        print("=" * 80)
+        print(f"🚨 BEFORE_REQUEST HANDLER CALLED FOR: {request.path}")
+        print(f"🔍 current_user: {current_user}")
+        print(f"🔍 is_authenticated: {current_user.is_authenticated}")
+        print(f"🔍 current_user type: {type(current_user)}")
+        print(f"🔍 session keys: {list(session.keys())}")
+        print(f"🔍 session _user_id: {session.get('_user_id', 'NOT FOUND')}")
+        print(f"🔍 session auth_namespace: {session.get('auth_namespace', 'NOT FOUND')}")
+        print("=" * 80)
+        
         exempt_routes = [
             '/admin/login',
             '/admin/signup',  # Add signup route to exempt routes
@@ -139,6 +150,7 @@ def check_admin_auth():
         ]
         
         if any(request.path.startswith(route) for route in exempt_routes):
+            print(f"✅ Path {request.path} is exempt, allowing through")
             return None
         
         if not current_user.is_authenticated:
@@ -247,6 +259,7 @@ try:
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
     ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
+    ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),  # Admin collaboration API
     ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),  # Instructor labs dashboard
     ('admin.routes.lab_api', 'lab_api', None, None)  # Instructor-scoped lab API
     ]

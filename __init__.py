@@ -65,6 +65,13 @@ def create_app(config=None):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
     
+    # Fix session cookie configuration to ensure proper admin_session cookie delivery
+    app.config['SESSION_COOKIE_PATH'] = '/'
+    app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
+    app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP for development
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Allow cross-context cookies
+    
     if config:
         app.config.update(config)
     

@@ -8,6 +8,8 @@ for the dynamic simulation system.
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from admin import db
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from admin.models.simulation_assignment import SimulationAssignment, SimulationAssignmentAttempt
 from admin.models.simulation import Simulation
 from admin.models.class_model import Class
@@ -19,6 +21,59 @@ from socket_events import (
 
 class EnhancedAssignmentService:
     """Service for managing assignments with Week 2 enhancements"""
+    
+    def _sync_pk_sequence(self) -> bool:
+        """Ensure the PostgreSQL sequence for simulation_assignments.id matches MAX(id).
+
+        This prevents duplicate key violations when the sequence falls behind, e.g.,
+        after manual inserts or data migrations.
+        """
+        try:
+            # Compute next value target
+            max_id_result = db.session.execute(text("SELECT COALESCE(MAX(id), 0) FROM simulation_assignments"))
+            max_id = max_id_result.scalar_one() or 0
+            next_val = max_id if max_id > 0 else 1
+            print(f"🔧 Syncing PK sequence for simulation_assignments.id -> max_id={max_id}, setval={next_val}")
+
+            # Resolve the sequence name
+            seq_name_result = db.session.execute(text("SELECT pg_get_serial_sequence('simulation_assignments','id')"))
+            seq_name = seq_name_result.scalar_one()
+            print(f"🔧 Resolved sequence name: {seq_name}")
+
+            # Primary attempt: setval on the resolved sequence
+            db.session.execute(text("SELECT setval(:seq, :val, true)"), {"seq": seq_name, "val": next_val})
+            db.session.commit()
+            print("✅ PK sequence synced using setval")
+            return True
+        except Exception as e1:
+            print(f"⚠️ setval failed: {e1}; attempting ALTER SEQUENCE fallback")
+            db.session.rollback()
+            try:
+                # Fallback: ALTER SEQUENCE RESTART WITH max_id + 1
+                max_id_result = db.session.execute(text("SELECT COALESCE(MAX(id), 0) FROM simulation_assignments"))
+                max_id = max_id_result.scalar_one() or 0
+                restart_with = (max_id + 1) if max_id > 0 else 1
+                seq_name_result = db.session.execute(text("SELECT pg_get_serial_sequence('simulation_assignments','id')"))
+                seq_name = seq_name_result.scalar_one()
+                db.session.execute(text(f"ALTER SEQUENCE {seq_name} RESTART WITH {restart_with}"))
+                db.session.commit()
+                print(f"✅ PK sequence synced using ALTER SEQUENCE RESTART WITH {restart_with}")
+                return True
+            except Exception as e2:
+                print(f"❌ Failed to sync PK sequence: {e2}")
+                db.session.rollback()
+                return False
+
+    def _commit_with_sequence_retry(self):
+        """Commit the session, retrying once after syncing PK sequence on IntegrityError."""
+        try:
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            if self._sync_pk_sequence():
+                db.session.commit()
+            else:
+                raise e
     
     def create_lesson_assignment(self, simulation_id: int, class_id: int, lesson_name: str, 
                                due_date: Optional[datetime] = None, max_attempts: int = 3) -> SimulationAssignment:
@@ -38,7 +93,7 @@ class EnhancedAssignmentService:
         )
         
         db.session.add(assignment)
-        db.session.commit()
+        self._commit_with_sequence_retry()
         
         # Real-time notification
         emit_assignment_created(assignment.id, class_id, 'lesson')
@@ -88,7 +143,7 @@ class EnhancedAssignmentService:
                     db.session.add(assignment)
                     assignments.append(assignment)
         
-        db.session.commit()
+        self._commit_with_sequence_retry()
         
         # Notify affected classes
         for class_id in class_ids:
@@ -100,6 +155,21 @@ class EnhancedAssignmentService:
                                  description: str = "", due_date: Optional[datetime] = None,
                                  max_attempts: int = 3) -> SimulationAssignment:
         """Create an explicit assignment with custom settings"""
+        assigned_by_id = 1
+        try:
+            # Prefer the actual logged-in admin if available
+            from flask_login import current_user
+            if getattr(current_user, 'is_authenticated', False):
+                # current_user.id may be a property or need get_id()
+                uid = getattr(current_user, 'id', None) or getattr(current_user, 'get_id', lambda: None)()
+                if uid is not None:
+                    try:
+                        assigned_by_id = int(uid)
+                    except (TypeError, ValueError):
+                        pass
+        except Exception:
+            # If anything goes wrong, keep default fallback
+            pass
         assignment = SimulationAssignment(
             title=title,
             description=description,
@@ -108,13 +178,15 @@ class EnhancedAssignmentService:
             assignment_type='explicit',
             due_date=due_date or (datetime.utcnow() + timedelta(days=7)),
             max_attempts=max_attempts,
-            assigned_by=1,  # TODO: Get current admin user
+            assigned_by=assigned_by_id,
             is_active=True,
             is_published=True
         )
         
         db.session.add(assignment)
-        db.session.commit()
+        # Proactively ensure sequence alignment before attempting commit
+        self._sync_pk_sequence()
+        self._commit_with_sequence_retry()
         
         # Real-time notification
         emit_assignment_created(assignment.id, class_id, 'explicit')
@@ -162,7 +234,7 @@ class EnhancedAssignmentService:
                 db.session.add(assignment)
                 assignments.append(assignment)
         
-        db.session.commit()
+        self._commit_with_sequence_retry()
         
         # Send real-time notifications
         if assignments:
@@ -231,11 +303,10 @@ class EnhancedAssignmentService:
             )
             
             db.session.add(auto_assignment)
-            
             # Auto-assign existing simulations in this category
             self.create_category_auto_assignment(category, [class_id])
-            
-            db.session.commit()
+            # Commit with retry for any inserts performed
+            self._commit_with_sequence_retry()
             return True
             
         except Exception as e:

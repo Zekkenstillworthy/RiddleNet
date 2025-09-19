@@ -587,63 +587,13 @@ except ImportError as e:
 @socketio.on('create_troubleshooting_lobby')
 @authenticated_only
 def handle_create_lobby(data):
-    """Create a new collaborative troubleshooting lobby"""
-    if not lobby_manager:
-        emit('lobby_created', {'success': False, 'error': 'Lobby system not available'})
-        return
-    
-    try:
-        lobby_config = {
-            'name': data.get('name', f"{current_user.username}'s Session"),
-            'scenario_type': data.get('scenario_type', 'easy'),
-            'scenario_id': data.get('scenario_id', 'network'),
-            'max_participants': data.get('max_participants', 6)
-        }
-        
-        lobby = lobby_manager.create_lobby(
-            creator_id=str(current_user.id),
-            creator_name=current_user.username,
-            creator_profile_image=current_user.profile_img,
-            lobby_config=lobby_config
-        )
-        
-        # Join the lobby room
-        room_name = f"troubleshooting_lobby_{lobby.id}"
-        join_room(room_name)
-        
-        # Notify user of successful creation
-        emit('lobby_created', {
-            'success': True,
-            'lobby': lobby.to_dict()
-        })
-        
-        # Broadcast lobby availability to other users in lobby browser
-        emit('new_lobby_available', {
-            'lobby': lobby.to_dict()
-        }, room='troubleshooting_browser')
-        
-        # ===== ADMIN MONITORING INTEGRATION =====
-        # Notify admin collaboration monitoring of new session
-        emit('collaboration_started', {
-            'id': lobby.id,
-            'activity_name': lobby_config['name'],
-            'participants': [current_user.username],
-            'status': 'active',
-            'duration': '0m',
-            'type': 'troubleshooting',
-            'scenario': lobby_config.get('scenario_type', 'Unknown'),
-            'created_at': datetime.utcnow().isoformat()
-        }, room='admin_collaboration_monitoring')
-        
-        print(f"✅ User {current_user.username} created lobby {lobby.id}")
-        print(f"📊 Notified admin monitoring of new collaboration session")
-        
-    except Exception as e:
-        print(f"❌ Error creating lobby: {str(e)}")
-        emit('lobby_created', {
-            'success': False,
-            'error': str(e)
-        })
+    """Create a new collaborative troubleshooting lobby - RESTRICTED TO ADMINS ONLY"""
+    # DISABLED: Users can no longer create lobbies directly
+    emit('lobby_created', {
+        'success': False, 
+        'error': 'Lobby creation is restricted to administrators only. Please contact your teacher to create collaboration sessions.'
+    })
+    return
 
 @socketio.on('join_troubleshooting_lobby')
 @authenticated_only

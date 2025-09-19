@@ -41,31 +41,41 @@ class SplitSessionInterface(SecureCookieSessionInterface):
 
     def _select_cookie_for_request(self):
         path = (request.path or "").lower()
+        print(f"🍪 SplitSession: _select_cookie_for_request called for path: {path}")
         if path.startswith("/admin"):
+            print(f"🍪 SplitSession: Admin path detected, returning ADMIN_COOKIE ({ADMIN_COOKIE})")
             return ADMIN_COOKIE
         if path.startswith("/socket.io"):
+            print(f"🍪 SplitSession: Socket.io path detected, returning None for later decision")
             # WebSocket handshake: we don't know original page path; we will
             # decide later in open_session by inspecting both cookies.
             return None
+        print(f"🍪 SplitSession: Non-admin path, returning USER_COOKIE ({USER_COOKIE})")
         return USER_COOKIE
 
     # ---------- OPEN SESSION ----------
     def open_session(self, app, request):  # type: ignore[override]
         serializer = self.get_signing_serializer(app)
         if not serializer:
+            print(f"🍪 SplitSession: No serializer available")
             return self.session_class()
 
         chosen = self._select_cookie_for_request()
+        print(f"🍪 SplitSession: Chosen cookie: {chosen}")
 
         # Normal HTTP request that maps cleanly to a cookie name
         if chosen:
             raw = request.cookies.get(chosen)
+            print(f"🍪 SplitSession: Raw cookie value for {chosen}: {raw[:50] if raw else 'None'}...")
             if not raw:
+                print(f"🍪 SplitSession: No cookie found for {chosen}, returning empty session")
                 return self.session_class()
             try:
                 data = serializer.loads(raw)
+                print(f"🍪 SplitSession: Successfully loaded session data, keys: {list(data.keys())}")
                 return self.session_class(data)
             except BadSignature:
+                print(f"🍪 SplitSession: Bad signature for {chosen}")
                 return self.session_class()
 
         # WebSocket (or ambiguous) – inspect both cookies and pick the most appropriate

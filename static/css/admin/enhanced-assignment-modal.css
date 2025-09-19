@@ -1,0 +1,800 @@
+/* Enhanced Assignment Modal Styles - Admin Dashboard Theme */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* CSS Variables matching Admin Dashboard theme */
+:root {
+    /* Modern Gaming Network Theme - Matching Admin Dashboard */
+    --primary-color: #0F172A;
+    --secondary-color: #1E293B;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --dark-navy: #1a237e;
+    --deep-purple: #2a1b3d;
+    
+    /* Background & Surface Colors */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --border-color: rgba(59, 130, 246, 0.2);
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    
+    /* Text Colors */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    --text-inverse: #ffffff;
+    
+    --dark-bg: rgba(26, 35, 126, 0.85);
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    --gradient-dark: linear-gradient(135deg, var(--dark-navy), var(--deep-purple));
+    
+    /* Shadows and effects */
+    --shadow-card: 0 8px 32px rgba(26, 35, 126, 0.4);
+    --shadow-cyber: 0 16px 48px rgba(0, 217, 255, 0.25);
+    --border-radius: 16px;
+    --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================
+   MODAL OVERLAY AND CONTAINER
+   ======================================== */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(20px);
+    z-index: 10000;
+    animation: modalBackdropFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced Modal Content - Glassmorphism Design */
+.modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(30px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    animation: modalSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cyber glow effect on top */
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-primary);
+    opacity: 0.8;
+    z-index: 1;
+}
+
+/* Hover glow effect */
+.modal-content::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--gradient-primary);
+    border-radius: calc(var(--border-radius) + 2px);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    filter: blur(8px);
+}
+
+.modal-content:hover::after {
+    opacity: 0.3;
+}
+
+/* Large modal variant */
+.modal-content.large-modal {
+    max-width: 900px;
+}
+
+/* ========================================
+   MODAL HEADER
+   ======================================== */
+
+.modal-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(26, 35, 126, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer effect */
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.05), 
+        transparent);
+    animation: shimmer 3s infinite;
+}
+
+.modal-header.cyber-glow {
+    background: rgba(26, 35, 126, 0.3);
+}
+
+.modal-title {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    font-family: 'Poppins', sans-serif;
+}
+
+.modal-title.cyber-text {
+    filter: drop-shadow(0 0 10px var(--cyber-glow));
+}
+
+/* Enhanced Close Button */
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-normal);
+    z-index: 10;
+    outline: none;
+}
+
+.modal-close:hover,
+.modal-close.cyber-close-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: var(--danger-color);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    color: var(--danger-color);
+}
+
+/* ========================================
+   MODAL BODY AND FORM STYLES
+   ======================================== */
+
+.modal-body {
+    padding: 32px 40px;
+    overflow-y: auto;
+    flex: 1;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.modal-body.cyber-form {
+    background: transparent;
+}
+
+/* Custom scrollbar */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--gradient-primary);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--gradient-secondary);
+}
+
+/* Form Layout */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.col-6 {
+    flex: 0 0 calc(50% - 10px);
+}
+
+/* ========================================
+   FORM CONTROLS - CYBER THEME
+   ======================================== */
+
+/* Form Labels */
+.form-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-label.cyber-label {
+    color: var(--cyber-glow);
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+.form-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--cyber-glow), transparent);
+    opacity: 0.3;
+}
+
+/* Required field indicator */
+.form-label:has(+ [required])::before,
+.form-label:has(+ input[required])::before {
+    content: '*';
+    color: var(--danger-color);
+    margin-right: 4px;
+    font-weight: bold;
+}
+
+/* Form Controls Base */
+.form-control {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    padding: 16px 20px !important;
+    font-size: 1rem !important;
+    font-family: 'Poppins', sans-serif !important;
+    transition: var(--transition-normal) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    outline: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Cyber Input Styles */
+.form-control.cyber-input {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 2px solid rgba(0, 217, 255, 0.3) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: 0.5px !important;
+    position: relative;
+}
+
+.form-control.cyber-input:focus {
+    border-color: var(--cyber-glow) !important;
+    box-shadow: 
+        0 0 20px rgba(0, 217, 255, 0.3),
+        inset 0 0 20px rgba(0, 217, 255, 0.1) !important;
+    background: rgba(15, 23, 42, 1) !important;
+    transform: translateY(-1px);
+}
+
+.form-control.cyber-input:hover {
+    border-color: rgba(0, 217, 255, 0.5) !important;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2) !important;
+}
+
+/* Textarea Styles */
+.form-control.cyber-textarea {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 2px solid rgba(0, 217, 255, 0.3) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    font-family: 'Poppins', sans-serif !important;
+    resize: vertical !important;
+    min-height: 120px !important;
+    line-height: 1.6 !important;
+}
+
+.form-control.cyber-textarea:focus {
+    border-color: var(--cyber-glow) !important;
+    box-shadow: 
+        0 0 20px rgba(0, 217, 255, 0.3),
+        inset 0 0 20px rgba(0, 217, 255, 0.1) !important;
+    background: rgba(15, 23, 42, 1) !important;
+}
+
+/* Select Dropdown */
+.form-control.cyber-select {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 2px solid rgba(0, 217, 255, 0.3) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary) !important;
+    cursor: pointer !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%2300D9FF' viewBox='0 0 16 16'%3e%3cpath d='m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 16px center !important;
+    background-size: 16px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+.form-control.cyber-select:focus {
+    border-color: var(--cyber-glow) !important;
+    box-shadow: 
+        0 0 20px rgba(0, 217, 255, 0.3),
+        inset 0 0 20px rgba(0, 217, 255, 0.1) !important;
+    background: rgba(15, 23, 42, 1) !important;
+}
+
+/* Select options styling */
+.form-control.cyber-select option {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    padding: 12px !important;
+    border: none !important;
+}
+
+/* Placeholder styles */
+.form-control::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7 !important;
+    font-style: italic !important;
+}
+
+.form-control.cyber-input::placeholder,
+.form-control.cyber-textarea::placeholder {
+    color: rgba(0, 217, 255, 0.5) !important;
+    font-family: 'Poppins', sans-serif !important;
+}
+
+/* ========================================
+   CHECKBOX STYLES
+   ======================================== */
+
+.cyber-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    transition: var(--transition-normal);
+    cursor: pointer;
+}
+
+.cyber-checkbox-container:hover {
+    background: rgba(15, 23, 42, 0.8);
+    border-color: rgba(0, 217, 255, 0.5);
+}
+
+.cyber-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.cyber-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+    margin: 0;
+}
+
+.cyber-checkbox-indicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--cyber-glow);
+    border-radius: 4px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-normal);
+    position: relative;
+}
+
+.cyber-checkbox:checked + .cyber-checkbox-label .cyber-checkbox-indicator {
+    background: var(--gradient-primary);
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+}
+
+.cyber-checkbox:checked + .cyber-checkbox-label .cyber-checkbox-indicator::after {
+    content: '✓';
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* ========================================
+   MODAL FOOTER AND BUTTONS
+   ======================================== */
+
+.modal-footer {
+    padding: 24px 40px 32px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.modal-footer.cyber-actions {
+    background: rgba(26, 35, 126, 0.2);
+}
+
+/* Enhanced Button Styles */
+.btn {
+    padding: 14px 28px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    min-width: 140px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Primary Button - Cyber Style */
+.btn-primary,
+.btn.cyber-btn-primary {
+    background: var(--gradient-primary);
+    color: var(--text-inverse);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    border: 1px solid rgba(0, 217, 255, 0.5);
+}
+
+.btn-primary:hover,
+.btn.cyber-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 25px rgba(0, 217, 255, 0.4),
+        0 0 0 3px rgba(0, 217, 255, 0.2);
+    background: var(--gradient-secondary);
+}
+
+.btn-primary:active,
+.btn.cyber-btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+/* Secondary Button */
+.btn-secondary,
+.btn.cyber-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover,
+.btn.cyber-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+}
+
+/* Danger Button */
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+/* Button loading state */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes modalBackdropFadeIn {
+    from { 
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to { 
+        opacity: 1;
+        backdrop-filter: blur(20px);
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 0.6; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.05);
+    }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-width: 95vw;
+        border-radius: 12px;
+        margin: 0;
+    }
+    
+    .modal-content.large-modal {
+        max-width: 95vw;
+    }
+    
+    .modal-header {
+        padding: 24px 20px 16px;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .modal-title {
+        font-size: 1.4rem;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        padding: 16px 20px 24px;
+        flex-direction: column;
+        border-radius: 0 0 12px 12px;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        margin: 0;
+    }
+    
+    .modal-close {
+        width: 40px;
+        height: 40px;
+        top: 16px;
+        right: 16px;
+        font-size: 20px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .form-group.col-6 {
+        flex: 1;
+    }
+    
+    .form-control {
+        padding: 14px 16px !important;
+        font-size: 0.95rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-title {
+        font-size: 1.2rem;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .modal-footer {
+        padding: 12px 16px 20px;
+    }
+    
+    .form-control {
+        padding: 12px 14px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.modal-blur-background {
+    filter: blur(8px);
+    transition: filter 0.3s ease;
+}
+
+.modal-no-scroll {
+    overflow: hidden;
+}
+
+/* Success/Error states for form validation */
+.form-control.is-valid {
+    border-color: var(--success-color) !important;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+}
+
+.form-control.is-invalid {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+}
+
+.form-control.is-valid:focus {
+    border-color: var(--success-color) !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
+}
+
+.form-control.is-invalid:focus {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Field validation messages */
+.invalid-feedback,
+.valid-feedback {
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    padding-left: 4px;
+}
+
+.invalid-feedback {
+    color: var(--danger-color);
+}
+
+.valid-feedback {
+    color: var(--success-color);
+}
+
+/* Loading overlay for modal */
+.modal-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(8px);
+}
+
+.modal-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--glass-border);
+    border-top: 3px solid var(--cyber-glow);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}

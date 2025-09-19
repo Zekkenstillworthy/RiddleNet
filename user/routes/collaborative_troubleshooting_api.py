@@ -83,47 +83,15 @@ def get_my_lobby():
             'error': str(e)
         }), 500
 
-@collaborative_troubleshooting_api_bp.route('/lobby', methods=['POST'])
-@login_required
-def create_lobby():
-    """Create a new collaborative troubleshooting lobby"""
-    try:
-        data = request.get_json()
-        
-        lobby_config = {
-            'name': data.get('name', f"{current_user.username}'s Session"),
-            'scenario_type': data.get('scenario_type', 'easy'),
-            'scenario_id': data.get('scenario_id', 'network'),
-            'max_participants': data.get('max_participants', 6),
-            'class_id': data.get('class_id')
-        }
-        
-        lobby = lobby_manager.create_lobby(
-            creator_id=str(current_user.id),
-            creator_name=current_user.username,
-            creator_profile_image=current_user.profile_img,
-            lobby_config=lobby_config
-        )
-
-        # Audit
-        ActivityLog.log_activity(
-            user_id=current_user.id,
-            action_type='lobby_create',
-            message=f"Created lobby {lobby.id} ({lobby.name})",
-            related_entity_type='lobby',
-            related_entity_id=None
-        )
-        
-        return jsonify({
-            'success': True,
-            'lobby': lobby.to_dict()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+# REMOVED: User lobby creation - only admins can create lobbies now
+# @collaborative_troubleshooting_api_bp.route('/lobby', methods=['POST'])
+# @login_required
+# def create_lobby():
+#     """Create a new collaborative troubleshooting lobby - DISABLED FOR USERS"""
+#     return jsonify({
+#         'success': False,
+#         'error': 'Lobby creation is restricted to administrators only. Please contact your teacher to create collaboration sessions.'
+#     }), 403
 
 @collaborative_troubleshooting_api_bp.route('/lobby/<lobby_id>/join', methods=['POST'])
 @login_required

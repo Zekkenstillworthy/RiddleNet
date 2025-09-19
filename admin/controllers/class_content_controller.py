@@ -21,12 +21,28 @@ def _is_super_admin():
 
 def _require_class_owner(class_id):
     cls = Class.query.get_or_404(class_id)
-    if _is_super_admin() or cls.created_by == getattr(current_user, 'id', None):
+    current_user_id = getattr(current_user, 'id', None)
+    current_user_role = getattr(current_user, 'role', None)
+    is_super_admin = _is_super_admin()
+    
+    # Debug logging
+    print(f"🔍 _require_class_owner DEBUG:")
+    print(f"   class_id: {class_id}")
+    print(f"   cls.created_by: {cls.created_by}")
+    print(f"   current_user: {current_user}")
+    print(f"   current_user.id: {current_user_id}")
+    print(f"   current_user.role: {current_user_role}")
+    print(f"   is_super_admin: {is_super_admin}")
+    
+    if is_super_admin or cls.created_by == current_user_id:
+        print(f"✅ Access granted for class {class_id}")
         return cls
+    
+    print(f"❌ Access denied for class {class_id}")
     return None
 
 @class_content_controller_old.route('/class-content-manager')
-@login_required
+@admin_required
 def class_content_manager_redirect():
     """Handle class-content-manager route with query parameters and redirect to proper URL"""
     class_id = request.args.get('class_id', type=int)
@@ -37,7 +53,7 @@ def class_content_manager_redirect():
         return redirect(url_for('dashboard.class_content_manager'))
 
 @class_content_controller_old.route('/class-content-manager/<int:class_id>')
-@login_required
+@admin_required
 def manage_content(class_id):
     """Display class content manager interface for managing modules, simulations, assignments, etc."""
     try:
@@ -165,7 +181,7 @@ def manage_content(class_id):
         return redirect(url_for('class_controller.index'))
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/content/simulations', methods=['POST'])
-@login_required
+@admin_required
 def assign_simulation_to_class(class_id):
     """Assign a simulation to a class"""
     try:
@@ -205,7 +221,7 @@ def assign_simulation_to_class(class_id):
         return jsonify({"error": str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/content/simulations/<int:simulation_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def unassign_simulation_from_class(class_id, simulation_id):
     """Unassign a simulation from a class"""
     try:
@@ -234,7 +250,7 @@ def unassign_simulation_from_class(class_id, simulation_id):
         return jsonify({"error": str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/template/generate', methods=['POST'])
-@login_required
+@admin_required
 def generate_class_template(class_id):
     """Generate or regenerate class template"""
     try:
@@ -264,7 +280,7 @@ def generate_class_template(class_id):
         return jsonify({"error": str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/content/summary')
-@login_required
+@admin_required
 def get_class_content_summary(class_id):
     """Get a summary of all content assigned to a class"""
     try:
@@ -298,7 +314,7 @@ def get_class_content_summary(class_id):
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules', methods=['GET'])
-@login_required
+@admin_required
 def get_class_modules(class_id):
     """Get all modules for a class"""
     try:
@@ -330,7 +346,7 @@ def get_class_modules(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules', methods=['POST'])
-@login_required
+@admin_required
 def create_class_module(class_id):
     """Create a new module for a class"""
     try:
@@ -380,7 +396,7 @@ def create_class_module(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_class_module(class_id, module_id):
     """Get a specific module for a class"""
     try:
@@ -412,7 +428,7 @@ def get_class_module(class_id, module_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_class_module(class_id, module_id):
     """Update a class module"""
     try:
@@ -452,7 +468,7 @@ def update_class_module(class_id, module_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_class_module(class_id, module_id):
     """Delete a class module"""
     try:
@@ -479,7 +495,7 @@ def delete_class_module(class_id, module_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/preview', methods=['GET'])
-@login_required
+@admin_required
 def get_module_preview(class_id, module_id):
     """Get module data for preview rendering - identical to student view"""
     try:
@@ -641,7 +657,7 @@ def admin_student_view(class_id, module_id):
         return redirect(url_for('class_content_controller_old.manage_content', class_id=class_id))
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/preview/html', methods=['GET'])
-@login_required
+@admin_required
 def get_module_preview_html(class_id, module_id):
     """Get module preview as rendered HTML - identical to student view"""
     try:
@@ -698,7 +714,7 @@ def get_module_preview_html(class_id, module_id):
         }), 404
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/lessons', methods=['GET'])
-@login_required
+@admin_required
 def get_module_lessons(class_id, module_id):
     """Get all lessons for a module"""
     print(f"DEBUG MODULE_LESSONS: get_module_lessons called with class_id={class_id}, module_id={module_id}")
@@ -746,7 +762,7 @@ def get_module_lessons(class_id, module_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/lessons', methods=['POST'])
-@login_required
+@admin_required
 def create_module_lesson(class_id, module_id):
     """Create a new lesson for a module"""
     try:
@@ -796,7 +812,7 @@ def create_module_lesson(class_id, module_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/lessons/<int:lesson_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_module_lesson(class_id, module_id, lesson_id):
     """Update a module lesson"""
     try:
@@ -841,7 +857,7 @@ def update_module_lesson(class_id, module_id, lesson_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/modules/<int:module_id>/lessons/<int:lesson_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_module_lesson(class_id, module_id, lesson_id):
     """Delete a module lesson"""
     try:
@@ -873,7 +889,7 @@ def delete_module_lesson(class_id, module_id, lesson_id):
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments', methods=['GET'])
-@login_required
+@admin_required
 def get_class_assignments(class_id):
     """Get all assignments for a class"""
     try:
@@ -915,7 +931,7 @@ def get_class_assignments(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/simulations', methods=['GET'])
-@login_required
+@admin_required
 def get_class_simulations(class_id):
     """Get all simulations assigned to a class"""
     try:
@@ -955,7 +971,7 @@ def get_class_simulations(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/simulations/<int:simulation_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def remove_class_simulation(class_id, simulation_id):
     """Remove a simulation assignment from a class"""
     try:
@@ -988,7 +1004,7 @@ def remove_class_simulation(class_id, simulation_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments', methods=['POST'])
-@login_required
+@admin_required
 def create_class_assignment(class_id):
     """Create a new assignment for a class"""
     try:
@@ -1047,7 +1063,7 @@ def create_class_assignment(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_class_assignment(class_id, assignment_id):
     """Get specific assignment details"""
     try:
@@ -1082,7 +1098,7 @@ def get_class_assignment(class_id, assignment_id):
         }), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_class_assignment(class_id, assignment_id):
     """Update an existing assignment"""
     try:
@@ -1135,7 +1151,7 @@ def update_class_assignment(class_id, assignment_id):
         }), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_class_assignment(class_id, assignment_id):
     """Delete an assignment"""
     try:
@@ -1164,7 +1180,7 @@ def delete_class_assignment(class_id, assignment_id):
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/materials', methods=['GET'])
-@login_required
+@admin_required
 def get_class_materials(class_id):
     """Get all materials for a class"""
     try:
@@ -1191,7 +1207,7 @@ def get_class_materials(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/materials', methods=['POST'])
-@login_required
+@admin_required
 def create_class_material(class_id):
     """Create a new material for a class"""
     try:
@@ -1283,7 +1299,7 @@ def create_class_material(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/materials/<int:material_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_class_material(class_id, material_id):
     """Delete a material"""
     try:
@@ -1312,7 +1328,7 @@ def delete_class_material(class_id, material_id):
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['GET'])
-@login_required
+@admin_required
 def get_class_question_groups(class_id):
     """Get all question groups assigned to a class"""
     try:
@@ -1340,7 +1356,7 @@ def get_class_question_groups(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
-@login_required
+@admin_required
 def create_class_question_group(class_id):
     """Create a new question group and assign it to the class"""
     try:
@@ -1380,7 +1396,7 @@ def create_class_question_group(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def unassign_question_group_from_class(class_id, group_id):
     """Unassign a question group from a class"""
     try:
@@ -1405,7 +1421,7 @@ def unassign_question_group_from_class(class_id, group_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/available', methods=['GET'])
-@login_required
+@admin_required
 def get_available_question_groups(class_id):
     """Get question groups available to assign to the class"""
     try:
@@ -1438,7 +1454,7 @@ def get_available_question_groups(class_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>/assign', methods=['POST'])
-@login_required
+@admin_required
 def assign_question_group_to_class(class_id, group_id):
     """Assign an existing question group to a class"""
     try:
@@ -1472,7 +1488,7 @@ def assign_question_group_to_class(class_id, group_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_question_group_details(class_id, group_id):
     """Get detailed information about a question group"""
     try:
@@ -1514,7 +1530,7 @@ def get_question_group_details(class_id, group_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/question-groups/<int:group_id>', methods=['GET'])
-@login_required
+@admin_required
 def get_question_group_info(group_id):
     """Get detailed information about a question group (general endpoint)"""
     try:
@@ -1548,7 +1564,7 @@ def get_question_group_info(group_id):
 # ========================================
 
 @class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['GET'])
-@login_required
+@admin_required
 def get_questions_in_group(group_id):
     """Get all questions in a specific question group"""
     try:
@@ -1577,7 +1593,7 @@ def get_questions_in_group(group_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['POST'])
-@login_required
+@admin_required
 def create_question_in_group(group_id):
     """Create a new question in a question group"""
     try:
@@ -1621,7 +1637,7 @@ def create_question_in_group(group_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/questions/<int:question_id>', methods=['PUT'])
-@login_required
+@admin_required
 def update_question(question_id):
     """Update an existing question"""
     try:
@@ -1655,7 +1671,7 @@ def update_question(question_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/questions/<int:question_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def delete_question(question_id):
     """Delete a question"""
     try:
@@ -1674,7 +1690,7 @@ def delete_question(question_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/question-groups/<int:group_id>/questions/<int:question_id>/remove', methods=['DELETE'])
-@login_required
+@admin_required
 def remove_question_from_group(group_id, question_id):
     """Remove a question from a group (doesn't delete the question)"""
     try:
@@ -1701,7 +1717,7 @@ def remove_question_from_group(group_id, question_id):
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/students/<int:student_id>/progress', methods=['GET'])
-@login_required
+@admin_required
 def get_student_progress(class_id, student_id):
     """Get student progress for a specific class"""
     try:
@@ -1737,7 +1753,7 @@ def get_student_progress(class_id, student_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/students/<int:student_id>/message', methods=['POST'])
-@login_required
+@admin_required
 def send_student_message(class_id, student_id):
     """Send a message to a student"""
     try:
@@ -1761,7 +1777,7 @@ def send_student_message(class_id, student_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/students/<int:student_id>', methods=['DELETE'])
-@login_required
+@admin_required
 def remove_student_from_class(class_id, student_id):
     """Remove a student from a class"""
     try:
@@ -1784,7 +1800,7 @@ def remove_student_from_class(class_id, student_id):
         return jsonify({'error': str(e)}), 500
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/invite-students', methods=['POST'])
-@login_required
+@admin_required
 def invite_students_to_class(class_id):
     """Send email invitations to students"""
     try:
@@ -1808,7 +1824,7 @@ def invite_students_to_class(class_id):
 
 # Copy assignment to another class (owner's classes only)
 @class_content_controller_old.route('/api/classes/<int:class_id>/assignments/<int:assignment_id>/copy-to/<int:target_class_id>', methods=['POST'])
-@login_required
+@admin_required
 def copy_assignment_to_class(class_id, assignment_id, target_class_id):
     try:
         source_cls = _require_class_owner(class_id)
