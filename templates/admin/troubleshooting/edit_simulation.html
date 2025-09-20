@@ -812,19 +812,43 @@
         background: var(--surface);
         border: 2px solid var(--border-color);
         border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        cursor: grab;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         user-select: none;
+        /* Smooth movement properties */
+        will-change: transform, left, top;
+        backface-visibility: hidden;
+        transform: translateZ(0); /* Force hardware acceleration */
     }
 
     .canvas-device:hover {
         border-color: var(--cyber-glow);
         box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        transform: translateY(-2px) translateZ(0);
     }
 
     .canvas-device.selected {
         border-color: var(--neon-green);
         box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+    }
+
+    .canvas-device:active {
+        cursor: grabbing;
+    }
+
+    .canvas-device.dragging {
+        opacity: 0.8;
+        transform: scale(1.05) translateZ(0);
+        z-index: 1000 !important;
+        box-shadow: 0 8px 30px rgba(0, 217, 255, 0.5);
+        border-color: var(--cyber-glow);
+        /* Disable transitions during dragging for immediate response */
+        transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Smooth transition when not dragging */
+    .canvas-device:not(.dragging) {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .canvas-device img {
@@ -1855,6 +1879,56 @@ class SimulationEditor {
             sync();
         }
 
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Delete key to remove selected device
+            if (e.key === 'Delete' && this.selectedDevice) {
+                e.preventDefault();
+                this.removeSelectedDevice();
+            }
+            
+            // Escape key to deselect devices
+            if (e.key === 'Escape') {
+                this.selectedDevice = null;
+                document.querySelectorAll('.canvas-device').forEach(el => {
+                    el.classList.remove('selected');
+                });
+            }
+            
+            // Arrow keys to move selected device (fine control)
+            if (this.selectedDevice && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const step = e.shiftKey ? 10 : 1; // Hold Shift for larger steps
+                const device = this.selectedDevice;
+                const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+                
+                if (deviceElement) {
+                    let newX = device.x;
+                    let newY = device.y;
+                    
+                    switch(e.key) {
+                        case 'ArrowLeft': newX = Math.max(0, device.x - step); break;
+                        case 'ArrowRight': newX = device.x + step; break;
+                        case 'ArrowUp': newY = Math.max(0, device.y - step); break;
+                        case 'ArrowDown': newY = device.y + step; break;
+                    }
+                    
+                    // Apply canvas bounds
+                    const canvas = document.getElementById('canvas-content');
+                    if (canvas) {
+                        const maxX = canvas.offsetWidth - deviceElement.offsetWidth;
+                        const maxY = canvas.offsetHeight - deviceElement.offsetHeight;
+                        newX = Math.min(newX, maxX);
+                        newY = Math.min(newY, maxY);
+                    }
+                    
+                    // Use smooth movement for keyboard positioning
+                    const duration = e.shiftKey ? 150 : 100; // Faster for small steps
+                    this.smoothMoveDevice(device, newX, newY, duration);
+                }
+            }
+        });
+
     }
 
     setupDragAndDrop() {
@@ -2038,13 +2112,119 @@ class SimulationEditor {
             ${device.status !== 'normal' ? `<div class="status-indicator" style="position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: ${statusColors[device.status]}; border-radius: 50%; border: 2px solid var(--background);"></div>` : ''}
         `;
 
-        deviceElement.addEventListener('click', (e) => {
+        // Device interaction variables for dragging
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let deviceStartX = device.x;
+        let deviceStartY = device.y;
+        let animationFrameId = null;
+        let currentMousePos = { x: 0, y: 0 };
+
+        deviceElement.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return; // Only left mouse button
+            e.preventDefault();
             e.stopPropagation();
-            if (window.connectMode) {
-                window.handleConnectClick(device);
-                return;
-            }
-            this.selectDevice(device);
+            
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            deviceStartX = device.x;
+            deviceStartY = device.y;
+            
+            // Initialize current mouse position to starting position
+            currentMousePos.x = e.clientX;
+            currentMousePos.y = e.clientY;
+            
+            deviceElement.classList.add('dragging');
+            
+            // Smooth animation loop for dragging
+            const animateDrag = () => {
+                if (!isDragging) return;
+                
+                const deltaX = currentMousePos.x - dragStartX;
+                const deltaY = currentMousePos.y - dragStartY;
+                
+                // Get canvas bounds for constraint checking
+                const canvas = document.getElementById('canvas-content');
+                
+                // Calculate new position with constraints
+                let newX = Math.max(0, deviceStartX + deltaX);
+                let newY = Math.max(0, deviceStartY + deltaY);
+                
+                // Constrain to canvas bounds (accounting for device size)
+                const maxX = canvas.offsetWidth - deviceElement.offsetWidth;
+                const maxY = canvas.offsetHeight - deviceElement.offsetHeight;
+                
+                newX = Math.min(newX, maxX);
+                newY = Math.min(newY, maxY);
+                
+                // Only update position if there's actual movement
+                if (newX !== device.x || newY !== device.y) {
+                    deviceElement.style.left = newX + 'px';
+                    deviceElement.style.top = newY + 'px';
+                    
+                    // Update device data
+                    device.x = newX;
+                    device.y = newY;
+                    
+                    // Update connections if they exist
+                    this.updateConnections();
+                }
+                
+                // Continue animation
+                animationFrameId = requestAnimationFrame(animateDrag);
+            };
+            
+            // Global mouse move tracking
+            const onMouseMove = (e) => {
+                currentMousePos.x = e.clientX;
+                currentMousePos.y = e.clientY;
+                
+                // Start animation loop only after first mouse movement
+                if (!animationFrameId) {
+                    animationFrameId = requestAnimationFrame(animateDrag);
+                }
+            };
+            
+            const onMouseUp = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                deviceElement.classList.remove('dragging');
+                
+                // Cancel animation frame
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                
+                // Remove global listeners
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Only show toast if device actually moved
+                const deltaX = Math.abs(currentMousePos.x - dragStartX);
+                const deltaY = Math.abs(currentMousePos.y - dragStartY);
+                if (deltaX > 5 || deltaY > 5) {
+                    this.showToast(`${device.name} moved to (${device.x}, ${device.y})`, 'info');
+                }
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        deviceElement.addEventListener('click', (e) => {
+            // Small delay to prevent selection immediately after dragging
+            setTimeout(() => {
+                if (isDragging) return; // Don't select if we just finished dragging
+                e.stopPropagation();
+                if (window.connectMode) {
+                    window.handleConnectClick(device);
+                    return;
+                }
+                this.selectDevice(device);
+            }, 50);
         });
 
         // Quick access to enhanced configurator
@@ -2052,15 +2232,21 @@ class SimulationEditor {
             e.stopPropagation();
             if (window.deviceConfigurator && typeof window.deviceConfigurator.openDeviceConfiguration === 'function') {
                 window.deviceConfigurator.openDeviceConfiguration(device);
+                this.showToast(`Opened configuration interface for ${device.name}`, 'success');
             } else {
-                this.showToast('Configurator not available', 'warning');
+                this.showToast(`Opening device interface for ${device.name}`, 'info');
+                // Fallback: show device config in sidebar
+                this.selectDevice(device);
+                
+                // Ensure sidebar is expanded
+                const sidebar = document.getElementById('editing-sidebar');
+                if (sidebar && sidebar.classList.contains('collapsed')) {
+                    toggleSidebar();
+                }
+                
+                // Switch to devices tab
+                this.switchTab('devices');
             }
-        });
-
-        // Make devices draggable
-        deviceElement.draggable = true;
-        deviceElement.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('device-id', device.id);
         });
 
         canvas.appendChild(deviceElement);
@@ -2570,6 +2756,9 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         
     // Sync connectivity console list after initial load
     try { window.connectivityTester?.updateDeviceList?.(); } catch (_) {}
+    
+    // Refresh device positions to ensure they're within bounds
+    this.refreshDevicePositions();
     }
 
     updateConnections() {
@@ -2828,6 +3017,79 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
             badges: []
         };
     }
+
+    // Helper method to smoothly move a device to a new position
+    smoothMoveDevice(device, newX, newY, duration = 300) {
+        const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+        if (!deviceElement) return;
+        
+        const startX = device.x;
+        const startY = device.y;
+        const deltaX = newX - startX;
+        const deltaY = newY - startY;
+        const startTime = performance.now();
+        
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Use easing function for smooth animation
+            const easeProgress = this.easeOutCubic(progress);
+            
+            const currentX = startX + (deltaX * easeProgress);
+            const currentY = startY + (deltaY * easeProgress);
+            
+            device.x = currentX;
+            device.y = currentY;
+            deviceElement.style.left = currentX + 'px';
+            deviceElement.style.top = currentY + 'px';
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Update connections after animation completes
+                this.updateConnections();
+            }
+        };
+        
+        requestAnimationFrame(animate);
+    }
+
+    // Easing function for smooth animations
+    easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+    }
+
+    // Helper method to refresh all device positions and ensure they're within bounds
+    refreshDevicePositions() {
+        const canvas = document.getElementById('canvas-content');
+        if (!canvas) return;
+        
+        this.devices.forEach(device => {
+            const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+            if (deviceElement) {
+                // Ensure device is within canvas bounds
+                const maxX = canvas.offsetWidth - deviceElement.offsetWidth;
+                const maxY = canvas.offsetHeight - deviceElement.offsetHeight;
+                
+                const newX = Math.max(0, Math.min(device.x || 0, maxX));
+                const newY = Math.max(0, Math.min(device.y || 0, maxY));
+                
+                // Use smooth movement if position changed significantly
+                if (Math.abs(newX - device.x) > 5 || Math.abs(newY - device.y) > 5) {
+                    this.smoothMoveDevice(device, newX, newY, 500);
+                } else {
+                    device.x = newX;
+                    device.y = newY;
+                    deviceElement.style.left = newX + 'px';
+                    deviceElement.style.top = newY + 'px';
+                }
+            }
+        });
+        
+        // Update connections after repositioning
+        setTimeout(() => this.updateConnections(), 600);
+    }
 }
 
 // Initialize the editor
@@ -2880,22 +3142,26 @@ function autoArrange() {
         const spacing = 120;
         const cols = Math.floor((rect.width - 2 * margin) / spacing);
         
+        // Animate devices to new positions one by one for a cascade effect
         editor.devices.forEach((device, index) => {
             const col = index % cols;
             const row = Math.floor(index / cols);
             
-            device.x = margin + col * spacing;
-            device.y = margin + row * spacing;
+            const newX = margin + col * spacing;
+            const newY = margin + row * spacing;
             
-            const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
-            if (deviceElement) {
-                deviceElement.style.left = device.x + 'px';
-                deviceElement.style.top = device.y + 'px';
-            }
+            // Use smooth movement with a slight delay for cascade effect
+            setTimeout(() => {
+                editor.smoothMoveDevice(device, newX, newY, 400);
+            }, index * 50); // 50ms delay between each device
         });
         
-    editor.updateConnections();
-    editor.showToast('Devices auto-arranged', 'success');
+        // Update connections after all animations complete
+        setTimeout(() => {
+            editor.updateConnections();
+        }, editor.devices.length * 50 + 400);
+        
+        editor.showToast('Devices auto-arranged', 'success');
     }
 }
 

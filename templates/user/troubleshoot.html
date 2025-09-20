@@ -135,9 +135,37 @@
         filter: none !important;
     }
 
-    /* Prevent backdrop filter conflicts */
+    /* Prevent backdrop filter conflicts and improve isolation */
     body, html {
         isolation: isolate;
+    }
+
+    /* Enhanced visual state isolation */
+    .foundation-btn,
+    .select-btn {
+        position: relative;
+        isolation: isolate;
+        z-index: 1;
+    }
+
+    .foundation-btn.completed,
+    .select-btn.completed {
+        z-index: 2; /* Ensure completed items render above others */
+    }
+
+    /* Prevent background bleed for completed states */
+    .foundation-btn.completed::before,
+    .select-btn.completed::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0.9;
     }
 
     /* Critical responsive rules - Load immediately */
@@ -818,6 +846,57 @@
         animation: achievementUnlock 0.6s ease;
     }
 
+    /* Completion Badge System */
+    .completion-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, var(--success) 0%, rgba(5, 150, 105, 1) 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .completion-badge::before {
+        content: '✓';
+        font-size: 0.7rem;
+        font-weight: bold;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .locked-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(108, 117, 125, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .locked-badge::before {
+        content: '🔒';
+        font-size: 0.6rem;
+    }
+
     @keyframes achievementUnlock {
         0% { transform: scale(1); }
         50% { transform: scale(1.1); }
@@ -1127,6 +1206,163 @@
         padding: 4px 8px;
         font-size: 12px;
         font-weight: 600;
+    }
+
+    /* Current Scenario Status */
+    .current-scenario-container {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        margin-top: 16px;
+    }
+
+    .scenario-status {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .scenario-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .scenario-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        border-radius: var(--border-radius);
+        color: var(--cyber-glow);
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .scenario-badge i {
+        font-size: 16px;
+    }
+
+    .scenario-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .scenario-difficulty {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .scenario-xp {
+        color: var(--success);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .scenario-progress {
+        border-top: 1px solid var(--glass-border);
+        padding-top: 12px;
+    }
+
+    .progress-indicators {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .progress-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .progress-item i {
+        color: var(--cyber-glow);
+        font-size: 14px;
+    }
+
+    /* Arena Unlock Progress */
+    .unlock-progress-container {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        margin-top: 16px;
+    }
+
+    .difficulty-unlock {
+        margin-bottom: 16px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: var(--border-radius);
+        border-left: 3px solid var(--glass-border);
+    }
+
+    .difficulty-unlock.unlocked {
+        border-left-color: var(--success);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .difficulty-unlock.locked {
+        border-left-color: var(--warning);
+        background: rgba(251, 191, 36, 0.1);
+    }
+
+    .unlock-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .unlock-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: rgba(0, 217, 255, 0.2);
+        border-radius: 50%;
+        color: var(--cyber-glow);
+    }
+
+    .unlock-icon i {
+        font-size: 16px;
+    }
+
+    .unlock-name {
+        flex: 1;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    .unlock-status i {
+        font-size: 18px;
+    }
+
+    .unlock-status .bx-check-circle {
+        color: var(--success);
+    }
+
+    .unlock-status .bx-lock-alt {
+        color: var(--warning);
+    }
+
+    .unlock-requirement {
+        color: var(--text-secondary);
+        font-size: 12px;
+        margin-left: 44px;
     }
 
     /* Network Skill Trees */
@@ -1581,6 +1817,496 @@
         0% { transform: scale(0.5) rotate(-12deg); }
         50% { transform: scale(1.2) rotate(6deg); }
         100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* Auto-Completion Notification Styles */
+    .auto-completion-notification {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--success);
+        border-radius: 20px;
+        padding: 30px;
+        z-index: 4000;
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 20px 60px rgba(16, 185, 129, 0.3);
+        max-width: 400px;
+        width: 90%;
+    }
+
+    .auto-completion-notification.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .auto-completion-content {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+    }
+
+    .auto-completion-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        color: white;
+        animation: completionPulse 2s infinite;
+    }
+
+    .auto-completion-icon i {
+        font-size: 32px;
+    }
+
+    .auto-completion-text {
+        flex: 1;
+        color: white;
+    }
+
+    .auto-completion-text h4 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: white;
+    }
+
+    .auto-completion-text p {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .completion-time {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 600;
+    }
+
+    @keyframes completionPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    /* Gamified Difficulty Selection Styles */
+    .difficulty-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        padding: 24px 0;
+        width: 100%;
+        max-width: none;
+    }
+
+    .difficulty-card {
+        background: var(--glass-bg-light);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 0; /* remove internal spacing */
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        min-height: 0; /* allow content to define height */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* avoid space between creating gaps */
+        aspect-ratio: auto; /* avoid forced whitespace due to ratio */
+    }
+
+    .difficulty-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .difficulty-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .difficulty-card:hover::before {
+        opacity: 1;
+    }
+
+    /* Foundation Card Styling */
+    .foundation-card {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        border: 2px solid #4A90E2;
+    }
+
+    .foundation-card::before {
+        background: linear-gradient(135deg, #5BA0F2 0%, #4A90E2 100%);
+    }
+
+    .foundation-card:hover {
+        box-shadow: 0 15px 40px rgba(74, 144, 226, 0.4);
+    }
+
+    .foundation-card .difficulty-icon {
+        color: #E3F2FD;
+    }
+
+    /* Easy Card Styling */
+    .easy-card {
+        border-color: rgba(76, 175, 80, 0.3);
+    }
+
+    .easy-card::before {
+        background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    }
+
+    .easy-card:hover {
+        border-color: #4CAF50;
+        box-shadow: 0 20px 40px rgba(76, 175, 80, 0.3);
+    }
+
+    .easy-card .difficulty-icon {
+        color: #4CAF50;
+    }
+
+    /* Medium Card Styling */
+    .medium-card {
+        border-color: rgba(255, 152, 0, 0.3);
+    }
+
+    .medium-card::before {
+        background: linear-gradient(90deg, #FF9800, #FFC107);
+    }
+
+    .medium-card:hover {
+        border-color: #FF9800;
+        box-shadow: 0 20px 40px rgba(255, 152, 0, 0.3);
+    }
+
+    .medium-card .difficulty-icon {
+        color: #FF9800;
+    }
+
+    /* Hard Card Styling */
+    .hard-card {
+        border-color: rgba(244, 67, 54, 0.3);
+    }
+
+    .hard-card::before {
+        background: linear-gradient(90deg, #F44336, #E91E63);
+    }
+
+    .hard-card:hover {
+        border-color: #F44336;
+        box-shadow: 0 20px 40px rgba(244, 67, 54, 0.3);
+    }
+
+    .hard-card .difficulty-icon {
+        color: #F44336;
+    }
+
+    .difficulty-header {
+        margin-bottom: 20px;
+    }
+
+    .difficulty-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    }
+
+    .difficulty-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .difficulty-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .difficulty-stars {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        margin: 16px 0;
+        font-size: 20px;
+    }
+
+    .difficulty-stars .bxs-star {
+        color: #FFD700;
+        filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+    }
+
+    .difficulty-stars .bx-star {
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .challenge-count {
+        font-size: 16px;
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .xp-reward {
+        font-size: 14px;
+        color: var(--cyber-glow);
+        font-weight: 700;
+        font-family: 'Orbitron', monospace;
+        margin-bottom: 16px;
+        text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+    }
+
+    .difficulty-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    /* Locked Level Styles - MVP Progressive System */
+    .difficulty-card.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: var(--glass-bg);
+        position: relative;
+    }
+
+    .difficulty-card.locked::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: var(--border-radius-lg);
+        pointer-events: none;
+    }
+
+    .lock-overlay {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: var(--danger-color);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        z-index: 10;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .unlock-status {
+        background: var(--success-color);
+        color: white;
+        padding: 8px 16px;
+        border-radius: var(--border-radius);
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .unlock-requirement {
+        background: var(--warning-color);
+        color: var(--background);
+        padding: 8px 16px;
+        border-radius: var(--border-radius);
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .difficulty-card.locked:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .difficulty-card.unlocked:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 217, 255, 0.2);
+    }
+
+    /* Level Unlock and XP Notifications */
+    .level-unlock-notification,
+    .xp-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg-light);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        z-index: 10000;
+        animation: slideInRight 0.5s ease, fadeOut 0.5s ease 3.5s forwards;
+        box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+    }
+
+    .unlock-content {
+        text-align: center;
+        color: var(--text-primary);
+    }
+
+    .unlock-content i {
+        font-size: 32px;
+        color: var(--cyber-glow);
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .unlock-content h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        color: var(--cyber-glow);
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .unlock-content p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .xp-notification {
+        background: var(--success-color);
+        border-color: var(--success-color);
+        animation: slideInRight 0.5s ease, fadeOut 0.5s ease 2.5s forwards;
+    }
+
+    .xp-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: white;
+        font-weight: bold;
+    }
+
+    .xp-content i {
+        font-size: 20px;
+    }
+
+    .xp-content small {
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+
+    /* Responsive adjustments for difficulty cards */
+    @media (max-width: 768px) {
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+        
+        .scenario-popup {
+            width: clamp(280px, 95vw, 600px);
+            padding: 20px;
+            max-height: 95vh;
+            min-height: 50vh;
+        }
+        
+        .difficulty-selection-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            padding: 16px 0;
+        }
+        
+        .difficulty-card {
+            padding: 0;
+            min-height: 0;
+            aspect-ratio: auto;
+        }
+        
+        .difficulty-icon {
+            font-size: 40px;
+        }
+        
+        .difficulty-title {
+            font-size: 20px;
+        }
+        
+        .lock-overlay {
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .scenario-popup {
+            padding: 16px;
+            margin: 8px;
+        }
+        
+        .difficulty-card {
+            padding: 0;
+            min-height: 0;
+        }
+        
+        .lock-overlay {
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
     }
 </style>
 
@@ -2148,54 +2874,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    .tutorialModal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        z-index: 2000;
-        color: var(--text-primary);
-        padding: 32px;
-        border-radius: var(--border-radius-lg);
-        max-width: 500px;
-        box-shadow: var(--shadow-lg);
-        animation: modalFadeIn 0.5s ease;
-    }
-
-    @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
-        }
-
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-    }
-
-    .tutorialModal::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-primary);
-        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    }
-
     .configModal {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%);
-        width: 90%;
+        width: min(90%, calc(100vw - var(--current-sidebar-width) - 80px));
         max-width: 900px;
         max-height: 90vh;
         background: var(--background);
@@ -2283,15 +2968,6 @@ document.addEventListener('DOMContentLoaded', () => {
         height: 3px;
         background: var(--gradient-primary);
         border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    }
-
-    .tutorialmodal-content {
-        position: relative;
-        padding: 24px;
-        border-radius: var(--border-radius);
-        background: transparent;
-        text-align: center;
-        max-height: 80vh;
     }
 
     .configmodal-content {
@@ -2397,40 +3073,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gap: 16px;
         justify-content: center;
         align-items: center;
-    }
-
-    .tutorial-buttons button {
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border);
-        padding: 12px 20px;
-        margin: 0;
-        border-radius: var(--border-radius);
-        cursor: pointer;
-        background: var(--glass-bg-light);
-        backdrop-filter: blur(10px);
-        font-size: 16px;
-        font-weight: 500;
-        transition: all var(--transition-speed) ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 48px;
-        min-height: 48px;
-    }
-
-    .tutorial-buttons button:disabled {
-        background: var(--glass-bg);
-        color: var(--text-muted);
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
-    .tutorial-buttons button:hover:not(:disabled) {
-        background: var(--gradient-primary);
-        color: var(--background);
-        border-color: var(--cyber-glow);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
     }
 
     .modal-content p {
@@ -2653,22 +3295,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     .select-btn.completed {
-        background: var(--gradient-secondary);
-        color: var(--background);
-        border-color: var(--neon-green);
-        box-shadow: 0 4px 20px rgba(57, 255, 20, 0.4);
+        background: linear-gradient(135deg, rgba(57, 255, 20, 0.25) 0%, rgba(16, 185, 129, 0.25) 100%);
+        color: var(--text-primary);
+        border: 2px solid var(--neon-green);
+        box-shadow: 
+            0 4px 20px rgba(57, 255, 20, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        padding-right: 60px; /* Add space for completion badge */
+        backdrop-filter: blur(15px);
     }
 
     .select-btn.completed::after {
         content: '✔';
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--neon-green);
         color: var(--background);
-        font-size: 18px;
-        margin-left: 12px;
+        font-size: 16px;
         font-weight: bold;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 10px rgba(57, 255, 20, 0.5);
     }
 
     .select-btn.completed:hover::after {
         color: var(--background);
+        background: rgba(57, 255, 20, 1);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 15px rgba(57, 255, 20, 0.7);
     }
 
     .terminal {
@@ -2796,26 +3458,119 @@ document.addEventListener('DOMContentLoaded', () => {
         /* Space between buttons */
     }
 
+    /* Modal Backdrop */
+    .modal-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(12px);
+        z-index: var(--z-modal);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        isolation: isolate; /* Prevent backdrop filter bleed */
+    }
+
+    .modal-backdrop.active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Scenario Popup with proper layer isolation */
     .scenario-popup {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        /* Center within the main content area (to the right of the sidebar) */
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
-        width: 500px;
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
+        /* Respect available width minus the sidebar */
+        width: min(1000px, calc(100vw - var(--current-sidebar-width) - 64px));
+        max-width: calc(100vw - var(--current-sidebar-width) - 32px);
+        max-height: 85vh;
+        min-height: 50vh;
+        background: rgba(15, 23, 42, 0.98);
+        backdrop-filter: blur(25px);
+        border: 2px solid var(--glass-border);
         border-radius: var(--border-radius-xl);
         padding: 32px;
         opacity: 0;
         pointer-events: none;
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
+        z-index: calc(var(--z-modal) + 1);
         box-shadow:
-            0 25px 50px rgba(0, 0, 0, 0.4),
-            0 0 40px rgba(0, 217, 255, 0.2);
+            0 25px 50px rgba(0, 0, 0, 0.5),
+            0 0 40px rgba(0, 217, 255, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
         overflow: hidden;
+        /* Ensure proper stacking context isolation */
+        isolation: isolate;
+        /* Flexbox to manage content layout */
+        flex-direction: column;
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
+    }
+
+    /* Ensure all popup modals use proper text colors */
+    .scenario-popup *,
+    .easy-popup *,
+    .medium-popup *,
+    .hard-popup *,
+    .problem-popup *,
+    .foundation-popup * {
+        color: inherit;
+    }
+
+    /* Modal Header */
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+        flex-shrink: 0;
+        /* Keep the header visible while scrolling inside modals */
+        position: sticky;
+        top: 0;
+        z-index: 10; /* ensure it's above all modal content */
+        /* More opaque background for better readability when sticky */
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(15px);
+        /* Enhanced shadow and border for better separation */
+        box-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.25),
+            0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        flex: 1;
+    }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 24px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        width: 40px;
+        height: 40px;
+    }
+
+    .modal-close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        transform: scale(1.1);
     }
 
     .scenario-popup::before {
@@ -2902,6 +3657,11 @@ document.addEventListener('DOMContentLoaded', () => {
         gap: 16px;
         border-top: 1px solid var(--glass-border);
         margin: 16px 0;
+        width: 100%;
+        max-width: 100%;
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
     }
 
     .scenario-popup .modal-buttons {
@@ -2910,6 +3670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gap: 16px;
         margin-top: 12px;
         padding-top: 8px;
+        flex-shrink: 0;
     }
 
     .scenario-popup .back-btn {
@@ -2968,9 +3729,9 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
-        width: 500px;
+        width: min(500px, calc(100vw - var(--current-sidebar-width) - 80px));
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
@@ -2984,6 +3745,8 @@ document.addEventListener('DOMContentLoaded', () => {
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
         overflow: hidden;
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
     }
 
     .easy-popup::before {
@@ -3108,9 +3871,9 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
-        width: 500px;
+        width: min(500px, calc(100vw - var(--current-sidebar-width) - 80px));
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
@@ -3124,6 +3887,8 @@ document.addEventListener('DOMContentLoaded', () => {
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
         overflow: hidden;
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
     }
 
     .medium-popup::before {
@@ -3248,9 +4013,9 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
-        width: 500px;
+        width: min(500px, calc(100vw - var(--current-sidebar-width) - 80px));
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
@@ -3264,6 +4029,8 @@ document.addEventListener('DOMContentLoaded', () => {
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
         overflow: hidden;
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
     }
 
     .hard-popup::before {
@@ -3395,9 +4162,9 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
-        width: 500px;
+        width: min(500px, calc(100vw - var(--current-sidebar-width) - 80px));
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
@@ -3407,9 +4174,10 @@ document.addEventListener('DOMContentLoaded', () => {
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
-        position: relative;
         overflow: hidden;
         transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
     }
 
     .problem-popup::before {
@@ -3494,24 +4262,585 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+    /* Foundation Popup Styling */
+    .foundation-popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
+        transform: translate(-50%, -50%) scale(0.9);
+        width: min(800px, calc(100vw - var(--current-sidebar-width) - 80px));
+        max-width: calc(100vw - var(--current-sidebar-width) - 40px);
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(74, 144, 226, 0.3);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2001;
+        box-shadow:
+            0 25px 50px rgba(0, 0, 0, 0.4),
+            0 0 40px rgba(74, 144, 226, 0.2);
+        overflow: hidden;
+        max-height: 80vh;
+        overflow-y: auto;
+        /* Ensure all text uses cyber theme colors */
+        color: var(--text-primary);
+    }
+
+    .foundation-popup::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #4A90E2, #357ABD, #4A90E2);
+    }
+
+    .foundation-popup.active {
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .foundation-popup h2 {
+        font-size: 28px;
+        color: #4A90E2;
+        text-align: center;
+        margin-bottom: 24px;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .foundationdescmodal-content {
+        padding: 24px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        border-top: 1px solid rgba(74, 144, 226, 0.3);
+        margin: 16px 0;
+    }
+
+    .learning-phases {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .phase-section {
+        background: rgba(74, 144, 226, 0.05);
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(74, 144, 226, 0.2);
+    }
+
+    .phase-section h3 {
+        color: #357ABD;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+    }
+
+    .foundation-btn {
+        width: 100%;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1);
+        position: relative;
+        backdrop-filter: blur(10px);
+    }
+
+    .foundation-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        border-color: var(--cyber-glow-bright);
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%);
+    }
+
+    .foundation-btn:active {
+        transform: translateY(-1px);
+    }
+
+    .btn-content {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-align: left;
+    }
+
+    .btn-icon {
+        font-size: 2rem;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .btn-text {
+        flex: 1;
+    }
+
+    .btn-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+    }
+
+    .btn-desc {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    .foundation-btn.completed {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(5, 150, 105, 0.4) 100%);
+        border: 2px solid var(--success);
+        border-width: 3px;
+        box-shadow: 
+            0 6px 25px rgba(16, 185, 129, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        backdrop-filter: blur(15px);
+    }
+
+    .foundation-btn.completed .btn-title {
+        color: var(--success);
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .foundation-btn.completed::after {
+        content: '✓';
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        background: linear-gradient(135deg, var(--success) 0%, rgba(5, 150, 105, 1) 100%);
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 
+            0 3px 12px rgba(16, 185, 129, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Foundation Tutorial Overlay */
+    .foundation-tutorial-overlay {
+        position: fixed;
+        top: 0;
+        left: var(--current-sidebar-width);
+        width: calc(100vw - var(--current-sidebar-width));
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 3000;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .foundation-tutorial-overlay.active {
+        opacity: 1;
+    }
+
+    .foundation-tutorial-content {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: min(600px, calc(100vw - var(--current-sidebar-width) - 80px));
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        transition: all 0.3s ease;
+    }
+
+    .foundation-tutorial-overlay.active .foundation-tutorial-content {
+        transform: scale(1);
+    }
+
+    .foundation-tutorial-content h3 {
+        color: var(--cyber-glow);
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .tutorial-description {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .tutorial-instruction {
+        font-size: 1rem;
+        color: var(--cyber-glow);
+        background: rgba(0, 217, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        border-left: 4px solid var(--cyber-glow);
+    }
+
+    .tutorial-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .tutorial-btn {
+        background: linear-gradient(135deg, var(--cyber-glow) 0%, var(--cyber-glow-bright) 100%);
+        color: var(--primary-dark);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    }
+
+    .tutorial-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+    }
+
+    .tutorial-btn.complete-btn {
+        background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .tutorial-btn.complete-btn:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Auto-completion info message */
+    .auto-completion-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        border-radius: 25px;
+        color: var(--cyber-glow);
+        font-size: 14px;
+        font-weight: 500;
+        margin-left: auto;
+    }
+
+    .auto-completion-info i {
+        font-size: 16px;
+        color: var(--success);
+    }
+
+    /* Completion Preview Styles */
+    .completion-preview {
+        margin: 25px 0;
+        padding: 20px;
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: 15px;
+    }
+
+    .completion-preview h4 {
+        color: var(--cyber-glow);
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .preview-image-container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        width: auto;
+        height: auto;
+        border-radius: 10px;
+        border: 2px solid rgba(0, 217, 255, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease;
+    }
+
+    .preview-image:hover {
+        transform: scale(1.05);
+        border-color: var(--cyber-glow);
+    }
+
+    .preview-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-style: italic;
+        text-align: center;
+    }
+
+    /* Device Palette Highlighting */
+    .device.highlight {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        color: white;
+        animation: pulse 2s infinite;
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(74, 144, 226, 0.4);
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    /* Foundation Completion Notification */
+    .foundation-completion-notification {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        border: 2px solid #28a745;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        z-index: 4000;
+        opacity: 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .foundation-completion-notification.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .notification-content i {
+        font-size: 3rem;
+        color: #28a745;
+        margin-bottom: 15px;
+    }
+
+    .notification-content h4 {
+        font-size: 1.5rem;
+        color: var(--success);
+        margin-bottom: 10px;
+    }
+
+    .notification-content p {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        margin-bottom: 15px;
+    }
+
+    .xp-gained {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+    }
+
+    /* Locked Difficulty Cards */
+    .difficulty-card.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: linear-gradient(135deg, rgba(108, 117, 125, 0.2) 0%, rgba(108, 117, 125, 0.1) 100%);
+        filter: grayscale(50%);
+        border: 2px solid rgba(108, 117, 125, 0.3);
+    }
+
+    .difficulty-card.locked:hover {
+        transform: none;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .difficulty-card.locked::before {
+        background: rgba(108, 117, 125, 0.1);
+    }
+
+    .difficulty-card.locked .difficulty-icon {
+        color: var(--text-muted);
+    }
+
+    .difficulty-card.locked .difficulty-title,
+    .difficulty-card.locked .difficulty-subtitle {
+        color: var(--text-muted);
+    }
+
+    .difficulty-card.unlocked {
+        cursor: pointer;
+    }
+
+    /* Foundation Learning Phases Styling */
+    .progress-overview {
+        background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(53, 122, 189, 0.1) 100%);
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    .progress-bar {
+        background: rgba(255, 255, 255, 0.3);
+        height: 8px;
+        border-radius: 10px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .progress-text {
+        font-size: 0.9rem;
+        color: #4A90E2;
+        font-weight: 600;
+    }
+
+    .phase-section {
+        margin-bottom: 30px;
+        padding-bottom: 25px;
+        border-bottom: 2px solid rgba(74, 144, 226, 0.1);
+    }
+
+    .phase-section:last-child {
+        border-bottom: none;
+    }
+
+    .phase-section h3 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #4A90E2;
+        margin-bottom: 15px;
+        font-size: 1.4rem;
+    }
+
+    .phase-status {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: auto;
+    }
+
+    .phase-status.locked {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+
+    .phase-status.completed {
+        background: linear-gradient(135deg, var(--success) 0%, rgba(5, 150, 105, 1) 100%);
+        color: white;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    }
+
+    .phase-status.completed::before {
+        content: '✓';
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+
+    .foundation-btn.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: linear-gradient(135deg, rgba(71, 85, 105, 0.3) 0%, rgba(71, 85, 105, 0.2) 100%);
+        border: 2px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .foundation-btn.locked:hover {
+        transform: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .foundation-btn.locked .btn-icon {
+        filter: grayscale(100%);
+    }
+
+    .foundation-btn.completed {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(5, 150, 105, 0.4) 100%);
+        border: 3px solid var(--success);
+        box-shadow: 
+            0 6px 25px rgba(16, 185, 129, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+    }
+
+    .foundation-btn.completed::after {
+        content: '✓';
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: linear-gradient(135deg, var(--success) 0%, rgba(5, 150, 105, 1) 100%);
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 
+            0 3px 12px rgba(16, 185, 129, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
 </style>
 
 <div id="app">
-
-        <!-- Tutorial Modal -->
-        <div id="tutorialModal" class="tutorialModal">
-            <div class="tutorialmodal-content">
-                <h2>Tutorial</h2>
-                <div id="tutorialStep"></div>
-                <div class="tutorial-buttons">
-                    <button id="prevStep" onclick="prevTutorialStep()" disabled><i
-                            class='bx bxs-left-arrow'></i></button>
-                    <button id="nextStep" onclick="nextTutorialStep()"><i class='bx bxs-right-arrow'></i></button>
-                    <i onclick="closeTutorial()" class="bx bx-x profile-exit-btn"></i>
-
-                </div>
-            </div>
-        </div>
 
         <!-- Add Configuration Modal after the Tutorial Modal -->
         <div id="configModal" class="configModal">
@@ -3525,28 +4854,312 @@ document.addEventListener('DOMContentLoaded', () => {
 
             </div>
         </div> <!-- Add new scenario selection modal -->
+        
+        <!-- Modal Backdrop -->
+    <div id="modalBackdrop" class="modal-backdrop" onclick="handleBackdropClick()"></div>
+        
+        <!-- Scenario Modal -->
         <div id="scenarioModal" class="scenario-popup">
-            <h2>Select a Scenario</h2>
-            <div class="scenariomodal-content">
-
-                <button class="scenario-btn" onclick="selectScenario('easy')">
-                    Easy
-                </button>
-                <button class="scenario-btn" onclick="selectScenario('medium')">
-                    Medium
-                </button>
-                <button class="scenario-btn" onclick="selectScenario('hard')">
-                    Hard
+            <div class="modal-header">
+                <h2><i class='bx bx-trophy'></i> Network Learning Arena</h2>
+                <button class="modal-close-btn" onclick="closeScenarioModal()">
+                    <i class='bx bx-x'></i>
                 </button>
             </div>
+            <div class="scenariomodal-content">
+                <div class="difficulty-selection-grid">
+                    <!-- Foundation Difficulty - Always Unlocked (Phase 1 & 2) -->
+                    <div class="difficulty-card foundation-card unlocked" onclick="selectScenario('foundation')">
+                        <div class="difficulty-header">
+                            <div class="difficulty-icon">
+                                <i class='bx bx-book-open'></i>
+                            </div>
+                            <div class="difficulty-title">FOUNDATION</div>
+                            <div class="difficulty-subtitle">Device Discovery</div>
+                        </div>
+                        <div class="difficulty-stars">
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bx-star'></i>
+                            <i class='bx bx-star'></i>
+                        </div>
+                        <div class="challenge-count">6 Learning Modules</div>
+                        <div class="xp-reward">+15 XP per module</div>
+                        <div class="unlock-status">
+                            <i class='bx bx-check-circle'></i> ALWAYS AVAILABLE
+                        </div>
+                    </div>
+
+                    <!-- Easy Difficulty - Locked initially (now troubleshooting) -->
+                    <div class="difficulty-card easy-card locked" id="easy-difficulty" onclick="handleLockedLevel('easy')">
+                        <div class="lock-overlay">
+                            <i class='bx bx-lock-alt'></i>
+                        </div>
+                        <div class="difficulty-header">
+                            <div class="difficulty-icon">
+                                <i class='bx bx-leaf'></i>
+                            </div>
+                            <div class="difficulty-title">EASY</div>
+                            <div class="difficulty-subtitle">Basic Troubleshooting</div>
+                        </div>
+                        <div class="difficulty-stars">
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bx-star'></i>
+                        </div>
+                        <div class="challenge-count">3 Network Scenarios</div>
+                        <div class="xp-reward">+25 XP per scenario</div>
+                        <div class="unlock-requirement">
+                            <i class='bx bx-trophy'></i> Complete 4 Foundation modules to unlock
+                        </div>
+                    </div>
+
+                    <!-- Medium Difficulty - Locked initially -->
+                    <div class="difficulty-card medium-card locked" id="medium-difficulty" onclick="handleLockedLevel('medium')">
+                        <div class="lock-overlay">
+                            <i class='bx bx-lock-alt'></i>
+                        </div>
+                        <div class="difficulty-header">
+                            <div class="difficulty-icon">
+                                <i class='bx bx-shield'></i>
+                            </div>
+                            <div class="difficulty-title">MEDIUM</div>
+                            <div class="difficulty-subtitle">Intermediate Level</div>
+                        </div>
+                        <div class="difficulty-stars">
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bx-star'></i>
+                        </div>
+                        <div class="challenge-count">3 Network Scenarios</div>
+                        <div class="xp-reward">+50 XP per scenario</div>
+                        <div class="unlock-requirement">
+                            <i class='bx bx-trophy'></i> Complete 2 Easy scenarios to unlock
+                        </div>
+                    </div>
+
+                    <!-- Hard Difficulty - Locked initially -->
+                    <div class="difficulty-card hard-card locked" id="hard-difficulty" onclick="handleLockedLevel('hard')">
+                        <div class="lock-overlay">
+                            <i class='bx bx-lock-alt'></i>
+                        </div>
+                        <div class="difficulty-header">
+                            <div class="difficulty-icon">
+                                <i class='bx bx-skull'></i>
+                            </div>
+                            <div class="difficulty-title">HARD</div>
+                            <div class="difficulty-subtitle">Expert Challenge</div>
+                        </div>
+                        <div class="difficulty-stars">
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bxs-star'></i>
+                            <i class='bx bxs-star'></i>
+                        </div>
+                        <div class="challenge-count">4 Network Scenarios</div>
+                        <div class="xp-reward">+100 XP per scenario</div>
+                        <div class="unlock-requirement">
+                            <i class='bx bx-trophy'></i> Complete 2 Medium scenarios to unlock
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="modal-buttons">
-                <button class="back-btn" onclick="closeScenarioModal()"><i class='bx bxs-left-arrow'></i></button>
+                <button class="back-btn" onclick="closeScenarioModal()"><i class='bx bxs-left-arrow'></i> Back</button>
             </div>
         </div>
 
-        <!-- After the scenarioModal div, add the new description modals -->
+        <!-- Foundation Learning Modules Modal -->
+        <div id="foundationDescModal" class="foundation-popup">
+            <div class="modal-header">
+                <h2><i class='bx bx-book-open'></i> Foundation Learning Path</h2>
+                <button class="modal-close-btn" onclick="backToScenarioSelection()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <div class="foundationdescmodal-content">
+                <div class="progress-overview">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="overall-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="progress-text" id="overall-progress-text">0/15 modules completed</span>
+                </div>
+                
+                <div class="learning-phases">
+                    <!-- Phase 1: Device Discovery -->
+                    <div class="phase-section">
+                        <h3><i class='bx bx-desktop'></i> Phase 1: Device Discovery</h3>
+                        <span class="phase-status" id="phase1-status">Available</span>
+                        <button onclick="startFoundationScenario('meet-pc')" class="foundation-btn" data-phase="1" id="meet-pc-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">💻</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Meet the PC</div>
+                                    <div class="btn-desc">Discover what a computer does in a network</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('meet-switch')" class="foundation-btn" data-phase="1" id="meet-switch-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔀</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Meet the Switch</div>
+                                    <div class="btn-desc">Learn how switches connect multiple devices</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('meet-router')" class="foundation-btn" data-phase="1" id="meet-router-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">📡</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Meet the Router</div>
+                                    <div class="btn-desc">Understand how routers connect networks</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- Phase 2: Basic Connections -->
+                    <div class="phase-section">
+                        <h3><i class='bx bx-link'></i> Phase 2: Basic Connections</h3>
+                        <span class="phase-status" id="phase2-status">Locked</span>
+                        <button onclick="startFoundationScenario('pc-to-pc')" class="foundation-btn locked" data-phase="2" id="pc-to-pc-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">💻↔️💻</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">PC-to-PC Connection</div>
+                                    <div class="btn-desc">Connect two computers directly</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('pc-to-switch')" class="foundation-btn locked" data-phase="2" id="pc-to-switch-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">💻🔀💻</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">PC through Switch</div>
+                                    <div class="btn-desc">Use a switch to connect multiple PCs</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('switch-to-router')" class="foundation-btn locked" data-phase="2" id="switch-to-router-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔀📡</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Switch to Router</div>
+                                    <div class="btn-desc">Connect different network segments</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Phase 3: Network Topologies -->
+                    <div class="phase-section">
+                        <h3><i class='bx bx-sitemap'></i> Phase 3: Network Topologies</h3>
+                        <span class="phase-status" id="phase3-status">Locked</span>
+                        <button onclick="startFoundationScenario('small-office')" class="foundation-btn locked" data-phase="3" id="small-office-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🏢</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Small Office Network</div>
+                                    <div class="btn-desc">Build a complete office network</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('home-network')" class="foundation-btn locked" data-phase="3" id="home-network-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🏠</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Home Network Setup</div>
+                                    <div class="btn-desc">Create a residential network topology</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('network-expansion')" class="foundation-btn locked" data-phase="3" id="network-expansion-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔗</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Network Expansion</div>
+                                    <div class="btn-desc">Learn to grow existing networks</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Phase 4: Basic Configuration -->
+                    <div class="phase-section">
+                        <h3><i class='bx bx-cog'></i> Phase 4: Basic Configuration</h3>
+                        <span class="phase-status" id="phase4-status">Locked</span>
+                        <button onclick="startFoundationScenario('device-naming')" class="foundation-btn locked" data-phase="4" id="device-naming-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🏷️</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Device Naming</div>
+                                    <div class="btn-desc">Learn device identification and naming</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('cable-management')" class="foundation-btn locked" data-phase="4" id="cable-management-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔌</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Cable Management</div>
+                                    <div class="btn-desc">Organize and manage network cables</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('basic-security')" class="foundation-btn locked" data-phase="4" id="basic-security-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🛡️</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Basic Security</div>
+                                    <div class="btn-desc">Introduction to network security</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Phase 5: Network Addressing -->
+                    <div class="phase-section">
+                        <h3><i class='bx bx-map'></i> Phase 5: Network Addressing</h3>
+                        <span class="phase-status" id="phase5-status">Locked</span>
+                        <button onclick="startFoundationScenario('device-addresses')" class="foundation-btn locked" data-phase="5" id="device-addresses-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">📍</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Device Addresses</div>
+                                    <div class="btn-desc">Understand IP addresses basics</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('connectivity-testing')" class="foundation-btn locked" data-phase="5" id="connectivity-testing-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔍</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Connectivity Testing</div>
+                                    <div class="btn-desc">Test network connections</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button onclick="startFoundationScenario('troubleshooting-basics')" class="foundation-btn locked" data-phase="5" id="troubleshooting-basics-btn">
+                            <div class="btn-content">
+                                <div class="btn-icon">🔧</div>
+                                <div class="btn-text">
+                                    <div class="btn-title">Troubleshooting Basics</div>
+                                    <div class="btn-desc">Learn basic problem solving</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simple scenario description modals -->
         <div id="easyDescModal" class="easy-popup">
-            <h2>Easy Scenarios</h2>
+            <div class="modal-header">
+                <h2>Easy Scenarios</h2>
+                <button class="modal-close-btn" onclick="backToScenarioSelection()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
             <div class="easydescmodal-content">
                 <button onclick="startScenario('easy', 'network')" class="select-btn">
                     Misconfigured Network Address
@@ -3558,15 +5171,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     Incorrect Version
                 </button>
             </div>
-            <div class="modal-buttons">
-                <button onclick="backToScenarioSelection()" class="action-btn"><i
-                        class='bx bxs-left-arrow'></i></button>
-            </div>
         </div>
 
         <!-- Medium Scenarios Modal -->
         <div id="mediumDescModal" class="medium-popup">
-            <h2>Medium Scenarios</h2>
+            <div class="modal-header">
+                <h2>Medium Scenarios</h2>
+                <button class="modal-close-btn" onclick="backToScenarioSelection()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
             <div class="mediumdescmodal-content">
                 <button onclick="startScenario('medium', 'split')" class="select-btn">
                     Split Horizon
@@ -3578,15 +5192,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     Timers Mismatch
                 </button>
             </div>
-            <div class="modal-buttons">
-                <button onclick="backToScenarioSelection()" class="action-btn"><i
-                        class='bx bxs-left-arrow'></i></button>
-            </div>
         </div>
 
         <!-- Hard Scenarios Modal -->
         <div id="hardDescModal" class="hard-popup">
-            <h2>Hard Scenarios</h2>
+            <div class="modal-header">
+                <h2>Hard Scenarios</h2>
+                <button class="modal-close-btn" onclick="backToScenarioSelection()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
             <div class="harddescmodal-content">
                 <button onclick="startScenario('hard', 'flapping')" class="select-btn">
                     Route Flapping
@@ -3600,10 +5215,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button onclick="startScenario('hard', 'auth')" class="select-btn">
                     Authentication Failure (RIP v2)
                 </button>
-            </div>
-            <div class="modal-buttons">
-                <button onclick="backToScenarioSelection()" class="action-btn"><i
-                        class='bx bxs-left-arrow'></i></button>
             </div>
         </div>
 
@@ -3822,13 +5433,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
     <div id="device-palette">
             <div class="palette-section left-section">
-                <div class="action-btn" id="solo-scenario-btn" onclick="activateSoloMode()">
-                    <i class='bx bx-user'></i>
-                    <span class="label">Solo Mode</span>
-                </div>
-                <div class="action-btn" id="challenges-btn" onclick="openChallengesModal()">
+                <div class="action-btn" id="challenges-btn">
                     <i class='bx bx-target-lock'></i>
-                    <span class="label">Challenges</span>
+                    <span class="label">Network Challenges</span>
                 </div>
                 <div class="action-btn" id="troubleshoot-btn">
                     <i class='bx bx-check-shield'></i>
@@ -3909,6 +5516,37 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span id="level-title">Networking Novice</span>
                             <div class="next-level-preview" id="next-level-preview">
                                 Next: Junior Technician
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Scenario Status -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-target-lock"></i> Active Learning Arena</h4>
+                    <div class="current-scenario-container">
+                        <div class="scenario-status" id="scenario-status">
+                            <div class="scenario-info">
+                                <div class="scenario-badge" id="scenario-badge">
+                                    <i class="bx bx-play-circle"></i>
+                                    <span id="scenario-name">No Scenario Selected</span>
+                                </div>
+                                <div class="scenario-details" id="scenario-details">
+                                    <div class="scenario-difficulty" id="scenario-difficulty">Select from Network Learning Arena</div>
+                                    <div class="scenario-xp" id="scenario-xp">XP Reward: --</div>
+                                </div>
+                            </div>
+                            <div class="scenario-progress" id="scenario-progress">
+                                <div class="progress-indicators">
+                                    <div class="progress-item">
+                                        <i class="bx bx-time-five"></i>
+                                        <span id="scenario-timer">--:--</span>
+                                    </div>
+                                    <div class="progress-item">
+                                        <i class="bx bx-help-circle"></i>
+                                        <span id="hints-used">0 Hints</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4186,6 +5824,57 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="bx bx-refresh"></i>
                             Reset
                         </button>
+                    </div>
+                </div>
+
+                <!-- Unlock Progress -->
+                <div class="feedback-section">
+                    <h4><i class="bx bx-lock-open"></i> Arena Unlock Progress</h4>
+                    <div class="unlock-progress-container">
+                        <div class="difficulty-unlock easy-unlock" id="easy-unlock">
+                            <div class="unlock-header">
+                                <div class="unlock-icon">
+                                    <i class="bx bx-leaf"></i>
+                                </div>
+                                <div class="unlock-name">Easy Difficulty</div>
+                                <div class="unlock-status" id="easy-status">
+                                    <i class="bx bx-check-circle"></i>
+                                </div>
+                            </div>
+                            <div class="unlock-requirement" id="easy-requirement">
+                                Complete Foundation Learning
+                            </div>
+                        </div>
+
+                        <div class="difficulty-unlock medium-unlock" id="medium-unlock">
+                            <div class="unlock-header">
+                                <div class="unlock-icon">
+                                    <i class="bx bx-shield-quarter"></i>
+                                </div>
+                                <div class="unlock-name">Medium Difficulty</div>
+                                <div class="unlock-status" id="medium-status">
+                                    <i class="bx bx-lock-alt"></i>
+                                </div>
+                            </div>
+                            <div class="unlock-requirement" id="medium-requirement">
+                                Complete 3 Easy scenarios
+                            </div>
+                        </div>
+
+                        <div class="difficulty-unlock hard-unlock" id="hard-unlock">
+                            <div class="unlock-header">
+                                <div class="unlock-icon">
+                                    <i class="bx bx-shield-alt-2"></i>
+                                </div>
+                                <div class="unlock-name">Hard Difficulty</div>
+                                <div class="unlock-status" id="hard-status">
+                                    <i class="bx bx-lock-alt"></i>
+                                </div>
+                            </div>
+                            <div class="unlock-requirement" id="hard-requirement">
+                                Complete 5 Medium scenarios
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4528,6 +6217,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 window.socketClient.emit('action_feedback', feedbackData);
                 console.log('📤 Sent action feedback:', feedbackData);
+            }
+
+            // Generic backend event sender used by multiple features
+            sendActionToBackend(eventName, payload) {
+                if (!this.realTimeEnabled || !window.socketClient) {
+                    console.warn(`⚠️ Skipping backend send for ${eventName} - offline or missing socket`);
+                    return;
+                }
+                const data = {
+                    session_id: this.sessionId,
+                    timestamp: Date.now(),
+                    ...payload
+                };
+                try {
+                    window.socketClient.emit(eventName, data);
+                    console.log(`📤 Sent backend event: ${eventName}`, data);
+                } catch (err) {
+                    console.error(`❌ Failed to send backend event: ${eventName}`, err);
+                }
             }
 
             addAchievement(achievement) {
@@ -4883,6 +6591,9 @@ document.addEventListener('DOMContentLoaded', () => {
             addHint(text, type = 'info') {
                 const hintsContainer = document.getElementById('hints-container');
                 if (!hintsContainer) return;
+                
+                // Update hints counter in Live Performance if a scenario is active
+                updateHintsCounter();
                 
                 // Limit to 3 most recent hints
                 const existingHints = hintsContainer.querySelectorAll('.hint-item');
@@ -5583,30 +7294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Initialize Performance Feedback System
-        let performanceFeedback = null;
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize immediately without delay
-            performanceFeedback = new PerformanceFeedbackSystem();
-            
-            // Make it globally accessible
-            window.performanceFeedback = performanceFeedback;
-            
-            console.log('🎯 Performance Feedback System ready');
-        });
-
-        // Integration hooks for existing code
-        function trackPerformanceAction(actionType, data = {}) {
-            if (window.performanceFeedback) {
-                window.performanceFeedback.trackAction(actionType, data);
-            }
-        }
-
-        // Export for external use
-        window.trackPerformanceAction = trackPerformanceAction;
-        
-        console.log('📊 Performance Feedback System script loaded');
+        // Performance Feedback System initialization is handled later in a consolidated block
     </script>
     <script>
         const palette = document.getElementById("device-palette");
@@ -5622,6 +7310,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let isDragging = false;
         let draggedDevice = null;
+        
+        // Initialize missing variables to prevent reference errors
+        let currentDeviceLocks = {};
+        
+        // Define missing function with safe implementation
+        function enhanceScenarioWithFeedback(difficulty, scenarioId) {
+            try {
+                console.log(`🎯 Enhancing scenario with feedback: ${difficulty} - ${scenarioId}`);
+                // Placeholder implementation - can be expanded later
+                if (typeof window.performanceFeedback !== 'undefined' && window.performanceFeedback.enhanceScenario) {
+                    window.performanceFeedback.enhanceScenario(difficulty, scenarioId);
+                }
+            } catch (error) {
+                console.warn('⚠️ enhanceScenarioWithFeedback error:', error);
+            }
+        }
 
 
         // Adjust canvas size
@@ -5759,6 +7463,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     device_label: newDevice.label
                 });
             }
+
+            // Check for scenario completion after device placement
+            if (currentScenarioObjectives && !currentScenarioObjectives.completed) {
+                setTimeout(() => checkScenarioCompletion(), 100);
+            }
         }
 
 
@@ -5847,6 +7556,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         device2_type: device2.type
                     });
                 }
+
+                // Check for scenario completion after connection
+                if (currentScenarioObjectives && !currentScenarioObjectives.completed) {
+                    setTimeout(() => checkScenarioCompletion(), 100);
+                }
             }
             firstDevice = null;  // Reset after connection
         }
@@ -5925,7 +7639,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 draggedDevice = clickedDevice;
                 
                 // Lock device for editing if in solo mode
-                console.log('🔒 Locking device for editing:', device.label);
+                console.log('🔒 Locking device for editing:', clickedDevice.label);
             }
         });
 
@@ -5967,144 +7681,158 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const tutorialSteps = [
-            {
-                text: "Welcome to the Network Troubleshooting! Follow these steps to learn how to use it:",
-                highlight: null
-            },
-            {
-                text: "Step 1: Select a problem from the Select Scenario button.",
-                highlight: "#select-scenario-btn"
-            },
-            {
-                text: "Step 2: Drag and drop devices from the palette to the canvas.",
-                highlight: ".device"
-            },
-            {
-                text: "Step 3: Click 'Connection Mode' to start connecting devices.",
-                highlight: "#connection-mode-btn"
-            },
-            {
-                text: "Step 4: Click on two devices to create a connection between them.",
-                highlight: "#Canvas"
-            },
-            {
-                text: "Step 5: Click 'Check Scenario' to verify your network setup.",
-                highlight: "#troubleshoot-btn"
-            },
-            {
-                text: "Step 6: Use the 'Delete Connection' button to remove a connection.",
-                highlight: "#delete-connection-btn"
-            },
-            {
-                text: "Step 7: Use the 'Delete Device' button to remove a device.",
-                highlight: "#delete-device-btn"
-            }
-        ];
-
-        let currentStep = 0;
-
-        function showTutorial() {
-            currentStep = 0;
-            document.getElementById("tutorialModal").style.display = "flex";
-            updateTutorialStep();
-        }
-
-        function updateTutorialStep() {
-            const step = tutorialSteps[currentStep];
-            document.getElementById("tutorialStep").innerHTML = `<p>${step.text}</p>`;
-
-            // Remove highlight from previous step
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-
-            // Highlight the current step element
-            if (step.highlight) {
-                const highlightElement = document.querySelector(step.highlight);
-                highlightElement.classList.add('highlight');
-
-                // Position the modal near the highlighted element
-                const rect = highlightElement.getBoundingClientRect();
-                const modal = document.getElementById("tutorialModal");
-                const modalHeight = modal.offsetHeight;
-                const modalWidth = modal.offsetWidth;
-                const viewportHeight = window.innerHeight;
-                const viewportWidth = window.innerWidth;
-
-                // Center the modal if the canvas is highlighted
-                if (step.highlight === "#Canvas") {
-                    modal.style.top = `50%`;
-                    modal.style.left = `50%`;
-                    modal.style.transform = `translate(-50%, -50%)`;
-                } else {
-                    // Determine the best position for the modal
-                    let top = rect.top + window.scrollY + rect.height + 10; // Default position below the element
-                    let left = rect.left + window.scrollX + (rect.width / 2) - (modalWidth / 2);
-
-                    if (top + modalHeight > viewportHeight) {
-                        top = rect.top + window.scrollY - modalHeight - 10; // Position above the element if it overflows
-                    }
-                    if (left + modalWidth > viewportWidth) {
-                        left = viewportWidth - modalWidth - 10; // Adjust to the left if it overflows
-                    }
-                    if (left < 0) {
-                        left = 10; // Adjust to the right if it overflows
-                    }
-
-                    modal.style.top = `${top}px`;
-                    modal.style.left = `${left}px`;
-                    modal.style.transform = `none`;
-                }
-            } else {
-
-                const modal = document.getElementById("tutorialModal");
-                modal.style.top = `50%`;
-                modal.style.left = `50%`;
-                modal.style.transform = `translate(-50%, -50%)`;
-            }
-
-            // Enable/disable buttons
-            document.getElementById("prevStep").disabled = currentStep === 0;
-            document.getElementById("nextStep").disabled = currentStep === tutorialSteps.length - 1;
-        }
-
-        function nextTutorialStep() {
-            if (currentStep < tutorialSteps.length - 1) {
-                currentStep++;
-                updateTutorialStep();
-            }
-        }
-
-        function prevTutorialStep() {
-            if (currentStep > 0) {
-                currentStep--;
-                updateTutorialStep();
-            }
-        }
-
-        function closeTutorial() {
-            document.getElementById("tutorialModal").style.display = "none";
-            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-
-            // After tutorial, show scenario selection since we're in solo mode
-            if (currentMode === 'solo') {
-                const scenarioModal = document.getElementById("scenarioModal");
-                scenarioModal.style.display = "flex";
-                scenarioModal.classList.add('active');
-            }
-        }
-        
-        // Ensure tutorial functions are globally accessible
-        window.showTutorial = showTutorial;
-        window.closeTutorial = closeTutorial;
-        window.updateTutorialStep = updateTutorialStep;
-
         window.onload = function () {
             // Restore mode preference first
             restoreMode();
             
-            // Show initial state - no tutorial on page load
-            // Tutorial will be triggered when solo mode is activated
+            // Initialize level progression system (MVP)
+            initializeLevelProgression();
+            
+            // Show initial state
         };
+        
+        // --- Level Progression System (MVP) ---
+        let userProgress = {
+            easyCompleted: [],
+            mediumCompleted: [],
+            hardCompleted: [],
+            totalXP: 0,
+            currentLevel: 1
+        };
+
+        function initializeLevelProgression() {
+            // Load progress from localStorage
+            const savedProgress = localStorage.getItem('troubleshoot_progress');
+            if (savedProgress) {
+                userProgress = { ...userProgress, ...JSON.parse(savedProgress) };
+            }
+            
+            // Update UI based on current progress
+            updateLevelUI();
+        }
+
+        function updateLevelUI() {
+            const mediumCard = document.getElementById('medium-difficulty');
+            const hardCard = document.getElementById('hard-difficulty');
+            
+            // Check if Medium should be unlocked (2 Easy scenarios completed)
+            if (userProgress.easyCompleted.length >= 2) {
+                unlockLevel(mediumCard, 'medium');
+            }
+            
+            // Check if Hard should be unlocked (2 Medium scenarios completed)
+            if (userProgress.mediumCompleted.length >= 2) {
+                unlockLevel(hardCard, 'hard');
+            }
+        }
+
+        function unlockLevel(card, difficulty) {
+            if (card && card.classList.contains('locked')) {
+                card.classList.remove('locked');
+                card.classList.add('unlocked');
+                card.onclick = () => selectScenario(difficulty);
+                
+                // Show unlock notification
+                showLevelUnlockNotification(difficulty);
+            }
+        }
+
+        function handleLockedLevel(difficulty) {
+            let message = '';
+            let requirement = '';
+            
+            if (difficulty === 'medium') {
+                const remaining = Math.max(0, 2 - userProgress.easyCompleted.length);
+                requirement = `Complete ${remaining} more Easy scenario${remaining !== 1 ? 's' : ''}`;
+                message = `🔒 Medium Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.easyCompleted.length}/2 Easy scenarios completed`;
+            } else if (difficulty === 'hard') {
+                const remaining = Math.max(0, 2 - userProgress.mediumCompleted.length);
+                requirement = `Complete ${remaining} more Medium scenario${remaining !== 1 ? 's' : ''}`;
+                message = `🔒 Hard Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.mediumCompleted.length}/2 Medium scenarios completed`;
+            }
+            
+            alert(message);
+        }
+
+        function recordScenarioCompletion(difficulty, scenario) {
+            let xpGained = 0;
+            
+            switch (difficulty) {
+                case 'easy':
+                    if (!userProgress.easyCompleted.includes(scenario)) {
+                        userProgress.easyCompleted.push(scenario);
+                        xpGained = 25;
+                    }
+                    break;
+                case 'medium':
+                    if (!userProgress.mediumCompleted.includes(scenario)) {
+                        userProgress.mediumCompleted.push(scenario);
+                        xpGained = 50;
+                    }
+                    break;
+                case 'hard':
+                    if (!userProgress.hardCompleted.includes(scenario)) {
+                        userProgress.hardCompleted.push(scenario);
+                        xpGained = 100;
+                    }
+                    break;
+            }
+            
+            if (xpGained > 0) {
+                userProgress.totalXP += xpGained;
+                saveProgress();
+                updateLevelUI();
+                
+                // Show XP notification
+                showXPNotification(xpGained, scenario);
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('troubleshoot_progress', JSON.stringify(userProgress));
+        }
+
+        function showLevelUnlockNotification(difficulty) {
+            const levelName = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+            const notification = document.createElement('div');
+            notification.className = 'level-unlock-notification';
+            notification.innerHTML = `
+                <div class="unlock-content">
+                    <i class='bx bx-trophy'></i>
+                    <h3>Level Unlocked!</h3>
+                    <p>${levelName} difficulty is now available</p>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+
+        function showXPNotification(xp, scenario) {
+            const notification = document.createElement('div');
+            notification.className = 'xp-notification';
+            notification.innerHTML = `
+                <div class="xp-content">
+                    <i class='bx bx-star'></i>
+                    <span>+${xp} XP</span>
+                    <small>${scenario} completed!</small>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Make functions globally accessible
+        window.handleLockedLevel = handleLockedLevel;
+        window.recordScenarioCompletion = recordScenarioCompletion;
+        window.openScenarioSelectionModal = openScenarioSelectionModal;
         
         function savetroubleshootScore(score, category) {
             fetch('/save_troubleshoot_score', {
@@ -6207,17 +7935,48 @@ document.addEventListener('DOMContentLoaded', () => {
             return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
         }
 
-        function showScenarioSelection() {
+        function openScenarioSelectionModal() {
             const scenarioModal = document.getElementById("scenarioModal");
+            const modalBackdrop = document.getElementById("modalBackdrop");
+            
+            // Show backdrop first
+            modalBackdrop.style.display = "block";
+            modalBackdrop.classList.add('active');
+            
+            // Then show modal
             scenarioModal.style.display = "flex";
             scenarioModal.classList.add('active');
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
         }
 
         function selectScenario(scenarioType) {
+            // Check if the difficulty is accessible
+            if (!isDifficultyAccessible(scenarioType)) {
+                showLockedDifficultyMessage(scenarioType);
+                return;
+            }
+
+            // Update Live Performance sidebar with current scenario
+            updateLivePerformanceScenario(scenarioType);
+
             // Hide scenario modal with fade out
             const scenarioModal = document.getElementById("scenarioModal");
+            const modalBackdrop = document.getElementById("modalBackdrop");
+            
             scenarioModal.classList.remove('active');
-            scenarioModal.style.display = "none";
+            // Keep the backdrop active for the next modal layer
+            
+            // Hide after transition
+            setTimeout(() => {
+                scenarioModal.style.display = "none";
+                if (modalBackdrop) {
+                    modalBackdrop.style.display = 'block';
+                    modalBackdrop.classList.add('active');
+                }
+                document.body.style.overflow = 'hidden';
+            }, 300);
 
             // Show and activate the selected description modal
             const descModal = document.getElementById(`${scenarioType}DescModal`);
@@ -6226,7 +7985,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const topologySound = document.getElementById('bgSound');
             topologySound.currentTime = 0;
-            topologySound.play();
+            // Use safe play with error handling to prevent AbortError
+            const playPromise = topologySound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn('Audio play interrupted:', error);
+                });
+            }
             topologySound.loop = true;
             // Update the "Select Scenario" button text and style
             const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
@@ -6248,6 +8013,1389 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Update Live Performance sidebar with current scenario information
+        function updateLivePerformanceScenario(scenarioType) {
+            const scenarioName = document.getElementById('scenario-name');
+            const scenarioDifficulty = document.getElementById('scenario-difficulty');
+            const scenarioXP = document.getElementById('scenario-xp');
+            const scenarioBadge = document.getElementById('scenario-badge');
+
+            // Define scenario information
+            const scenarioInfo = {
+                'foundation': {
+                    name: 'Foundation Learning',
+                    difficulty: 'Device Discovery & Basic Connections',
+                    xp: '+15 XP per module',
+                    icon: 'bx-book-open',
+                    color: '#10B981'
+                },
+                'easy': {
+                    name: 'Easy Troubleshooting',
+                    difficulty: 'Basic Network Issues',
+                    xp: '+25 XP per scenario',
+                    icon: 'bx-leaf',
+                    color: '#84CC16'
+                },
+                'medium': {
+                    name: 'Medium Challenges',
+                    difficulty: 'Intermediate Problems',
+                    xp: '+50 XP per scenario',
+                    icon: 'bx-shield-quarter',
+                    color: '#F59E0B'
+                },
+                'hard': {
+                    name: 'Hard Scenarios',
+                    difficulty: 'Advanced Network Issues',
+                    xp: '+100 XP per scenario',
+                    icon: 'bx-shield-alt-2',
+                    color: '#EF4444'
+                }
+            };
+
+            const info = scenarioInfo[scenarioType];
+            if (info && scenarioName && scenarioDifficulty && scenarioXP && scenarioBadge) {
+                // Update content
+                scenarioName.textContent = info.name;
+                scenarioDifficulty.textContent = info.difficulty;
+                scenarioXP.textContent = info.xp;
+
+                // Update badge icon and style
+                const badgeIcon = scenarioBadge.querySelector('i');
+                if (badgeIcon) {
+                    badgeIcon.className = `bx ${info.icon}`;
+                }
+                scenarioBadge.style.borderColor = info.color + '50';
+                scenarioBadge.style.backgroundColor = info.color + '20';
+                scenarioBadge.style.color = info.color;
+
+                // Start scenario timer
+                startScenarioTimer();
+
+                // Update unlock progress
+                updateUnlockProgress();
+            }
+        }
+
+        // Scenario timer functionality
+        let scenarioStartTime = null;
+        let scenarioTimerInterval = null;
+
+        function startScenarioTimer() {
+            // Clear any existing timer
+            if (scenarioTimerInterval) {
+                clearInterval(scenarioTimerInterval);
+            }
+
+            // Reset hints counter for new scenario
+            resetHintsCounter();
+
+            scenarioStartTime = Date.now();
+            const timerElement = document.getElementById('scenario-timer');
+
+            scenarioTimerInterval = setInterval(() => {
+                if (timerElement && scenarioStartTime) {
+                    const elapsed = Date.now() - scenarioStartTime;
+                    const minutes = Math.floor(elapsed / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function resetScenarioPerformance() {
+            // Reset scenario display
+            const scenarioName = document.getElementById('scenario-name');
+            const scenarioDifficulty = document.getElementById('scenario-difficulty');
+            const scenarioXP = document.getElementById('scenario-xp');
+            const scenarioBadge = document.getElementById('scenario-badge');
+            const scenarioTimer = document.getElementById('scenario-timer');
+            const hintsUsed = document.getElementById('hints-used');
+
+            if (scenarioName) scenarioName.textContent = 'No Scenario Selected';
+            if (scenarioDifficulty) scenarioDifficulty.textContent = 'Select from Network Learning Arena';
+            if (scenarioXP) scenarioXP.textContent = 'XP Reward: --';
+            if (scenarioTimer) scenarioTimer.textContent = '--:--';
+            if (hintsUsed) hintsUsed.textContent = '0 Hints';
+
+            // Reset badge style
+            if (scenarioBadge) {
+                const badgeIcon = scenarioBadge.querySelector('i');
+                if (badgeIcon) {
+                    badgeIcon.className = 'bx bx-play-circle';
+                }
+                scenarioBadge.style.borderColor = 'rgba(0, 217, 255, 0.3)';
+                scenarioBadge.style.backgroundColor = 'rgba(0, 217, 255, 0.1)';
+                scenarioBadge.style.color = 'var(--cyber-glow)';
+            }
+
+            // Clear timer
+            if (scenarioTimerInterval) {
+                clearInterval(scenarioTimerInterval);
+                scenarioTimerInterval = null;
+            }
+            scenarioStartTime = null;
+            
+            // Reset hints counter
+            resetHintsCounter();
+        }
+
+        // Hint tracking
+        let currentScenarioHints = 0;
+
+        function updateHintsCounter() {
+            // Only count hints if a scenario is active (timer is running)
+            if (scenarioStartTime) {
+                currentScenarioHints++;
+                const hintsElement = document.getElementById('hints-used');
+                if (hintsElement) {
+                    hintsElement.textContent = `${currentScenarioHints} Hint${currentScenarioHints !== 1 ? 's' : ''}`;
+                }
+            }
+        }
+
+        function resetHintsCounter() {
+            currentScenarioHints = 0;
+            const hintsElement = document.getElementById('hints-used');
+            if (hintsElement) {
+                hintsElement.textContent = '0 Hints';
+            }
+        }
+
+        // Update unlock progress based on completion status
+        function updateUnlockProgress() {
+            // Check foundation completion
+            const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
+            const hasCompletedFoundation = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
+
+            // Get completed scenarios count (this would need to be tracked)
+            const completedEasy = parseInt(localStorage.getItem('completed_easy_scenarios') || '0');
+            const completedMedium = parseInt(localStorage.getItem('completed_medium_scenarios') || '0');
+
+            // Update Easy difficulty
+            const easyUnlock = document.getElementById('easy-unlock');
+            const easyStatus = document.getElementById('easy-status');
+            const easyRequirement = document.getElementById('easy-requirement');
+
+            if (hasCompletedFoundation) {
+                easyUnlock.classList.add('unlocked');
+                easyUnlock.classList.remove('locked');
+                easyStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                easyRequirement.textContent = 'Unlocked!';
+            } else {
+                easyUnlock.classList.add('locked');
+                easyUnlock.classList.remove('unlocked');
+                easyStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                easyRequirement.textContent = 'Complete Foundation Learning';
+            }
+
+            // Update Medium difficulty
+            const mediumUnlock = document.getElementById('medium-unlock');
+            const mediumStatus = document.getElementById('medium-status');
+            const mediumRequirement = document.getElementById('medium-requirement');
+
+            if (hasCompletedFoundation && completedEasy >= 3) {
+                mediumUnlock.classList.add('unlocked');
+                mediumUnlock.classList.remove('locked');
+                mediumStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                mediumRequirement.textContent = 'Unlocked!';
+            } else {
+                mediumUnlock.classList.add('locked');
+                mediumUnlock.classList.remove('unlocked');
+                mediumStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                if (!hasCompletedFoundation) {
+                    mediumRequirement.textContent = 'Complete Foundation Learning first';
+                } else {
+                    mediumRequirement.textContent = `Complete ${3 - completedEasy} more Easy scenarios (${completedEasy}/3)`;
+                }
+            }
+
+            // Update Hard difficulty
+            const hardUnlock = document.getElementById('hard-unlock');
+            const hardStatus = document.getElementById('hard-status');
+            const hardRequirement = document.getElementById('hard-requirement');
+
+            if (hasCompletedFoundation && completedEasy >= 3 && completedMedium >= 5) {
+                hardUnlock.classList.add('unlocked');
+                hardUnlock.classList.remove('locked');
+                hardStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                hardRequirement.textContent = 'Unlocked!';
+            } else {
+                hardUnlock.classList.add('locked');
+                hardUnlock.classList.remove('unlocked');
+                hardStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                if (!hasCompletedFoundation) {
+                    hardRequirement.textContent = 'Complete Foundation Learning first';
+                } else if (completedEasy < 3) {
+                    hardRequirement.textContent = 'Complete Easy scenarios first';
+                } else {
+                    hardRequirement.textContent = `Complete ${5 - completedMedium} more Medium scenarios (${completedMedium}/5)`;
+                }
+            }
+        }
+
+        // Check if difficulty level is accessible
+        function isDifficultyAccessible(difficulty) {
+            // Foundation is always accessible
+            if (difficulty === 'foundation') return true;
+
+            // Get foundation progress
+            const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
+            const hasCompletedFoundation = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
+
+            // Easy requires Foundation completion
+            if (difficulty === 'easy') {
+                return hasCompletedFoundation;
+            }
+
+            // Higher difficulties require Foundation + previous level completion
+            if (!hasCompletedFoundation) return false;
+
+            // Check if scenarios variable exists
+            if (typeof scenarios === 'undefined') {
+                console.warn('Scenarios not loaded, allowing access to prevent blocking');
+                return true; // Allow access if scenarios aren't loaded yet
+            }
+
+            const userProgress = parseInt(localStorage.getItem('topologyProgress') || '0');
+            const easyScenarios = scenarios.filter(s => s.difficulty === 'easy');
+            const mediumScenarios = scenarios.filter(s => s.difficulty === 'medium');
+            const hardScenarios = scenarios.filter(s => s.difficulty === 'hard');
+
+            if (difficulty === 'medium') {
+                return userProgress >= easyScenarios.length;
+            }
+
+            if (difficulty === 'hard') {
+                return userProgress >= (easyScenarios.length + mediumScenarios.length);
+            }
+
+            if (difficulty === 'expert') {
+                return userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
+            }
+
+            return true;
+        }
+
+        // Show message for locked difficulty
+        function showLockedDifficultyMessage(difficulty) {
+            const modal = document.createElement('div');
+            modal.className = 'foundation-tutorial-overlay active';
+            
+            let message = '';
+            let requirement = '';
+            
+            switch(difficulty) {
+                case 'easy':
+                    message = 'Easy Difficulty Locked';
+                    requirement = 'Complete Foundation Phase 1 & 2 to unlock Easy scenarios.';
+                    break;
+                case 'medium':
+                    message = 'Medium Difficulty Locked';
+                    requirement = 'Complete all Easy scenarios and Foundation to unlock Medium.';
+                    break;
+                case 'hard':
+                    message = 'Hard Difficulty Locked';
+                    requirement = 'Complete all Medium scenarios to unlock Hard.';
+                    break;
+                case 'expert':
+                    message = 'Expert Difficulty Locked';
+                    requirement = 'Complete all Hard scenarios to unlock Expert.';
+                    break;
+            }
+
+            modal.innerHTML = `
+                <div class="foundation-tutorial-content">
+                    <h3>🔒 ${message}</h3>
+                    <div class="tutorial-description">
+                        ${requirement}
+                    </div>
+                    <div class="tutorial-buttons">
+                        <button class="tutorial-btn" onclick="this.closest('.foundation-tutorial-overlay').remove()">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.remove();
+                }
+            }, 5000);
+        }
+
+        // Foundation learning progress tracking
+        let foundationProgress = {
+            completedModules: [],
+            currentModule: null,
+            phase1Completed: 0,
+            phase2Completed: 0,
+            phase3Completed: 0,
+            phase4Completed: 0,
+            phase5Completed: 0,
+            phase1Complete: false,
+            phase2Complete: false,
+            phase3Complete: false,
+            phase4Complete: false,
+            phase5Complete: false
+        };
+
+        // Module definitions for all phases
+        const allPhaseModules = {
+            phase1: ['meet-pc', 'meet-switch', 'meet-router'],
+            phase2: ['pc-to-pc', 'pc-to-switch', 'switch-to-router'],
+            phase3: ['small-office', 'home-network', 'network-expansion'],
+            phase4: ['device-naming', 'cable-management', 'basic-security'],
+            phase5: ['device-addresses', 'connectivity-testing', 'troubleshooting-basics']
+        };
+
+        // Load foundation progress from localStorage
+        function loadFoundationProgress() {
+            const saved = localStorage.getItem('foundation_progress');
+            if (saved) {
+                foundationProgress = {...foundationProgress, ...JSON.parse(saved)};
+                // Backfill completedModules from legacy fields if needed
+                if (!Array.isArray(foundationProgress.completedModules)) {
+                    foundationProgress.completedModules = [];
+                }
+                const ensureInCompleted = (id) => {
+                    if (!foundationProgress.completedModules.includes(id)) {
+                        foundationProgress.completedModules.push(id);
+                    }
+                };
+                // For each phase, if legacy complete flag is true, add all modules
+                Object.keys(allPhaseModules).forEach((phaseKey) => {
+                    const phaseNum = parseInt(phaseKey.replace('phase',''));
+                    if (foundationProgress[`phase${phaseNum}Complete`] === true) {
+                        allPhaseModules[phaseKey].forEach(ensureInCompleted);
+                    } else {
+                        // If we have a legacy count, add that many modules in order
+                        const legacyCount = foundationProgress[`phase${phaseNum}Completed`];
+                        if (typeof legacyCount === 'number' && legacyCount > 0) {
+                            allPhaseModules[phaseKey].slice(0, legacyCount).forEach(ensureInCompleted);
+                        }
+                    }
+                });
+                // Persist normalized structure
+                localStorage.setItem('foundation_progress', JSON.stringify(foundationProgress));
+            }
+            updateFoundationUI();
+        }
+
+        // Update Foundation UI based on progress
+        function updateFoundationUI() {
+            // Update overall progress
+            const totalModules = 15;
+            const completedCount = foundationProgress.completedModules.length;
+            const progressPercent = (completedCount / totalModules) * 100;
+            
+            const progressFill = document.getElementById('overall-progress-fill');
+            const progressText = document.getElementById('overall-progress-text');
+            
+            if (progressFill) progressFill.style.width = `${progressPercent}%`;
+            if (progressText) progressText.textContent = `${completedCount}/${totalModules} modules completed`;
+
+            // Update phase statuses and button states
+            updatePhaseAccess();
+            updateModuleButtons();
+        }
+
+        // Update phase accessibility based on completion
+        function updatePhaseAccess() {
+            const phases = ['phase1', 'phase2', 'phase3', 'phase4', 'phase5'];
+            
+            phases.forEach((phase, index) => {
+                const statusElement = document.getElementById(`${phase}-status`);
+                const phaseModules = allPhaseModules[phase];
+                const completedInPhase = foundationProgress.completedModules.filter(m => phaseModules.includes(m)).length;
+                const isPhaseComplete = completedInPhase >= phaseModules.length;
+                
+                // Update completion status
+                foundationProgress[`${phase}Completed`] = completedInPhase;
+                foundationProgress[`${phase}Complete`] = isPhaseComplete;
+                
+                // Determine if phase is accessible
+                const isAccessible = index === 0 || foundationProgress[`phase${index}Complete`];
+                
+                if (statusElement) {
+                    if (isPhaseComplete) {
+                        statusElement.textContent = 'Complete';
+                        statusElement.className = 'phase-status completed';
+                    } else if (isAccessible) {
+                        statusElement.textContent = `${completedInPhase}/${phaseModules.length}`;
+                        statusElement.className = 'phase-status available';
+                    } else {
+                        statusElement.textContent = 'Locked';
+                        statusElement.className = 'phase-status locked';
+                    }
+                }
+            });
+        }
+
+        // Update individual module buttons
+        function updateModuleButtons() {
+            Object.keys(allPhaseModules).forEach((phase, phaseIndex) => {
+                const phaseModules = allPhaseModules[phase];
+                const isPhaseAccessible = phaseIndex === 0 || foundationProgress[`phase${phaseIndex}Complete`];
+                
+                phaseModules.forEach(moduleId => {
+                    const button = document.getElementById(`${moduleId}-btn`);
+                    if (button) {
+                        const isCompleted = foundationProgress.completedModules.includes(moduleId);
+                        
+                        button.classList.remove('locked', 'completed');
+                        
+                        if (isCompleted) {
+                            button.classList.add('completed');
+                        } else if (!isPhaseAccessible) {
+                            button.classList.add('locked');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Update difficulty card accessibility
+        function updateDifficultyAccess() {
+            const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
+            const hasCompletedFoundation = foundationProgress.phase1Complete && 
+                                         foundationProgress.phase2Complete && 
+                                         foundationProgress.phase3Complete && 
+                                         foundationProgress.phase4Complete && 
+                                         foundationProgress.phase5Complete;
+            const userProgress = parseInt(localStorage.getItem('topologyProgress') || '0');
+
+            // Foundation is always unlocked
+            const foundationCard = document.querySelector('.foundation-card');
+            if (foundationCard) {
+                foundationCard.classList.add('unlocked');
+                foundationCard.classList.remove('locked');
+            }
+
+            // Easy card - requires Foundation completion
+            const easyCard = document.querySelector('.easy-card');
+            if (easyCard) {
+                if (hasCompletedFoundation) {
+                    easyCard.classList.add('unlocked');
+                    easyCard.classList.remove('locked');
+                    // Reset title if it was showing locked state
+                    const title = easyCard.querySelector('.difficulty-title');
+                    const subtitle = easyCard.querySelector('.difficulty-subtitle');
+                    if (title) title.textContent = 'Easy';
+                    if (subtitle) subtitle.textContent = 'Basic Troubleshooting';
+                } else {
+                    easyCard.classList.add('locked');
+                    easyCard.classList.remove('unlocked');
+                    // Show locked state
+                    const title = easyCard.querySelector('.difficulty-title');
+                    const subtitle = easyCard.querySelector('.difficulty-subtitle');
+                    if (title) title.textContent = '🔒 Easy (Locked)';
+                    if (subtitle) subtitle.textContent = 'Complete Foundation first';
+                }
+            }
+
+            // Medium, Hard, Expert cards - require previous completion
+            // Check if scenarios variable exists (it might not be loaded yet)
+            if (typeof scenarios === 'undefined') {
+                console.log('Scenarios not yet loaded, skipping advanced difficulty updates');
+                return;
+            }
+
+            const easyScenarios = scenarios.filter(s => s.difficulty === 'easy');
+            const mediumScenarios = scenarios.filter(s => s.difficulty === 'medium');
+            const hardScenarios = scenarios.filter(s => s.difficulty === 'hard');
+
+            const mediumCard = document.querySelector('.medium-card');
+            if (mediumCard) {
+                const canAccessMedium = hasCompletedFoundation && userProgress >= easyScenarios.length;
+                if (canAccessMedium) {
+                    mediumCard.classList.add('unlocked');
+                    mediumCard.classList.remove('locked');
+                } else {
+                    mediumCard.classList.add('locked');
+                    mediumCard.classList.remove('unlocked');
+                }
+            }
+
+            const hardCard = document.querySelector('.hard-card');
+            if (hardCard) {
+                const canAccessHard = hasCompletedFoundation && userProgress >= (easyScenarios.length + mediumScenarios.length);
+                if (canAccessHard) {
+                    hardCard.classList.add('unlocked');
+                    hardCard.classList.remove('locked');
+                } else {
+                    hardCard.classList.add('locked');
+                    hardCard.classList.remove('unlocked');
+                }
+            }
+
+            const expertCard = document.querySelector('.expert-card');
+            if (expertCard) {
+                const canAccessExpert = hasCompletedFoundation && userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
+                if (canAccessExpert) {
+                    expertCard.classList.add('unlocked');
+                    expertCard.classList.remove('locked');
+                } else {
+                    expertCard.classList.add('locked');
+                    expertCard.classList.remove('unlocked');
+                }
+            }
+        }
+
+        function initializeFoundationProgress() {
+            // Delegate to canonical loader to avoid duplicate logic
+            loadFoundationProgress();
+            // Refresh difficulty access as well
+            updateDifficultyAccess();
+        }
+
+        // Legacy simplified updater (kept for backward-compatibility, not used)
+        function updateFoundationUI_Legacy() {
+            // Mark completed modules
+            foundationProgress.completedModules.forEach(moduleId => {
+                const button = document.querySelector(`[onclick="startFoundationScenario('${moduleId}')"]`);
+                if (button) {
+                    button.classList.add('completed');
+                }
+            });
+            
+            // Update easy difficulty unlock status
+            const easyCard = document.getElementById('easy-difficulty');
+            if (foundationProgress.completedModules.length >= 4) {
+                if (easyCard && easyCard.classList.contains('locked')) {
+                    easyCard.classList.remove('locked');
+                    easyCard.classList.add('unlocked');
+                    easyCard.onclick = () => selectScenario('easy');
+                    easyCard.querySelector('.unlock-requirement').innerHTML = '<i class="bx bx-check-circle"></i> UNLOCKED';
+                }
+            }
+        }
+
+        function startFoundationScenario(moduleId) {
+            // Check if module is accessible
+            const modulePhase = Object.keys(allPhaseModules).find(phase => 
+                allPhaseModules[phase].includes(moduleId)
+            );
+            const phaseIndex = parseInt(modulePhase.replace('phase', '')) - 1;
+            const isAccessible = phaseIndex === 0 || foundationProgress[`phase${phaseIndex}Complete`];
+            
+            if (!isAccessible) {
+                showLockedModuleMessage(moduleId);
+                return;
+            }
+
+            // Close foundation modal
+            const foundationModal = document.getElementById("foundationDescModal");
+            foundationModal.classList.remove('active');
+            foundationModal.style.display = "none";
+            
+            // Clear existing devices and connections
+            devices = [];
+            connections = [];
+            redrawCanvas();
+            
+            // Set current module
+            foundationProgress.currentModule = moduleId;
+            
+            // Start the appropriate foundation scenario
+            switch (moduleId) {
+                // Phase 1: Device Discovery
+                case 'meet-pc':
+                    startMeetPCScenario();
+                    break;
+                case 'meet-switch':
+                    startMeetSwitchScenario();
+                    break;
+                case 'meet-router':
+                    startMeetRouterScenario();
+                    break;
+                
+                // Phase 2: Basic Connections
+                case 'pc-to-pc':
+                    startPCToPCScenario();
+                    break;
+                case 'pc-to-switch':
+                    startPCToSwitchScenario();
+                    break;
+                case 'switch-to-router':
+                    startSwitchToRouterScenario();
+                    break;
+                
+                // Phase 3: Network Topologies
+                case 'small-office':
+                    startSmallOfficeScenario();
+                    break;
+                case 'home-network':
+                    startHomeNetworkScenario();
+                    break;
+                case 'network-expansion':
+                    startNetworkExpansionScenario();
+                    break;
+                
+                // Phase 4: Basic Configuration
+                case 'device-naming':
+                    startDeviceNamingScenario();
+                    break;
+                case 'cable-management':
+                    startCableManagementScenario();
+                    break;
+                case 'basic-security':
+                    startBasicSecurityScenario();
+                    break;
+                
+                // Phase 5: Network Addressing
+                case 'device-addresses':
+                    startDeviceAddressesScenario();
+                    break;
+                case 'connectivity-testing':
+                    startConnectivityTestingScenario();
+                    break;
+                case 'troubleshooting-basics':
+                    startTroubleshootingBasicsScenario();
+                    break;
+                    
+                default:
+                    console.error('Unknown foundation module:', moduleId);
+            }
+        }
+
+        function showLockedModuleMessage(moduleId) {
+            const modal = document.createElement('div');
+            modal.className = 'foundation-tutorial-overlay active';
+            
+            modal.innerHTML = `
+                <div class="foundation-tutorial-content">
+                    <h3>🔒 Module Locked</h3>
+                    <div class="tutorial-description">
+                        Complete the previous phase to unlock this module.
+                    </div>
+                    <div class="tutorial-buttons">
+                        <button class="tutorial-btn" onclick="this.closest('.foundation-tutorial-overlay').remove()">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.remove();
+                }
+            }, 3000);
+        }
+
+        // Phase 1: Single Device Discovery Scenarios
+        function startMeetPCScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('meet-pc');
+            
+            // Show tutorial message
+            showFoundationTutorial(
+                "Meet the PC",
+                "A PC (Personal Computer) is an end device that users interact with directly. It can be a desktop, laptop, tablet, or smartphone. Let's place one on the canvas and explore its properties.",
+                "Click and drag a PC from the device palette onto the canvas.",
+                "foundation-meet-pc-preview.svg"
+            );
+            
+            // Highlight the PC in the device palette
+            highlightPaletteDevice('pc');
+        }
+
+        function startMeetSwitchScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('meet-switch');
+            
+            showFoundationTutorial(
+                "Meet the Switch",
+                "A Switch is a networking device that connects multiple devices in a local network. It learns MAC addresses and forwards data only to the intended recipient, creating separate collision domains for each port.",
+                "Drag a Switch from the device palette onto the canvas and count its ports.",
+                "foundation-meet-switch-preview.svg"
+            );
+            
+            highlightPaletteDevice('switch');
+        }
+
+        function startMeetRouterScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('meet-router');
+            
+            showFoundationTutorial(
+                "Meet the Router",
+                "A Router connects different networks together and makes forwarding decisions based on IP addresses. It operates at Layer 3 of the OSI model and can connect LANs to WANs or the Internet.",
+                "Place a Router on the canvas and examine its different interface types.",
+                "foundation-meet-router-preview.svg"
+            );
+            
+            highlightPaletteDevice('router');
+        }
+
+        // Phase 2: Connection Scenarios
+        function startPCToPCScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('pc-to-pc');
+            
+            showFoundationTutorial(
+                "PC-to-PC Direct Connection",
+                "Sometimes two computers can communicate directly using a crossover cable. This is useful for simple file transfers or small networks without a switch.",
+                "Place two PCs on the canvas, then use connection mode to link them together.",
+                "foundation-pc-to-pc-preview.svg"
+            );
+            
+            // Place initial PCs
+            let pc1 = new PC(200, 300, 'PC 1');
+            let pc2 = new PC(500, 300, 'PC 2');
+            devices.push(pc1, pc2);
+            redrawCanvas();
+        }
+
+        function startPCToSwitchScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('pc-to-switch');
+            
+            showFoundationTutorial(
+                "PCs through a Switch",
+                "A switch allows multiple PCs to communicate with each other. Each PC connects to a separate port on the switch, creating a local area network (LAN).",
+                "Connect the PCs to the switch using the connection tool, then add a third PC.",
+                "foundation-pc-to-switch-preview.svg"
+            );
+            
+            // Place initial devices
+            let pc1 = new PC(150, 200, 'PC 1');
+            let pc2 = new PC(150, 400, 'PC 2');
+            let switch1 = new Switch(400, 300, 'Switch 1');
+            devices.push(pc1, pc2, switch1);
+            redrawCanvas();
+        }
+
+        function startSwitchToRouterScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('switch-to-router');
+            
+            showFoundationTutorial(
+                "Switch to Router Connection",
+                "Routers connect different network segments. When you connect a switch to a router, you're creating a gateway for the devices on the switch to reach other networks.",
+                "Connect the switch to the router to create a complete network topology.",
+                "foundation-switch-to-router-preview.svg"
+            );
+            
+            // Place devices showing a typical network
+            let pc1 = new PC(100, 200, 'PC 1');
+            let pc2 = new PC(100, 400, 'PC 2');
+            let switch1 = new Switch(300, 300, 'Switch 1');
+            let router1 = new Router(550, 300, 'Router 1');
+            
+            devices.push(pc1, pc2, switch1, router1);
+            
+            // Pre-connect PCs to switch
+            connections.push({ device1: pc1, device2: switch1 });
+            connections.push({ device1: pc2, device2: switch1 });
+            
+            redrawCanvas();
+        }
+
+        // Phase 3: Network Topology Scenarios
+        function startSmallOfficeScenario() {
+            showFoundationTutorial(
+                "Small Office Network",
+                "A typical small office network includes multiple computers connected through a switch, which connects to a router for internet access. This is a common business topology.",
+                "Build a complete office network: Connect multiple PCs to a switch, then connect the switch to a router.",
+                "foundation-basic-network-preview.svg"
+            );
+            
+            // Place devices for small office topology
+            let pc1 = new PC(50, 150, 'PC 1');
+            let pc2 = new PC(50, 250, 'PC 2');
+            let pc3 = new PC(50, 350, 'PC 3');
+            let switch1 = new Switch(250, 250, 'Office Switch');
+            let router1 = new Router(450, 250, 'Office Router');
+            
+            devices.push(pc1, pc2, pc3, switch1, router1);
+            redrawCanvas();
+        }
+
+        function startHomeNetworkScenario() {
+            showFoundationTutorial(
+                "Home Network Setup",
+                "Home networks often use wireless routers that combine switching and routing functions. Devices can connect via WiFi or Ethernet to access the internet.",
+                "Create a home network topology with a wireless router connecting various devices."
+            );
+            
+            // Place devices for home network
+            let laptop = new PC(100, 150, 'Laptop');
+            let desktop = new PC(100, 350, 'Desktop PC');
+            let tablet = new PC(450, 150, 'Tablet');
+            let phone = new PC(450, 350, 'Smartphone');
+            let router1 = new Router(275, 250, 'Home Router');
+            
+            devices.push(laptop, desktop, tablet, phone, router1);
+            redrawCanvas();
+        }
+
+        function startNetworkExpansionScenario() {
+            showFoundationTutorial(
+                "Network Expansion",
+                "As networks grow, we add more switches and create hierarchical designs to efficiently manage traffic. This allows networks to scale while maintaining performance.",
+                "Start with a small network and expand it by adding additional switches and network segments."
+            );
+            
+            // Place devices for network expansion
+            let pc1 = new PC(50, 100, 'PC 1');
+            let pc2 = new PC(50, 200, 'PC 2');
+            let switch1 = new Switch(200, 150, 'Switch 1');
+            let pc3 = new PC(350, 100, 'PC 3');
+            let pc4 = new PC(350, 200, 'PC 4');
+            let switch2 = new Switch(500, 150, 'Switch 2');
+            let router1 = new Router(350, 300, 'Main Router');
+            
+            devices.push(pc1, pc2, switch1, pc3, pc4, switch2, router1);
+            redrawCanvas();
+        }
+
+        // Phase 4: Basic Configuration Scenarios
+        function startDeviceNamingScenario() {
+            showFoundationTutorial(
+                "Device Naming and Identification",
+                "Proper device naming helps network administrators identify and manage devices efficiently. Use descriptive, consistent names that indicate location, function, or department.",
+                "Practice naming devices with meaningful identifiers. Click on devices to see their properties and naming options."
+            );
+            
+            // Place devices to demonstrate naming
+            let pc1 = new PC(100, 150, 'PC');
+            let switch1 = new Switch(300, 200, 'Switch');
+            let router1 = new Router(500, 150, 'Router');
+            
+            devices.push(pc1, switch1, router1);
+            redrawCanvas();
+        }
+
+        function startCableManagementScenario() {
+            showFoundationTutorial(
+                "Cable Management and Organization",
+                "Well-organized cables make networks easier to maintain and troubleshoot. Learn proper connection practices and cable management techniques.",
+                "Organize network connections logically. Use appropriate cable types for different connections and maintain clean layouts."
+            );
+            
+            // Place devices to show cable management
+            let pc1 = new PC(50, 100, 'PC 1');
+            let pc2 = new PC(50, 200, 'PC 2');
+            let pc3 = new PC(50, 300, 'PC 3');
+            let switch1 = new Switch(250, 200, 'Managed Switch');
+            let router1 = new Router(450, 200, 'Network Router');
+            
+            devices.push(pc1, pc2, pc3, switch1, router1);
+            redrawCanvas();
+        }
+
+        function startBasicSecurityScenario() {
+            showFoundationTutorial(
+                "Basic Network Security",
+                "Network security starts with understanding device access, passwords, and basic protection measures. Learn fundamental security principles.",
+                "Explore device security settings and understand basic network protection concepts."
+            );
+            
+            // Place devices to show security concepts
+            let pc1 = new PC(100, 200, 'User PC');
+            let switch1 = new Switch(300, 200, 'Secure Switch');
+            let router1 = new Router(500, 200, 'Firewall Router');
+            
+            devices.push(pc1, switch1, router1);
+            redrawCanvas();
+        }
+
+        // Phase 5: Network Addressing Scenarios
+        function startDeviceAddressesScenario() {
+            showFoundationTutorial(
+                "Understanding Device Addresses",
+                "Every network device needs a unique IP address to communicate. Think of it like a postal address for network traffic - each device needs its own address.",
+                "Learn about IP addresses and how they enable devices to find and communicate with each other."
+            );
+            
+            // Place devices to show addressing
+            let pc1 = new PC(100, 150, 'PC 1 (192.168.1.10)');
+            let pc2 = new PC(100, 250, 'PC 2 (192.168.1.11)');
+            let switch1 = new Switch(300, 200, 'Switch');
+            let router1 = new Router(500, 200, 'Router (192.168.1.1)');
+            
+            devices.push(pc1, pc2, switch1, router1);
+            redrawCanvas();
+        }
+
+        function startConnectivityTestingScenario() {
+            showFoundationTutorial(
+                "Testing Network Connectivity",
+                "Use ping and other tools to verify that devices can communicate with each other across the network. Testing connectivity helps confirm proper network configuration.",
+                "Learn to test connections between devices using connectivity tools to verify network functionality."
+            );
+            
+            // Place connected devices for testing
+            let pc1 = new PC(100, 200, 'Source PC');
+            let pc2 = new PC(500, 200, 'Target PC');
+            let switch1 = new Switch(300, 200, 'Test Switch');
+            
+            devices.push(pc1, pc2, switch1);
+            
+            // Pre-connect for testing
+            connections.push({ device1: pc1, device2: switch1 });
+            connections.push({ device1: pc2, device2: switch1 });
+            
+            redrawCanvas();
+        }
+
+        function startTroubleshootingBasicsScenario() {
+            showFoundationTutorial(
+                "Basic Network Troubleshooting",
+                "Learn systematic approaches to identifying and solving common network problems step by step. Good troubleshooting follows a logical process.",
+                "Practice identifying common issues like disconnected cables, wrong IP addresses, and device configuration problems."
+            );
+            
+            // Place devices with intentional issues to troubleshoot
+            let pc1 = new PC(100, 150, 'Problem PC');
+            let pc2 = new PC(100, 250, 'Working PC');
+            let switch1 = new Switch(300, 200, 'Network Switch');
+            let router1 = new Router(500, 200, 'Network Router');
+            
+            devices.push(pc1, pc2, switch1, router1);
+            
+            // Connect working PC but leave problem PC disconnected
+            connections.push({ device1: pc2, device2: switch1 });
+            connections.push({ device1: switch1, device2: router1 });
+            
+            redrawCanvas();
+        }
+
+        // Tutorial system for foundation scenarios
+        function showFoundationTutorial(title, description, instruction, previewImage = null) {
+            // Determine if auto-completion is available
+            const hasAutoCompletion = currentScenarioObjectives && currentScenarioObjectives.objectives;
+            
+            // Create appropriate buttons based on auto-completion availability
+            const buttonsHtml = hasAutoCompletion 
+                ? `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
+                   <div class="auto-completion-info">
+                       <i class="bx bx-check-circle"></i>
+                       <span>Scenario will complete automatically when objectives are met</span>
+                   </div>`
+                : `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
+                   <button onclick="completeFoundationModule()" class="tutorial-btn complete-btn">Mark as Complete</button>`;
+            
+            // Create preview image section if provided
+            const previewHtml = previewImage 
+                ? `<div class="completion-preview">
+                       <h4><i class='bx bx-target-lock'></i> Completion Goal:</h4>
+                       <div class="preview-image-container">
+                           <img src="/static/img/${previewImage}" alt="Completion Preview" class="preview-image">
+                           <div class="preview-label">How your simulation should look when complete</div>
+                       </div>
+                   </div>`
+                : '';
+            
+            // Create tutorial overlay
+            const tutorialOverlay = document.createElement('div');
+            tutorialOverlay.id = 'foundation-tutorial';
+            tutorialOverlay.className = 'foundation-tutorial-overlay';
+            tutorialOverlay.innerHTML = `
+                <div class="foundation-tutorial-content">
+                    <h3><i class='bx bx-bulb'></i> ${title}</h3>
+                    <p class="tutorial-description">${description}</p>
+                    <p class="tutorial-instruction"><strong>Your Task:</strong> ${instruction}</p>
+                    ${previewHtml}
+                    <div class="tutorial-buttons">
+                        ${buttonsHtml}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(tutorialOverlay);
+            
+            // Show with animation
+            setTimeout(() => {
+                tutorialOverlay.classList.add('active');
+            }, 100);
+        }
+
+        function closeFoundationTutorial() {
+            const tutorial = document.getElementById('foundation-tutorial');
+            if (tutorial) {
+                tutorial.classList.remove('active');
+                setTimeout(() => {
+                    tutorial.remove();
+                }, 300);
+            }
+        }
+
+        function highlightPaletteDevice(deviceType) {
+            // Add highlight to the specified device in palette
+            const devices = document.querySelectorAll('.device');
+            devices.forEach(device => {
+                device.classList.remove('highlight');
+                if (device.classList.contains(deviceType)) {
+                    device.classList.add('highlight');
+                }
+            });
+            
+            // Remove highlight after 5 seconds
+            setTimeout(() => {
+                devices.forEach(device => device.classList.remove('highlight'));
+            }, 5000);
+        }
+
+        function completeFoundationModule() {
+            const currentModule = foundationProgress.currentModule;
+            if (currentModule && !foundationProgress.completedModules.includes(currentModule)) {
+                foundationProgress.completedModules.push(currentModule);
+                
+                // Update phase completion counters using the allPhaseModules object
+                Object.keys(allPhaseModules).forEach(phase => {
+                    const phaseModules = allPhaseModules[phase];
+                    const phaseNumber = parseInt(phase.replace('phase', ''));
+                    const completedInPhase = foundationProgress.completedModules.filter(m => phaseModules.includes(m)).length;
+                    
+                    foundationProgress[`phase${phaseNumber}Completed`] = completedInPhase;
+                    foundationProgress[`phase${phaseNumber}Complete`] = completedInPhase >= phaseModules.length;
+                });
+                
+                // Save progress
+                localStorage.setItem('foundation_progress', JSON.stringify(foundationProgress));
+                
+                // Update difficulty access when foundation is completed
+                updateDifficultyAccess();
+                
+                // Show completion notification
+                showCompletionNotification(currentModule);
+                
+                // Update UI
+                updateFoundationUI();
+                
+                // Close tutorial
+                closeFoundationTutorial();
+                
+                // Return to foundation menu
+                setTimeout(() => {
+                    openFoundationModal();
+                }, 1500);
+            }
+        }
+
+        // =================================================================
+        // AUTOMATIC SCENARIO COMPLETION DETECTION SYSTEM
+        // =================================================================
+        
+        // Track scenario objectives and automatically detect completion
+        let currentScenarioObjectives = null;
+        let scenarioCompletionTimer = null;
+
+        // Define completion criteria for each foundation scenario
+        const scenarioObjectives = {
+            // Phase 1: Device Discovery - Place specific device types
+            'meet-pc': {
+                requiredDevices: [{ type: 'pc', count: 1 }],
+                requiredConnections: [],
+                description: "Place a PC on the canvas"
+            },
+            'meet-switch': {
+                requiredDevices: [{ type: 'switch', count: 1 }],
+                requiredConnections: [],
+                description: "Place a Switch on the canvas"
+            },
+            'meet-router': {
+                requiredDevices: [{ type: 'router', count: 1 }],
+                requiredConnections: [],
+                description: "Place a Router on the canvas"
+            },
+            
+            // Phase 2: Basic Connections - Make specific connections
+            'pc-to-pc': {
+                requiredDevices: [{ type: 'pc', count: 2 }],
+                requiredConnections: [{ from: 'pc', to: 'pc', count: 1 }],
+                description: "Connect two PCs together"
+            },
+            'pc-to-switch': {
+                requiredDevices: [{ type: 'pc', count: 2, preExisting: true }, { type: 'switch', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'switch', count: 2 }],
+                description: "Connect PCs to a Switch"
+            },
+            'switch-to-router': {
+                requiredDevices: [{ type: 'switch', count: 1 }, { type: 'router', count: 1 }],
+                requiredConnections: [{ from: 'switch', to: 'router', count: 1 }],
+                description: "Connect a Switch to a Router"
+            },
+            
+            // Phase 3: Network Topologies - Build complete networks
+            'small-office': {
+                requiredDevices: [{ type: 'pc', count: 3 }, { type: 'switch', count: 1 }, { type: 'router', count: 1 }],
+                requiredConnections: [
+                    { from: 'pc', to: 'switch', count: 3 },
+                    { from: 'switch', to: 'router', count: 1 }
+                ],
+                description: "Build a small office network with 3 PCs, 1 Switch, and 1 Router"
+            },
+            'home-network': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'router', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'router', count: 2 }],
+                description: "Build a home network with PCs connected to a Router"
+            },
+            'network-expansion': {
+                requiredDevices: [{ type: 'pc', count: 4 }, { type: 'switch', count: 2 }, { type: 'router', count: 1 }],
+                requiredConnections: [
+                    { from: 'pc', to: 'switch', count: 4 },
+                    { from: 'switch', to: 'router', count: 1 }
+                ],
+                description: "Expand network with multiple switches and devices"
+            }
+        };
+
+        // Initialize scenario objectives when a scenario starts
+        function initializeScenarioObjectives(moduleId) {
+            if (scenarioObjectives[moduleId]) {
+                currentScenarioObjectives = {
+                    moduleId: moduleId,
+                    objectives: scenarioObjectives[moduleId],
+                    startTime: Date.now(),
+                    completed: false
+                };
+                
+                console.log(`📋 Scenario objectives initialized for: ${moduleId}`, currentScenarioObjectives);
+                
+                // Start monitoring for completion
+                startScenarioMonitoring();
+            } else {
+                console.log(`⚠️ No auto-completion objectives defined for: ${moduleId}. Manual completion required.`);
+                // For scenarios without defined objectives, we'll keep the manual completion system
+                currentScenarioObjectives = null;
+            }
+        }
+
+        // Start monitoring the canvas for scenario completion
+        function startScenarioMonitoring() {
+            // Clear any existing timer
+            if (scenarioCompletionTimer) {
+                clearInterval(scenarioCompletionTimer);
+            }
+            
+            // Check every 500ms for completion
+            scenarioCompletionTimer = setInterval(() => {
+                if (currentScenarioObjectives && !currentScenarioObjectives.completed) {
+                    checkScenarioCompletion();
+                }
+            }, 500);
+        }
+
+        // Check if current scenario objectives are met
+        function checkScenarioCompletion() {
+            if (!currentScenarioObjectives || currentScenarioObjectives.completed) {
+                return false;
+            }
+
+            const objectives = currentScenarioObjectives.objectives;
+            
+            // Check device requirements
+            const devicesSatisfied = checkDeviceRequirements(objectives.requiredDevices);
+            if (!devicesSatisfied) {
+                return false;
+            }
+            
+            // Check connection requirements
+            const connectionsSatisfied = checkConnectionRequirements(objectives.requiredConnections);
+            if (!connectionsSatisfied) {
+                return false;
+            }
+            
+            // All objectives met - complete the scenario!
+            completeScenarioAutomatically();
+            return true;
+        }
+
+        // Check if device requirements are satisfied
+        function checkDeviceRequirements(requiredDevices) {
+            for (const requirement of requiredDevices) {
+                const devicesOfType = devices.filter(device => device.type === requirement.type);
+                
+                if (devicesOfType.length < requirement.count) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Check if connection requirements are satisfied
+        function checkConnectionRequirements(requiredConnections) {
+            for (const requirement of requiredConnections) {
+                const matchingConnections = connections.filter(conn => {
+                    const device1Type = conn.device1.type;
+                    const device2Type = conn.device2.type;
+                    
+                    return (device1Type === requirement.from && device2Type === requirement.to) ||
+                           (device1Type === requirement.to && device2Type === requirement.from);
+                });
+                
+                if (matchingConnections.length < requirement.count) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Automatically complete the scenario when objectives are met
+        function completeScenarioAutomatically() {
+            if (!currentScenarioObjectives || currentScenarioObjectives.completed) {
+                return;
+            }
+            
+            currentScenarioObjectives.completed = true;
+            const moduleId = currentScenarioObjectives.moduleId;
+            const completionTime = Date.now() - currentScenarioObjectives.startTime;
+            
+            console.log(`🎉 Scenario auto-completed: ${moduleId} in ${completionTime}ms`);
+            
+            // Stop monitoring
+            if (scenarioCompletionTimer) {
+                clearInterval(scenarioCompletionTimer);
+                scenarioCompletionTimer = null;
+            }
+            
+            // Show auto-completion notification
+            showAutoCompletionNotification(moduleId, completionTime);
+            
+            // Complete the module using existing function
+            setTimeout(() => {
+                completeFoundationModule();
+            }, 2000); // Give time for the notification to be seen
+        }
+
+        // Show a special notification for automatic completion
+        function showAutoCompletionNotification(moduleId, completionTime) {
+            const moduleNames = {
+                'meet-pc': 'Meet the PC',
+                'meet-switch': 'Meet the Switch', 
+                'meet-router': 'Meet the Router',
+                'pc-to-pc': 'PC-to-PC Connection',
+                'pc-to-switch': 'PCs through Switch',
+                'switch-to-router': 'Switch to Router',
+                'small-office': 'Small Office Network',
+                'home-network': 'Home Network',
+                'network-expansion': 'Network Expansion'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = 'auto-completion-notification';
+            notification.innerHTML = `
+                <div class="auto-completion-content">
+                    <div class="auto-completion-icon">
+                        <i class="bx bx-check-circle"></i>
+                    </div>
+                    <div class="auto-completion-text">
+                        <h4>Scenario Completed!</h4>
+                        <p>${moduleNames[moduleId] || moduleId}</p>
+                        <span class="completion-time">Completed in ${Math.round(completionTime / 1000)}s</span>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Trigger animation
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 500);
+            }, 4000);
+        }
+
+        // Stop scenario monitoring (called when scenario ends)
+        function stopScenarioMonitoring() {
+            if (scenarioCompletionTimer) {
+                clearInterval(scenarioCompletionTimer);
+                scenarioCompletionTimer = null;
+            }
+            currentScenarioObjectives = null;
+        }
+        
+        // =================================================================
+        // END AUTOMATIC COMPLETION DETECTION SYSTEM
+        // =================================================================
+
+        function showCompletionNotification(moduleId) {
+            const moduleNames = {
+                // Phase 1: Device Discovery
+                'meet-pc': 'Meet the PC',
+                'meet-switch': 'Meet the Switch', 
+                'meet-router': 'Meet the Router',
+                
+                // Phase 2: Basic Connections
+                'pc-to-pc': 'PC-to-PC Connection',
+                'pc-to-switch': 'PC through Switch',
+                'switch-to-router': 'Switch to Router',
+                
+                // Phase 3: Network Topologies
+                'small-office': 'Small Office Network',
+                'home-network': 'Home Network Setup',
+                'network-expansion': 'Network Expansion',
+                
+                // Phase 4: Basic Configuration
+                'device-naming': 'Device Naming',
+                'cable-management': 'Cable Management',
+                'basic-security': 'Basic Security',
+                
+                // Phase 5: Network Addressing
+                'device-addresses': 'Device Addresses',
+                'connectivity-testing': 'Connectivity Testing',
+                'troubleshooting-basics': 'Troubleshooting Basics'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = 'foundation-completion-notification';
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class='bx bx-check-circle'></i>
+                    <h4>Module Complete!</h4>
+                    <p>${moduleNames[moduleId]}</p>
+                    <div class="xp-gained">+15 XP</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 2000);
+        }
+
+        function openFoundationModal() {
+            const foundationModal = document.getElementById("foundationDescModal");
+            // Refresh progress and UI before showing
+            loadFoundationProgress();
+            updateDifficultyAccess();
+            // Ensure backdrop is visible and body is locked while modal is open
+            const modalBackdrop = document.getElementById('modalBackdrop');
+            if (modalBackdrop) {
+                modalBackdrop.style.display = 'block';
+                modalBackdrop.classList.add('active');
+            }
+            foundationModal.style.display = "flex";
+            foundationModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Initialize foundation progress on page load
+        window.addEventListener('load', () => {
+            initializeFoundationProgress();
+            updateUnlockProgress();
+        });
+
         function closeDescriptionModal(modalId) {
             document.getElementById(modalId).style.display = "none";
         }
@@ -6255,6 +9403,13 @@ document.addEventListener('DOMContentLoaded', () => {
         function startScenario(difficulty, problemType) {
             // Close the corresponding description modal
             closeDescriptionModal(difficulty + 'DescModal');
+            // When starting a scenario, hide the backdrop and restore body scroll
+            const modalBackdrop = document.getElementById('modalBackdrop');
+            if (modalBackdrop) {
+                modalBackdrop.classList.remove('active');
+                modalBackdrop.style.display = 'none';
+            }
+            document.body.style.overflow = 'auto';
             // Clear existing devices and connections
             devices = [];
             connections = [];
@@ -6517,27 +9672,92 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('easyDescModal').style.display = "none";
             document.getElementById('mediumDescModal').style.display = "none";
             document.getElementById('hardDescModal').style.display = "none";
-            // Show the main scenario selection modal
-            document.getElementById("scenarioModal").style.display = "flex";
+            
+            // Show the main scenario selection modal with backdrop
+            const scenarioModal = document.getElementById("scenarioModal");
+            const modalBackdrop = document.getElementById("modalBackdrop");
+            
+            modalBackdrop.style.display = "block";
+            modalBackdrop.classList.add('active');
+            scenarioModal.style.display = "flex";
+            scenarioModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
 
         function closeScenarioModal() {
             const scenarioModal = document.getElementById("scenarioModal");
+            const modalBackdrop = document.getElementById("modalBackdrop");
+            
             scenarioModal.classList.remove('active');
-            scenarioModal.style.display = "none";
-            showTutorial(); // This will show the tutorial again
+            modalBackdrop.classList.remove('active');
+            
+            setTimeout(() => {
+                scenarioModal.style.display = "none";
+                modalBackdrop.style.display = "none";
+                document.body.style.overflow = 'auto';
+            }, 300);
         }
 
         function backToScenarioSelection() {
-            // Hide all difficulty modals
-            document.getElementById('easyDescModal').style.display = "none";
-            document.getElementById('mediumDescModal').style.display = "none";
-            document.getElementById('hardDescModal').style.display = "none";
+            // Hide all description modals (including Foundation)
+            ['easyDescModal', 'mediumDescModal', 'hardDescModal', 'foundationDescModal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('active');
+                    el.style.display = 'none';
+                }
+            });
 
-            // Show and activate the scenario selection modal
-            const scenarioModal = document.getElementById("scenarioModal");
-            scenarioModal.style.display = "flex";
-            scenarioModal.classList.add('active');
+            // Restore backdrop and show the main scenario selection modal
+            const scenarioModal = document.getElementById('scenarioModal');
+            const modalBackdrop = document.getElementById('modalBackdrop');
+            if (modalBackdrop) {
+                modalBackdrop.style.display = 'block';
+                modalBackdrop.classList.add('active');
+            }
+            if (scenarioModal) {
+                scenarioModal.style.display = 'flex';
+                scenarioModal.classList.add('active');
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Generic backdrop click: if a description modal is open, return to scenario selection;
+        // otherwise, close the main scenario modal and hide the backdrop.
+        function handleBackdropClick() {
+            const modals = [
+                document.getElementById('foundationDescModal'),
+                document.getElementById('easyDescModal'),
+                document.getElementById('mediumDescModal'),
+                document.getElementById('hardDescModal')
+            ];
+            const scenarioModal = document.getElementById('scenarioModal');
+            const modalBackdrop = document.getElementById('modalBackdrop');
+
+            const isElVisible = (el) => {
+                if (!el) return false;
+                const ds = el.style.display;
+                return el.classList.contains('active') || ds === 'flex' || ds === 'block';
+            };
+
+            // If any description/foundation modal is open, go back to scenario selection (keep backdrop)
+            if (modals.some(isElVisible)) {
+                backToScenarioSelection();
+                return;
+            }
+
+            // If the main scenario modal is open, close it entirely and hide backdrop
+            if (isElVisible(scenarioModal)) {
+                closeScenarioModal();
+                return;
+            }
+
+            // Fallback: just hide the backdrop and unlock scroll
+            if (modalBackdrop) {
+                modalBackdrop.classList.remove('active');
+                modalBackdrop.style.display = 'none';
+            }
+            document.body.style.overflow = 'auto';
         }
 
         // Add event listener for the "Check Solution" button
@@ -7072,7 +10292,11 @@ document.addEventListener('DOMContentLoaded', () => {
             devices = [];
             connections = [];
             redrawCanvas();
-            showScenarioSelection();
+            
+            // Reset Live Performance scenario tracking
+            resetScenarioPerformance();
+            
+            openScenarioSelectionModal();
 
             // Reset the "Select Scenario" button text and style
             const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
@@ -7087,6 +10311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const topologySound = document.getElementById('bgSound');
+            // Safe pause - no need for error handling as pause doesn't return promise
             topologySound.pause();
             topologySound.loop = false;
         }
@@ -7101,6 +10326,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (button) {
                 console.log(`Marking scenario as completed: ${difficulty}, ${problemType}`); // Debug log
                 button.classList.add('completed');
+                
+                // Record completion for level progression system (MVP)
+                recordScenarioCompletion(difficulty, problemType);
             } else {
                 console.log(`Button not found for: ${difficulty}, ${problemType}`); // Debug log
             }
@@ -7113,17 +10341,27 @@ document.addEventListener('DOMContentLoaded', () => {
         function playClickSound() {
             const click = document.getElementById('clickSound');
             const exit = document.getElementById('exitSound');
+            exit.pause(); // Pause first to prevent conflicts
             click.currentTime = 0;
-            click.play();
-            exit.pause();
+            const playPromise = click.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn('Click sound play interrupted:', error);
+                });
+            }
         }
 
         function playExitSound() {
             const exit = document.getElementById('exitSound');
             const click = document.getElementById('clickSound');
+            click.pause(); // Pause first to prevent conflicts
             exit.currentTime = 0;
-            exit.play();
-            click.pause();
+            const playPromise = exit.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn('Exit sound play interrupted:', error);
+                });
+            }
         }
         // Add click sound to all buttons
         document.querySelectorAll('button, .action-btn, .device').forEach(button => {
@@ -7154,9 +10392,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show solo features
             showSoloFeatures();
             
-            // Show tutorial every time solo mode is activated
-            showTutorial();
-            
             console.log('✅ Solo Mode setup complete');
         }
         
@@ -7168,25 +10403,31 @@ document.addEventListener('DOMContentLoaded', () => {
         function updateModeButtons() {
             const soloBtn = document.getElementById('solo-scenario-btn');
             
+            // Check if element exists before trying to modify it
+            if (!soloBtn) {
+                console.warn('Solo button not found, skipping mode button update');
+                return;
+            }
+            
             // Reset button state
             soloBtn.classList.remove('mode-active', 'mode-inactive', 'mode-neutral');
             
             if (currentMode === 'solo') {
                 soloBtn.classList.add('mode-active');
-                soloBtn.title = 'Solo Mode Active - Individual Learning';
+                soloBtn.title = 'Tutorial Mode Active - Individual Learning';
                 
                 // Update button text to show active mode
                 const soloLabel = soloBtn.querySelector('.label');
-                if (soloLabel) soloLabel.textContent = 'Solo Active';
+                if (soloLabel) soloLabel.textContent = 'Tutorial Active';
                 
             } else {
                 // Default state - no mode selected
                 soloBtn.classList.add('mode-neutral');
-                soloBtn.title = 'Activate Solo Mode - Individual Learning';
+                soloBtn.title = 'Activate Tutorial Mode - Individual Learning';
                 
                 // Reset button text to default
                 const soloLabel = soloBtn.querySelector('.label');
-                if (soloLabel) soloLabel.textContent = 'Solo Mode';
+                if (soloLabel) soloLabel.textContent = 'Tutorial';
             }
         }
 
@@ -7282,6 +10523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 console.log('Joined troubleshooting room:', scenarioId);
             }
+        }
         // Admin messages event handler
         function setupAdminMessages() {
             if (window.socketClient) {
@@ -7318,26 +10560,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
-        
-        // Lobby Management Variables
-
-
-                // The collaborative-session-btn is already set up with onclick="showLobbyBrowser()"
-                // All duplicate functions have been removed and consolidated
-                }
+    // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
+    // Lobby Management Variables
+    // The collaborative-session-btn is already set up with onclick="showLobbyBrowser()"
+    // All duplicate functions have been removed and consolidated
 
         // Unified Event Handlers - Merged from multiple DOMContentLoaded blocks
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Setting up consolidated troubleshooting WebSocket and UI handlers...');
             
-            // Handle scenario type change
-            const scenarioTypeSelect = document.getElementById('scenarioType');
-            if (scenarioTypeSelect) {
-                scenarioTypeSelect.addEventListener('change', updateScenarioOptions);
-                console.log('✅ Scenario type change listener added');
-            } else {
-                console.error('❌ Scenario type select not found');
+            // Initialize difficulty access based on progress
+            updateDifficultyAccess();
+            
+            // Retry updating difficulty access after scenarios load (with delays)
+            setTimeout(() => {
+                updateDifficultyAccess();
+            }, 1000);
+            
+            setTimeout(() => {
+                updateDifficultyAccess();
+            }, 3000);
+            
+            // Note: scenarioType selector temporarily disabled - element not present in current layout
+            // This can be re-enabled when the element is added to the template
+            
+            // Attach programmatic listeners for Solo Mode and Challenges to replace inline onclicks
+            const soloBtnEl = document.getElementById('solo-scenario-btn');
+            if (soloBtnEl && typeof window.activateSoloMode === 'function') {
+                soloBtnEl.addEventListener('click', window.activateSoloMode);
+                console.log('✅ Solo Mode button listener attached');
+            }
+            const challengesBtnEl = document.getElementById('challenges-btn');
+            if (challengesBtnEl && typeof openScenarioSelectionModal === 'function') {
+                challengesBtnEl.addEventListener('click', openScenarioSelectionModal);
+                console.log('✅ Challenges button listener attached');
             }
 
 
@@ -7825,6 +11081,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Collaborative enhancements and testing code removed
+        });
     </script>
 
     <!-- ===== SCENARIO TIMER SYSTEM ===== -->
@@ -8634,8 +11891,10 @@ document.addEventListener('DOMContentLoaded', () => {
     <script>
         // Initialize performance feedback system when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize performance feedback system
-            window.performanceFeedback = new PerformanceFeedbackSystem();
+            // Initialize performance feedback system (guard against duplicate instances)
+            if (!window.performanceFeedback) {
+                window.performanceFeedback = new PerformanceFeedbackSystem();
+            }
             
             // Backend integration status check
             console.log('🎯 Performance Feedback System Integration Status:');
@@ -9428,7 +12687,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Integration with existing scenario system
             onScenarioCompleted(difficulty, problemType, score, timeBonus) {
                 // Award XP based on performance
-                let baseXP = { easy: 50, medium: 100, hard: 200 }[difficulty] || 50;
+                let baseXP = { 
+                    foundation: 15, 
+                    easy: 25, 
+                    medium: 50, 
+                    hard: 100 
+                }[difficulty] || 15;
                 let bonusXP = Math.floor(score / 10) + timeBonus;
                 
                 this.awardXP(baseXP + bonusXP, `${difficulty.toUpperCase()} Scenario Completed`);
