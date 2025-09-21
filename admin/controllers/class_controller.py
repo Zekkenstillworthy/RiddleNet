@@ -678,9 +678,13 @@ def add_question_group_to_class(class_id):
         cls = Class.query.get_or_404(class_id)
         question_group = QuestionGroup.query.get_or_404(question_group_id)
         
-        # Check if already assigned
+        # Check if already assigned (idempotent)
         if question_group in cls.question_groups:
-            return jsonify({"error": "Question group is already assigned to this class"}), 400
+            return jsonify({
+                "success": True,
+                "already_assigned": True,
+                "message": f"Question group '{question_group.name}' is already assigned to this class. No changes made."
+            }), 200
         
         # Add the question group to the class
         cls.question_groups.append(question_group)

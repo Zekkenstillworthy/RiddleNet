@@ -300,8 +300,11 @@ def get_class_assignments(class_id):
     try:
         cls = Class.query.get_or_404(class_id)
         # TODO: Query actual assignments from database when assignment model is created
-        # For now, return empty array
-        return jsonify([])
+        # For now, return an empty, consistently shaped response
+        return jsonify({
+            'success': True,
+            'assignments': []
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -349,51 +352,109 @@ def get_question_groups():
 def assign_question_group_explicit():
     """Assign question group to class or module explicitly"""
     try:
+        print(f"\n🎯 assign_question_group_explicit called")
+        print(f"📋 Request method: {request.method}")
+        print(f"📋 Request headers: {dict(request.headers)}")
+        print(f"👤 Current user: {current_user}")
+        print(f"🔐 Is authenticated: {current_user.is_authenticated}")
+        
         data = request.get_json()
-        question_group_id = data.get('question_group_id')
-        class_id = data.get('class_id')
-        module_id = data.get('module_id')  # Optional: assign to specific module
+        print(f"📋 Request data: {data}")
+        
+        question_group_id = data.get('question_group_id') if data else None
+        class_id = data.get('class_id') if data else None
+        module_id = data.get('module_id') if data else None  # Optional: assign to specific module
+        
+        print(f"📋 Parsed fields: question_group_id={question_group_id}, class_id={class_id}, module_id={module_id}")
         
         if not question_group_id or not class_id:
+            print(f"❌ Missing required fields: question_group_id={question_group_id}, class_id={class_id}")
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
         # Get the question group
+        print(f"🔍 Querying question group with ID: {question_group_id}")
         question_group = QuestionGroup.query.get(question_group_id)
         if not question_group:
+            print(f"❌ Question group with ID {question_group_id} not found")
             return jsonify({'success': False, 'error': 'Question group not found'}), 404
         
+        print(f"✅ Question group found: {question_group.name} (ID: {question_group.id})")
+        
         if module_id:
+            print(f"🎯 Assigning to specific module (module_id={module_id}, class_id={class_id})")
             # Assign to specific module
             from admin.models.module import Module
+            print(f"🔍 Querying module with ID={module_id} and class_id={class_id}")
             module = Module.query.filter_by(id=module_id, class_id=class_id).first()
             if not module:
+                print(f"❌ Module with ID {module_id} not found in class {class_id}")
+                # Let's check if module exists at all
+                all_modules = Module.query.filter_by(id=module_id).all()
+                print(f"🔍 Modules with ID {module_id} in any class: {[f'Module {m.id} in class {m.class_id}' for m in all_modules]}")
                 return jsonify({'success': False, 'error': 'Module not found'}), 404
+            
+            print(f"✅ Module found: {module.title} (ID: {module.id}, Class ID: {module.class_id})")
+            print(f"📋 Module current question_groups: {[qg.name for qg in module.question_groups]}")
             
             # Check if already assigned
             if question_group not in module.question_groups:
+                print(f"✅ Question group not already assigned, proceeding with assignment")
                 module.question_groups.append(question_group)
                 assignment_type = "module"
                 target_name = module.title
+                print(f"✅ Question group '{question_group.name}' added to module '{module.title}'")
             else:
-                return jsonify({'success': False, 'error': 'Question group already assigned to this module'}), 400
+                # Idempotent behavior: treat duplicate assignment as success with info
+                print(f"ℹ️ Question group '{question_group.name}' already assigned to module '{module.title}' - returning idempotent success")
+                assignment_type = "module"
+                target_name = module.title
+                return jsonify({
+                    'success': True,
+                    'already_assigned': True,
+                    'message': f'Question group "{question_group.name}" is already assigned to module: {module.title}. No changes made.'
+                }), 200
         else:
+            print(f"🎯 Assigning to entire class (class_id={class_id})")
             # Assign to entire class
             from admin.models.class_model import Class
+            print(f"🔍 Querying class with ID: {class_id}")
             class_obj = Class.query.get(class_id)
             if not class_obj:
+                print(f"❌ Class with ID {class_id} not found")
                 return jsonify({'success': False, 'error': 'Class not found'}), 404
+            
+            print(f"✅ Class found: {class_obj.name} (ID: {class_obj.id})")
+            print(f"📋 Class current question_groups: {[qg.name for qg in class_obj.question_groups]}")
             
             # Check if already assigned
             if question_group not in class_obj.question_groups:
+                print(f"✅ Question group not already assigned to class, proceeding with assignment")
                 class_obj.question_groups.append(question_group)
                 assignment_type = "class"
                 target_name = class_obj.name
+                print(f"✅ Question group '{question_group.name}' added to class '{class_obj.name}'")
             else:
-                return jsonify({'success': False, 'error': 'Question group already assigned to this class'}), 400
+                # Idempotent behavior: treat duplicate assignment as success with info
+                print(f"ℹ️ Question group '{question_group.name}' already assigned to class '{class_obj.name}' - returning idempotent success")
+                assignment_type = "class"
+                target_name = class_obj.name
+                return jsonify({
+                    'success': True,
+                    'already_assigned': True,
+                    'message': f'Question group "{question_group.name}" is already assigned to class: {class_obj.name}. No changes made.'
+                }), 200
         
-        db.session.commit()
+        print(f"💾 Attempting to commit database changes...")
+        try:
+            db.session.commit()
+            print(f"✅ Database commit successful")
+        except Exception as commit_error:
+            print(f"❌ Database commit failed: {commit_error}")
+            db.session.rollback()
+            return jsonify({'success': False, 'error': f'Database commit failed: {str(commit_error)}'}), 500
         
         # Create notification data
+        print(f"📬 Creating notification data...")
         notification_data = {
             'type': 'question_group_assigned',
             'question_group_name': question_group.name,
@@ -402,19 +463,38 @@ def assign_question_group_explicit():
             'class_id': class_id,
             'module_id': module_id if module_id else None
         }
+        print(f"📬 Notification data: {notification_data}")
         
         # Emit socket event for real-time notification
-        from socket_events import emit_assignment_notification
-        emit_assignment_notification(class_id, notification_data)
+        print(f"📡 Attempting to emit socket notification...")
+        try:
+            from socket_events import emit_assignment_notification
+            emit_assignment_notification(class_id, notification_data)
+            print(f"✅ Socket notification emitted successfully")
+        except Exception as socket_error:
+            print(f"⚠️ Socket notification failed (non-critical): {socket_error}")
+        
+        success_message = f'Question group "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
+        print(f"✅ Assignment successful: {success_message}")
         
         return jsonify({
             'success': True,
-            'message': f'Question group "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
+            'message': success_message
         })
         
     except Exception as e:
-        db.session.rollback()
-        print(f"Error assigning question group: {e}")
+        print(f"❌ CRITICAL ERROR in assign_question_group_explicit: {e}")
+        print(f"📋 Error type: {type(e).__name__}")
+        import traceback
+        print(f"📋 Full traceback:")
+        traceback.print_exc()
+        
+        try:
+            db.session.rollback()
+            print(f"🔄 Database rollback completed")
+        except Exception as rollback_error:
+            print(f"❌ Database rollback failed: {rollback_error}")
+        
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/render-module-preview', methods=['POST'])
@@ -1515,6 +1595,411 @@ def get_class_deadline_report(class_id):
         })
         
     except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Module Content Assignment Endpoints
+@api_bp.route('/classes/<int:class_id>/question-groups', methods=['GET'])
+def get_class_question_groups(class_id):
+    """Get question groups for a class"""
+    try:
+        from admin.models.class_model import Class
+        
+        class_obj = Class.query.get_or_404(class_id)
+        question_groups = class_obj.question_groups.all()
+        
+        question_groups_data = []
+        for qg in question_groups:
+            question_groups_data.append({
+                'id': qg.id,
+                'name': qg.name,
+                'description': qg.description,
+                'question_count': len(qg.questions) if hasattr(qg, 'questions') else 0,
+                'is_active': getattr(qg, 'is_active', True)
+            })
+        
+        return jsonify({
+            'success': True,
+            'question_groups': question_groups_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/classes/<int:class_id>/simulations', methods=['GET'])  
+def get_class_simulations(class_id):
+    """Get simulations assigned to a class"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        
+        assignments = SimulationAssignment.query.filter_by(
+            class_id=class_id,
+            is_active=True
+        ).all()
+        
+        simulations_data = []
+        for assignment in assignments:
+            if assignment.simulation and assignment.simulation.is_active:
+                simulations_data.append({
+                    'id': assignment.simulation.id,
+                    'assignment_id': assignment.id,
+                    'title': assignment.simulation.title,
+                    'description': assignment.simulation.description,
+                    'category': assignment.simulation.category,
+                    'difficulty': assignment.simulation.difficulty,
+                    'estimated_duration': assignment.simulation.estimated_duration,
+                    'module_id': assignment.module_id,
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None
+                })
+        
+        return jsonify({
+            'success': True,
+            'simulations': simulations_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/content', methods=['GET'])
+def get_module_content(module_id):
+    """Get content assigned to a module (simulations, assignments, question groups).
+
+    Frontend calls this for many module cards during page load. Returning 404s causes
+    noisy console errors and breaks UX. If a module is missing (deleted or not in this
+    class), return a 200 with an empty content payload so the UI can render an empty
+    state gracefully.
+    """
+    try:
+        from admin.models.module import Module
+        from admin.models.simulation_assignment import SimulationAssignment
+        from admin.models.class_content import ClassAssignment
+
+        print(f"[get_module_content] Request for module_id={module_id}")
+        module = Module.query.get(module_id)
+        if not module:
+            print(f"[get_module_content] Module {module_id} not found. Returning empty content.")
+            return jsonify({
+                'success': True,
+                'module': {
+                    'id': module_id,
+                    'title': None,
+                    'description': None
+                },
+                'simulations': [],
+                'assignments': [],
+                'question_groups': []
+            }), 200
+
+        # Get simulations assigned to this module
+        sim_assignments = SimulationAssignment.query.filter_by(
+            module_id=module_id,
+            is_active=True
+        ).all()
+
+        simulations_data = []
+        for assignment in sim_assignments:
+            if assignment.simulation and getattr(assignment.simulation, 'is_active', True):
+                simulations_data.append({
+                    'id': assignment.simulation.id,
+                    'assignment_id': assignment.id,
+                    'title': assignment.simulation.title,
+                    'description': assignment.simulation.description,
+                    'category': getattr(assignment.simulation, 'category', None),
+                    'difficulty': getattr(assignment.simulation, 'difficulty', None),
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None
+                })
+
+        # Get assignments assigned to this module
+        assignments = ClassAssignment.query.filter_by(
+            module_id=module_id,
+            is_published=True
+        ).all()
+
+        assignments_data = []
+        for assignment in assignments:
+            assignments_data.append({
+                'id': assignment.id,
+                'title': assignment.title,
+                'description': assignment.description,
+                'due_date': assignment.due_date.isoformat() if getattr(assignment, 'due_date', None) else None,
+                'points': getattr(assignment, 'points', None),
+                'assignment_type': getattr(assignment, 'assignment_type', None)
+            })
+
+        # Get question groups assigned to this module
+        question_groups_data = []
+        if hasattr(module, 'question_groups') and module.question_groups:
+            for qg in module.question_groups:
+                question_groups_data.append({
+                    'id': qg.id,
+                    'name': qg.name,
+                    'description': getattr(qg, 'description', None),
+                    'question_count': len(qg.questions) if hasattr(qg, 'questions') and qg.questions else 0
+                })
+
+        print(f"[get_module_content] Module {module.id} found (class_id={getattr(module, 'class_id', 'n/a')}). Returning content: sims={len(simulations_data)}, assignments={len(assignments_data)}, qgs={len(question_groups_data)}")
+        return jsonify({
+            'success': True,
+            'module': {
+                'id': module.id,
+                'title': module.title,
+                'description': module.description
+            },
+            'simulations': simulations_data,
+            'assignments': assignments_data,
+            'question_groups': question_groups_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/assign-simulation', methods=['POST'])
+def assign_simulation_to_module(module_id):
+    """Assign a simulation to a module"""
+    try:
+        from admin.models.module import Module
+        from admin.models.simulation import Simulation
+        from admin.models.simulation_assignment import SimulationAssignment
+        from datetime import datetime, timedelta
+        
+        data = request.get_json()
+        simulation_id = data.get('simulation_id')
+        due_date_str = data.get('due_date')
+        
+        if not simulation_id:
+            return jsonify({
+                'success': False,
+                'error': 'Simulation ID is required'
+            }), 400
+            
+        module = Module.query.get_or_404(module_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Parse due date
+        due_date = None
+        if due_date_str:
+            try:
+                due_date = datetime.fromisoformat(due_date_str.replace('Z', '+00:00'))
+            except:
+                # Fallback: set due date to 7 days from now
+                due_date = datetime.utcnow() + timedelta(days=7)
+        
+        # Check if assignment already exists
+        existing_assignment = SimulationAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            module_id=module_id,
+            class_id=module.class_id
+        ).first()
+        
+        if existing_assignment:
+            # Idempotent success: already assigned
+            return jsonify({
+                'success': True,
+                'message': f'Simulation "{simulation.title}" is already assigned to module "{module.title}"',
+                'alreadyAssigned': True,
+                'assignment_id': existing_assignment.id
+            }), 200
+        
+        # Create new assignment
+        assignment = SimulationAssignment(
+            title=f"{simulation.title} - {module.title}",
+            description=f"Simulation assignment for {module.title}",
+            simulation_id=simulation_id,
+            class_id=module.class_id,
+            module_id=module_id,
+            assigned_by=getattr(current_user, 'id', 1),
+            assignment_type='module',
+            due_date=due_date,
+            is_active=True,
+            is_published=True
+        )
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Simulation "{simulation.title}" assigned to module "{module.title}"',
+            'assignment_id': assignment.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/assign-assignment', methods=['POST'])
+def assign_assignment_to_module(module_id):
+    """Assign a class assignment to a module"""
+    try:
+        from admin.models.module import Module
+        from admin.models.class_content import ClassAssignment
+        
+        data = request.get_json()
+        assignment_id = data.get('assignment_id')
+        
+        if not assignment_id:
+            return jsonify({
+                'success': False,
+                'error': 'Assignment ID is required'
+            }), 400
+            
+        module = Module.query.get_or_404(module_id)
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        
+        # Update assignment to be linked to this module
+        assignment.module_id = module_id
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Assignment "{assignment.title}" assigned to module "{module.title}"'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/assign-question-group', methods=['POST'])
+def assign_question_group_to_module(module_id):
+    """Assign a question group to a module"""
+    try:
+        from admin.models.module import Module
+        from admin.models.question_group import QuestionGroup
+        
+        data = request.get_json()
+        print(f"\n📥 assign_question_group_to_module called for module_id={module_id}")
+        print(f"🔎 Raw JSON payload: {data}")
+        question_group_id = data.get('question_group_id') if data else None
+        
+        if not question_group_id:
+            return jsonify({
+                'success': False,
+                'error': 'Question group ID is required'
+            }), 400
+            
+        module = Module.query.get_or_404(module_id)
+        question_group = QuestionGroup.query.get_or_404(question_group_id)
+        print(f"✅ Module found: {module.id} - {getattr(module, 'title', 'N/A')}")
+        print(f"✅ Question group found: {question_group.id} - {getattr(question_group, 'name', 'N/A')}")
+        
+        # Check if already assigned
+        already_assigned = module.question_groups.filter_by(id=question_group.id).first() is not None
+        if already_assigned:
+            print(f"ℹ️ Question group {question_group.id} already assigned to module {module.id} (idempotent success)")
+            return jsonify({
+                'success': True,
+                'message': f'Question group "{question_group.name}" is already assigned to module "{module.title}"',
+                'alreadyAssigned': True
+            }), 200
+        
+        # Add question group to module
+        module.question_groups.append(question_group)
+        db.session.commit()
+        print(f"🟢 Assigned question group {question_group.id} to module {module.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Question group "{question_group.name}" assigned to module "{module.title}"'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error in assign_question_group_to_module: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/unassign-simulation/<int:assignment_id>', methods=['DELETE'])
+def unassign_simulation_from_module(module_id, assignment_id):
+    """Remove a simulation assignment from a module"""
+    try:
+        from admin.models.simulation_assignment import SimulationAssignment
+        
+        assignment = SimulationAssignment.query.filter_by(
+            id=assignment_id,
+            module_id=module_id
+        ).first_or_404()
+        
+        assignment.is_active = False
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Simulation unassigned from module'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/unassign-assignment/<int:assignment_id>', methods=['DELETE'])
+def unassign_assignment_from_module(module_id, assignment_id):
+    """Remove an assignment from a module"""
+    try:
+        from admin.models.class_content import ClassAssignment
+        
+        assignment = ClassAssignment.query.filter_by(
+            id=assignment_id,
+            module_id=module_id
+        ).first_or_404()
+        
+        assignment.module_id = None
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assignment unassigned from module'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/modules/<int:module_id>/unassign-question-group/<int:question_group_id>', methods=['DELETE'])
+def unassign_question_group_from_module(module_id, question_group_id):
+    """Remove a question group from a module"""
+    try:
+        from admin.models.module import Module
+        from admin.models.question_group import QuestionGroup
+        
+        module = Module.query.get_or_404(module_id)
+        question_group = QuestionGroup.query.get_or_404(question_group_id)
+        
+        if question_group in module.question_groups:
+            module.question_groups.remove(question_group)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Question group unassigned from module'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({
             'success': False,
             'error': str(e)
