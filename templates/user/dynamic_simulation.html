@@ -242,8 +242,8 @@
         overflow: hidden;
     }
 
-    /* Canvas Area - Enhanced with Network Support */
-    .canvas-container {
+    /* Canvas Area - Enhanced with Network Support for Dynamic Simulation */
+    .dynamic-simulation .canvas-container {
         flex: 1;
         background: var(--surface);
         border-right: 2px solid var(--glass-border);
@@ -261,16 +261,13 @@
 
    
 
-    /* Network Canvas System from troubleshoot.html - Enhanced */
-    #Canvas {
+    /* Network Canvas System - Enhanced for Dynamic Simulation */
+    .dynamic-simulation canvas.network-sim-canvas {
         width: 100%;
         height: 100%;
         border-radius: var(--border-radius);
-        background: 
-            linear-gradient(45deg, transparent 24%, rgba(0, 217, 255, 0.05) 25%, rgba(0, 217, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, 0.05) 75%, rgba(0, 217, 255, 0.05) 76%, transparent 77%),
-            linear-gradient(-45deg, transparent 24%, rgba(139, 92, 246, 0.05) 25%, rgba(139, 92, 246, 0.05) 26%, transparent 27%, transparent 74%, rgba(139, 92, 246, 0.05) 75%, rgba(139, 92, 246, 0.05) 76%, transparent 77%),
-            var(--background);
-        background-size: 50px 50px;
+        /* Removed diamond grid background for a cleaner canvas */
+        background: var(--background);
         border: 2px solid var(--cyber-glow);
         box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
         position: relative;
@@ -1589,7 +1586,7 @@
 
     /* Animation for step transitions disabled */
     .step-item {
-        /* animation removed for performance */
+        animation: none !important; /* animation removed for performance */
     }
 
     /* Troubleshooting-specific styles */
@@ -1676,7 +1673,7 @@
         font-weight: 500;
     }
 
-    .network-canvas-container .canvas-header {
+    .dynamic-simulation .network-canvas-container .canvas-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1685,12 +1682,12 @@
         border-bottom: 1px solid var(--glass-border);
     }
 
-    .canvas-controls {
+    .dynamic-simulation .canvas-controls {
         display: flex;
         gap: 0.5rem;
     }
 
-    .btn-canvas {
+    .dynamic-simulation .btn-canvas {
         padding: 0.5rem 1rem;
         background: rgba(255, 255, 255, 0.1);
         border: 1px solid var(--glass-border);
@@ -1704,12 +1701,12 @@
         font-size: 0.875rem;
     }
 
-    .btn-canvas:hover {
+    .dynamic-simulation .btn-canvas:hover {
         background: rgba(255, 255, 255, 0.15);
         border-color: var(--cyber-glow);
     }
 
-    .network-canvas {
+    .dynamic-simulation .network-canvas {
         min-height: 300px;
         background: var(--surface);
         border: 1px solid var(--glass-border);
@@ -1718,7 +1715,7 @@
         overflow: hidden;
     }
 
-    .canvas-placeholder {
+    .dynamic-simulation .canvas-placeholder {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1728,7 +1725,7 @@
         font-size: 1.125rem;
     }
 
-    .canvas-placeholder i {
+    .dynamic-simulation .canvas-placeholder i {
         font-size: 3rem;
         margin-bottom: 1rem;
         color: var(--network-purple);
@@ -1750,24 +1747,24 @@
 
     /* Responsive Design (consolidated) */
     @media (max-width: 1200px) {
-        .steps-panel { width: 360px; }
-        .canvas-container { margin: 0.75rem; }
+        .dynamic-simulation .steps-panel { width: 360px; }
+        .dynamic-simulation .canvas-container { margin: 0.75rem; }
     }
     @media (max-width: 1024px) {
-        .steps-panel { width: 320px; }
-        .simulation-header { padding: 1rem 1.25rem; }
-        .simulation-title { font-size: 1.25rem; }
-        .device-categories { gap: 1rem; }
-        .device-category { min-width: 160px; max-width: 200px; }
+        .dynamic-simulation .steps-panel { width: 320px; }
+        .dynamic-simulation .simulation-header { padding: 1rem 1.25rem; }
+        .dynamic-simulation .simulation-title { font-size: 1.25rem; }
+        .dynamic-simulation .device-categories { gap: 1rem; }
+        .dynamic-simulation .device-category { min-width: 160px; max-width: 200px; }
     }
     @media (max-width: 768px) {
-        .simulation-content { flex-direction: column; }
-        .steps-panel { width:100%; height:45vh; border-left:none; border-top:2px solid var(--glass-border); margin:0; border-radius:0; }
-        .canvas-container { height:55vh; margin:0.25rem; }
-        .device-categories { gap: 0.75rem; padding: 0.5rem 0.75rem; }
-        .device-category { min-width: 140px; max-width: 180px; }
-        .device-grid { grid-template-columns: repeat(3, 1fr); }
-        .palette-top-bar { padding: 0.25rem 0.75rem; }
+        .dynamic-simulation .simulation-content { flex-direction: column; }
+        .dynamic-simulation .steps-panel { width:100%; height:45vh; border-left:none; border-top:2px solid var(--glass-border); margin:0; border-radius:0; }
+        .dynamic-simulation .canvas-container { height:55vh; margin:0.25rem; }
+        .dynamic-simulation .device-categories { gap: 0.75rem; padding: 0.5rem 0.75rem; }
+        .dynamic-simulation .device-category { min-width: 140px; max-width: 180px; }
+        .dynamic-simulation .device-grid { grid-template-columns: repeat(3, 1fr); }
+        .dynamic-simulation .palette-top-bar { padding: 0.25rem 0.75rem; }
     }
     @media (max-width: 600px) {
         .device-categories { flex-wrap: wrap; justify-content: center; padding: 0.5rem; }
@@ -2213,7 +2210,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="simulation-wrapper">
+<div class="simulation-wrapper dynamic-simulation">
     <!-- Header -->
     <div class="simulation-header">
         <div class="header-left">
@@ -2305,7 +2302,7 @@
             <div class="canvas-container">
                 <div id="simulation-canvas">
                     <!-- Network Canvas for visualization -->
-                    <canvas id="Canvas" width="800" height="600"></canvas>
+                    <canvas id="Canvas" class="network-sim-canvas" width="800" height="600"></canvas>
                     
                     <!-- Drop Zones for Devices -->
                     <div class="drop-zone" id="canvas-drop-zone">
@@ -10043,16 +10040,21 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 Dynamic Simulation initialized with enhanced event system and performance tracking');
 });
 
-// Enhanced Performance Feedback System for Dynamic Simulations
+// Enhanced Performance Feedback System for Dynamic Simulations - Network Learning Arena Compatible
 class SimulationPerformanceFeedback {
     constructor() {
         this.isVisible = false;
         this.startTime = null;
         this.sessionId = null;
+        this.backendSession = null;
         this.realTimeEnabled = false;
         this.socketConnected = false;
+        this.currentScenario = null;
+        this.lastSyncTime = 0;
+        this.isPaused = false;
+        this.pausedTime = 0;
         
-        // Metrics tracking specific to dynamic simulations
+        // Enhanced metrics tracking aligned with Network Learning Arena
         this.metrics = {
             score: 0,
             devicesPlaced: 0,
@@ -10065,50 +10067,152 @@ class SimulationPerformanceFeedback {
             timeSpent: 0,
             successRate: 0,
             currentStep: 0,
-            totalSteps: 0
+            totalSteps: 0,
+            averageResponseTime: 0,
+            completionPercentage: 0
         };
         
-        // Achievement tracking
+        // Enhanced achievement tracking with persistence
         this.achievements = {
-            'first-device-placed': false,
-            'network-architect': false,
+            'first-device': false,
+            'network-builder': false,
+            'speed-demon': false,
+            'perfectionist': false,
             'configuration-master': false,
-            'speed-builder': false,
-            'perfectionist': false
+            'network-architect': false
         };
         
         this.hints = [];
         this.progressTimer = null;
+        this.syncTimer = null;
+        this.leaderboardData = null;
         
         this.init();
     }
     
     init() {
-        console.log('🎯 Initializing Dynamic Simulation Performance Feedback System');
+        console.log('🎯 Initializing Dynamic Simulation Performance Feedback System (Network Learning Arena Compatible)');
         
-        // Initialize backend connection if available
+        // Initialize backend connection with fallback
         this.initializeBackendConnection();
         
         // Start session tracking
         this.startSession();
         
-        console.log('✅ Dynamic Simulation Performance Feedback System initialized');
+        // Setup UI event handlers
+        this.setupUIHandlers();
+        
+        // Initialize achievement system
+        this.initializeAchievements();
+        
+        console.log('✅ Dynamic Simulation Performance Feedback System initialized with Network Learning Arena features');
     }
     
     initializeBackendConnection() {
-        // Connect to existing WebSocket system
+        // Connect to existing WebSocket system with retry logic
         if (window.socketClient) {
             this.realTimeEnabled = true;
             this.setupWebSocketHandlers();
             console.log('📡 Connected to backend WebSocket system for simulation feedback');
         } else {
-            console.warn('⚠️ WebSocket not available for simulation feedback, running in local mode');
+            console.warn('⚠️ WebSocket not available for simulation feedback, setting up retry...');
+            // Retry connection every 2 seconds
+            setTimeout(() => this.initializeBackendConnection(), 2000);
+        }
+    }
+    
+    setupUIHandlers() {
+        // Timer control buttons (Network Learning Arena feature)
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        const resumeBtn = document.getElementById('resume-timer-btn');
+        
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pauseTimer());
+        }
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => this.resumeTimer());
+        }
+        
+        // Quick action buttons
+        const getHintBtn = document.getElementById('get-hint-btn');
+        const checkSolutionBtn = document.getElementById('check-solution-btn');
+        const resetProgressBtn = document.getElementById('reset-progress-btn');
+        
+        if (getHintBtn) {
+            getHintBtn.addEventListener('click', () => this.requestSmartHint());
+        }
+        if (checkSolutionBtn) {
+            checkSolutionBtn.addEventListener('click', () => this.validateCurrentSolution());
+        }
+        if (resetProgressBtn) {
+            resetProgressBtn.addEventListener('click', () => this.resetSession());
+        }
+    }
+    
+    initializeAchievements() {
+        // Load achievements from localStorage (Network Learning Arena compatibility)
+        const stored = localStorage.getItem('riddlenet_achievements');
+        if (stored) {
+            try {
+                const storedAchievements = JSON.parse(stored);
+                storedAchievements.forEach(achievement => {
+                    if (this.achievements.hasOwnProperty(achievement.id)) {
+                        this.achievements[achievement.id] = true;
+                    }
+                });
+            } catch (e) {
+                console.warn('Failed to load stored achievements:', e);
+            }
         }
     }
     
     setupWebSocketHandlers() {
         if (!window.socketClient) return;
         
+        // Enhanced WebSocket handlers matching Network Learning Arena
+        
+        // Backend feedback session updates
+        window.socketClient.on('feedback_session_update', (data) => {
+            if (data.session_id === this.sessionId) {
+                this.updateFromBackendData(data);
+            }
+        });
+
+        // Real-time action tracking
+        window.socketClient.on('action_tracked', (data) => {
+            if (data.session_id === this.sessionId) {
+                this.handleBackendActionUpdate(data);
+            }
+        });
+
+        // Progress updates
+        window.socketClient.on('progress_update', (data) => {
+            if (data.session_id === this.sessionId) {
+                this.updateProgressFromBackend(data);
+            }
+        });
+
+        // Smart hint responses
+        window.socketClient.on('smart_hint_response', (data) => {
+            if (data.session_id === this.sessionId) {
+                this.displayBackendHint(data.hint, data.type);
+            }
+        });
+
+        // Achievement unlocks
+        window.socketClient.on('achievement_unlocked', (data) => {
+            if (data.session_id === this.sessionId) {
+                this.addAchievement(data.achievement);
+                this.showAchievementNotification(data.achievement);
+            }
+        });
+
+        // Leaderboard updates
+        window.socketClient.on('leaderboard_update', (data) => {
+            this.updateLeaderboardPosition(data);
+        });
+        
+        // Legacy simulation events (maintain compatibility)
         window.socketClient.on('simulation_progress_update', (data) => {
             if (data.session_id === this.sessionId) {
                 this.updateMetrics(data.metrics);
@@ -10126,81 +10230,126 @@ class SimulationPerformanceFeedback {
                 this.unlockAchievement(data.achievement_id);
             }
         });
+
+        console.log('🔗 Enhanced WebSocket handlers set up for Network Learning Arena compatibility');
     }
     
     startSession() {
         this.startTime = Date.now();
         this.sessionId = 'sim_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
-        // Start backend session via WebSocket (with fallback)
-        if (this.realTimeEnabled && window.socketClient && window.socketClient.connected) {
-            window.socketClient.emit('start_simulation_session', {
+        // Enhanced backend session start (Network Learning Arena compatible)
+        if (this.realTimeEnabled && window.socketClient) {
+            window.socketClient.emit('start_feedback_session', {
                 session_id: this.sessionId,
-                simulation_type: 'dynamic_simulation',
+                scenario_id: window.currentModule?.id || 'dynamic_simulation',
+                scenario_type: 'dynamic_simulation',
+                lobby_id: null,
                 user_id: window.current_user_id || 'anonymous'
             });
-            console.log('🎯 Started backend simulation session:', this.sessionId);
-        } else if (this.realTimeEnabled && window.socketClient && !window.socketClient.connected) {
-            console.log('🎯 Started simulation session (WebSocket connecting):', this.sessionId);
-            // Retry when socket connects
-            window.socketClient.on('connected', () => {
-                window.socketClient.emit('start_simulation_session', {
-                    session_id: this.sessionId,
-                    simulation_type: 'dynamic_simulation',
-                    user_id: window.current_user_id || 'anonymous'
-                });
-            });
+            console.log('🎯 Started backend feedback session (Network Learning Arena compatible):', this.sessionId);
         } else {
             console.log('🎯 Started simulation session (offline mode):', this.sessionId);
         }
+
+        // Reset local metrics
+        this.metrics = {
+            score: 0,
+            devicesPlaced: 0,
+            connectionsMade: 0,
+            configurationsComplete: 0,
+            stepsCompleted: 0,
+            actionsCount: 0,
+            mistakesCount: 0,
+            hintsUsed: 0,
+            timeSpent: 0,
+            successRate: 0,
+            currentStep: 0,
+            totalSteps: 0,
+            averageResponseTime: 0,
+            completionPercentage: 0
+        };
         
-        // Start progress monitoring
+        // Start progress monitoring with enhanced timing
         this.progressTimer = setInterval(() => {
             this.updateTimeMetrics();
+            this.checkForTimeBasedHints();
+            this.syncWithBackend();
+        }, 1000); // More frequent updates like Network Learning Arena
+        
+        // Start backend sync timer
+        this.syncTimer = setInterval(() => {
             this.syncWithBackend();
         }, 5000);
+        
+        console.log('🎯 Performance tracking session started with Network Learning Arena integration');
+    }
+    
+    // Timer control methods (Network Learning Arena feature)
+    pauseTimer() {
+        if (this.isPaused) return;
+        
+        this.isPaused = true;
+        this.pausedTime = Date.now();
+        
+        // Update UI
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        const resumeBtn = document.getElementById('resume-timer-btn');
+        
+        if (pauseBtn) pauseBtn.style.display = 'none';
+        if (resumeBtn) resumeBtn.style.display = 'block';
+        
+        // Notify backend
+        this.sendActionToBackend('timer_paused', { paused_at: this.pausedTime });
+        
+        console.log('⏸️ Timer paused');
+    }
+    
+    resumeTimer() {
+        if (!this.isPaused) return;
+        
+        const pauseDuration = Date.now() - this.pausedTime;
+        this.startTime += pauseDuration; // Adjust start time to account for pause
+        
+        this.isPaused = false;
+        this.pausedTime = 0;
+        
+        // Update UI
+        const pauseBtn = document.getElementById('pause-timer-btn');
+        const resumeBtn = document.getElementById('resume-timer-btn');
+        
+        if (pauseBtn) pauseBtn.style.display = 'block';
+        if (resumeBtn) resumeBtn.style.display = 'none';
+        
+        // Notify backend
+        this.sendActionToBackend('timer_resumed', { resumed_at: Date.now(), pause_duration: pauseDuration });
+        
+        console.log('▶️ Timer resumed');
     }
     
     trackAction(actionType, data = {}) {
-        this.metrics.actionsCount++;
+        console.log(`🎯 Tracking action: ${actionType}`, data);
         
-        // Update specific metrics based on action type
-        switch (actionType) {
-            case 'device_placed':
-                this.metrics.devicesPlaced++;
-                this.checkDevicePlacementAchievements();
-                break;
-            case 'connection_made':
-                this.metrics.connectionsMade++;
-                break;
-            case 'configuration_complete':
-                this.metrics.configurationsComplete++;
-                break;
-            case 'step_completed':
-                this.metrics.stepsCompleted++;
-                this.metrics.currentStep = data.stepIndex || this.metrics.currentStep;
-                break;
-            case 'mistake_made':
-                this.metrics.mistakesCount++;
-                break;
-            case 'hint_used':
-                this.metrics.hintsUsed++;
-                break;
-        }
+        // Update local metrics first for immediate feedback
+        this.updateLocalMetrics(actionType, data);
         
-        // Calculate success rate
-        this.updateSuccessRate();
-        
-        // Log to backend if enabled
-        if (this.realTimeEnabled && window.socketClient && this.sessionId && window.socketClient.connected) {
-            window.socketClient.emit('log_simulation_action', {
+        // Send to backend if connected (Network Learning Arena compatible)
+        if (this.realTimeEnabled && window.socketClient) {
+            window.socketClient.emit('track_user_action', {
                 session_id: this.sessionId,
                 action_type: actionType,
                 action_data: data,
-                metrics_snapshot: this.metrics,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                current_metrics: this.metrics
             });
         }
+        
+        // Update display
+        this.updateAllMetrics();
+        
+        // Check for achievements and hints
+        this.checkForAchievements();
+        this.checkForSmartHints();
         
         // Store locally as backup
         const actions = JSON.parse(sessionStorage.getItem('simulation_recent_actions') || '[]');
@@ -10213,6 +10362,428 @@ class SimulationPerformanceFeedback {
         actions.splice(10); // Keep last 10 actions
         sessionStorage.setItem('simulation_recent_actions', JSON.stringify(actions));
     }
+    
+    updateLocalMetrics(actionType, actionData) {
+        // Update metrics based on action type (Network Learning Arena style)
+        switch (actionType) {
+            case 'device_placed':
+                this.metrics.devicesPlaced++;
+                this.metrics.actionsCount++;
+                this.metrics.score += 10;
+                break;
+            case 'connection_made':
+                this.metrics.connectionsMade++;
+                this.metrics.actionsCount++;
+                this.metrics.score += 15;
+                break;
+            case 'configuration_complete':
+                this.metrics.configurationsComplete++;
+                this.metrics.actionsCount++;
+                this.metrics.score += 25;
+                break;
+            case 'step_completed':
+                this.metrics.stepsCompleted++;
+                this.metrics.actionsCount++;
+                this.metrics.score += 20;
+                this.metrics.currentStep = actionData.stepIndex || this.metrics.currentStep;
+                break;
+            case 'mistake_made':
+                this.metrics.mistakesCount++;
+                this.metrics.actionsCount++;
+                this.metrics.score = Math.max(0, this.metrics.score - 5);
+                this.addHint('Don\'t worry about mistakes - they\'re part of learning!', 'tip');
+                break;
+            case 'hint_used':
+                this.metrics.hintsUsed++;
+                this.metrics.score = Math.max(0, this.metrics.score - 2);
+                break;
+            case 'action_generic':
+                this.metrics.actionsCount++;
+                this.metrics.score += 1;
+                break;
+        }
+        
+        // Update success rate and completion percentage
+        this.updateSuccessRate();
+        this.updateCompletionPercentage();
+    }
+    
+    checkForSmartHints() {
+        // Smart hint logic based on current state (Network Learning Arena style)
+        if (this.metrics.devicesPlaced === 2 && this.metrics.connectionsMade === 0) {
+            this.addHint('You can connect devices by clicking the "Connect" button, then clicking two devices.', 'tip');
+        } else if (this.metrics.devicesPlaced === 3 && this.metrics.configurationsComplete === 0) {
+            this.addHint('Don\'t forget to configure IP addresses for your devices!', 'config');
+        } else if (this.metrics.connectionsMade >= 2 && this.metrics.configurationsComplete >= 2) {
+            this.addHint('Great progress! Your network is taking shape nicely.', 'success');
+        }
+    }
+    
+    updateCompletionPercentage() {
+        // Calculate completion based on expected progress
+        const expectedDevices = this.metrics.totalSteps > 0 ? this.metrics.totalSteps : 5;
+        const deviceProgress = Math.min(100, (this.metrics.devicesPlaced / expectedDevices) * 40);
+        const connectionProgress = Math.min(100, (this.metrics.connectionsMade / Math.max(1, expectedDevices - 1)) * 30);
+        const configProgress = Math.min(100, (this.metrics.configurationsComplete / expectedDevices) * 30);
+        
+        this.metrics.completionPercentage = Math.min(100, Math.round(deviceProgress + connectionProgress + configProgress));
+    }
+    
+    // ===== NETWORK LEARNING ARENA COMPATIBILITY METHODS =====
+    
+    // Backend data synchronization methods
+    updateFromBackendData(backendData) {
+        console.log('📊 Updating from backend data:', backendData);
+        
+        // Update metrics from backend
+        if (backendData.metrics) {
+            this.metrics = {
+                ...this.metrics,
+                ...backendData.metrics
+            };
+        }
+        
+        // Update session info
+        if (backendData.session_info) {
+            this.backendSession = backendData.session_info;
+            this.sessionId = backendData.session_info.session_id;
+            
+            // Update start time if provided
+            if (backendData.session_info.start_time) {
+                this.startTime = new Date(backendData.session_info.start_time).getTime();
+            }
+        }
+        
+        // Update performance indicators
+        if (backendData.performance_indicators) {
+            this.updatePerformanceIndicators(backendData.performance_indicators);
+        }
+        
+        // Update smart hints
+        if (backendData.smart_hints) {
+            this.updateSmartHints(backendData.smart_hints);
+        }
+        
+        // Refresh display
+        this.updateAllMetrics();
+        
+        console.log('✅ Backend data sync complete');
+    }
+    
+    handleBackendActionUpdate(actionData) {
+        console.log('🔄 Backend action update:', actionData);
+        
+        // Update specific metrics based on action type
+        switch (actionData.action_type) {
+            case 'device_placed':
+                this.metrics.devicesPlaced = actionData.count || this.metrics.devicesPlaced;
+                break;
+            case 'connection_made':
+                this.metrics.connectionsMade = actionData.count || this.metrics.connectionsMade;
+                break;
+            case 'configuration_complete':
+                this.metrics.configurationsComplete = actionData.count || this.metrics.configurationsComplete;
+                break;
+            case 'mistake_made':
+                this.metrics.mistakesCount = actionData.count || this.metrics.mistakesCount;
+                break;
+            case 'hint_used':
+                this.metrics.hintsUsed = actionData.count || this.metrics.hintsUsed;
+                break;
+            case 'score_update':
+                this.metrics.score = actionData.score || this.metrics.score;
+                break;
+        }
+        
+        // Update action count
+        this.metrics.actionsCount = actionData.total_actions || this.metrics.actionsCount;
+        
+        // Update display
+        this.updateAllMetrics();
+        
+        // Check for achievements
+        this.checkForAchievements();
+    }
+    
+    updateProgressFromBackend(data) {
+        // Update progress based on backend calculations
+        if (data.completion_percentage !== undefined) {
+            this.metrics.completionPercentage = data.completion_percentage;
+            this.updateProgressRing(data.completion_percentage);
+        }
+        
+        if (data.score_delta !== undefined) {
+            this.metrics.score += data.score_delta;
+            this.updateScoreDisplay();
+            
+            // Show score change animation
+            this.animateScoreChange(data.score_delta);
+        }
+        
+        // Update step progress
+        if (data.current_step !== undefined) {
+            this.metrics.currentStep = data.current_step;
+        }
+        if (data.total_steps !== undefined) {
+            this.metrics.totalSteps = data.total_steps;
+        }
+    }
+    
+    displayBackendHint(hint, type) {
+        this.addHint(hint, type);
+        this.metrics.hintsUsed++;
+        this.updateMetricsDisplay();
+    }
+    
+    // Achievement system methods
+    addAchievement(achievement) {
+        // Add achievement to local storage
+        let achievements = JSON.parse(localStorage.getItem('riddlenet_achievements') || '[]');
+        if (!achievements.find(a => a.id === achievement.id)) {
+            achievements.push({
+                id: achievement.id,
+                name: achievement.name,
+                description: achievement.description,
+                icon: achievement.icon,
+                earned_at: new Date().toISOString(),
+                points: achievement.points || 0
+            });
+            localStorage.setItem('riddlenet_achievements', JSON.stringify(achievements));
+        }
+        
+        // Update achievements display
+        this.updateAchievementsDisplay();
+    }
+    
+    showAchievementNotification(achievement) {
+        // Create achievement notification
+        const notification = document.createElement('div');
+        notification.className = 'achievement-notification';
+        notification.innerHTML = `
+            <div class="achievement-icon">${achievement.icon}</div>
+            <div class="achievement-details">
+                <div class="achievement-name">${achievement.name}</div>
+                <div class="achievement-desc">${achievement.description}</div>
+                <div class="achievement-points">+${achievement.points || 0} pts</div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+    
+    updateLeaderboardPosition(data) {
+        // Update leaderboard display in sidebar
+        const leaderboardInfo = document.querySelector('.leaderboard-info');
+        if (leaderboardInfo) {
+            leaderboardInfo.innerHTML = `
+                <div class="leaderboard-rank">Rank: #${data.rank || 'N/A'}</div>
+                <div class="leaderboard-score">Score: ${data.score || 0}</div>
+                <div class="leaderboard-trend ${data.trend === 'up' ? 'up' : 'down'}">
+                    ${data.trend === 'up' ? '↗️' : '↘️'} ${data.change || 0}
+                </div>
+            `;
+        }
+    }
+    
+    // Smart hint system
+    requestSmartHint() {
+        if (this.realTimeEnabled && window.socketClient) {
+            window.socketClient.emit('request_hint', {
+                session_id: this.sessionId,
+                current_state: {
+                    devices: this.metrics.devicesPlaced,
+                    connections: this.metrics.connectionsMade,
+                    configurations: this.metrics.configurationsComplete,
+                    time_spent: this.metrics.timeSpent,
+                    mistakes: this.metrics.mistakesCount
+                },
+                scenario_context: window.currentModule || null
+            });
+        } else {
+            // Fallback local hint
+            this.generateLocalHint();
+        }
+    }
+    
+    generateLocalHint() {
+        let hint = "Try placing a network device on the canvas to get started.";
+        
+        if (this.metrics.devicesPlaced === 0) {
+            hint = "Start by dragging a device from the palette below onto the canvas.";
+        } else if (this.metrics.devicesPlaced > 0 && this.metrics.connectionsMade === 0) {
+            hint = "Great! Now try connecting your devices using the connection tool.";
+        } else if (this.metrics.connectionsMade > 0 && this.metrics.configurationsComplete === 0) {
+            hint = "Don't forget to configure IP addresses for your devices!";
+        } else {
+            hint = "You're doing well! Continue with the scenario objectives.";
+        }
+        
+        this.addHint(hint, 'tip');
+    }
+    
+    validateCurrentSolution() {
+        if (this.realTimeEnabled && window.socketClient) {
+            window.socketClient.emit('validate_solution', {
+                session_id: this.sessionId,
+                current_solution: {
+                    devices: window.networkDevices || [],
+                    connections: window.networkConnections || [],
+                    configurations: this.getDeviceConfigurations()
+                },
+                scenario_id: window.currentModule?.id || 'dynamic_simulation'
+            });
+        } else {
+            // Fallback local validation
+            this.performLocalValidation();
+        }
+    }
+    
+    performLocalValidation() {
+        const deviceCount = this.metrics.devicesPlaced;
+        const connectionCount = this.metrics.connectionsMade;
+        
+        if (deviceCount >= 2 && connectionCount >= 1) {
+            this.addHint("✅ Good progress! Your network topology looks functional.", 'success');
+            this.metrics.score += 10;
+        } else {
+            this.addHint("❌ Your network needs more devices and connections to be complete.", 'warning');
+        }
+        
+        this.updateScoreDisplay();
+    }
+    
+    resetSession() {
+        if (confirm('Are you sure you want to reset your progress? This cannot be undone.')) {
+            // Clear timers
+            if (this.progressTimer) clearInterval(this.progressTimer);
+            if (this.syncTimer) clearInterval(this.syncTimer);
+            
+            // Reset metrics
+            this.metrics = {
+                score: 0,
+                devicesPlaced: 0,
+                connectionsMade: 0,
+                configurationsComplete: 0,
+                stepsCompleted: 0,
+                actionsCount: 0,
+                mistakesCount: 0,
+                hintsUsed: 0,
+                timeSpent: 0,
+                successRate: 0,
+                currentStep: 0,
+                totalSteps: 0,
+                averageResponseTime: 0,
+                completionPercentage: 0
+            };
+            
+            // Clear hints
+            this.hints = [];
+            
+            // Notify backend
+            if (this.realTimeEnabled && window.socketClient) {
+                window.socketClient.emit('end_feedback_session', {
+                    session_id: this.sessionId,
+                    reason: 'user_reset'
+                });
+            }
+            
+            // Restart session
+            this.startSession();
+            
+            // Update display
+            this.updateAllMetrics();
+            
+            console.log('🔄 Session reset complete');
+        }
+    }
+    
+    // Time-based hint system
+    checkForTimeBasedHints() {
+        const timeSpent = this.metrics.timeSpent;
+        
+        // Time-based hints (matching Network Learning Arena)
+        if (timeSpent === 60 && this.metrics.devicesPlaced === 0) {
+            this.addHint('Take your time! Try dragging a device from the palette below onto the canvas.', 'tip');
+        } else if (timeSpent === 180 && this.metrics.completionPercentage < 20) {
+            this.addHint('Need help? Click the "Get Hint" button for personalized guidance!', 'tip');
+        } else if (timeSpent === 300 && this.metrics.completionPercentage < 50) {
+            this.addHint('You\'re doing great! Remember to connect devices after placing them.', 'tip');
+        }
+        
+        // Check for speed achievement
+        if (this.metrics.completionPercentage >= 100 && timeSpent <= 300) {
+            this.unlockAchievement('speed-demon');
+        }
+        
+        // Check for perfectionist achievement
+        if (this.metrics.completionPercentage >= 100 && this.metrics.mistakesCount === 0) {
+            this.unlockAchievement('perfectionist');
+        }
+    }
+    
+    // Backend communication helper
+    sendActionToBackend(eventName, payload) {
+        if (!this.realTimeEnabled || !window.socketClient) {
+            console.warn(`⚠️ Skipping backend send for ${eventName} - offline or missing socket`);
+            return;
+        }
+        const data = {
+            session_id: this.sessionId,
+            timestamp: Date.now(),
+            ...payload
+        };
+        try {
+            window.socketClient.emit(eventName, data);
+            console.log(`📤 Sent backend event: ${eventName}`, data);
+        } catch (err) {
+            console.error(`❌ Failed to send backend event: ${eventName}`, err);
+        }
+    }
+    
+    syncWithBackend() {
+        if (!this.realTimeEnabled || !window.socketClient) return;
+        
+        // Request progress update from backend
+        window.socketClient.emit('get_progress_update', {
+            session_id: this.sessionId,
+            current_metrics: this.metrics,
+            timestamp: Date.now()
+        });
+    }
+    
+    checkForAchievements() {
+        // Check for all achievements (Network Learning Arena style)
+        if (this.metrics.devicesPlaced === 1 && !this.achievements['first-device']) {
+            this.unlockAchievement('first-device');
+        }
+        
+        if (this.metrics.devicesPlaced >= 5 && !this.achievements['network-builder']) {
+            this.unlockAchievement('network-builder');
+        }
+        
+        if (this.metrics.completionPercentage >= 100 && this.metrics.timeSpent <= 300 && !this.achievements['speed-demon']) {
+            this.unlockAchievement('speed-demon');
+        }
+        
+        if (this.metrics.completionPercentage >= 100 && this.metrics.mistakesCount === 0 && !this.achievements['perfectionist']) {
+            this.unlockAchievement('perfectionist');
+        }
+        
+        if (this.metrics.configurationsComplete >= 3 && !this.achievements['configuration-master']) {
+            this.unlockAchievement('configuration-master');
+        }
+    }
+    
+    // ===== END NETWORK LEARNING ARENA COMPATIBILITY METHODS =====
     
     updateTimeMetrics() {
         if (this.startTime) {
@@ -10303,6 +10874,161 @@ class SimulationPerformanceFeedback {
             window.simulation.showToast(`💡 ${message}`, 'info');
         }
     }
+    
+    // ===== MISSING UTILITY METHODS =====
+    
+    updateAllMetrics() {
+        // Update all metric displays
+        this.updateMetricsDisplay();
+        this.updateScoreDisplay();
+        this.updateProgressRing(this.metrics.completionPercentage);
+        this.updateAchievementsDisplay();
+    }
+    
+    updateMetricsDisplay() {
+        // Update metrics in the performance sidebar
+        const elements = {
+            'time-spent': this.formatTime(this.metrics.timeSpent),
+            'actions-count': this.metrics.actionsCount,
+            'mistakes-count': this.metrics.mistakesCount,
+            'hints-used': this.metrics.hintsUsed,
+            'devices-placed': this.metrics.devicesPlaced,
+            'connections-made': this.metrics.connectionsMade,
+            'configurations-complete': this.metrics.configurationsComplete
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+    }
+    
+    updateScoreDisplay() {
+        const scoreElements = document.querySelectorAll('#current-score, #current-score-sidebar, .score-value');
+        scoreElements.forEach(element => {
+            if (element) {
+                element.textContent = this.metrics.score;
+            }
+        });
+    }
+    
+    updateProgressRing(percentage) {
+        // Update progress ring/circle if present
+        const progressRing = document.querySelector('.progress-ring-circle');
+        if (progressRing) {
+            const radius = progressRing.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            const offset = circumference - (percentage / 100) * circumference;
+            progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressRing.style.strokeDashoffset = offset;
+        }
+        
+        // Update percentage display
+        const percentageDisplay = document.querySelector('.progress-percentage');
+        if (percentageDisplay) {
+            percentageDisplay.textContent = `${Math.round(percentage)}%`;
+        }
+    }
+    
+    updateAchievementsDisplay() {
+        // Update achievement badges
+        Object.entries(this.achievements).forEach(([achievementId, unlocked]) => {
+            const badge = document.querySelector(`[data-achievement="${achievementId}"]`);
+            if (badge) {
+                badge.classList.toggle('unlocked', unlocked);
+                badge.classList.toggle('locked', !unlocked);
+            }
+        });
+    }
+    
+    formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    animateScoreChange(delta) {
+        const scoreElement = document.querySelector('.score-value, #current-score');
+        if (!scoreElement) return;
+        
+        const changeElement = document.createElement('div');
+        changeElement.className = `score-change ${delta > 0 ? 'positive' : 'negative'}`;
+        changeElement.textContent = `${delta > 0 ? '+' : ''}${delta}`;
+        changeElement.style.cssText = `
+            position: absolute;
+            color: ${delta > 0 ? '#4CAF50' : '#f44336'};
+            font-weight: bold;
+            font-size: 0.9em;
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 2s ease;
+            pointer-events: none;
+            z-index: 1000;
+        `;
+        
+        scoreElement.style.position = 'relative';
+        scoreElement.appendChild(changeElement);
+        
+        // Animate upward and fade out
+        requestAnimationFrame(() => {
+            changeElement.style.transform = 'translateY(-30px)';
+            changeElement.style.opacity = '0';
+        });
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (changeElement.parentNode) {
+                changeElement.parentNode.removeChild(changeElement);
+            }
+        }, 2000);
+    }
+    
+    updatePerformanceIndicators(indicators) {
+        // Update various performance indicators from backend
+        if (indicators.efficiency !== undefined) {
+            const efficiencyElement = document.querySelector('.efficiency-meter');
+            if (efficiencyElement) {
+                efficiencyElement.style.width = `${indicators.efficiency}%`;
+            }
+        }
+        
+        if (indicators.accuracy !== undefined) {
+            const accuracyElement = document.querySelector('.accuracy-meter');
+            if (accuracyElement) {
+                accuracyElement.style.width = `${indicators.accuracy}%`;
+            }
+        }
+    }
+    
+    updateSmartHints(hints) {
+        // Update smart hints container
+        const hintsContainer = document.getElementById('hints-container');
+        if (hintsContainer && hints.length > 0) {
+            hintsContainer.innerHTML = hints.map(hint => `
+                <div class="hint-item">
+                    <i class="bx bx-info-circle hint-icon"></i>
+                    <div class="hint-text">${hint.message}</div>
+                </div>
+            `).join('');
+        }
+    }
+    
+    getDeviceConfigurations() {
+        // Get current device configurations for validation
+        const configs = {};
+        if (window.networkDevices) {
+            window.networkDevices.forEach(device => {
+                if (device.config) {
+                    configs[device.id] = device.config;
+                }
+            });
+        }
+        return configs;
+    }
+    
+    // ===== END MISSING UTILITY METHODS =====
     
     getSmartHint() {
         if (!window.simulation) return;

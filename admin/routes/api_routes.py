@@ -345,6 +345,78 @@ def get_question_groups():
         print(f"Error fetching question groups: {e}")
         return jsonify([])
 
+@api_bp.route('/question-groups/assignments/explicit', methods=['POST'])
+def assign_question_group_explicit():
+    """Assign question group to class or module explicitly"""
+    try:
+        data = request.get_json()
+        question_group_id = data.get('question_group_id')
+        class_id = data.get('class_id')
+        module_id = data.get('module_id')  # Optional: assign to specific module
+        
+        if not question_group_id or not class_id:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Get the question group
+        question_group = QuestionGroup.query.get(question_group_id)
+        if not question_group:
+            return jsonify({'success': False, 'error': 'Question group not found'}), 404
+        
+        if module_id:
+            # Assign to specific module
+            from admin.models.module import Module
+            module = Module.query.filter_by(id=module_id, class_id=class_id).first()
+            if not module:
+                return jsonify({'success': False, 'error': 'Module not found'}), 404
+            
+            # Check if already assigned
+            if question_group not in module.question_groups:
+                module.question_groups.append(question_group)
+                assignment_type = "module"
+                target_name = module.title
+            else:
+                return jsonify({'success': False, 'error': 'Question group already assigned to this module'}), 400
+        else:
+            # Assign to entire class
+            from admin.models.class_model import Class
+            class_obj = Class.query.get(class_id)
+            if not class_obj:
+                return jsonify({'success': False, 'error': 'Class not found'}), 404
+            
+            # Check if already assigned
+            if question_group not in class_obj.question_groups:
+                class_obj.question_groups.append(question_group)
+                assignment_type = "class"
+                target_name = class_obj.name
+            else:
+                return jsonify({'success': False, 'error': 'Question group already assigned to this class'}), 400
+        
+        db.session.commit()
+        
+        # Create notification data
+        notification_data = {
+            'type': 'question_group_assigned',
+            'question_group_name': question_group.name,
+            'assignment_type': assignment_type,
+            'target_name': target_name,
+            'class_id': class_id,
+            'module_id': module_id if module_id else None
+        }
+        
+        # Emit socket event for real-time notification
+        from socket_events import emit_assignment_notification
+        emit_assignment_notification(class_id, notification_data)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Question group "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error assigning question group: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @api_bp.route('/render-module-preview', methods=['POST'])
 def render_module_preview():
     """Render module preview using the student-identical template"""

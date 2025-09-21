@@ -851,13 +851,19 @@ def create_explicit_assignment():
             title=title,
             description=data.get('description', ''),
             due_date=data.get('due_date'),
-            max_attempts=data.get('max_attempts', 3)
+            max_attempts=data.get('max_attempts', 3),
+            module_id=data.get('module_id'),  # Support module-level assignments
+            assigned_by=getattr(current_user, 'id', None)
         )
+        
+        # Generate appropriate success message
+        assignment_target = "module" if data.get('module_id') else "class"
         
         return jsonify({
             'success': True,
             'assignment_id': assignment.id,
-            'message': 'Explicit assignment created successfully'
+            'assignment_target': assignment_target,
+            'message': f'Simulation assigned to {assignment_target} successfully'
         })
         
     except Exception as e:
@@ -1071,4 +1077,89 @@ def quick_create_simulation():
         }), 201
         
     except Exception as e:
+        return jsonify({'error': f'Failed to create simulation: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/create', methods=['POST'])
+@login_required
+@teacher_required
+def create_simulation_api():
+    """API endpoint for creating new simulations from class content selector"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Required fields validation
+        required_fields = ['title', 'description', 'simulation_type', 'category']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        # Build simulation data structure for the controller
+        simulation_data = {
+            'basic': {
+                'title': data.get('title'),
+                'description': data.get('description'),
+                'simulation_type': data.get('simulation_type'),
+                'category': data.get('category'),
+                'difficulty': data.get('difficulty', 'Beginner'),
+                'estimated_duration': data.get('estimated_duration', 30),
+                'is_published': data.get('is_published', True),
+                'is_active': data.get('is_active', True)
+            },
+            'objectives': data.get('learning_objectives', []),
+            'template': {
+                'selectedTemplate': 'basic-template',
+                'networkTopology': 'simple'
+            },
+            'steps': [
+                {
+                    'title': 'Introduction',
+                    'type': 'instruction',
+                    'description': f"Welcome to the {data.get('title', 'simulation')} exercise.",
+                    'content': data.get('description', ''),
+                    'validation': {'score': 0}
+                },
+                {
+                    'title': 'Complete Task',
+                    'type': 'task',
+                    'description': 'Complete the assigned networking task.',
+                    'content': f"Complete the {data.get('simulation_type', 'networking')} configuration as instructed.",
+                    'validation': {
+                        'score': 80
+                    },
+                    'hint': 'Follow the step-by-step instructions provided.'
+                },
+                {
+                    'title': 'Verification',
+                    'type': 'verification',
+                    'description': 'Verify your configuration is working correctly.',
+                    'content': 'Test your network configuration and verify connectivity.',
+                    'validation': {
+                        'score': 20
+                    }
+                }
+            ],
+            'scoring': {
+                'timeBonus': 10,
+                'perfectBonus': 20,
+                'totalPoints': 100
+            }
+        }
+
+        # Create the simulation using the existing controller method
+        result = simulation_controller.create_simulation_from_builder(simulation_data, current_user.id)
+
+        if 'error' in result:
+            return jsonify(result), 400
+
+        return jsonify({
+            'success': True,
+            'simulation': result['simulation'],
+            'message': 'Simulation created successfully!'
+        }), 201
+        
+    except Exception as e:
+        current_app.logger.error(f"Error creating simulation: {str(e)}")
         return jsonify({'error': f'Failed to create simulation: {str(e)}'}), 500

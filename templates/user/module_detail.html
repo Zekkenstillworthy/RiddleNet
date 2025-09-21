@@ -710,10 +710,11 @@ html {
     border-radius: 12px;
     margin-bottom: 20px;
     overflow: hidden;
+    flex-wrap: wrap; /* allow two-per-row layout when we add more toggles */
 }
 
 .toggle-btn {
-    flex: 1;
+    flex: 1 1 50%; /* two buttons per row on small width sidebar */
     background: none;
     border: none;
     padding: 12px 16px;
@@ -836,6 +837,102 @@ html {
     color: var(--cyber-glow);
     width: 12px;
 }
+
+/* Questions Modal Styles */
+.questions-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.questions-modal-content {
+    background: var(--card-bg);
+    border: 2px solid var(--border-glow);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), var(--glow-cyan);
+    position: relative;
+}
+
+.questions-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-glow);
+}
+
+.questions-modal-title {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.questions-modal-title i {
+    color: var(--cyber-glow);
+}
+
+.questions-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.questions-modal-close:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.questions-modal-body {
+    max-height: calc(90vh - 150px);
+    overflow-y: auto;
+}
+
+.questions-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.questions-modal-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.questions-modal-body::-webkit-scrollbar-thumb {
+    background: var(--cyber-glow);
+    border-radius: 3px;
+}
+
+.questions-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
+}
 </style>
 {% endblock %}
 
@@ -858,6 +955,14 @@ html {
             <button class="toggle-btn" onclick="switchSidebarView('assignments')" id="assignments-toggle">
                 <i class="fas fa-tasks"></i>
                 Assignments
+            </button>
+            <button class="toggle-btn" onclick="switchSidebarView('simulations')" id="simulations-toggle">
+                <i class="fas fa-flask"></i>
+                Simulations
+            </button>
+            <button class="toggle-btn" onclick="switchSidebarView('questions')" id="questions-toggle">
+                <i class="fas fa-question-circle"></i>
+                Questions
             </button>
         </div>
 
@@ -1035,6 +1140,55 @@ html {
             </div>
         </div>
 
+        <!-- Simulations Section (moved from lesson-content) -->
+        <div class="sidebar-section" id="simulations-section">
+            {% if lesson and lesson_simulations and lesson_simulations|length > 0 %}
+                <div class="assignment-list">{# reuse list/card styles #}
+                    {% for simulation in lesson_simulations %}
+                    <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=simulation.id) }}"
+                       class="quick-action-btn" style="margin: 0 0 10px 0;">
+                        <i class="fas fa-play"></i>
+                        <span style="flex:1;">{{ simulation.title }}</span>
+                        {% if (simulation_progress or {}).get(simulation.id, {}).get('completed') %}
+                        <i class="fas fa-check-circle" style="color: var(--success-color);" title="Completed"></i>
+
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+                <div style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-top: 8px;">
+                    <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 6px;"></i>
+                    Complete these simulations to master the lesson concepts
+                </div>
+            {% else %}
+                {% if module_simulations and module_simulations|length > 0 %}
+                    <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=module_simulations[0].id) }}"
+                       class="quick-action-btn">
+                        <i class="fas fa-play"></i>
+                        <span style="flex:1;">Start: {{ module_simulations[0].title }}</span>
+                    </a>
+                {% else %}
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    <i class="fas fa-flask" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.6;"></i>
+                    <div>No simulations available for this lesson.</div>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Questions Section (trigger for modal) -->
+        <div class="sidebar-section" id="questions-section">
+            <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                <i class="fas fa-question-circle" style="font-size: 2.5rem; margin-bottom: 12px; color: var(--cyber-glow);"></i>
+                <h4 style="color: var(--text-primary); margin-bottom: 8px; font-size: 1.1rem;">Practice Questions</h4>
+                <p style="margin: 0 0 16px 0; font-size: 0.9rem;">Test your knowledge with interactive questions</p>
+                <button onclick="openQuestionsModal()" class="quick-action-btn" style="margin: 0 auto; max-width: 200px;">
+                    <i class="fas fa-play"></i>
+                    <span>Start Questions</span>
+                </button>
+            </div>
+        </div>
+
         {# Quick Actions removed per request: section intentionally omitted #}
     </div>
 
@@ -1081,80 +1235,6 @@ html {
                 </div>
                 {% endif %}
             </div>
-            
-            <!-- Lesson-Specific Simulation Buttons -->
-            <!-- NOTE: For future maintenance, consider using CSS classes from learning_class_common.css:
-                 .simulation-btn-primary for large simulation buttons
-                 .simulation-btn-card for smaller card-based simulation buttons
-                 .simulation-grid-card for simulation card containers -->
-            {% if lesson_simulations and lesson_simulations|length > 0 %}
-            <div style="margin-top: 24px;">
-                <h4 style="color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-flask" style="color: var(--cyber-glow);"></i>
-                    Lesson Simulations
-                </h4>
-                <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-                    {% for simulation in lesson_simulations %}
-                    <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=simulation.id) }}" 
-                       style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
-                              color: white; 
-                              padding: 16px 32px; 
-                              border-radius: 12px; 
-                              text-decoration: none; 
-                              font-weight: 600; 
-                              font-size: 1.1rem;
-                              display: flex; 
-                              align-items: center; 
-                              gap: 12px;
-                              box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-                              transition: all 0.3s ease;
-                              border: 2px solid transparent;
-                              position: relative;"
-                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'; this.style.borderColor='transparent';">
-                        <i class="fas fa-play" style="font-size: 1.2rem;"></i>
-                        <span>{{ simulation.title }}</span>
-                        {% if simulation_progress.get(simulation.id, {}).get('completed') %}
-                        <i class="fas fa-check-circle" style="color: var(--success-color); margin-left: 8px;" title="Completed"></i>
-                        {% endif %}
-                    </a>
-                    {% endfor %}
-                </div>
-                <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; margin-top: 12px;">
-                    <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 8px;"></i>
-                    Complete these simulations to master the lesson concepts
-                </div>
-            </div>
-            {% else %}
-            <!-- Fallback: Show module or general simulations -->
-            <div style="margin-top: 24px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-                {% if module_simulations and module_simulations|length > 0 %}
-                    <a href="{{ url_for('dynamic_simulations.run_simulation', simulation_id=module_simulations[0].id) }}" 
-                       style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); 
-                              color: white; 
-                              padding: 16px 32px; 
-                              border-radius: 12px; 
-                              text-decoration: none; 
-                              font-weight: 600; 
-                              font-size: 1.1rem;
-                              display: flex; 
-                              align-items: center; 
-                              gap: 12px;
-                              box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
-                              transition: all 0.3s ease;
-                              border: 2px solid transparent;"
-                       onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 35px rgba(0, 217, 255, 0.4)'; this.style.borderColor='var(--cyber-glow)';"
-                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 25px rgba(0, 217, 255, 0.3)'; this.style.borderColor='transparent';">
-                        <i class="fas fa-play" style="font-size: 1.2rem;"></i>
-                        <span>Start: {{ module_simulations[0].title }}</span>
-                    </a>
-                {% endif %}
-                <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">
-                    <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 8px;"></i>
-                    No specific simulations assigned to this lesson
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         <!-- Description -->
@@ -1209,111 +1289,6 @@ html {
         </div>
         {% endif %}
 
-        <!-- Questions Section -->
-        {% if lesson_questions and lesson_questions|length > 0 %}
-        <div class="content-section">
-            <h3 class="section-title">
-                <i class="fas fa-question-circle"></i>
-                Practice Questions
-            </h3>
-            <div class="questions-container">
-                <div class="questions-header" style="margin-bottom: 24px; padding: 16px; background: var(--surface-light); border-radius: 8px; border: 1px solid var(--border-glow);">
-                    <p style="color: var(--text-secondary); margin: 0; font-size: 1rem; line-height: 1.5;">
-                        <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 8px;"></i>
-                        Test your understanding with these practice questions. Click on an answer to see if it's correct.
-                    </p>
-                </div>
-                
-                {% for question in lesson_questions %}
-                <div class="question-card" style="background: var(--surface-light); border: 1px solid var(--border-glow); border-radius: 12px; padding: 24px; margin-bottom: 20px; transition: all 0.3s ease;">
-                    <div class="question-header" style="margin-bottom: 16px;">
-                        <span class="question-number" style="background: var(--cyber-glow); color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; margin-right: 12px;">
-                            Q{{ question.numb or loop.index }}
-                        </span>
-                        {% if question.category %}
-                        <span class="question-category" style="background: rgba(139, 92, 246, 0.2); color: var(--network-purple); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">
-                            {{ question.category|title }}
-                        </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="question-text" style="color: var(--text-primary); font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; line-height: 1.6;">
-                        {{ question.question }}
-                    </div>
-                    
-                    {% if question.options %}
-                    <div class="question-options" style="margin-bottom: 16px;">
-                        {% for option in question.options %}
-                        <div class="option-item" 
-                             onclick="selectAnswer({{ loop.index0 }}, '{{ question.answer }}', '{{ option }}', {{ question.id }}, '{{ question.explanation or '' }}')"
-                             style="background: rgba(255, 255, 255, 0.05); 
-                                    border: 1px solid rgba(255, 255, 255, 0.2); 
-                                    border-radius: 8px; 
-                                    padding: 12px 16px; 
-                                    margin-bottom: 8px; 
-                                    cursor: pointer; 
-                                    transition: all 0.3s ease;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 12px;"
-                             onmouseover="this.style.background='rgba(0, 217, 255, 0.1)'; this.style.borderColor='var(--cyber-glow)';"
-                             onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.2)';"
-                             data-question-id="{{ question.id }}"
-                             data-option-index="{{ loop.index0 }}">
-                            <span class="option-letter" style="background: var(--dark-bg); color: var(--cyber-glow); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; flex-shrink: 0;">
-                                {{ ['A', 'B', 'C', 'D'][loop.index0] if loop.index0 < 4 else loop.index }}
-                            </span>
-                            <span class="option-text" style="color: var(--text-secondary); flex: 1;">{{ option }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    
-                    <div class="question-answer" id="answer-{{ question.id }}" style="display: none; margin-top: 16px; padding: 16px; border-radius: 8px; border-left: 4px solid var(--neon-green);">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                            <i class="fas fa-check-circle" style="color: var(--neon-green); font-size: 1.1rem;"></i>
-                            <strong style="color: var(--neon-green); font-size: 1rem;">Correct Answer:</strong>
-                            <span style="color: var(--text-primary); font-weight: 600;">{{ question.answer }}</span>
-                        </div>
-                        {% if question.explanation %}
-                        <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-top: 8px;">
-                            <strong style="color: var(--text-primary);">Explanation:</strong> {{ question.explanation }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="question-feedback" id="feedback-{{ question.id }}" style="display: none; margin-top: 16px; padding: 16px; border-radius: 8px;">
-                        <!-- Feedback will be populated by JavaScript -->
-                    </div>
-                </div>
-                {% endfor %}
-                
-                <div class="questions-summary" style="margin-top: 32px; padding: 20px; background: var(--surface-light); border-radius: 12px; border: 1px solid var(--border-glow); text-align: center;">
-                    <h4 style="color: var(--text-primary); margin: 0 0 12px 0; font-size: 1.2rem;">Questions Summary</h4>
-                    <p style="color: var(--text-secondary); margin: 0; font-size: 1rem;">
-                        Total Questions: <strong style="color: var(--cyber-glow);">{{ lesson_questions|length }}</strong>
-                    </p>
-                    <div id="score-summary" style="margin-top: 12px; display: none;">
-                        <p style="color: var(--text-secondary); margin: 0;">
-                            Your Score: <span id="score-text" style="color: var(--neon-green); font-weight: 600; font-size: 1.1rem;"></span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="content-section">
-            <h3 class="section-title">
-                <i class="fas fa-question-circle"></i>
-                Practice Questions
-            </h3>
-            <div style="text-align: center; padding: 48px; color: var(--text-muted);">
-                <i class="fas fa-question-circle" style="font-size: 4rem; margin-bottom: 16px; opacity: 0.5;"></i>
-                <h4 style="color: var(--text-secondary); margin-bottom: 8px;">No Questions Available</h4>
-                <p style="margin: 0;">Questions for this lesson will be added soon.</p>
-            </div>
-        </div>
-        {% endif %}
 
         <!-- Navigation Between Lessons -->
         {% if previous_lesson or next_lesson %}
@@ -1360,6 +1335,82 @@ html {
                 </div>
             </div>
         </div>
+
+                <!-- No Questions Modal -->
+                <div class="questions-modal" id="noQuestionsModal" style="display: none;">
+                    <div class="questions-modal-content" style="max-width: 560px;">
+                        <div class="questions-modal-header">
+                            <h2 style="margin: 0; color: var(--text-primary); font-size: 1.15rem;">
+                                <i class="fas fa-info-circle" style="color: var(--warning-color); margin-right: 10px;"></i>
+                                No Questions Available
+                            </h2>
+                            <span class="questions-modal-close" onclick="closeNoQuestionsModal()">&times;</span>
+                        </div>
+                        <div class="questions-modal-body">
+                            <div style="text-align: center; padding: 16px 8px;">
+                                <i class="fas fa-question-circle" style="font-size: 2.2rem; margin-bottom: 12px; color: var(--text-secondary);"></i>
+                                <p id="no-questions-text" style="color: var(--text-secondary); font-size: 0.98rem; margin: 0 0 16px 0;">
+                                    There are currently no questions assigned to this module.
+                                </p>
+                                <button class="quick-action-btn" onclick="closeNoQuestionsModal()" style="min-width: 140px;">
+                                    <i class="fas fa-check"></i>
+                                    <span>OK</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Click outside to close -->
+                    <script>
+                    function openNoQuestionsModal(moduleTitle) {
+                        console.log('🚫 openNoQuestionsModal() called with moduleTitle:', moduleTitle);
+                        const modal = document.getElementById('noQuestionsModal');
+                        const text = document.getElementById('no-questions-text');
+                        
+                        console.log('🔍 No questions modal elements:', {
+                            modal: modal ? 'Found' : 'Missing',
+                            text: text ? 'Found' : 'Missing'
+                        });
+                        
+                        if (text && moduleTitle) {
+                            const newText = `There are currently no questions assigned to <strong>${moduleTitle}</strong> module.`;
+                            console.log('📝 Setting no questions text:', newText);
+                            text.innerHTML = newText;
+                        }
+                        if (modal) {
+                            console.log('🎪 Showing no questions modal');
+                            modal.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            console.error('❌ No questions modal element not found!');
+                        }
+                    }
+                    function closeNoQuestionsModal() {
+                        console.log('🔒 closeNoQuestionsModal() called');
+                        const modal = document.getElementById('noQuestionsModal');
+                        if (modal) {
+                            console.log('✅ Closing no questions modal');
+                            modal.style.display = 'none';
+                            document.body.style.overflow = 'auto';
+                        } else {
+                            console.warn('⚠️ No questions modal not found for closing');
+                        }
+                        const questionsToggle = document.getElementById('questions-toggle');
+                        if (questionsToggle) {
+                            console.log('🔄 Removing active state from questions toggle');
+                            questionsToggle.classList.remove('active');
+                        }
+                    }
+                    // Outside click handler
+                    window.addEventListener('click', function(e) {
+                        const modal = document.getElementById('noQuestionsModal');
+                        if (e.target === modal) {
+                            closeNoQuestionsModal();
+                        }
+                    });
+                    </script>
+    
+                </div>
         {% endif %}
     </div>
     {% else %}
@@ -1374,17 +1425,40 @@ html {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Page loaded - additional functionality can be added here
+    console.log('🎯 Module Detail Page Loaded');
+    {% if module %}
+    console.log('📚 Current Module:', {
+        id: {{ module.id }},
+        title: '{{ module.title }}',
+        number: {{ module.module_number or 'null' }}
+    });
+    {% endif %}
+    {% if lesson %}
+    console.log('📖 Current Lesson:', {
+        id: {{ lesson.id }},
+        title: '{{ lesson.title }}'
+    });
+    {% endif %}
+    console.log('🔗 Current URL:', window.location.href);
+    
+    // Check if modal elements exist
+    const questionsModal = document.getElementById('questionsModal');
+    const noQuestionsModal = document.getElementById('noQuestionsModal');
+    console.log('🔍 Modal elements check on page load:', {
+        questionsModal: questionsModal ? 'Found' : 'Missing',
+        noQuestionsModal: noQuestionsModal ? 'Found' : 'Missing'
+    });
+    
+    console.log('✅ Questions functionality ready');
 });
 
-// Question scoring variables
-let totalQuestions = {{ lesson_questions|length if lesson_questions else 0 }};
+// Question scoring variables (will be set when questions load)
+let totalQuestions = 0;
 let answeredQuestions = 0;
 let correctAnswers = 0;
 
 function selectAnswer(optionIndex, correctAnswer, selectedOption, questionId, explanation) {
     // Check if this question was already answered
-    const questionElement = document.querySelector(`[data-question-id="${questionId}"]`);
     const allOptionsForQuestion = document.querySelectorAll(`[data-question-id="${questionId}"]`);
     
     // Check if already answered
@@ -1415,7 +1489,7 @@ function selectAnswer(optionIndex, correctAnswer, selectedOption, questionId, ex
             opt.style.borderColor = '#10B981';
             opt.style.cursor = 'default';
             opt.classList.add('correct-answer');
-        } else if (opt === questionElement) {
+        } else if (parseInt(opt.getAttribute('data-option-index')) === optionIndex) {
             // Mark selected wrong answer in red
             opt.style.background = 'rgba(239, 68, 68, 0.2)';
             opt.style.borderColor = '#EF4444';
@@ -1540,6 +1614,8 @@ function completeLesson() {
 }
 
 function switchSidebarView(view) {
+    console.log('🔄 switchSidebarView called with view:', view);
+    
     // Remove active class from all toggle buttons
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -1552,12 +1628,280 @@ function switchSidebarView(view) {
     
     // Show selected section and activate corresponding button
     if (view === 'modules') {
+        console.log('📚 Switching to modules view');
         document.getElementById('modules-toggle').classList.add('active');
         document.getElementById('modules-section').classList.add('active');
     } else if (view === 'assignments') {
+        console.log('📝 Switching to assignments view');
         document.getElementById('assignments-toggle').classList.add('active');
         document.getElementById('assignments-section').classList.add('active');
+    } else if (view === 'simulations') {
+        console.log('🧪 Switching to simulations view');
+        const btn = document.getElementById('simulations-toggle');
+        const sec = document.getElementById('simulations-section');
+        if (btn && sec) { btn.classList.add('active'); sec.classList.add('active'); }
+    } else if (view === 'questions') {
+        console.log('❓ Switching to questions view - opening modal');
+        // Questions button should open modal instead of activating sidebar
+        document.getElementById('questions-toggle').classList.add('active');
+        openQuestionsModal();
+    }
+}
+
+// Modal functions for questions
+function openQuestionsModal() {
+    console.log('🔍 openQuestionsModal() called');
+    const modal = document.getElementById('questionsModal');
+    console.log('📋 Modal element found:', modal ? 'Yes' : 'No');
+    
+    if (modal) {
+        console.log('🎪 Opening questions modal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Load questions for current module
+        console.log('📡 Calling loadQuestionsForModule()');
+        loadQuestionsForModule();
+    } else {
+        console.error('❌ Questions modal element not found!');
+    }
+}
+
+async function loadQuestionsForModule() {
+    console.log('🚀 loadQuestionsForModule() started');
+    
+    const loadingDiv = document.getElementById('questions-loading');
+    const contentDiv = document.getElementById('questions-content');
+    const errorDiv = document.getElementById('questions-error');
+    
+    console.log('🔍 Modal elements check:', {
+        loading: loadingDiv ? 'Found' : 'Missing',
+        content: contentDiv ? 'Found' : 'Missing', 
+        error: errorDiv ? 'Found' : 'Missing'
+    });
+    
+    // Show loading state
+    if (loadingDiv) loadingDiv.style.display = 'block';
+    if (contentDiv) contentDiv.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'none';
+    
+    // Reset scoring counters before loading
+    totalQuestions = 0;
+    answeredQuestions = 0;
+    correctAnswers = 0;
+    console.log('🔄 Reset scoring counters');
+    
+    try {
+        {% if module %}
+        const moduleId = {{ module.id }};
+        {% else %}
+        const moduleId = null;
+        {% endif %}
+        
+        console.log('🆔 Module ID from template:', moduleId);
+        
+        if (!moduleId) {
+            throw new Error('No module selected');
+        }
+        
+        const apiUrl = `/api/questions/module/${moduleId}`;
+        console.log('📡 Making API call to:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log('📋 API response status:', response.status, response.statusText);
+        
+        const data = await response.json();
+        console.log('📊 API response data:', data);
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to load questions');
+        }
+        
+        // Hide loading and show content
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        
+        if (data.questions && data.questions.length > 0) {
+            console.log('✅ Questions found:', data.questions.length, 'questions');
+            renderQuestions(data);
+            if (contentDiv) contentDiv.style.display = 'block';
+        } else {
+            console.log('⚠️ No questions found for module');
+            console.log('🔄 Closing questions modal and showing no questions popup');
+            // If no questions, close the questions modal and show a small informative popup
+            const moduleTitle = data.module_title || 'this module';
+            closeQuestionsModal();
+            openNoQuestionsModal(moduleTitle);
+            return;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading questions:', error);
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        if (errorDiv) errorDiv.style.display = 'block';
+    }
+}
+
+function renderQuestions(data) {
+    const contentDiv = document.getElementById('questions-content');
+    // Initialize scoring based on loaded data
+    totalQuestions = Array.isArray(data.questions) ? data.questions.length : 0;
+    answeredQuestions = 0;
+    correctAnswers = 0;
+    
+    let html = `
+        <div class="questions-container">
+            <div class="questions-header" style="margin-bottom: 16px; padding: 12px; background: var(--surface-light); border-radius: 8px; border: 1px solid var(--border-glow);">
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem; line-height: 1.5;">
+                    <i class="fas fa-info-circle" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                    Practice questions for ${data.module_title || 'this lesson'}. Click an answer to check it.
+                </p>
+            </div>
+    `;
+    
+    data.questions.forEach((question, index) => {
+        html += `
+            <div class="question-card" style="background: var(--surface-light); border: 1px solid var(--border-glow); border-radius: 12px; padding: 16px; margin-bottom: 16px; transition: all 0.3s ease;">
+                <div class="question-header" style="margin-bottom: 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="question-number" style="background: var(--cyber-glow); color: white; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">
+                        Q${question.numb || (index + 1)}
+                    </span>
+                    ${question.category ? `
+                    <span class="question-category" style="background: rgba(139, 92, 246, 0.2); color: var(--network-purple); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">
+                        ${question.category.charAt(0).toUpperCase() + question.category.slice(1)}
+                    </span>
+                    ` : ''}
+                </div>
+                <div class="question-text" style="color: var(--text-primary); font-size: 1rem; font-weight: 600; margin-bottom: 12px; line-height: 1.5;">
+                    ${question.question}
+                </div>
+        `;
+        
+        if (question.options && question.options.length > 0) {
+            html += '<div class="question-options" style="margin-bottom: 10px;">';
+            question.options.forEach((option, optIndex) => {
+                const optionLetter = ['A', 'B', 'C', 'D'][optIndex] || (optIndex + 1);
+                html += `
+                    <div class="option-item"
+                         onclick="selectAnswer(${optIndex}, '${question.answer}', '${option}', ${question.id}, '${question.explanation || ''}')"
+                         style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;"
+                         onmouseover="this.style.background='rgba(0, 217, 255, 0.1)'; this.style.borderColor='var(--cyber-glow)';"
+                         onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.2)';"
+                         data-question-id="${question.id}"
+                         data-option-index="${optIndex}">
+                        <span class="option-letter" style="background: var(--dark-bg); color: var(--cyber-glow); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; flex-shrink: 0;">
+                            ${optionLetter}
+                        </span>
+                        <span class="option-text" style="color: var(--text-secondary); flex: 1;">${option}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        html += `
+                <div class="question-answer" id="answer-${question.id}" style="display: none; margin-top: 8px; padding: 12px; border-radius: 8px; border-left: 4px solid var(--neon-green);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <i class="fas fa-check-circle" style="color: var(--neon-green); font-size: 1rem;"></i>
+                        <strong style="color: var(--neon-green); font-size: 0.95rem;">Correct Answer:</strong>
+                        <span style="color: var(--text-primary); font-weight: 600;">${question.answer}</span>
+                    </div>
+                    ${question.explanation ? `
+                    <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-top: 6px;">
+                        <strong style="color: var(--text-primary);">Explanation:</strong> ${question.explanation}
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="question-feedback" id="feedback-${question.id}" style="display: none; margin-top: 10px; padding: 12px; border-radius: 8px;"></div>
+            </div>
+        `;
+    });
+    
+    html += `
+            <div class="questions-summary" style="margin-top: 16px; padding: 14px; background: var(--surface-light); border-radius: 12px; border: 1px solid var(--border-glow); text-align: center;">
+                <h4 style="color: var(--text-primary); margin: 0 0 6px 0; font-size: 1.05rem;">Questions Summary</h4>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">
+                    Total Questions: <strong style="color: var(--cyber-glow);">${data.questions.length}</strong>
+                </p>
+                <div id="score-summary" style="margin-top: 8px; display: none;">
+                    <p style="color: var(--text-secondary); margin: 0;">
+                        Your Score: <span id="score-text" style="color: var(--neon-green); font-weight: 600; font-size: 1rem;"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    contentDiv.innerHTML = html;
+}
+
+function renderNoQuestions(moduleTitle) {
+    const contentDiv = document.getElementById('questions-content');
+    contentDiv.innerHTML = `
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+            <i class="fas fa-question-circle" style="font-size: 2.2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+            <h4 style="color: var(--text-secondary); margin-bottom: 6px; font-size: 1rem;">No Questions Available</h4>
+            <p style="margin: 0; font-size: 0.9rem;">Questions for ${moduleTitle} will be added soon.</p>
+        </div>
+    `;
+}
+
+function closeQuestionsModal() {
+    console.log('🔒 closeQuestionsModal() called');
+    const modal = document.getElementById('questionsModal');
+    if (modal) {
+        console.log('✅ Closing questions modal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    } else {
+        console.warn('⚠️ Questions modal not found for closing');
+    }
+    // Remove active state from questions toggle when modal closes
+    const questionsToggle = document.getElementById('questions-toggle');
+    if (questionsToggle) {
+        console.log('🔄 Removing active state from questions toggle');
+        questionsToggle.classList.remove('active');
+    }
+}
+
+// Close modal when clicking outside of modal content
+window.onclick = function(event) {
+    const modal = document.getElementById('questionsModal');
+    if (event.target === modal) {
+        closeQuestionsModal();
     }
 }
 </script>
+
+<!-- Questions Modal -->
+<div class="questions-modal" id="questionsModal">
+    <div class="questions-modal-content">
+        <div class="questions-modal-header">
+            <h2 style="margin: 0; color: var(--text-primary); font-size: 1.25rem;">
+                <i class="fas fa-question-circle" style="color: var(--cyber-glow); margin-right: 10px;"></i>
+                Practice Questions
+            </h2>
+            <span class="questions-modal-close" onclick="closeQuestionsModal()">&times;</span>
+        </div>
+        <div class="questions-modal-body">
+            <div id="questions-loading" style="text-align: center; padding: 48px 24px; display: none;">
+                <div style="color: var(--cyber-glow); font-size: 2rem; margin-bottom: 16px;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <h4 style="color: var(--text-primary); margin: 0 0 8px 0; font-size: 1.1rem;">Loading Questions...</h4>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">Fetching questions for the selected lesson</p>
+            </div>
+            
+            <div id="questions-content">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            
+            <div id="questions-error" style="text-align: center; padding: 24px; color: var(--text-muted); display: none;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2.2rem; margin-bottom: 10px; color: var(--danger-color);"></i>
+                <h4 style="color: var(--text-secondary); margin-bottom: 6px; font-size: 1rem;">Error Loading Questions</h4>
+                <p style="margin: 0; font-size: 0.9rem;">Please try again or select a different lesson.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

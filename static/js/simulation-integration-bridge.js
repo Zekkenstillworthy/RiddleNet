@@ -70,7 +70,9 @@ class SimulationEngineIntegration {
                 newCanvas.id = 'network-canvas';
                 if (canvas.width) newCanvas.width = canvas.width;
                 if (canvas.height) newCanvas.height = canvas.height;
-                newCanvas.className = canvas.className ? canvas.className + ' network-engine-canvas' : 'network-engine-canvas';
+                // Ensure the new canvas carries the common styling class
+                const existingClass = canvas.className ? canvas.className + ' ' : '';
+                newCanvas.className = `${existingClass}network-engine-canvas network-sim-canvas`.trim();
                 canvas.parentElement.insertBefore(newCanvas, canvas.nextSibling);
                 console.log('🧹 Created dedicated network canvas and removing legacy canvas');
                 // Remove the legacy canvas entirely
@@ -87,6 +89,8 @@ class SimulationEngineIntegration {
         // Initialize the comprehensive network engine
         try {
             // Find the canvas and get its ID
+            // Ensure the active canvas has the shared styling class
+            try { canvas.classList.add('network-sim-canvas'); } catch(_) {}
             let canvasId = canvas.id;
             if (!canvasId) {
                 // Generate a temporary ID if none exists

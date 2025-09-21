@@ -3265,6 +3265,183 @@ select::-webkit-scrollbar-thumb {
     overflow-y: auto;
 }
 
+/* Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--glass-border);
+    margin-bottom: 20px;
+    gap: 4px;
+}
+
+.modal-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modal-tab.active {
+    color: var(--cyber-glow);
+    border-bottom-color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.1);
+}
+
+.modal-tab i {
+    font-size: 0.9rem;
+}
+
+/* Modal Tab Content */
+.modal-tab-content {
+    display: none;
+}
+
+.modal-tab-content.active {
+    display: block;
+}
+
+/* Form Styles for Creation Tab */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group.half {
+    width: calc(50% - 10px);
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.form-group.half:last-child {
+    margin-right: 0;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.05);
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--accent-color));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 2px solid var(--glass-border);
+}
+
+.btn-secondary:hover {
+    color: var(--text-primary);
+    border-color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.05);
+}
+
+/* Assignment Options */
+.assignment-options {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.assignment-options .form-label {
+    margin-bottom: 8px;
+    color: var(--cyber-glow);
+    font-weight: 600;
+}
+
 .simulation-list {
     margin: 20px 0;
     max-height: 400px;
@@ -5773,19 +5950,134 @@ function showSimulationAssignmentModal() {
         <div class="modal-overlay" id="simulationAssignmentModalOverlay" onclick="closeSimulationAssignmentModal()">
             <div class="modal-content simulation-assignment-modal" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <h2><i class="fas fa-desktop"></i> Assign Simulation to Class</h2>
+                    <h2><i class="fas fa-desktop"></i> Manage Simulations</h2>
                     <button class="modal-close" onclick="closeSimulationAssignmentModal()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="modal-description">Select an existing simulation to assign to this class:</p>
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs">
+                        <button class="modal-tab active" onclick="switchModalTab('assign')">
+                            <i class="fas fa-link"></i> Assign Existing
+                        </button>
+                        <button class="modal-tab" onclick="switchModalTab('create')">
+                            <i class="fas fa-plus"></i> Create New
+                        </button>
+                    </div>
                     
-                    <div id="availableSimulations" class="simulation-list">
-                        <div class="loading-state">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading available simulations...</p>
+                    <!-- Assign Existing Tab -->
+                    <div id="assign-tab" class="modal-tab-content active">
+                        <p class="modal-description">Select an existing simulation to assign to this class:</p>
+                        
+                        <!-- Module Selection for Assignment -->
+                        <div class="assignment-options" style="margin-bottom: 20px;">
+                            <label class="form-label">Assign to:</label>
+                            <select id="assignmentTarget" class="form-select">
+                                <option value="class">Entire Class</option>
+                                <option value="module">Specific Module</option>
+                            </select>
+                            
+                            <div id="moduleSelector" style="display: none; margin-top: 10px;">
+                                <label class="form-label">Select Module:</label>
+                                <select id="targetModule" class="form-select">
+                                    <option value="">Choose a module...</option>
+                                </select>
+                            </div>
                         </div>
+                        
+                        <div id="availableSimulations" class="simulation-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading available simulations...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Create New Tab -->
+                    <div id="create-tab" class="modal-tab-content">
+                        <p class="modal-description">Create a new simulation for this class:</p>
+                        
+                        <form id="createSimulationForm">
+                            <div class="form-group">
+                                <label class="form-label">Simulation Title *</label>
+                                <input type="text" id="simTitle" class="form-input" placeholder="Enter simulation title" required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label class="form-label">Simulation Type *</label>
+                                    <select id="simType" class="form-select" required>
+                                        <option value="">Select type...</option>
+                                        <option value="Networking 1">Networking 1</option>
+                                        <option value="Networking 2">Networking 2</option>
+                                        <option value="Security">Security</option>
+                                        <option value="Troubleshooting">Troubleshooting</option>
+                                    </select>
+                                </div>
+                                <div class="form-group half">
+                                    <label class="form-label">Category *</label>
+                                    <select id="simCategory" class="form-select" required>
+                                        <option value="">Select category...</option>
+                                        <option value="Subnetting">Subnetting</option>
+                                        <option value="Routing">Routing</option>
+                                        <option value="Switching">Switching</option>
+                                        <option value="VLAN">VLAN</option>
+                                        <option value="Security">Security</option>
+                                        <option value="Troubleshooting">Troubleshooting</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label class="form-label">Difficulty Level</label>
+                                    <select id="simDifficulty" class="form-select">
+                                        <option value="Beginner">Beginner</option>
+                                        <option value="Intermediate">Intermediate</option>
+                                        <option value="Advanced">Advanced</option>
+                                        <option value="Expert">Expert</option>
+                                    </select>
+                                </div>
+                                <div class="form-group half">
+                                    <label class="form-label">Duration (minutes)</label>
+                                    <input type="number" id="simDuration" class="form-input" placeholder="30" min="5" max="180">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Description *</label>
+                                <textarea id="simDescription" class="form-textarea" rows="3" placeholder="Describe what students will learn..." required></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Learning Objectives</label>
+                                <textarea id="simObjectives" class="form-textarea" rows="2" placeholder="List learning objectives (one per line)"></textarea>
+                            </div>
+                            
+                            <!-- Assignment Options for New Simulation -->
+                            <div class="form-group">
+                                <label class="form-label">Assign to:</label>
+                                <select id="newSimAssignmentTarget" class="form-select">
+                                    <option value="class">Entire Class</option>
+                                    <option value="module">Specific Module</option>
+                                </select>
+                                
+                                <div id="newSimModuleSelector" style="display: none; margin-top: 10px;">
+                                    <label class="form-label">Select Module:</label>
+                                    <select id="newSimTargetModule" class="form-select">
+                                        <option value="">Choose a module...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" onclick="closeSimulationAssignmentModal()">Cancel</button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-plus"></i> Create & Assign Simulation
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -5796,6 +6088,8 @@ function showSimulationAssignmentModal() {
     setTimeout(() => {
         document.getElementById('simulationAssignmentModalOverlay').classList.add('show');
         loadAvailableSimulations();
+        populateModuleSelectors();
+        initializeModalEvents();
     }, 10);
 }
 
@@ -5875,14 +6169,23 @@ function assignSimulationToClass(simulationId) {
         return;
     }
     
+    // Get assignment target and module selection
+    const assignmentTarget = document.getElementById('assignmentTarget').value;
+    const moduleId = document.getElementById('targetModule').value;
+    
     // Create simulation assignment
     const assignmentData = {
         simulation_id: simulationId,
         class_id: moduleBuilder.currentClass.id,
-        assignment_type: 'class',
+        assignment_type: assignmentTarget,
         is_published: true,
         max_attempts: 3
     };
+    
+    // Add module ID if assigning to specific module
+    if (assignmentTarget === 'module' && moduleId) {
+        assignmentData.module_id = moduleId;
+    }
     
     console.log('Assignment data being sent:', assignmentData);
     console.log('Current class:', moduleBuilder.currentClass);
@@ -5906,7 +6209,8 @@ function assignSimulationToClass(simulationId) {
     .then(data => {
         console.log('Assignment API response:', data);
         if (data.success) {
-            moduleBuilder.showToast('Simulation assigned to class successfully!', 'success');
+            const targetText = assignmentTarget === 'module' ? 'module' : 'class';
+            moduleBuilder.showToast(`Simulation assigned to ${targetText} successfully!`, 'success');
             closeSimulationAssignmentModal();
             // Reload classwork content
             if (document.getElementById('classwork-content').classList.contains('active')) {
@@ -5919,6 +6223,179 @@ function assignSimulationToClass(simulationId) {
     .catch(error => {
         console.error('Error assigning simulation:', error);
         moduleBuilder.showToast('Failed to assign simulation: ' + error.message, 'error');
+    });
+}
+
+// New Modal Tab Management Functions
+function switchModalTab(tabName) {
+    // Remove active class from all tabs and contents
+    document.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    const selectedTab = document.querySelector(`[onclick*="switchModalTab('${tabName}')"]`);
+    const selectedContent = document.getElementById(`${tabName}-tab`);
+    
+    if (selectedTab) selectedTab.classList.add('active');
+    if (selectedContent) selectedContent.classList.add('active');
+}
+
+function populateModuleSelectors() {
+    if (!moduleBuilder.currentClass) return;
+    
+    // Get current class modules
+    const modules = moduleBuilder.currentClass.modules || [];
+    
+    const selectors = ['targetModule', 'newSimTargetModule'];
+    selectors.forEach(selectorId => {
+        const select = document.getElementById(selectorId);
+        if (select) {
+            select.innerHTML = '<option value="">Choose a module...</option>';
+            modules.forEach(module => {
+                const option = document.createElement('option');
+                option.value = module.id;
+                option.textContent = module.title;
+                select.appendChild(option);
+            });
+        }
+    });
+}
+
+function initializeModalEvents() {
+    // Assignment target change handler
+    const assignmentTarget = document.getElementById('assignmentTarget');
+    if (assignmentTarget) {
+        assignmentTarget.addEventListener('change', function() {
+            const moduleSelector = document.getElementById('moduleSelector');
+            if (this.value === 'module') {
+                moduleSelector.style.display = 'block';
+            } else {
+                moduleSelector.style.display = 'none';
+            }
+        });
+    }
+    
+    // New simulation assignment target change handler
+    const newSimAssignmentTarget = document.getElementById('newSimAssignmentTarget');
+    if (newSimAssignmentTarget) {
+        newSimAssignmentTarget.addEventListener('change', function() {
+            const moduleSelector = document.getElementById('newSimModuleSelector');
+            if (this.value === 'module') {
+                moduleSelector.style.display = 'block';
+            } else {
+                moduleSelector.style.display = 'none';
+            }
+        });
+    }
+    
+    // Create simulation form submit handler
+    const createSimForm = document.getElementById('createSimulationForm');
+    if (createSimForm) {
+        createSimForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createNewSimulation();
+        });
+    }
+}
+
+function createNewSimulation() {
+    const formData = {
+        title: document.getElementById('simTitle').value,
+        description: document.getElementById('simDescription').value,
+        simulation_type: document.getElementById('simType').value,
+        category: document.getElementById('simCategory').value,
+        difficulty: document.getElementById('simDifficulty').value || 'Beginner',
+        estimated_duration: parseInt(document.getElementById('simDuration').value) || 30,
+        learning_objectives: document.getElementById('simObjectives').value.split('\n').filter(obj => obj.trim()),
+        is_published: true,
+        is_active: true
+    };
+    
+    // Validate required fields
+    if (!formData.title || !formData.description || !formData.simulation_type || !formData.category) {
+        moduleBuilder.showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('#createSimulationForm button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    submitBtn.disabled = true;
+    
+    // Create simulation
+    fetch('/admin/simulation/api/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.simulation) {
+            moduleBuilder.showToast('Simulation created successfully!', 'success');
+            
+            // Now assign the simulation
+            const assignmentTarget = document.getElementById('newSimAssignmentTarget').value;
+            const moduleId = document.getElementById('newSimTargetModule').value;
+            
+            assignNewSimulation(data.simulation.id, assignmentTarget, moduleId);
+        } else {
+            moduleBuilder.showToast('Error: ' + (data.error || 'Failed to create simulation'), 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error creating simulation:', error);
+        moduleBuilder.showToast('Failed to create simulation: ' + error.message, 'error');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function assignNewSimulation(simulationId, assignmentTarget, moduleId) {
+    const assignmentData = {
+        simulation_id: simulationId,
+        class_id: moduleBuilder.currentClass.id,
+        assignment_type: assignmentTarget,
+        is_published: true,
+        max_attempts: 3
+    };
+    
+    // Add module ID if assigning to specific module
+    if (assignmentTarget === 'module' && moduleId) {
+        assignmentData.module_id = moduleId;
+    }
+    
+    fetch('/admin/simulation/api/assignments/explicit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(assignmentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            moduleBuilder.showToast('Simulation created and assigned successfully!', 'success');
+            closeSimulationAssignmentModal();
+            // Reload classwork content
+            if (document.getElementById('classwork-content').classList.contains('active')) {
+                loadClassworkContent();
+            }
+        } else {
+            moduleBuilder.showToast('Simulation created but assignment failed: ' + (data.error || 'Unknown error'), 'warning');
+            closeSimulationAssignmentModal();
+        }
+    })
+    .catch(error => {
+        console.error('Error assigning simulation:', error);
+        moduleBuilder.showToast('Simulation created but assignment failed: ' + error.message, 'warning');
+        closeSimulationAssignmentModal();
     });
 }
 
@@ -8206,18 +8683,57 @@ function showAssignQuestionGroupModal() {
         <div class="modal-overlay" id="assignQuestionGroupModalOverlay" onclick="closeAssignQuestionGroupModal()">
             <div class="modal-content assign-question-group-modal" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <h2><i class="fas fa-link"></i> Assign Existing Question Group</h2>
+                    <h2><i class="fas fa-link"></i> Assign Question Group</h2>
                     <button class="modal-close" onclick="closeAssignQuestionGroupModal()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p class="modal-description">Select an existing question group to assign to this class:</p>
+                    <!-- Assignment Target Selection -->
+                    <div class="assignment-target-section">
+                        <h3><i class="fas fa-bullseye"></i> Assignment Target</h3>
+                        <div class="assignment-options">
+                            <label class="assignment-option">
+                                <input type="radio" name="questionGroupAssignmentTarget" value="class" checked onchange="toggleQuestionGroupModuleSelector()">
+                                <span class="option-content">
+                                    <i class="fas fa-users"></i>
+                                    <div>
+                                        <strong>Entire Class</strong>
+                                        <p>Available to all students in the class</p>
+                                    </div>
+                                </span>
+                            </label>
+                            <label class="assignment-option">
+                                <input type="radio" name="questionGroupAssignmentTarget" value="module" onchange="toggleQuestionGroupModuleSelector()">
+                                <span class="option-content">
+                                    <i class="fas fa-layer-group"></i>
+                                    <div>
+                                        <strong>Specific Module</strong>
+                                        <p>Available only within a selected module</p>
+                                    </div>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <!-- Module Selection (hidden by default) -->
+                        <div id="questionGroupModuleSelector" class="module-selector" style="display: none;">
+                            <label for="questionGroupModuleSelect">Select Module:</label>
+                            <select id="questionGroupModuleSelect" class="form-control">
+                                <option value="">Loading modules...</option>
+                            </select>
+                        </div>
+                    </div>
                     
-                    <div id="availableQuestionGroups" class="question-group-list">
-                        <div class="loading-state">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <p>Loading available question groups...</p>
+                    <!-- Question Group Selection -->
+                    <div class="question-group-selection-section">
+                        <h3><i class="fas fa-question-circle"></i> Select Question Group</h3>
+                        <p class="modal-description">Choose a question group to assign:</p>
+                        
+                        <div id="availableQuestionGroups" class="question-group-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading available question groups...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -8229,6 +8745,7 @@ function showAssignQuestionGroupModal() {
     setTimeout(() => {
         document.getElementById('assignQuestionGroupModalOverlay').classList.add('show');
         loadAvailableQuestionGroups();
+        populateQuestionGroupModuleSelector();
     }, 10);
 }
 
@@ -8241,18 +8758,18 @@ function closeAssignQuestionGroupModal() {
 }
 
 function loadAvailableQuestionGroups() {
-    fetch(`/admin/api/classes/${moduleBuilder.currentClass.id}/question-groups/available`)
+    fetch('/admin/api/question-groups')
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('availableQuestionGroups');
             
-            if (data.success && data.available_groups && data.available_groups.length > 0) {
-                container.innerHTML = data.available_groups.map(group => `
+            if (data && data.length > 0) {
+                container.innerHTML = data.map(group => `
                     <div class="question-group-item" data-group-id="${group.id}">
                         <div class="group-info">
                             <h4>${group.name}</h4>
                             <p>${group.description || 'No description'}</p>
-                            <span class="question-count">${group.question_count} questions</span>
+                            <span class="question-count">${group.questionCount || 0} questions</span>
                         </div>
                         <button class="action-btn primary" onclick="assignQuestionGroup(${group.id})">
                             <i class="fas fa-plus"></i>
@@ -8264,8 +8781,8 @@ function loadAvailableQuestionGroups() {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-question-circle"></i>
-                        <h3>No Available Question Groups</h3>
-                        <p>All existing question groups are already assigned to this class, or none exist yet.</p>
+                        <h3>No Question Groups Available</h3>
+                        <p>No question groups exist yet.</p>
                         <button class="action-btn primary" onclick="closeAssignQuestionGroupModal(); showCreateQuestionGroupModal();">
                             <i class="fas fa-plus"></i>
                             Create New Group
@@ -8287,11 +8804,36 @@ function loadAvailableQuestionGroups() {
 }
 
 function assignQuestionGroup(groupId) {
-    fetch(`/admin/api/classes/${moduleBuilder.currentClass.id}/question-groups/${groupId}/assign`, {
+    // Get assignment target
+    const assignmentTarget = document.querySelector('input[name="questionGroupAssignmentTarget"]:checked').value;
+    let moduleId = null;
+    
+    if (assignmentTarget === 'module') {
+        const moduleSelect = document.getElementById('questionGroupModuleSelect');
+        moduleId = moduleSelect.value;
+        
+        if (!moduleId) {
+            moduleBuilder.showToast('Please select a module', 'error');
+            return;
+        }
+    }
+    
+    // Prepare request data
+    const requestData = {
+        question_group_id: groupId,
+        class_id: moduleBuilder.currentClass.id
+    };
+    
+    if (moduleId) {
+        requestData.module_id = moduleId;
+    }
+    
+    fetch('/admin/api/question-groups/assignments/explicit', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify(requestData)
     })
     .then(response => response.json())
     .then(data => {
@@ -8307,6 +8849,34 @@ function assignQuestionGroup(groupId) {
         console.error('Error assigning question group:', error);
         moduleBuilder.showToast('Failed to assign question group', 'error');
     });
+}
+
+function toggleQuestionGroupModuleSelector() {
+    const moduleSelector = document.getElementById('questionGroupModuleSelector');
+    const assignmentTarget = document.querySelector('input[name="questionGroupAssignmentTarget"]:checked').value;
+    
+    if (assignmentTarget === 'module') {
+        moduleSelector.style.display = 'block';
+    } else {
+        moduleSelector.style.display = 'none';
+    }
+}
+
+function populateQuestionGroupModuleSelector() {
+    const moduleSelect = document.getElementById('questionGroupModuleSelect');
+    
+    if (moduleBuilder.currentClass && moduleBuilder.currentClass.modules) {
+        moduleSelect.innerHTML = '<option value="">Select a module...</option>';
+        
+        moduleBuilder.currentClass.modules.forEach(module => {
+            const option = document.createElement('option');
+            option.value = module.id;
+            option.textContent = `${module.module_number}: ${module.title}`;
+            moduleSelect.appendChild(option);
+        });
+    } else {
+        moduleSelect.innerHTML = '<option value="">No modules available</option>';
+    }
 }
 
 function unassignQuestionGroup(groupId) {

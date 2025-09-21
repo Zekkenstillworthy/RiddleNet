@@ -100,6 +100,43 @@ class EnhancedAssignmentService:
         
         return assignment
     
+    def create_explicit_assignment(self, simulation_id: int, class_id: int, title: str = None, 
+                                 description: str = None, due_date: Optional[datetime] = None, 
+                                 max_attempts: int = 3, module_id: Optional[int] = None, 
+                                 assigned_by: int = None) -> SimulationAssignment:
+        """Create an explicit assignment to a class or specific module"""
+        
+        # Get simulation for title/description defaults
+        simulation = Simulation.query.get(simulation_id)
+        if not simulation:
+            raise ValueError(f"Simulation with ID {simulation_id} not found")
+        
+        # Set assignment type based on whether module_id is provided
+        assignment_type = 'module' if module_id else 'class'
+        
+        assignment = SimulationAssignment(
+            title=title or f"Assignment: {simulation.title}",
+            description=description or simulation.description,
+            simulation_id=simulation_id,
+            class_id=class_id,
+            module_id=module_id,  # Will be None if assigning to entire class
+            assignment_type=assignment_type,
+            due_date=due_date or (datetime.utcnow() + timedelta(days=7)),
+            max_attempts=max_attempts,
+            assigned_by=assigned_by or 1,  # TODO: Get current admin user from context
+            is_active=True,
+            is_published=True
+        )
+        
+        db.session.add(assignment)
+        self._commit_with_sequence_retry()
+        
+        # Real-time notification
+        target_type = 'module' if module_id else 'class'
+        emit_assignment_created(assignment.id, class_id, target_type)
+        
+        return assignment
+    
     def create_category_auto_assignment(self, category: str, class_ids: List[int]) -> List[SimulationAssignment]:
         """Automatically assign all simulations in a category to specified classes"""
         assignments = []

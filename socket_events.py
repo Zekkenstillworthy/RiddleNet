@@ -1851,6 +1851,42 @@ def handle_start_feedback_session(data):
             'error': str(e)
         })
 
+@socketio.on('start_simulation_session')
+@authenticated_only
+def handle_start_simulation_session(data):
+    """Start a new simulation session (Dynamic Simulation compatibility)"""
+    if not feedback_service:
+        emit('simulation_session_started', {'success': False, 'error': 'Feedback system not available'})
+        return
+    
+    try:
+        scenario_id = data.get('scenario_id', 'dynamic_simulation')
+        simulation_type = data.get('simulation_type', 'dynamic_simulation')
+        
+        # Use feedback service for consistency
+        session_data = feedback_service.start_session(
+            user_id=current_user.id,
+            scenario_id=scenario_id,
+            lobby_id=None
+        )
+        
+        emit('simulation_session_started', {
+            'success': True,
+            'session_id': session_data['session_id'],
+            'scenario_id': scenario_id,
+            'simulation_type': simulation_type,
+            'start_time': session_data['start_time']
+        })
+        
+        print(f"✅ Simulation session started for user {current_user.username}: {session_data['session_id']}")
+        
+    except Exception as e:
+        print(f"❌ Error starting simulation session: {str(e)}")
+        emit('simulation_session_started', {
+            'success': False,
+            'error': str(e)
+        })
+
 @socketio.on('end_feedback_session')
 @authenticated_only
 def handle_end_feedback_session(data):
@@ -1915,8 +1951,14 @@ def handle_track_user_action(data):
             scenario_context=scenario_context
         )
         
-        # Send real-time feedback to user
+        # Send real-time feedback to user (Network Learning Arena compatible)
         emit('real_time_feedback', feedback_data)
+        emit('action_tracked', {
+            'session_id': session_id,
+            'action_type': action_type,
+            'success': feedback_data.get('type') == 'success',
+            'feedback': feedback_data
+        })
         
         # If in collaborative session, notify other participants
         lobby_id = action_data.get('lobby_id')
@@ -1934,6 +1976,13 @@ def handle_track_user_action(data):
     except Exception as e:
         print(f"❌ Error tracking user action: {str(e)}")
         emit('feedback_error', {'error': str(e)})
+
+@socketio.on('log_simulation_action')
+@authenticated_only
+def handle_log_simulation_action(data):
+    """Log simulation action (Dynamic Simulation compatibility)"""
+    # Route to the standard action tracking system
+    handle_track_user_action(data)
 
 @socketio.on('get_progress_update')
 @authenticated_only
@@ -2063,11 +2112,91 @@ def handle_request_hint(data):
             'timestamp': datetime.utcnow().isoformat()
         })
         
+        # Network Learning Arena compatible response
+        emit('smart_hint_response', {
+            'session_id': session_id,
+            'hint': selected_hint,
+            'type': hint_type,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
         print(f"💡 Hint provided to {current_user.username}: {hint_type}")
         
     except Exception as e:
         print(f"❌ Error providing hint: {str(e)}")
         emit('hint_error', {'error': str(e)})
+
+@socketio.on('unlock_achievement')
+@authenticated_only 
+def handle_unlock_achievement(data):
+    """Handle achievement unlock requests and notifications"""
+    try:
+        session_id = data.get('session_id')
+        achievement_id = data.get('achievement_id')
+        achievement_data = data.get('achievement_data', {})
+        
+        if not session_id or not achievement_id:
+            emit('achievement_error', {'error': 'Session ID and achievement ID required'})
+            return
+        
+        # Achievement definitions
+        achievements = {
+            'first-device': {
+                'id': 'first-device',
+                'name': 'First Steps',
+                'description': 'Placed your first network device',
+                'icon': '🖥️',
+                'points': 25
+            },
+            'network-builder': {
+                'id': 'network-builder', 
+                'name': 'Network Builder',
+                'description': 'Created a complex network topology',
+                'icon': '🏗️',
+                'points': 50
+            },
+            'speed-demon': {
+                'id': 'speed-demon',
+                'name': 'Speed Demon',
+                'description': 'Completed scenario in record time',
+                'icon': '⚡',
+                'points': 75
+            },
+            'perfectionist': {
+                'id': 'perfectionist',
+                'name': 'Perfectionist',
+                'description': 'Completed without any mistakes',
+                'icon': '💎',
+                'points': 100
+            },
+            'configuration-master': {
+                'id': 'configuration-master',
+                'name': 'Configuration Master',
+                'description': 'Expertly configured multiple devices',
+                'icon': '⚙️',
+                'points': 60
+            }
+        }
+        
+        achievement = achievements.get(achievement_id)
+        if not achievement:
+            emit('achievement_error', {'error': 'Unknown achievement'})
+            return
+        
+        # Store achievement (you could save to database here)
+        # For now, just notify the client
+        
+        emit('achievement_unlocked', {
+            'session_id': session_id,
+            'achievement': achievement,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+        print(f"🏆 Achievement unlocked for {current_user.username}: {achievement['name']}")
+        
+    except Exception as e:
+        print(f"❌ Error unlocking achievement: {str(e)}")
+        emit('achievement_error', {'error': str(e)})
 
 @socketio.on('validate_solution')
 @authenticated_only

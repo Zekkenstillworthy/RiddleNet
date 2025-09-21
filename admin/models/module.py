@@ -10,6 +10,13 @@ import json
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import or_, and_
 
+# Association table for many-to-many relationship between modules and question groups
+module_question_groups = db.Table('module_question_groups',
+    db.Column('module_id', db.Integer, db.ForeignKey('modules.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('question_group_id', db.Integer, db.ForeignKey('question_groups.id', ondelete='CASCADE'), primary_key=True),
+    extend_existing=True
+)
+
 class Module(db.Model):
     """
     Course Module Model - represents major learning units
@@ -62,6 +69,12 @@ class Module(db.Model):
     assignments = db.relationship('ClassAssignment', backref='module', lazy='dynamic')
     materials = db.relationship('ClassMaterial', backref='module', lazy='dynamic')
     simulations = db.relationship('SimulationAssignment', backref='module', lazy='dynamic')
+    question_groups = db.relationship(
+        'QuestionGroup',
+        secondary=module_question_groups,
+        backref=db.backref('modules', lazy='dynamic'),
+        lazy='dynamic'
+    )
     
     def __repr__(self):
         return f"Module('{self.module_number}', '{self.title}', '{self.course_type}')"

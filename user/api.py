@@ -171,6 +171,138 @@ def get_questions():
         traceback.print_exc()
         return jsonify([]), 500
 
+@api_blueprint.route('/questions/lesson/<int:lesson_id>', methods=['GET'])
+def get_questions_by_lesson(lesson_id):
+    """Get questions for a specific lesson based on module characteristics"""
+    try:
+        from user.models import Lesson, Module, Question, StandardQuestion
+        
+        # Get the lesson and its module
+        lesson = Lesson.query.get(lesson_id)
+        if not lesson:
+            return jsonify({"error": "Lesson not found"}), 404
+            
+        module = Module.query.get(lesson.module_id)
+        if not module:
+            return jsonify({"error": "Module not found"}), 404
+        
+        # Determine question category based on module characteristics
+        question_category = None
+        
+        if module:
+            module_title_lower = module.title.lower()
+            course_type_lower = module.course_type.lower()
+            
+            # Networking modules get networking questions
+            if ('network' in module_title_lower or 
+                'networking' in course_type_lower or 
+                'tcp' in module_title_lower or 
+                'osi' in module_title_lower or
+                'ethernet' in module_title_lower or
+                'routing' in module_title_lower):
+                question_category = 'networking'
+            # Default to riddle questions for other modules
+            else:
+                question_category = 'riddle'
+        else:
+            # Fallback to networking if no module found
+            question_category = 'networking'
+        
+        # Get questions from both tables with category filter
+        questions_1 = Question.query.filter_by(category=question_category).all()
+        questions_2 = StandardQuestion.query.filter_by(category=question_category).all()
+        
+        # Combine questions and convert to dict format
+        all_questions = []
+        for q in questions_1:
+            question_dict = q.to_dict()
+            question_dict['source_table'] = 'question'
+            all_questions.append(question_dict)
+        for q in questions_2:
+            question_dict = q.to_dict()
+            question_dict['source_table'] = 'questions'
+            all_questions.append(question_dict)
+        
+        # Sort by question number if available
+        all_questions.sort(key=lambda x: x.get('numb', 0))
+        
+        return jsonify({
+            "lesson_id": lesson_id,
+            "module_title": module.title,
+            "question_category": question_category,
+            "questions": all_questions
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_questions_by_lesson: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+
+@api_blueprint.route('/questions/module/<int:module_id>', methods=['GET'])
+def get_questions_by_module(module_id):
+    """Get questions assigned to a specific module via question groups"""
+    try:
+        from admin.models.module import Module
+        from admin.models.question_group import QuestionGroup
+        
+        # Get the module
+        module = Module.query.get(module_id)
+        if not module:
+            return jsonify({"error": "Module not found"}), 404
+        
+        # Get all question groups assigned to this module
+        question_groups = module.question_groups.all()
+        
+        # Collect all questions from assigned question groups
+        all_questions = []
+        total_groups = len(question_groups)
+        
+        for qg in question_groups:
+            if hasattr(qg, 'questions') and qg.questions:
+                for q in qg.questions:
+                    question_dict = {
+                        'id': q.id,
+                        'question': q.question,
+                        'answer': q.answer,
+                        'category': getattr(q, 'category', ''),
+                        'difficulty': getattr(q, 'difficulty', 'medium'),
+                        'numb': getattr(q, 'numb', 0),
+                        'question_group_id': qg.id,
+                        'question_group_name': qg.name,
+                        'source_table': 'question'
+                    }
+                    
+                    # Add options if they exist
+                    if hasattr(q, 'option1') and q.option1:
+                        question_dict['options'] = [
+                            q.option1,
+                            q.option2 if hasattr(q, 'option2') and q.option2 else '',
+                            q.option3 if hasattr(q, 'option3') and q.option3 else '',
+                            q.option4 if hasattr(q, 'option4') and q.option4 else ''
+                        ]
+                        # Filter out empty options
+                        question_dict['options'] = [opt for opt in question_dict['options'] if opt.strip()]
+                    
+                    all_questions.append(question_dict)
+        
+        # Sort questions by question number if available
+        all_questions.sort(key=lambda x: (x.get('question_group_name', ''), x.get('numb', 0)))
+        
+        return jsonify({
+            "module_id": module_id,
+            "module_title": module.title,
+            "total_question_groups": total_groups,
+            "total_questions": len(all_questions),
+            "questions": all_questions
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_questions_by_module: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error"}), 500
+
 @api_blueprint.route('/topology/types', methods=['GET'])
 def get_topology_types():
     """Get available topology types for the topology UI"""

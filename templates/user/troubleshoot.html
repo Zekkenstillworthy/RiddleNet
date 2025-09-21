@@ -6014,48 +6014,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('🔗 WebSocket handlers set up for performance feedback');
             }
 
-            updateFromBackendData(data) {
-                // Update metrics from backend feedback session
-                if (data.metrics) {
-                    this.metrics = { ...this.metrics, ...data.metrics };
-                    this.updateMetricsDisplay();
-                    this.updateScoreDisplay();
-                }
-                
-                // Update progress ring
-                if (data.progress_percentage !== undefined) {
-                    this.updateProgressRing(data.progress_percentage);
-                }
-                
-                console.log('🔄 Updated from backend data:', data);
-            }
 
-            handleBackendActionUpdate(data) {
-                // Handle specific action types from backend
-                switch (data.action_type) {
-                    case 'device_placed':
-                        this.metrics.devicesPlaced++;
-                        break;
-                    case 'connection_made':
-                        this.metrics.connectionsMade++;
-                        break;
-                    case 'configuration_complete':
-                        this.metrics.configurationsComplete++;
-                        break;
-                    case 'mistake_made':
-                        this.metrics.mistakesCount++;
-                        break;
-                }
-                
-                this.metrics.actionsCount++;
-                this.calculateSuccessRate();
-                this.updateMetricsDisplay();
-                
-                // Send feedback to backend about the action
-                this.sendActionFeedback(data.action_type, data.success);
-                
-                console.log('⚡ Backend action update:', data);
-            }
+
+
 
             updateProgressFromBackend(data) {
                 // Update progress based on backend calculations
