@@ -651,6 +651,47 @@
                 </div>
             </div>
 
+            <!-- Quick Announcement Section -->
+            <div class="quick-announcement-section" style="background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 24px; margin-bottom: 32px;">
+                <div class="announcement-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: var(--cyber-glow); margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class='bx bx-broadcast'></i>
+                        Quick Announcement Broadcast
+                    </h3>
+                    <div class="announcement-controls">
+                        <button id="testAnnouncementBtn" class="quick-action-btn" onclick="sendTestAnnouncement()" style="background: var(--neon-green); color: #000;">
+                            <i class='bx bx-test-tube'></i>
+                            Test Announcement
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="announcement-form" style="display: grid; grid-template-columns: 1fr 200px 120px; gap: 16px; align-items: end;">
+                    <div>
+                        <label style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 8px; display: block;">Message</label>
+                        <input type="text" id="quickAnnouncementMessage" placeholder="Enter announcement message..." 
+                               style="width: 100%; padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white;" maxlength="200">
+                    </div>
+                    <div>
+                        <label style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; margin-bottom: 8px; display: block;">Priority</label>
+                        <select id="quickAnnouncementPriority" style="width: 100%; padding: 12px; border: 1px solid var(--glass-border); border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white;">
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <button id="broadcastAnnouncementBtn" onclick="broadcastQuickAnnouncement()" 
+                            style="padding: 12px 16px; background: var(--cyber-glow); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        <i class='bx bx-broadcast'></i>
+                        Broadcast
+                    </button>
+                </div>
+                
+                <div id="announcementStatus" style="margin-top: 16px; padding: 12px; border-radius: 8px; display: none;">
+                    <!-- Status messages will appear here -->
+                </div>
+            </div>
+
             <!-- Notifications Log -->
             <div class="notifications-log">
                 <div class="log-header">
@@ -704,7 +745,7 @@
                 users.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
-                    option.textContent = `${user.username} (${user.email || 'No email'}) ${user.is_admin ? '- Admin' : ''}`;
+                    option.textContent = `${user.username} (${user.email || 'No email'})`;
                     select.appendChild(option);
                 });
                 
@@ -752,7 +793,7 @@
                             <input type="checkbox" id="user_${user.id}" name="selectedUsers" value="${user.id}" onchange="updateSelectAll()">
                             <label for="user_${user.id}" class="user-checkbox-label">
                                 ${user.username}
-                                <div class="user-info">${user.email || 'No email'} ${user.is_admin ? '• Admin' : ''}</div>
+                                <div class="user-info">${user.email || 'No email'}</div>
                             </label>
                         </div>
                     `;
@@ -1171,6 +1212,160 @@
                 }, 300);
             }, 3000);
         }
+
+        // ===== QUICK ANNOUNCEMENT FUNCTIONS =====
+        
+        // Initialize WebSocket for announcements
+        let announcementSocket = null;
+        
+        function initializeAnnouncementSocket() {
+            try {
+                console.log('📢 Initializing announcement WebSocket...');
+                
+                // Use existing socket if available, otherwise create new one
+                if (window.io && typeof window.io === 'function') {
+                    announcementSocket = window.io();
+                    
+                    announcementSocket.on('connect', () => {
+                        console.log('📢 Announcement WebSocket connected');
+                        showAnnouncementStatus('WebSocket connected', 'success');
+                    });
+                    
+                    announcementSocket.on('disconnect', () => {
+                        console.log('📢 Announcement WebSocket disconnected');
+                        showAnnouncementStatus('WebSocket disconnected', 'warning');
+                    });
+                    
+                    announcementSocket.on('announcement_sent', (data) => {
+                        console.log('📢 Announcement sent confirmation:', data);
+                        showAnnouncementStatus('✅ Announcement broadcast successfully!', 'success');
+                    });
+                    
+                    announcementSocket.on('announcement_error', (data) => {
+                        console.log('📢 Announcement error:', data);
+                        showAnnouncementStatus('❌ Error: ' + data.error, 'error');
+                    });
+                } else {
+                    console.log('📢 Socket.IO not available - announcements will use HTTP API');
+                }
+            } catch (error) {
+                console.error('📢 Error initializing announcement WebSocket:', error);
+            }
+        }
+        
+        function showAnnouncementStatus(message, type) {
+            const statusDiv = document.getElementById('announcementStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = type === 'success' ? 'rgba(57, 255, 20, 0.2)' : 
+                                        type === 'error' ? 'rgba(255, 71, 87, 0.2)' : 
+                                        'rgba(255, 149, 0, 0.2)';
+            statusDiv.style.border = `1px solid ${type === 'success' ? 'var(--neon-green)' : 
+                                                  type === 'error' ? 'var(--error-red)' : 
+                                                  'var(--warning-orange)'}`;
+            statusDiv.style.color = type === 'success' ? 'var(--neon-green)' : 
+                                   type === 'error' ? 'var(--error-red)' : 
+                                   'var(--warning-orange)';
+            statusDiv.textContent = message;
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function sendTestAnnouncement() {
+            const testMessages = [
+                'This is a test announcement from the admin panel!',
+                'WebSocket real-time announcement test - ' + new Date().toLocaleTimeString(),
+                'Testing announcement system connectivity',
+                'Real-time dashboard update test message'
+            ];
+            
+            const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+            
+            broadcastAnnouncement('Test Announcement', randomMessage, 'normal', 'all_users');
+        }
+        
+        function broadcastQuickAnnouncement() {
+            const messageInput = document.getElementById('quickAnnouncementMessage');
+            const prioritySelect = document.getElementById('quickAnnouncementPriority');
+            const broadcastBtn = document.getElementById('broadcastAnnouncementBtn');
+            
+            const message = messageInput.value.trim();
+            const priority = prioritySelect.value;
+            
+            if (!message) {
+                showAnnouncementStatus('❌ Please enter a message', 'error');
+                return;
+            }
+            
+            // Disable button during broadcast
+            broadcastBtn.disabled = true;
+            broadcastBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Broadcasting...';
+            
+            broadcastAnnouncement('New Announcement', message, priority, 'all_users')
+                .finally(() => {
+                    // Re-enable button
+                    broadcastBtn.disabled = false;
+                    broadcastBtn.innerHTML = '<i class="bx bx-broadcast"></i> Broadcast';
+                    
+                    // Clear message on success
+                    if (messageInput.value.trim()) {
+                        messageInput.value = '';
+                    }
+                });
+        }
+        
+        async function broadcastAnnouncement(title, message, priority = 'normal', target = 'all_users') {
+            try {
+                console.log('📢 Broadcasting announcement:', { title, message, priority, target });
+                showAnnouncementStatus('📡 Broadcasting announcement...', 'warning');
+                
+                // Try WebSocket first
+                if (announcementSocket && announcementSocket.connected) {
+                    console.log('📢 Sending via WebSocket...');
+                    announcementSocket.emit('broadcast_announcement', {
+                        title: title,
+                        message: message,
+                        priority: priority,
+                        target: target
+                    });
+                } else {
+                    // Fallback to official admin notification API
+                    console.log('📢 WebSocket not available, using notification send API...');
+                    const resp = await fetch('/admin/api/notifications/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: title || 'Announcement',
+                            message,
+                            priority,
+                            channel: 'websocket',
+                            recipient_type: target || 'all_users'
+                        })
+                    });
+                    if (!resp.ok) {
+                        const text = await resp.text();
+                        throw new Error('Notification API failed: ' + text);
+                    }
+                    const result = await resp.json();
+                    console.log('📢 Notification API response:', result);
+                    showAnnouncementStatus('✅ Announcement sent via API', 'success');
+                }
+                
+            } catch (error) {
+                console.error('📢 Error broadcasting announcement:', error);
+                showAnnouncementStatus('❌ Failed to broadcast announcement: ' + error.message, 'error');
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize existing functionality first
+            setTimeout(() => {
+                initializeAnnouncementSocket();
+            }, 1000);
+        });
     </script>
 </main>
 {% endblock content %}

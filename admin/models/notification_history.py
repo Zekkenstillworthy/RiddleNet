@@ -87,8 +87,10 @@ class NotificationHistory(db.Model):
                 # Use the existing session with proper error handling
                 local_session = db.session
                 
+                # Ensure sender_id is never NULL (use 0 for system/debug senders)
+                safe_sender_id = sender_id if sender_id is not None else 0
                 record = cls(
-                    sender_id=sender_id,
+                    sender_id=safe_sender_id,
                     sender_type=sender_type,
                     sender_username=sender_username,
                     notification_type=notification_data.get('notification_type', 'admin_notice'),

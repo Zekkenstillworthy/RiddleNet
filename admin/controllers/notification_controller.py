@@ -50,73 +50,128 @@ def send_notification():
         
         # Validate required fields
         if not data.get('title') or not data.get('message'):
+            print(f"❌ Missing required fields - title: {data.get('title')}, message: {data.get('message')}")
             return jsonify({'error': 'Title and message are required'}), 400
         
         # Get notification service
         notification_service = get_notification_service(get_socketio_instance())
+        print(f"🔧 Notification service retrieved: {notification_service is not None}")
         
-        # Parse notification type and priority
-        notification_type = NotificationType(data.get('notification_type', 'admin_notice'))
-        priority = NotificationPriority(data.get('priority', 'normal'))
-        channel = NotificationChannel(data.get('channel', 'both'))
+        # Parse notification type and priority with validation
+        try:
+            notification_type = NotificationType(data.get('notification_type', 'admin_notice'))
+            print(f"📝 Notification type parsed: {notification_type}")
+        except ValueError as e:
+            print(f"❌ Invalid notification type: {data.get('notification_type')} - {e}")
+            return jsonify({'error': f'Invalid notification type: {data.get("notification_type")}'}), 400
+            
+        try:
+            priority = NotificationPriority(data.get('priority', 'normal'))
+            print(f"📝 Priority parsed: {priority}")
+        except ValueError as e:
+            print(f"❌ Invalid priority: {data.get('priority')} - {e}")
+            return jsonify({'error': f'Invalid priority: {data.get("priority")}'}), 400
+            
+        try:
+            channel = NotificationChannel(data.get('channel', 'both'))
+            print(f"📝 Channel parsed: {channel}")
+        except ValueError as e:
+            print(f"❌ Invalid channel: {data.get('channel')} - {e}")
+            return jsonify({'error': f'Invalid channel: {data.get("channel")}'}), 400
         
         # Prepare sender info
         sender_info = {
             'sender_id': current_user.id,
             'sender_type': 'admin' if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins' else 'user',
             'sender_username': current_user.username,
-            'recipient_type': data.get('recipient_type', 'all_admins'),
+            'recipient_type': data.get('recipient_type', 'all_users'),
             'specific_user': data.get('specific_user'),
             'channel': data.get('channel', 'both')
         }
         
         # Determine recipients
-        recipient_type = data.get('recipient_type', 'all_admins')
+        recipient_type = data.get('recipient_type', 'all_users')  # Default to all_users instead of all_admins
+        print(f"📋 Recipient type: {recipient_type}")
         
-        if recipient_type == 'all_admins':
-            # Send to all admins
-            result = notification_service.send_admin_notification(
-                notification_type=notification_type,
+        if recipient_type == 'all_users':
+            # Send to all regular users (not admins) using system announcement method
+            print(f"� Sending notification to all users via system announcement")
+            
+            final_result = notification_service.send_system_announcement(
                 title=data['title'],
                 message=data['message'],
                 priority=priority,
                 sender_info=sender_info
             )
+            
         elif recipient_type == 'specific_user':
-            # Send to specific user
+            # Send to specific user (admins no longer supported as recipients)
             user_id = data.get('specific_user')
             if not user_id:
                 return jsonify({'error': 'User ID required for specific user notifications'}), 400
             
-            # Handle admin user IDs (format: "admin_3") vs regular user IDs (format: "3")
-            if str(user_id).startswith('admin_'):
-                # Extract admin ID and send admin notification
-                admin_id = int(str(user_id).replace('admin_', ''))
-                # For admin users, we'll send an admin notification to that specific admin
-                # Note: This is a simplified approach - you might want to implement a more specific method
-                result = notification_service.send_admin_notification(
-                    notification_type=notification_type,
-                    title=data['title'],
-                    message=data['message'],
-                    priority=priority,
-                    sender_info=sender_info
-                )
-            else:
-                # Regular user notification
-                result = notification_service.send_user_notification(
-                    user_id=int(user_id),
-                    notification_type=notification_type,
-                    title=data['title'],
-                    message=data['message'],
-                    priority=priority,
-                    channel=channel,
-                    sender_info=sender_info
-                )
+            print(f"👤 Sending user notification to user ID: {user_id}")
+            final_result = notification_service.send_user_notification(
+                user_id=int(user_id),
+                notification_type=notification_type,
+                title=data['title'],
+                message=data['message'],
+                priority=priority,
+                channel=channel,
+                sender_info=sender_info
+            )
+        elif recipient_type == 'multiple_users':
+            # Send to multiple selected users using session-safe approach
+            selected_users = data.get('selected_users', [])
+            if not selected_users:
+                return jsonify({'error': 'At least one user must be selected for multiple users notifications'}), 400
+            
+            print(f"👥 Sending to multiple users: {selected_users}")
+            
+            success_count = 0
+            error_count = 0
+            results = []
+            
+            # Process each user individually to avoid session issues
+            for user_id in selected_users:
+                try:
+                    # Only regular users are supported as recipients now
+                    result = notification_service.send_user_notification(
+                        user_id=int(user_id),
+                        notification_type=notification_type,
+                        title=data['title'],
+                        message=data['message'],
+                        priority=priority,
+                        channel=channel,
+                        sender_info=sender_info
+                    )
+                    
+                    if result.get('success', False):
+                        success_count += 1
+                    else:
+                        error_count += 1
+                    results.append(result)
+                    
+                    # Commit after each user to avoid session issues
+                    db.session.commit()
+                    
+                except Exception as e:
+                    print(f"❌ Error sending to user {user_id}: {e}")
+                    error_count += 1
+                    db.session.rollback()
+                    
+            final_result = {
+                'success': True,
+                'total_users': len(selected_users),
+                'successful_sends': success_count,
+                'failed_sends': error_count,
+                'message': f'Sent notifications to {success_count} users, {error_count} failed'
+            }
         else:
-            return jsonify({'error': 'Invalid recipient type'}), 400
+            return jsonify({'error': f'Invalid recipient type: {recipient_type}'}), 400
         
-        print(f"✅ Notification sent successfully: {result}")
-        return jsonify(result)
+        print(f"✅ Notification sent successfully: {final_result}")
+        return jsonify(final_result)
         
     except Exception as e:
         current_app.logger.error(f"Error sending notification: {e}")
@@ -149,10 +204,9 @@ def notification_stats():
         stats = NotificationHistory.get_statistics(days=1)
         
         # Add additional stats
-        # Note: Regular users don't have is_admin property, only Admin table contains admin users
+        # Note: Only regular users can receive notifications now
         stats.update({
             'active_users': User.query.count(),
-            'total_admins': Admin.query.count(),  # Only count from Admin table
             'last_24h': NotificationHistory.get_statistics(days=1)['total_sent']
         })
         
@@ -167,7 +221,7 @@ def notification_stats():
 def get_users():
     """Get list of users for notification targeting"""
     try:
-        # Get regular users
+        # Get regular users only (admins removed from selection)
         users = User.query.all()
         user_list = []
         
@@ -180,16 +234,8 @@ def get_users():
                 'user_type': 'user'
             })
         
-        # Get admin users from Admin table
-        admins = Admin.query.all()
-        for admin in admins:
-            user_list.append({
-                'id': f"admin_{admin.id}",  # Prefix to distinguish from regular users
-                'username': admin.username,
-                'email': getattr(admin, 'email', None),
-                'is_admin': True,
-                'user_type': 'admin'
-            })
+        # Admin users are no longer included in the recipient selection
+        # Only regular users can receive notifications from the admin panel
         
         return jsonify(user_list)
         
@@ -466,12 +512,13 @@ def setup_notification_websocket_events(socketio):
                 'timestamp': datetime.now().isoformat()
             }
             
-            if data.get('target') == 'all_admins':
-                result = notification_service.send_admin_notification(
-                    notification_type=notification_type,
+            if data.get('target') == 'all_users':
+                # Send system announcement to all users (no admin option)
+                result = notification_service.send_system_announcement(
                     title=data['title'],
                     message=data['message'],
-                    priority=priority
+                    priority=priority,
+                    sender_info=sender_info
                 )
             else:
                 # Send to specific user
@@ -513,7 +560,6 @@ def setup_notification_websocket_events(socketio):
             # Get stats
             stats = {
                 'active_users': len(User.query.all()),
-                'total_admins': len(Admin.query.all()),
                 'online_users': 0,  # Would need WebSocket connection tracking
                 'recent_notifications': 0  # Would come from database
             }

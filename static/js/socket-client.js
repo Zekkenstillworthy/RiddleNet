@@ -21,6 +21,8 @@ class SocketClient {
         this.connected = false;
         this.isConnecting = false;
         this.eventHandlers = {};
+        // Buffer for early announcements before UI listeners attach
+        this.pendingAnnouncements = [];
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // Start with 2 seconds
@@ -467,9 +469,14 @@ class SocketClient {
             
             // Dispatch custom event for dashboard to avoid duplicate handlers
             if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('announcement-received', { 
-                    detail: data 
-                }));
+                // If DOM not interactive yet, buffer the announcement
+                if (document.readyState === 'loading') {
+                    this.pendingAnnouncements.push(data);
+                } else {
+                    window.dispatchEvent(new CustomEvent('announcement-received', { 
+                        detail: data 
+                    }));
+                }
             }
             
             // Show browser notification
@@ -501,6 +508,15 @@ class SocketClient {
      * @param {number} duration - How long to show the notification in ms
      */
     showNotification(title, message, type = 'info', duration = 5000) {
+        // Suppress in-app notifications on the student dashboard (top-right white box)
+        try {
+            const path = (window.location && window.location.pathname) ? window.location.pathname : '';
+            if (window.DISABLE_DASHBOARD_TOASTS === true || path.indexOf('/dashboard') !== -1) {
+                console.debug('[SocketClient] Notification suppressed on dashboard:', { title, message, type });
+                return null;
+            }
+        } catch (e) { /* no-op */ }
+
         // Check if browser supports notifications
         if ('Notification' in window) {
             // First check if we already have permission
@@ -930,6 +946,22 @@ if (typeof window !== 'undefined' && typeof window.socketClient === 'undefined')
                 setTimeout(() => {
                     console.log('🔌 Initiating WebSocket connection...');
                     window.socketClient.connect();
+                    // Flush any buffered announcements once DOM is ready
+                    if (document.readyState !== 'loading') {
+                        const pending = window.socketClient.pendingAnnouncements || [];
+                        if (pending.length) {
+                            pending.forEach(a => window.dispatchEvent(new CustomEvent('announcement-received', { detail: a })));
+                            window.socketClient.pendingAnnouncements = [];
+                        }
+                    } else {
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const pending = window.socketClient.pendingAnnouncements || [];
+                            if (pending.length) {
+                                pending.forEach(a => window.dispatchEvent(new CustomEvent('announcement-received', { detail: a })));
+                                window.socketClient.pendingAnnouncements = [];
+                            }
+                        });
+                    }
                 }, 1000); // Reduced delay but still sufficient
             } catch (error) {
                 console.error('Error during WebSocket initialization:', error);

@@ -1210,6 +1210,15 @@
 
         // User notification function
         function showUserNotification(title, message, type = 'info') {
+            // Suppress notifications on the dashboard page or when explicitly disabled
+            try {
+                const path = (window.location && window.location.pathname) ? window.location.pathname : '';
+                if (window.DISABLE_DASHBOARD_TOASTS === true || /\/dashboard$/.test(path)) {
+                    // Optional debug log
+                    console.log('[Toast] Suppressed on dashboard:', title, message);
+                    return;
+                }
+            } catch (e) { /* no-op */ }
             // Create notification element
             const notification = document.createElement('div');
             notification.style.cssText = `

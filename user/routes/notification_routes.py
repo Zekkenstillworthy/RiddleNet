@@ -361,23 +361,56 @@ def get_recent_announcements():
             include_deleted=False
         )
         
-        # Filter for system announcements AND admin notices (both should be shown)
-        announcements = [n for n in all_notifications if n.notification_type in ['system_announcement', 'admin_notice', 'maintenance_alert']][:10]
+        # Filter for announcement-like types used across the system
+        # Note: Keep this list in sync with services/notification_service.py
+        ANNOUNCEMENT_TYPES = [
+            'system_announcement',   # Explicit system-wide announcements
+            'admin_notice',          # Admin notices
+            'maintenance_alert',     # Legacy/alternate maintenance type
+            'system_update',         # General system updates
+            'maintenance',           # Maintenance notifications
+            'security_alert',        # Security-related alerts
+            'course_update'          # Course-related updates
+        ]
+
+        announcements = [n for n in all_notifications if n.notification_type in ANNOUNCEMENT_TYPES][:10]
         
         # Convert to format expected by frontend
         announcement_data = []
         for announcement in announcements:
+            # Try to get the actual admin name from the notification
+            admin_name = 'System'  # Default fallback
+            
+            # Check if there's sender info in the notification
+            if hasattr(announcement, 'sender_id') and announcement.sender_id:
+                try:
+                    from admin.models.user import Admin
+                    admin = Admin.query.get(announcement.sender_id)
+                    if admin:
+                        admin_name = admin.username
+                except:
+                    pass  # Keep default if lookup fails
+            
+            # For certain types, use more specific names
+            if announcement.notification_type in ['maintenance', 'maintenance_alert']:
+                admin_name = 'System Maintenance'
+            elif announcement.notification_type == 'security_alert':
+                admin_name = 'Security Team'
+            elif announcement.notification_type == 'course_update':
+                admin_name = 'Course Admin'
+            
             announcement_data.append({
                 'id': announcement.id,
                 'title': announcement.title,
                 'message': announcement.message,
                 'content': announcement.message,  # Alternative field for compatibility
-                'type': 'system_announcement',
+                # Preserve original type so UI can style/handle appropriately
+                'type': announcement.notification_type,
                 'priority': announcement.priority,
                 'timestamp': announcement.created_at.isoformat(),
                 'from_admin': True,
-                'admin_name': 'System',  # We could enhance this later with actual admin name
-                'source': 'system_announcement',
+                'admin_name': admin_name,  # Now uses actual admin name when available
+                'source': 'system_announcement',  # Keep source stable for now
                 'is_read': announcement.is_read,
                 'created_at': announcement.created_at.isoformat()
             })

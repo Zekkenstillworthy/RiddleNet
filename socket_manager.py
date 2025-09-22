@@ -122,6 +122,15 @@ def admin_only(f):
             return
         
         print(f"✅ Admin validation successful for: {current_user.username}")
+        
+        # Debug logging for announcement events
+        func_name = f.__name__
+        if 'announcement' in func_name.lower():
+            print(f"📢 Announcement-related admin function called: {func_name}")
+            print(f"   - Admin user: {current_user.username}")
+            print(f"   - Function args: {args}")
+            print(f"   - Function kwargs: {kwargs}")
+        
         return f(*args, **kwargs)
     return wrapped
 
@@ -166,9 +175,12 @@ def register_handlers():
                     'connected_at': datetime.utcnow().isoformat()
                 }
                 
-                # Join user-specific room
+                # Join user-specific room and announcement rooms
                 join_room(f'user_{user_id}')
                 join_room('all_users')
+                join_room('announcements')  # Add this for announcement compatibility
+                
+                print(f"✅ User {username} joined rooms: user_{user_id}, all_users, announcements")
                 
                 # ENHANCED admin detection - support both Admin and AdminUser models
                 is_admin = False
@@ -345,6 +357,38 @@ def register_handlers():
         except Exception as e:
             print(f"❌ Error in health check handler: {str(e)}")
             socket_monitor.register_error(request.sid, e)
+
+    # Lightweight ping/pong to support client health checks
+    @socketio.on('ping')
+    def handle_ping(data=None):
+        try:
+            emit('pong', {
+                'server_time': datetime.utcnow().isoformat(),
+                'client_time': (data or {}).get('client_time')
+            })
+        except Exception as e:
+            print(f"❌ Error in ping handler: {str(e)}")
+
+    # Optional dashboard room join (used by user dashboard for bookkeeping)
+    @socketio.on('join_dashboard')
+    @authenticated_only
+    def handle_join_dashboard(data=None):
+        try:
+            user_id = getattr(current_user, 'id', None)
+            username = getattr(current_user, 'username', 'unknown')
+            # Ensure user-specific room is joined (already done on connect) and also a shared dashboard room
+            if user_id is not None:
+                join_room(f'user_{user_id}')
+            join_room('dashboard')
+            emit('dashboard_joined', {
+                'success': True,
+                'user_id': user_id,
+                'username': username,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+            print(f"🧭 {username} joined dashboard room(s)")
+        except Exception as e:
+            print(f"❌ Error in join_dashboard handler: {str(e)}")
 
     @socketio.on('get_admin_user_list')
     @admin_only

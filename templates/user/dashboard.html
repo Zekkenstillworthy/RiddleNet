@@ -486,57 +486,6 @@
     100% { transform: rotate(360deg); }
   }
 
-  /* Live Notification Styles */
-  .live-notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 16px 20px;
-    backdrop-filter: blur(20px);
-    z-index: 1000;
-    transform: translateX(100%);
-    transition: all 0.3s ease;
-    max-width: 350px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  .live-notification.show {
-    transform: translateX(0);
-  }
-
-  .live-notification.success {
-    border-left: 4px solid #ffd700;
-  }
-
-  .live-notification.info {
-    border-left: 4px solid var(--cyber-glow);
-  }
-
-  .notification-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .notification-icon {
-    font-size: 1.5rem;
-    min-width: 24px;
-  }
-
-  .notification-title {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-  }
-
-  .notification-message {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-  }
-
   /* Leaderboard Entry Animations */
   .leaderboard-entry.new-high-score {
     animation: pulse-gold 2s ease-in-out 3;
@@ -566,6 +515,10 @@
 {% block content %}
 <div class="page-container">
   <div class="dashboard-container">
+    <script>
+      // Disable generic top-right toasts on the dashboard
+      window.DISABLE_DASHBOARD_TOASTS = true;
+    </script>
     <!-- Enhanced Stats Grid - Compact -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
       <div class="stat-card-modern">
@@ -597,28 +550,6 @@
         <div style="margin-top: 8px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.5);">
           <i class="fas fa-medal" style="color: var(--neon-green);"></i> Global Ranking
         </div>
-      </div>
-    </div>
-
-    <!-- Daily Quest Section - Compact -->
-    <div class="modern-card" style="margin-bottom: 24px;">
-      <div class="section-header">
-        <i class="fas fa-calendar-check section-icon"></i>
-        <h2 style="margin: 0; font-size: 1.3rem;">Daily Quest</h2>
-      </div>
-      
-      <div style="background: var(--dark-bg); border-radius: 8px; padding: 16px; border-left: 4px solid #ffd700; margin-top: 12px;">
-        <h3 style="color: #ffd700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-          <i class="fas fa-graduation-cap"></i>
-          Complete 2 Courses From your Class
-        </h3>
-        <div style="background: #ffd700; height: 6px; border-radius: 3px; margin: 12px 0;">
-          <div style="background: #ff8c00; height: 100%; width: 66%; border-radius: 3px; transition: width 0.3s ease;"></div>
-        </div>
-        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 6px; font-size: 0.9rem;">
-          Join your enrolled classes and complete at least 2 network troubleshooting exercises
-        </p>
-        <small style="color: rgba(255, 255, 255, 0.6);">2/3 completed</small>
       </div>
     </div>
 
@@ -921,31 +852,68 @@
           if (window.socketClient) {
             console.log('Dashboard: Initializing comprehensive WebSocket handlers...');
             
-            // Join dashboard-specific room
-            window.socketClient.emit('join_dashboard', {
-              user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-              page: 'dashboard'
+            // Add connection event listener
+            window.socketClient.socket.on('connect', function() {
+              console.log('✅ Dashboard: WebSocket connected, joining rooms...');
+              updateConnectionStatus(true);
+              
+              // Join dashboard-specific room (now that we're connected)
+              window.socketClient.emit('join_dashboard', {
+                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                page: 'dashboard'
+              });
+              
+              // Join live leaderboard for dashboard updates
+              window.socketClient.emit('join_leaderboard', {
+                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                page: 'dashboard'
+              });
             });
             
-            // Join live leaderboard for dashboard updates
-            window.socketClient.emit('join_leaderboard', {
-              user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
-              page: 'dashboard'
+            // Add disconnect event listener
+            window.socketClient.socket.on('disconnect', function() {
+              console.log('❌ Dashboard: WebSocket disconnected');
+              updateConnectionStatus(false);
             });
+            
+            // Function to safely emit events only when connected
+            function safeEmit(event, data, retryCount = 0) {
+              if (window.socketClient.connected) {
+                window.socketClient.emit(event, data);
+                return true;
+              } else if (retryCount < 10) {
+                // Retry after 500ms, up to 10 times (5 seconds total)
+                setTimeout(() => {
+                  safeEmit(event, data, retryCount + 1);
+                }, 500);
+                return false;
+              } else {
+                console.warn(`⚠️ Failed to emit ${event} after 5 seconds - giving up`);
+                return false;
+              }
+            }
+            
+            // Initial connection attempt (if already connected)
+            if (window.socketClient.connected) {
+              console.log('✅ Dashboard: Already connected, joining rooms immediately...');
+              
+              // Join dashboard-specific room (with connection check)
+              safeEmit('join_dashboard', {
+                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                page: 'dashboard'
+              });
+              
+              // Join live leaderboard for dashboard updates (with connection check)
+              safeEmit('join_leaderboard', {
+                user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+                page: 'dashboard'
+              });
+            }
             
             // Handle real-time score updates
             window.socketClient.on('score_update', function(data) {
               console.log('Dashboard: Score update received:', data);
               updateDashboardScore(data);
-              
-              // Show notification
-              if (window.socketClient.showNotification) {
-                window.socketClient.showNotification(
-                  'Score Updated!', 
-                  `Your ${data.category} score: ${data.score}`, 
-                  'success'
-                );
-              }
             });
             
             // Handle leaderboard initialization
@@ -962,31 +930,11 @@
               if (data.leaderboard_data && data.leaderboard_data.overall) {
                 updateDashboardLeaderboard(data.leaderboard_data.overall);
               }
-              
-              // Show notification for score updates
-              if (data.is_new_high_score) {
-                showDashboardNotification(
-                  '🏆 New High Score!',
-                  `${data.username} achieved ${data.score}% in ${data.category}!`,
-                  'success'
-                );
-              } else {
-                showDashboardNotification(
-                  '📊 Score Update',
-                  `${data.username} scored ${data.score}% in ${data.category}`,
-                  'info'
-                );
-              }
             });
             
             // Handle new high score achievements
             window.socketClient.on('new_high_score_achieved', function(data) {
               console.log('Dashboard: New high score achieved:', data);
-              showDashboardNotification(
-                '🎉 New High Score!',
-                `${data.username} achieved ${data.score}% in ${data.category} - Rank #${data.new_rank}`,
-                'success'
-              );
             });
             
             // Handle leaderboard data responses
@@ -1015,28 +963,137 @@
           updateProgressIndicators(data);
         });
         
-        // Handle announcements via trigger system (avoids duplication)
+        // ===== REAL-TIME ANNOUNCEMENT SYSTEM (ENHANCED) =====
         if (window.socketClient) {
-          // Remove the socket.on handler since socket-client.js already handles it
-          // Instead, listen to the custom event handlers that socket-client.js provides
-          if (typeof window.socketClient.on === 'function') {
-            // Use a custom event name to avoid conflicts
-            window.addEventListener('announcement-received', function(event) {
-              console.log('Dashboard: New announcement received via custom event:', event.detail);
-              addAnnouncementToUI(event.detail);
+          console.log('📢 Dashboard: Initializing enhanced real-time announcement system');
+          
+          // Enhanced debugging for announcements
+          const debugAnnouncements = true;
+          
+          // Centralized announcement handler to prevent duplicates
+          function handleAnnouncementData(data, source) {
+            if (debugAnnouncements) {
+              console.log(`📢 Dashboard: Processing announcement from ${source}:`, data);
+              console.log('📢 Socket connection state:', {
+                connected: window.socketClient.connected,
+                id: window.socketClient.id,
+                timestamp: new Date().toISOString()
+              });
+            }
+            
+            // Validate announcement data
+            if (!data || typeof data !== 'object') {
+              console.warn('📢 Dashboard: Invalid announcement data received:', data);
+              return;
+            }
+
+            // Filter out test/debug System announcements
+            const adminName = (data.admin_name || '').toLowerCase();
+            const title = (data.title || '').toLowerCase();
+            
+            // Filter out test announcements and generic system announcements with placeholder text
+            const isTestAnnouncement = (
+              title.includes('test system announcement') ||
+              title.includes('test debug announcement') ||
+              (adminName === 'system' && (
+                data.message && (
+                  data.message.includes('[DATE]') || 
+                  data.message.includes('[START_TIME]') || 
+                  data.message.includes('[END_TIME]')
+                )
+              ))
+            );
+            
+            if (isTestAnnouncement) {
+              if (debugAnnouncements) {
+                console.log('📢 Dashboard: Filtering out test/generic announcement:', data.title);
+              }
+              return;
+            }
+            
+            // Process the announcement
+            addAnnouncementToUI(data);
+          }
+          
+          // Primary announcement handler - new announcements via WebSocket
+          window.socketClient.on('new_announcement', function(data) {
+            handleAnnouncementData(data, 'new_announcement');
+          });
+          
+          // Secondary handler for backward compatibility
+          window.socketClient.on('notification', function(data) {
+            if (data && (data.type === 'announcement' || data.type === 'system_announcement' || data.title)) {
+              if (debugAnnouncements) {
+                console.log('📢 Dashboard: Processing notification as announcement:', data);
+              }
+              handleAnnouncementData(data, 'notification');
+            } else if (debugAnnouncements) {
+              console.log('📢 Dashboard: Skipping non-announcement notification:', data);
+            }
+          });
+          
+          // Join announcement rooms and get recent announcements
+          function initializeAnnouncementSystem() {
+            if (debugAnnouncements) {
+              console.log('📢 Dashboard: Joining announcement rooms...');
+            }
+            
+            // Join announcement rooms for real-time updates
+            window.socketClient.emit('join_announcements', {
+              user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}',
+              page: 'dashboard',
+              timestamp: new Date().toISOString()
             });
           }
+          
+          // Handle successful room joining
+          window.socketClient.on('announcements_joined', function(data) {
+            if (debugAnnouncements) {
+              console.log('📢 Dashboard: Successfully joined announcement rooms:', data);
+            }
+          });
+          
+          // Handle announcement system errors
+          window.socketClient.on('announcements_error', function(data) {
+            console.error('📢 Dashboard: Announcement system error:', data);
+          });
+          
+          // Initialize when socket is ready
+          if (window.socketClient.connected) {
+            initializeAnnouncementSystem();
+          } else {
+            window.socketClient.on('connected', () => {
+              console.log('📢 Dashboard: Socket connected, initializing announcements');
+              initializeAnnouncementSystem();
+            });
+          }
+          
+          console.log('📢 Dashboard: Enhanced announcement system initialized');
         }
         
-        // Connection status handlers
+        // Connection status indicator function - DISABLED
+        function updateConnectionStatus(connected) {
+          console.log(`🔌 Dashboard: Connection status updated - ${connected ? 'Connected' : 'Disconnected'}`);
+          // Status indicator removed - no UI notification for connection status
+        }
+        
+        // Connection status handlers - with better error handling
         window.socketClient.on('connected', () => {
           console.log('Dashboard: Socket connected');
-          updateConnectionStatus(true);
+          try {
+            updateConnectionStatus(true);
+          } catch (error) {
+            console.error('Error updating connection status:', error);
+          }
         });
         
         window.socketClient.on('disconnected', (reason) => {
           console.log('Dashboard: Socket disconnected:', reason);
-          updateConnectionStatus(false);
+          try {
+            updateConnectionStatus(false);
+          } catch (error) {
+            console.error('Error updating connection status:', error);
+          }
         });
         
         console.log('Dashboard: WebSocket handlers initialized successfully');
@@ -1287,13 +1344,6 @@
         window.socketClient.on('live_leaderboard_update', function(data) {
           console.log('Dashboard: Live leaderboard update:', data);
           updateDashboardLeaderboard(data.leaderboard_data);
-          
-          // Show mini notification
-          showDashboardNotification(
-            data.is_new_high_score ? '🏆 New High Score!' : '📊 Score Update',
-            `${data.username} scored ${data.score}% in ${data.category}`,
-            data.is_new_high_score ? 'success' : 'info'
-          );
         });
         
         // Request initial leaderboard data
@@ -1303,51 +1353,6 @@
           limit: 5
         });
       }
-    }
-    
-    // Dashboard notification system
-    function showDashboardNotification(title, message, type = 'info') {
-      const notification = document.createElement('div');
-      notification.className = `dashboard-notification ${type}`;
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 8px;
-        padding: 12px 16px;
-        backdrop-filter: blur(20px);
-        z-index: 1000;
-        transform: translateX(100%);
-        transition: all 0.3s ease;
-        max-width: 300px;
-      `;
-      
-      notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div style="font-size: 1.2rem;">${type === 'success' ? '🏆' : '📊'}</div>
-          <div>
-            <div style="color: var(--text-primary); font-weight: 500; font-size: 0.9rem;">${title}</div>
-            <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; margin-top: 2px;">${message}</div>
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(notification);
-      
-      // Animate in
-      setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-      }, 100);
-      
-      // Remove after delay
-      setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-          notification.remove();
-        }, 300);
-      }, 4000);
     }
     
     // Helper function for category formatting
@@ -1460,92 +1465,248 @@
       }
     }
     
-    function loadRecentAnnouncements() {
-      console.log('📢 Loading recent announcements on page load...');
-      fetch('/user/api/notifications/recent-announcements')
-        .then(response => response.json())
-        .then(data => {
-          console.log('📢 Recent announcements response:', data);
-          if (data.success && data.announcements && data.announcements.length > 0) {
-            // Display each announcement (most recent first)
-            data.announcements.forEach((announcement, index) => {
-              // Add a small delay between announcements for smooth loading effect
-              setTimeout(() => {
-                addAnnouncementToUI(announcement);
-              }, index * 200);
-            });
-            console.log(`📢 Loaded ${data.announcements.length} recent announcements`);
-          } else {
-            console.log('📢 No recent announcements found');
-          }
-        })
-        .catch(error => {
-          console.error('❌ Error loading recent announcements:', error);
-        });
-    }
-    
+    // Enhanced announcement UI handler with comprehensive debugging
     function addAnnouncementToUI(announcementData) {
-      console.log('🔧 addAnnouncementToUI called with:', announcementData);
-      const announcementsContainer = document.getElementById('announcements-container');
-      console.log('🔧 announcements-container found:', !!announcementsContainer);
-      if (announcementsContainer) {
-        // Remove the "no announcements" placeholder if it exists
-        const noAnnouncementsPlaceholder = announcementsContainer.querySelector('.no-announcements');
-        console.log('🔧 no-announcements placeholder found:', !!noAnnouncementsPlaceholder);
-        if (noAnnouncementsPlaceholder) {
-          noAnnouncementsPlaceholder.remove();
-          console.log('🔧 removed no-announcements placeholder');
-        }
-        
-        const newAnnouncement = document.createElement('div');
-        newAnnouncement.style.cssText = `
-          background: var(--dark-bg);
-          border-radius: 8px;
-          padding: 16px;
-          border-left: 4px solid var(--cyber-glow);
-          margin-bottom: 12px;
-          opacity: 0;
-          transform: translateY(20px);
-          transition: all 0.3s ease;
-        `;
-        
-        // Determine priority styling
-        const priority = announcementData.priority || 'normal';
-        const priorityColor = priority === 'high' ? '#ff6b6b' : priority === 'urgent' ? '#ff3333' : 'var(--cyber-glow)';
-        const priorityIcon = priority === 'high' ? 'fa-exclamation-triangle' : priority === 'urgent' ? 'fa-bolt' : 'fa-bullhorn';
-        
-        newAnnouncement.innerHTML = `
-          <h3 style="color: ${priorityColor}; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-            <i class="fas ${priorityIcon}"></i>
-            ${announcementData.title || 'New Announcement'}
-            ${priority !== 'normal' ? `<span style="background: ${priorityColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase;">${priority}</span>` : ''}
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 8px; font-size: 0.9rem;">
-            ${announcementData.message || announcementData.content}
-          </p>
-          <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
-            ${announcementData.admin_name ? `From: ${announcementData.admin_name} - ` : ''}${new Date(announcementData.timestamp || Date.now()).toLocaleString()}
-          </small>
-        `;
-        
-        // Insert at the top of the container
-        announcementsContainer.insertBefore(newAnnouncement, announcementsContainer.firstChild);
-        console.log('🔧 New announcement element inserted into DOM');
-        
-        // Animate in
-        setTimeout(() => {
-          newAnnouncement.style.opacity = '1';
-          newAnnouncement.style.transform = 'translateY(0)';
-          console.log('🔧 Announcement animation completed');
-        }, 100);
-        
-        // Limit to max 5 announcements
-        const announcements = announcementsContainer.querySelectorAll('div[style*="border-left: 4px solid"]');
-        if (announcements.length > 5) {
-          announcements[announcements.length - 1].remove();
+      // Gate debug verbosity behind global flag or URL param (?debug=1)
+      const urlParams = new URLSearchParams(window.location.search);
+      const debugAnnouncements = (window.DASHBOARD_DEBUG === true) || urlParams.get('debug') === '1';
+      
+      if (debugAnnouncements) {
+        console.log('🔧 addAnnouncementToUI called with:', announcementData);
+        // Stack traces are noisy; only log when extra verbose requested (?debug=2)
+        if (urlParams.get('debug') === '2') {
+          console.log('🔧 Call stack:', new Error().stack);
         }
       }
+      
+      // Validation
+      if (!announcementData || typeof announcementData !== 'object') {
+        console.warn('🔧 Invalid announcement data:', announcementData);
+        return;
+      }
+
+      // Filter out test/debug System announcements
+      const adminName = (announcementData.admin_name || '').toLowerCase();
+      const title = (announcementData.title || '').toLowerCase();
+      
+      // Filter out test announcements and generic system announcements with placeholder text
+      const isTestAnnouncement = (
+        title.includes('test system announcement') ||
+        title.includes('test debug announcement') ||
+        (adminName === 'system' && (
+          announcementData.message && (
+            announcementData.message.includes('[DATE]') || 
+            announcementData.message.includes('[START_TIME]') || 
+            announcementData.message.includes('[END_TIME]')
+          )
+        ))
+      );
+      
+      if (isTestAnnouncement) {
+        if (debugAnnouncements) {
+          console.log('🔧 Filtering out test/generic announcement:', announcementData.title);
+        }
+        return;
+      }
+      
+      const announcementsContainer = document.getElementById('announcements-container');
+      if (!announcementsContainer) {
+        console.error('🔧 announcements-container not found in DOM');
+        return;
+      }
+      
+      if (debugAnnouncements) {
+        console.log('🔧 announcements-container found:', announcementsContainer);
+      }
+      
+      // Duplicate prevention - check by ID first, then by content
+      const announcementId = announcementData.id || `announcement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Check for existing announcement with same ID
+      const existingById = document.getElementById(`announcement-${announcementId}`);
+      if (existingById) {
+        if (debugAnnouncements) {
+          console.log('🔧 DUPLICATE PREVENTION: Announcement with ID already exists, skipping:', announcementId);
+        }
+        return;
+      }
+      
+      // Check for duplicate content within the last 30 seconds
+      const existingAnnouncements = announcementsContainer.querySelectorAll('.announcement-card');
+      const announcementTitle = announcementData.title || announcementData.message || '';
+      const announcementMessage = announcementData.message || announcementData.content || '';
+      
+      for (let existing of existingAnnouncements) {
+        const existingTitle = existing.querySelector('.announcement-title')?.textContent || '';
+        const existingMessage = existing.querySelector('.announcement-message')?.textContent || '';
+        
+        if (existingTitle === announcementTitle && existingMessage === announcementMessage) {
+          const existingTimestamp = existing.dataset.timestamp;
+          if (existingTimestamp) {
+            const timeDiff = Date.now() - parseInt(existingTimestamp);
+            if (timeDiff < 30000) { // 30 seconds
+              if (debugAnnouncements) {
+                console.log('� DUPLICATE PREVENTION: Similar announcement found within 30 seconds, skipping');
+              }
+              return;
+            }
+          }
+        }
+      }
+      
+      // Remove "no announcements" placeholder
+      const noAnnouncementsPlaceholder = announcementsContainer.querySelector('.no-announcements');
+      if (noAnnouncementsPlaceholder) {
+        noAnnouncementsPlaceholder.remove();
+        if (debugAnnouncements) {
+          console.log('🔧 Removed no-announcements placeholder');
+        }
+      }
+      
+      // Create announcement element
+      const newAnnouncement = document.createElement('div');
+      newAnnouncement.className = 'announcement-card';
+      newAnnouncement.id = `announcement-${announcementId}`;
+      newAnnouncement.dataset.timestamp = Date.now().toString();
+      
+      // Determine announcement priority styling
+      const priority = announcementData.priority || 'normal';
+      let priorityStyle = '';
+      let priorityIcon = 'fas fa-info-circle';
+      let priorityColor = '#00D4FF';
+      
+      switch (priority.toLowerCase()) {
+        case 'urgent':
+          priorityStyle = 'border-left: 4px solid #ff4444; background: rgba(255, 68, 68, 0.1);';
+          priorityIcon = 'fas fa-exclamation-triangle';
+          priorityColor = '#ff4444';
+          break;
+        case 'high':
+          priorityStyle = 'border-left: 4px solid #ff8800; background: rgba(255, 136, 0, 0.1);';
+          priorityIcon = 'fas fa-exclamation-circle';
+          priorityColor = '#ff8800';
+          break;
+        case 'low':
+          priorityStyle = 'border-left: 4px solid #888; background: rgba(136, 136, 136, 0.1);';
+          priorityIcon = 'fas fa-info';
+          priorityColor = '#888';
+          break;
+        default:
+          priorityStyle = 'border-left: 4px solid #00D4FF; background: rgba(0, 212, 255, 0.1);';
+          priorityIcon = 'fas fa-bullhorn';
+          priorityColor = '#00D4FF';
+      }
+      
+      newAnnouncement.style.cssText = `
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        ${priorityStyle}
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      `;
+      
+      // Format timestamp
+      const timestamp = announcementData.timestamp || announcementData.created_at || new Date().toISOString();
+      const timeString = new Date(timestamp).toLocaleString();
+      
+      newAnnouncement.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <i class="${priorityIcon}" style="color: ${priorityColor}; font-size: 1.2rem; margin-top: 2px; flex-shrink: 0;"></i>
+          <div style="flex: 1;">
+            <div class="announcement-title" style="color: ${priorityColor}; font-weight: 600; font-size: 1.1rem; margin-bottom: 8px;">
+              ${escapeHtml(announcementTitle)}
+            </div>
+            <div class="announcement-message" style="color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin-bottom: 10px;">
+              ${escapeHtml(announcementMessage)}
+            </div>
+            <div class="announcement-meta" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">
+              <span>From: ${escapeHtml(announcementData.admin_name || 'System')}</span>
+              <span>${timeString}</span>
+            </div>
+          </div>
+          <button class="announcement-dismiss-btn" 
+                  style="background: none; border: none; color: rgba(255, 255, 255, 0.4); cursor: pointer; padding: 4px; font-size: 1rem; flex-shrink: 0; transition: color 0.3s ease;"
+                  title="Dismiss">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      
+      // Add to container (prepend for newest first)
+      announcementsContainer.insertBefore(newAnnouncement, announcementsContainer.firstChild);
+      
+      // Add event listener for dismiss button
+      const dismissBtn = newAnnouncement.querySelector('.announcement-dismiss-btn');
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Add fade out animation
+          newAnnouncement.style.transition = 'all 0.3s ease';
+          newAnnouncement.style.opacity = '0';
+          newAnnouncement.style.transform = 'translateY(-20px)';
+          
+          // Remove after animation
+          setTimeout(() => {
+            if (newAnnouncement.parentNode) {
+              newAnnouncement.remove();
+            }
+          }, 300);
+        });
+        
+        // Add hover effect
+        dismissBtn.addEventListener('mouseenter', function() {
+          this.style.color = 'rgba(255, 255, 255, 0.8)';
+        });
+        
+        dismissBtn.addEventListener('mouseleave', function() {
+          this.style.color = 'rgba(255, 255, 255, 0.4)';
+        });
+      }
+      
+      // Animate in
+      setTimeout(() => {
+        newAnnouncement.style.opacity = '1';
+        newAnnouncement.style.transform = 'translateY(0)';
+      }, 100);
+      
+      // Add temporary highlight for new announcements
+      if (announcementData.priority !== 'recent') {
+        newAnnouncement.style.boxShadow = `0 0 20px ${priorityColor}40`;
+        setTimeout(() => {
+          newAnnouncement.style.boxShadow = 'none';
+        }, 3000);
+      }
+      
+      // Limit total announcements displayed (keep latest 10)
+      const allAnnouncements = announcementsContainer.querySelectorAll('.announcement-card');
+      if (allAnnouncements.length > 10) {
+        for (let i = 10; i < allAnnouncements.length; i++) {
+          allAnnouncements[i].remove();
+        }
+      }
+      
+      if (debugAnnouncements) {
+        console.log(`✅ Successfully added announcement: "${announcementTitle}" (ID: ${announcementId})`);
+        console.log('🔧 Total announcements now:', announcementsContainer.querySelectorAll('.announcement-card').length);
+      }
     }
+    
+    // HTML escape function for security
+    function escapeHtml(text) {
+      if (typeof text !== 'string') return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
     
     function animateNumberChange(element, fromValue, toValue) {
       const duration = 1000;

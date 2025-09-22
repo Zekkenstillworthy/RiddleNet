@@ -292,17 +292,6 @@ def handle_assignment_completed(data):
             }
             emit_simulation_update(data['class_id'], update_data)
 
-# Health check events
-@socketio.on('ping')
-def handle_ping(data):
-    """Handle ping from client for health check"""
-    client_time = data.get('client_time') or data.get('timestamp') or (datetime.utcnow().timestamp() * 1000)
-    emit('pong', {
-        'server_time': datetime.utcnow().timestamp() * 1000,
-        'client_time': client_time,
-        'latency': 0  # Client will calculate
-    })
-
 # Topology events
 @socketio.on('join_topology')
 @authenticated_only
@@ -1808,6 +1797,260 @@ def get_user_rank(user_id, category='all'):
     except Exception as e:
         print(f"❌ Error getting user rank: {str(e)}")
         return None
+
+# ===== REAL-TIME ANNOUNCEMENT SYSTEM =====
+@socketio.on('join_announcements')
+@authenticated_only
+def handle_join_announcements(data=None):
+    """Join announcement rooms for real-time updates"""
+    try:
+        user_id = current_user.id
+        username = getattr(current_user, 'username', f'User{user_id}')
+        
+        print(f"📢 DEBUG: User {username} joining announcement rooms")
+        print(f"📢 DEBUG: Session ID: {request.sid}")
+        print(f"📢 DEBUG: Join data: {data}")
+        
+        # Join multiple announcement rooms for different targeting
+        join_room('announcements')          # General announcements room
+        join_room('all_users')             # All users room  
+        join_room('dashboard')             # Dashboard-specific room
+        join_room(f'user_{user_id}')       # User-specific room
+        
+        rooms_joined = ['announcements', 'all_users', 'dashboard', f'user_{user_id}']
+        
+        # Admin users get additional admin announcement room
+        if hasattr(current_user, '__tablename__') and current_user.__tablename__ in ['admins', 'admin_users']:
+            join_room('admin_announcements')
+            rooms_joined.append('admin_announcements')
+            print(f"📢 DEBUG: Admin user {username} joined admin announcement room")
+        
+        print(f"📢 DEBUG: User {username} joined rooms: {rooms_joined}")
+        
+        emit('announcements_joined', {
+            'success': True,
+            'user_id': user_id,
+            'username': username,
+            'rooms': rooms_joined,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+        print(f"✅ User {username} successfully joined announcement rooms")
+        
+    except Exception as e:
+        print(f"❌ Error joining announcement rooms: {str(e)}")
+        emit('announcements_error', {
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+@socketio.on('get_recent_announcements') 
+@authenticated_only
+def handle_get_recent_announcements(data=None):
+    """Get recent announcements for the current user"""
+    try:
+        user_id = current_user.id
+        username = getattr(current_user, 'username', f'User{user_id}')
+        
+        print(f"📢 DEBUG: User {username} requesting recent announcements")
+        print(f"📢 DEBUG: Request data: {data}")
+        
+        # Use the existing notification endpoint to get recent announcements
+        from user.routes.notification_routes import get_recent_announcements
+        from flask import make_response
+        
+        # Create a mock request context to call the function
+        with socketio.test_client().application.app_context():
+            with socketio.test_client().application.test_request_context():
+                # Import and use the session
+                from flask import session
+                session['_user_id'] = str(user_id)
+                
+                try:
+                    # Get announcements from the existing API
+                    result = get_recent_announcements()
+                    if hasattr(result, 'get_json'):
+                        announcement_data = result.get_json()
+                    else:
+                        announcement_data = result
+                        
+                    print(f"📢 DEBUG: Retrieved announcements: {announcement_data}")
+                    
+                    emit('recent_announcements', {
+                        'success': True,
+                        'announcements': announcement_data.get('announcements', []),
+                        'count': announcement_data.get('count', 0),
+                        'timestamp': datetime.utcnow().isoformat()
+                    })
+                    
+                    print(f"✅ Recent announcements sent to {username}")
+                    
+                except Exception as inner_e:
+                    print(f"❌ Error calling announcement API: {inner_e}")
+                    # Fallback: return empty list
+                    emit('recent_announcements', {
+                        'success': True,
+                        'announcements': [],
+                        'count': 0,
+                        'timestamp': datetime.utcnow().isoformat()
+                    })
+        
+    except Exception as e:
+        print(f"❌ Error getting recent announcements: {str(e)}")
+        emit('announcements_error', {
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+@socketio.on('broadcast_announcement')
+@admin_only
+def handle_broadcast_announcement(data):
+    """Broadcast announcement to all users or specific targets - ADMIN ONLY"""
+    try:
+        admin_username = getattr(current_user, 'username', 'Unknown Admin')
+        
+        print(f"📢 DEBUG: Admin {admin_username} broadcasting announcement")
+        print(f"📢 DEBUG: Session ID: {request.sid}")
+        print(f"📢 DEBUG: Announcement data: {data}")
+        
+        title = data.get('title', 'System Announcement').strip()
+        message = data.get('message', '').strip()
+        priority = data.get('priority', 'normal')
+        target = data.get('target', 'all_users')
+        
+        # Validation
+        if not message:
+            print(f"📢 DEBUG: Empty message detected")
+            emit('announcement_error', {
+                'success': False,
+                'error': 'Message cannot be empty',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+            return
+        
+        # Create announcement data
+        announcement_data = {
+            'id': f"announcement_{int(datetime.utcnow().timestamp() * 1000)}",
+            'title': title,
+            'message': message,
+            'content': message,  # For compatibility
+            'priority': priority,
+            'admin_name': admin_username,
+            'type': 'system_announcement',
+            'created_at': datetime.utcnow().isoformat(),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        print(f"📢 DEBUG: Prepared announcement: {announcement_data}")
+        
+        # Use the notification service for proper persistence and broadcasting
+        try:
+            from services.notification_service import get_notification_service, NotificationPriority
+            notification_service = get_notification_service(socketio)
+            
+            # Convert priority string to enum if needed
+            priority_enum = NotificationPriority.NORMAL
+            if priority == 'high':
+                priority_enum = NotificationPriority.HIGH
+            elif priority == 'urgent':
+                priority_enum = NotificationPriority.URGENT
+            elif priority == 'low':
+                priority_enum = NotificationPriority.LOW
+            
+            # Send via notification service for persistence
+            result = notification_service.send_system_announcement(
+                title=title,
+                message=message,
+                priority=priority_enum
+            )
+            
+            print(f"📢 DEBUG: Notification service result: {result}")
+            
+        except Exception as service_error:
+            print(f"⚠️ Notification service failed, using direct WebSocket: {service_error}")
+        
+        # Direct WebSocket broadcast for immediate delivery
+        broadcast_count = 0
+        
+        if target == 'all_users' or target == 'everyone':
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            socketio.emit('new_announcement', announcement_data, room='announcements')
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+            broadcast_count += 3
+            print(f"📢 DEBUG: Broadcasted to all_users, announcements, and dashboard rooms")
+            
+        elif target == 'dashboard_users':
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+            broadcast_count += 1
+            print(f"📢 DEBUG: Broadcasted to dashboard room only")
+            
+        elif target.startswith('user_'):
+            user_id = target.replace('user_', '')
+            socketio.emit('new_announcement', announcement_data, room=f'user_{user_id}')
+            broadcast_count += 1
+            print(f"📢 DEBUG: Broadcasted to specific user: {user_id}")
+            
+        else:
+            # Default fallback
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            broadcast_count += 1
+            print(f"📢 DEBUG: Broadcasted to all_users (fallback)")
+        
+        # Send confirmation to admin
+        emit('announcement_sent', {
+            'success': True,
+            'announcement': announcement_data,
+            'target': target,
+            'broadcast_count': broadcast_count,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+        print(f"✅ Announcement broadcast successful: '{title}' to {target}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting announcement: {str(e)}")
+        emit('announcement_error', {
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+# Helper function for programmatic announcements
+def emit_system_announcement(title, message, priority='normal', target='all_users'):
+    """Emit system announcement programmatically"""
+    try:
+        announcement_data = {
+            'id': f"system_{int(datetime.utcnow().timestamp() * 1000)}",
+            'title': title,
+            'message': message,
+            'content': message,
+            'priority': priority,
+            'admin_name': 'System',
+            'type': 'system_announcement',
+            'created_at': datetime.utcnow().isoformat(),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        print(f"📢 DEBUG: System announcement: {announcement_data}")
+        
+        # Broadcast to target rooms
+        if target == 'all_users':
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            socketio.emit('new_announcement', announcement_data, room='announcements') 
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+        elif target == 'dashboard':
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+        elif target.startswith('user_'):
+            socketio.emit('new_announcement', announcement_data, room=target)
+        
+        print(f"✅ System announcement emitted: {title}")
+        return {'success': True, 'announcement': announcement_data}
+        
+    except Exception as e:
+        print(f"❌ Error emitting system announcement: {str(e)}")
+        return {'success': False, 'error': str(e)}
 
 # ===== REAL-TIME PERFORMANCE FEEDBACK SYSTEM =====
 try:
@@ -4406,4 +4649,171 @@ def handle_admin_monitoring_request(data):
             'timestamp': datetime.utcnow().isoformat()
         })
 
-print("🚀 Admin WebSocket test handlers loaded successfully")
+# ===== REAL-TIME ANNOUNCEMENT SYSTEM =====
+# Enhanced announcement system for real-time dashboard updates
+
+@socketio.on('broadcast_announcement')
+@admin_only
+def handle_broadcast_announcement(data):
+    """Broadcast announcement to all users or specific targets"""
+    try:
+        print(f"📢 DEBUG: Broadcast announcement called by {current_user.username}")
+        print(f"📢 DEBUG: Session ID: {request.sid}")
+        print(f"📢 DEBUG: Announcement data: {data}")
+        print(f"📢 DEBUG: Request timestamp: {datetime.utcnow().isoformat()}")
+        
+        title = data.get('title', 'System Announcement')
+        message = data.get('message', '')
+        priority = data.get('priority', 'normal')
+        target = data.get('target', 'all_users')
+        
+        if not message.strip():
+            print(f"📢 DEBUG: Empty message detected, sending error")
+            emit('announcement_error', {'error': 'Message cannot be empty'})
+            return
+        
+        announcement_data = {
+            'id': f"announcement_{datetime.utcnow().timestamp()}",
+            'title': title,
+            'message': message,
+            'priority': priority,
+            'admin_name': current_user.username,
+            'timestamp': datetime.utcnow().isoformat(),
+            'type': 'announcement'
+        }
+        
+        print(f"📢 DEBUG: Prepared announcement data: {announcement_data}")
+        
+        # Broadcast to target audience
+        if target == 'all_users':
+            # Send to all connected users
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            socketio.emit('notification', announcement_data, room='all_users')
+            print(f"📢 DEBUG: Sent announcement to all_users room")
+            
+        elif target == 'dashboard_users':
+            # Send specifically to dashboard users
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+            socketio.emit('notification', announcement_data, room='dashboard')
+            print(f"� DEBUG: Sent announcement to dashboard room")
+            
+        elif target.startswith('user_'):
+            # Send to specific user
+            user_id = target.replace('user_', '')
+            socketio.emit('new_announcement', announcement_data, room=f'user_{user_id}')
+            socketio.emit('notification', announcement_data, room=f'user_{user_id}')
+            print(f"📢 DEBUG: Sent announcement to user_{user_id}")
+            
+        else:
+            # Default to all users
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            socketio.emit('notification', announcement_data, room='all_users')
+            print(f"📢 DEBUG: Sent announcement to all_users (default)")
+        
+        # Send confirmation back to admin
+        emit('announcement_sent', {
+            'success': True,
+            'announcement': announcement_data,
+            'target': target
+        })
+        
+        print(f"📢 Announcement broadcast successfully: {title}")
+        
+    except Exception as e:
+        print(f"❌ Error broadcasting announcement: {str(e)}")
+        emit('announcement_error', {'error': str(e)})
+
+@socketio.on('join_announcements')
+@authenticated_only
+def handle_join_announcements(data=None):
+    """Join announcement room for real-time updates"""
+    try:
+        print(f"📢 DEBUG: User {current_user.username} joining announcement rooms")
+        print(f"📢 DEBUG: Session ID: {request.sid}")
+        print(f"📢 DEBUG: Join data: {data}")
+        
+        join_room('announcements')
+        print(f"📢 DEBUG: Joined 'announcements' room")
+        
+        join_room('all_users')  # Also join general user room
+        print(f"📢 DEBUG: Joined 'all_users' room")
+        
+        rooms_joined = ['announcements', 'all_users']
+        
+        if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
+            join_room('admin_announcements')
+            rooms_joined.append('admin_announcements')
+            print(f"📢 DEBUG: Admin user joined 'admin_announcements' room")
+        
+        print(f"📢 DEBUG: Total rooms joined: {rooms_joined}")
+            
+        emit('announcements_joined', {
+            'success': True,
+            'user_id': current_user.id,
+            'rooms': rooms_joined,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+        print(f"📢 User {current_user.username} joined announcement rooms")
+        
+    except Exception as e:
+        print(f"❌ Error joining announcement rooms: {str(e)}")
+        emit('announcements_error', {'error': str(e)})
+
+@socketio.on('get_recent_announcements')
+@authenticated_only
+def handle_get_recent_announcements(data=None):
+    """Get recent announcements for user"""
+    try:
+        print(f"📢 DEBUG: User {current_user.username} requesting recent announcements")
+        print(f"📢 DEBUG: Session ID: {request.sid}")
+        print(f"📢 DEBUG: Request data: {data}")
+        
+        # In a real implementation, this would query the database
+        # For now, return empty list or sample data
+        recent_announcements = []
+        
+        emit('recent_announcements', {
+            'announcements': recent_announcements,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+        print(f"📢 Recent announcements sent to {current_user.username}")
+        
+    except Exception as e:
+        print(f"❌ Error getting recent announcements: {str(e)}")
+        emit('announcements_error', {'error': str(e)})
+
+# Helper function to send system announcements
+def send_system_announcement(title, message, priority='normal', target='all_users'):
+    """Helper function to send system announcements programmatically"""
+    try:
+        announcement_data = {
+            'id': f"system_announcement_{datetime.utcnow().timestamp()}",
+            'title': title,
+            'message': message,
+            'priority': priority,
+            'admin_name': 'System',
+            'timestamp': datetime.utcnow().isoformat(),
+            'type': 'system_announcement'
+        }
+        
+        print(f"📢 DEBUG: System announcement: {announcement_data}")
+        
+        # Broadcast based on target
+        if target == 'all_users':
+            socketio.emit('new_announcement', announcement_data, room='all_users')
+            socketio.emit('notification', announcement_data, room='all_users')
+        elif target == 'dashboard_users':
+            socketio.emit('new_announcement', announcement_data, room='dashboard')
+            socketio.emit('notification', announcement_data, room='dashboard')
+        
+        print(f"📢 System announcement sent: {title}")
+        return {'success': True, 'announcement': announcement_data}
+        
+    except Exception as e:
+        print(f"❌ Error sending system announcement: {str(e)}")
+        return {'success': False, 'error': str(e)}
+
+print("�🚀 Admin WebSocket test handlers loaded successfully")
+print("📢 Real-time announcement system loaded successfully")

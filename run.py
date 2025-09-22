@@ -422,6 +422,8 @@ setup_jinja_environment()
 if __name__ == "__main__":
     import logging
     from flask import send_from_directory
+    import os as _os
+    import socket as _socket
     
     # Setup logging
     logging.basicConfig(level=logging.INFO)
@@ -473,6 +475,9 @@ if __name__ == "__main__":
     @app.route('/health')
     def health_check():
         return {'status': 'healthy', 'server': 'main'}, 200
+
+    # Removed debug/test announcement routes (/demo/announcements, /test/announcements, /api/debug/announce)
+    # to prevent accidental broadcast of test system announcements in production.
 
     # DEBUG endpoints for testing module functionality (remove in production)
     @app.route('/api/debug/modules/<int:module_id>/test-delete', methods=['GET'])
@@ -570,16 +575,42 @@ if __name__ == "__main__":
             print("Continuing with application startup...")
 
     # Start the unified server with WebSocket support
-    print("🚀 Starting unified Flask-SocketIO server on port 5001...")
+    # Determine port and host with fallback if default is busy
+    def _find_free_port(preferred: int, tries: int = 10) -> int:
+        port = preferred
+        for _ in range(tries):
+            s = None
+            try:
+                s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+                s.bind(('127.0.0.1', port))
+                # If bind succeeds, it's free
+                return port
+            except OSError:
+                port += 1
+            finally:
+                try:
+                    if s:
+                        s.close()
+                except Exception:
+                    pass
+        return preferred  # Fallback to preferred even if busy
+
+    env_port = int(_os.getenv('PORT', '5001'))
+    env_host = _os.getenv('HOST', '127.0.0.1')
+    
+    # Force use of port 5001 only - no fallback
+    chosen_port = env_port
+
+    print(f"🚀 Starting unified Flask-SocketIO server on {env_host}:{chosen_port}...")
     print("🔌 WebSocket events loaded and ready")
     print("📁 Static files will be served by Flask's built-in handler")
     
     # Start the Flask-SocketIO server
     socketio.run(
-        app, 
-        debug=True, 
-        host='127.0.0.1',
-        port=5001,
+        app,
+        debug=True,
+        host=env_host,
+        port=chosen_port,
         use_reloader=False,  # Disable reloader to prevent threading issues
         allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
     )
