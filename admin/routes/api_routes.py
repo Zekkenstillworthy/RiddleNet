@@ -8,6 +8,7 @@ import random
 import string
 from datetime import datetime
 from utils.permission_decorators import teacher_required
+from utils.route_guards import admin_required
 
 api_bp = Blueprint('admin_api', __name__, url_prefix='/admin/api')
 
@@ -950,83 +951,110 @@ def download_collaboration_file(file_id):
         }), 500
 
 @api_bp.route('/grades/<int:class_id>', methods=['GET'])
+@admin_required
 def get_class_grades(class_id):
     """Get comprehensive grade data for a class"""
     try:
+        print(f"🔍 DEBUG: Getting grades for class {class_id}")
         from admin.models.class_content import ClassAssignment
         from admin.models.assignment_submission import AssignmentSubmission
         from user.models.user import User
         from admin.models.class_model import Class
         
+        print(f"🔍 DEBUG: Fetching class object {class_id}")
         # Verify class exists and user has access
         class_obj = Class.query.get_or_404(class_id)
+        print(f"✅ DEBUG: Class found: {class_obj.name}")
         
-        # Get all students in the class
-        students = User.query.filter_by(role='student').join(
-            User.enrolled_classes
-        ).filter_by(id=class_id).all()
+        print(f"🔍 DEBUG: Getting students for class {class_id}")
+        # Get all students in the class using the relationship
+        students = class_obj.students.all()
+        print(f"✅ DEBUG: Found {len(students)} students")
         
+        print(f"🔍 DEBUG: Getting assignments for class {class_id}")
         # Get all assignments for this class
         assignments = ClassAssignment.query.filter_by(class_id=class_id).all()
+        print(f"✅ DEBUG: Found {len(assignments)} assignments")
         
+        print(f"🔍 DEBUG: Getting submissions for assignments")
         # Get all submissions for these assignments
         assignment_ids = [a.id for a in assignments]
         submissions = AssignmentSubmission.query.filter(
             AssignmentSubmission.assignment_id.in_(assignment_ids)
         ).all() if assignment_ids else []
+        print(f"✅ DEBUG: Found {len(submissions)} submissions")
         
+        print(f"🔍 DEBUG: Processing submissions data")
         # Group submissions by student and assignment
         submission_map = {}
         grade_map = {}
         
         for submission in submissions:
-            if submission.student_id not in submission_map:
-                submission_map[submission.student_id] = {}
-                grade_map[submission.student_id] = {}
-            
-            submission_map[submission.student_id][submission.assignment_id] = submission
-            
-            if submission.grade is not None:
-                grade_map[submission.student_id][submission.assignment_id] = {
-                    'score': submission.grade,
-                    'max_points': submission.max_points or 100,
-                    'percentage': (submission.grade / (submission.max_points or 100)) * 100,
-                    'graded_at': submission.graded_at.isoformat() if submission.graded_at else None
-                }
+            try:
+                if submission.student_id not in submission_map:
+                    submission_map[submission.student_id] = {}
+                    grade_map[submission.student_id] = {}
+                
+                submission_map[submission.student_id][submission.assignment_id] = submission
+                
+                if submission.grade is not None:
+                    grade_map[submission.student_id][submission.assignment_id] = {
+                        'score': submission.grade,
+                        'max_points': submission.max_points or 100,
+                        'percentage': (submission.grade / (submission.max_points or 100)) * 100,
+                        'graded_at': submission.graded_at.isoformat() if submission.graded_at else None
+                    }
+            except Exception as e:
+                print(f"❌ DEBUG: Error processing submission {submission.id}: {e}")
+                continue
         
+        print(f"🔍 DEBUG: Building student data")
         # Prepare student data
         student_data = []
         for student in students:
-            student_grades = grade_map.get(student.id, {})
-            student_submissions = submission_map.get(student.id, {})
-            
-            student_data.append({
-                'id': student.id,
-                'first_name': student.first_name,
-                'last_name': student.last_name,
-                'email': student.email,
-                'grades': student_grades,
-                'submissions': {aid: {'status': sub.status, 'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None} 
-                              for aid, sub in student_submissions.items()}
-            })
+            try:
+                student_grades = grade_map.get(student.id, {})
+                student_submissions = submission_map.get(student.id, {})
+                
+                student_data.append({
+                    'id': student.id,
+                    'first_name': student.first_name,
+                    'last_name': student.last_name,
+                    'email': student.email,
+                    'grades': student_grades,
+                    'submissions': {aid: {'status': sub.status, 'submitted_at': sub.submitted_at.isoformat() if sub.submitted_at else None} 
+                                  for aid, sub in student_submissions.items()}
+                })
+            except Exception as e:
+                print(f"❌ DEBUG: Error processing student {student.id}: {e}")
+                continue
         
+        print(f"✅ DEBUG: Built data for {len(student_data)} students")
+        
+        print(f"🔍 DEBUG: Building assignment statistics")
         # Prepare assignment data with statistics
         assignment_data = []
         for assignment in assignments:
-            assignment_submissions = [s for s in submissions if s.assignment_id == assignment.id]
-            assignment_grades = [s.grade for s in assignment_submissions if s.grade is not None]
-            
-            stats = {
-                'id': assignment.id,
-                'title': assignment.title,
-                'type': 'assignment',
-                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
-                'max_points': assignment.max_points or 100,
-                'submitted_count': len(assignment_submissions),
-                'graded_count': len(assignment_grades),
-                'average_grade': sum(assignment_grades) / len(assignment_grades) if assignment_grades else 0
-            }
-            assignment_data.append(stats)
+            try:
+                assignment_submissions = [s for s in submissions if s.assignment_id == assignment.id]
+                assignment_grades = [s.grade for s in assignment_submissions if s.grade is not None]
+                
+                stats = {
+                    'id': assignment.id,
+                    'title': assignment.title,
+                    'type': 'assignment',
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                    'max_points': assignment.max_points or 100,
+                    'submitted_count': len(assignment_submissions),
+                    'graded_count': len(assignment_grades),
+                    'average_grade': sum(assignment_grades) / len(assignment_grades) if assignment_grades else 0
+                }
+                assignment_data.append(stats)
+            except Exception as e:
+                print(f"❌ DEBUG: Error processing assignment {assignment.id}: {e}")
+                continue
+        
+        print(f"✅ DEBUG: Built data for {len(assignment_data)} assignments")
         
         # TODO: Add simulation and quiz data when those models are available
         simulation_data = []
@@ -1044,9 +1072,13 @@ def get_class_grades(class_id):
             }
         }
         
+        print(f"✅ DEBUG: Successfully built grades response")
         return jsonify(response_data)
         
     except Exception as e:
+        print(f"❌ DEBUG: Fatal error in get_class_grades: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': str(e)
@@ -1669,6 +1701,7 @@ def get_class_simulations(class_id):
         }), 500
 
 @api_bp.route('/modules/<int:module_id>/content', methods=['GET'])
+@admin_required
 def get_module_content(module_id):
     """Get content assigned to a module (simulations, assignments, question groups).
 

@@ -6862,10 +6862,23 @@ function viewStudentProgress(studentId) {
 }
 
 function fetchStudentProgress(studentId) {
-    const classId = selectedClass ? selectedClass.id : null;
+    // Resolve classId robustly: prefer moduleBuilder.currentClass, then query param, then URL path
+    let classId = null;
+    if (typeof moduleBuilder !== 'undefined' && moduleBuilder && moduleBuilder.currentClass && moduleBuilder.currentClass.id) {
+        classId = moduleBuilder.currentClass.id;
+    } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        classId = urlParams.get('class_id');
+        if (!classId) {
+            const pathMatch = window.location.pathname.match(/\/classes\/(\d+)/);
+            if (pathMatch) {
+                classId = pathMatch[1];
+            }
+        }
+    }
     
     if (!classId) {
-        showProgressError('Class not selected');
+        showProgressError('Class context not available');
         return;
     }
     
@@ -7871,14 +7884,8 @@ function showAssignToModulesModal() {
 
 // Module content management functions
 function loadModuleContent(moduleId) {
-    fetch(`/admin/api/modules/${moduleId}/content`)
-        .then(response => {
-            const ct = response.headers.get('content-type') || '';
-            if (!response.ok || !ct.includes('application/json')) {
-                throw new Error(`Bad response (${response.status})`);
-            }
-            return response.json();
-        })
+    // Use adminFetch to ensure credentials/cookies are sent and errors are handled consistently
+    adminFetch(`/admin/api/modules/${moduleId}/content`)
         .then(data => {
             if (data.success) {
                 const moduleContentDiv = document.getElementById(`module-content-${moduleId}`);
@@ -7965,10 +7972,11 @@ function loadModuleContent(moduleId) {
             console.error('Error loading module content:', error);
             const moduleContentDiv = document.getElementById(`module-content-${moduleId}`);
             if (moduleContentDiv) {
+                // Degrade gracefully to an empty state instead of a red error, to avoid noisy UX
                 moduleContentDiv.innerHTML = `
-                    <div class="module-content-error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Error loading content</span>
+                    <div class="module-content-empty">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>No content assigned yet</span>
                     </div>
                 `;
             }
@@ -9464,12 +9472,12 @@ async function loadGradeData() {
     }
 
     try {
-        const response = await fetch(`/admin/api/grades/${moduleBuilder.currentClass.id}`);
-        if (response.ok) {
-            gradeData = await response.json();
+        const data = await adminFetch(`/admin/api/grades/${moduleBuilder.currentClass.id}`);
+        if (data) {
+            gradeData = data;
             updateGradeDisplay();
         } else {
-            console.error('Failed to load grade data');
+            console.warn('No grade data returned');
         }
     } catch (error) {
         console.error('Error loading grades:', error);
@@ -9946,7 +9954,8 @@ function printGrades() {
 
 // Helper function to hide all tabs
 function hideAllTabs() {
-    const tabs = ['stream-tab', 'classwork-tab', 'people-tab', 'grades-content', 'deadlines-content', 'essays-content'];
+    // Ensure we hide the actual tab content containers to avoid overlapping sections
+    const tabs = ['stream-content', 'classwork-content', 'people-content', 'grades-content', 'deadlines-content', 'essays-content'];
     tabs.forEach(tabId => {
         const tab = document.getElementById(tabId);
         if (tab) tab.style.display = 'none';

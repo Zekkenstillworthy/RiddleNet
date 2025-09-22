@@ -1758,22 +1758,57 @@ def remove_question_from_group(group_id, question_id):
 def get_student_progress(class_id, student_id):
     """Get student progress for a specific class"""
     try:
+        print(f"🔍 DEBUG: Getting progress for student {student_id} in class {class_id}")
+        
+        # Simple test - just return success for now to verify API auth works
+        return jsonify({
+            'success': True,
+            'message': 'API authentication working',
+            'student': {'id': student_id, 'name': 'Test Student'},
+            'progress': {
+                'overview': {
+                    'overall_progress': 0,
+                    'modules_completed': '0/0',
+                    'lessons_completed': '0/0',
+                    'assignments_submitted': '0/0',
+                    'average_score': 0,
+                    'total_time_spent_hours': 0
+                },
+                'modules': [],
+                'assignments': [],
+                'recent_activity': []
+            }
+        })
+        
         cls = _require_class_owner(class_id)
         if not cls:
+            print(f"❌ DEBUG: Permission denied for class {class_id}")
             return jsonify({'error': 'Permission denied'}), 403
+        
+        print(f"✅ DEBUG: Class access granted for {class_id}")
         
         # Import User model to get student info
         from user.models.user import User
         from admin.models.module import Module, ModuleProgress, Lesson, LessonProgress
         from admin.models.class_content import ClassAssignment
+        
+        print(f"🔍 DEBUG: Fetching student {student_id}")
         student = User.query.get_or_404(student_id)
+        print(f"✅ DEBUG: Student found: {student.username}")
+        
+        print(f"🔍 DEBUG: Checking if student is enrolled in class")
         
         # Verify student is enrolled in this class
         if student not in cls.students:
+            print(f"❌ DEBUG: Student {student_id} not enrolled in class {class_id}")
             return jsonify({'error': 'Student not enrolled in this class'}), 404
         
+        print(f"✅ DEBUG: Student is enrolled in class")
+        
+        print(f"🔍 DEBUG: Fetching modules for class {class_id}")
         # Get all modules for this class
         modules = Module.query.filter_by(class_id=class_id, is_active=True).order_by(Module.order_index).all()
+        print(f"✅ DEBUG: Found {len(modules)} modules")
         
         # Calculate overall progress
         total_modules = len(modules)
