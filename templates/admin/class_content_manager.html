@@ -6269,16 +6269,31 @@ class CleanModuleBuilder {
 
 // Global Functions
 function switchTab(tabName) {
+    console.log('Switching to tab:', tabName);
+    
+    // Remove active class from all tab links
     document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     
+    // Hide all tab content using both methods to ensure consistency
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+        content.style.display = 'none'; // Ensure inline styles are cleared
+    });
+    
+    // Activate the target tab link
     const targetTabLink = document.querySelector(`[onclick*="switchTab('${tabName}')"]`);
+    if (targetTabLink) {
+        targetTabLink.classList.add('active');
+    }
+    
+    // Show the target content using both methods
     const targetContent = document.getElementById(tabName + '-content');
+    if (targetContent) {
+        targetContent.classList.add('active');
+        targetContent.style.display = 'block'; // Ensure content is visible
+    }
     
-    if (targetTabLink) targetTabLink.classList.add('active');
-    if (targetContent) targetContent.classList.add('active');
-    
-    // Load content based on tab
+    // Load content based on tab (but don't call separate show functions that manipulate display)
     if (tabName === 'classwork' && moduleBuilder.currentClass) {
         loadClassworkContent();
     } else if (tabName === 'stream' && moduleBuilder.currentClass) {
@@ -6287,11 +6302,14 @@ function switchTab(tabName) {
     } else if (tabName === 'people' && moduleBuilder.currentClass) {
         // People tab is static for now
     } else if (tabName === 'grades' && moduleBuilder.currentClass) {
-        showGrades();
+        loadGradeData(); // Just load data, don't manipulate display
     } else if (tabName === 'deadlines' && moduleBuilder.currentClass) {
-        showDeadlines();
+        loadDeadlineData(); // Just load data, don't manipulate display
     } else if (tabName === 'essays' && moduleBuilder.currentClass) {
-        showEssays();
+        // Load essays with delay to ensure tab is visible
+        setTimeout(() => {
+            loadEssayData();
+        }, 100);
     }
 }
 
@@ -9446,10 +9464,9 @@ let currentGradeFilter = 'all';
 let gradeData = null;
 
 function showGrades() {
-    console.log('Showing grades tab');
-    hideAllTabs();
-    document.getElementById('grades-content').style.display = 'block';
-    updateActiveTab('grades');
+    console.log('Loading grades data (called via switchTab)');
+    // Don't manipulate display here - let switchTab handle that
+    // Just load the data
     loadGradeData();
 }
 
@@ -9640,10 +9657,9 @@ function exportGrades() {
 let deadlineData = null;
 
 function showDeadlines() {
-    console.log('Showing deadlines tab');
-    hideAllTabs();
-    document.getElementById('deadlines-content').style.display = 'block';
-    updateActiveTab('deadlines');
+    console.log('Loading deadlines data (called via switchTab)');
+    // Don't manipulate display here - let switchTab handle that
+    // Just load the data
     loadDeadlineData();
 }
 
@@ -10966,12 +10982,9 @@ let currentEssayPage = 1;
 const essaysPerPage = 10;
 
 function showEssays() {
-    console.log('🔍 Showing essays tab');
-    hideAllTabs();
-    document.getElementById('essays-content').style.display = 'block';
-    updateActiveTab('essays');
-    
-    // Add a small delay to ensure the tab is visible before loading data
+    console.log('🔍 Loading essays data (called via switchTab)');
+    // Don't manipulate display here - let switchTab handle that
+    // Just load the data with a small delay
     setTimeout(() => {
         loadEssayData();
     }, 100);
@@ -11740,6 +11753,30 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('   - debugModuleAssignment(moduleId) - Debug specific module assignment');
     console.log('   - testQuestionGroupsAPI() - Test question groups API');
     console.log('   - checkModalStatus() - Check if modal exists and is visible');
+    
+    // Initialize proper tab state on page load
+    console.log('🔧 Initializing tab system...');
+    
+    // Ensure all tabs start with proper state
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none'; // Reset any inline styles
+        content.classList.remove('active'); // Remove any active classes
+    });
+    
+    // Set the stream tab as active by default (or whichever tab should be default)
+    const defaultTab = 'stream';
+    const defaultTabContent = document.getElementById(defaultTab + '-content');
+    const defaultTabLink = document.querySelector(`[onclick*="switchTab('${defaultTab}')"]`);
+    
+    if (defaultTabContent) {
+        defaultTabContent.classList.add('active');
+        defaultTabContent.style.display = 'block';
+    }
+    if (defaultTabLink) {
+        defaultTabLink.classList.add('active');
+    }
+    
+    console.log('✅ Tab system initialized with default tab:', defaultTab);
     
     // Check if the problematic module 6 exists
     setTimeout(() => {
