@@ -26,6 +26,20 @@
     
     <div class="admin-nav-right">
         {% if simulation %}
+            <!-- Export/Import Section -->
+            <button onclick="exportSimulation()" class="action-btn secondary" title="Export as .rnet file">
+                <i class="fas fa-download"></i>
+                Export
+            </button>
+            <button onclick="openImportModal()" class="action-btn secondary" title="Import from .rnet file">
+                <i class="fas fa-upload"></i>
+                Import
+            </button>
+            
+            <!-- Separator -->
+            <div class="button-separator"></div>
+            
+            <!-- Preview & Save -->
             <a href="{{ url_for('admin_simulation.view_simulation', simulation_id=simulation.id) }}" class="action-btn">
                 <i class="fas fa-eye"></i>
                 Preview
@@ -383,6 +397,170 @@ body, html {
         margin-top: 20px;
         justify-content: center;
     }
+}
+
+/* Export/Import Button Styles */
+.action-btn.secondary {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.action-btn.secondary:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.button-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 12px;
+}
+
+/* Import Modal Styles */
+.import-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.import-modal-content {
+    background: var(--dark-bg);
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+.import-modal-header {
+    background: linear-gradient(135deg, var(--cyber-glow), var(--primary-color));
+    padding: 20px 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.import-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.import-modal-close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.import-modal-close:hover {
+    opacity: 1;
+}
+
+.import-modal-body {
+    padding: 30px;
+    color: var(--text-primary);
+}
+
+.file-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.05);
+}
+
+.file-upload-area.dragover {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.upload-text {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.upload-subtext {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.file-input-hidden {
+    display: none;
+}
+
+.import-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-import {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-import:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-import:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-cancel:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
 }
 </style>
 
@@ -1224,14 +1402,16 @@ document.getElementById('simulationForm').addEventListener('submit', function(e)
     // Build simulation_config from GUI builders
     const simCfg = {};
     const devs = collectDevices();
-    if(devs.length) simCfg.devices = devs;
     const prots = collectProtocols();
     if(prots.length) simCfg.protocols = prots;
     const links = collectLinks();
     const layout = document.getElementById('topologyLayout')?.value || '';
-    if(links.length || layout){
+    
+    // Always create network_topology if we have devices or links
+    if(devs.length || links.length || layout){
         simCfg.network_topology = {};
         if(layout) simCfg.network_topology.layout = layout;
+        if(devs.length) simCfg.network_topology.devices = devs;
         if(links.length) simCfg.network_topology.links = links;
     }
     if(Object.keys(simCfg).length){ data.simulation_config = simCfg; }
@@ -1390,6 +1570,217 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 });
+</script>
+
+<!-- Import Modal -->
+<div id="importModal" class="import-modal">
+    <div class="import-modal-content">
+        <div class="import-modal-header">
+            <h2><i class="fas fa-upload"></i> Import Simulation</h2>
+            <span class="import-modal-close" onclick="closeImportModal()">&times;</span>
+        </div>
+        <div class="import-modal-body">
+            <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">Click to select or drag and drop</div>
+                <div class="upload-subtext">Upload .rnet file to import simulation data</div>
+            </div>
+            <input type="file" id="fileInput" class="file-input-hidden" accept=".rnet" onchange="handleFileSelect(event)">
+            <div id="fileInfo" style="display: none; margin-top: 15px; padding: 15px; background: rgba(0, 217, 255, 0.1); border-radius: 6px;">
+                <i class="fas fa-file"></i> <span id="fileName"></span>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
+                    Ready to import
+                </div>
+            </div>
+            <div class="import-actions">
+                <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+                <button id="importBtn" class="btn-import" onclick="performImport()" disabled>
+                    <i class="fas fa-upload"></i> Import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Export/Import Functions
+function exportSimulation() {
+    if (!SIMULATION_ID) {
+        showNotification('No simulation available for export', 'error');
+        return;
+    }
+    window.location.href = `/admin/simulation/api/${SIMULATION_ID}/export`;
+}
+
+function openImportModal() {
+    document.getElementById('importModal').style.display = 'block';
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+    // Reset form
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('importBtn').disabled = true;
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (file.name.toLowerCase().endsWith('.rnet')) {
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('importBtn').disabled = false;
+        } else {
+            alert('Please select a valid .rnet file');
+            event.target.value = '';
+        }
+    }
+}
+
+function performImport() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file first');
+        return;
+    }
+    
+    if (!SIMULATION_ID) {
+        alert('No simulation context available for import');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Show loading state
+    const importBtn = document.getElementById('importBtn');
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+    importBtn.disabled = true;
+    
+    fetch(`/admin/simulation/api/${SIMULATION_ID}/import`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification('Simulation imported successfully! Refreshing page...', 'success');
+            
+            // Close modal and refresh page
+            setTimeout(() => {
+                closeImportModal();
+                window.location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Import failed');
+        }
+    })
+    .catch(error => {
+        console.error('Import error:', error);
+        showNotification('Error importing simulation: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+    });
+}
+
+// Drag and drop functionality
+const uploadArea = document.querySelector('.file-upload-area');
+if (uploadArea) {
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            document.getElementById('fileInput').files = files;
+            handleFileSelect({ target: { files: files } });
+        }
+    });
+}
+
+// Utility function to get CSRF token
+function getCsrfToken() {
+    return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        ${message}
+    `;
+    
+    // Style the notification
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 400px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 5000);
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('importModal');
+    if (event.target === modal) {
+        closeImportModal();
+    }
+}
 </script>
 
 {# Removed legacy duplicate editor markup and scripts to prevent Jinja parsing errors and route redirects #}

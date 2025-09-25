@@ -21,9 +21,64 @@ class Topology(db.Model):
     base_score = db.Column(db.Integer, default=10)  # Base points for completing
     time_bonus = db.Column(db.Integer, default=0)  # Additional points for completing quickly
     perfect_match_bonus = db.Column(db.Integer, default=5)  # Bonus for exact match with expected solution
+    time_limit = db.Column(db.Integer, default=300)  # Time limit in seconds (default 5 minutes)
+    
+    # Gamified features
+    _tutorial_steps = db.Column('tutorial_steps', db.Text, nullable=True)  # JSON array of tutorial steps
+    _hints = db.Column('hints', db.Text, nullable=True)  # JSON array of hints
+    unlock_requirement = db.Column(db.String(100), nullable=True)  # Required achievement to unlock
+    prerequisite_topology_id = db.Column(db.Integer, db.ForeignKey('topologies.id'), nullable=True)  # Previous topology required
+    
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    prerequisite_topology = db.relationship('Topology', remote_side=[id], backref='unlocks')
+
+    @property
+    def tutorial_steps(self):
+        """Get tutorial steps as a Python list"""
+        if not self._tutorial_steps:
+            return []
+        try:
+            return json.loads(self._tutorial_steps)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    @tutorial_steps.setter
+    def tutorial_steps(self, steps):
+        """Set tutorial steps from a Python list"""
+        try:
+            if isinstance(steps, list):
+                self._tutorial_steps = json.dumps(steps)
+            else:
+                self._tutorial_steps = steps
+        except Exception as e:
+            print(f"Error setting tutorial_steps: {str(e)}")
+            raise ValueError(f"Invalid tutorial_steps format: {str(e)}")
+    
+    @property
+    def hints(self):
+        """Get hints as a Python list"""
+        if not self._hints:
+            return []
+        try:
+            return json.loads(self._hints)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
+    @hints.setter
+    def hints(self, hint_list):
+        """Set hints from a Python list"""
+        try:
+            if isinstance(hint_list, list):
+                self._hints = json.dumps(hint_list)
+            else:
+                self._hints = hint_list
+        except Exception as e:
+            print(f"Error setting hints: {str(e)}")
+            raise ValueError(f"Invalid hints format: {str(e)}")
 
     @property
     def initial_config(self):
@@ -134,6 +189,11 @@ class Topology(db.Model):
             'base_score': self.base_score,
             'time_bonus': self.time_bonus,
             'perfect_match_bonus': self.perfect_match_bonus,
+            'time_limit': self.time_limit,
+            'tutorial_steps': self.tutorial_steps,
+            'hints': self.hints,
+            'unlock_requirement': self.unlock_requirement,
+            'prerequisite_topology_id': self.prerequisite_topology_id,
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None

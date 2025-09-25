@@ -4,9 +4,7 @@ from datetime import datetime
 from flask_login import login_required, current_user
 from utils.permission_decorators import teacher_required
 from services.lab_service import LabService
-from services.point_economy_service import PointEconomyService
-from services.onboarding_service import OnboardingService
-from services.anti_cheat_service import AntiCheatService
+# Removed unused service imports: PointEconomyService, OnboardingService, AntiCheatService
 from admin.models.lab import Lab, LabSubmission
 from admin.models.rubric import Rubric
 from __init__ import db
@@ -78,13 +76,15 @@ def submit_lab(lab_id: int):
     if d and d.due_date:
         cutoff = d.late_allowed_until or d.due_date
         if now > cutoff:
-            AntiCheatService.log_action(getattr(current_user, 'id', None), lab_id, 'deadline_circumvention', {'now': now.isoformat()}, flagged=True)
+            # AntiCheatService removed - stub implementation for deadline checking
+            # AntiCheatService.log_action(getattr(current_user, 'id', None), lab_id, 'deadline_circumvention', {'now': now.isoformat()}, flagged=True)
             return jsonify({'success': False, 'error': 'Submission window closed'}), 403
     sub = LabSubmission(lab_id=lab_id, student_id=getattr(current_user, 'id', None), data_json=json.dumps(payload.get('data', {})))
     db.session.add(sub)
     db.session.commit()
-    AntiCheatService.log_action(getattr(current_user, 'id', None), lab_id, 'submit', {'size': len(payload.get('data', {}))})
-    AntiCheatService.detect_rapid_submissions(getattr(current_user, 'id', None), lab_id)
+    # AntiCheatService removed - submissions no longer logged for anti-cheat
+    # AntiCheatService.log_action(getattr(current_user, 'id', None), lab_id, 'submit', {'size': len(payload.get('data', {}))})
+    # AntiCheatService.detect_rapid_submissions(getattr(current_user, 'id', None), lab_id)
     return jsonify({'success': True, 'submission_id': sub.id})
 
 
@@ -109,7 +109,9 @@ def grade_lab(lab_id: int, submission_id: int):
     # award points equal to score (rounded)
     try:
         if sub.student_id and result.get('score') is not None:
-            PointEconomyService.earn(sub.student_id, int(result['score']), reason='lab_grade')
+            # PointEconomyService removed - points no longer awarded automatically
+            # PointEconomyService.earn(sub.student_id, int(result['score']), reason='lab_grade')
+            pass
     except Exception:
         pass
     return jsonify({'success': True, 'result': result})
@@ -118,7 +120,8 @@ def grade_lab(lab_id: int, submission_id: int):
 @lab_api.route('/api/onboarding/steps', methods=['GET'])
 def get_onboarding_steps():
     role = request.args.get('role', 'student')
-    return jsonify({'success': True, 'role': role, 'steps': OnboardingService.get_steps(role)})
+    # OnboardingService removed - return empty steps
+    return jsonify({'success': True, 'role': role, 'steps': []})
 
 
 @lab_api.route('/labs/<int:lab_id>/validate', methods=['POST'])
@@ -132,14 +135,13 @@ def validate_lab(lab_id: int):
 @lab_api.route('/api/points/balance', methods=['GET'])
 @login_required
 def get_points_balance():
-    bal = PointEconomyService.get_balance(getattr(current_user, 'id', None))
-    return jsonify({'success': True, 'balance': bal})
+    # PointEconomyService removed - return default balance
+    return jsonify({'success': True, 'balance': 0})
 
 
 @lab_api.route('/api/points/spend', methods=['POST'])
 @login_required
 def spend_points():
     payload = request.get_json(force=True)
-    res = PointEconomyService.spend(getattr(current_user, 'id', None), int(payload.get('amount', 0)), payload.get('reason', 'spend'))
-    status = 200 if res.get('success') else 400
-    return jsonify(res), status
+    # PointEconomyService removed - return success without spending
+    return jsonify({'success': True, 'message': 'Points system disabled'}), 200

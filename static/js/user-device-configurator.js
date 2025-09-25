@@ -345,6 +345,68 @@ class UserDeviceConfigurator {
         this.loadServicesConfiguration(device, config);
     }
 
+    refreshConfiguration(device) {
+        console.log('🔄 Refreshing device configuration modal with updated data:', device);
+        
+        if (!device || !this.modal || this.modal.style.display === 'none') {
+            console.log('⚠️ Cannot refresh - device config modal not open or device not available');
+            return;
+        }
+        
+        // Update current device reference
+        this.currentDevice = device;
+        
+        // Update stored configuration if device has config data
+        if (device.config && Object.keys(device.config).length > 0) {
+            this.networkConfigs.set(device.id, device.config);
+            console.log(`✅ Updated stored config for device ${device.id}:`, device.config);
+        }
+        
+        // Reload the configuration display
+        this.loadDeviceConfiguration(device);
+        
+        // Show notification in modal about the refresh
+        const modalContent = this.modal.querySelector('.modal-content');
+        if (modalContent) {
+            // Remove any existing refresh notification
+            const existingNotification = modalContent.querySelector('.refresh-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            // Add refresh notification
+            const notification = document.createElement('div');
+            notification.className = 'refresh-notification';
+            notification.style.cssText = `
+                background: #e3f2fd;
+                border: 1px solid #2196f3;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin-bottom: 16px;
+                color: #1976d2;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            notification.innerHTML = `
+                <span style="color: #2196f3;">ℹ️</span>
+                <span>Configuration updated by admin - displaying latest changes</span>
+            `;
+            
+            // Insert notification at the top of modal content
+            const firstChild = modalContent.firstElementChild;
+            modalContent.insertBefore(notification, firstChild);
+            
+            // Auto-remove notification after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    }
+
     getDefaultConfig(device) {
         const defaults = {
             'pc': {

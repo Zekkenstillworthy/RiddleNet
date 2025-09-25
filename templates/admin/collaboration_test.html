@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collaboration Test</title>
+</head>
+<body>
+    <h1>RiddleNet Collaboration Test</h1>
+    
+    <div id="status">Connecting...</div>
+    
+    <h2>Test Collaboration Settings</h2>
+    <button onclick="testCollaborationAPI()">Test Save Settings</button>
+    <button onclick="testLoadSettings()">Test Load Settings</button>
+    
+    <h2>Test Students API</h2>
+    <button onclick="testStudentsAPI()">Test Load Students</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Test collaboration API functionality
+        async function testCollaborationAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing collaboration settings save...';
+            
+            const testSettings = {
+                collaboration_settings: {
+                    max_team_size: '4',
+                    team_formation: 'manual',
+                    enable_chat: true,
+                    shared_workspace: true,
+                    admin_monitoring: true,
+                    save_logs: true,
+                    allow_admin_join: false,
+                    session_duration: '60',
+                    break_interval: '15'
+                }
+            };
+            
+            try {
+                const response = await fetch('/admin/api/collaboration/simulation/1/collaboration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testSettings)
+                });
+                
+                const data = await response.json();
+                results.innerHTML = `<h3>Save Test Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Save Test Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+        
+        async function testLoadSettings() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing collaboration settings load...';
+            
+            try {
+                const response = await fetch('/admin/api/collaboration/simulation/1/collaboration');
+                const data = await response.json();
+                results.innerHTML = `<h3>Load Test Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Load Test Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+        
+        async function testStudentsAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = 'Testing students API...';
+            
+            try {
+                const response = await fetch('/admin/api/collaboration/classes/7/students');
+                const data = await response.json();
+                results.innerHTML = `<h3>Students API Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML = `<h3>Students API Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('status').innerHTML = 'Ready for testing!';
+        });
+    </script>
+</body>
+</html>

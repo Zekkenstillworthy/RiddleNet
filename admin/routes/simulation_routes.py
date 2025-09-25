@@ -3,10 +3,12 @@ from flask_login import login_required, current_user
 from admin.controllers.simulation_controller import SimulationController
 # Learning controller removed - Learning Paths feature disabled
 from admin.services.assignment_service import assignment_service
-from socket_events import emit_new_simulation_available, emit_assignment_created
+from socket_events import emit_new_simulation_available, emit_assignment_created, emit_admin_simulation_updated
 from utils.render_utils import render_safe_template
 from utils.permission_decorators import teacher_required, require_class_id_in_json
 import json
+import os
+from datetime import datetime
 
 # Create blueprint with unique name to avoid conflicts
 admin_simulation_bp = Blueprint('admin_simulation', __name__, url_prefix='/admin/simulation')
@@ -118,6 +120,39 @@ def edit_simulation(simulation_id):
         except Exception:
             pass
 
+        # Debug logging for device count investigation
+        debug_file_path = r'c:\Users\gilbe\OneDrive\Desktop\RiddleNet\admin_debug.txt'
+        try:
+            network_topology = ensure_dict(sim_config, 'network_topology')
+            device_count = len(network_topology.get('devices', [])) if network_topology else 0
+            debug_msg = f"DEBUG [ADMIN EDIT {simulation_id}]: Device count = {device_count}\n"
+            debug_msg += f"DEBUG [ADMIN EDIT {simulation_id}]: Network topology keys = {list(network_topology.keys()) if network_topology else []}\n"
+            if network_topology and 'devices' in network_topology:
+                device_types = [d.get('type', 'unknown') for d in network_topology['devices']]
+                debug_msg += f"DEBUG [ADMIN EDIT {simulation_id}]: Device types = {device_types}\n"
+            
+            print("ADMIN ROUTE DEBUG:")
+            print(debug_msg)
+            print("=" * 80)  # Separator to make it stand out
+            
+            # Also log to file for easier debugging
+            with open(debug_file_path, 'w', encoding='utf-8') as f:
+                f.write(f"{datetime.now().isoformat()}: ADMIN ROUTE\n")
+                f.write(debug_msg + "\n")
+                f.write("=" * 50 + "\n")
+                
+            # Also use Flask logger
+            current_app.logger.info(debug_msg)
+        except Exception as e:
+            error_msg = f"DEBUG [ADMIN EDIT {simulation_id}]: Error logging device info: {e}"
+            print("ADMIN ROUTE ERROR:")
+            print(error_msg)
+            try:
+                with open(debug_file_path, 'w', encoding='utf-8') as f:
+                    f.write(f"{datetime.now().isoformat()}: ADMIN ERROR: {error_msg}\n")
+            except Exception as e2:
+                print(f"Could not write error to file: {e2}")
+
         # Create a troubleshooting-compatible simulation object
         troubleshooting_sim = TroubleshootingSimulation(
             id=simulation.get('id'),
@@ -194,6 +229,35 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
         result = simulation_controller.update_simulation(simulation_id, update_data)
 
         if result.get('success'):
+            # Emit real-time update to users viewing this simulation
+            try:
+                # Check if device configurations were changed
+                devices = data.get('devices', [])
+                device_configs_updated = any(
+                    device.get('config') and len(device.get('config', {})) > 0 
+                    for device in devices
+                )
+                
+                # Create device configuration mapping for targeted updates
+                device_configs = {}
+                for device in devices:
+                    if device.get('config') and len(device.get('config', {})) > 0:
+                        device_configs[device.get('id')] = device.get('config')
+                
+                emit_admin_simulation_updated(simulation_id, {
+                    'title': data.get('title'),
+                    'description': data.get('description'),
+                    'topology_updated': True,
+                    'initial_topology': data.get('initial_topology', {}),
+                    'solution_topology': data.get('solution_topology', {}),
+                    'devices': devices,
+                    'device_configs_updated': device_configs_updated,
+                    'device_configs': device_configs,
+                    'updated_by': current_user.username if current_user.is_authenticated else 'System'
+                })
+            except Exception as e:
+                print(f"Warning: Failed to emit simulation update: {str(e)}")
+            
             return jsonify({
                 'success': True,
                 'message': 'Simulation updated successfully',
@@ -618,6 +682,16 @@ def update_simulation_api(simulation_id):
         
         if 'error' in result:
             return jsonify(result), 400
+        
+        # Emit real-time update to users viewing this simulation
+        try:
+            emit_admin_simulation_updated(simulation_id, {
+                'api_update': True,
+                'updated_data': data,
+                'updated_by': current_user.username if current_user.is_authenticated else 'System'
+            })
+        except Exception as e:
+            print(f"Warning: Failed to emit API simulation update: {str(e)}")
         
         return jsonify(result)
     except Exception as e:
@@ -1163,3 +1237,187 @@ def create_simulation_api():
     except Exception as e:
         current_app.logger.error(f"Error creating simulation: {str(e)}")
         return jsonify({'error': f'Failed to create simulation: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/export', methods=['GET'])
+@login_required
+@teacher_required
+def export_simulation_rnetfile(simulation_id):
+    """Export simulation as rnetfile format with embedded QR code"""
+    try:
+        # Get simulation data
+        simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
+        if 'error' in simulation_data:
+            return jsonify({'error': simulation_data['error']}), 404
+        
+        simulation = simulation_data['simulation']
+        
+        # Create rnetfile format export
+        from datetime import datetime
+        import json
+        from services.qr_service import QRCodeService
+        
+        # Prepare export metadata
+        export_timestamp = datetime.utcnow().isoformat()
+        export_metadata = {
+            'exported_by': current_user.username,
+            'exported_at': export_timestamp,
+            'version': '1.0',
+            'exporter_id': current_user.id,
+            'export_type': 'rnet_file'
+        }
+        
+        # Generate QR code for file verification
+        qr_service = QRCodeService()
+        qr_result = qr_service.generate_file_embedded_qr(simulation_id, export_metadata)
+        
+        rnetfile_data = {
+            'format': 'rnetfile',
+            'version': '1.0',
+            'exported_at': export_timestamp,
+            'exported_by': current_user.username,
+            'export_metadata': {
+                'exporter_id': current_user.id,
+                'exporter_username': current_user.username,
+                'export_timestamp': export_timestamp,
+                'export_purpose': 'File sharing and verification',
+                'verification_enabled': qr_result['success']
+            },
+            'verification': {
+                'qr_code_included': qr_result['success'],
+                'qr_code_base64': qr_result.get('qr_code_base64') if qr_result['success'] else None,
+                'confirmation_url': qr_result.get('confirmation_url') if qr_result['success'] else None,
+                'verification_token': qr_result.get('token') if qr_result['success'] else None,
+                'instructions': 'Scan the QR code to verify simulation ownership and access the confirmation page',
+                'qr_metadata': qr_result.get('file_metadata') if qr_result['success'] else None
+            },
+            'simulation': {
+                'id': simulation.id,
+                'title': simulation.title,
+                'description': simulation.description,
+                'simulation_type': simulation.simulation_type,
+                'category': simulation.category,
+                'difficulty': simulation.difficulty,
+                'learning_objectives': simulation.learning_objectives,
+                'prerequisite_knowledge': simulation.prerequisite_knowledge,
+                'estimated_duration': simulation.estimated_duration,
+                'base_score': simulation.base_score,
+                'time_bonus': simulation.time_bonus,
+                'perfect_completion_bonus': simulation.perfect_completion_bonus,
+                'tags': simulation.tags,
+                'version': simulation.version,
+                'step_definitions': simulation.step_definitions,
+                'validation_rules': simulation.validation_rules,
+                'simulation_config': simulation.simulation_config,
+                'initial_state': simulation.initial_state,
+                'expected_outcomes': simulation.expected_outcomes,
+                'hints': simulation.hints
+            }
+        }
+        
+        # Create file response
+        from flask import Response
+        import json
+        
+        filename = f"{simulation.title.replace(' ', '_').replace('/', '_')}_v{simulation.version}.rnet"
+        response = Response(
+            json.dumps(rnetfile_data, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+        
+        return response
+        
+    except Exception as e:
+        current_app.logger.error(f"Error exporting simulation {simulation_id}: {str(e)}")
+        return jsonify({'error': f'Failed to export simulation: {str(e)}'}), 500
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/import', methods=['POST'])
+@login_required  
+@teacher_required
+def import_simulation_rnetfile(simulation_id):
+    """Import rnetfile format to update existing simulation"""
+    try:
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Validate file extension
+        if not file.filename.lower().endswith('.rnet'):
+            return jsonify({'error': 'Invalid file format. Please upload a .rnet file'}), 400
+        
+        # Parse uploaded file
+        try:
+            file_content = file.read().decode('utf-8')
+            rnetfile_data = json.loads(file_content)
+        except Exception as e:
+            return jsonify({'error': f'Invalid file format: {str(e)}'}), 400
+        
+        # Validate rnetfile format
+        if rnetfile_data.get('format') != 'rnetfile':
+            return jsonify({'error': 'Invalid rnetfile format'}), 400
+        
+        if 'simulation' not in rnetfile_data:
+            return jsonify({'error': 'No simulation data found in file'}), 400
+        
+        imported_sim = rnetfile_data['simulation']
+        
+        # Get existing simulation
+        existing_simulation = simulation_controller.get_simulation_by_id(simulation_id)
+        if 'error' in existing_simulation:
+            return jsonify({'error': 'Simulation not found'}), 404
+        
+        # Prepare update data in the format expected by update_simulation
+        update_data = {
+            'basic': {
+                'title': imported_sim.get('title', ''),
+                'description': imported_sim.get('description', ''),
+                'simulation_type': imported_sim.get('simulation_type', ''),
+                'category': imported_sim.get('category', ''),
+                'difficulty': imported_sim.get('difficulty', 'medium'),
+                'estimated_duration': imported_sim.get('estimated_duration', 30),
+                'tags': imported_sim.get('tags', []),
+                'learning_objectives': imported_sim.get('learning_objectives', []),
+                'prerequisite_knowledge': imported_sim.get('prerequisite_knowledge', [])
+            },
+            'steps': imported_sim.get('step_definitions', []),
+            'scoring': {
+                'baseScore': imported_sim.get('base_score', 100),
+                'timeBonus': imported_sim.get('time_bonus', 20),
+                'perfectBonus': imported_sim.get('perfect_completion_bonus', 30)
+            },
+            'validation': imported_sim.get('validation_rules', {}),
+            'config': imported_sim.get('simulation_config', {}),
+            'initial_state': imported_sim.get('initial_state', {}),
+            'expected_outcomes': imported_sim.get('expected_outcomes', {}),
+            'hints': imported_sim.get('hints', [])
+        }
+        
+        # Update the simulation
+        result = simulation_controller.update_simulation(simulation_id, update_data)
+        
+        if 'error' in result:
+            return jsonify({'error': result['error']}), 400
+        
+        # Emit WebSocket event for real-time updates
+        try:
+            emit_admin_simulation_updated(simulation_id, {
+                'type': 'simulation_imported',
+                'title': imported_sim.get('title', ''),
+                'updated_by': current_user.username
+            })
+        except Exception as e:
+            current_app.logger.warning(f"Failed to emit WebSocket event: {str(e)}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully imported simulation from {file.filename}',
+            'simulation': result['simulation']
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error importing simulation {simulation_id}: {str(e)}")
+        return jsonify({'error': f'Failed to import simulation: {str(e)}'}), 500

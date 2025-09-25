@@ -2256,26 +2256,21 @@
                     <i class="fas fa-tags"></i>
                 </button>
             </div>
-            <!-- Team Session Collaboration Controls (only shown if collaboration is enabled) -->
-            {% if simulation.collab.enabled %}
-            <div class="collaboration-controls">
-                {% if simulation.collab.mode == 'Team' %}
+            <!-- Team Session Collaboration Controls (visibility controlled by JavaScript) -->
+            <div class="collaboration-controls" style="display: none;">
                 <button id="browse-lobbies-btn" class="btn btn-primary">
                     <i class="fas fa-users"></i>
-                    Join Team Session
+                    Join Collaboration Session
                 </button>
-                <button id="create-lobby-btn" class="btn btn-secondary">
-                    <i class="fas fa-plus"></i>
-                    Create Team
+                <button id="refresh-lobbies-btn" class="btn btn-outline-secondary">
+                    <i class="fas fa-sync"></i>
+                    Refresh Sessions
                 </button>
-                {% else %}
-                <div class="collaboration-status">
+                <div class="collaboration-status" style="display: none;">
                     <i class="fas fa-user"></i>
                     Solo Mode
                 </div>
-                {% endif %}
             </div>
-            {% endif %}
             
             <div class="bottom-actions">
                 <button id="validate-btn" class="btn btn-success">
@@ -2649,6 +2644,11 @@
         window.simulation = simulation;
         window.progress = progress;
 
+        // Load and apply collaboration settings if simulation ID is available
+        if (simulation.id) {
+            loadCollaborationSettings(simulation.id);
+        }
+
         // HUD: score + progress
         const scoreEl = document.getElementById('current-score');
         const progressEl = document.getElementById('progress-percentage');
@@ -2750,10 +2750,10 @@ const lobbyBrowserModalHTML = `
                 <div class="no-lobbies" id="no-lobbies" style="display: none;">
                     <div class="text-center p-4">
                         <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
-                        <h5>No Active Team Sessions</h5>
-                        <p class="text-muted">Create a new team session to get started with collaboration.</p>
-                        <button class="btn btn-primary" id="create-lobby-from-modal">
-                            <i class="fas fa-plus"></i> Create Team Session
+                        <h5>No Active Collaboration Sessions</h5>
+                        <p class="text-muted">Waiting for your instructor to start a collaboration session.</p>
+                        <button class="btn btn-outline-primary" onclick="window.teamSessionManager.refreshLobbies()">
+                            <i class="fas fa-sync"></i> Refresh Sessions
                         </button>
                     </div>
                 </div>
@@ -2847,17 +2847,15 @@ const teamSessionPanelHTML = `
 </div>
 `;
 
-// Add modals to document if collaboration is enabled and they don't exist
-if (window.simulation && window.simulation.collab && window.simulation.collab.enabled) {
-    if (!document.getElementById('lobby-browser-modal')) {
-        document.body.insertAdjacentHTML('beforeend', lobbyBrowserModalHTML);
-    }
-    if (!document.getElementById('create-lobby-modal')) {
-        document.body.insertAdjacentHTML('beforeend', createLobbyModalHTML);
-    }
-    if (!document.getElementById('team-session-panel')) {
-        document.body.insertAdjacentHTML('beforeend', teamSessionPanelHTML);
-    }
+// Add modals to document for collaboration functionality
+if (!document.getElementById('lobby-browser-modal')) {
+    document.body.insertAdjacentHTML('beforeend', lobbyBrowserModalHTML);
+}
+if (!document.getElementById('create-lobby-modal')) {
+    document.body.insertAdjacentHTML('beforeend', createLobbyModalHTML);
+}
+if (!document.getElementById('team-session-panel')) {
+    document.body.insertAdjacentHTML('beforeend', teamSessionPanelHTML);
 }
 
 // Team Session Management Functions
@@ -2876,6 +2874,7 @@ window.teamSessionManager = {
 // Team Session Management Functions
 window.teamSessionManager = {
     currentSession: null,
+    currentLobby: null,
     participants: [],
     socket: null,
     
@@ -2883,11 +2882,7 @@ window.teamSessionManager = {
     init() {
         console.log('Initializing team session manager');
         
-        // Only initialize if collaboration is enabled
-        if (!window.simulation || !window.simulation.collab || !window.simulation.collab.enabled) {
-            return;
-        }
-        
+        // Always bind events and socket handlers, visibility will be controlled by settings
         this.bindEvents();
         
         // Initialize socket if available
@@ -2901,7 +2896,7 @@ window.teamSessionManager = {
     // Bind UI event handlers
     bindEvents() {
         const browseLobbyBtn = document.getElementById('browse-lobbies-btn');
-        const createLobbyBtn = document.getElementById('create-lobby-btn');
+        const refreshLobbiesBtn = document.getElementById('refresh-lobbies-btn');
         const createLobbySubmit = document.getElementById('create-lobby-submit');
         const leaveLobbyBtn = document.getElementById('leave-team-btn');
         const chatToggleBtn = document.getElementById('team-chat-toggle');
@@ -2912,9 +2907,11 @@ window.teamSessionManager = {
             browseLobbyBtn.addEventListener('click', () => this.showLobbyBrowser());
         }
         
-        if (createLobbyBtn) {
-            createLobbyBtn.addEventListener('click', () => this.showCreateLobby());
+        if (refreshLobbiesBtn) {
+            refreshLobbiesBtn.addEventListener('click', () => this.refreshLobbies());
         }
+        
+        // Remove create lobby functionality - now disabled for users
         
         if (createLobbySubmit) {
             createLobbySubmit.addEventListener('click', (e) => {
@@ -2974,6 +2971,28 @@ window.teamSessionManager = {
             this.updateLobbyList(data.lobbies);
         });
         
+        // Add lobby chat message handler
+        this.socket.on('lobby_chat_message', (data) => {
+            console.log('Received lobby chat message:', data);
+            this.addTeamChatMessage(data);
+        });
+        
+        // Add lobby join/leave handlers
+        this.socket.on('lobby_joined', (data) => {
+            console.log('Joined lobby:', data);
+            this.currentLobby = data.lobby;
+            this.showNotification(`Joined collaboration session: ${data.lobby.name}`, 'success');
+            this.hideModals();
+            this.showSessionUI(data.lobby);
+        });
+        
+        this.socket.on('lobby_left', (data) => {
+            console.log('Left lobby:', data);
+            this.currentLobby = null;
+            this.hideSessionUI();
+            this.showNotification('Left collaboration session', 'info');
+        });
+        
         this.socket.on('lobby_created', (data) => {
             console.log('Lobby created:', data);
             this.showNotification(`Created lobby: ${data.lobby.name}`, 'success');
@@ -3020,46 +3039,25 @@ window.teamSessionManager = {
         $('#lobby-browser-modal').modal('show');
     },
     
-    // Show create lobby modal
-    showCreateLobby() {
-        console.log('Showing create lobby modal');
-        
-        // Reset form
-        document.getElementById('lobby-name').value = '';
-        document.getElementById('lobby-description').value = '';
-        document.getElementById('lobby-max-participants').value = '4';
-        document.getElementById('lobby-private').checked = false;
-        
-        $('#create-lobby-modal').modal('show');
+    // Refresh available lobbies
+    refreshLobbies() {
+        console.log('Refreshing collaboration lobbies');
+        this.loadPublicLobbies();
+        this.showNotification('Refreshed collaboration sessions', 'info');
     },
     
-    // Create a new team lobby
+    // Show create lobby modal - DISABLED FOR USERS
+    showCreateLobby() {
+        console.log('Create lobby functionality disabled for users');
+        this.showNotification('Only instructors can create collaboration sessions', 'warning');
+        return;
+    },
+    
+    // Create a new team lobby - DISABLED FOR USERS
     createTeamLobby() {
-        const nameInput = document.getElementById('lobby-name');
-        const descInput = document.getElementById('lobby-description');
-        const maxParticipants = document.getElementById('lobby-max-participants');
-        const isPrivate = document.getElementById('lobby-private');
-        
-        const lobbyData = {
-            name: nameInput.value.trim(),
-            description: descInput.value.trim(),
-            max_participants: parseInt(maxParticipants.value),
-            is_private: isPrivate.checked,
-            simulation_id: this.getSimulationId(),
-            creator_id: this.getCurrentUserId(),
-            creator_name: this.getCurrentUsername()
-        };
-
-        if (!lobbyData.name) {
-            this.showNotification('Please enter a lobby name', 'error');
-            return;
-        }
-
-        console.log('Creating team lobby:', lobbyData);
-        
-        if (this.socket) {
-            this.socket.emit('create_team_lobby', lobbyData);
-        }
+        console.log('Create team lobby functionality disabled for users');
+        this.showNotification('Only instructors can create collaboration sessions', 'warning');
+        return;
     },
     
     // Join a team lobby
@@ -3104,22 +3102,40 @@ window.teamSessionManager = {
         const messageInput = document.getElementById('chat-input');
         const message = messageInput.value.trim();
         
-        if (!message || !this.currentSession) {
+        if (!message) {
             return;
         }
 
-        const messageData = {
-            session_id: this.currentSession.id,
-            user_id: this.getCurrentUserId(),
-            username: this.getCurrentUsername(),
-            message: message,
-            timestamp: new Date().toISOString()
-        };
+        // For collaboration lobbies, use the lobby chat system
+        if (this.currentLobby) {
+            const messageData = {
+                lobby_id: this.currentLobby.id,
+                message: message,
+                user_id: this.getCurrentUserId(),
+                username: this.getCurrentUsername()
+            };
 
-        console.log('Sending team message:', messageData);
-        
-        if (this.socket) {
-            this.socket.emit('team_chat_message', messageData);
+            console.log('Sending lobby chat message:', messageData);
+            
+            if (this.socket) {
+                this.socket.emit('send_lobby_chat', messageData);
+            }
+        } 
+        // Fallback to team session if no lobby
+        else if (this.currentSession) {
+            const messageData = {
+                session_id: this.currentSession.id,
+                user_id: this.getCurrentUserId(),
+                username: this.getCurrentUsername(),
+                message: message,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log('Sending team message:', messageData);
+            
+            if (this.socket) {
+                this.socket.emit('team_chat_message', messageData);
+            }
         }
 
         messageInput.value = '';
@@ -3167,6 +3183,54 @@ window.teamSessionManager = {
         }
         
         // Hide collaboration controls
+        const controls = document.querySelector('.collaboration-controls');
+        if (controls) {
+            controls.style.display = 'none';
+        }
+    },
+    
+    // Show session UI for lobby/session
+    showSessionUI(lobbyData) {
+        console.log('Showing session UI for lobby:', lobbyData);
+        
+        this.currentLobby = lobbyData;
+        this.participants = lobbyData.participants || [];
+
+        // Show team session panel
+        const panel = document.getElementById('team-session-panel');
+        if (panel) {
+            panel.style.display = 'block';
+        }
+        
+        // Update team info
+        const teamNameEl = document.getElementById('current-team-name');
+        if (teamNameEl) {
+            teamNameEl.textContent = lobbyData.name;
+        }
+        
+        // Update participants list
+        const participantsList = document.getElementById('team-participants');
+        if (participantsList) {
+            participantsList.innerHTML = this.participants.map(participant => {
+                const avatarLetter = participant.username.charAt(0).toUpperCase();
+                const isCurrentUser = participant.user_id === {{ session.user_id|default('null') }};
+                const roleText = participant.role || 'Member';
+                const statusClass = participant.online ? 'online' : 'offline';
+                
+                return `
+                    <div class="participant-item">
+                        <div class="participant-avatar">${avatarLetter}</div>
+                        <div class="participant-info">
+                            <div class="participant-name">${participant.username}${isCurrentUser ? ' (You)' : ''}</div>
+                            <div class="participant-role">${roleText}</div>
+                        </div>
+                        <div class="participant-status ${statusClass}">${participant.online ? 'Online' : 'Offline'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Hide collaboration controls since user is in lobby
         const controls = document.querySelector('.collaboration-controls');
         if (controls) {
             controls.style.display = 'none';
@@ -3299,17 +3363,143 @@ window.teamSessionManager = {
     }
 };
 
+// Function to load collaboration settings from the backend
+function loadCollaborationSettings(simulationId) {
+    console.log('Loading collaboration settings for simulation:', simulationId);
+    
+    // Use the existing collaboration manager if available
+    if (window.collaborationManager && typeof window.collaborationManager.getSimulationCollaborationSettings === 'function') {
+        window.collaborationManager.getSimulationCollaborationSettings(simulationId)
+            .then(settings => {
+                console.log('Loaded collaboration settings:', settings);
+                applyCollaborationSettings(settings);
+            })
+            .catch(error => {
+                console.warn('Failed to load collaboration settings:', error.message);
+                // Apply default settings on failure
+                applyCollaborationSettings({});
+            });
+    } else {
+        // Fallback API call if collaboration manager is not available
+        fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log('Loaded collaboration settings:', data.collaboration_settings);
+                    applyCollaborationSettings(data.collaboration_settings || {});
+                } else {
+                    throw new Error(data.error || 'Failed to load settings');
+                }
+            })
+            .catch(error => {
+                console.warn('Failed to load collaboration settings:', error.message);
+                // Apply default settings on failure
+                applyCollaborationSettings({});
+            });
+    }
+}
+
+// Function to apply collaboration settings to the simulation interface
+function applyCollaborationSettings(settings) {
+    console.log('Applying collaboration settings:', settings);
+    
+    // Update simulation collab object with loaded settings
+    if (window.simulation && window.simulation.collab) {
+        // Apply settings to simulation collab config
+        const collab = window.simulation.collab;
+        
+        // Enable collaboration if settings exist and have valid configuration
+        collab.enabled = settings.max_team_size && parseInt(settings.max_team_size) > 1;
+        
+        if (collab.enabled) {
+            collab.mode = 'Team';
+            collab.teamSize = parseInt(settings.max_team_size) || 4;
+            collab.chatEnabled = settings.enable_chat !== false;
+            collab.sharedTerminal = settings.shared_workspace === true;
+            collab.individualTerminals = settings.shared_workspace !== true;
+            collab.transcriptLogging = settings.save_logs !== false;
+            
+            // Apply room policies
+            collab.roomPolicy = {
+                allowLateJoin: settings.team_formation !== 'instructor_assigned',
+                requireInstructor: settings.admin_monitoring === true,
+                timeWindow: settings.session_duration ? parseInt(settings.session_duration) * 60 : null
+            };
+        } else {
+            collab.mode = 'Solo';
+            collab.teamSize = 0;
+        }
+        
+        console.log('Updated simulation collab config:', collab);
+    }
+    
+    // Show/hide collaboration controls based on settings
+    const collaborationControls = document.querySelector('.collaboration-controls');
+    if (collaborationControls) {
+        if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
+            collaborationControls.style.display = 'block';
+            
+            // Update collaboration status
+            const statusElement = collaborationControls.querySelector('.collaboration-status');
+            if (statusElement) {
+                statusElement.innerHTML = `<i class="fas fa-users"></i> Team Mode (Max: ${settings.max_team_size})`;
+            }
+        } else {
+            collaborationControls.style.display = 'none';
+        }
+    }
+    
+    // Update collaboration badge in header
+    updateCollaborationBadge(settings);
+    
+    // Re-initialize team session manager with new settings
+    if (window.teamSessionManager && typeof window.teamSessionManager.init === 'function') {
+        window.teamSessionManager.init();
+    }
+}
+
+// Function to update the collaboration badge in the header
+function updateCollaborationBadge(settings) {
+    // Remove existing badge
+    const existingBadge = document.querySelector('.collaboration-badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+    
+    // Add new badge if collaboration is enabled
+    if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
+        const headerRight = document.querySelector('.simulation-header .header-right');
+        if (headerRight) {
+            const badge = document.createElement('div');
+            badge.className = 'progress-indicator collaboration-badge';
+            badge.innerHTML = `<i class="fas fa-users"></i><span>Collab: Team (${settings.max_team_size})</span>`;
+            headerRight.appendChild(badge);
+        }
+    }
+}
+
 // Initialize team session manager when document is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.teamSessionManager.init();
+    if (!window.teamSessionManagerInitialized) {
+        window.teamSessionManager.init();
+        window.teamSessionManagerInitialized = true;
+        console.log('✅ Team Session Manager initialized (first time)');
+    } else {
+        console.log('🔧 Team Session Manager already initialized, skipping...');
+    }
 });
 
 // Enhanced Dynamic Simulation Engine - Complete Admin Parity Implementation
 class DynamicSimulation {
     constructor(simulationData, progressData) {
         this.simulation = simulationData;
+        this.simulationId = simulationData.id; // Add simulationId property for easier access
         this.currentStepIndex = 0;
         this.steps = this.simulation.step_definitions || [];
+        this.topologyLoaded = false;
         
         // ===== CENTRALIZED STATE MANAGEMENT SYSTEM =====
         this.state = {
@@ -3337,6 +3527,7 @@ class DynamicSimulation {
             // Connection mode state
             isConnectionMode: false,
             firstDevice: null,
+            
             connections: [], // Legacy support
             
             
@@ -3351,7 +3542,7 @@ class DynamicSimulation {
             },
             
             // Device management
-            deviceStates: new Map(),
+            deviceStates: {},
             deviceConfigurations: new Map(),
             deviceIdCounter: 1,
             deviceCounter: {},
@@ -3408,6 +3599,10 @@ class DynamicSimulation {
         Object.defineProperty(this, 'showGrid', {
             get: () => this.state.showGrid !== undefined ? this.state.showGrid : true,
             set: (value) => this.updateState({ showGrid: value })
+        });
+        Object.defineProperty(this, 'deviceStates', {
+            get: () => this.state.deviceStates || {},
+            set: (value) => this.updateState({ deviceStates: value })
         });
         
         this.startTime = this.state.startTime; // Keep for backward compatibility
@@ -3564,6 +3759,10 @@ class DynamicSimulation {
             deviceCounter: {}
         });
         
+        // Reset topology loaded flag to allow reloading
+        this.topologyLoaded = false;
+        this.topologyLoading = false;
+        
         console.log('🔄 State reset to initial values');
     }
 
@@ -3593,12 +3792,16 @@ class DynamicSimulation {
         }
         
         // Load existing content
-        this.loadTopologyFromConfig();
         this.loadSteps();
         this.loadCurrentStep();
         
-        // Try to restore previous progress
-        this.loadSavedProgress();
+        // Try to restore previous progress first, then load topology if no progress exists
+        this.loadSavedProgress().then((hasProgress) => {
+            if (!hasProgress) {
+                // Only load topology if no saved progress was found
+                this.loadTopologyFromConfig();
+            }
+        });
         
         // Setup live features
         if (this.liveScoring) {
@@ -4014,6 +4217,16 @@ class DynamicSimulation {
     addDevice(type, x, y) {
         const startTime = Date.now();
         
+        // Check if device already exists at this position (prevent duplicates)
+        const existingDevice = this.networkDevices.find(d => 
+            Math.abs(d.x - x) < 10 && Math.abs(d.y - y) < 10
+        );
+        
+        if (existingDevice) {
+            console.log('Device already exists at this position, skipping duplicate');
+            return existingDevice;
+        }
+        
         let newDevice;
         this.deviceCounter[type] = (this.deviceCounter[type] || 0) + 1;
         
@@ -4040,7 +4253,9 @@ class DynamicSimulation {
         
         this.networkDevices.push(newDevice);
         this.selectedDevice = newDevice;
-        this.redrawCanvas();
+        
+        // Single render call only
+        this.renderCanvas(); // This will render all devices once
         
         // Enhanced performance tracking with mobile device support
         if (window.performanceFeedback) {
@@ -4068,6 +4283,7 @@ class DynamicSimulation {
         }
         
         console.log(`✅ Added device: ${label} at (${x}, ${y})`);
+        return newDevice;
     }
     
     // Test function for mobile device drag and drop functionality
@@ -4146,13 +4362,8 @@ class DynamicSimulation {
     redrawCanvas() {
         if (!this.ctx) return;
         
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Render connections first (behind devices)
-        this.renderConnections();
-        
-        // Render devices on top
-        this.networkDevices.forEach(device => this.drawDevice(device));
+        // Use renderCanvas for consistent rendering
+        this.renderCanvas();
     }
 
     // Helper function to check if device is mobile
@@ -4968,6 +5179,11 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
 
     // ===== CANVAS RENDERING SYSTEM =====
     
+    render() {
+        // Main render method - delegates to renderCanvas
+        this.renderCanvas();
+    }
+    
     renderCanvas() {
         // MVP: Enhanced canvas safety checks
         if (!this.ctx) {
@@ -5003,8 +5219,14 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         // Render connections first (so they appear behind devices)
         this.renderConnections();
         
-        // Render devices
-        this.renderDevices();
+        // Render each device exactly once
+        const renderedDevices = new Set();
+        this.networkDevices.forEach(device => {
+            if (!renderedDevices.has(device.id)) {
+                this.renderDevice(device);
+                renderedDevices.add(device.id);
+            }
+        });
         
         // Restore transformation
         this.ctx.restore();
@@ -6193,10 +6415,8 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         this.updateNetworkStatus();
         this.renderCanvas();
         
-        // Reload from configuration if available
-        if (this.loadTopologyFromConfig) {
-            this.loadTopologyFromConfig();
-        }
+        // Note: Removed duplicate loadTopologyFromConfig() call since resetState() 
+        // already clears topologyLoaded flag and init() will handle loading properly
         
         console.log('🔄 Network topology reset');
     }
@@ -7014,10 +7234,26 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     loadTopologyFromConfig() {
+        // Prevent multiple topology loading calls
+        if (this.topologyLoaded || this.topologyLoading) {
+            console.log('🔧 Topology already loaded or loading, skipping...', {
+                topologyLoaded: this.topologyLoaded,
+                topologyLoading: this.topologyLoading,
+                currentDevicesCount: this.networkDevices?.length || 0
+            });
+            return;
+        }
+        
+        // Set loading flag to prevent concurrent calls
+        this.topologyLoading = true;
+        
+        console.log('🚀 Starting topology loading process...');
+        
         // Enhanced topology loading with priority order:
         // 1. Attempt-specific topology (from progress data)
-        // 2. Admin-defined topology (from simulation.topology.network_topology)
-        // 3. Legacy topology (from simulation.topology or simulation_config)
+        // 2. Admin-defined topology (from simulation.simulation_config.network_topology)
+        // 3. Direct devices from simulation config (from simulation.simulation_config.devices)
+        // 4. Legacy topology (from simulation.topology)
         
         let topology = null;
         let source = 'none';
@@ -7029,20 +7265,39 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 source = 'attempt';
             } else {
                 // Fall back to admin-defined or legacy topology
-                const adminTopology = this.simulation.topology;
                 const configTopology = this.simulation.simulation_config;
+                const adminTopology = this.simulation.topology;
                 
-                // Check if we have network_topology in simulation config
+                console.log('🔍 Checking topology sources:', {
+                    configTopology: configTopology,
+                    adminTopology: adminTopology,
+                    networkTopology: configTopology?.network_topology,
+                    directDevices: configTopology?.devices
+                });
+                
+                // Check if we have network_topology in simulation config (preferred source)
                 if (configTopology && configTopology.network_topology && 
                     (configTopology.network_topology.devices || configTopology.network_topology.connections)) {
                     topology = configTopology.network_topology;
-                    source = 'admin';
-                } else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
+                    source = 'config_network_topology';
+                } 
+                // Check for direct devices array in simulation config
+                else if (configTopology && configTopology.devices && Array.isArray(configTopology.devices) && configTopology.devices.length > 0) {
+                    topology = {
+                        devices: configTopology.devices,
+                        connections: configTopology.connections || configTopology.links || []
+                    };
+                    source = 'config_devices';
+                }
+                // Legacy topology from simulation.topology
+                else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
                     topology = adminTopology;
-                    source = adminTopology === configTopology ? 'legacy' : 'admin';
-                } else if (configTopology && (configTopology.devices || configTopology.connections || configTopology.links)) {
+                    source = 'admin_topology';
+                } 
+                // Fallback to any devices in config topology
+                else if (configTopology && (configTopology.connections || configTopology.links)) {
                     topology = configTopology;
-                    source = 'legacy';
+                    source = 'config_fallback';
                 }
             }
             
@@ -7050,10 +7305,16 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             
             if (topology) {
                 this.loadTopologyData(topology);
+                this.topologyLoaded = true;
             } else {
                 console.log('ℹ️ No topology data found - starting with empty canvas');
+                console.log('🔍 Available simulation data:', this.simulation);
                 this.showTopologyHelperText();
+                this.topologyLoaded = true;
             }
+            
+            // Clear loading flag
+            this.topologyLoading = false;
         }).catch(error => {
             console.warn('Failed to get attempt topology, using fallback:', error);
             
@@ -7073,6 +7334,8 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 console.log(`🔧 Loading fallback topology from ${source}:`, topology);
                 this.loadTopologyData(topology);
             }
+            this.topologyLoaded = true;
+            this.topologyLoading = false;
         });
     }
     
@@ -7100,20 +7363,48 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     loadTopologyData(topology) {
-        // Clear existing topology
-        this.networkDevices = [];
-        this.networkConnections = [];
+        console.log('🔧 Loading topology data:', topology);
+        console.log('🔧 Current networkDevices before clear:', this.networkDevices.length);
+        
+        // Only clear existing topology if we're not loading from saved progress
+        if (!this.networkDevices || this.networkDevices.length === 0) {
+            this.networkDevices = [];
+            this.networkConnections = [];
+            
+            // Clear the canvas
+            const canvas = document.getElementById('networkCanvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        } else {
+            console.log('🔧 Skipping topology clear - devices already exist from saved progress');
+            return; // Don't load topology if devices already exist from saved progress
+        }
         
         if (topology) {
+            console.log('🔧 Processing topology devices:', topology.devices?.length || 0);
+            
             // Load devices from config
             if (topology.devices) {
                 topology.devices.forEach((device, index) => {
+                    // Create a more consistent device ID to avoid duplicates
+                    const baseId = device.id || `${device.type || 'device'}_${Date.now()}_${index}`;
+                    const deviceId = baseId.replace(/[^a-zA-Z0-9_]/g, '_'); // Clean the ID
+                    
+                    // Check if device with this ID already exists to prevent duplicates
+                    if (this.networkDevices.find(d => d.id === deviceId)) {
+                        console.warn('⚠️ Device with ID', deviceId, 'already exists, skipping duplicate');
+                        return;
+                    }
+                    
+                    console.log('➕ Adding device:', deviceId, device.type || 'router');
                     this.addNetworkDevice({
-                        id: device.id || `device_${index}`,
+                        id: deviceId,
                         type: device.type || 'router',
                         x: device.x || device.position?.x || 100 + (index * 150),
                         y: device.y || device.position?.y || 100 + (index % 3) * 150,
-                        label: device.label || device.id || `Device ${index + 1}`,
+                        label: device.label || device.name || device.id || `${device.type || 'Device'} ${index + 1}`,
                         config: device.config || {},
                         ip: device.ip,
                         subnet: device.subnet,
@@ -7159,6 +7450,27 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     }
     
     addNetworkDevice(deviceConfig) {
+        // Check for duplicate devices by ID
+        const existingDevice = this.networkDevices.find(d => d.id === deviceConfig.id);
+        if (existingDevice) {
+            console.warn('⚠️ Device with ID', deviceConfig.id, 'already exists. Skipping duplicate device creation.');
+            return existingDevice;
+        }
+        
+        // Also check for devices with similar positions to avoid visual overlapping
+        const positionTolerance = 50; // pixels
+        const nearbyDevice = this.networkDevices.find(d => 
+            Math.abs(d.x - deviceConfig.x) < positionTolerance && 
+            Math.abs(d.y - deviceConfig.y) < positionTolerance
+        );
+        
+        if (nearbyDevice) {
+            console.warn('⚠️ Device near position', deviceConfig.x, deviceConfig.y, 'already exists. Adjusting position.');
+            // Adjust position slightly to avoid overlap
+            deviceConfig.x += positionTolerance + 10;
+            deviceConfig.y += positionTolerance + 10;
+        }
+        
         const device = {
             id: deviceConfig.id,
             type: deviceConfig.type,
@@ -7171,7 +7483,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             height: 60
         };
         
-        console.log('Adding network device:', device.id, 'with label:', device.label);
+        console.log('✅ Adding NEW network device:', device.id, 'with label:', device.label, 'Total devices will be:', this.networkDevices.length + 1);
         this.networkDevices.push(device);
 
         // Also import into the NetworkSimulationEngine if available (so engine-managed canvas knows about it)
@@ -8760,37 +9072,49 @@ DynamicSimulation.prototype.showNotification = function(message, type = 'info', 
 
 // Load saved progress from localStorage or server
 DynamicSimulation.prototype.loadSavedProgress = function() {
-    try {
-        // Try to load from localStorage first
-        const localProgress = localStorage.getItem(`simulation_${this.simulationId}_progress`);
-        if (localProgress) {
-            const progressData = JSON.parse(localProgress);
-            this.restoreProgressData(progressData);
-            console.log('📂 Loaded progress from localStorage');
-            return;
-        }
+    return new Promise((resolve) => {
+        try {
+            // Try to load from localStorage first
+            const localProgress = localStorage.getItem(`simulation_${this.simulationId}_progress`);
+            if (localProgress) {
+                const progressData = JSON.parse(localProgress);
+                this.restoreProgressData(progressData);
+                console.log('📂 Loaded progress from localStorage');
+                resolve(true); // Progress was found and loaded
+                return;
+            }
 
-        // Try to load from server
-        if (this.simulationId) {
-            fetch(`/user/api/simulation/${this.simulationId}/progress`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.progress) {
-                        this.restoreProgressData(data.progress);
-                        console.log('📂 Loaded progress from server');
-                    }
-                })
-                .catch(error => {
-                    console.log('ℹ️ No saved progress found:', error.message);
-                });
+            // Try to load from server
+            if (this.simulationId) {
+                fetch(`/user/api/simulation/${this.simulationId}/progress`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.progress) {
+                            this.restoreProgressData(data.progress);
+                            console.log('📂 Loaded progress from server');
+                            resolve(true); // Progress was found and loaded
+                        } else {
+                            resolve(false); // No progress found
+                        }
+                    })
+                    .catch(error => {
+                        console.log('ℹ️ No saved progress found:', error.message);
+                        resolve(false); // No progress found
+                    });
+            } else {
+                resolve(false); // No simulation ID
+            }
+        } catch (error) {
+            console.warn('⚠️ Failed to load saved progress:', error);
+            resolve(false); // Error occurred
         }
-    } catch (error) {
-        console.warn('⚠️ Failed to load saved progress:', error);
-    }
+    });
 };
 
 // Restore progress data
 DynamicSimulation.prototype.restoreProgressData = function(progressData) {
+    console.log('📂 Restoring progress data:', progressData);
+    
     if (progressData.currentStepIndex !== undefined) {
         this.currentStepIndex = progressData.currentStepIndex;
     }
@@ -8800,25 +9124,51 @@ DynamicSimulation.prototype.restoreProgressData = function(progressData) {
     }
     
     if (progressData.networkDevices && Array.isArray(progressData.networkDevices)) {
+        // Clear existing devices first to avoid duplicates
+        this.networkDevices = [];
+        
         // Filter out invalid devices before restoring
-        this.networkDevices = progressData.networkDevices.filter(device => 
+        const validDevices = progressData.networkDevices.filter(device => 
             device && 
             typeof device.x === 'number' && 
             typeof device.y === 'number' && 
             device.id && 
             device.type
         );
+        
+        // Restore devices one by one to ensure proper state management
+        validDevices.forEach(device => {
+            this.addNetworkDevice({
+                id: device.id,
+                type: device.type,
+                x: device.x,
+                y: device.y,
+                label: device.label || device.name,
+                config: device.config || {},
+                ip: device.ip,
+                subnet: device.subnet,
+                interfaces: device.interfaces || [],
+                meta: device.meta || {}
+            });
+        });
+        
         console.log(`📂 Restored ${this.networkDevices.length} valid devices`);
     }
     
     if (progressData.networkConnections && Array.isArray(progressData.networkConnections)) {
+        // Clear existing connections first to avoid duplicates
+        this.networkConnections = [];
+        
         // Filter out invalid connections before restoring
-        this.networkConnections = progressData.networkConnections.filter(connection =>
+        const validConnections = progressData.networkConnections.filter(connection =>
             connection &&
             connection.from &&
             connection.to &&
             connection.id
         );
+        
+        // Add connections back
+        this.networkConnections = validConnections;
         console.log(`📂 Restored ${this.networkConnections.length} valid connections`);
     }
     
@@ -9845,6 +10195,12 @@ DynamicSimulation.prototype.restoreHistoryState = function(state) {
 
 // Initialize simulation when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Allow first initialization, prevent subsequent ones
+    if (window.simulation && window.simulation.initialized) {
+        console.log('🔧 Simulation already initialized, skipping...');
+        return;
+    }
+    
     const rawSim = document.getElementById('simulation-data');
     const rawProgress = document.getElementById('progress-data');
     const simulationData = rawSim ? JSON.parse(rawSim.textContent) : {};
@@ -9852,6 +10208,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize simulation with enhanced event system
     window.simulation = new DynamicSimulation(simulationData, progressData);
+    window.simulation.initialized = true; // Mark as initialized
+    console.log('🚀 DynamicSimulation instance created successfully');
+    
+    // Add cleanup for simulation room when leaving page
+    window.addEventListener('beforeunload', function() {
+        if (window.socketClient && window.simulation_id) {
+            window.socketClient.emit('leave_simulation_room', { simulation_id: window.simulation_id });
+        }
+    });
     
     // Test mobile device functionality (for development/debugging)
     setTimeout(() => {
@@ -10169,6 +10534,12 @@ class SimulationPerformanceFeedback {
     setupWebSocketHandlers() {
         if (!window.socketClient) return;
         
+        // Join simulation-specific room for real-time admin updates
+        if (window.simulation_id) {
+            window.socketClient.emit('join_simulation_room', { simulation_id: window.simulation_id });
+            console.log('🎮 Joined simulation room for real-time updates:', window.simulation_id);
+        }
+        
         // Enhanced WebSocket handlers matching Network Learning Arena
         
         // Backend feedback session updates
@@ -10228,6 +10599,21 @@ class SimulationPerformanceFeedback {
         window.socketClient.on('simulation_achievement_unlocked', (data) => {
             if (data.session_id === this.sessionId) {
                 this.unlockAchievement(data.achievement_id);
+            }
+        });
+
+        // Admin real-time simulation update handlers
+        window.socketClient.on('admin_simulation_updated', (data) => {
+            if (data.simulation_id == window.simulation_id) {
+                console.log('🔄 Admin updated simulation - syncing changes:', data);
+                this.handleAdminSimulationUpdate(data);
+            }
+        });
+        
+        window.socketClient.on('simulation_update', (data) => {
+            if (data.type === 'admin_simulation_update' && data.simulation_id == window.simulation_id) {
+                console.log('🔄 Class simulation update - syncing changes:', data);
+                this.handleAdminSimulationUpdate(data);
             }
         });
 
@@ -10526,6 +10912,191 @@ class SimulationPerformanceFeedback {
         }
         if (data.total_steps !== undefined) {
             this.metrics.totalSteps = data.total_steps;
+        }
+    }
+    
+    handleAdminSimulationUpdate(data) {
+        console.log('🔄 Handling admin simulation update:', data);
+        
+        // Show notification to user
+        this.showNotification('Admin updated the simulation - syncing changes...', 'info');
+        
+        // Handle topology updates
+        if (data.update_data && data.update_data.topology_updated) {
+            console.log('📡 Topology updated by admin - refreshing network view');
+            
+            // Update initial topology if provided
+            if (data.update_data.initial_topology) {
+                window.initialTopology = data.update_data.initial_topology;
+                
+                // Refresh network simulation if it exists
+                if (window.networkSimulation && window.networkSimulation.clearAndLoadTopology) {
+                    window.networkSimulation.clearAndLoadTopology(data.update_data.initial_topology);
+                }
+            }
+            
+            // Update devices if provided
+            if (data.update_data.devices && Array.isArray(data.update_data.devices)) {
+                window.simulationDevices = data.update_data.devices;
+                this.syncDeviceConfigurations(data.update_data.devices);
+            }
+            
+            // Update solution topology if provided
+            if (data.update_data.solution_topology) {
+                window.solutionTopology = data.update_data.solution_topology;
+            }
+        }
+        
+        // Handle device configuration updates specifically
+        if (data.update_data && data.update_data.device_configs_updated) {
+            console.log('⚙️ Device configurations updated by admin - syncing device configs');
+            this.handleDeviceConfigurationUpdates(data.update_data);
+        }
+        
+        // Handle basic simulation updates
+        if (data.update_data && data.update_data.updated_data) {
+            const updatedData = data.update_data.updated_data;
+            
+            // Update simulation title if changed
+            if (updatedData.title) {
+                const titleElement = document.querySelector('.simulation-header h1, .page-title, [class*="title"]');
+                if (titleElement) {
+                    titleElement.textContent = updatedData.title;
+                }
+            }
+            
+            // Update description if changed
+            if (updatedData.description) {
+                const descElement = document.querySelector('.simulation-description, .description, [class*="description"]');
+                if (descElement) {
+                    descElement.textContent = updatedData.description;
+                }
+            }
+        }
+        
+        // Trigger a sync with backend to get latest data
+        setTimeout(() => {
+            this.syncWithBackend();
+        }, 500);
+        
+        console.log('✅ Admin simulation update processed');
+    }
+    
+    handleDeviceConfigurationUpdates(updateData) {
+        console.log('⚙️ Processing device configuration updates:', updateData);
+        
+        // Update device configurations in memory
+        if (updateData.devices && Array.isArray(updateData.devices)) {
+            this.syncDeviceConfigurations(updateData.devices);
+        }
+        
+        // Update specific device configs if provided
+        if (updateData.device_configs) {
+            Object.entries(updateData.device_configs).forEach(([deviceId, config]) => {
+                this.updateSingleDeviceConfiguration(deviceId, config);
+            });
+        }
+        
+        // Refresh the network visualization to show updated configurations
+        if (window.networkSimulation && window.networkSimulation.refreshDeviceStates) {
+            window.networkSimulation.refreshDeviceStates();
+        }
+        
+        // Update any open device configuration modals
+        this.refreshOpenDeviceConfigurationModals();
+        
+        // Show specific notification about device config changes
+        this.showNotification('Device configurations updated by admin', 'success');
+    }
+    
+    syncDeviceConfigurations(adminDevices) {
+        console.log('🔄 Syncing device configurations from admin update');
+        
+        if (!Array.isArray(adminDevices)) return;
+        
+        // Update local device array with admin configurations
+        adminDevices.forEach(adminDevice => {
+            const localDevice = this.networkDevices.find(d => d.id === adminDevice.id);
+            if (localDevice) {
+                // Merge configurations while preserving simulation-specific data
+                if (adminDevice.config) {
+                    localDevice.config = {
+                        ...localDevice.config,
+                        ...adminDevice.config
+                    };
+                }
+                
+                // Update specific properties
+                if (adminDevice.ipv4) localDevice.ipv4 = adminDevice.ipv4;
+                if (adminDevice.subnet) localDevice.subnet = adminDevice.subnet;
+                if (adminDevice.gateway) localDevice.gateway = adminDevice.gateway;
+                if (adminDevice.interfaces) localDevice.interfaces = adminDevice.interfaces;
+                
+                // Mark as configured if it has configuration data
+                if (adminDevice.config && Object.keys(adminDevice.config).length > 0) {
+                    localDevice.configured = true;
+                }
+                
+                console.log(`✅ Updated configuration for device ${localDevice.id}:`, localDevice.config);
+            }
+        });
+        
+        // Update the network visualization
+        if (window.networkSimulation && window.networkSimulation.updateDeviceVisuals) {
+            adminDevices.forEach(device => {
+                window.networkSimulation.updateDeviceVisuals(device.id);
+            });
+        }
+    }
+    
+    updateSingleDeviceConfiguration(deviceId, config) {
+        console.log(`⚙️ Updating configuration for device ${deviceId}:`, config);
+        
+        const device = this.networkDevices.find(d => d.id === deviceId);
+        if (!device) {
+            console.warn(`Device ${deviceId} not found for configuration update`);
+            return;
+        }
+        
+        // Update device configuration
+        device.config = {
+            ...device.config,
+            ...config
+        };
+        
+        // Update specific IP configuration if provided
+        if (config.ipv4) device.ipv4 = config.ipv4;
+        if (config.subnet) device.subnet = config.subnet;
+        if (config.gateway) device.gateway = config.gateway;
+        
+        // Mark as configured
+        device.configured = true;
+        
+        // Update visualization
+        if (window.networkSimulation && window.networkSimulation.updateDeviceVisuals) {
+            window.networkSimulation.updateDeviceVisuals(deviceId);
+        }
+    }
+    
+    refreshOpenDeviceConfigurationModals() {
+        // Check if device configuration modal is open and refresh its data
+        const configModal = document.getElementById('device-config-modal');
+        if (configModal && configModal.style.display !== 'none') {
+            console.log('🔄 Refreshing open device configuration modal');
+            
+            // Find which device is currently being configured
+            const deviceTitle = document.getElementById('config-device-title');
+            if (deviceTitle && deviceTitle.textContent) {
+                const deviceName = deviceTitle.textContent.replace('Configure ', '');
+                const currentDevice = this.networkDevices.find(d => 
+                    d.label === deviceName || d.name === deviceName || d.id === deviceName
+                );
+                
+                if (currentDevice && window.userDeviceConfigurator) {
+                    // Refresh the modal with updated device data
+                    window.userDeviceConfigurator.refreshConfiguration(currentDevice);
+                }
+            }
         }
     }
     
@@ -11394,9 +11965,12 @@ class DeviceCLIManager {
 
 // Initialize device CLI after DOM + simulation engine ready
 window.addEventListener('DOMContentLoaded', () => {
-    if (!window.deviceCLI) {
+    if (!window.deviceCLI && !window.deviceCLIInitialized) {
         window.deviceCLI = new DeviceCLIManager();
-        console.log('🖥️ Device CLI Manager initialized');
+        window.deviceCLIInitialized = true;
+        console.log('🖥️ Device CLI Manager initialized (first time)');
+    } else {
+        console.log('🔧 Device CLI Manager already initialized, skipping...');
     }
 });
 
@@ -11435,5 +12009,169 @@ function testButtonState() {
 
 // Add test function to window for debugging
 window.testButtonState = testButtonState;
+
+// Initialize collaboration system for dynamic simulation
+window.currentUser = {
+    id: {{ session.user_id|default('null') }},
+    username: "{{ session.username|default('') }}",
+    is_admin: false,
+    profile_img: null
+};
+
+// Simulation state sync function for collaboration
+window.syncSimulationState = function(stateData, syncType = 'full') {
+    if (window.collaborationSystem) {
+        window.collaborationSystem.syncSimulationState(stateData, syncType);
+    }
+};
+
+// Listen for simulation state changes and sync with collaborators
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent multiple initialization of tracking wrappers
+    if (window.simulationTrackingWrappersInitialized) {
+        console.log('🔧 Simulation tracking wrappers already initialized, skipping...');
+        return;
+    }
+    window.simulationTrackingWrappersInitialized = true;
+    
+    // Track device configuration changes
+    if (window.simulation) {
+        const originalUpdateDevice = window.simulation.updateDeviceState;
+        window.simulation.updateDeviceState = function(deviceId, newState) {
+            const result = originalUpdateDevice.call(this, deviceId, newState);
+            
+            // Sync device state change
+            window.syncSimulationState({
+                deviceStates: {
+                    [deviceId]: newState
+                }
+            }, 'device');
+            
+            return result;
+        };
+        
+        // Track topology changes
+        const originalAddDevice = window.simulation.addNetworkDevice;
+        window.simulation.addNetworkDevice = function(device) {
+            const result = originalAddDevice.call(this, device);
+            
+            // Sync topology change
+            window.syncSimulationState({
+                topology: window.simulation.getTopologyData()
+            }, 'topology');
+            
+            return result;
+        };
+        
+        // Track step progression
+        const originalNextStep = window.simulation.nextStep;
+        window.simulation.nextStep = function() {
+            const result = originalNextStep.call(this);
+            
+            // Sync step change
+            window.syncSimulationState({
+                currentStep: window.simulation.currentStep,
+                stepData: window.simulation.getCurrentStepData()
+            }, 'step');
+            
+            return result;
+        };
+    }
+    
+    // Listen for collaboration updates
+    if (window.collaborationSystem) {
+        window.collaborationSystem.onContentUpdate = function(data) {
+            console.log('🤝 Received simulation update from collaborator:', data.username);
+            
+            if (data.change_data.deviceStates && window.simulation) {
+                // Apply device state changes
+                Object.entries(data.change_data.deviceStates).forEach(([deviceId, state]) => {
+                    window.simulation.updateDeviceStateFromCollaboration(deviceId, state);
+                });
+            }
+            
+            if (data.change_data.topology && window.simulation) {
+                // Apply topology changes
+                window.simulation.updateTopologyFromCollaboration(data.change_data.topology);
+            }
+            
+            if (data.change_data.currentStep !== undefined && window.simulation) {
+                // Apply step changes
+                window.simulation.updateStepFromCollaboration(data.change_data.currentStep);
+            }
+        };
+    }
+    
+    // Track CLI command execution for collaboration
+    if (window.deviceCLI) {
+        const originalExecuteCommand = window.deviceCLI.executeCommand;
+        window.deviceCLI.executeCommand = function(deviceId, command) {
+            const result = originalExecuteCommand.call(this, deviceId, command);
+            
+            // Sync CLI command execution
+            if (window.collaborationSystem) {
+                window.collaborationSystem.syncContentChange({
+                    type: 'cli_command',
+                    device_id: deviceId,
+                    command: command,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            return result;
+        };
+    }
+    
+    // Add collaboration methods to simulation if they don't exist
+    if (window.simulation && !window.simulation.updateDeviceStateFromCollaboration) {
+        window.simulation.updateDeviceStateFromCollaboration = function(deviceId, state) {
+            console.log(`🔄 Updating device ${deviceId} from collaboration:`, state);
+            // Apply the state without triggering another sync
+            this.deviceStates = this.deviceStates || {};
+            this.deviceStates[deviceId] = state;
+            
+            // Update UI if needed
+            if (this.selectedDevice && this.selectedDevice.id === deviceId) {
+                this.refreshDeviceConfigUI();
+            }
+        };
+        
+        window.simulation.updateTopologyFromCollaboration = function(topology) {
+            console.log('🔄 Updating topology from collaboration:', topology);
+            // Apply topology changes without triggering sync
+            if (topology.devices) {
+                this.networkDevices = topology.devices;
+                this.refreshCanvas();
+            }
+        };
+        
+        window.simulation.updateStepFromCollaboration = function(stepIndex) {
+            console.log(`🔄 Updating step from collaboration: ${stepIndex}`);
+            // Update current step without triggering sync
+            this.currentStep = stepIndex;
+            this.refreshStepUI();
+        };
+        
+        window.simulation.getTopologyData = function() {
+            return {
+                devices: this.networkDevices || [],
+                connections: this.networkConnections || []
+            };
+        };
+        
+        window.simulation.getCurrentStepData = function() {
+            return {
+                stepIndex: this.currentStep,
+                stepContent: this.steps[this.currentStep] || null
+            };
+        };
+    }
+});
+</script>
+
+<!-- Real-time Collaboration System -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/collaboration-real-time.js') }}"></script>
+
 </script>
 {% endblock %}

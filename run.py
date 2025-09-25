@@ -242,35 +242,41 @@ try:
         
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
-    ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
-        # Advanced lesson editor (blueprint has its own /admin/lessons prefix)
+        ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
         ('admin.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
         ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),  # Module management
         ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),  # Module lesson editor
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
-    ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
+        ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
         ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),  # Lesson management
-    ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),  # Tutorial management
-    ('admin.controllers.rubric_controller', 'rubric_bp', None, None),  # Rubric management
-    ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),  # Admin settings
+        ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),  # Tutorial management
+        ('admin.controllers.rubric_controller', 'rubric_bp', None, None),  # Rubric management
+        ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),  # Admin settings
 
         ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),  # Admin API routes with internal prefix
         ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
         ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
-        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
+        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        
+        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
     ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
     ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),  # Admin collaboration API
     ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),  # Instructor labs dashboard
-    ('admin.routes.lab_api', 'lab_api', None, None)  # Instructor-scoped lab API
+    ('admin.routes.lab_api', 'lab_api', None, None),  # Instructor-scoped lab API
+    # Explicitly register RNet viewer blueprint here to guarantee availability before templates render
+    ('admin.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
     ]
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
         try:
+            print(f"🔧 Attempting to import {module_path}...")
             module = importlib.import_module(module_path)
+            print(f"✅ Successfully imported {module_path}")
             blueprint = getattr(module, blueprint_name)
+            print(f"✅ Got blueprint {blueprint_name} from {module_path}")
             
             # Register with the specified URL prefix (or None if not needed)
             app.register_blueprint(blueprint, url_prefix=url_prefix)
+            print(f"✅ Registered blueprint {blueprint_name}")
             
             # Update the blueprint's template search paths
             from utils.template_utils import ensure_blueprint_can_find_templates
@@ -285,7 +291,9 @@ try:
                 print(f"Registered {blueprint_name} from {module_path}")
                 
         except (ImportError, AttributeError) as e:
-            print(f"Could not import or register {blueprint_name} from {module_path}: {e}")
+            print(f"❌ Could not import or register {blueprint_name} from {module_path}: {e}")
+            import traceback
+            traceback.print_exc()
     
     print("Admin blueprints registration complete")
 except Exception as e:
@@ -475,6 +483,75 @@ if __name__ == "__main__":
     @app.route('/health')
     def health_check():
         return {'status': 'healthy', 'server': 'main'}, 200
+    
+    @app.route('/debug/simulations')
+    def debug_simulations():
+        """Debug endpoint to check simulations without auth"""
+        try:
+            from admin.models.simulation import Simulation
+            simulations = Simulation.query.limit(10).all()
+            sim_list = []
+            for sim in simulations:
+                sim_list.append({
+                    'id': sim.id,
+                    'title': sim.title,
+                    'is_active': getattr(sim, 'is_active', True),
+                    'created_at': str(getattr(sim, 'created_at', 'Unknown'))
+                })
+            return {
+                'total_simulations': len(sim_list),
+                'simulations': sim_list
+            }
+        except Exception as e:
+            return {'error': str(e)}, 500
+    
+    @app.route('/debug/routes')
+    def debug_routes():
+        """Debug endpoint to list all registered routes"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                'endpoint': rule.endpoint,
+                'methods': list(rule.methods),
+                'rule': rule.rule
+            })
+        return {'routes': sorted(routes, key=lambda x: x['rule'])}
+        
+    @app.route('/debug/auth')
+    def debug_auth():
+        """Debug endpoint to check current authentication state"""
+        from flask_login import current_user
+        from flask import session
+        return {
+            'is_authenticated': current_user.is_authenticated,
+            'current_user_type': str(type(current_user)),
+            'current_user_id': getattr(current_user, 'id', None),
+            'session_keys': list(session.keys()),
+            'auth_namespace': session.get('auth_namespace', 'Not set'),
+            'user_id_in_session': session.get('_user_id', 'Not set')
+        }
+    
+    @app.route('/debug/simulation/edit/<int:simulation_id>')
+    def debug_simulation_edit(simulation_id):
+        """Debug endpoint to access simulation edit without auth"""
+        try:
+            from admin.controllers.simulation_controller import SimulationController
+            simulation_controller = SimulationController()
+            simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
+            
+            if 'error' in simulation_data:
+                return {'error': simulation_data['error']}, 404
+            
+            return {
+                'simulation_id': simulation_id,
+                'simulation_found': True,
+                'simulation_title': simulation_data.get('simulation', {}).get('title', 'Unknown'),
+                'message': f'Simulation {simulation_id} exists and can be edited',
+                'edit_url': f'/admin/simulation/edit/{simulation_id}',
+                'note': 'This is a debug endpoint. Use the proper admin route after logging in.'
+            }
+        except Exception as e:
+            return {'error': f'Debug error: {str(e)}'}, 500
 
     # Removed debug/test announcement routes (/demo/announcements, /test/announcements, /api/debug/announce)
     # to prevent accidental broadcast of test system announcements in production.

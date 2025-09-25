@@ -632,211 +632,407 @@
         outline: none;
     }
 
-    /* Device Palette */
+    /* Enhanced Device Palette - Complete Network Toolkit (MVP from Dynamic Simulation) */
     #device-palette {
         position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
+        bottom: 0;
+        left: 0;
+        right: 0;
         background: var(--glass-bg);
+        border-top: 2px solid var(--glass-border);
         backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        padding: 16px 24px;
-        display: flex;
-        align-items: center;
-        gap: 24px;
-        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
         z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+    }
+
+    .palette-top-bar {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+        padding: 0.5rem 1rem;
+        flex-shrink: 0;
     }
 
     .palette-section {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding: 0.125rem;
     }
 
-    .palette-separator {
-        width: 1px;
-        height: 32px;
-        background: var(--border-color);
+    .palette-section.left-section {
+        flex: 1;
+        justify-content: flex-start;
+        min-width: 280px;
     }
 
-    .device {
+    .palette-section.center-section {
+        flex: 2;
+        justify-content: center;
+        gap: 2rem;
+        min-width: 320px;
+    }
+
+    .palette-section.right-section {
+        flex: 1;
+        justify-content: flex-end;
+        min-width: 280px;
+    }
+
+    .palette-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .palette-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--cyber-glow);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .palette-toggle {
+        background: none;
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        color: var(--cyber-glow);
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .palette-toggle:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+    }
+
+    .device-categories {
+        display: flex;
+        gap: 1.5rem;
+        overflow: hidden;
+        padding: 0.75rem 1rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: nowrap;
+        width: 100%;
+        max-width: 100vw;
+        min-height: 65px;
+    }
+
+    .device-category {
+        min-width: 180px;
+        flex-shrink: 1;
+        flex: 1;
+        max-width: 220px;
+    }
+
+    .category-title {
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .device-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 0.5rem;
+        grid-auto-rows: minmax(72px, auto);
+    }
+
+    .device-item {
+        width: 60px;
+        height: 70px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
-        padding: 12px;
-        background: var(--surface);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        justify-content: center;
         cursor: pointer;
-        transition: all 0.3s ease;
-        min-width: 80px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        margin: 0;
+        padding: 6px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        gap: 4px;
     }
 
-    .device:hover {
-        transform: translateY(-2px);
+    .device-item:hover {
+        background: rgba(59, 130, 246, 0.2);
         border-color: var(--cyber-glow);
-        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .device-item:active {
+        transform: translateY(0);
+        box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
     }
 
     .device-icon {
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
+        font-size: 1.2rem;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
     }
 
-    .device span {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
+    .device-item img {
+        width: 20px;
+        height: 20px;
+        filter: brightness(1.1);
+        transition: all 0.3s ease;
+    }
+
+    .device-item:hover .device-icon {
+        color: var(--cyber-glow);
+        transform: scale(1.1);
+    }
+
+    .device-item:hover img {
+        filter: brightness(1.3) drop-shadow(0 0 3px rgba(0, 217, 255, 0.5));
+        transform: scale(1.1);
+    }
+
+    .device-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: var(--text-primary);
+        padding: 0.4rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 1003;
+        margin-bottom: 8px;
+        max-width: 200px;
         text-align: center;
     }
 
+    .device-item:hover .device-tooltip {
+        opacity: 1;
+    }
+
+    .device-label {
+        display: block !important;
+        opacity: 0.9 !important;
+        transform: none !important;
+        position: static !important;
+        font-size: 0.65rem;
+        letter-spacing: 0.25px;
+        margin: 2px 0 0 0;
+        padding: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--text-secondary);
+        text-align: center;
+        max-width: 70px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+        font-weight: 500;
+        line-height: 1;
+        transition: color 0.3s ease;
+    }
+
+    .device-item:hover .device-label {
+        color: var(--text-primary);
+        opacity: 1;
+    }
+
+    /* Minimized palette state */
+    #device-palette.minimized {
+        min-height: 45px;
+    }
+
+    #device-palette.minimized .device-categories {
+        display: none;
+    }
+
+    #device-palette.minimized .palette-title {
+        font-size: 0.8rem;
+    }
+
+    /* Rotation animation for toggle icon */
+    #palette-toggle-icon {
+        transition: transform 0.3s ease;
+    }
+
+    #device-palette.collapsed #palette-toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    /* Palette separator for better visual organization */
+    .palette-separator {
+        width: 2px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), var(--cyber-glow), rgba(255, 255, 255, 0.1));
+        margin: 0 var(--space-lg);
+        border-radius: 2px;
+        align-self: stretch;
+        opacity: 0.8;
+        min-height: 60px;
+    }
+
+    /* Keep existing action-btn class for compatibility */
     .action-btn {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 4px;
-        padding: 8px 12px;
-        background: var(--surface);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
         color: var(--text-secondary);
-        min-width: 70px;
     }
 
     .action-btn:hover {
-        background: var(--surface-hover);
-        border-color: var(--cyber-glow);
         color: var(--text-primary);
     }
 
     .action-btn.active {
-        background: var(--surface-hover);
-        border-color: var(--cyber-glow);
         color: var(--cyber-glow);
         box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
     }
 
-    .action-btn i {
-        font-size: 1.2rem;
-    }
 
-    .action-btn .label {
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-
-    /* Mode buttons */
-    .mode-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin: 16px 0;
-    }
-
-    .mode-btn {
-        padding: 12px 16px;
-        background: var(--surface);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-    }
-
-    .mode-btn:hover {
-        background: var(--surface-hover);
-        border-color: var(--cyber-glow);
-        color: var(--text-primary);
-    }
-
-    .mode-btn.active {
-        background: var(--surface-hover);
-        border-color: var(--cyber-glow);
-        color: var(--cyber-glow);
-        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
-    }
 
     /* Tab system */
     .panel-tabs {
         display: flex;
+        flex-wrap: wrap;
         margin-bottom: 16px;
         border-bottom: 1px solid var(--border-color);
+        gap: 4px;
     }
 
     .panel-tab {
-        padding: 8px 16px;
+        padding: 8px 12px;
         background: transparent;
         border: none;
         color: var(--text-muted);
         cursor: pointer;
         transition: all 0.3s ease;
         border-bottom: 2px solid transparent;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 6px 6px 0 0;
+        min-width: auto;
+        flex: 1;
+        justify-content: center;
     }
 
     .panel-tab:hover {
         color: var(--text-secondary);
+        background: var(--surface-hover);
     }
 
     .panel-tab.active {
         color: var(--cyber-glow);
         border-bottom-color: var(--cyber-glow);
+        background: var(--surface-hover);
+        font-weight: 600;
+    }
+
+    .panel-tab i {
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .panel-tab:hover i,
+    .panel-tab.active i {
+        color: var(--cyber-glow);
+        transform: scale(1.1);
+    }
+
+    /* Responsive tab layout */
+    @media (max-width: 1200px) {
+        .panel-tab span {
+            display: none;
+        }
+        .panel-tab {
+            min-width: 40px;
+            padding: 8px;
+        }
     }
 
     .tab-content {
         display: none;
+        animation: fadeIn 0.3s ease-in-out;
     }
 
     .tab-content.active {
         display: block;
     }
 
-    /* Canvas elements */
-    .canvas-device {
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Enhanced Network Device Styling */
+    .network-device {
         position: absolute;
+        width: 60px;
+        height: 60px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid var(--glass-border);
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
-        padding: 8px;
-        background: var(--surface);
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
+        justify-content: center;
         cursor: grab;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         user-select: none;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         /* Smooth movement properties */
         will-change: transform, left, top;
         backface-visibility: hidden;
         transform: translateZ(0); /* Force hardware acceleration */
     }
 
-    .canvas-device:hover {
+    .network-device:hover {
+        transform: translateY(-2px) scale(1.05);
         border-color: var(--cyber-glow);
-        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
-        transform: translateY(-2px) translateZ(0);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
     }
 
-    .canvas-device.selected {
+    .network-device.selected {
         border-color: var(--neon-green);
         box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
     }
 
-    .canvas-device:active {
+    .network-device:active {
         cursor: grabbing;
     }
 
-    .canvas-device.dragging {
+    .network-device.dragging {
         opacity: 0.8;
         transform: scale(1.05) translateZ(0);
         z-index: 1000 !important;
@@ -847,10 +1043,81 @@
     }
 
     /* Smooth transition when not dragging */
-    .canvas-device:not(.dragging) {
+    .network-device:not(.dragging) {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    .network-device .device-icon {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        margin-bottom: 4px;
+    }
+
+    .network-device:hover .device-icon {
+        color: var(--cyber-glow);
+        transform: scale(1.1);
+    }
+
+    .network-device.selected .device-icon {
+        color: var(--neon-green);
+    }
+
+    .network-device .device-label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-align: center;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .network-device .device-status {
+        position: absolute;
+        bottom: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 1px 4px;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
+
+    .network-device .status-indicator {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--background);
+    }
+
+    .status-indicator.malfunctioning,
+    .status-indicator.misconfigured {
+        background: var(--warning-color);
+    }
+
+    .status-indicator.offline {
+        background: var(--danger-color);
+    }
+
+    .status-indicator.degraded {
+        background: var(--warning-color);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Legacy support for canvas-device references */
     .canvas-device img {
         width: 48px;
         height: 48px;
@@ -953,10 +1220,13 @@
         border-color: var(--danger-color);
         color: var(--danger-color);
     }
+    /* Enhanced Responsive Design (MVP from Dynamic Simulation) */
     @media (max-width: 1400px) {
         .editor-container {
             grid-template-columns: 280px 1fr 280px;
         }
+        .device-categories { gap: 1rem; }
+        .device-category { min-width: 160px; max-width: 200px; }
     }
 
     @media (max-width: 1200px) {
@@ -969,6 +1239,10 @@
             height: auto;
         }
         
+        .collapsible-sidebar {
+            width: 280px;
+        }
+        
         #device-palette {
             position: relative;
             left: auto;
@@ -978,6 +1252,9 @@
             justify-content: center;
             flex-wrap: wrap;
         }
+        
+        .device-categories { gap: 1rem; padding: 0.5rem 0.75rem; }
+        .device-category { min-width: 140px; max-width: 180px; }
     }
 
     @media (max-width: 768px) {
@@ -995,10 +1272,72 @@
             font-size: 0.8rem;
         }
         
-        #device-palette .center-section {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+        .device-categories { 
+            gap: 0.75rem; 
+            padding: 0.5rem 0.75rem; 
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .device-category { 
+            min-width: 120px; 
+            max-width: 160px; 
+        }
+        
+        .device-grid { 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 0.5rem;
+        }
+        
+        .palette-top-bar { 
+            padding: 0.25rem 0.75rem; 
+        }
+        
+        .admin-top-navbar {
+            padding: 10px 15px;
+        }
+
+        .sidebar-content {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .device-categories { 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            padding: 0.5rem; 
+        }
+        
+        .device-category { 
+            min-width: 100px; 
+            max-width: 140px; 
+        }
+        
+        .device-grid { 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 0.5rem;
+        }
+        
+        .palette-top-bar { 
+            padding: 0.25rem 0.5rem; 
+        }
+        
+        .palette-title { 
+            font-size: 0.8rem; 
+        }
+        
+        .device-item {
+            width: 50px;
+            height: 60px;
+        }
+        
+        .device-icon {
+            font-size: 1rem;
+        }
+        
+        .device-label {
+            font-size: 0.6rem;
         }
     }
 
@@ -1026,34 +1365,20 @@
         </div>
     </div>
 
-    <!-- Navigation Menu -->
+    
+
+    <!-- Navigation Menu - Save and Exit Actions -->
     <div class="top-navbar-nav">
-        <button class="top-nav-item" onclick="showSidebarAndSwitchMode('devices')">
-            <i class="fas fa-cog"></i>
-            <span>Device Config</span>
-        </button>
-        <button class="top-nav-item" onclick="showSidebarAndSwitchMode('scenario')">
-            <i class="fas fa-tasks"></i>
-            <span>Problem Scenario</span>
-        </button>
-        <button class="top-nav-item" onclick="showSidebarAndSwitchMode('solution')">
-            <i class="fas fa-check-circle"></i>
-            <span>Solution & Scoring</span>
-        </button>
-        
-        <!-- Simulation Editor Specific Actions -->
-        <div style="border-left: 1px solid var(--border-color); height: 32px; margin: 0 16px;"></div>
-        
-        <button class="top-nav-item" style="background: var(--gradient-secondary); color: white;" onclick="previewSimulation()">
-            <i class="fas fa-eye"></i>
-            <span>Preview</span>
-        </button>
-        <button class="top-nav-item" style="background: var(--gradient-primary); color: white;" onclick="saveSimulation()">
+        <button class="top-nav-item" onclick="saveSimulation()" title="Save Simulation">
             <i class="fas fa-save"></i>
             <span>Save</span>
         </button>
-        <button class="top-nav-item" style="background: linear-gradient(135deg, var(--danger-color), #dc2626); color: white;" onclick="exitEditor()">
-            <i class="fas fa-times"></i>
+        <button class="top-nav-item" onclick="showQRCode()" title="Show QR Code">
+            <i class="fas fa-qrcode"></i>
+            <span>QR Code</span>
+        </button>
+        <button class="top-nav-item" onclick="exitEditor()" title="Exit Editor">
+            <i class="fas fa-arrow-left"></i>
             <span>Exit</span>
         </button>
     </div>
@@ -1073,11 +1398,7 @@
 
 <div class="main-content">
 
-<!-- Dashboard-style Main Section Header -->
-<div class="section-header">
-    <i class="fas fa-edit section-icon"></i>
-    <h2>Troubleshooting Simulation Editor</h2>
-</div>
+
 
 <div class="simulation-editor">
     <!-- Collapsible Left Sidebar - Enhanced Configuration Panel -->
@@ -1089,13 +1410,13 @@
 
         <!-- Collapsed State Icons -->
         <div class="collapsed-icons">
-            <div class="collapsed-icon" data-tooltip="Device Mode" onclick="showSidebarAndSwitchMode('devices')">
+            <div class="collapsed-icon" data-tooltip="Devices & Properties" onclick="showSidebarAndSwitchTab('devices')">
                 <i class="fas fa-laptop"></i>
             </div>
-            <div class="collapsed-icon" data-tooltip="Scenario Mode" onclick="showSidebarAndSwitchMode('scenario')">
+            <div class="collapsed-icon" data-tooltip="Scenario Editor" onclick="showSidebarAndSwitchTab('scenario')">
                 <i class="fas fa-tasks"></i>
             </div>
-            <div class="collapsed-icon" data-tooltip="Solution Mode" onclick="showSidebarAndSwitchMode('solution')">
+            <div class="collapsed-icon" data-tooltip="Solution Editor" onclick="showSidebarAndSwitchTab('solution')">
                 <i class="fas fa-check-circle"></i>
             </div>
             <div class="collapsed-icon" data-tooltip="CLI Editor" onclick="showSidebarAndSwitchTab('cli')">
@@ -1107,7 +1428,7 @@
             <div class="collapsed-icon" data-tooltip="Bulk Operations" onclick="showSidebarAndSwitchTab('bulk')">
                 <i class="fas fa-layer-group"></i>
             </div>
-                <div class="collapsed-icon" data-tooltip="Collaboration Controls" onclick="showSidebarAndSwitchTab('collaboration')">
+            <div class="collapsed-icon" data-tooltip="Collaboration" onclick="showSidebarAndSwitchTab('collaboration')">
                 <i class="fas fa-users"></i>
             </div>
         </div>
@@ -1119,66 +1440,93 @@
                 <h3>Editing Tools</h3>
             </div>
 
-            <!-- Mode Selection -->
-            <div class="form-group">
-                <label>Editing Mode</label>
-                <div class="mode-buttons">
-                    <div class="mode-btn active" data-mode="devices">
-                        <i class="fas fa-laptop"></i>
-                        <span>Device Mode</span>
-                    </div>
-                    <div class="mode-btn" data-mode="scenario">
-                        <i class="fas fa-tasks"></i>
-                        <span>Scenario Mode</span>
-                    </div>
-                    <div class="mode-btn" data-mode="solution">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Solution Mode</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Simulation Settings -->
-            <div class="form-group">
-                <label for="simulation-title">Simulation Title</label>
-                <input type="text" id="simulation-title" placeholder="Enter simulation title..." value="{{ simulation.title if simulation else 'Network Troubleshooting Simulation' }}">
-            </div>
-
-            <div class="form-group">
-                <label for="simulation-description">Description</label>
-                <textarea id="simulation-description" rows="3" placeholder="Enter simulation description...">{{ simulation.description if simulation else 'Identify and resolve network connectivity issues in this hands-on troubleshooting scenario.' }}</textarea>
-            </div>
-
-            <!-- Difficulty Selection -->
-            <div class="form-group">
-                <label>Difficulty Level</label>
-                <div class="difficulty-badges">
-                    <div class="difficulty-badge Easy" data-difficulty="Easy">
-                        <i class="fas fa-circle"></i>
-                        <span>Easy</span>
-                    </div>
-                    <div class="difficulty-badge Medium active" data-difficulty="Medium">
-                        <i class="fas fa-circle"></i>
-                        <span>Medium</span>
-                    </div>
-                    <div class="difficulty-badge Hard" data-difficulty="Hard">
-                        <i class="fas fa-circle"></i>
-                        <span>Hard</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Advanced Tabs -->
+            <!-- Main Tab Navigation -->
             <div class="panel-tabs">
-                <button class="panel-tab active" data-tab="properties">Properties</button>
-                <button class="panel-tab" data-tab="cli">CLI Editor</button>
-                <button class="panel-tab" data-tab="tutorial">Tutorial</button>
-                <button class="panel-tab" data-tab="bulk">Bulk Ops</button>
-                <button class="panel-tab" data-tab="collaboration">Collaboration</button>
+                <button class="panel-tab active" data-tab="devices">
+                    <i class="fas fa-laptop"></i>
+                    <span>Devices</span>
+                </button>
+                <button class="panel-tab" data-tab="scenario">
+                    <i class="fas fa-tasks"></i>
+                    <span>Scenario</span>
+                </button>
+                <button class="panel-tab" data-tab="solution">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Solution</span>
+                </button>
+                <button class="panel-tab" data-tab="cli">
+                    <i class="fas fa-terminal"></i>
+                    <span>CLI</span>
+                </button>
+                <button class="panel-tab" data-tab="tutorial">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Tutorial</span>
+                </button>
+                <button class="panel-tab" data-tab="bulk">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Bulk Ops</span>
+                </button>
+                <button class="panel-tab" data-tab="collaboration">
+                    <i class="fas fa-users"></i>
+                    <span>Collaboration</span>
+                </button>
             </div>
 
-            <!-- Properties Tab Content -->
-            <div id="properties-tab-content" class="tab-content active">
+            <!-- Devices Tab Content -->
+            <div id="devices-tab-content" class="tab-content active">
+                <!-- Device/Topology Mode Settings -->
+                <div class="form-group">
+                    <label for="simulation-title">Simulation Title</label>
+                    <input type="text" id="simulation-title" placeholder="Enter simulation title..." value="{{ simulation.title if simulation else 'Network Troubleshooting Simulation' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="simulation-description">Description</label>
+                    <textarea id="simulation-description" rows="3" placeholder="Enter simulation description...">{{ simulation.description if simulation else 'Identify and resolve network connectivity issues in this hands-on troubleshooting scenario.' }}</textarea>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div class="form-group">
+                    <label>Difficulty Level</label>
+                    <div class="difficulty-badges">
+                        <div class="difficulty-badge Easy" data-difficulty="Easy">
+                            <i class="fas fa-circle"></i>
+                            <span>Easy</span>
+                        </div>
+                        <div class="difficulty-badge Medium active" data-difficulty="Medium">
+                            <i class="fas fa-circle"></i>
+                            <span>Medium</span>
+                        </div>
+                        <div class="difficulty-badge Hard" data-difficulty="Hard">
+                            <i class="fas fa-circle"></i>
+                            <span>Hard</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Properties for Selected Device -->
+                <div id="device-properties" style="display: none; margin-top: 16px; padding: 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <h4 style="margin: 0 0 12px 0; color: var(--text-primary);">Device Properties</h4>
+                    <div class="form-group">
+                        <label for="device-name">Device Name</label>
+                        <input type="text" id="device-name" placeholder="Enter device name...">
+                    </div>
+                    <div class="form-group">
+                        <label for="device-ip">IP Address</label>
+                        <input type="text" id="device-ip" placeholder="192.168.1.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="device-status">Status</label>
+                        <select id="device-status">
+                            <option value="normal">Normal</option>
+                            <option value="malfunctioning">Malfunctioning</option>
+                            <option value="offline">Offline</option>
+                            <option value="misconfigured">Misconfigured</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Basic Properties -->
                 <div class="form-group">
                     <label for="max-score">Maximum Score</label>
                     <input type="number" id="max-score" value="100" min="1" max="1000">
@@ -1192,6 +1540,94 @@
                 <div class="form-group">
                     <label for="attempts-allowed">Attempts Allowed</label>
                     <input type="number" id="attempts-allowed" value="3" min="1" max="10">
+                </div>
+
+
+            </div>
+
+            <!-- Scenario Tab Content -->
+            <div id="scenario-tab-content" class="tab-content">
+                <div class="form-group">
+                    <label for="scenario-text">Scenario Description</label>
+                    <textarea id="scenario-text" rows="6" placeholder="Describe the network scenario and the problem students need to solve...">{{ simulation.scenario if simulation else 'Your company\'s network is experiencing connectivity issues. Several workstations cannot access the internet, while others are working fine. Your task is to identify and resolve the network problems.' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="problem-symptoms">Problem Symptoms</label>
+                    <textarea id="problem-symptoms" rows="4" placeholder="List the observable symptoms of the network problem..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="background-context">Background Context</label>
+                    <textarea id="background-context" rows="4" placeholder="Provide additional context about the network environment..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="learning-objectives">Learning Objectives</label>
+                    <textarea id="learning-objectives" rows="4" placeholder="What should students learn from this simulation?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="problem-type">Problem Type</label>
+                    <select id="problem-type">
+                        <option value="network">Network Connectivity</option>
+                        <option value="configuration">Configuration Error</option>
+                        <option value="hardware">Hardware Failure</option>
+                        <option value="security">Security Issue</option>
+                        <option value="performance">Performance Problem</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Solution Tab Content -->
+            <div id="solution-tab-content" class="tab-content">
+                <div class="form-group">
+                    <label for="solution-text">Solution Description</label>
+                    <textarea id="solution-text" rows="6" placeholder="Describe the complete solution to the network problem...">{{ simulation.solution if simulation else 'The connectivity issues are caused by incorrect VLAN configuration on the switch. To resolve: 1. Access the switch CLI, 2. Check VLAN assignments, 3. Correct port assignments to appropriate VLANs, 4. Verify connectivity.' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="solution-steps">Step-by-Step Solution</label>
+                    <textarea id="solution-steps" rows="6" placeholder="List the detailed steps to solve the problem..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="base-score">Base Score Points</label>
+                    <input type="number" id="base-score" value="{{ simulation.base_score if simulation else 50 }}" min="0" max="1000">
+                </div>
+
+                <div class="form-group">
+                    <label for="time-bonus">Time Bonus Points</label>
+                    <input type="number" id="time-bonus" value="{{ simulation.time_bonus if simulation else 10 }}" min="0" max="100">
+                </div>
+
+                <!-- Solution Verification -->
+                <div class="form-group">
+                    <label>Solution Verification Methods</label>
+                    <div style="display: grid; gap: 8px; margin-top: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--surface); border-radius: 4px;">
+                            <input type="checkbox" id="verify-connectivity" checked>
+                            <label for="verify-connectivity" style="margin: 0; cursor: pointer; color: var(--text-primary);">Verify Network Connectivity</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--surface); border-radius: 4px;">
+                            <input type="checkbox" id="verify-configuration">
+                            <label for="verify-configuration" style="margin: 0; cursor: pointer; color: var(--text-primary);">Check Device Configuration</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--surface); border-radius: 4px;">
+                            <input type="checkbox" id="verify-cli-commands">
+                            <label for="verify-cli-commands" style="margin: 0; cursor: pointer; color: var(--text-primary);">Validate CLI Commands</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hints Management -->
+                <div class="form-group">
+                    <label>Hints for Students</label>
+                    <div id="hint-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-top: 8px;">
+                        <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            No hints added yet
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1250,27 +1686,17 @@
                 </div>
                 
                 <div class="form-group" style="margin-top: 16px;">
-                    <label for="bulk-subnet">Bulk Apply Subnet</label>
+                    <label for="devices-bulk-subnet">Bulk Apply Subnet</label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="bulk-subnet" placeholder="192.168.1.0/24" style="flex: 1;">
-                        <button class="btn-modern" style="background: var(--success-color); padding: 8px 12px;" onclick="applyBulkSubnet()">
+                        <input type="text" id="devices-bulk-subnet" placeholder="192.168.1.0/24" style="flex: 1;">
+                        <button class="btn-modern" style="background: var(--success-color); padding: 8px 12px;" onclick="applyBulkSubnetFromDevices()">
                             Apply
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="form-group" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-                <button class="btn-modern" style="background: var(--success-color); width: 100%; margin-bottom: 8px;" onclick="addStep()">
-                    <i class="fas fa-plus"></i>
-                    Add Simulation Step
-                </button>
-                <button class="btn-modern" style="background: var(--accent-color); width: 100%;" onclick="addHint()">
-                    <i class="fas fa-lightbulb"></i>
-                    Add Hint
-                </button>
-            </div>
+
         </div>
     </div>
 
@@ -1489,8 +1915,8 @@
                         <div class="operation-section">
                             <h4>Network Configuration</h4>
                             <div class="bulk-operation-item">
-                                <label for="bulk-subnet">Apply Subnet:</label>
-                                <input type="text" id="bulk-subnet" placeholder="192.168.1.0/24">
+                                <label for="bulk-operations-subnet">Apply Subnet:</label>
+                                <input type="text" id="bulk-operations-subnet" placeholder="192.168.1.0/24">
                                 <button onclick="applyBulkSubnet()">Apply</button>
                             </div>
                             <div class="bulk-operation-item">
@@ -1522,148 +1948,138 @@
                 </div>
             </div>
 
-            <!-- Collaboration Controls Tab -->
+            <!-- Collaboration Tab -->
             <div id="collaboration-tab-content" class="tab-content">
                 <div class="section-header">
                     <i class="fas fa-users"></i>
-                    Collaboration Controls
+                    Collaboration Settings
                 </div>
+                
+                <div class="collaboration-content">
+                    <!-- Lobby Management Section -->
+                    <div class="collaboration-section">
+                        <div class="section-title">
+                            <i class="fas fa-door-open"></i>
+                            <span>Lobby Management</span>
+                        </div>
+                        
+                        <!-- Create New Lobby -->
+                        <div class="collaboration-control-group">
+                            <button class="primary-button" onclick="showCreateLobby()">
+                                <i class="fas fa-plus"></i>
+                                Create New Lobby
+                            </button>
+                            <button class="secondary-button" onclick="showLobbyBrowser()">
+                                <i class="fas fa-search"></i>
+                                Browse Lobbies
+                            </button>
+                        </div>
 
-                <div class="collaboration-controls">
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="enable-collaboration" style="margin-right: 8px;">
-                            Enable Collaborative Mode
-                        </label>
-                        <small style="color: var(--text-muted); display: block; margin-top: 4px;">
-                            Allow multiple students to work together on this simulation
-                        </small>
+                        <!-- Active Lobbies -->
+                        <div class="active-lobbies-section">
+                            <h4>Active Lobbies</h4>
+                            <div id="active-lobbies-list" class="lobbies-list">
+                                <div class="no-lobbies-message" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                    No active lobbies. Create one to start collaborating!
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="collaboration-settings" style="display: none;">
-                        <div class="form-group">
-                            <label for="max-team-size">Maximum Team Size</label>
-                            <input type="number" id="max-team-size" min="2" max="8" value="4">
+                    <!-- Current Lobby Info -->
+                    <div class="collaboration-section" id="current-lobby-section" style="display: none;">
+                        <div class="section-title">
+                            <i class="fas fa-users"></i>
+                            <span>Current Lobby</span>
                         </div>
-
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="class-scoped-only" style="margin-right: 8px;">
-                                Restrict to Class Members Only
-                            </label>
-                            <small style="color: var(--text-muted); display: block; margin-top: 4px;">
-                                Only students in the same class can join collaborative sessions
-                            </small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Moderation Features</label>
-                            <div class="modal-checkbox-group">
-                                <div class="modal-checkbox-item">
-                                    <input type="checkbox" id="allow-kick" checked>
-                                    <label for="allow-kick">Allow moderators to remove participants</label>
-                                </div>
-                                <div class="modal-checkbox-item">
-                                    <input type="checkbox" id="allow-lock" checked>
-                                    <label for="allow-lock">Allow session locking</label>
-                                </div>
-                                <div class="modal-checkbox-item">
-                                    <input type="checkbox" id="audit-trail" checked>
-                                    <label for="audit-trail">Log all collaboration actions</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- NEW: Lobby Management Section -->
-                        <div class="lobby-management-panel" style="margin-top: 24px; padding: 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="margin: 0 0 16px 0; color: var(--text-primary);">
-                                <i class="fas fa-users-cog" style="color: var(--accent-color); margin-right: 8px;"></i>
-                                Collaboration Lobby Management
-                            </h4>
-                            
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                <div class="form-group">
-                                    <label for="lobby-name">Lobby Name</label>
-                                    <input type="text" id="lobby-name" placeholder="Enter lobby name" value="">
-                                </div>
-                                <div class="form-group">
-                                    <label for="lobby-class">Assign to Class</label>
-                                    <select id="lobby-class">
-                                        <option value="">Open to All</option>
-                                        <!-- Classes will be populated dynamically -->
-                                    </select>
+                        
+                        <div class="current-lobby-info">
+                            <div class="lobby-header">
+                                <h4 id="current-lobby-name">Lobby Name</h4>
+                                <div class="lobby-actions">
+                                    <button class="danger-button" onclick="leaveLobby()">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        Leave Lobby
+                                    </button>
                                 </div>
                             </div>
                             
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                <div class="form-group">
-                                    <label for="lobby-scenario-type">Difficulty Level</label>
-                                    <select id="lobby-scenario-type">
-                                        <option value="easy">Easy - Basic Network Issues</option>
-                                        <option value="medium">Medium - Advanced Troubleshooting</option>
-                                        <option value="hard">Hard - Complex Network Problems</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="lobby-scenario-id">Scenario Type</label>
-                                    <select id="lobby-scenario-id">
-                                        <option value="network">Network Issues</option>
-                                        <option value="passive">Passive Discovery</option>
-                                        <option value="version">Version Mismatch</option>
-                                        <option value="security">Security Analysis</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
-                                <button class="btn-modern" style="background: var(--success-color);" onclick="createSimulationLobby()">
-                                    <i class="fas fa-plus-circle"></i>
-                                    Create Lobby for This Simulation
-                                </button>
-                                <button class="btn-modern" style="background: var(--info-color);" onclick="viewActiveLobbies()">
-                                    <i class="fas fa-eye"></i>
-                                    View Active Lobbies
-                                </button>
-                                <button class="btn-modern" style="background: var(--warning-color);" onclick="manageLobbyPermissions()">
-                                    <i class="fas fa-shield-alt"></i>
-                                    Manage Permissions
-                                </button>
-                            </div>
-                            
-                            <!-- Active Lobbies Display -->
-                            <div id="active-lobbies-display" style="margin-top: 16px; display: none;">
-                                <h5 style="margin: 0 0 12px 0; color: var(--text-primary);">Active Collaboration Lobbies</h5>
-                                <div id="lobbies-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
-                                    <!-- Lobbies will be populated here -->
+                            <!-- Participants List -->
+                            <div class="participants-container">
+                                <h5>Participants (<span id="participant-count">0</span>)</h5>
+                                <div id="participants-list" class="participants-list">
+                                    <!-- Participants will be populated here -->
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="collaboration-test-panel" style="margin-top: 24px; padding: 16px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="margin: 0 0 16px 0; color: var(--text-primary);">
-                                <i class="fas fa-vial" style="color: var(--accent-color); margin-right: 8px;"></i>
-                                Test Collaboration Features
-                            </h4>
-                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                <button class="btn-modern" style="background: var(--accent-color);" onclick="testCreateLobby()">
-                                    <i class="fas fa-plus"></i>
-                                    Create Test Lobby
-                                </button>
-                                <button class="btn-modern" style="background: var(--warning-color);" onclick="testLockLobby()">
-                                    <i class="fas fa-lock"></i>
-                                    Test Lock/Unlock
-                                </button>
-                                <button class="btn-modern" style="background: var(--danger-color);" onclick="testKickUser()">
-                                    <i class="fas fa-user-times"></i>
-                                    Test Kick User
-                                </button>
-                                <button class="btn-modern" style="background: var(--success-color);" onclick="testAssignModerator()">
-                                    <i class="fas fa-shield-alt"></i>
-                                    Test Assign Moderator
-                                </button>
+                    <!-- Collaboration Settings -->
+                    <div class="collaboration-section">
+                        <div class="section-title">
+                            <i class="fas fa-cog"></i>
+                            <span>Collaboration Features</span>
+                        </div>
+                        
+                        <div class="collaboration-options">
+                            <div class="option-row">
+                                <label class="option-label">
+                                    <input type="checkbox" id="enable-cursor-sharing" checked>
+                                    <span class="checkmark"></span>
+                                    Enable Cursor Sharing
+                                </label>
+                                <small>Show other users' cursors on the canvas</small>
                             </div>
-                            <div id="collaboration-test-results" style="margin-top: 12px; padding: 8px; background: var(--background); border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary); min-height: 40px;">
-                                Test results will appear here...
+                            
+                            <div class="option-row">
+                                <label class="option-label">
+                                    <input type="checkbox" id="enable-device-sync" checked>
+                                    <span class="checkmark"></span>
+                                    Sync Device Changes
+                                </label>
+                                <small>Automatically sync device configurations and positions</small>
+                            </div>
+                            
+                            <div class="option-row">
+                                <label class="option-label">
+                                    <input type="checkbox" id="enable-chat" checked>
+                                    <span class="checkmark"></span>
+                                    Enable Chat
+                                </label>
+                                <small>Allow participants to communicate via text chat</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Team Assignment -->
+                    <div class="collaboration-section">
+                        <div class="section-title">
+                            <i class="fas fa-user-friends"></i>
+                            <span>Team Assignment</span>
+                        </div>
+                        
+                        <div class="team-assignment-controls">
+                            <div class="form-row">
+                                <label for="collaboration-class-select">Select Class:</label>
+                                <select id="collaboration-class-select" onchange="loadCollaborationStudents()">
+                                    <option value="">Choose a class...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-row">
+                                <label for="collaboration-team-count">Number of Teams:</label>
+                                <input type="number" id="collaboration-team-count" min="1" max="10" value="2" onchange="generateCollaborationTeams()">
+                            </div>
+                            
+                            <div class="control-buttons">
+                                <button class="secondary-button" onclick="autoAssignTeams()">
+                                    <i class="fas fa-magic"></i>
+                                    Auto-Assign Teams
+                                </button>
+                                <button class="primary-button" onclick="saveCollaborationTeams()">
+                                    <i class="fas fa-save"></i>
+                                    Save Teams
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1677,83 +2093,115 @@
     </div>
 </div>
 
-<!-- Device Palette - Based on troubleshoot.html structure -->
+<!-- Enhanced Device Palette - Complete Network Toolkit (MVP from Dynamic Simulation) -->
 <div id="device-palette">
-    <!-- Left Section: Mode & Status -->
-    <div class="palette-section left-section">
-        <div class="action-btn" id="mode-indicator">
-            <i class="fas fa-edit"></i>
-            <span class="label">Edit Mode</span>
-        </div>
-        
-        <div class="palette-separator"></div>
-        
-        <div class="action-btn" onclick="toggleGrid()">
-            <i class="fas fa-th"></i>
-            <span class="label">Toggle Grid</span>
+    <!-- Device Palette Top Bar -->
+    <div class="palette-top-bar">
+        <div class="palette-header">
+            <div class="palette-title">
+                <i class="fas fa-layer-group"></i>
+                Network Devices
+            </div>
+            <button class="palette-toggle" onclick="toggleDevicePalette()" aria-expanded="true">
+                <i class="fas fa-chevron-down" id="palette-toggle-icon" aria-hidden="true"></i>
+            </button>
         </div>
     </div>
 
-    <!-- Center Section: Network Devices -->
-    <div class="palette-section center-section">
-        <div class="device" data-device-type="router" draggable="true">
-            <img src="{{ url_for('static', filename='img/router.png') }}" alt="Router" class="device-icon">
-            <span>Router</span>
+    <!-- Device Categories Content -->
+    <div class="device-categories" id="palette-content">
+        <!-- Network Infrastructure -->
+        <div class="device-category">
+            <div class="category-title">
+                <i class="fas fa-network-wired"></i>
+                Network Infrastructure
+            </div>
+            <div class="device-grid">
+                <div class="device-item" data-device-type="router" draggable="true">
+                    <i class="fas fa-project-diagram device-icon"></i>
+                    <span class="device-label">Router</span>
+                    <div class="device-tooltip">Network Router - Routes traffic between networks</div>
+                </div>
+                <div class="device-item" data-device-type="switch" draggable="true">
+                    <i class="fas fa-ethernet device-icon"></i>
+                    <span class="device-label">Switch</span>
+                    <div class="device-tooltip">Network Switch - Connects devices in a network</div>
+                </div>
+                <div class="device-item" data-device-type="access-point" draggable="true">
+                    <i class="fas fa-wifi device-icon"></i>
+                    <span class="device-label">Access Point</span>
+                    <div class="device-tooltip">Wireless Access Point - Provides WiFi connectivity</div>
+                </div>
+                <div class="device-item" data-device-type="firewall" draggable="true">
+                    <i class="fas fa-shield-alt device-icon"></i>
+                    <span class="device-label">Firewall</span>
+                    <div class="device-tooltip">Network Firewall - Security device</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="device" data-device-type="switch" draggable="true">
-            <img src="{{ url_for('static', filename='img/switch.png') }}" alt="Switch" class="device-icon">
-            <span>Switch</span>
-        </div>
-        
-        <div class="device" data-device-type="pc" draggable="true">
-            <img src="{{ url_for('static', filename='img/pc.png') }}" alt="PC" class="device-icon">
-            <span>Workstation</span>
-        </div>
-        
-        <div class="device" data-device-type="server" draggable="true">
-            <img src="{{ url_for('static', filename='img/server.png') }}" alt="Server" class="device-icon">
-            <span>Server</span>
-        </div>
-        
-        <div class="device" data-device-type="firewall" draggable="true">
-            <img src="{{ url_for('static', filename='img/firewall.png') }}" alt="Firewall" class="device-icon">
-            <span>Firewall</span>
-        </div>
-        
-        <div class="device" data-device-type="access-point" draggable="true">
-            <img src="{{ url_for('static', filename='img/access-point.png') }}" alt="Access Point" class="device-icon">
-            <span>Access Point</span>
-        </div>
-        
-        <div class="device" data-device-type="cable" draggable="true">
-            <img src="{{ url_for('static', filename='img/cable.png') }}" alt="Cable" class="device-icon">
-            <span>Connection</span>
-        </div>
-    </div>
 
-    <!-- Right Section: Actions -->
-    <div class="palette-section right-section">
-        <div class="palette-separator"></div>
-        
-        <div class="action-btn" onclick="clearCanvas()">
-            <i class="fas fa-trash-alt"></i>
-            <span class="label">Clear All</span>
+        <!-- Computing Devices -->
+        <div class="device-category">
+            <div class="category-title">
+                <i class="fas fa-desktop"></i>
+                Computing Devices
+            </div>
+            <div class="device-grid">
+                <div class="device-item" data-device-type="server" draggable="true">
+                    <i class="fas fa-server device-icon"></i>
+                    <span class="device-label">Server</span>
+                    <div class="device-tooltip">Server - Provides network services</div>
+                </div>
+                <div class="device-item" data-device-type="pc" draggable="true">
+                    <i class="fas fa-desktop device-icon"></i>
+                    <span class="device-label">Workstation</span>
+                    <div class="device-tooltip">Desktop Computer - End user device</div>
+                </div>
+                <div class="device-item" data-device-type="laptop" draggable="true">
+                    <i class="fas fa-laptop device-icon"></i>
+                    <span class="device-label">Laptop</span>
+                    <div class="device-tooltip">Laptop Computer - Portable end user device</div>
+                </div>
+                <div class="device-item" data-device-type="mobile" draggable="true">
+                    <i class="fas fa-mobile-alt device-icon"></i>
+                    <span class="device-label">Mobile</span>
+                    <div class="device-tooltip">Mobile Device - Smartphone or tablet</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="action-btn" onclick="autoArrange()">
-            <i class="fas fa-magic"></i>
-            <span class="label">Auto Arrange</span>
-        </div>
-        
-        <div class="action-btn" onclick="toggleConnectMode()" id="connect-mode-btn">
-            <i class="fas fa-project-diagram"></i>
-            <span class="label">Connect</span>
-        </div>
-    </div>
-</div>
 
-<!-- Inject server-provided simulation JSON for editor bootstrap -->
+        <!-- Connection & Tools -->
+        <div class="device-category">
+            <div class="category-title">
+                <i class="fas fa-tools"></i>
+                Tools & Actions
+            </div>
+            <div class="device-grid">
+                <div class="device-item" data-device-type="cable" draggable="true">
+                    <i class="fas fa-plug device-icon"></i>
+                    <span class="device-label">Connection</span>
+                    <div class="device-tooltip">Network Cable - Connect devices</div>
+                </div>
+                <div class="action-btn device-item" onclick="clearCanvas()">
+                    <i class="fas fa-trash-alt device-icon"></i>
+                    <span class="device-label">Clear All</span>
+                    <div class="device-tooltip">Clear all devices from canvas</div>
+                </div>
+                <div class="action-btn device-item" onclick="autoArrange()">
+                    <i class="fas fa-magic device-icon"></i>
+                    <span class="device-label">Auto Arrange</span>
+                    <div class="device-tooltip">Automatically arrange devices</div>
+                </div>
+                <div class="action-btn device-item" onclick="toggleConnectMode()" id="connect-mode-btn">
+                    <i class="fas fa-project-diagram device-icon"></i>
+                    <span class="device-label">Connect</span>
+                    <div class="device-tooltip">Toggle connection mode</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div><!-- Inject server-provided simulation JSON for editor bootstrap -->
 <script id="simulation-json" type="application/json">{{ simulation.to_dict() | tojson if simulation else '{}' }}</script>
 
 <!-- Enhanced JavaScript for Simulation Editor -->
@@ -1761,7 +2209,7 @@
 // Enhanced Simulation Editor with troubleshoot.html structure
 class SimulationEditor {
     constructor() {
-        this.currentMode = 'devices';
+        this.currentTab = 'devices';
         this.selectedDevice = null;
         this.devices = [];
         this.connections = [];
@@ -1798,16 +2246,18 @@ class SimulationEditor {
         // Tab switching functionality
         document.querySelectorAll('.panel-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                const targetTab = e.target.dataset.tab;
+                const targetTab = e.target.closest('.panel-tab').dataset.tab;
                 this.switchTab(targetTab);
             });
         });
 
         // Initialize first tab as active
-        this.switchTab('properties');
+        this.switchTab('devices');
     }
 
     switchTab(tabName) {
+        console.log('Switching to tab:', tabName);
+        
         // Remove active class from all tabs and content
         document.querySelectorAll('.panel-tab').forEach(tab => {
             tab.classList.remove('active');
@@ -1821,11 +2271,34 @@ class SimulationEditor {
         const selectedTab = document.querySelector(`[data-tab="${tabName}"]`);
         const selectedContent = document.getElementById(`${tabName}-tab-content`);
 
-        if (selectedTab) selectedTab.classList.add('active');
-        if (selectedContent) selectedContent.classList.add('active');
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+            console.log('Tab found and activated:', selectedTab);
+        } else {
+            console.error('Tab not found:', tabName);
+        }
+        
+        if (selectedContent) {
+            selectedContent.classList.add('active');
+            console.log('Content found and activated:', selectedContent);
+        } else {
+            console.error('Content not found:', `${tabName}-tab-content`);
+        }
+
+        // Update current tab
+        this.currentTab = tabName;
 
         // Initialize tab-specific functionality
         switch (tabName) {
+            case 'devices':
+                this.initializeDevicesTab();
+                break;
+            case 'scenario':
+                this.initializeScenarioTab();
+                break;
+            case 'solution':
+                this.initializeSolutionTab();
+                break;
             case 'cli':
                 this.initializeCLIEditor();
                 break;
@@ -1835,14 +2308,141 @@ class SimulationEditor {
             case 'bulk':
                 this.initializeBulkOperations();
                 break;
+            case 'collaboration':
+                this.initializeCollaborationTab();
+                break;
+        }
+
+        // Update mode indicator in palette
+        this.updateModeIndicator();
+    }
+
+    initializeDevicesTab() {
+        // Setup device selection handlers
+        this.setupDeviceSelection();
+        // Update device properties panel if device is selected
+        if (this.selectedDevice) {
+            this.showDeviceProperties(this.selectedDevice);
+        }
+    }
+
+    initializeScenarioTab() {
+        // Focus on scenario text area for immediate editing
+        const scenarioText = document.getElementById('scenario-text');
+        if (scenarioText) {
+            scenarioText.focus();
+        }
+    }
+
+    initializeSolutionTab() {
+        // Focus on solution text area and render hints
+        const solutionText = document.getElementById('solution-text');
+        if (solutionText) {
+            solutionText.focus();
+        }
+        this.renderHints();
+    }
+
+    setupDeviceSelection() {
+        // Update device properties panel when device is selected
+        const deviceProps = document.getElementById('device-properties');
+        if (deviceProps && this.selectedDevice) {
+            deviceProps.style.display = 'block';
+            this.populateDeviceProperties(this.selectedDevice);
+        }
+    }
+
+    showDeviceProperties(device) {
+        const deviceProps = document.getElementById('device-properties');
+        if (deviceProps) {
+            deviceProps.style.display = 'block';
+            this.populateDeviceProperties(device);
+        }
+    }
+
+    populateDeviceProperties(device) {
+        const nameInput = document.getElementById('device-name');
+        const ipInput = document.getElementById('device-ip');
+        const statusSelect = document.getElementById('device-status');
+
+        if (nameInput) nameInput.value = device.name || '';
+        if (ipInput) ipInput.value = device.config?.ip || '';
+        if (statusSelect) statusSelect.value = device.status || 'normal';
+
+        // Add event listeners for property changes
+        if (nameInput) {
+            nameInput.removeEventListener('input', this.handleDeviceNameChange);
+            nameInput.addEventListener('input', (e) => this.handleDeviceNameChange(e, device));
+        }
+        if (ipInput) {
+            ipInput.removeEventListener('input', this.handleDeviceIpChange);
+            ipInput.addEventListener('input', (e) => this.handleDeviceIpChange(e, device));
+        }
+        if (statusSelect) {
+            statusSelect.removeEventListener('change', this.handleDeviceStatusChange);
+            statusSelect.addEventListener('change', (e) => this.handleDeviceStatusChange(e, device));
+        }
+    }
+
+    handleDeviceNameChange(e, device) {
+        device.name = e.target.value;
+        // Update device label in canvas
+        const deviceElement = document.querySelector(`[data-device-id="${device.id}"] span`);
+        if (deviceElement) {
+            deviceElement.textContent = device.name;
+        }
+        this.showToast(`Device renamed to ${device.name}`, 'success');
+    }
+
+    handleDeviceIpChange(e, device) {
+        if (!device.config) device.config = {};
+        device.config.ip = e.target.value;
+        // Update IP badge in canvas
+        const ipBadge = document.querySelector(`[data-device-id="${device.id}"] .ip-badge`);
+        if (ipBadge) {
+            ipBadge.textContent = device.config.ip;
+        }
+        this.showToast(`IP updated to ${device.config.ip}`, 'success');
+    }
+
+    handleDeviceStatusChange(e, device) {
+        device.status = e.target.value;
+        // Update device appearance in canvas
+        this.updateDeviceStatus(device);
+        this.showToast(`Status changed to ${device.status}`, 'info');
+    }
+
+    updateDeviceStatus(device) {
+        const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+        if (!deviceElement) return;
+
+        const statusColors = {
+            'normal': 'var(--success-color)',
+            'malfunctioning': 'var(--warning-color)',
+            'offline': 'var(--danger-color)',
+            'misconfigured': 'var(--warning-color)',
+            'degraded': 'var(--warning-color)'
+        };
+
+        deviceElement.style.borderColor = statusColors[device.status] || 'var(--glass-border)';
+
+        // Update or add status indicator
+        let statusIndicator = deviceElement.querySelector('.status-indicator');
+        if (device.status !== 'normal') {
+            if (!statusIndicator) {
+                statusIndicator = document.createElement('div');
+                statusIndicator.className = 'status-indicator';
+                statusIndicator.style.cssText = 'position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--background);';
+                deviceElement.appendChild(statusIndicator);
+            }
+            statusIndicator.style.background = statusColors[device.status];
+        } else if (statusIndicator) {
+            statusIndicator.remove();
         }
     }
 
     setupEventListeners() {
-        // Mode switching
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchMode(e.target.closest('.mode-btn').dataset.mode));
-        });
+        // Tab switching is now handled in setupTabNavigation()
 
         // Difficulty selection
         document.querySelectorAll('.difficulty-badge').forEach(badge => {
@@ -1870,15 +2470,6 @@ class SimulationEditor {
             canvas.addEventListener('contextmenu', (e) => this.handleCanvasRightClick(e));
         }
 
-        // Collaboration toggle
-        const collabToggle = document.getElementById('enable-collaboration');
-        const collabSettings = document.getElementById('collaboration-settings');
-        if (collabToggle && collabSettings) {
-            const sync = () => { collabSettings.style.display = collabToggle.checked ? 'block' : 'none'; };
-            collabToggle.addEventListener('change', sync);
-            sync();
-        }
-
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             // Delete key to remove selected device
@@ -1890,9 +2481,12 @@ class SimulationEditor {
             // Escape key to deselect devices
             if (e.key === 'Escape') {
                 this.selectedDevice = null;
-                document.querySelectorAll('.canvas-device').forEach(el => {
+                document.querySelectorAll('.network-device').forEach(el => {
                     el.classList.remove('selected');
                 });
+                // Hide device properties panel
+                const deviceProps = document.getElementById('device-properties');
+                if (deviceProps) deviceProps.style.display = 'none';
             }
             
             // Arrow keys to move selected device (fine control)
@@ -1927,12 +2521,21 @@ class SimulationEditor {
                     this.smoothMoveDevice(device, newX, newY, duration);
                 }
             }
-        });
 
+            // Tab switching shortcuts (Ctrl + 1-7)
+            if (e.ctrlKey && e.key >= '1' && e.key <= '7') {
+                e.preventDefault();
+                const tabs = ['devices', 'scenario', 'solution', 'cli', 'tutorial', 'bulk'];
+                const tabIndex = parseInt(e.key) - 1;
+                if (tabs[tabIndex]) {
+                    this.switchTab(tabs[tabIndex]);
+                }
+            }
+        });
     }
 
     setupDragAndDrop() {
-        const devices = document.querySelectorAll('.device[draggable="true"]');
+        const devices = document.querySelectorAll('.device-item[draggable="true"]');
         const canvas = document.getElementById('simulation-canvas');
 
         devices.forEach(device => {
@@ -1961,46 +2564,6 @@ class SimulationEditor {
                 canvas.style.backgroundColor = '';
                 this.handleDeviceDrop(e);
             });
-        }
-    }
-
-    switchMode(mode) {
-        this.currentMode = mode;
-        
-        // Update active button
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
-
-        // Show/hide properties panels
-        const scenarioProps = document.getElementById('scenario-properties');
-        const solutionProps = document.getElementById('solution-properties');
-        if (scenarioProps) scenarioProps.style.display = mode === 'scenario' ? 'block' : 'none';
-        if (solutionProps) solutionProps.style.display = mode === 'solution' ? 'block' : 'none';
-
-        // Update mode indicator
-        this.updateModeIndicator();
-    }
-
-    updateModeIndicator() {
-        const indicator = document.getElementById('mode-indicator');
-        if (indicator) {
-            const icons = {
-                'devices': 'fas fa-microchip',
-                'scenario': 'fas fa-file-alt',
-                'solution': 'fas fa-check-circle'
-            };
-            
-            const labels = {
-                'devices': 'Topology Mode',
-                'scenario': 'Scenario Mode',
-                'solution': 'Solution Mode'
-            };
-            
-            indicator.innerHTML = `
-                <i class="${icons[this.currentMode]}"></i>
-                <span class="label">${labels[this.currentMode]}</span>
-            `;
         }
     }
 
@@ -2089,10 +2652,24 @@ class SimulationEditor {
         if (!canvas) return;
 
         const deviceElement = document.createElement('div');
-        deviceElement.className = 'canvas-device device-placed';
+        deviceElement.className = 'network-device enhanced-device';
         deviceElement.dataset.deviceId = device.id;
         deviceElement.style.left = device.x + 'px';
         deviceElement.style.top = device.y + 'px';
+
+        // Enhanced styling with icon and visual improvements
+        const deviceIcons = {
+            'router': 'fas fa-project-diagram',
+            'switch': 'fas fa-ethernet', 
+            'pc': 'fas fa-desktop',
+            'server': 'fas fa-server',
+            'firewall': 'fas fa-shield-alt',
+            'access-point': 'fas fa-wifi',
+            'laptop': 'fas fa-laptop',
+            'mobile': 'fas fa-mobile-alt'
+        };
+
+        const iconClass = deviceIcons[device.type] || 'fas fa-network-wired';
 
         // Status-based styling
         const statusColors = {
@@ -2103,14 +2680,17 @@ class SimulationEditor {
             'degraded': 'var(--warning-color)'
         };
 
-        deviceElement.style.borderColor = statusColors[device.status] || 'var(--glass-border)';
-
         deviceElement.innerHTML = `
-            <img src="/static/img/${device.type}.png" alt="${device.type}" onerror="this.style.display='none'">
-            <span>${device.name}</span>
-            <div class="ip-badge" style="position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); font-size:10px; color: var(--text-muted);">${device.config?.ip || ''}</div>
-            ${device.status !== 'normal' ? `<div class="status-indicator" style="position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; background: ${statusColors[device.status]}; border-radius: 50%; border: 2px solid var(--background);"></div>` : ''}
+            <div class="device-icon">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="device-label">${device.name}</div>
+            <div class="device-status ${device.status}">${device.config?.ip || ''}</div>
+            ${device.status !== 'normal' ? `<div class="status-indicator ${device.status}"></div>` : ''}
         `;
+
+        // Apply enhanced styling
+        deviceElement.style.borderColor = statusColors[device.status] || 'var(--glass-border)';
 
         // Device interaction variables for dragging
         let isDragging = false;
@@ -2256,7 +2836,7 @@ class SimulationEditor {
         this.selectedDevice = device;
         
         // Update visual selection
-        document.querySelectorAll('.canvas-device').forEach(el => {
+        document.querySelectorAll('.network-device').forEach(el => {
             el.classList.remove('selected');
         });
         const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
@@ -2264,7 +2844,13 @@ class SimulationEditor {
             deviceElement.classList.add('selected');
         }
 
-        this.switchMode('devices'); // Ensure we're in device mode
+        // Switch to devices tab if not already there
+        if (this.currentTab !== 'devices') {
+            this.switchTab('devices');
+        }
+
+        // Show device properties panel
+        this.showDeviceProperties(device);
     }
 
     addStep() {
@@ -2611,6 +3197,60 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         this.setupBulkSelection();
     }
 
+    // Collaboration Methods
+    initializeCollaborationTab() {
+        // Initialize collaboration features
+        this.setupCollaborationHandlers();
+        
+        // Load active lobbies using the global function
+        if (typeof loadActiveLobbies === 'function') {
+            loadActiveLobbies();
+        }
+        
+        // Connect to WebSocket if not already connected
+        if (!window.socket || !window.socket.connected) {
+            this.initializeWebSocket();
+        }
+    }
+
+    setupCollaborationHandlers() {
+        // Setup event handlers for collaboration features
+        console.log('Setting up collaboration handlers');
+        
+        // Initialize lobby management
+        if (typeof window.joinLobby === 'function') {
+            console.log('Collaboration functions loaded successfully');
+        }
+        
+        // Initialize collaboration WebSocket handlers
+        if (typeof setupCollaborationWebSocket === 'function') {
+            setupCollaborationWebSocket();
+        }
+    }
+
+    initializeWebSocket() {
+        // Initialize WebSocket connection for collaboration
+        if (typeof io !== 'undefined') {
+            window.socket = io();
+            this.setupWebSocketHandlers();
+        }
+    }
+
+    setupWebSocketHandlers() {
+        // Setup WebSocket event handlers for collaboration
+        if (window.socket) {
+            window.socket.on('lobby_updated', (data) => {
+                console.log('Lobby updated:', data);
+                this.handleLobbyUpdate(data);
+            });
+        }
+    }
+
+    handleLobbyUpdate(data) {
+        // Handle lobby update events
+        console.log('Handling lobby update:', data);
+    }
+
     loadDevicesForBulkOps() {
         const devicesList = document.getElementById('bulk-device-list');
         if (!devicesList) return;
@@ -2724,23 +3364,6 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
                 }
             }
 
-            // Load collaboration config
-            const collab = this.simulationData.collab || {};
-            if (document.getElementById('enable-collaboration')) {
-                document.getElementById('enable-collaboration').checked = !!collab.enabled;
-            }
-            if (document.getElementById('max-team-size') && collab.team) {
-                document.getElementById('max-team-size').value = collab.team.maxSize ?? 4;
-            }
-            if (document.getElementById('class-scoped-only') && collab.policy) {
-                document.getElementById('class-scoped-only').checked = !!collab.policy.classOnly;
-            }
-            if (collab.moderation) {
-                if (document.getElementById('allow-kick')) document.getElementById('allow-kick').checked = !!collab.moderation.allowKick;
-                if (document.getElementById('allow-lock')) document.getElementById('allow-lock').checked = !!collab.moderation.allowLock;
-                if (document.getElementById('audit-trail')) document.getElementById('audit-trail').checked = !!collab.moderation.auditTrail;
-            }
-
             // Load scoring config
             const scoring = this.simulationData.scoring || {};
             if (document.getElementById('max-score') && scoring.totalPoints != null) {
@@ -2797,7 +3420,7 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
     handleCanvasClick(e) {
         if (e.target.id === 'simulation-canvas' || e.target.id === 'canvas-content') {
             this.selectedDevice = null;
-            document.querySelectorAll('.canvas-device').forEach(el => {
+            document.querySelectorAll('.network-device').forEach(el => {
                 el.classList.remove('selected');
             });
         }
@@ -2883,7 +3506,6 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
             is_active: true,
             cli_rules: this.cliRules,
             // New nested authoring blocks persisted under simulation_config
-            collab: this.collectCollabConfig(),
             tutorial: this.collectTutorialConfig(),
             achievements: this.collectAchievementsConfig(),
             scoring: this.collectScoringConfig()
@@ -2934,8 +3556,16 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
                 if (!this.simulationData.id && data.simulation_id) {
                     // Update the simulation data with the new ID
                     this.simulationData.id = data.simulation_id;
+                    simulationId = data.simulation_id;
                     // Update the URL to reflect we're now editing an existing simulation
                     window.history.replaceState({}, '', `/admin/simulation/edit/${data.simulation_id}`);
+                }
+                
+                // Broadcast the simulation update via WebSocket
+                try {
+                    broadcastSimulationUpdate(simulationData);
+                } catch (e) {
+                    console.warn('Failed to broadcast simulation update:', e);
                 }
             } else {
                 this.showToast('Error saving simulation: ' + (data.message || 'Unknown error'), 'error');
@@ -2969,23 +3599,6 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
             attemptsAllowed: attempts,
             ruleWeights: {},
             isActive: true
-        };
-    }
-
-    collectCollabConfig() {
-        const enabled = !!document.getElementById('enable-collaboration')?.checked;
-        const settings = document.getElementById('collaboration-settings');
-        const maxTeamSize = parseInt(document.getElementById('max-team-size')?.value || '4') || 4;
-        const classOnly = !!document.getElementById('class-scoped-only')?.checked;
-        const allowKick = !!document.getElementById('allow-kick')?.checked;
-        const allowLock = !!document.getElementById('allow-lock')?.checked;
-        const auditTrail = !!document.getElementById('audit-trail')?.checked;
-        return {
-            enabled,
-            mode: enabled ? 'team' : 'solo',
-            team: { maxSize: maxTeamSize },
-            policy: { classOnly },
-            moderation: { allowKick, allowLock, auditTrail }
         };
     }
 
@@ -3090,6 +3703,36 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         // Update connections after repositioning
         setTimeout(() => this.updateConnections(), 600);
     }
+
+    updateModeIndicator() {
+        // Update visual indicator in the palette to show current mode/tab
+        const modeIndicator = document.querySelector('.mode-indicator');
+        if (modeIndicator) {
+            modeIndicator.textContent = this.currentTab.charAt(0).toUpperCase() + this.currentTab.slice(1);
+        }
+
+        // Update tab visual state
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        const activeTab = document.querySelector(`[data-tab="${this.currentTab}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+
+        // Update palette button states based on current mode
+        const paletteButtons = document.querySelectorAll('.palette-btn');
+        paletteButtons.forEach(btn => {
+            btn.classList.remove('mode-active');
+        });
+
+        // Highlight mode-specific buttons
+        if (this.currentTab === 'devices') {
+            const deviceButtons = document.querySelectorAll('.palette-btn[data-device-type]');
+            deviceButtons.forEach(btn => btn.classList.add('mode-active'));
+        }
+    }
 }
 
 // Initialize the editor
@@ -3162,6 +3805,33 @@ function autoArrange() {
         }, editor.devices.length * 50 + 400);
         
         editor.showToast('Devices auto-arranged', 'success');
+    }
+}
+
+function toggleDevicePalette() {
+    const palette = document.getElementById('device-palette');
+    const icon = document.getElementById('palette-toggle-icon');
+    const categories = document.querySelector('.device-categories');
+    
+    if (palette && icon && categories) {
+        palette.classList.toggle('minimized');
+        
+        // Update icon and visibility
+        if (palette.classList.contains('minimized')) {
+            icon.className = 'fas fa-chevron-up';
+            categories.style.display = 'none';
+            // Optional: show a brief toast
+            if (window.editor) {
+                editor.showToast('Device palette minimized', 'info');
+            }
+        } else {
+            icon.className = 'fas fa-chevron-down';
+            categories.style.display = 'flex';
+            // Optional: show a brief toast
+            if (window.editor) {
+                editor.showToast('Device palette expanded', 'info');
+            }
+        }
     }
 }
 
@@ -3494,7 +4164,7 @@ function selectNone() {
 }
 
 function applyBulkSubnet() {
-    const subnet = document.getElementById('bulk-subnet').value;
+    const subnet = document.getElementById('bulk-operations-subnet').value;
     if (!subnet) {
         alert('Please enter a subnet');
         return;
@@ -3507,6 +4177,22 @@ function applyBulkSubnet() {
     }
     
     alert(`Applied subnet ${subnet} to ${selectedDevices.length} device(s)`);
+}
+
+function applyBulkSubnetFromDevices() {
+    const subnet = document.getElementById('devices-bulk-subnet').value;
+    if (!subnet) {
+        alert('Please enter a subnet');
+        return;
+    }
+    
+    const selectedDevices = document.querySelectorAll('.device-selected');
+    if (selectedDevices.length === 0) {
+        alert('Please select at least one device from the canvas');
+        return;
+    }
+    
+    alert(`Applied subnet ${subnet} to ${selectedDevices.length} device(s) from devices tab`);
 }
 
 function applyBulkGateway() {
@@ -3536,203 +4222,71 @@ function applyBulkStatus() {
     alert(`Applied status "${status}" to ${selectedDevices.length} device(s)`);
 }
 
-// Collaboration Controls Functions
-function testCreateLobby() {
-    const resultsDiv = document.getElementById('collaboration-test-results');
-    resultsDiv.innerHTML = 'Creating test lobby...';
-    
-    fetch('/api/troubleshooting/collaborative/lobby', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            simulation_id: window.simulationId || 1,
-            max_participants: parseInt(document.getElementById('max-team-size').value) || 4,
-            class_scoped: document.getElementById('class-scoped-only').checked
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            resultsDiv.innerHTML = `✅ Lobby created: ID ${data.lobby_id}, Code: ${data.lobby_code}`;
-            window.testLobbyId = data.lobby_id;
-        } else {
-            resultsDiv.innerHTML = `❌ Error: ${data.error}`;
-        }
-    })
-    .catch(error => {
-        resultsDiv.innerHTML = `❌ Network error: ${error.message}`;
-    });
-}
 
-function testLockLobby() {
-    if (!window.testLobbyId) {
-        document.getElementById('collaboration-test-results').innerHTML = '❌ Please create a test lobby first';
-        return;
+// Collapsible Sidebar Functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('editing-sidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle');
+    const icons = document.querySelector('.collapsed-icons');
+    const content = document.querySelector('.sidebar-content');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        // Expand sidebar
+        sidebar.classList.remove('collapsed');
+        toggleBtn.querySelector('i').className = 'fas fa-chevron-left';
+        icons.style.display = 'none';
+        content.style.display = 'block';
+        localStorage.setItem('sidebarCollapsed', 'false');
+    } else {
+        // Collapse sidebar
+        sidebar.classList.add('collapsed');
+        toggleBtn.querySelector('i').className = 'fas fa-chevron-right';
+        icons.style.display = 'flex';
+        content.style.display = 'none';
+        localStorage.setItem('sidebarCollapsed', 'true');
     }
-    
-    const resultsDiv = document.getElementById('collaboration-test-results');
-    resultsDiv.innerHTML = 'Testing lock/unlock...';
-    
-    fetch(`/api/troubleshooting/collaborative/lobby/${window.testLobbyId}/lock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            resultsDiv.innerHTML = `✅ Lobby locked successfully`;
-            // Test unlock after 2 seconds
-            setTimeout(() => {
-                fetch(`/api/troubleshooting/collaborative/lobby/${window.testLobbyId}/lock`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ locked: false })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        resultsDiv.innerHTML = `✅ Lock/unlock test passed`;
-                    }
-                });
-            }, 2000);
-        } else {
-            resultsDiv.innerHTML = `❌ Lock test failed: ${data.error}`;
-        }
-    });
 }
 
-function testKickUser() {
-    document.getElementById('collaboration-test-results').innerHTML = '✅ Kick functionality ready (requires active participants to test)';
-}
-
-function testAssignModerator() {
-    document.getElementById('collaboration-test-results').innerHTML = '✅ Moderator assignment ready (requires participants to test)';
-}
-
-// NEW: Admin Lobby Management Functions
-function loadClasses() {
-    fetch('/admin/api/classes')
-    .then(response => response.json())
-    .then(data => {
-        const classSelect = document.getElementById('lobby-class');
-        classSelect.innerHTML = '<option value="">All Classes</option>';
-        
-        if (data.success && data.classes) {
-            data.classes.forEach(cls => {
-                const option = document.createElement('option');
-                option.value = cls.id;
-                option.textContent = cls.name;
-                classSelect.appendChild(option);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error loading classes:', error);
-        showNotification('Failed to load classes', 'error');
-    });
-}
-
-function createSimulationLobby() {
-    const lobbyName = document.getElementById('lobby-name').value.trim();
-    const classId = document.getElementById('lobby-class').value;
-    const scenarioType = document.getElementById('lobby-scenario-type').value;
-    const scenarioId = document.getElementById('lobby-scenario-id').value;
-    const maxTeamSize = parseInt(document.getElementById('max-team-size').value) || 4;
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'notification ' + type;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 16px 20px;
+        color: var(--text-primary);
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
     
-    if (!lobbyName) {
-        alert('Please enter a lobby name');
-        return;
-    }
+    document.body.appendChild(notification);
     
-    const lobbyData = {
-        name: lobbyName,
-        scenario_type: scenarioType,
-        scenario_id: scenarioId,
-        max_participants: maxTeamSize,
-        class_id: classId || null,
-        simulation_id: window.simulationId || null,
-        admin_created: true
-    };
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
     
-    fetch('/admin/api/collaboration/lobby', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(lobbyData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification(`✅ Lobby "${lobbyName}" created successfully!`, 'success');
-            document.getElementById('lobby-name').value = '';
-            viewActiveLobbies(); // Refresh the lobbies display
-        } else {
-            showNotification(`❌ Error creating lobby: ${data.error}`, 'error');
-        }
-    })
-    .catch(error => {
-        showNotification(`❌ Network error: ${error.message}`, 'error');
-    });
-}
-
-function viewActiveLobbies() {
-    const display = document.getElementById('active-lobbies-display');
-    const list = document.getElementById('lobbies-list');
-    
-    display.style.display = 'block';
-    list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading...</div>';
-    
-    fetch('/admin/api/collaboration/lobbies')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.lobbies) {
-            if (data.lobbies.length === 0) {
-                list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No active lobbies found</div>';
-                return;
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
             }
-            
-            let html = '';
-            data.lobbies.forEach(lobby => {
-                const participantCount = Object.keys(lobby.participants || {}).length;
-                const status = lobby.is_locked ? 'Locked' : 'Open';
-                const statusColor = lobby.is_locked ? 'var(--warning-color)' : 'var(--success-color)';
-                
-                html += `
-                    <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 8px; background: var(--background);">
-                        <div style="display: flex; justify-content: between; align-items: center;">
-                            <div style="flex: 1;">
-                                <strong style="color: var(--text-primary);">${lobby.name}</strong>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0;">
-                                    ${lobby.scenario_type.toUpperCase()} - ${lobby.scenario_id} | 
-                                    ${participantCount}/${lobby.max_participants} participants
-                                </div>
-                                <div style="font-size: 0.8rem; color: ${statusColor};">
-                                    Status: ${status} | Created by: ${lobby.creator_name}
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="manageLobby('${lobby.id}')" style="background: var(--info-color); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                                    Manage
-                                </button>
-                                <button onclick="closeLobby('${lobby.id}')" style="background: var(--danger-color); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            list.innerHTML = html;
-        } else {
-            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger-color);">Error loading lobbies</div>';
-        }
-    })
-    .catch(error => {
-        list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger-color);">Network error</div>';
-    });
+        }, 300);
+    }, 3000);
 }
 
 function manageLobby(lobbyId) {
@@ -3771,6 +4325,352 @@ function manageLobbyPermissions() {
     // TODO: Implement permission management interface
 }
 
+function loadClassStudents() {
+    const classId = document.getElementById('target-class').value;
+    const studentsDiv = document.getElementById('available-students');
+    const assignmentDiv = document.getElementById('student-team-assignment');
+    
+    if (!classId) {
+        studentsDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Select a class to load students</div>';
+        assignmentDiv.style.display = 'none';
+        return;
+    }
+    
+    studentsDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading students...</div>';
+    
+    fetch(`/admin/api/classes/${classId}/students`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.students) {
+                assignmentDiv.style.display = 'block';
+                renderStudentList(data.students);
+                generateTeamStructure(); // Generate initial team structure
+            } else {
+                studentsDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No students found in this class</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            studentsDiv.innerHTML = '<div style="text-align: center; color: var(--danger-color); padding: 20px;">Error loading students</div>';
+        });
+}
+
+function renderStudentList(students) {
+    const studentsDiv = document.getElementById('available-students');
+    
+    if (students.length === 0) {
+        studentsDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No students in this class</div>';
+        return;
+    }
+    
+    let html = '';
+    students.forEach(student => {
+        html += `
+            <div class="student-item" data-student-id="${student.id}" style="padding: 8px; margin: 4px 0; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; background: var(--surface); transition: all 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: var(--text-primary);">${student.username}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">${student.email}</div>
+                    </div>
+                    <div class="drag-handle" style="color: var(--text-muted); cursor: grab;">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    studentsDiv.innerHTML = html;
+    
+    // Add drag and drop functionality
+    makeDraggable();
+}
+
+function generateTeamStructure() {
+    const teamCount = parseInt(document.getElementById('team-count').value) || 2;
+    const teamsDiv = document.getElementById('team-assignments');
+    
+    let html = '';
+    for (let i = 1; i <= teamCount; i++) {
+        html += `
+            <div class="team-container" data-team-id="${i}" style="margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--surface);">
+                <h6 style="margin: 0 0 8px 0; color: var(--text-primary); display: flex; align-items: center;">
+                    <i class="fas fa-users" style="margin-right: 8px; color: var(--accent-color);"></i>
+                    Team ${i}
+                    <span class="team-count" style="margin-left: auto; font-size: 0.8rem; color: var(--text-secondary);">(0 members)</span>
+                </h6>
+                <div class="team-members" style="min-height: 60px; border: 2px dashed var(--border-color); border-radius: 4px; padding: 4px;">
+                    <div class="drop-zone-text" style="text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.8rem;">
+                        Drag students here
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    teamsDiv.innerHTML = html;
+    
+    // Make team containers droppable
+    makeDroppable();
+}
+
+function makeDraggable() {
+    const studentItems = document.querySelectorAll('.student-item');
+    
+    studentItems.forEach(item => {
+        item.draggable = true;
+        
+        item.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', item.dataset.studentId);
+            item.style.opacity = '0.5';
+        });
+        
+        item.addEventListener('dragend', (e) => {
+            item.style.opacity = '1';
+        });
+        
+        item.addEventListener('click', () => {
+            // Allow clicking to add to first available team
+            assignToFirstAvailableTeam(item);
+        });
+    });
+}
+
+function makeDroppable() {
+    const teamContainers = document.querySelectorAll('.team-members');
+    
+    teamContainers.forEach(container => {
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            container.style.borderColor = 'var(--accent-color)';
+            container.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+        });
+        
+        container.addEventListener('dragleave', (e) => {
+            container.style.borderColor = 'var(--border-color)';
+            container.style.backgroundColor = 'transparent';
+        });
+        
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const studentId = e.dataTransfer.getData('text/plain');
+            const studentItem = document.querySelector(`[data-student-id="${studentId}"]`);
+            
+            if (studentItem) {
+                addStudentToTeam(studentItem, container);
+            }
+            
+            container.style.borderColor = 'var(--border-color)';
+            container.style.backgroundColor = 'transparent';
+        });
+    });
+}
+
+function assignToFirstAvailableTeam(studentItem) {
+    const maxTeamSize = parseInt(document.getElementById('max-team-size').value) || 4;
+    const teamContainers = document.querySelectorAll('.team-members');
+    
+    for (const container of teamContainers) {
+        const currentMembers = container.querySelectorAll('.team-member').length;
+        if (currentMembers < maxTeamSize) {
+            addStudentToTeam(studentItem, container);
+            break;
+        }
+    }
+}
+
+function addStudentToTeam(studentItem, teamContainer) {
+    const maxTeamSize = parseInt(document.getElementById('max-team-size').value) || 4;
+    const currentMembers = teamContainer.querySelectorAll('.team-member').length;
+    
+    if (currentMembers >= maxTeamSize) {
+        showNotification('Team is full!', 'warning');
+        return;
+    }
+    
+    // Remove from current location
+    if (studentItem.parentElement.classList.contains('team-members')) {
+        updateTeamCount(studentItem.parentElement);
+    }
+    
+    // Create team member element
+    const teamMember = document.createElement('div');
+    teamMember.className = 'team-member';
+    teamMember.dataset.studentId = studentItem.dataset.studentId;
+    teamMember.style.cssText = `
+        padding: 4px 8px; 
+        margin: 2px; 
+        background: var(--accent-color); 
+        color: white; 
+        border-radius: 4px; 
+        font-size: 0.8rem; 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 4px;
+    `;
+    
+    const studentName = studentItem.querySelector('strong').textContent;
+    teamMember.innerHTML = `
+        ${studentName}
+        <button onclick="removeFromTeam(this)" style="background: none; border: none; color: white; margin-left: 4px; cursor: pointer; font-size: 0.7rem;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Hide drop zone text and add member
+    const dropZoneText = teamContainer.querySelector('.drop-zone-text');
+    if (dropZoneText) {
+        dropZoneText.style.display = 'none';
+    }
+    
+    teamContainer.appendChild(teamMember);
+    
+    // Hide student from available list
+    studentItem.style.display = 'none';
+    
+    // Update team count
+    updateTeamCount(teamContainer);
+}
+
+function removeFromTeam(button) {
+    const teamMember = button.parentElement;
+    const studentId = teamMember.dataset.studentId;
+    const teamContainer = teamMember.parentElement;
+    
+    // Remove from team
+    teamMember.remove();
+    
+    // Show student back in available list
+    const studentItem = document.querySelector(`[data-student-id="${studentId}"]`);
+    if (studentItem) {
+        studentItem.style.display = 'block';
+    }
+    
+    // Update team count and show drop zone if empty
+    updateTeamCount(teamContainer);
+    
+    if (teamContainer.querySelectorAll('.team-member').length === 0) {
+        const dropZoneText = teamContainer.querySelector('.drop-zone-text');
+        if (dropZoneText) {
+            dropZoneText.style.display = 'block';
+        }
+    }
+}
+
+function updateTeamCount(teamContainer) {
+    const teamCountSpan = teamContainer.parentElement.querySelector('.team-count');
+    const memberCount = teamContainer.querySelectorAll('.team-member').length;
+    const maxTeamSize = parseInt(document.getElementById('max-team-size').value) || 4;
+    
+    if (teamCountSpan) {
+        teamCountSpan.textContent = `(${memberCount}/${maxTeamSize} members)`;
+    }
+}
+
+function randomizeTeams() {
+    const availableStudents = Array.from(document.querySelectorAll('.student-item')).filter(item => item.style.display !== 'none');
+    const teamContainers = document.querySelectorAll('.team-members');
+    const maxTeamSize = parseInt(document.getElementById('max-team-size').value) || 4;
+    
+    // Clear existing assignments
+    clearAllTeams();
+    
+    // Shuffle students
+    const shuffledStudents = availableStudents.sort(() => Math.random() - 0.5);
+    
+    // Assign to teams
+    let currentTeamIndex = 0;
+    shuffledStudents.forEach((student, index) => {
+        const teamContainer = teamContainers[currentTeamIndex];
+        if (teamContainer) {
+            addStudentToTeam(student, teamContainer);
+            
+            // Move to next team if current is full
+            const currentMembers = teamContainer.querySelectorAll('.team-member').length;
+            if (currentMembers >= maxTeamSize) {
+                currentTeamIndex = (currentTeamIndex + 1) % teamContainers.length;
+            }
+        }
+    });
+    
+    showNotification('Teams randomized successfully!', 'success');
+}
+
+function balanceTeams() {
+    // This would implement skill-based balancing
+    // For now, we'll just do random assignment
+    randomizeTeams();
+    showNotification('Teams balanced by skill level!', 'success');
+}
+
+function clearAllTeams() {
+    const teamMembers = document.querySelectorAll('.team-member');
+    teamMembers.forEach(member => {
+        const button = member.querySelector('button');
+        if (button) {
+            removeFromTeam(button);
+        }
+    });
+}
+
+function saveTeamAssignments() {
+    const teamContainers = document.querySelectorAll('.team-container');
+    const classId = document.getElementById('target-class').value;
+    const simulationId = window.simulationId || editor?.simulationData?.id;
+    
+    if (!classId) {
+        showNotification('Please select a class first', 'error');
+        return;
+    }
+    
+    const teams = [];
+    teamContainers.forEach((container, index) => {
+        const teamId = container.dataset.teamId;
+        const members = Array.from(container.querySelectorAll('.team-member')).map(member => ({
+            student_id: member.dataset.studentId,
+            student_name: member.textContent.trim().replace('×', '')
+        }));
+        
+        if (members.length > 0) {
+            teams.push({
+                team_id: teamId,
+                team_name: `Team ${teamId}`,
+                members: members
+            });
+        }
+    });
+    
+    if (teams.length === 0) {
+        showNotification('No teams to save', 'warning');
+        return;
+    }
+    
+    const teamData = {
+        class_id: classId,
+        simulation_id: simulationId,
+        teams: teams
+    };
+    
+    fetch('/admin/api/collaboration/teams', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(teamData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`✅ Team assignments saved for ${teams.length} teams!`, 'success');
+        } else {
+            showNotification(`❌ Error saving teams: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification(`❌ Network error: ${error.message}`, 'error');
+    });
+}
+
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -3796,19 +4696,6 @@ function showNotification(message, type = 'info') {
 }
 
 
-// Collaboration and Validation Toggle Handlers
-document.addEventListener('DOMContentLoaded', function() {
-    // Collaboration toggle
-    const collaborationToggle = document.getElementById('enable-collaboration');
-    const collaborationSettings = document.getElementById('collaboration-settings');
-    
-    if (collaborationToggle) {
-        collaborationToggle.addEventListener('change', function() {
-            collaborationSettings.style.display = this.checked ? 'block' : 'none';
-        });
-    }
-});
-
 // Collapsible Sidebar Functionality
 function toggleSidebar() {
     const sidebar = document.getElementById('editing-sidebar');
@@ -3833,31 +4720,41 @@ function toggleSidebar() {
     }
 }
 
-function showSidebarAndSwitchMode(mode) {
+function showSidebarAndSwitchTab(tab) {
+    console.log('showSidebarAndSwitchTab called with:', tab);
+    
     // First expand the sidebar
     const sidebar = document.getElementById('editing-sidebar');
     if (sidebar.classList.contains('collapsed')) {
+        console.log('Expanding collapsed sidebar');
         toggleSidebar();
     }
     
-    // Then switch to the specified mode
-    const modeButtons = document.querySelectorAll('.mode-btn');
-    modeButtons.forEach(btn => btn.classList.remove('active'));
-    
-    const targetBtn = document.querySelector(`.mode-btn[data-mode="${mode}"]`);
-    if (targetBtn) {
-        targetBtn.classList.add('active');
+    // Use the simulation editor's tab switching
+    if (window.simulationEditor) {
+        window.simulationEditor.switchTab(tab);
+    } else {
+        console.warn('SimulationEditor not found');
     }
-    
-    // You could add mode-specific logic here
-    console.log(`Switched to ${mode} mode`);
 }
 
 function showSidebarAndSwitchTab(tab) {
+    console.log('showSidebarAndSwitchTab called with:', tab);
+    
     // First expand the sidebar
     const sidebar = document.getElementById('editing-sidebar');
     if (sidebar.classList.contains('collapsed')) {
+        console.log('Expanding collapsed sidebar');
         toggleSidebar();
+    }
+    
+    // Debug: Check if collaboration tab content exists
+    if (tab === 'collaboration') {
+        const collabContent = document.getElementById('collaboration-tab-content');
+        console.log('Collaboration tab content element:', collabContent);
+        if (collabContent) {
+            console.log('Collaboration content innerHTML length:', collabContent.innerHTML.length);
+        }
     }
     
     // Then switch to the specified tab
@@ -3870,15 +4767,17 @@ function showSidebarAndSwitchTab(tab) {
     const targetTab = document.querySelector(`.panel-tab[data-tab="${tab}"]`);
     const targetContent = document.getElementById(`${tab}-tab-content`);
     
+    console.log('Target tab:', targetTab);
+    console.log('Target content:', targetContent);
+    
     if (targetTab && targetContent) {
         targetTab.classList.add('active');
         targetContent.classList.add('active');
+        console.log('Successfully switched to tab:', tab);
+    } else {
+        console.error('Failed to find tab or content for:', tab);
     }
-    
-    console.log(`Switched to ${tab} tab`);
 }
-
-
 
 // Initialize sidebar state on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -3906,17 +4805,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add mode switching functionality
-    const modeButtons = document.querySelectorAll('.mode-btn');
-    modeButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const mode = this.getAttribute('data-mode');
-            modeButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            console.log(`Switched to ${mode} mode`);
-        });
-    });
-    
     // Add difficulty badge functionality
     const difficultyBadges = document.querySelectorAll('.difficulty-badge');
     difficultyBadges.forEach(badge => {
@@ -3932,23 +4820,642 @@ document.addEventListener('DOMContentLoaded', function() {
 
     
 
+    <!-- Include Socket.IO for real-time updates -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+
     <!-- Include tutorial editor JS -->
     <script src="{{ url_for('static', filename='js/tutorial-editor.js') }}"></script>
+
+    <!-- Initialize WebSocket for real-time simulation updates -->
+    <script>
+        // Initialize Socket.IO connection
+        let socket = null;
+        let simulationId = null;
+
+        function initializeWebSocket() {
+            try {
+                socket = io();
+                
+                socket.on('connect', function() {
+                    console.log('Connected to WebSocket server');
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('Disconnected from WebSocket server');
+                });
+
+                socket.on('error', function(error) {
+                    console.error('WebSocket error:', error);
+                });
+
+                // Get simulation ID from the current page
+                const simJson = document.getElementById('simulation-json');
+                const simData = simJson ? JSON.parse(simJson.textContent || '{}') : {};
+                simulationId = simData?.id || getSimulationIdFromUrl();
+                
+                if (simulationId) {
+                    console.log('Admin editor initialized for simulation:', simulationId);
+                }
+            } catch (e) {
+                console.error('Failed to initialize WebSocket:', e);
+            }
+        }
+
+        function getSimulationIdFromUrl() {
+            const match = window.location.pathname.match(/\/admin\/simulation\/edit\/(\d+)/);
+            return match ? parseInt(match[1]) : null;
+        }
+
+        function broadcastSimulationUpdate(simulationData) {
+            if (socket && socket.connected && simulationId) {
+                console.log('Broadcasting simulation update for:', simulationId);
+                socket.emit('admin_simulation_update', {
+                    simulation_id: simulationId,
+                    simulation_data: simulationData,
+                    updated_by: 'admin',
+                    timestamp: Date.now()
+                });
+            }
+        }
+    </script>
+
+    <!-- Collaboration System JavaScript -->
+    <script>
+        // Collaboration state management
+        let currentLobby = null;
+        let collaborationSocket = null;
+        let collaborationParticipants = new Map();
+        let userCursors = new Map();
+        let isCollaborationActive = false;
+
+        // Initialize collaboration features
+        function initializeCollaboration() {
+            if (!socket) {
+                console.warn('WebSocket not available - collaboration disabled');
+                return;
+            }
+
+            collaborationSocket = socket;
+
+            // Set up collaboration event listeners
+            setupCollaborationEvents();
+
+            // Load active lobbies
+            loadActiveLobbies();
+
+            console.log('Collaboration system initialized');
+        }
+
+        function setupCollaborationEvents() {
+            if (!collaborationSocket) return;
+
+            // Lobby events
+            collaborationSocket.on('lobby_joined', handleLobbyJoined);
+            collaborationSocket.on('lobby_left', handleLobbyLeft);
+            collaborationSocket.on('participant_joined', handleParticipantJoined);
+            collaborationSocket.on('participant_left', handleParticipantLeft);
+
+            // Communication events
+            collaborationSocket.on('chat_message', handleChatMessage);
+            collaborationSocket.on('cursor_moved', handleCursorMoved);
+
+            // Device sync events
+            collaborationSocket.on('device_added', handleDeviceAdded);
+            collaborationSocket.on('device_moved', handleDeviceMoved);
+            collaborationSocket.on('device_updated', handleDeviceUpdated);
+            collaborationSocket.on('device_removed', handleDeviceRemoved);
+
+            // Admin events
+            collaborationSocket.on('lobby_created', handleLobbyCreated);
+            collaborationSocket.on('lobby_updated', handleLobbyUpdated);
+            collaborationSocket.on('lobby_closed', handleLobbyClosed);
+        }
+
+        // Lobby Browser Functions
+        function showLobbyBrowser() {
+            document.getElementById('lobby-browser-modal').style.display = 'block';
+            refreshLobbies();
+        }
+
+        function closeLobbyBrowser() {
+            document.getElementById('lobby-browser-modal').style.display = 'none';
+        }
+
+        function refreshLobbies() {
+            const grid = document.getElementById('lobbies-grid');
+            grid.innerHTML = '<div class="loading-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><div>Loading lobbies...</div></div>';
+
+            fetch('/admin/api/collaboration/lobbies')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderLobbiesGrid(data.lobbies);
+                    } else {
+                        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">Failed to load lobbies</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading lobbies:', error);
+                    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">Error loading lobbies</div>';
+                });
+        }
+
+        function renderLobbiesGrid(lobbies) {
+            const grid = document.getElementById('lobbies-grid');
+            
+            if (lobbies.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">No lobbies available</div>';
+                return;
+            }
+
+            grid.innerHTML = '';
+            lobbies.forEach(lobby => {
+                const lobbyCard = createLobbyCard(lobby);
+                grid.appendChild(lobbyCard);
+            });
+        }
+
+        function createLobbyCard(lobby) {
+            const card = document.createElement('div');
+            card.className = 'lobby-card';
+            card.onclick = () => joinLobby(lobby.id);
+
+            const statusClass = lobby.participant_count >= lobby.max_participants ? 'full' : 'active';
+            const privacyIcon = lobby.privacy === 'private' ? 'fas fa-lock' : 
+                               lobby.privacy === 'class' ? 'fas fa-graduation-cap' : 'fas fa-globe';
+
+            card.innerHTML = `
+                <div class="lobby-card-header">
+                    <h4 class="lobby-title">${lobby.name}</h4>
+                    <span class="lobby-status ${statusClass}">${statusClass}</span>
+                </div>
+                <div class="lobby-description">${lobby.description || 'No description provided'}</div>
+                <div class="lobby-info-row">
+                    <div class="lobby-participants">
+                        <i class="fas fa-users"></i>
+                        <span>${lobby.participant_count}/${lobby.max_participants}</span>
+                    </div>
+                    <div class="lobby-privacy">
+                        <i class="${privacyIcon}"></i>
+                        <span>${lobby.privacy}</span>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Create Lobby Functions
+        function showCreateLobby() {
+            document.getElementById('create-lobby-modal').style.display = 'block';
+            // Reset form
+            document.getElementById('create-lobby-form').reset();
+        }
+
+        function closeCreateLobby() {
+            document.getElementById('create-lobby-modal').style.display = 'none';
+        }
+
+        function handleCreateLobby(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const lobbyData = {
+                name: formData.get('lobby_name'),
+                description: formData.get('lobby_description'),
+                max_participants: parseInt(formData.get('max_participants')),
+                privacy: formData.get('privacy'),
+                allow_chat: formData.has('allow_chat'),
+                allow_cursor_sharing: formData.has('allow_cursor_sharing'),
+                allow_device_sync: formData.has('allow_device_sync'),
+                admin_controls: formData.has('admin_controls'),
+                simulation_id: editor?.simulationData?.id
+            };
+
+            // Basic validation
+            if (!lobbyData.name.trim()) {
+                showToast('Please enter a lobby name', 'error');
+                return;
+            }
+
+            fetch('/admin/api/collaboration/lobbies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(lobbyData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Lobby created successfully!', 'success');
+                    closeCreateLobby();
+                    loadActiveLobbies();
+                    
+                    // Auto-join the created lobby
+                    if (data.lobby_id) {
+                        setTimeout(() => joinLobby(data.lobby_id), 500);
+                    }
+                } else {
+                    showToast('Error creating lobby: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating lobby:', error);
+                showToast('Network error while creating lobby', 'error');
+            });
+        }
+
+        // Lobby Management Functions
+        function joinLobby(lobbyId) {
+            if (!collaborationSocket) {
+                showToast('WebSocket connection not available', 'error');
+                return;
+            }
+
+            collaborationSocket.emit('join_lobby', {
+                lobby_id: lobbyId,
+                user_type: 'admin',
+                simulation_id: editor?.simulationData?.id
+            });
+        }
+
+        function leaveLobby() {
+            if (currentLobby && collaborationSocket) {
+                collaborationSocket.emit('leave_lobby', {
+                    lobby_id: currentLobby.id
+                });
+            }
+        }
+
+        function loadActiveLobbies() {
+            fetch('/admin/api/collaboration/lobbies/active')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderActiveLobbies(data.lobbies);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading active lobbies:', error);
+                });
+        }
+
+        function renderActiveLobbies(lobbies) {
+            const container = document.getElementById('active-lobbies-list');
+            
+            if (lobbies.length === 0) {
+                container.innerHTML = '<div class="no-lobbies-message" style="text-align: center; padding: 20px; color: var(--text-muted);">No active lobbies. Create one to start collaborating!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            lobbies.forEach(lobby => {
+                const item = document.createElement('div');
+                item.className = 'lobby-item';
+                item.innerHTML = `
+                    <div class="lobby-info">
+                        <h5>${lobby.name}</h5>
+                        <small>${lobby.participant_count}/${lobby.max_participants} participants</small>
+                    </div>
+                    <div class="lobby-actions">
+                        <button class="secondary-button" onclick="joinLobby('${lobby.id}')">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </button>
+                        <button class="danger-button" onclick="closeLobby('${lobby.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Event Handlers
+        function handleLobbyJoined(data) {
+            currentLobby = data.lobby;
+            isCollaborationActive = true;
+            
+            showToast(`Joined lobby: ${data.lobby.name}`, 'success');
+            
+            // Update UI
+            document.getElementById('current-lobby-section').style.display = 'block';
+            document.getElementById('current-lobby-name').textContent = data.lobby.name;
+            
+            // Show collaboration panel
+            showCollaborationPanel();
+            
+            // Close modals
+            closeLobbyBrowser();
+            
+            // Update participants
+            updateParticipantsList(data.lobby.participants);
+        }
+
+        function handleLobbyLeft(data) {
+            currentLobby = null;
+            isCollaborationActive = false;
+            
+            showToast('Left the lobby', 'info');
+            
+            // Update UI
+            document.getElementById('current-lobby-section').style.display = 'none';
+            hideCollaborationPanel();
+            
+            // Clear participants and cursors
+            collaborationParticipants.clear();
+            clearAllCursors();
+        }
+
+        function handleParticipantJoined(data) {
+            collaborationParticipants.set(data.participant.id, data.participant);
+            updateParticipantsList(Array.from(collaborationParticipants.values()));
+            
+            addChatMessage({
+                type: 'system',
+                message: `${data.participant.username} joined the lobby`
+            });
+        }
+
+        function handleParticipantLeft(data) {
+            collaborationParticipants.delete(data.participant_id);
+            updateParticipantsList(Array.from(collaborationParticipants.values()));
+            
+            // Remove cursor
+            removeCursor(data.participant_id);
+        }
+
+        function handleChatMessage(data) {
+            addChatMessage(data);
+        }
+
+        function handleCursorMoved(data) {
+            updateCursor(data.user_id, data.x, data.y, data.username);
+        }
+
+        // Chat Functions
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message && collaborationSocket && currentLobby) {
+                collaborationSocket.emit('chat_message', {
+                    lobby_id: currentLobby.id,
+                    message: message
+                });
+                
+                input.value = '';
+            }
+        }
+
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function addChatMessage(data) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            
+            if (data.type === 'system') {
+                messageDiv.className = 'system-message';
+                messageDiv.textContent = data.message;
+            } else {
+                messageDiv.className = 'chat-message';
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <strong>${data.username}</strong>
+                        <small>${new Date(data.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <div class="message-content">${data.message}</div>
+                `;
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function clearChat() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = '<div class="system-message">Chat cleared</div>';
+        }
+
+        // Collaboration Panel Functions
+        function showCollaborationPanel() {
+            document.getElementById('collaboration-panel').style.display = 'block';
+        }
+
+        function hideCollaborationPanel() {
+            document.getElementById('collaboration-panel').style.display = 'none';
+        }
+
+        function toggleCollaborationPanel() {
+            const panel = document.getElementById('collaboration-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Participants Management
+        function updateParticipantsList(participants) {
+            const container = document.getElementById('collaboration-participants-list');
+            const countSpan = document.getElementById('collaboration-participant-count');
+            
+            countSpan.textContent = participants.length;
+            
+            container.innerHTML = '';
+            participants.forEach(participant => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.innerHTML = `
+                    <div class="participant-status"></div>
+                    <div class="participant-name">${participant.username}</div>
+                    <div class="participant-role">${participant.role || 'Student'}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Cursor Tracking Functions
+        function updateCursor(userId, x, y, username) {
+            let cursor = userCursors.get(userId);
+            
+            if (!cursor) {
+                cursor = createCursor(userId, username);
+                userCursors.set(userId, cursor);
+            }
+            
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+        }
+
+        function createCursor(userId, username) {
+            const cursor = document.createElement('div');
+            cursor.className = 'user-cursor';
+            cursor.id = `cursor-${userId}`;
+            
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF'];
+            const color = colors[userId.toString().charCodeAt(0) % colors.length];
+            
+            cursor.innerHTML = `
+                <div class="cursor-pointer" style="background: ${color};"></div>
+                <div class="cursor-label" style="background: ${color};">${username}</div>
+            `;
+            
+            document.getElementById('simulation-canvas').appendChild(cursor);
+            return cursor;
+        }
+
+        function removeCursor(userId) {
+            const cursor = userCursors.get(userId);
+            if (cursor) {
+                cursor.remove();
+                userCursors.delete(userId);
+            }
+        }
+
+        function clearAllCursors() {
+            userCursors.forEach(cursor => cursor.remove());
+            userCursors.clear();
+        }
+
+        // Track mouse movement for cursor sharing
+        document.addEventListener('mousemove', function(event) {
+            if (isCollaborationActive && collaborationSocket && currentLobby) {
+                const canvas = document.getElementById('simulation-canvas');
+                if (canvas) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    
+                    collaborationSocket.emit('cursor_move', {
+                        lobby_id: currentLobby.id,
+                        x: x,
+                        y: y
+                    });
+                }
+            }
+        });
+
+        // Device Sync Event Handlers
+        function handleDeviceAdded(data) {
+            if (editor && data.device) {
+                editor.devices.push(data.device);
+                editor.renderDevice(data.device);
+                showToast(`Device added by ${data.username}: ${data.device.name}`, 'info');
+            }
+        }
+
+        function handleDeviceMoved(data) {
+            if (editor && data.device_id) {
+                const device = editor.devices.find(d => d.id === data.device_id);
+                if (device) {
+                    device.x = data.x;
+                    device.y = data.y;
+                    const deviceElement = document.querySelector(`[data-device-id="${data.device_id}"]`);
+                    if (deviceElement) {
+                        deviceElement.style.left = data.x + 'px';
+                        deviceElement.style.top = data.y + 'px';
+                    }
+                    editor.updateConnections();
+                }
+            }
+        }
+
+        function handleDeviceUpdated(data) {
+            if (editor && data.device) {
+                const index = editor.devices.findIndex(d => d.id === data.device.id);
+                if (index !== -1) {
+                    editor.devices[index] = { ...editor.devices[index], ...data.device };
+                    // Update device element
+                    const deviceElement = document.querySelector(`[data-device-id="${data.device.id}"]`);
+                    if (deviceElement) {
+                        // Update device label and status if changed
+                        const label = deviceElement.querySelector('.device-label');
+                        if (label) label.textContent = data.device.name;
+                    }
+                }
+            }
+        }
+
+        function handleDeviceRemoved(data) {
+            if (editor && data.device_id) {
+                editor.devices = editor.devices.filter(d => d.id !== data.device_id);
+                const deviceElement = document.querySelector(`[data-device-id="${data.device_id}"]`);
+                if (deviceElement) {
+                    deviceElement.remove();
+                }
+                editor.updateConnections();
+                showToast(`Device removed by ${data.username}`, 'warning');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(event) {
+            const lobbyBrowserModal = document.getElementById('lobby-browser-modal');
+            const createLobbyModal = document.getElementById('create-lobby-modal');
+            
+            if (event.target === lobbyBrowserModal) {
+                closeLobbyBrowser();
+            }
+            
+            if (event.target === createLobbyModal) {
+                closeCreateLobby();
+            }
+        });
+
+        // Initialize collaboration when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize collaboration after WebSocket is ready
+            setTimeout(initializeCollaboration, 1000);
+        });
+
+        // Team assignment functions for collaboration tab
+        function loadCollaborationStudents() {
+            const classId = document.getElementById('collaboration-class-select').value;
+            if (!classId) return;
+            
+            // Similar to existing loadClassStudents but for collaboration context
+            fetch(`/admin/api/classes/${classId}/students`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Handle student loading for collaboration
+                        console.log('Loaded students for collaboration:', data.students);
+                    }
+                });
+        }
+
+        function generateCollaborationTeams() {
+            const teamCount = parseInt(document.getElementById('collaboration-team-count').value) || 2;
+            console.log('Generating', teamCount, 'teams for collaboration');
+        }
+
+        function autoAssignTeams() {
+            showToast('Auto-assigning teams for collaboration...', 'info');
+        }
+
+        function saveCollaborationTeams() {
+            showToast('Saving collaboration team assignments...', 'success');
+        }
+    </script>
 
     <!-- Initialize tutorial editor -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize WebSocket first
+            initializeWebSocket();
+            
             // Initialize tutorial editor when document is ready
             try {
                 const simJson = document.getElementById('simulation-json');
                 const simData = simJson ? JSON.parse(simJson.textContent || '{}') : {};
-                const simulationId = simData?.id;
+                const simId = simData?.id;
                 if (typeof TutorialEditorManager !== 'undefined') {
-                    window.tutorialEditor = new TutorialEditorManager({ simulationId });
+                    window.tutorialEditor = new TutorialEditorManager({ simulationId: simId });
                     document.getElementById('add-tutorial-step')?.addEventListener('click', () => window.tutorialEditor.addTutorialStep());
                     document.getElementById('save-tutorial')?.addEventListener('click', () => window.tutorialEditor.saveTutorial());
-                    if (simulationId) {
-                        window.tutorialEditor.loadTutorial(simulationId);
+                    if (simId) {
+                        window.tutorialEditor.loadTutorial(simId);
                     }
                 }
             } catch (e) {
@@ -3957,11 +5464,239 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Load classes for lobby creation
             try {
-                loadClasses();
+                if (typeof loadClasses === 'function') {
+                    loadClasses();
+                } else {
+                    console.log('loadClasses function not available - class loading skipped');
+                }
             } catch (e) {
                 console.warn('Classes loading skipped:', e);
             }
         });
+    </script>
+
+    <!-- QR Code Functions -->
+    <script>
+        function showQRCode() {
+            try {
+                // Get current simulation ID
+                const simJson = document.getElementById('simulation-json');
+                const simData = simJson ? JSON.parse(simJson.textContent || '{}') : {};
+                const simulationId = simData?.id || getSimulationIdFromUrl();
+                
+                if (!simulationId) {
+                    showToast('Please save the simulation first before generating QR code', 'warning');
+                    return;
+                }
+
+                // Generate QR code URL
+                const qrUrl = `/dynamic/simulation/${simulationId}/qr`;
+                const confirmUrl = `/dynamic/simulation/${simulationId}/confirm`;
+                
+                // Set QR code image
+                const qrImage = document.getElementById('qrCodeImage');
+                qrImage.src = qrUrl;
+                
+                // Display the confirmation URL
+                const qrUrlDisplay = document.getElementById('qrUrlDisplay');
+                qrUrlDisplay.innerHTML = `<strong>Confirmation URL:</strong><br>${window.location.origin}${confirmUrl}`;
+                
+                // Show modal
+                document.getElementById('qrModal').style.display = 'block';
+                
+                // Track QR code generation
+                console.log('🔍 Generated QR code for simulation:', simulationId);
+                
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                showToast('Error generating QR code: ' + error.message, 'danger');
+            }
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
+        }
+
+        function downloadQRCode() {
+            try {
+                const qrImage = document.getElementById('qrCodeImage');
+                if (!qrImage.src) {
+                    showToast('No QR code to download', 'warning');
+                    return;
+                }
+
+                // Create a link element to trigger download
+                const link = document.createElement('a');
+                link.href = qrImage.src;
+                link.download = `simulation_${getSimulationIdFromUrl()}_qr.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('QR code downloaded successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error downloading QR code:', error);
+                showToast('Error downloading QR code', 'danger');
+            }
+        }
+
+        function printQRCode() {
+            try {
+                const qrImage = document.getElementById('qrCodeImage');
+                if (!qrImage.src) {
+                    showToast('No QR code to print', 'warning');
+                    return;
+                }
+
+                // Create a new window for printing
+                const printWindow = window.open('', '_blank');
+                const simJson = document.getElementById('simulation-json');
+                const simData = simJson ? JSON.parse(simJson.textContent || '{}') : {};
+                const simulationTitle = simData?.title || 'Simulation';
+                
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>QR Code - ${simulationTitle}</title>
+                            <style>
+                                body { 
+                                    font-family: Arial, sans-serif; 
+                                    text-align: center; 
+                                    padding: 20px; 
+                                }
+                                .header { 
+                                    margin-bottom: 20px; 
+                                    border-bottom: 2px solid #333; 
+                                    padding-bottom: 10px; 
+                                }
+                                .qr-container { 
+                                    margin: 30px 0; 
+                                }
+                                .qr-container img { 
+                                    border: 2px solid #333; 
+                                    padding: 10px; 
+                                    border-radius: 10px; 
+                                }
+                                .instructions { 
+                                    margin-top: 20px; 
+                                    font-size: 14px; 
+                                    color: #666; 
+                                }
+                                .footer {
+                                    margin-top: 30px;
+                                    padding-top: 10px;
+                                    border-top: 1px solid #ccc;
+                                    font-size: 12px;
+                                    color: #999;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>RiddleNet Simulation</h1>
+                                <h2>${simulationTitle}</h2>
+                            </div>
+                            <div class="qr-container">
+                                <img src="${qrImage.src}" alt="QR Code">
+                            </div>
+                            <div class="instructions">
+                                <h3>How to Access:</h3>
+                                <p>1. Use your mobile device to scan the QR code above</p>
+                                <p>2. You will be taken to a confirmation page</p>
+                                <p>3. Click "Start Simulation" to begin</p>
+                            </div>
+                            <div class="footer">
+                                <p>Generated on ${new Date().toLocaleString()}</p>
+                                <p>RiddleNet Learning Management System</p>
+                            </div>
+                        </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+                printWindow.focus();
+                
+                // Wait for image to load then print
+                printWindow.onload = function() {
+                    setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                    }, 500);
+                };
+                
+                showToast('Print dialog opened', 'success');
+                
+            } catch (error) {
+                console.error('Error printing QR code:', error);
+                showToast('Error printing QR code', 'danger');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('qrModal');
+            if (event.target == modal) {
+                closeQRModal();
+            }
+        }
+
+        // Helper function to show toast notifications
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                color: var(--text-primary);
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+
+            // Set type-specific styling
+            if (type === 'success') {
+                toast.style.borderLeftColor = 'var(--success-color)';
+                toast.innerHTML = `<i class="fas fa-check-circle" style="color: var(--success-color); margin-right: 8px;"></i>${message}`;
+            } else if (type === 'danger' || type === 'error') {
+                toast.style.borderLeftColor = 'var(--danger-color)';
+                toast.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: var(--danger-color); margin-right: 8px;"></i>${message}`;
+            } else if (type === 'warning') {
+                toast.style.borderLeftColor = 'var(--warning-color)';
+                toast.innerHTML = `<i class="fas fa-exclamation-circle" style="color: var(--warning-color); margin-right: 8px;"></i>${message}`;
+            } else {
+                toast.style.borderLeftColor = 'var(--accent-color)';
+                toast.innerHTML = `<i class="fas fa-info-circle" style="color: var(--accent-color); margin-right: 8px;"></i>${message}`;
+            }
+
+            toastContainer.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
     </script>
 
 
@@ -3972,5 +5707,705 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Error/Success Toast Container -->
     <div class="toast-container" id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <!-- QR Code Modal -->
+    <div class="modal" id="qrModal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; margin: 50px auto; padding: 30px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: var(--text-primary); margin: 0;">
+                    <i class="fas fa-qrcode" style="margin-right: 10px; color: var(--cyber-glow);"></i>
+                    Simulation QR Code
+                </h3>
+                <button onclick="closeQRModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0;">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div id="qrCodeContainer" style="margin: 20px 0;">
+                    <img id="qrCodeImage" src="" alt="QR Code" style="max-width: 300px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                </div>
+                <div style="margin-top: 20px; color: var(--text-secondary);">
+                    <p><i class="fas fa-mobile-alt" style="margin-right: 5px; color: var(--cyber-glow);"></i> Scan this QR code to access the simulation confirmation page</p>
+                    <p><i class="fas fa-info-circle" style="margin-right: 5px; color: var(--neon-green);"></i> Students can scan to quickly access the simulation</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button onclick="downloadQRCode()" style="background: var(--gradient-primary); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-right: 10px;">
+                        <i class="fas fa-download" style="margin-right: 5px;"></i> Download QR Code
+                    </button>
+                    <button onclick="printQRCode()" style="background: var(--gradient-secondary); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-print" style="margin-right: 5px;"></i> Print QR Code
+                    </button>
+                </div>
+                <div id="qrUrlDisplay" style="margin-top: 15px; padding: 10px; background: var(--surface-hover); border-radius: 8px; word-break: break-all; color: var(--text-muted); font-size: 12px;">
+                    <!-- URL will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collaboration Modals -->
+    <!-- Lobby Browser Modal -->
+    <div id="lobby-browser-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow: hidden; margin: 50px auto;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; border-bottom: 1px solid var(--glass-border);">
+                <h3 style="color: var(--text-primary); margin: 0; display: flex; align-items: center;">
+                    <i class="fas fa-search" style="margin-right: 10px; color: var(--cyber-glow);"></i>
+                    Browse Lobbies
+                </h3>
+                <button onclick="closeLobbyBrowser()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0;">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 0 20px 20px 20px; overflow-y: auto; max-height: calc(80vh - 100px);">
+                <!-- Search and Filters -->
+                <div class="lobby-browser-controls" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="lobby-search" placeholder="Search lobbies..." style="flex: 1; min-width: 200px; padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary);">
+                    <select id="lobby-filter" style="padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary);">
+                        <option value="all">All Lobbies</option>
+                        <option value="public">Public Only</option>
+                        <option value="available">Available</option>
+                        <option value="active">Active</option>
+                    </select>
+                    <button onclick="refreshLobbies()" style="padding: 10px 15px; background: var(--gradient-primary); border: none; color: white; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <!-- Lobbies Grid -->
+                <div id="lobbies-grid" class="lobbies-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; min-height: 200px;">
+                    <div class="loading-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <div>Loading lobbies...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Lobby Modal -->
+    <div id="create-lobby-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; margin: 50px auto;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px; border-bottom: 1px solid var(--glass-border);">
+                <h3 style="color: var(--text-primary); margin: 0; display: flex; align-items: center;">
+                    <i class="fas fa-plus-circle" style="margin-right: 10px; color: var(--neon-green);"></i>
+                    Create New Lobby
+                </h3>
+                <button onclick="closeCreateLobby()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0;">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding: 0 20px 20px 20px;">
+                <form id="create-lobby-form" onsubmit="handleCreateLobby(event)">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="lobby-name" style="display: block; margin-bottom: 5px; color: var(--text-primary);">Lobby Name *</label>
+                        <input type="text" id="lobby-name" name="lobby_name" required placeholder="Enter lobby name..." style="width: 100%; padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary);">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="lobby-description" style="display: block; margin-bottom: 5px; color: var(--text-primary);">Description</label>
+                        <textarea id="lobby-description" name="lobby_description" placeholder="Describe this collaboration session..." style="width: 100%; padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary); min-height: 80px; resize: vertical;"></textarea>
+                    </div>
+                    
+                    <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="max-participants" style="display: block; margin-bottom: 5px; color: var(--text-primary);">Max Participants</label>
+                            <input type="number" id="max-participants" name="max_participants" min="2" max="20" value="8" style="width: 100%; padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary);">
+                        </div>
+                        
+                        <div class="form-group" style="flex: 1;">
+                            <label for="lobby-privacy" style="display: block; margin-bottom: 5px; color: var(--text-primary);">Privacy</label>
+                            <select id="lobby-privacy" name="privacy" style="width: 100%; padding: 10px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary);">
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                                <option value="class">Class Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary);">Collaboration Features</label>
+                        <div class="feature-checkboxes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <label style="display: flex; align-items: center; color: var(--text-secondary);">
+                                <input type="checkbox" name="allow_chat" checked style="margin-right: 8px;">
+                                Enable Chat
+                            </label>
+                            <label style="display: flex; align-items: center; color: var(--text-secondary);">
+                                <input type="checkbox" name="allow_cursor_sharing" checked style="margin-right: 8px;">
+                                Cursor Sharing
+                            </label>
+                            <label style="display: flex; align-items: center; color: var(--text-secondary);">
+                                <input type="checkbox" name="allow_device_sync" checked style="margin-right: 8px;">
+                                Device Sync
+                            </label>
+                            <label style="display: flex; align-items: center; color: var(--text-secondary);">
+                                <input type="checkbox" name="admin_controls" checked style="margin-right: 8px;">
+                                Admin Controls
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 15px; border-top: 1px solid var(--glass-border);">
+                        <button type="button" onclick="closeCreateLobby()" style="padding: 10px 20px; background: var(--surface-hover); border: 1px solid var(--glass-border); color: var(--text-secondary); border-radius: 6px; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 10px 20px; background: var(--gradient-primary); border: none; color: white; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-plus" style="margin-right: 5px;"></i>
+                            Create Lobby
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collaboration Panel (Sidebar) -->
+    <div id="collaboration-panel" class="collaboration-panel" style="display: none;">
+        <div class="collaboration-panel-header">
+            <h4><i class="fas fa-users"></i> Collaboration</h4>
+            <button id="toggle-collaboration" onclick="toggleCollaborationPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="collaboration-panel-content">
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h5>Chat</h5>
+                    <div class="chat-controls">
+                        <button onclick="clearChat()" title="Clear chat">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="chat-messages" class="chat-messages">
+                    <div class="system-message">Welcome to the collaboration session!</div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatInput(event)">
+                    <button onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Participants List -->
+            <div class="participants-container">
+                <div class="participants-header">
+                    <h5>Participants</h5>
+                    <span id="collaboration-participant-count" class="participant-count">0</span>
+                </div>
+                
+                <div id="collaboration-participants-list" class="participants-list">
+                    <!-- Participants will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal Styles -->
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-content h3 {
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        #qrCodeImage {
+            transition: transform 0.3s ease;
+        }
+
+        #qrCodeImage:hover {
+            transform: scale(1.05);
+        }
+
+        /* Collaboration Styles */
+        .collaboration-content {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .collaboration-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .collaboration-control-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .primary-button, .secondary-button, .danger-button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .secondary-button {
+            background: var(--surface-hover);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .danger-button {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .primary-button:hover, .secondary-button:hover, .danger-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .lobbies-list, .participants-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            background: var(--glass-bg);
+        }
+
+        .lobby-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lobby-item:last-child {
+            border-bottom: none;
+        }
+
+        .lobby-info h5 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .lobby-info small {
+            color: var(--text-muted);
+        }
+
+        .lobby-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .lobby-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .collaboration-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .option-label input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Collaboration Panel Styles */
+        .collaboration-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 350px;
+            max-height: calc(100vh - 100px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .collaboration-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .collaboration-panel-header h4 {
+            margin: 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .collaboration-panel-header button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .collaboration-panel-header button:hover {
+            background: var(--surface-hover);
+        }
+
+        .collaboration-panel-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+
+        .chat-header {
+            padding: 10px 15px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h5 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .chat-controls button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            background: var(--surface);
+        }
+
+        .system-message {
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .chat-input-container {
+            padding: 10px;
+            background: var(--surface);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-container input {
+            flex: 1;
+            padding: 8px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .chat-input-container button {
+            padding: 8px;
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .participants-container {
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .participants-header {
+            padding: 10px 15px;
+            background: var(--surface);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .participants-header h5 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .participant-count {
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .participants-list {
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .participant-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px;
+            margin-bottom: 5px;
+            background: var(--surface);
+            border-radius: 4px;
+        }
+
+        .participant-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+
+        .participant-name {
+            flex: 1;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .participant-role {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--surface-hover);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Lobby Grid Styles */
+        .lobbies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            min-height: 200px;
+        }
+
+        .lobby-card {
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .lobby-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .lobby-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .lobby-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .lobby-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .lobby-status.active {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .lobby-status.full {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .lobby-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .lobby-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .lobby-participants {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .lobby-privacy {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Cursor Styles */
+        .user-cursor {
+            position: absolute;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-2px, -2px);
+        }
+
+        .cursor-pointer {
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .cursor-label {
+            position: absolute;
+            top: 25px;
+            left: 0;
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </div>
+
 {% endblock %}

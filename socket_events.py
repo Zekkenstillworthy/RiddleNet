@@ -1,6 +1,7 @@
-from socket_manager import socketio, authenticated_only, admin_only
+from socket_manager import socketio, authenticated_only, admin_only, user_connections
 from flask_socketio import emit, join_room, leave_room
 from flask_login import current_user
+from utils.auth_decorators import admin_required
 from __init__ import db
 from datetime import datetime, timedelta
 from typing import List
@@ -33,6 +34,57 @@ def emit_simulation_update(class_id: int, update_data: dict):
         print(f"📢 Sent simulation update to class {class_id}")
     except Exception as e:
         print(f"❌ Error sending simulation update: {str(e)}")
+
+def emit_admin_simulation_updated(simulation_id: int, update_data: dict):
+    """Emit real-time simulation update to users currently viewing the simulation"""
+    try:
+        notification_data = {
+            'type': 'admin_simulation_update',
+            'simulation_id': simulation_id,
+            'update_data': update_data,
+            'timestamp': datetime.utcnow().isoformat(),
+            'message': 'Simulation updated by admin'
+        }
+        
+        # Emit to users currently viewing this simulation
+        socketio.emit('admin_simulation_updated', notification_data, room=f'simulation_{simulation_id}')
+        
+        # Also emit to any class rooms that might have this simulation assigned
+        from admin.models.simulation import Simulation
+        from admin.models.class_assignment import ClassAssignment
+        
+        simulation = Simulation.query.get(simulation_id)
+        if simulation:
+            # Find classes that have this simulation assigned
+            assignments = ClassAssignment.query.filter_by(simulation_id=simulation_id).all()
+            for assignment in assignments:
+                socketio.emit('simulation_update', notification_data, room=f'class_{assignment.class_id}')
+        
+        print(f"📢 Sent admin simulation update for simulation {simulation_id} to active viewers")
+    except Exception as e:
+        print(f"❌ Error sending admin simulation update: {str(e)}")
+
+def emit_module_content_updated(class_id: int, module_id: int, update_data: dict):
+    """Emit real-time module content update to users currently viewing the module"""
+    try:
+        notification_data = {
+            'type': 'module_content_update',
+            'class_id': class_id,
+            'module_id': module_id,
+            'update_data': update_data,
+            'timestamp': datetime.utcnow().isoformat(),
+            'message': 'Module content updated by admin'
+        }
+        
+        # Emit to users currently viewing this module
+        socketio.emit('module_content_updated', notification_data, room=f'module_{module_id}')
+        
+        # Also emit to class room
+        socketio.emit('module_content_updated', notification_data, room=f'class_{class_id}')
+        
+        print(f"📢 Sent module content update for module {module_id} in class {class_id}")
+    except Exception as e:
+        print(f"❌ Error sending module content update: {str(e)}")
 
 def emit_grade_notification(user_id: int, grade_data: dict):
     """Emit grade notification to a specific user"""
@@ -238,6 +290,100 @@ def handle_leave_class_room(data):
             leave_room(room)
             emit('left_room', {'room': room, 'type': 'class', 'class_id': class_id})
             print(f"🏫 User {current_user.id} left class room {room}")
+
+@socketio.on('join_simulation_room')
+@authenticated_only
+def handle_join_simulation_room(data):
+    """Join simulation-specific room for real-time updates"""
+    if current_user.is_authenticated:
+        simulation_id = data.get('simulation_id')
+        if simulation_id:
+            room = f'simulation_{simulation_id}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'simulation', 'simulation_id': simulation_id})
+            print(f"🎮 User {current_user.id} joined simulation room {room}")
+
+@socketio.on('leave_simulation_room')
+@authenticated_only
+def handle_leave_simulation_room(data):
+    """Leave simulation-specific room"""
+    if current_user.is_authenticated:
+        simulation_id = data.get('simulation_id')
+        if simulation_id:
+            room = f'simulation_{simulation_id}'
+            leave_room(room)
+            emit('left_room', {'room': room, 'type': 'simulation', 'simulation_id': simulation_id})
+            print(f"🎮 User {current_user.id} left simulation room {room}")
+
+@socketio.on('join_module_room')
+@authenticated_only
+def handle_join_module_room(data):
+    """Join module-specific room for content updates"""
+    if current_user.is_authenticated:
+        module_id = data.get('module_id')
+        if module_id:
+            room = f'module_{module_id}'
+            join_room(room)
+            emit('joined_room', {'room': room, 'type': 'module', 'module_id': module_id})
+            print(f"📚 User {current_user.id} joined module room {room}")
+
+@socketio.on('leave_module_room')
+@authenticated_only
+def handle_leave_module_room(data):
+    """Leave module-specific room"""
+    if current_user.is_authenticated:
+        module_id = data.get('module_id')
+        if module_id:
+            room = f'module_{module_id}'
+            leave_room(room)
+            emit('left_room', {'room': room, 'type': 'module', 'module_id': module_id})
+            print(f"📚 User {current_user.id} left module room {room}")
+
+@socketio.on('module_simulation_linked')
+@admin_required
+def handle_module_simulation_linked(data):
+    """Handle module-simulation linking/unlinking events"""
+    try:
+        module_id = data.get('module_id')
+        simulation_id = data.get('simulation_id')
+        assignment_id = data.get('assignment_id')
+        class_id = data.get('class_id')
+        action = data.get('action')  # 'linked' or 'unlinked'
+        
+        print(f"🔗 Module-simulation {action}: module={module_id}, simulation={simulation_id}, class={class_id}")
+        
+        # Broadcast to module room
+        if module_id:
+            module_room = f'module_{module_id}'
+            emit('module_content_updated', {
+                'module_id': module_id,
+                'simulation_id': simulation_id,
+                'assignment_id': assignment_id,
+                'action': action,
+                'type': 'simulation_link',
+                'updated_by': current_user.username if current_user.is_authenticated else 'System',
+                'timestamp': data.get('timestamp', time.time() * 1000)
+            }, room=module_room)
+            
+        # Also broadcast to class room if class_id is provided
+        if class_id:
+            class_room = f'class_{class_id}'
+            emit('class_module_updated', {
+                'class_id': class_id,
+                'module_id': module_id,
+                'simulation_id': simulation_id,
+                'assignment_id': assignment_id,
+                'action': action,
+                'type': 'simulation_link',
+                'updated_by': current_user.username if current_user.is_authenticated else 'System',
+                'timestamp': data.get('timestamp', time.time() * 1000)
+            }, room=class_room)
+            
+        print(f"✅ Broadcasted module-simulation {action} to relevant rooms")
+        
+    except Exception as e:
+        print(f"❌ Error handling module-simulation link event: {str(e)}")
+        emit('error', {'message': f'Error processing module link: {str(e)}'}, room=request.sid)
 
 # Assignment-related events
 @socketio.on('assignment_started')
@@ -4282,6 +4428,85 @@ def handle_leave_module_builder(data=None):
         
         emit('left_module_builder', {'success': True})
         print(f"🏗️ User {current_user.username} left module builder room")
+    except Exception as e:
+        print(f"❌ Error leaving module builder: {str(e)}")
+
+# Collaboration Team Management Events
+@socketio.on('join_collaboration_session')
+@authenticated_only
+def handle_join_collaboration_session(data):
+    """Join a collaboration session for real-time team updates"""
+    try:
+        simulation_id = data.get('simulation_id')
+        class_id = data.get('class_id')
+        
+        if simulation_id:
+            join_room(f'collaboration_sim_{simulation_id}')
+        
+        if class_id:
+            join_room(f'collaboration_class_{class_id}')
+        
+        emit('joined_collaboration_session', {
+            'success': True,
+            'simulation_id': simulation_id,
+            'class_id': class_id
+        })
+        
+        print(f"🤝 User {current_user.username} joined collaboration session (sim: {simulation_id}, class: {class_id})")
+        
+    except Exception as e:
+        print(f"❌ Error joining collaboration session: {str(e)}")
+        emit('collaboration_session_error', {'error': str(e)})
+
+@socketio.on('update_team_assignment')
+@admin_only  
+def handle_update_team_assignment(data):
+    """Handle real-time team assignment updates"""
+    try:
+        simulation_id = data.get('simulation_id')
+        class_id = data.get('class_id')
+        teams = data.get('teams', [])
+        
+        # Broadcast team updates to all users in the collaboration session
+        room_name = f'collaboration_sim_{simulation_id}' if simulation_id else f'collaboration_class_{class_id}'
+        
+        emit('team_assignment_updated', {
+            'simulation_id': simulation_id,
+            'class_id': class_id,
+            'teams': teams,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"🤝 Team assignment updated by {current_user.username} for simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"❌ Error updating team assignment: {str(e)}")
+        emit('team_update_error', {'error': str(e)})
+
+@socketio.on('collaboration_settings_changed')
+@admin_only
+def handle_collaboration_settings_changed(data):
+    """Handle real-time collaboration settings updates"""
+    try:
+        simulation_id = data.get('simulation_id')
+        settings = data.get('settings', {})
+        
+        # Broadcast settings changes to all users in the collaboration session
+        room_name = f'collaboration_sim_{simulation_id}'
+        
+        emit('collaboration_settings_updated', {
+            'simulation_id': simulation_id,
+            'settings': settings,
+            'updated_by': current_user.username,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"⚙️ Collaboration settings updated by {current_user.username} for simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"❌ Error updating collaboration settings: {str(e)}")
+        emit('settings_update_error', {'error': str(e)})
         
     except Exception as e:
         print(f"❌ Error leaving module builder: {str(e)}")
@@ -4815,5 +5040,213 @@ def send_system_announcement(title, message, priority='normal', target='all_user
         print(f"❌ Error sending system announcement: {str(e)}")
         return {'success': False, 'error': str(e)}
 
-print("�🚀 Admin WebSocket test handlers loaded successfully")
+print("🚀 Admin WebSocket test handlers loaded successfully")
 print("📢 Real-time announcement system loaded successfully")
+
+# ===== COLLABORATION FEATURES =====
+
+# REMOVED: Duplicate collaboration handler that was causing user_connections conflicts
+# The simpler collaboration handler above should be sufficient
+
+# REMOVED: Duplicate collaboration leave handler that was causing user_connections conflicts
+
+@socketio.on('collaboration_cursor_move')
+@authenticated_only
+def handle_collaboration_cursor_move(data):
+    """Handle cursor movement in collaboration sessions"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        cursor_data = data.get('cursor_data', {})
+        
+        room_name = f"collaboration_{session_type}_{session_id}"
+        
+        # Broadcast cursor position to other users
+        socketio.emit('collaboration_cursor_update', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'cursor_data': cursor_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error handling cursor move: {str(e)}")
+
+@socketio.on('collaboration_selection_change')
+@authenticated_only
+def handle_collaboration_selection_change(data):
+    """Handle selection changes in collaboration sessions"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        selection_data = data.get('selection_data', {})
+        
+        room_name = f"collaboration_{session_type}_{session_id}"
+        
+        # Broadcast selection to other users
+        socketio.emit('collaboration_selection_update', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'selection_data': selection_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error handling selection change: {str(e)}")
+
+@socketio.on('collaboration_content_change')
+@authenticated_only
+def handle_collaboration_content_change(data):
+    """Handle real-time content changes in collaboration sessions"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        change_data = data.get('change_data', {})
+        
+        room_name = f"collaboration_{session_type}_{session_id}"
+        
+        # Broadcast content changes to other users
+        socketio.emit('collaboration_content_update', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'change_data': change_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"📝 Content change by {current_user.username} in {session_type}_{session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error handling content change: {str(e)}")
+
+@socketio.on('collaboration_chat_message')
+@authenticated_only
+def handle_collaboration_chat_message(data):
+    """Handle chat messages in collaboration sessions"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        message = data.get('message', '').strip()
+        
+        if not message:
+            return
+        
+        room_name = f"collaboration_{session_type}_{session_id}"
+        
+        chat_message = {
+            'id': f"msg_{datetime.utcnow().timestamp()}",
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'profile_img': getattr(current_user, 'profile_img', None),
+            'message': message,
+            'timestamp': datetime.utcnow().isoformat(),
+            'is_admin': hasattr(current_user, 'role') and 'admin' in str(current_user.role).lower()
+        }
+        
+        # Broadcast message to all users in the session
+        socketio.emit('collaboration_chat_message', chat_message, room=room_name)
+        
+        print(f"💬 Chat message from {current_user.username} in {session_type}_{session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error handling chat message: {str(e)}")
+
+@socketio.on('collaboration_simulation_state_sync')
+@authenticated_only
+def handle_collaboration_simulation_state_sync(data):
+    """Handle simulation state synchronization between collaborators"""
+    try:
+        simulation_id = data.get('simulation_id')
+        state_data = data.get('state_data', {})
+        sync_type = data.get('sync_type', 'full')  # 'full', 'device', 'topology', 'step'
+        
+        room_name = f"collaboration_simulation_{simulation_id}"
+        
+        # Broadcast state sync to other users
+        socketio.emit('collaboration_simulation_state_update', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'simulation_id': simulation_id,
+            'state_data': state_data,
+            'sync_type': sync_type,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"🔄 Simulation state sync by {current_user.username} for simulation {simulation_id}")
+        
+    except Exception as e:
+        print(f"❌ Error handling simulation state sync: {str(e)}")
+
+@socketio.on('collaboration_admin_content_sync')
+@authenticated_only
+def handle_collaboration_admin_content_sync(data):
+    """Handle admin content synchronization between collaborators"""
+    try:
+        class_id = data.get('class_id')
+        content_data = data.get('content_data', {})
+        sync_type = data.get('sync_type', 'full')  # 'full', 'assignments', 'modules', 'simulations'
+        
+        room_name = f"collaboration_admin_class_content_{class_id}"
+        
+        # Broadcast content sync to other admins
+        socketio.emit('collaboration_admin_content_update', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'class_id': class_id,
+            'content_data': content_data,
+            'sync_type': sync_type,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+        print(f"📋 Admin content sync by {current_user.username} for class {class_id}")
+        
+    except Exception as e:
+        print(f"❌ Error handling admin content sync: {str(e)}")
+
+@socketio.on('collaboration_typing_indicator')
+@authenticated_only
+def handle_collaboration_typing_indicator(data):
+    """Handle typing indicators in collaboration sessions"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        is_typing = data.get('is_typing', False)
+        field_id = data.get('field_id', '')
+        
+        room_name = f"collaboration_{session_type}_{session_id}"
+        
+        # Broadcast typing indicator
+        socketio.emit('collaboration_typing_indicator', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'is_typing': is_typing,
+            'field_id': field_id,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=room_name, include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error handling typing indicator: {str(e)}")
+
+@socketio.on('get_collaboration_session_info')
+@authenticated_only
+def handle_get_collaboration_session_info(data):
+    """Get information about a collaboration session"""
+    try:
+        session_type = data.get('session_type')
+        session_id = data.get('session_id')
+        
+        current_users = [u for u in user_connections.values() 
+                        if u['session_type'] == session_type and u['session_id'] == session_id]
+        
+        emit('collaboration_session_info', {
+            'session_type': session_type,
+            'session_id': session_id,
+            'current_users': current_users,
+            'total_users': len(current_users),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error getting collaboration session info: {str(e)}")
+        emit('collaboration_error', {'error': str(e)})
+
+print("👥 Collaboration socket events loaded successfully")

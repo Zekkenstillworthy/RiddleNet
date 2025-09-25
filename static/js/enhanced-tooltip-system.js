@@ -681,13 +681,17 @@ class EnhancedTooltipSystem {
     addHelpButtons() {
         // Add floating help button to admin pages
         const adminPaths = [
-            '/admin/class-content-selector',
             '/admin/simulation-builder', 
             '/admin/module',
             '/admin/user-management'
         ];
 
-        if (adminPaths.some(path => window.location.pathname.includes(path))) {
+        // Exclude class-content-selector from getting help buttons
+        const excludePaths = ['/admin/class-content-selector'];
+        const currentPath = window.location.pathname;
+
+        if (adminPaths.some(path => currentPath.includes(path)) && 
+            !excludePaths.some(path => currentPath.includes(path))) {
             this.addFloatingHelpButton();
         }
     }

@@ -68,9 +68,19 @@ class Simulation(db.Model):
     initial_state = db.Column(JSON, default=dict)  # Starting state of the simulation
     expected_outcomes = db.Column(JSON, default=dict)  # Expected final outcomes
     
+    # Collaboration Settings
+    collaboration_settings = db.Column(JSON, default=dict)  # Collaboration configuration for teams
+    
     # Relationships
     attempts = db.relationship('SimulationAttempt', backref='simulation', lazy='dynamic', cascade='all, delete-orphan')
     children = db.relationship('Simulation', backref=db.backref('parent', remote_side=[id]), lazy='dynamic')
+    
+    # Add the missing class_assignments relationship
+    @property
+    def class_assignments(self):
+        """Get simulation assignments for this simulation"""
+        from admin.models.simulation_assignment import SimulationAssignment
+        return SimulationAssignment.query.filter_by(simulation_id=self.id).all()
     
     def __repr__(self):
         return f"Simulation('{self.title}', '{self.simulation_type}', '{self.difficulty}')"

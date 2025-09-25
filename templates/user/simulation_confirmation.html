@@ -1,0 +1,309 @@
+{% extends "user/base.html" %}
+
+{% block title %}Simulation Confirmation - RiddleNet{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <i class="fas fa-clipboard-check fa-3x mb-3"></i>
+                    <h3 class="mb-0">Simulation Confirmation</h3>
+                </div>
+                
+                <div class="card-body p-5">
+                    {% if simulation %}
+                        <div class="text-center mb-4">
+                            <h4 class="text-primary mb-3">{{ simulation.title }}</h4>
+                            
+                            {% if token_valid %}
+                                {% if token_data and token_data.type == 'file_export' %}
+                                    <div class="alert alert-success border-0 shadow-sm" role="alert">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-certificate fa-2x text-success me-3"></i>
+                                            <div>
+                                                <h6 class="mb-0"><strong>File Export Verified!</strong></h6>
+                                                <small class="text-success">This simulation is verified from an exported RNet file</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- File Export Details Card -->
+                                    <div class="card border-success mb-3">
+                                        <div class="card-header bg-success text-white">
+                                            <i class="fas fa-file-export me-2"></i>Export Verification Details
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3 text-start">
+                                                <div class="col-sm-6">
+                                                    <div class="verification-detail">
+                                                        <i class="fas fa-user text-primary me-2"></i>
+                                                        <strong>Exported by:</strong>
+                                                        <div class="text-muted">{{ token_data.exported_by or 'Unknown' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <div class="verification-detail">
+                                                        <i class="fas fa-clock text-info me-2"></i>
+                                                        <strong>Export Date:</strong>
+                                                        <div class="text-muted">
+                                                            {% if token_data.export_timestamp %}
+                                                                <span data-timestamp="{{ token_data.export_timestamp }}" class="format-date">{{ token_data.export_timestamp }}</span>
+                                                            {% else %}
+                                                                Unknown
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <div class="verification-detail">
+                                                        <i class="fas fa-code-branch text-warning me-2"></i>
+                                                        <strong>File Version:</strong>
+                                                        <div class="text-muted">{{ token_data.file_version or '1.0' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <div class="verification-detail">
+                                                        <i class="fas fa-shield-check text-success me-2"></i>
+                                                        <strong>Verification:</strong>
+                                                        <div class="text-muted">{{ token_data.verification_type or 'Standard' }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="alert alert-info mt-3 mb-0" role="alert">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <small>This QR code was scanned from an exported RNet file, providing proof of simulation ownership and authenticity.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-success" role="alert">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>Verified!</strong> This simulation is ready to start.
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Note:</strong> Accessing without QR code verification.
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="simulation-details mb-4">
+                            <div class="row">
+                                <div class="col-sm-6 mb-3">
+                                    <div class="detail-card p-3 bg-light rounded">
+                                        <i class="fas fa-layer-group text-primary me-2"></i>
+                                        <strong>Type:</strong>
+                                        <div class="text-muted">{{ simulation.simulation_type or 'General' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <div class="detail-card p-3 bg-light rounded">
+                                        <i class="fas fa-tag text-info me-2"></i>
+                                        <strong>Category:</strong>
+                                        <div class="text-muted">{{ simulation.category or 'General' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <div class="detail-card p-3 bg-light rounded">
+                                        <i class="fas fa-signal text-warning me-2"></i>
+                                        <strong>Difficulty:</strong>
+                                        <div class="text-muted">{{ simulation.difficulty or 'Beginner' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <div class="detail-card p-3 bg-light rounded">
+                                        <i class="fas fa-clock text-success me-2"></i>
+                                        <strong>Duration:</strong>
+                                        <div class="text-muted">{{ simulation.estimated_duration or 30 }} minutes</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if simulation.description %}
+                        <div class="mb-4">
+                            <h6 class="text-secondary mb-3"><i class="fas fa-info-circle me-2"></i>Description</h6>
+                            <p class="text-muted">{{ simulation.description }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="availability-status mb-4">
+                            {% if simulation.is_published and simulation.is_active %}
+                                <div class="alert alert-success" role="alert">
+                                    <i class="fas fa-play-circle me-2"></i>
+                                    This simulation is <strong>available</strong> and ready to start.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="fas fa-ban me-2"></i>
+                                    This simulation is currently <strong>unavailable</strong>.
+                                    {% if not simulation.is_published %}
+                                        <div class="small mt-1">Reason: Not published</div>
+                                    {% endif %}
+                                    {% if not simulation.is_active %}
+                                        <div class="small mt-1">Reason: Not active</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="action-buttons text-center">
+                            {% if simulation.is_published and simulation.is_active and start_url %}
+                                <a href="{{ start_url }}" class="btn btn-primary btn-lg px-5 mb-2">
+                                    <i class="fas fa-play me-2"></i>
+                                    Start Simulation
+                                </a>
+                                <div class="text-muted small">
+                                    You will be taken to the simulation interface
+                                </div>
+                            {% else %}
+                                <button class="btn btn-secondary btn-lg px-5" disabled>
+                                    <i class="fas fa-ban me-2"></i>
+                                    Simulation Not Available
+                                </button>
+                            {% endif %}
+                        </div>
+                        
+                    {% else %}
+                        <div class="text-center">
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <h5>Simulation Not Found</h5>
+                                <p class="mb-0">The requested simulation could not be found or is no longer available.</p>
+                            </div>
+                            
+                            <a href="{{ url_for('dynamic_simulations.simulations_dashboard') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Simulations
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer text-center text-muted py-3">
+                    <small>
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Secured by RiddleNet verification system
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-card {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.detail-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.btn-lg {
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn-lg:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.simulation-details .fas {
+    width: 20px;
+    text-align: center;
+}
+
+.verification-detail {
+    padding: 8px 0;
+}
+
+.verification-detail strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.9rem;
+}
+
+.verification-detail .text-muted {
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.card-header {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth animations
+    const cards = document.querySelectorAll('.detail-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Log QR access for analytics
+    if (window.location.search.includes('token=')) {
+        console.log('🔍 Accessed via QR code verification');
+        
+        // Format any timestamps
+        document.querySelectorAll('.format-date').forEach(element => {
+            const timestamp = element.getAttribute('data-timestamp');
+            if (timestamp) {
+                try {
+                    const date = new Date(timestamp);
+                    element.textContent = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    console.log('Date formatting error:', e);
+                }
+            }
+        });
+        
+        // Optional: Send analytics event
+        // fetch('/api/analytics/qr-access', {
+        //     method: 'POST',
+        //     headers: {'Content-Type': 'application/json'},
+        //     body: JSON.stringify({simulation_id: {{ simulation.id if simulation else 'null' }}})
+        // }).catch(e => console.log('Analytics error:', e));
+    }
+});
+</script>
+{% endblock %}

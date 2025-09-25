@@ -1,0 +1,349 @@
+<!-- Collaboration Settings Modal -->
+<div id="collaboration-modal" class="modal">
+    <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+            <h3>
+                <i class="fas fa-users"></i>
+                Collaboration Settings
+            </h3>
+            <button class="close-modal" onclick="closeCollaborationModal()">&times;</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body">
+            <form id="collaboration-settings-form">
+                <!-- Enable Collaboration Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-toggle-on"></i>
+                        <span>Enable Collaboration</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="toggle-container">
+                            <input type="checkbox" id="enable-collaboration" name="enable_collaboration">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Allow collaborative troubleshooting</span>
+                        </label>
+                        <small class="form-help">When enabled, students can work together on this simulation</small>
+                    </div>
+                </div>
+
+                <!-- Team Settings Section -->
+                <div class="form-section" id="team-settings" style="display: none;">
+                    <div class="section-header">
+                        <i class="fas fa-users-cog"></i>
+                        <span>Team Configuration</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="max-team-size">Maximum Team Size</label>
+                            <input type="number" id="max-team-size" name="max_team_size" min="2" max="8" value="4" class="form-input">
+                            <small class="form-help">How many students can work together (2-8)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="team-formation">Team Formation</label>
+                            <select id="team-formation" name="team_formation" class="form-select">
+                                <option value="student_choice">Student Choice</option>
+                                <option value="instructor_assigned">Instructor Assigned</option>
+                                <option value="random">Random Assignment</option>
+                            </select>
+                            <small class="form-help">How teams are formed</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communication Settings Section -->
+                <div class="form-section" id="communication-settings" style="display: none;">
+                    <div class="section-header">
+                        <i class="fas fa-comments"></i>
+                        <span>Communication Options</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="enable-chat" name="enable_chat" checked>
+                            <span class="checkbox-checkmark"></span>
+                            <span>Enable text chat</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="enable-screen-share" name="enable_screen_share">
+                            <span class="checkbox-checkmark"></span>
+                            <span>Allow screen sharing</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="enable-annotations" name="enable_annotations" checked>
+                            <span class="checkbox-checkmark"></span>
+                            <span>Enable diagram annotations</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Monitoring Settings Section -->
+                <div class="form-section" id="monitoring-settings" style="display: none;">
+                    <div class="section-header">
+                        <i class="fas fa-eye"></i>
+                        <span>Instructor Monitoring</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="instructor-monitoring" name="instructor_monitoring" checked>
+                            <span class="checkbox-checkmark"></span>
+                            <span>Allow instructor to join sessions</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="activity-logging" name="activity_logging" checked>
+                            <span class="checkbox-checkmark"></span>
+                            <span>Log collaboration activities</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Session Management Section -->
+                <div class="form-section" id="session-settings" style="display: none;">
+                    <div class="section-header">
+                        <i class="fas fa-clock"></i>
+                        <span>Session Management</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="session-timeout">Session Timeout (minutes)</label>
+                            <input type="number" id="session-timeout" name="session_timeout" min="15" max="480" value="60" class="form-input">
+                            <small class="form-help">Automatic session end after inactivity</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max-sessions">Max Concurrent Sessions</label>
+                            <input type="number" id="max-sessions" name="max_sessions" min="1" max="20" value="5" class="form-input">
+                            <small class="form-help">Maximum number of active collaboration sessions</small>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeCollaborationModal()">
+                <i class="fas fa-times"></i>
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveCollaborationSettings()">
+                <i class="fas fa-save"></i>
+                Save Settings
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Collaboration Modal Specific Styles */
+#collaboration-modal .form-section {
+    background: var(--surface-hover, #334155);
+    border: 1px solid var(--border-color, rgba(59, 130, 246, 0.2));
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+#collaboration-modal .form-section:hover {
+    border-color: var(--cyber-glow, #00D9FF);
+    box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+}
+
+#collaboration-modal .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color, rgba(59, 130, 246, 0.2));
+}
+
+#collaboration-modal .section-header i {
+    color: var(--cyber-glow, #00D9FF);
+    font-size: 1.1rem;
+}
+
+#collaboration-modal .section-header span {
+    color: var(--text-primary, #F8FAFC);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+#collaboration-modal .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+#collaboration-modal .form-group {
+    margin-bottom: 16px;
+}
+
+#collaboration-modal .form-group label {
+    display: block;
+    color: var(--text-secondary, #CBD5E1);
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+#collaboration-modal .form-input,
+#collaboration-modal .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--surface, #0F172A);
+    border: 1px solid var(--border-color, rgba(59, 130, 246, 0.2));
+    border-radius: 8px;
+    color: var(--text-primary, #F8FAFC);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+#collaboration-modal .form-input:focus,
+#collaboration-modal .form-select:focus {
+    outline: none;
+    border-color: var(--cyber-glow, #00D9FF);
+    box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+}
+
+#collaboration-modal .form-help {
+    display: block;
+    color: var(--text-muted, #64748B);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Toggle Switch Styling */
+#collaboration-modal .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+#collaboration-modal .toggle-container input[type="checkbox"] {
+    display: none;
+}
+
+#collaboration-modal .toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: var(--surface, #0F172A);
+    border: 1px solid var(--border-color, rgba(59, 130, 246, 0.2));
+    border-radius: 13px;
+    transition: all 0.3s ease;
+}
+
+#collaboration-modal .toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: var(--text-muted, #64748B);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#collaboration-modal .toggle-container input[type="checkbox"]:checked + .toggle-slider {
+    background: var(--cyber-glow, #00D9FF);
+    border-color: var(--cyber-glow, #00D9FF);
+}
+
+#collaboration-modal .toggle-container input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(24px);
+    background: white;
+}
+
+#collaboration-modal .toggle-label {
+    color: var(--text-secondary, #CBD5E1);
+    font-weight: 500;
+}
+
+/* Checkbox Styling */
+#collaboration-modal .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+#collaboration-modal .checkbox-container input[type="checkbox"] {
+    display: none;
+}
+
+#collaboration-modal .checkbox-checkmark {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    background: var(--surface, #0F172A);
+    border: 2px solid var(--border-color, rgba(59, 130, 246, 0.2));
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+#collaboration-modal .checkbox-checkmark::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#collaboration-modal .checkbox-container input[type="checkbox"]:checked + .checkbox-checkmark {
+    background: var(--cyber-glow, #00D9FF);
+    border-color: var(--cyber-glow, #00D9FF);
+}
+
+#collaboration-modal .checkbox-container input[type="checkbox"]:checked + .checkbox-checkmark::after {
+    opacity: 1;
+}
+
+#collaboration-modal .checkbox-container span:last-child {
+    color: var(--text-secondary, #CBD5E1);
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #collaboration-modal .form-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    #collaboration-modal .section-header {
+        font-size: 0.9rem;
+    }
+    
+    #collaboration-modal .form-section {
+        padding: 16px;
+    }
+}
+</style>

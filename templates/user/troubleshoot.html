@@ -2153,6 +2153,8 @@
         justify-content: center;
         gap: 6px;
         text-align: center;
+        width: 100%; /* Fix width to use full container */
+        box-sizing: border-box; /* Include padding in width calculation */
     }
 
     .difficulty-card.locked:hover {
@@ -2307,6 +2309,137 @@
             height: 32px;
             font-size: 14px;
         }
+    }
+
+    /* Interactive Topology Simulator Styles */
+    .topology-selection-panel {
+        background: rgba(139, 92, 246, 0.05);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .topology-selection-panel h4 {
+        color: #8B5CF6;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+
+    .topology-quick-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .topology-quick-btn {
+        background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        min-width: 100px;
+    }
+
+    .topology-quick-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+    }
+
+    .topology-canvas-container {
+        display: flex;
+        gap: 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 2px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .topology-device-palette {
+        min-width: 150px;
+        background: rgba(30, 41, 59, 0.8);
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .topology-device-palette h5 {
+        color: #3B82F6;
+        margin-bottom: 15px;
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .topology-device {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 8px;
+        padding: 10px;
+        margin: 8px 0;
+        cursor: grab;
+        text-align: center;
+        color: #3B82F6;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .topology-device:hover {
+        background: rgba(59, 130, 246, 0.2);
+        transform: scale(1.05);
+    }
+
+    .topology-device:active {
+        cursor: grabbing;
+    }
+
+    .topology-controls {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .topology-control-btn {
+        background: linear-gradient(135deg, #10B981, #059669);
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .topology-control-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .topology-control-btn.active {
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+    }
+
+    #topologyReferenceCanvas {
+        flex: 1;
+        background: #1E293B;
+        border-radius: 10px;
+        border: 2px solid rgba(59, 130, 246, 0.3);
+        cursor: crosshair;
+    }
+
+    #topologyReferenceCanvas.connection-mode {
+        cursor: pointer;
+    }
+
+    /* Device rendering on canvas */
+    .topology-device-selected {
+        border: 3px solid #F59E0B !important;
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
     }
 </style>
 
@@ -3269,6 +3402,210 @@ document.addEventListener('DOMContentLoaded', () => {
         font-family: 'Orbitron', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-align: left;
+    }
+    
+    .scenario-details {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        text-align: left;
+    }
+    
+    .scenario-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .scenario-topology {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-style: italic;
+        opacity: 0.8;
+        text-transform: none;
+        font-weight: 400;
+        letter-spacing: normal;
+    }
+    
+    .scenario-topology-info {
+        background: var(--glass-bg);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--border-radius-lg);
+        padding: 16px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .scenario-topology-info h4 {
+        margin: 0 0 8px 0;
+        color: var(--accent-primary);
+        font-size: 18px;
+        font-family: 'Orbitron', sans-serif;
+    }
+    
+    .scenario-topology-info p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Topology Hint Notification */
+    .topology-hint-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        max-width: 350px;
+        opacity: 0;
+        transform: translateX(400px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 3000;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .topology-hint-notification.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    .hint-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .hint-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--accent-primary);
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .hint-header i {
+        font-size: 20px;
+    }
+    
+    .topology-type {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .hint-description {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    
+    /* Topology Details Modal */
+    .topology-details-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .topology-details-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .topology-details-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+    
+    .topology-details-modal.show .topology-details-content {
+        transform: scale(1);
+    }
+    
+    .topology-details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 16px;
+    }
+    
+    .topology-details-header h3 {
+        color: var(--cyber-glow);
+        font-size: 1.5rem;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .topology-description {
+        color: var(--text-primary);
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+    
+    .topology-characteristics,
+    .topology-use-cases {
+        margin-bottom: 20px;
+    }
+    
+    .topology-characteristics h4,
+    .topology-use-cases h4 {
+        color: var(--cyber-glow);
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    
+    .topology-characteristics ul,
+    .topology-use-cases ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .topology-characteristics li,
+    .topology-use-cases li {
+        color: var(--text-secondary);
+        padding: 8px 0;
+        padding-left: 20px;
+        position: relative;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .topology-characteristics li:before,
+    .topology-use-cases li:before {
+        content: '•';
+        color: var(--cyber-glow);
+        position: absolute;
+        left: 0;
+        font-weight: bold;
     }
 
     .select-btn::before {
@@ -4455,14 +4792,15 @@ document.addEventListener('DOMContentLoaded', () => {
         left: var(--current-sidebar-width);
         width: calc(100vw - var(--current-sidebar-width));
         height: 100vh;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
+        background: rgba(15, 23, 42, 0.3);
+        backdrop-filter: blur(5px);
         display: flex;
         justify-content: center;
         align-items: center;
         z-index: 3000;
         opacity: 0;
         transition: all 0.3s ease;
+        pointer-events: auto;
     }
 
     .foundation-tutorial-overlay.active {
@@ -4495,6 +4833,101 @@ document.addEventListener('DOMContentLoaded', () => {
         align-items: center;
         justify-content: center;
         gap: 10px;
+    }
+
+    /* Topology Learning Guide Styles - Matching learning-phases styling */
+    .topology-learning-guide {
+        background: rgba(74, 144, 226, 0.05);
+        border: 1px solid rgba(74, 144, 226, 0.2);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 20px 0;
+    }
+
+    .topology-learning-guide h3 {
+        color: #357ABD;
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+    }
+
+    .topology-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .topology-level {
+        background: rgba(74, 144, 226, 0.05);
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(74, 144, 226, 0.2);
+    }
+
+    .topology-level h4 {
+        color: #357ABD;
+        font-size: 1.1rem;
+        margin-bottom: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .topology-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .topology-btn {
+        width: 100%;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1);
+        position: relative;
+        backdrop-filter: blur(10px);
+        text-align: left;
+    }
+
+    .topology-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
+        border-color: var(--cyber-glow-bright);
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%);
+    }
+
+    .topology-btn:active {
+        transform: translateY(-1px);
+    }
+
+
+
+    /* Mobile responsive adjustments for topology guide */
+    @media (max-width: 768px) {
+        .topology-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .topology-learning-guide {
+            padding: 16px;
+        }
+        
+        .topology-sections {
+            gap: 16px;
+        }
+        
+        .topology-level {
+            padding: 16px;
+        }
     }
 
     .tutorial-description {
@@ -4861,7 +5294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Scenario Modal -->
         <div id="scenarioModal" class="scenario-popup">
             <div class="modal-header">
-                <h2><i class='bx bx-trophy'></i> Network Learning Arena</h2>
+                <h2><i class='bx bx-trophy'></i> Link Up!</h2>
                 <button class="modal-close-btn" onclick="closeScenarioModal()">
                     <i class='bx bx-x'></i>
                 </button>
@@ -4883,9 +5316,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class='bx bx-star'></i>
                         </div>
                         <div class="challenge-count">6 Learning Modules</div>
-                        <div class="xp-reward">+15 XP per module</div>
+                        <div class="xp-reward">+15 XP</div>
                         <div class="unlock-status">
-                            <i class='bx bx-check-circle'></i> ALWAYS AVAILABLE
+                            <i class='bx bx-check-circle'></i> 
                         </div>
                     </div>
 
@@ -4898,16 +5331,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="difficulty-icon">
                                 <i class='bx bx-leaf'></i>
                             </div>
-                            <div class="difficulty-title">EASY</div>
-                            <div class="difficulty-subtitle">Basic Troubleshooting</div>
+                            <div class="difficulty-title">NOVICE</div>
+                            <div class="difficulty-subtitle">Single-Segment Networks</div>
                         </div>
                         <div class="difficulty-stars">
                             <i class='bx bxs-star'></i>
                             <i class='bx bxs-star'></i>
                             <i class='bx bx-star'></i>
                         </div>
-                        <div class="challenge-count">3 Network Scenarios</div>
-                        <div class="xp-reward">+25 XP per scenario</div>
+                        <div class="challenge-count">4 Network Scenarios</div>
+                        <div class="xp-reward">+30 XP </div>
                         <div class="unlock-requirement">
                             <i class='bx bx-trophy'></i> Complete 4 Foundation modules to unlock
                         </div>
@@ -4922,18 +5355,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="difficulty-icon">
                                 <i class='bx bx-shield'></i>
                             </div>
-                            <div class="difficulty-title">MEDIUM</div>
-                            <div class="difficulty-subtitle">Intermediate Level</div>
+                            <div class="difficulty-title">INTERMEDIATE</div>
+                            <div class="difficulty-subtitle">Multi-Segment & Routing</div>
                         </div>
                         <div class="difficulty-stars">
                             <i class='bx bxs-star'></i>
                             <i class='bx bxs-star'></i>
                             <i class='bx bx-star'></i>
                         </div>
-                        <div class="challenge-count">3 Network Scenarios</div>
-                        <div class="xp-reward">+50 XP per scenario</div>
+                        <div class="challenge-count">4 Network Scenarios</div>
+                        <div class="xp-reward">+60 XP  </div>
                         <div class="unlock-requirement">
-                            <i class='bx bx-trophy'></i> Complete 2 Easy scenarios to unlock
+                            <i class='bx bx-trophy'></i> Complete 3 Novice scenarios to unlock
                         </div>
                     </div>
 
@@ -4946,18 +5379,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="difficulty-icon">
                                 <i class='bx bx-skull'></i>
                             </div>
-                            <div class="difficulty-title">HARD</div>
-                            <div class="difficulty-subtitle">Expert Challenge</div>
+                            <div class="difficulty-title">ADVANCED</div>
+                            <div class="difficulty-subtitle">Enterprise Networks</div>
                         </div>
                         <div class="difficulty-stars">
                             <i class='bx bxs-star'></i>
                             <i class='bx bxs-star'></i>
                             <i class='bx bxs-star'></i>
                         </div>
-                        <div class="challenge-count">4 Network Scenarios</div>
-                        <div class="xp-reward">+100 XP per scenario</div>
+                        <div class="challenge-count">5 Network Scenarios</div>
+                        <div class="xp-reward">+125 XP  </div>
                         <div class="unlock-requirement">
-                            <i class='bx bx-trophy'></i> Complete 2 Medium scenarios to unlock
+                            <i class='bx bx-trophy'></i> Complete 3 Intermediate scenarios to unlock
                         </div>
                     </div>
                 </div>
@@ -4982,6 +5415,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <span class="progress-text" id="overall-progress-text">0/15 modules completed</span>
                 </div>
+                
+                
                 
                 <div class="learning-phases">
                     <!-- Phase 1: Device Discovery -->
@@ -5149,26 +5584,213 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     </div>
                 </div>
+
+                <!-- Interactive Network Topology Simulation -->
+                <div class="topology-learning-guide">
+                    <h3><i class='bx bx-network-chart'></i> Interactive Network Topology Simulator</h3>
+                    
+                    <!-- Topology Selection Panel -->
+                    <div class="topology-selection-panel">
+                        <h4>Select a Topology to Build:</h4>
+                        <div class="topology-quick-buttons">
+                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('point-to-point')">
+                                ⟷ Point-to-Point
+                            </button>
+                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('star')">
+                                ✦ Star
+                            </button>
+                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('ring')">
+                                ○ Ring
+                            </button>
+                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('mesh')">
+                                ⬢ Mesh
+                            </button>
+                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('tree')">
+                                🌳 Tree
+                            </button>
+                            <button class="topology-quick-btn" onclick="clearTopologyCanvas()">
+                                🗑️ Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Canvas Container -->
+                    <div class="topology-canvas-container">
+                        <div class="topology-device-palette">
+                            <h5>Device Palette</h5>
+                            <div class="topology-device" draggable="true" data-device-type="router">
+                                🔀 Router
+                            </div>
+                            <div class="topology-device" draggable="true" data-device-type="switch">
+                                🔄 Switch
+                            </div>
+                            <div class="topology-device" draggable="true" data-device-type="pc">
+                                💻 PC
+                            </div>
+                            <div class="topology-controls">
+                                <button class="topology-control-btn" onclick="toggleTopologyConnectionMode()">
+                                    🔗 Connect
+                                </button>
+                                <button class="topology-control-btn" onclick="validateTopologyConfiguration()">
+                                    ✅ Validate
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="topologyReferenceCanvas" width="600" height="400"></canvas>
+                    </div>
+
+                    <div class="topology-sections">
+                        <div class="topology-level">
+                            <h4>Foundation & Novice Level Topologies</h4>
+                            <button class="topology-btn" onclick="showTopologyDetails('point-to-point')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">⟷</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Point-to-Point</div>
+                                        <div class="btn-desc">Direct connection between two devices. Used for: WAN links, device-to-device communication.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('star')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">✦</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Star</div>
+                                        <div class="btn-desc">Central hub connecting multiple devices. Used for: Office networks, home networks, basic LANs.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('tree-basic')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">🌳</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Tree (Basic)</div>
+                                        <div class="btn-desc">Hierarchical structure with branches. Used for: Departmental networks, small campus networks.</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <div class="topology-level">
+                            <h4>Intermediate Level Topologies</h4>
+                            <button class="topology-btn" onclick="showTopologyDetails('bus')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">━</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Bus</div>
+                                        <div class="btn-desc">Linear backbone with device taps. Used for: Legacy networks, industrial control systems.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('ring')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">○</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Ring</div>
+                                        <div class="btn-desc">Circular connection forming a loop. Used for: Token ring networks, SONET/SDH, redundant links.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('partial-mesh')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">⬢</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Partial Mesh</div>
+                                        <div class="btn-desc">Some devices interconnected for redundancy. Used for: Core networks, WAN designs.</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <div class="topology-level">
+                            <h4>Advanced Level Topologies</h4>
+                            <button class="topology-btn" onclick="showTopologyDetails('full-mesh')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">⬢</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Full Mesh</div>
+                                        <div class="btn-desc">Every device connected to every other. Used for: Critical infrastructure, high-availability systems.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('hybrid')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">🔗</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Hybrid</div>
+                                        <div class="btn-desc">Combination of multiple topologies. Used for: Enterprise networks, complex environments.</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button class="topology-btn" onclick="showTopologyDetails('hierarchical')">
+                                <div class="btn-content">
+                                    <div class="btn-icon">🏢</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Hierarchical</div>
+                                        <div class="btn-desc">Three-tier architecture (Core/Distribution/Access). Used for: Large campus, enterprise networks.</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Simple scenario description modals -->
         <div id="easyDescModal" class="easy-popup">
             <div class="modal-header">
-                <h2>Easy Scenarios</h2>
+                <h2>Novice Scenarios</h2>
                 <button class="modal-close-btn" onclick="backToScenarioSelection()">
                     <i class='bx bx-x'></i>
                 </button>
             </div>
             <div class="easydescmodal-content">
-                <button onclick="startScenario('easy', 'network')" class="select-btn">
-                    Misconfigured Network Address
+                <div class="scenario-topology-info">
+                    <h4><i class='bx bx-network-chart'></i> Topology Focus: Point-to-Point, Star, Bus & Tree</h4>
+                    <p>Learn fundamental network connectivity and basic troubleshooting in simple topologies. Includes ping testing between devices.</p>
+                </div>
+                <button onclick="startScenario('easy', 'point-to-point-connection')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Point-to-Point Connection Issue</span>
+                        <span class="scenario-topology">⟷ Direct Device Link</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('easy', 'passive')" class="select-btn">
-                    Passive Interface
+                <button onclick="startScenario('easy', 'star-network-basic')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Star Network Basic Issues</span>
+                        <span class="scenario-topology">✦ Central Switch Topology</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('easy', 'version')" class="select-btn">
-                    Incorrect Version
+                <button onclick="startScenario('easy', 'bus-topology-collision')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Bus Topology Collision Problems</span>
+                        <span class="scenario-topology">━ Shared Medium Bus</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('easy', 'extended-star-failure')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Extended Star Link Failure</span>
+                        <span class="scenario-topology">✦ Multi-Switch Star</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('easy', 'tree-basic-hierarchy')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Tree Network VLAN Issues</span>
+                        <span class="scenario-topology">🌳 Hierarchical Tree</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('easy', 'ip-conflict')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">IP Address Conflict</span>
+                        <span class="scenario-topology">✦ Star Network</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('easy', 'cable-physical')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Physical Layer Problems</span>
+                        <span class="scenario-topology">⟷ Point-to-Point</span>
+                    </div>
                 </button>
             </div>
         </div>
@@ -5176,20 +5798,57 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Medium Scenarios Modal -->
         <div id="mediumDescModal" class="medium-popup">
             <div class="modal-header">
-                <h2>Medium Scenarios</h2>
+                <h2>Intermediate Scenarios</h2>
                 <button class="modal-close-btn" onclick="backToScenarioSelection()">
                     <i class='bx bx-x'></i>
                 </button>
             </div>
             <div class="mediumdescmodal-content">
-                <button onclick="startScenario('medium', 'split')" class="select-btn">
-                    Split Horizon
+                <div class="scenario-topology-info">
+                    <h4><i class='bx bx-network-chart'></i> Topology Focus: Ring, Hybrid & Partial Mesh</h4>
+                    <p>Master routing protocols and network segmentation in intermediate topologies. Includes OSPF areas and STP configurations.</p>
+                </div>
+                <button onclick="startScenario('medium', 'ring-network-failure')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Ring Network Failure Recovery</span>
+                        <span class="scenario-topology">○ Ring Topology</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('medium', 'hopcount')" class="select-btn">
-                    Maximum Hop Count Reached
+                <button onclick="startScenario('medium', 'extended-ring-redundancy')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Extended Ring with Redundancy</span>
+                        <span class="scenario-topology">○○ Dual-Ring with Bridge</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('medium', 'timers')" class="select-btn">
-                    Timers Mismatch
+                <button onclick="startScenario('medium', 'hybrid-star-ring')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Hybrid Star-Ring Network</span>
+                        <span class="scenario-topology">✦○ Star + Ring Combination</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('medium', 'partial-mesh-ospf')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">OSPF Partial Mesh Areas</span>
+                        <span class="scenario-topology">⬢ Multi-Area OSPF</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('medium', 'tree-vlan-segmentation')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Tree Network VLAN Issues</span>
+                        <span class="scenario-topology">🌳 Hierarchical Tree</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('medium', 'rip-version-mismatch')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">RIP Protocol Version Conflict</span>
+                        <span class="scenario-topology">⬢ Partial Mesh</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('medium', 'bus-collision-domain')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Bus Network Collision Issues</span>
+                        <span class="scenario-topology">━ Bus Topology</span>
+                    </div>
                 </button>
             </div>
         </div>
@@ -5197,23 +5856,63 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Hard Scenarios Modal -->
         <div id="hardDescModal" class="hard-popup">
             <div class="modal-header">
-                <h2>Hard Scenarios</h2>
+                <h2>Advanced Scenarios</h2>
                 <button class="modal-close-btn" onclick="backToScenarioSelection()">
                     <i class='bx bx-x'></i>
                 </button>
             </div>
             <div class="harddescmodal-content">
-                <button onclick="startScenario('hard', 'flapping')" class="select-btn">
-                    Route Flapping
+                <div class="scenario-topology-info">
+                    <h4><i class='bx bx-network-chart'></i> Topology Focus: MPLS, Data Center & SD-WAN</h4>
+                    <p>Advanced troubleshooting in complex enterprise-grade network topologies including modern architectures.</p>
+                </div>
+                <button onclick="startScenario('hard', 'mpls-vpn-complex')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">MPLS VPN Route Leaking</span>
+                        <span class="scenario-topology">🌐 MPLS Provider Network</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('hard', 'loops')" class="select-btn">
-                    Routing Loops
+                <button onclick="startScenario('hard', 'datacenter-fabric')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Data Center Spine-Leaf VXLAN</span>
+                        <span class="scenario-topology">🏢 Spine-Leaf Fabric</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('hard', 'summarization')" class="select-btn">
-                    Incorrect Route Summarization
+                <button onclick="startScenario('hard', 'sd-wan-overlay')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">SD-WAN Overlay Issues</span>
+                        <span class="scenario-topology">☁️ SD-WAN Multi-Transport</span>
+                    </div>
                 </button>
-                <button onclick="startScenario('hard', 'auth')" class="select-btn">
-                    Authentication Failure (RIP v2)
+                <button onclick="startScenario('hard', 'full-mesh-convergence')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Full Mesh Convergence Issues</span>
+                        <span class="scenario-topology">⬢ Full Mesh Network</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('hard', 'hybrid-topology-failure')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Hybrid Network Failure Analysis</span>
+                        <span class="scenario-topology">🔗 Hybrid Topology</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('hard', 'hierarchical-routing')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Three-Tier Architecture Issues</span>
+                        <span class="scenario-topology">🏢 Core/Distribution/Access</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('hard', 'multi-protocol-mesh')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Multi-Protocol Mesh Conflicts</span>
+                        <span class="scenario-topology">⬢ OSPF/BGP Mesh</span>
+                    </div>
+                </button>
+                <button onclick="startScenario('hard', 'enterprise-redundancy')" class="select-btn">
+                    <div class="scenario-details">
+                        <span class="scenario-title">Enterprise Redundancy Failure</span>
+                        <span class="scenario-topology">🏢 Multi-Site Enterprise</span>
+                    </div>
                 </button>
             </div>
         </div>
@@ -5435,7 +6134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="palette-section left-section">
                 <div class="action-btn" id="challenges-btn">
                     <i class='bx bx-target-lock'></i>
-                    <span class="label">Network Challenges</span>
+                    <span class="label">Link Up!</span>
                 </div>
                 <div class="action-btn" id="troubleshoot-btn">
                     <i class='bx bx-check-shield'></i>
@@ -5532,7 +6231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span id="scenario-name">No Scenario Selected</span>
                                 </div>
                                 <div class="scenario-details" id="scenario-details">
-                                    <div class="scenario-difficulty" id="scenario-difficulty">Select from Network Learning Arena</div>
+                                    <div class="scenario-difficulty" id="scenario-difficulty">Select from Link Up!</div>
                                     <div class="scenario-xp" id="scenario-xp">XP Reward: --</div>
                                 </div>
                             </div>
@@ -7702,14 +8401,20 @@ document.addEventListener('DOMContentLoaded', () => {
             let message = '';
             let requirement = '';
             
-            if (difficulty === 'medium') {
-                const remaining = Math.max(0, 2 - userProgress.easyCompleted.length);
-                requirement = `Complete ${remaining} more Easy scenario${remaining !== 1 ? 's' : ''}`;
-                message = `🔒 Medium Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.easyCompleted.length}/2 Easy scenarios completed`;
+            if (difficulty === 'easy') {
+                const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
+                const completedModules = foundationProgress.completedModules || [];
+                const remaining = Math.max(0, 4 - completedModules.length);
+                requirement = `Complete ${remaining} more Foundation module${remaining !== 1 ? 's' : ''}`;
+                message = `🔒 Novice Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${completedModules.length}/4 Foundation modules completed`;
+            } else if (difficulty === 'medium') {
+                const remaining = Math.max(0, 3 - userProgress.easyCompleted.length);
+                requirement = `Complete ${remaining} more Novice scenario${remaining !== 1 ? 's' : ''}`;
+                message = `🔒 Intermediate Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.easyCompleted.length}/3 Novice scenarios completed`;
             } else if (difficulty === 'hard') {
-                const remaining = Math.max(0, 2 - userProgress.mediumCompleted.length);
-                requirement = `Complete ${remaining} more Medium scenario${remaining !== 1 ? 's' : ''}`;
-                message = `🔒 Hard Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.mediumCompleted.length}/2 Medium scenarios completed`;
+                const remaining = Math.max(0, 3 - userProgress.mediumCompleted.length);
+                requirement = `Complete ${remaining} more Intermediate scenario${remaining !== 1 ? 's' : ''}`;
+                message = `🔒 Advanced Level Locked!\n\n${requirement} to unlock this difficulty level.\n\nProgress: ${userProgress.mediumCompleted.length}/3 Intermediate scenarios completed`;
             }
             
             alert(message);
@@ -7986,28 +8691,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 'foundation': {
                     name: 'Foundation Learning',
                     difficulty: 'Device Discovery & Basic Connections',
-                    xp: '+15 XP per module',
+                    xp: '+15 XP ',
                     icon: 'bx-book-open',
                     color: '#10B981'
                 },
                 'easy': {
-                    name: 'Easy Troubleshooting',
-                    difficulty: 'Basic Network Issues',
-                    xp: '+25 XP per scenario',
+                    name: 'Novice Level',
+                    difficulty: 'Single-Segment Network Issues',
+                    xp: '+30 XP  ',
                     icon: 'bx-leaf',
                     color: '#84CC16'
                 },
                 'medium': {
-                    name: 'Medium Challenges',
-                    difficulty: 'Intermediate Problems',
-                    xp: '+50 XP per scenario',
+                    name: 'Intermediate Level',
+                    difficulty: 'Multi-Segment & Routing Protocols',
+                    xp: '+60 XP  ',
                     icon: 'bx-shield-quarter',
                     color: '#F59E0B'
                 },
                 'hard': {
-                    name: 'Hard Scenarios',
-                    difficulty: 'Advanced Network Issues',
-                    xp: '+100 XP per scenario',
+                    name: 'Advanced Level',
+                    difficulty: 'Enterprise Network Problems',
+                    xp: '+125 XP  ',
                     icon: 'bx-shield-alt-2',
                     color: '#EF4444'
                 }
@@ -8073,7 +8778,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hintsUsed = document.getElementById('hints-used');
 
             if (scenarioName) scenarioName.textContent = 'No Scenario Selected';
-            if (scenarioDifficulty) scenarioDifficulty.textContent = 'Select from Network Learning Arena';
+            if (scenarioDifficulty) scenarioDifficulty.textContent = 'Select from Link Up!';
             if (scenarioXP) scenarioXP.textContent = 'XP Reward: --';
             if (scenarioTimer) scenarioTimer.textContent = '--:--';
             if (hintsUsed) hintsUsed.textContent = '0 Hints';
@@ -8201,15 +8906,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Get foundation progress
             const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
-            const hasCompletedFoundation = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
+            const completedModules = foundationProgress.completedModules || [];
+            const hasEnoughFoundationModules = completedModules.length >= 4;
+            const hasCompletedBasicPhases = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
+            const canUnlockEasy = hasEnoughFoundationModules || hasCompletedBasicPhases;
 
-            // Easy requires Foundation completion
+            // Easy requires 4 Foundation modules completion
             if (difficulty === 'easy') {
-                return hasCompletedFoundation;
+                return canUnlockEasy;
             }
 
-            // Higher difficulties require Foundation + previous level completion
-            if (!hasCompletedFoundation) return false;
+            // Higher difficulties require Easy unlock + previous level completion
+            if (!canUnlockEasy) return false;
 
             // Check if scenarios variable exists
             if (typeof scenarios === 'undefined') {
@@ -8247,20 +8955,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             switch(difficulty) {
                 case 'easy':
-                    message = 'Easy Difficulty Locked';
-                    requirement = 'Complete Foundation Phase 1 & 2 to unlock Easy scenarios.';
+                    message = 'Novice Difficulty Locked';
+                    requirement = 'Complete 4 Foundation modules to unlock Novice scenarios. Master basic device discovery and connections first.';
                     break;
                 case 'medium':
-                    message = 'Medium Difficulty Locked';
-                    requirement = 'Complete all Easy scenarios and Foundation to unlock Medium.';
+                    message = 'Intermediate Difficulty Locked';
+                    requirement = 'Complete 3 Novice scenarios to unlock Intermediate challenges. Build single-segment network skills first.';
                     break;
                 case 'hard':
-                    message = 'Hard Difficulty Locked';
-                    requirement = 'Complete all Medium scenarios to unlock Hard.';
+                    message = 'Advanced Difficulty Locked';
+                    requirement = 'Complete 3 Intermediate scenarios to unlock Advanced challenges. Master routing protocols and multi-segment networks first.';
                     break;
                 case 'expert':
                     message = 'Expert Difficulty Locked';
-                    requirement = 'Complete all Hard scenarios to unlock Expert.';
+                    requirement = 'Complete all Advanced scenarios to unlock Expert challenges. Demonstrate enterprise-level networking skills first.';
                     break;
             }
 
@@ -8422,6 +9130,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update difficulty card accessibility
         function updateDifficultyAccess() {
             const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
+            // For Easy unlock, we need 4 Foundation modules completed (phases 1&2 complete, or equivalent)
+            const completedModules = foundationProgress.completedModules || [];
+            const hasEnoughFoundationModules = completedModules.length >= 4;
+            // Alternative check: Phase 1 and Phase 2 complete
+            const hasCompletedBasicPhases = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
+            // Easy unlocks when either condition is met
+            const canUnlockEasy = hasEnoughFoundationModules || hasCompletedBasicPhases;
+            
+            // Full foundation completion (for higher difficulties)
             const hasCompletedFoundation = foundationProgress.phase1Complete && 
                                          foundationProgress.phase2Complete && 
                                          foundationProgress.phase3Complete && 
@@ -8436,25 +9153,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 foundationCard.classList.remove('locked');
             }
 
-            // Easy card - requires Foundation completion
+            // Easy card - requires 4 Foundation modules completion
             const easyCard = document.querySelector('.easy-card');
             if (easyCard) {
-                if (hasCompletedFoundation) {
+                if (canUnlockEasy) {
                     easyCard.classList.add('unlocked');
                     easyCard.classList.remove('locked');
+                    // Update the onclick handler to allow access
+                    easyCard.setAttribute('onclick', "selectScenario('easy')");
+                    
+                    // Remove lock overlay
+                    const lockOverlay = easyCard.querySelector('.lock-overlay');
+                    if (lockOverlay) {
+                        lockOverlay.style.display = 'none';
+                    }
+                    
+                    // Update unlock status
+                    const unlockRequirement = easyCard.querySelector('.unlock-requirement');
+                    const unlockStatus = easyCard.querySelector('.unlock-status');
+                    if (unlockRequirement) {
+                        unlockRequirement.innerHTML = '<i class="bx bx-check-circle"></i> Unlocked!';
+                    }
+                    if (unlockStatus) {
+                        unlockStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                    }
+                    
                     // Reset title if it was showing locked state
                     const title = easyCard.querySelector('.difficulty-title');
                     const subtitle = easyCard.querySelector('.difficulty-subtitle');
-                    if (title) title.textContent = 'Easy';
+                    if (title) title.textContent = 'EASY';
                     if (subtitle) subtitle.textContent = 'Basic Troubleshooting';
                 } else {
                     easyCard.classList.add('locked');
                     easyCard.classList.remove('unlocked');
+                    // Keep the locked handler
+                    easyCard.setAttribute('onclick', "handleLockedLevel('easy')");
+                    
+                    // Show lock overlay
+                    const lockOverlay = easyCard.querySelector('.lock-overlay');
+                    if (lockOverlay) {
+                        lockOverlay.style.display = 'block';
+                    }
+                    
+                    // Update unlock requirement
+                    const unlockRequirement = easyCard.querySelector('.unlock-requirement');
+                    const unlockStatus = easyCard.querySelector('.unlock-status');
+                    if (unlockRequirement) {
+                        unlockRequirement.innerHTML = '<i class="bx bx-trophy"></i> Complete 4 Foundation modules to unlock';
+                    }
+                    if (unlockStatus) {
+                        unlockStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                    }
+                    
                     // Show locked state
                     const title = easyCard.querySelector('.difficulty-title');
                     const subtitle = easyCard.querySelector('.difficulty-subtitle');
-                    if (title) title.textContent = '🔒 Easy (Locked)';
-                    if (subtitle) subtitle.textContent = 'Complete Foundation first';
+                    if (title) title.textContent = 'EASY';
+                    if (subtitle) subtitle.textContent = 'Basic Troubleshooting';
                 }
             }
 
@@ -8471,31 +9226,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const mediumCard = document.querySelector('.medium-card');
             if (mediumCard) {
-                const canAccessMedium = hasCompletedFoundation && userProgress >= easyScenarios.length;
+                const canAccessMedium = canUnlockEasy && userProgress >= easyScenarios.length;
                 if (canAccessMedium) {
                     mediumCard.classList.add('unlocked');
                     mediumCard.classList.remove('locked');
+                    mediumCard.setAttribute('onclick', "selectScenario('medium')");
                 } else {
                     mediumCard.classList.add('locked');
                     mediumCard.classList.remove('unlocked');
+                    mediumCard.setAttribute('onclick', "handleLockedLevel('medium')");
                 }
             }
 
             const hardCard = document.querySelector('.hard-card');
             if (hardCard) {
-                const canAccessHard = hasCompletedFoundation && userProgress >= (easyScenarios.length + mediumScenarios.length);
+                const canAccessHard = canUnlockEasy && userProgress >= (easyScenarios.length + mediumScenarios.length);
                 if (canAccessHard) {
                     hardCard.classList.add('unlocked');
                     hardCard.classList.remove('locked');
+                    hardCard.setAttribute('onclick', "selectScenario('hard')");
                 } else {
                     hardCard.classList.add('locked');
                     hardCard.classList.remove('unlocked');
+                    hardCard.setAttribute('onclick', "handleLockedLevel('hard')");
                 }
             }
 
             const expertCard = document.querySelector('.expert-card');
             if (expertCard) {
-                const canAccessExpert = hasCompletedFoundation && userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
+                const canAccessExpert = canUnlockEasy && userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
                 if (canAccessExpert) {
                     expertCard.classList.add('unlocked');
                     expertCard.classList.remove('locked');
@@ -8819,6 +9578,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Phase 4: Basic Configuration Scenarios
         function startDeviceNamingScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('device-naming');
+            
             showFoundationTutorial(
                 "Device Naming and Identification",
                 "Proper device naming helps network administrators identify and manage devices efficiently. Use descriptive, consistent names that indicate location, function, or department.",
@@ -8835,6 +9597,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startCableManagementScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('cable-management');
+            
             showFoundationTutorial(
                 "Cable Management and Organization",
                 "Well-organized cables make networks easier to maintain and troubleshoot. Learn proper connection practices and cable management techniques.",
@@ -8853,6 +9618,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startBasicSecurityScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('basic-security');
+            
             showFoundationTutorial(
                 "Basic Network Security",
                 "Network security starts with understanding device access, passwords, and basic protection measures. Learn fundamental security principles.",
@@ -8870,6 +9638,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Phase 5: Network Addressing Scenarios
         function startDeviceAddressesScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('device-addresses');
+            
             showFoundationTutorial(
                 "Understanding Device Addresses",
                 "Every network device needs a unique IP address to communicate. Think of it like a postal address for network traffic - each device needs its own address.",
@@ -8887,6 +9658,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startConnectivityTestingScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('connectivity-testing');
+            
             showFoundationTutorial(
                 "Testing Network Connectivity",
                 "Use ping and other tools to verify that devices can communicate with each other across the network. Testing connectivity helps confirm proper network configuration.",
@@ -8908,6 +9682,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function startTroubleshootingBasicsScenario() {
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('troubleshooting-basics');
+            
             showFoundationTutorial(
                 "Basic Network Troubleshooting",
                 "Learn systematic approaches to identifying and solving common network problems step by step. Good troubleshooting follows a logical process.",
@@ -8931,18 +9708,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tutorial system for foundation scenarios
         function showFoundationTutorial(title, description, instruction, previewImage = null) {
-            // Determine if auto-completion is available
-            const hasAutoCompletion = currentScenarioObjectives && currentScenarioObjectives.objectives;
-            
-            // Create appropriate buttons based on auto-completion availability
-            const buttonsHtml = hasAutoCompletion 
-                ? `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
+            // All Foundation scenarios now have auto-completion, so always show the auto-completion message
+            const buttonsHtml = `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
                    <div class="auto-completion-info">
                        <i class="bx bx-check-circle"></i>
                        <span>Scenario will complete automatically when objectives are met</span>
-                   </div>`
-                : `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
-                   <button onclick="completeFoundationModule()" class="tutorial-btn complete-btn">Mark as Complete</button>`;
+                   </div>`;
             
             // Create preview image section if provided
             const previewHtml = previewImage 
@@ -8983,9 +9754,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const tutorial = document.getElementById('foundation-tutorial');
             if (tutorial) {
                 tutorial.classList.remove('active');
+                // Ensure main content is visible immediately
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.style.display = 'block';
+                    mainContent.style.visibility = 'visible';
+                    mainContent.style.opacity = '1';
+                }
+                // Remove the tutorial overlay
                 setTimeout(() => {
                     tutorial.remove();
-                }, 300);
+                    // Force redraw of main content
+                    document.body.style.overflow = 'auto';
+                }, 100);
             }
         }
 
@@ -9007,8 +9788,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function completeFoundationModule() {
             const currentModule = foundationProgress.currentModule;
+            console.log(`📚 Completing Foundation module: ${currentModule}`);
+            console.log(`📊 Current completed modules:`, foundationProgress.completedModules);
+            
             if (currentModule && !foundationProgress.completedModules.includes(currentModule)) {
                 foundationProgress.completedModules.push(currentModule);
+                console.log(`✅ Added ${currentModule} to completed modules`);
                 
                 // Update phase completion counters using the allPhaseModules object
                 Object.keys(allPhaseModules).forEach(phase => {
@@ -9018,13 +9803,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     foundationProgress[`phase${phaseNumber}Completed`] = completedInPhase;
                     foundationProgress[`phase${phaseNumber}Complete`] = completedInPhase >= phaseModules.length;
+                    
+                    console.log(`📋 Phase ${phaseNumber}: ${completedInPhase}/${phaseModules.length} complete`);
                 });
                 
                 // Save progress
                 localStorage.setItem('foundation_progress', JSON.stringify(foundationProgress));
+                console.log(`💾 Progress saved to localStorage`);
                 
                 // Update difficulty access when foundation is completed
                 updateDifficultyAccess();
+                console.log(`🔓 Updated difficulty access`);
                 
                 // Show completion notification
                 showCompletionNotification(currentModule);
@@ -9039,6 +9828,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     openFoundationModal();
                 }, 1500);
+            } else {
+                console.log(`⚠️ Module ${currentModule} already completed or invalid`);
             }
         }
 
@@ -9107,6 +9898,46 @@ document.addEventListener('DOMContentLoaded', () => {
                     { from: 'switch', to: 'router', count: 1 }
                 ],
                 description: "Expand network with multiple switches and devices"
+            },
+            
+            // Phase 4: Basic Configuration - Device management
+            'device-naming': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'switch', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'switch', count: 2 }],
+                description: "Place and configure network devices with proper naming"
+            },
+            'cable-management': {
+                requiredDevices: [{ type: 'pc', count: 3 }, { type: 'switch', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'switch', count: 3 }],
+                description: "Organize network connections with proper cable management"
+            },
+            'basic-security': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'switch', count: 1 }, { type: 'router', count: 1 }],
+                requiredConnections: [
+                    { from: 'pc', to: 'switch', count: 2 },
+                    { from: 'switch', to: 'router', count: 1 }
+                ],
+                description: "Set up a secure network configuration"
+            },
+            
+            // Phase 5: Network Addressing - Advanced networking
+            'device-addresses': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'router', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'router', count: 2 }],
+                description: "Configure device IP addresses and network settings"
+            },
+            'connectivity-testing': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'switch', count: 1 }],
+                requiredConnections: [{ from: 'pc', to: 'switch', count: 2 }],
+                description: "Test network connectivity between devices"
+            },
+            'troubleshooting-basics': {
+                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'switch', count: 1 }, { type: 'router', count: 1 }],
+                requiredConnections: [
+                    { from: 'pc', to: 'switch', count: 1 },
+                    { from: 'switch', to: 'router', count: 1 }
+                ],
+                description: "Practice basic network troubleshooting techniques"
             }
         };
 
@@ -9224,6 +10055,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Complete the module using existing function
             setTimeout(() => {
+                console.log(`🔧 Calling completeFoundationModule for: ${moduleId}`);
                 completeFoundationModule();
             }, 2000); // Give time for the notification to be seen
         }
@@ -9355,6 +10187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('load', () => {
             initializeFoundationProgress();
             updateUnlockProgress();
+            updateDifficultyAccess();
         });
 
         function closeDescriptionModal(modalId) {
@@ -9413,71 +10246,219 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function setupEasyScenario(problemType) {
             switch (problemType) {
-                case 'network':
-                    // Setup for Misconfigured Network Address problem
-                    // Create PCs
-                    let pc1 = new PC(200, 200, 'PC 1');
+                case 'point-to-point-connection':
+                    // Point-to-Point Topology: Direct connection issue
+                    let pc1 = new PC(250, 250, 'PC 1');
                     pc1.ipv4 = '192.168.1.10';
                     pc1.subnet = '255.255.255.0';
 
-                    let pc2 = new PC(400, 200, 'PC 2');
-                    pc2.ipv4 = '192.168.2.20'; // Incorrect network
+                    let pc2 = new PC(450, 250, 'PC 2');
+                    pc2.ipv4 = '192.168.1.11';
                     pc2.subnet = '255.255.255.0';
+                    
+                    // Problem: PCs are not connected (missing cable)
+                    devices.push(pc1, pc2);
+                    // No connection to simulate cable issue
 
-                    // Create a switch
-                    let switch1 = new Switch(300, 300, 'Switch 1');
-
-                    // Add devices to the array
-                    devices.push(pc1, pc2, switch1);
-
-                    // Create connections
-                    connections.push({ device1: pc1, device2: switch1 });
-                    connections.push({ device1: pc2, device2: switch1 });
-
-                    // Redraw the canvas to display the scenario
                     redrawCanvas();
+                    showTopologyHint('Point-to-Point', 'Two devices connected directly. Check physical connections and cable status.');
                     break;
+                    
+                case 'star-network-basic':
+                    // Star Topology: Central switch with multiple devices
+                    let centralSwitch = new Switch(350, 250, 'Central Switch');
+                    
+                    let starPC1 = new PC(200, 150, 'PC 1');
+                    starPC1.ipv4 = '192.168.1.10';
+                    starPC1.subnet = '255.255.255.0';
+                    
+                    let starPC2 = new PC(500, 150, 'PC 2');
+                    starPC2.ipv4 = '192.168.1.11';
+                    starPC2.subnet = '255.255.255.0';
+                    
+                    let starPC3 = new PC(350, 400, 'PC 3');
+                    starPC3.ipv4 = '192.168.1.12';
+                    starPC3.subnet = '255.255.255.0';
+                    
+                    // Problem: One port on switch is misconfigured
+                    centralSwitch.hasPortIssue = true;
+
+                    devices.push(centralSwitch, starPC1, starPC2, starPC3);
+                    connections.push({ device1: starPC1, device2: centralSwitch });
+                    connections.push({ device1: starPC2, device2: centralSwitch });
+                    connections.push({ device1: starPC3, device2: centralSwitch });
+
+                    redrawCanvas();
+                    showTopologyHint('Star', 'Central hub connects all devices. Check switch port configurations and status.');
+                    break;
+                    
+                case 'ip-conflict':
+                    // Star Network with IP conflict
+                    let conflictSwitch = new Switch(350, 300, 'Switch 1');
+                    
+                    let conflictPC1 = new PC(200, 200, 'PC 1');
+                    conflictPC1.ipv4 = '192.168.1.10';
+                    conflictPC1.subnet = '255.255.255.0';
+
+                    let conflictPC2 = new PC(500, 200, 'PC 2');
+                    conflictPC2.ipv4 = '192.168.1.10'; // Same IP as PC1 - conflict!
+                    conflictPC2.subnet = '255.255.255.0';
+
+                    devices.push(conflictPC1, conflictPC2, conflictSwitch);
+                    connections.push({ device1: conflictPC1, device2: conflictSwitch });
+                    connections.push({ device1: conflictPC2, device2: conflictSwitch });
+
+                    redrawCanvas();
+                    showTopologyHint('Star', 'IP address conflict detected. Two devices cannot have the same IP address.');
+                    break;
+                    
+                case 'cable-physical':
+                    // Point-to-Point with physical layer issue
+                    let physicalPC1 = new PC(200, 250, 'PC 1');
+                    physicalPC1.ipv4 = '192.168.1.10';
+                    physicalPC1.subnet = '255.255.255.0';
+
+                    let physicalPC2 = new PC(500, 250, 'PC 2');
+                    physicalPC2.ipv4 = '192.168.1.11';
+                    physicalPC2.subnet = '255.255.255.0';
+                    
+                    // Problem: Cable is connected but defective
+                    devices.push(physicalPC1, physicalPC2);
+                    connections.push({ 
+                        device1: physicalPC1, 
+                        device2: physicalPC2, 
+                        cableDefective: true 
+                    });
+
+                    redrawCanvas();
+                    showTopologyHint('Point-to-Point', 'Physical layer issue. Check cable integrity and connection quality.');
+                    break;
+                    
+                case 'bus-topology-collision':
+                    // Bus Topology: Collision domain with multiple devices
+                    let busHub = new Switch(350, 250, 'Shared Hub');
+                    busHub.isHub = true; // Single collision domain
+                    
+                    let busPC1 = new PC(200, 200, 'PC 1');
+                    busPC1.ipv4 = '192.168.1.10';
+                    busPC1.subnet = '255.255.255.0';
+                    
+                    let busPC2 = new PC(300, 200, 'PC 2');
+                    busPC2.ipv4 = '192.168.1.11';
+                    busPC2.subnet = '255.255.255.0';
+                    
+                    let busPC3 = new PC(400, 200, 'PC 3');
+                    busPC3.ipv4 = '192.168.1.12';
+                    busPC3.subnet = '255.255.255.0';
+                    
+                    let busPC4 = new PC(500, 200, 'PC 4');
+                    busPC4.ipv4 = '192.168.1.13';
+                    busPC4.subnet = '255.255.255.0';
+                    
+                    // Problem: High collision rate due to shared medium
+                    busHub.collisionRate = 45; // High collision rate
+                    
+                    devices.push(busHub, busPC1, busPC2, busPC3, busPC4);
+                    connections.push({ device1: busPC1, device2: busHub });
+                    connections.push({ device1: busPC2, device2: busHub });
+                    connections.push({ device1: busPC3, device2: busHub });
+                    connections.push({ device1: busPC4, device2: busHub });
+
+                    redrawCanvas();
+                    showTopologyHint('Bus', 'Bus topology with shared collision domain. Multiple devices competing for the same medium causing performance issues.');
+                    break;
+                    
+                case 'extended-star-failure':
+                    // Extended Star: Central switch with link failure
+                    let mainSwitch = new Switch(350, 200, 'Main Switch');
+                    let secondarySwitch = new Switch(550, 300, 'Secondary Switch');
+                    
+                    let starExtPC1 = new PC(200, 150, 'PC 1');
+                    starExtPC1.ipv4 = '192.168.1.10';
+                    starExtPC1.subnet = '255.255.255.0';
+                    
+                    let starExtPC2 = new PC(300, 100, 'PC 2');
+                    starExtPC2.ipv4 = '192.168.1.11';
+                    starExtPC2.subnet = '255.255.255.0';
+                    
+                    let starExtPC3 = new PC(600, 250, 'PC 3');
+                    starExtPC3.ipv4 = '192.168.1.12';
+                    starExtPC3.subnet = '255.255.255.0';
+                    
+                    let starExtPC4 = new PC(500, 400, 'PC 4');
+                    starExtPC4.ipv4 = '192.168.1.13';
+                    starExtPC4.subnet = '255.255.255.0';
+                    
+                    // Problem: Link between switches is down
+                    mainSwitch.linkDown = true;
+                    
+                    devices.push(mainSwitch, secondarySwitch, starExtPC1, starExtPC2, starExtPC3, starExtPC4);
+                    connections.push({ device1: starExtPC1, device2: mainSwitch });
+                    connections.push({ device1: starExtPC2, device2: mainSwitch });
+                    connections.push({ device1: starExtPC3, device2: secondarySwitch });
+                    connections.push({ device1: starExtPC4, device2: secondarySwitch });
+                    // Missing connection between switches - inter-switch link failure
+                    
+                    redrawCanvas();
+                    showTopologyHint('Extended Star', 'Extended star topology with inter-switch link failure. Check uplink connections between switches.');
+                    break;
+                    
+                case 'tree-basic-hierarchy':
+                    // Tree Topology: Basic 3-level hierarchy
+                    let rootSwitch = new Switch(350, 100, 'Root Switch');
+                    let branchSwitch1 = new Switch(250, 250, 'Branch Switch 1');
+                    let branchSwitch2 = new Switch(450, 250, 'Branch Switch 2');
+                    
+                    let treePC1 = new PC(150, 350, 'PC 1');
+                    treePC1.ipv4 = '192.168.1.10';
+                    treePC1.subnet = '255.255.255.0';
+                    
+                    let treePC2 = new PC(350, 350, 'PC 2');
+                    treePC2.ipv4 = '192.168.1.11';
+                    treePC2.subnet = '255.255.255.0';
+                    
+                    let treePC3 = new PC(400, 350, 'PC 3');
+                    treePC3.ipv4 = '192.168.1.12';
+                    treePC3.subnet = '255.255.255.0';
+                    
+                    let treePC4 = new PC(550, 350, 'PC 4');
+                    treePC4.ipv4 = '192.168.1.13';
+                    treePC4.subnet = '255.255.255.0';
+                    
+                    // Problem: VLAN misconfiguration on branch switches
+                    branchSwitch1.vlanMisconfigured = true;
+                    treePC1.vlan = 10;
+                    treePC2.vlan = 20; // Different VLAN causing isolation
+                    treePC3.vlan = 10;
+                    treePC4.vlan = 10;
+                    
+                    devices.push(rootSwitch, branchSwitch1, branchSwitch2, treePC1, treePC2, treePC3, treePC4);
+                    connections.push({ device1: rootSwitch, device2: branchSwitch1 });
+                    connections.push({ device1: rootSwitch, device2: branchSwitch2 });
+                    connections.push({ device1: branchSwitch1, device2: treePC1 });
+                    connections.push({ device1: branchSwitch1, device2: treePC2 });
+                    connections.push({ device1: branchSwitch2, device2: treePC3 });
+                    connections.push({ device1: branchSwitch2, device2: treePC4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Tree', 'Hierarchical tree topology with VLAN segmentation issues. Check VLAN configurations across the hierarchy.');
+                    break;
+                    
+                // Legacy compatibility cases
+                case 'subnet-mismatch':
+                case 'cable-issue':
+                case 'switch-port':
+                case 'network':
                 case 'passive':
-                    // Setup for Passive Interface problem
-                    // Create routers
-                    let router1 = new Router(200, 200, 'Router 1');
-                    let router2 = new Router(400, 200, 'Router 2');
-
-                    // Configure IP addresses
-                    router1.ipv4 = '10.0.0.1';
-                    router1.subnet = '255.0.0.0';
-
-                    router2.ipv4 = '10.0.0.2';
-                    router2.subnet = '255.0.0.0';
-
-                    // Set one interface as passive
-                    router1.isPassive = true;
-
-                    // Add devices
-                    devices.push(router1, router2);
-
-                    // Connect routers
-                    connections.push({ device1: router1, device2: router2 });
-
-                    redrawCanvas();
-                    break;
                 case 'version':
-                    // Setup for Incorrect Version problem
-                    // Create routers with different RIP versions
-                    let routerA = new Router(200, 200, 'Router A');
-                    routerA.ipv4 = '192.168.1.1';
-                    routerA.subnet = '255.255.255.0';
-                    routerA.ripVersion = 1;
-
-                    let routerB = new Router(400, 200, 'Router B');
-                    routerB.ipv4 = '192.168.1.2';
-                    routerB.subnet = '255.255.255.0';
-                    routerB.ripVersion = 2;
-
-                    devices.push(routerA, routerB);
-                    connections.push({ device1: routerA, device2: routerB });
-
-                    redrawCanvas();
+                    // Redirect legacy scenarios to new equivalents
+                    if (problemType === 'subnet-mismatch' || problemType === 'network') {
+                        setupEasyScenario('ip-conflict');
+                    } else if (problemType === 'cable-issue') {
+                        setupEasyScenario('cable-physical');
+                    } else {
+                        setupEasyScenario('star-network-basic');
+                    }
                     break;
             }
         }
@@ -9488,144 +10469,764 @@ document.addEventListener('DOMContentLoaded', () => {
             connections = [];
 
             switch (problemType) {
+                case 'ring-network-failure':
+                    // Ring Topology: Network with redundant paths, one link fails
+                    let ringSwitch1 = new Switch(300, 150, 'Switch 1');
+                    let ringSwitch2 = new Switch(500, 250, 'Switch 2');
+                    let ringSwitch3 = new Switch(300, 350, 'Switch 3');
+                    let ringSwitch4 = new Switch(100, 250, 'Switch 4');
+                    
+                    // Problem: One link in the ring is down
+                    devices.push(ringSwitch1, ringSwitch2, ringSwitch3, ringSwitch4);
+                    connections.push({ device1: ringSwitch1, device2: ringSwitch2 });
+                    connections.push({ device1: ringSwitch2, device2: ringSwitch3 });
+                    connections.push({ device1: ringSwitch3, device2: ringSwitch4 });
+                    // Missing connection from switch4 to switch1 - ring break
+                    
+                    // Add end devices
+                    let ringEndPC1 = new PC(300, 100, 'PC 1');
+                    let ringEndPC2 = new PC(550, 250, 'PC 2');
+                    devices.push(ringEndPC1, ringEndPC2);
+                    connections.push({ device1: ringEndPC1, device2: ringSwitch1 });
+                    connections.push({ device1: ringEndPC2, device2: ringSwitch2 });
+
+                    redrawCanvas();
+                    showTopologyHint('Ring', 'Ring topology with redundancy. One link failure breaks network connectivity.');
+                    break;
+                    
+                case 'tree-vlan-segmentation':
+                    // Tree/Hierarchical Topology: VLAN segmentation issues
+                    let coreSwitch = new Switch(350, 200, 'Core Switch');
+                    let distSwitch1 = new Switch(200, 350, 'Dist Switch 1');
+                    let distSwitch2 = new Switch(500, 350, 'Dist Switch 2');
+                    
+                    let accessPC1 = new PC(100, 400, 'PC 1');
+                    let accessPC2 = new PC(300, 400, 'PC 2');
+                    let accessPC3 = new PC(400, 400, 'PC 3');
+                    let accessPC4 = new PC(600, 400, 'PC 4');
+                    
+                    // Problem: VLAN misconfiguration
+                    accessPC1.vlan = 10;
+                    accessPC2.vlan = 20;
+                    accessPC3.vlan = 10;
+                    accessPC4.vlan = 30; // Different VLAN causing issues
+                    
+                    devices.push(coreSwitch, distSwitch1, distSwitch2, accessPC1, accessPC2, accessPC3, accessPC4);
+                    connections.push({ device1: coreSwitch, device2: distSwitch1 });
+                    connections.push({ device1: coreSwitch, device2: distSwitch2 });
+                    connections.push({ device1: distSwitch1, device2: accessPC1 });
+                    connections.push({ device1: distSwitch1, device2: accessPC2 });
+                    connections.push({ device1: distSwitch2, device2: accessPC3 });
+                    connections.push({ device1: distSwitch2, device2: accessPC4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Tree/Hierarchical', 'Three-tier architecture with VLAN segmentation. Check VLAN configurations and trunk ports.');
+                    break;
+                    
+                case 'rip-version-mismatch':
+                    // Partial Mesh Topology: RIP version conflicts
+                    let ripRouter1 = new Router(200, 150, 'Router 1');
+                    let ripRouter2 = new Router(500, 150, 'Router 2');
+                    let ripRouter3 = new Router(200, 350, 'Router 3');
+                    let ripRouter4 = new Router(500, 350, 'Router 4');
+                    
+                    // Problem: Mixed RIP versions
+                    ripRouter1.ripVersion = 1;
+                    ripRouter2.ripVersion = 2;
+                    ripRouter3.ripVersion = 1;
+                    ripRouter4.ripVersion = 2;
+                    
+                    ripRouter1.ipv4 = '10.1.1.1';
+                    ripRouter2.ipv4 = '10.1.1.2';
+                    ripRouter3.ipv4 = '10.1.1.3';
+                    ripRouter4.ipv4 = '10.1.1.4';
+                    
+                    devices.push(ripRouter1, ripRouter2, ripRouter3, ripRouter4);
+                    // Partial mesh connections
+                    connections.push({ device1: ripRouter1, device2: ripRouter2 });
+                    connections.push({ device1: ripRouter1, device2: ripRouter3 });
+                    connections.push({ device1: ripRouter2, device2: ripRouter4 });
+                    connections.push({ device1: ripRouter3, device2: ripRouter4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Partial Mesh', 'Partial mesh with RIP protocol. Check routing protocol versions and compatibility.');
+                    break;
+                    
+                case 'bus-collision-domain':
+                    // Bus Topology: Collision domain issues
+                    let busHub = new Switch(350, 250, 'Hub/Bus');
+                    busHub.isHub = true; // Mark as hub (single collision domain)
+                    
+                    let busPC1 = new PC(150, 200, 'PC 1');
+                    let busPC2 = new PC(250, 200, 'PC 2');
+                    let busPC3 = new PC(450, 200, 'PC 3');
+                    let busPC4 = new PC(550, 200, 'PC 4');
+                    let busPC5 = new PC(350, 350, 'PC 5');
+                    
+                    // Problem: Too many devices on single collision domain
+                    devices.push(busHub, busPC1, busPC2, busPC3, busPC4, busPC5);
+                    connections.push({ device1: busPC1, device2: busHub });
+                    connections.push({ device1: busPC2, device2: busHub });
+                    connections.push({ device1: busPC3, device2: busHub });
+                    connections.push({ device1: busPC4, device2: busHub });
+                    connections.push({ device1: busPC5, device2: busHub });
+
+                    redrawCanvas();
+                    showTopologyHint('Bus', 'Bus topology with hub. Single collision domain causes performance issues with multiple devices.');
+                    break;
+                    
+                case 'extended-ring-redundancy':
+                    // Extended Ring: Multiple rings with redundant paths
+                    let ring1Switch1 = new Switch(200, 150, 'Ring1 SW1');
+                    let ring1Switch2 = new Switch(400, 150, 'Ring1 SW2');
+                    let ring1Switch3 = new Switch(400, 350, 'Ring1 SW3');
+                    let ring1Switch4 = new Switch(200, 350, 'Ring1 SW4');
+                    let bridgeSwitch = new Switch(300, 250, 'Bridge SW');
+                    
+                    // Second ring
+                    let ring2Switch1 = new Switch(500, 150, 'Ring2 SW1');
+                    let ring2Switch2 = new Switch(600, 250, 'Ring2 SW2');
+                    let ring2Switch3 = new Switch(500, 350, 'Ring2 SW3');
+                    
+                    // Problem: STP blocking backup paths incorrectly
+                    bridgeSwitch.stpMisconfigured = true;
+                    ring1Switch1.spanningTreeBlocked = true;
+                    
+                    devices.push(ring1Switch1, ring1Switch2, ring1Switch3, ring1Switch4, bridgeSwitch, ring2Switch1, ring2Switch2, ring2Switch3);
+                    
+                    // Ring 1 connections
+                    connections.push({ device1: ring1Switch1, device2: ring1Switch2 });
+                    connections.push({ device1: ring1Switch2, device2: ring1Switch3 });
+                    connections.push({ device1: ring1Switch3, device2: ring1Switch4 });
+                    connections.push({ device1: ring1Switch4, device2: ring1Switch1 });
+                    
+                    // Ring 2 connections
+                    connections.push({ device1: ring2Switch1, device2: ring2Switch2 });
+                    connections.push({ device1: ring2Switch2, device2: ring2Switch3 });
+                    connections.push({ device1: ring2Switch3, device2: ring2Switch1 });
+                    
+                    // Bridge connections
+                    connections.push({ device1: bridgeSwitch, device2: ring1Switch2 });
+                    connections.push({ device1: bridgeSwitch, device2: ring2Switch1 });
+
+                    redrawCanvas();
+                    showTopologyHint('Extended Ring', 'Dual-ring topology with bridge switch. Check spanning tree protocol configuration and redundant path handling.');
+                    break;
+                    
+                case 'hybrid-star-ring':
+                    // Hybrid: Star-Ring combination
+                    let coreStarSwitch = new Switch(300, 200, 'Core Star SW');
+                    
+                    // Star segment
+                    let starPC1 = new PC(200, 150, 'Star PC1');
+                    let starPC2 = new PC(400, 150, 'Star PC2');
+                    starPC1.ipv4 = '192.168.1.10'; starPC1.subnet = '255.255.255.0';
+                    starPC2.ipv4 = '192.168.1.11'; starPC2.subnet = '255.255.255.0';
+                    
+                    // Ring segment
+                    let ringSW1 = new Switch(250, 350, 'Ring SW1');
+                    let ringSW2 = new Switch(350, 400, 'Ring SW2');
+                    let ringSW3 = new Switch(350, 300, 'Ring SW3');
+                    
+                    let hybridRingPC1 = new PC(150, 400, 'Ring PC1');
+                    let hybridRingPC2 = new PC(450, 450, 'Ring PC2');
+                    hybridRingPC1.ipv4 = '192.168.2.10'; hybridRingPC1.subnet = '255.255.255.0';
+                    hybridRingPC2.ipv4 = '192.168.2.11'; hybridRingPC2.subnet = '255.255.255.0';
+                    
+                    // Problem: Inter-VLAN routing missing between segments
+                    coreStarSwitch.interVlanRoutingDisabled = true;
+                    starPC1.vlan = 10; starPC2.vlan = 10;
+                    hybridRingPC1.vlan = 20; hybridRingPC2.vlan = 20;
+                    
+                    devices.push(coreStarSwitch, starPC1, starPC2, ringSW1, ringSW2, ringSW3, hybridRingPC1, hybridRingPC2);
+                    
+                    // Star connections
+                    connections.push({ device1: starPC1, device2: coreStarSwitch });
+                    connections.push({ device1: starPC2, device2: coreStarSwitch });
+                    
+                    // Ring connections
+                    connections.push({ device1: ringSW1, device2: ringSW2 });
+                    connections.push({ device1: ringSW2, device2: ringSW3 });
+                    connections.push({ device1: ringSW3, device2: ringSW1 });
+                    connections.push({ device1: hybridRingPC1, device2: ringSW1 });
+                    connections.push({ device1: hybridRingPC2, device2: ringSW2 });
+                    
+                    // Hybrid connection
+                    connections.push({ device1: coreStarSwitch, device2: ringSW3 });
+
+                    redrawCanvas();
+                    showTopologyHint('Hybrid Star-Ring', 'Hybrid topology combining star and ring segments. Check inter-VLAN routing and trunk configurations.');
+                    break;
+                    
+                case 'partial-mesh-ospf':
+                    // Partial Mesh: OSPF with area misconfigurations
+                    let ospfRouter1 = new Router(200, 150, 'R1-Area0');
+                    let ospfRouter2 = new Router(500, 150, 'R2-Area0');
+                    let ospfRouter3 = new Router(200, 350, 'R3-Area1');
+                    let ospfRouter4 = new Router(500, 350, 'R4-Area1');
+                    let ospfRouter5 = new Router(350, 250, 'R5-ABR');
+                    
+                    // OSPF Areas configuration
+                    ospfRouter1.ospfArea = 0;
+                    ospfRouter2.ospfArea = 0;
+                    ospfRouter3.ospfArea = 1;
+                    ospfRouter4.ospfArea = 1;
+                    ospfRouter5.ospfArea = [0, 1]; // Area Border Router
+                    
+                    // Problem: ABR misconfigured, LSA filtering issues
+                    ospfRouter5.abrMisconfigured = true;
+                    ospfRouter5.lsaFiltering = 'incorrect';
+                    
+                    ospfRouter1.ipv4 = '10.0.0.1'; ospfRouter1.subnet = '255.255.255.0';
+                    ospfRouter2.ipv4 = '10.0.0.2'; ospfRouter2.subnet = '255.255.255.0';
+                    ospfRouter3.ipv4 = '10.1.0.1'; ospfRouter3.subnet = '255.255.255.0';
+                    ospfRouter4.ipv4 = '10.1.0.2'; ospfRouter4.subnet = '255.255.255.0';
+                    ospfRouter5.ipv4 = '10.0.1.1'; ospfRouter5.subnet = '255.255.255.0';
+                    
+                    devices.push(ospfRouter1, ospfRouter2, ospfRouter3, ospfRouter4, ospfRouter5);
+                    
+                    // Partial mesh connections (not fully connected)
+                    connections.push({ device1: ospfRouter1, device2: ospfRouter2 }); // Area 0 backbone
+                    connections.push({ device1: ospfRouter1, device2: ospfRouter5 }); // Area 0 to ABR
+                    connections.push({ device1: ospfRouter2, device2: ospfRouter5 }); // Area 0 to ABR
+                    connections.push({ device1: ospfRouter5, device2: ospfRouter3 }); // ABR to Area 1
+                    connections.push({ device1: ospfRouter5, device2: ospfRouter4 }); // ABR to Area 1
+                    connections.push({ device1: ospfRouter3, device2: ospfRouter4 }); // Area 1 internal
+
+                    redrawCanvas();
+                    showTopologyHint('Partial Mesh', 'OSPF multi-area partial mesh. Check Area Border Router configuration and LSA propagation.');
+                    break;
+                    
+                // Legacy compatibility cases
+                case 'rip-version':
+                case 'passive-interface':
+                case 'vlan-config':
+                case 'routing-loop':
                 case 'split':
-                    // Setup for Split Horizon problem
-                    // Create routers
-                    const routerA = new Router(200, 200, 'Router A');
-                    const routerB = new Router(400, 200, 'Router B');
-                    const routerC = new Router(300, 400, 'Router C');
-                    devices.push(routerA, routerB, routerC);
-
-                    // Create connections
-                    connections.push({ device1: routerA, device2: routerB });
-                    connections.push({ device1: routerB, device2: routerC });
-                    connections.push({ device1: routerC, device2: routerA });
-
-                    // Redraw canvas
-                    redrawCanvas();
-                    break;
                 case 'hopcount':
-                    // Setup for Maximum Hop Count Reached problem
-                    // Create multiple routers to exceed hop count
-                    const routers = [];
-                    for (let i = 0; i < 17; i++) {
-                        const router = new Router(100 + i * 50, 200, `Router ${i + 1}`);
-                        devices.push(router);
-                        routers.push(router);
-                    }
-
-                    // Connect routers in a line
-                    for (let i = 0; i < routers.length - 1; i++) {
-                        connections.push({ device1: routers[i], device2: routers[i + 1] });
-                    }
-
-                    // Redraw canvas
-                    redrawCanvas();
-                    break;
                 case 'timers':
-                    // Setup for Timers Mismatch problem
-                    // Create two routers with mismatched timers
-                    const router1 = new Router(250, 250, 'Router 1');
-                    const router2 = new Router(550, 250, 'Router 2');
-                    devices.push(router1, router2);
-
-                    // Create connection
-                    connections.push({ device1: router1, device2: router2 });
-
-                    // Assign mismatched timers (simulated via device properties)
-                    router1.timer = 30;
-                    router2.timer = 15;
-
-                    // Redraw canvas
-                    redrawCanvas();
+                    // Redirect legacy scenarios to new equivalents
+                    if (problemType === 'rip-version') {
+                        setupMediumScenario('rip-version-mismatch');
+                    } else if (problemType === 'vlan-config') {
+                        setupMediumScenario('tree-vlan-segmentation');
+                    } else if (problemType === 'routing-loop') {
+                        setupMediumScenario('ring-network-failure');
+                    } else {
+                        setupMediumScenario('bus-collision-domain');
+                    }
                     break;
             }
         }
 
         function setupHardScenario(problemType) {
             switch (problemType) {
+                case 'full-mesh-convergence':
+                    // Full Mesh Topology: Complex convergence issues
+                    let meshR1 = new Router(250, 150, 'Core Router 1');
+                    let meshR2 = new Router(450, 150, 'Core Router 2');
+                    let meshR3 = new Router(250, 350, 'Core Router 3');
+                    let meshR4 = new Router(450, 350, 'Core Router 4');
+                    
+                    // Configure OSPF areas
+                    meshR1.ospfArea = 0;
+                    meshR2.ospfArea = 0;
+                    meshR3.ospfArea = 1;
+                    meshR4.ospfArea = 2;
+                    
+                    // Problem: Area border router misconfiguration
+                    meshR1.abrMisconfigured = true;
+                    
+                    devices.push(meshR1, meshR2, meshR3, meshR4);
+                    // Full mesh connections
+                    connections.push({ device1: meshR1, device2: meshR2 });
+                    connections.push({ device1: meshR1, device2: meshR3 });
+                    connections.push({ device1: meshR1, device2: meshR4 });
+                    connections.push({ device1: meshR2, device2: meshR3 });
+                    connections.push({ device1: meshR2, device2: meshR4 });
+                    connections.push({ device1: meshR3, device2: meshR4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Full Mesh', 'Enterprise full mesh with OSPF multi-area. Check ABR configurations and LSA propagation.');
+                    break;
+                    
+                case 'hybrid-topology-failure':
+                    // Hybrid Topology: Star-Ring-Mesh combination
+                    // Core mesh
+                    let hybridCore1 = new Router(300, 200, 'Core 1');
+                    let hybridCore2 = new Router(500, 200, 'Core 2');
+                    
+                    // Ring distribution
+                    let hybridDist1 = new Switch(200, 100, 'Dist Ring 1');
+                    let hybridDist2 = new Switch(400, 100, 'Dist Ring 2');
+                    let hybridDist3 = new Switch(600, 100, 'Dist Ring 3');
+                    let hybridDist4 = new Switch(400, 300, 'Dist Ring 4');
+                    
+                    // Star access
+                    let hybridAccess1 = new Switch(100, 50, 'Access 1');
+                    let hybridAccess2 = new Switch(150, 400, 'Access 2');
+                    
+                    // End devices
+                    let hybridPC1 = new PC(50, 50, 'PC 1');
+                    let hybridPC2 = new PC(100, 450, 'PC 2');
+                    
+                    // Problem: VLAN spanning tree issues across hybrid topology
+                    hybridDist1.stpBroken = true;
+                    
+                    devices.push(hybridCore1, hybridCore2, hybridDist1, hybridDist2, 
+                                hybridDist3, hybridDist4, hybridAccess1, hybridAccess2, 
+                                hybridPC1, hybridPC2);
+                    
+                    // Mesh core
+                    connections.push({ device1: hybridCore1, device2: hybridCore2 });
+                    
+                    // Ring distribution
+                    connections.push({ device1: hybridDist1, device2: hybridDist2 });
+                    connections.push({ device1: hybridDist2, device2: hybridDist3 });
+                    connections.push({ device1: hybridDist3, device2: hybridDist4 });
+                    connections.push({ device1: hybridDist4, device2: hybridDist1 });
+                    
+                    // Core to distribution
+                    connections.push({ device1: hybridCore1, device2: hybridDist1 });
+                    connections.push({ device1: hybridCore2, device2: hybridDist3 });
+                    
+                    // Star access
+                    connections.push({ device1: hybridDist1, device2: hybridAccess1 });
+                    connections.push({ device1: hybridDist4, device2: hybridAccess2 });
+                    connections.push({ device1: hybridAccess1, device2: hybridPC1 });
+                    connections.push({ device1: hybridAccess2, device2: hybridPC2 });
+
+                    redrawCanvas();
+                    showTopologyHint('Hybrid', 'Complex hybrid topology combining mesh, ring, and star elements. Check STP and VLAN consistency.');
+                    break;
+                    
+                case 'hierarchical-routing':
+                    // Three-Tier Enterprise Architecture
+                    // Core layer
+                    let coreR1 = new Router(300, 100, 'Core Router 1');
+                    let coreR2 = new Router(400, 100, 'Core Router 2');
+                    
+                    // Distribution layer
+                    let distR1 = new Router(200, 250, 'Dist Router 1');
+                    let distR2 = new Router(350, 250, 'Dist Router 2');
+                    let distR3 = new Router(500, 250, 'Dist Router 3');
+                    
+                    // Access layer
+                    let accessS1 = new Switch(150, 400, 'Access Switch 1');
+                    let accessS2 = new Switch(300, 400, 'Access Switch 2');
+                    let accessS3 = new Switch(450, 400, 'Access Switch 3');
+                    let accessS4 = new Switch(600, 400, 'Access Switch 4');
+                    
+                    // Problem: Suboptimal routing and redistribution issues
+                    distR2.redistributionIssue = true;
+                    coreR1.routingLoops = true;
+                    
+                    devices.push(coreR1, coreR2, distR1, distR2, distR3, 
+                                accessS1, accessS2, accessS3, accessS4);
+                    
+                    // Core mesh
+                    connections.push({ device1: coreR1, device2: coreR2 });
+                    
+                    // Core to distribution
+                    connections.push({ device1: coreR1, device2: distR1 });
+                    connections.push({ device1: coreR1, device2: distR2 });
+                    connections.push({ device1: coreR2, device2: distR2 });
+                    connections.push({ device1: coreR2, device2: distR3 });
+                    
+                    // Distribution to access
+                    connections.push({ device1: distR1, device2: accessS1 });
+                    connections.push({ device1: distR1, device2: accessS2 });
+                    connections.push({ device1: distR2, device2: accessS2 });
+                    connections.push({ device1: distR2, device2: accessS3 });
+                    connections.push({ device1: distR3, device2: accessS3 });
+                    connections.push({ device1: distR3, device2: accessS4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Hierarchical', 'Three-tier enterprise architecture. Check routing protocols, redistribution, and layer-3 switching.');
+                    break;
+                    
+                case 'multi-protocol-mesh':
+                    // Multi-Protocol Mesh: OSPF/BGP conflicts
+                    let bgpR1 = new Router(200, 200, 'BGP Router 1');
+                    let bgpR2 = new Router(500, 200, 'BGP Router 2');
+                    let ospfR1 = new Router(200, 350, 'OSPF Router 1');
+                    let ospfR2 = new Router(500, 350, 'OSPF Router 2');
+                    let abrR1 = new Router(350, 275, 'ABR/ASBR');
+                    
+                    // Configure protocols
+                    bgpR1.routingProtocol = 'BGP';
+                    bgpR2.routingProtocol = 'BGP';
+                    ospfR1.routingProtocol = 'OSPF';
+                    ospfR2.routingProtocol = 'OSPF';
+                    abrR1.routingProtocol = 'OSPF+BGP';
+                    
+                    // Problem: Route redistribution and metric conflicts
+                    abrR1.redistributionConflict = true;
+                    
+                    devices.push(bgpR1, bgpR2, ospfR1, ospfR2, abrR1);
+                    
+                    // BGP mesh
+                    connections.push({ device1: bgpR1, device2: bgpR2 });
+                    connections.push({ device1: bgpR1, device2: abrR1 });
+                    connections.push({ device1: bgpR2, device2: abrR1 });
+                    
+                    // OSPF mesh
+                    connections.push({ device1: ospfR1, device2: ospfR2 });
+                    connections.push({ device1: ospfR1, device2: abrR1 });
+                    connections.push({ device1: ospfR2, device2: abrR1 });
+
+                    redrawCanvas();
+                    showTopologyHint('Multi-Protocol Mesh', 'BGP and OSPF integration with redistribution. Check AS boundaries and route filtering.');
+                    break;
+                    
+                case 'enterprise-redundancy':
+                    // Multi-Site Enterprise with Redundancy
+                    // Site 1
+                    let site1Core = new Router(150, 200, 'Site 1 Core');
+                    let site1Backup = new Router(150, 300, 'Site 1 Backup');
+                    
+                    // Site 2
+                    let site2Core = new Router(550, 200, 'Site 2 Core');
+                    let site2Backup = new Router(550, 300, 'Site 2 Backup');
+                    
+                    // WAN links
+                    let wan1 = new Router(300, 150, 'WAN Router 1');
+                    let wan2 = new Router(400, 150, 'WAN Router 2');
+                    
+                    // Problem: Failover mechanisms not working correctly
+                    site1Backup.hsrpFailed = true;
+                    wan1.linkDown = true;
+                    
+                    devices.push(site1Core, site1Backup, site2Core, site2Backup, wan1, wan2);
+                    
+                    // Primary paths
+                    connections.push({ device1: site1Core, device2: wan1 });
+                    connections.push({ device1: wan1, device2: wan2 });
+                    connections.push({ device1: wan2, device2: site2Core });
+                    
+                    // Backup paths
+                    connections.push({ device1: site1Backup, device2: wan2 });
+                    connections.push({ device1: wan1, device2: site2Backup });
+                    
+                    // Site redundancy
+                    connections.push({ device1: site1Core, device2: site1Backup });
+                    connections.push({ device1: site2Core, device2: site2Backup });
+
+                    redrawCanvas();
+                    showTopologyHint('Enterprise Multi-Site', 'Multi-site enterprise with redundancy. Check HSRP/VRRP and failover mechanisms.');
+                    break;
+                    
+                case 'mpls-vpn-complex':
+                    // MPLS VPN: Provider network with customer VPNs
+                    let providerCore1 = new Router(300, 150, 'P1-Core');
+                    let providerCore2 = new Router(400, 150, 'P2-Core');
+                    let providerEdge1 = new Router(200, 250, 'PE1');
+                    let providerEdge2 = new Router(500, 250, 'PE2');
+                    let customerEdge1 = new Router(100, 250, 'CE1-CustomerA');
+                    let customerEdge2 = new Router(600, 250, 'CE2-CustomerA');
+                    let customerEdge3 = new Router(150, 350, 'CE3-CustomerB');
+                    let customerEdge4 = new Router(550, 350, 'CE4-CustomerB');
+                    
+                    // MPLS configuration
+                    providerCore1.mpls = true; providerCore1.vrfTable = ['CustomerA', 'CustomerB'];
+                    providerCore2.mpls = true; providerCore2.vrfTable = ['CustomerA', 'CustomerB'];
+                    providerEdge1.mpls = true; providerEdge1.vrfTable = ['CustomerA', 'CustomerB'];
+                    providerEdge2.mpls = true; providerEdge2.vrfTable = ['CustomerA', 'CustomerB'];
+                    
+                    // Problem: VRF route leaking between customers
+                    providerEdge1.vrfMisconfigured = true;
+                    providerEdge1.routeLeaking = 'CustomerA_to_CustomerB';
+                    
+                    customerEdge1.vrf = 'CustomerA'; customerEdge1.ipv4 = '10.1.1.1';
+                    customerEdge2.vrf = 'CustomerA'; customerEdge2.ipv4 = '10.1.2.1';
+                    customerEdge3.vrf = 'CustomerB'; customerEdge3.ipv4 = '10.2.1.1';
+                    customerEdge4.vrf = 'CustomerB'; customerEdge4.ipv4 = '10.2.2.1';
+                    
+                    devices.push(providerCore1, providerCore2, providerEdge1, providerEdge2, customerEdge1, customerEdge2, customerEdge3, customerEdge4);
+                    
+                    // Provider core mesh
+                    connections.push({ device1: providerCore1, device2: providerCore2 });
+                    connections.push({ device1: providerCore1, device2: providerEdge1 });
+                    connections.push({ device1: providerCore2, device2: providerEdge2 });
+                    connections.push({ device1: providerEdge1, device2: providerEdge2 }); // PE-PE connection
+                    
+                    // Customer connections
+                    connections.push({ device1: customerEdge1, device2: providerEdge1 });
+                    connections.push({ device1: customerEdge2, device2: providerEdge2 });
+                    connections.push({ device1: customerEdge3, device2: providerEdge1 });
+                    connections.push({ device1: customerEdge4, device2: providerEdge2 });
+
+                    redrawCanvas();
+                    showTopologyHint('MPLS VPN', 'MPLS L3 VPN with multiple customers. Check VRF configurations and route target policies to prevent route leaking.');
+                    break;
+                    
+                case 'datacenter-fabric':
+                    // Data Center: Spine-Leaf fabric with VXLAN
+                    let spine1 = new Switch(250, 100, 'Spine-1');
+                    let spine2 = new Switch(450, 100, 'Spine-2');
+                    let leaf1 = new Switch(150, 250, 'Leaf-1');
+                    let leaf2 = new Switch(300, 250, 'Leaf-2');
+                    let leaf3 = new Switch(450, 250, 'Leaf-3');
+                    let leaf4 = new Switch(550, 250, 'Leaf-4');
+                    
+                    // Server attachments
+                    let server1 = new PC(100, 350, 'Server-1');
+                    let server2 = new PC(250, 350, 'Server-2');
+                    let server3 = new PC(400, 350, 'Server-3');
+                    let server4 = new PC(600, 350, 'Server-4');
+                    
+                    // VXLAN overlay configuration
+                    leaf1.vxlan = true; leaf1.vni = [100, 200];
+                    leaf2.vxlan = true; leaf2.vni = [100, 200];
+                    leaf3.vxlan = true; leaf3.vni = [100, 200];
+                    leaf4.vxlan = true; leaf4.vni = [100, 200];
+                    
+                    // Problem: VTEP misconfiguration causing overlay issues
+                    leaf2.vtepMisconfigured = true;
+                    leaf2.vxlanFloodingIssue = true;
+                    
+                    server1.vlan = 100; server1.ipv4 = '192.168.100.10';
+                    server2.vlan = 100; server2.ipv4 = '192.168.100.11';
+                    server3.vlan = 200; server3.ipv4 = '192.168.200.10';
+                    server4.vlan = 200; server4.ipv4 = '192.168.200.11';
+                    
+                    devices.push(spine1, spine2, leaf1, leaf2, leaf3, leaf4, server1, server2, server3, server4);
+                    
+                    // Spine-Leaf fabric (every leaf connects to every spine)
+                    connections.push({ device1: leaf1, device2: spine1 });
+                    connections.push({ device1: leaf1, device2: spine2 });
+                    connections.push({ device1: leaf2, device2: spine1 });
+                    connections.push({ device1: leaf2, device2: spine2 });
+                    connections.push({ device1: leaf3, device2: spine1 });
+                    connections.push({ device1: leaf3, device2: spine2 });
+                    connections.push({ device1: leaf4, device2: spine1 });
+                    connections.push({ device1: leaf4, device2: spine2 });
+                    
+                    // Server connections
+                    connections.push({ device1: server1, device2: leaf1 });
+                    connections.push({ device1: server2, device2: leaf2 });
+                    connections.push({ device1: server3, device2: leaf3 });
+                    connections.push({ device1: server4, device2: leaf4 });
+
+                    redrawCanvas();
+                    showTopologyHint('Data Center Fabric', 'Spine-Leaf data center fabric with VXLAN overlay. Check VTEP configurations and VXLAN tunnel states.');
+                    break;
+                    
+                case 'sd-wan-overlay':
+                    // SD-WAN: Overlay network with multiple transport links
+                    let sdwanController = new Router(350, 100, 'SD-WAN Controller');
+                    let branch1Edge = new Router(150, 250, 'Branch1-Edge');
+                    let branch2Edge = new Router(550, 250, 'Branch2-Edge');
+                    let hqEdge = new Router(350, 400, 'HQ-Edge');
+                    
+                    // Internet and MPLS transports
+                    let internetHub = new Router(250, 150, 'Internet-Hub');
+                    let mplsHub = new Router(450, 150, 'MPLS-Hub');
+                    
+                    // Branch LANs
+                    let branch1LAN = new PC(50, 300, 'Branch1-LAN');
+                    let branch2LAN = new PC(650, 300, 'Branch2-LAN');
+                    let hqLAN = new PC(350, 500, 'HQ-LAN');
+                    
+                    // SD-WAN configuration
+                    sdwanController.sdwan = true; sdwanController.orchestrator = true;
+                    branch1Edge.sdwan = true; branch1Edge.tunnels = ['internet', 'mpls'];
+                    branch2Edge.sdwan = true; branch2Edge.tunnels = ['internet', 'mpls'];
+                    hqEdge.sdwan = true; hqEdge.tunnels = ['internet', 'mpls'];
+                    
+                    // Problem: Policy routing and tunnel selection issues
+                    branch1Edge.policyRoutingError = true;
+                    branch1Edge.tunnelPreference = 'misconfigured';
+                    branch2Edge.bfdDown = 'mpls'; // BFD session down on MPLS transport
+                    
+                    branch1LAN.ipv4 = '192.168.1.10'; branch1LAN.subnet = '255.255.255.0';
+                    branch2LAN.ipv4 = '192.168.2.10'; branch2LAN.subnet = '255.255.255.0';
+                    hqLAN.ipv4 = '192.168.100.10'; hqLAN.subnet = '255.255.255.0';
+                    
+                    devices.push(sdwanController, branch1Edge, branch2Edge, hqEdge, internetHub, mplsHub, branch1LAN, branch2LAN, hqLAN);
+                    
+                    // SD-WAN control plane
+                    connections.push({ device1: sdwanController, device2: internetHub });
+                    connections.push({ device1: sdwanController, device2: mplsHub });
+                    
+                    // Transport connections
+                    connections.push({ device1: branch1Edge, device2: internetHub });
+                    connections.push({ device1: branch1Edge, device2: mplsHub });
+                    connections.push({ device1: branch2Edge, device2: internetHub });
+                    connections.push({ device1: branch2Edge, device2: mplsHub });
+                    connections.push({ device1: hqEdge, device2: internetHub });
+                    connections.push({ device1: hqEdge, device2: mplsHub });
+                    
+                    // LAN connections
+                    connections.push({ device1: branch1LAN, device2: branch1Edge });
+                    connections.push({ device1: branch2LAN, device2: branch2Edge });
+                    connections.push({ device1: hqLAN, device2: hqEdge });
+
+                    redrawCanvas();
+                    showTopologyHint('SD-WAN', 'SD-WAN overlay with dual transport (Internet/MPLS). Check policy routing, tunnel states, and BFD sessions.');
+                    break;
+                    
+                // Legacy compatibility cases
+                case 'route-summarization':
+                case 'auth-failure':
+                case 'complex-flapping':
+                case 'redistribution':
+                case 'convergence':
                 case 'flapping':
-                    // Setup for Route Flapping problem
-                    // Create network with unstable connection
-                    let router1 = new Router(200, 100, 'Router 1');
-                    let router2 = new Router(400, 100, 'Router 2');
-
-                    router1.ipv4 = '192.168.20.1';
-                    router2.ipv4 = '192.168.20.2';
-                    router1.subnet = router2.subnet = '255.255.255.0';
-
-                    devices.push(router1, router2);
-
-                    // Create unstable connection
-                    connections.push({ device1: router1, device2: router2, unstable: true });
-
-                    redrawCanvas();
-                    break;
                 case 'loops':
-                    // Setup for Routing Loops problem
-                    let routerA = new Router(200, 100, 'Router A');
-                    let routerB = new Router(400, 100, 'Router B');
-                    let routerC = new Router(300, 250, 'Router C');
-
-                    routerA.ipv4 = '192.168.30.1';
-                    routerB.ipv4 = '192.168.30.2';
-                    routerC.ipv4 = '192.168.30.3';
-                    routerA.subnet = routerB.subnet = routerC.subnet = '255.255.255.0';
-
-                    devices.push(routerA, routerB, routerC);
-
-                    // Connect routers in a way that can cause loops
-                    connections.push({ device1: routerA, device2: routerB });
-                    connections.push({ device1: routerB, device2: routerC });
-                    connections.push({ device1: routerC, device2: routerA });
-
-                    redrawCanvas();
-                    break;
                 case 'summarization':
-                    // Setup for Incorrect Route Summarization problem
-                    // Create devices with improper route summarization
-                    let mainRouter = new Router(300, 100, 'Main Router');
-                    mainRouter.ipv4 = '10.0.0.1';
-                    mainRouter.subnet = '255.0.0.0';
-
-                    let subnetRouter1 = new Router(200, 250, 'Subnet Router 1');
-                    subnetRouter1.ipv4 = '10.1.0.1';
-                    subnetRouter1.subnet = '255.255.0.0';
-
-                    let subnetRouter2 = new Router(400, 250, 'Subnet Router 2');
-                    subnetRouter2.ipv4 = '10.2.0.1';
-                    subnetRouter2.subnet = '255.255.0.0';
-
-                    devices.push(mainRouter, subnetRouter1, subnetRouter2);
-
-                    // Connect routers
-                    connections.push({ device1: mainRouter, device2: subnetRouter1 });
-                    connections.push({ device1: mainRouter, device2: subnetRouter2 });
-
-                    // Improper summarization configuration
-                    mainRouter.routeSummarization = false;
-
-                    redrawCanvas();
-                    break;
                 case 'auth':
-                    // Setup for Authentication Failure (RIP v2) problem
-                    // Create routers with mismatched authentication settings
-                    let routerX = new Router(200, 150, 'Router X');
-                    routerX.ipv4 = '172.16.0.1';
-                    routerX.subnet = '255.255.0.0';
-                    routerX.ripAuth = 'password123';
-
-                    let routerY = new Router(400, 150, 'Router Y');
-                    routerY.ipv4 = '172.16.0.2';
-                    routerY.subnet = '255.255.0.0';
-                    routerY.ripAuth = 'wrongpass';
-
-                    devices.push(routerX, routerY);
-                    connections.push({ device1: routerX, device2: routerY });
-
-                    redrawCanvas();
+                    // Redirect legacy scenarios to new equivalents
+                    if (problemType.includes('mesh') || problemType === 'convergence') {
+                        setupHardScenario('full-mesh-convergence');
+                    } else if (problemType.includes('enterprise') || problemType.includes('redundancy')) {
+                        setupHardScenario('enterprise-redundancy');
+                    } else if (problemType.includes('redistribution') || problemType.includes('auth')) {
+                        setupHardScenario('multi-protocol-mesh');
+                    } else {
+                        setupHardScenario('hierarchical-routing');
+                    }
                     break;
             }
+        }
+        
+        function showTopologyHint(topologyType, description) {
+            // Create topology hint notification
+            const hint = document.createElement('div');
+            hint.className = 'topology-hint-notification';
+            hint.innerHTML = `
+                <div class="hint-content">
+                    <div class="hint-header">
+                        <i class='bx bx-network-chart'></i>
+                        <span class="topology-type">${topologyType} Topology</span>
+                    </div>
+                    <div class="hint-description">${description}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(hint);
+            
+            // Show the hint
+            setTimeout(() => {
+                hint.classList.add('show');
+            }, 100);
+            
+            // Auto-hide after 8 seconds
+            setTimeout(() => {
+                hint.classList.remove('show');
+                setTimeout(() => {
+                    if (hint.parentNode) {
+                        hint.remove();
+                    }
+                }, 300);
+            }, 8000);
+        }
+        
+        function showTopologyDetails(topologyType) {
+            // Create a detailed topology information popup
+            const topologyInfo = {
+                'point-to-point': {
+                    title: 'Point-to-Point Topology',
+                    description: 'A point-to-point topology consists of a direct connection between two devices. This is the simplest network topology.',
+                    characteristics: ['Direct connection', 'Minimal hardware', 'Easy to setup', 'Limited scalability'],
+                    useCases: ['WAN links', 'Device-to-device communication', 'Simple file transfers']
+                },
+                'star': {
+                    title: 'Star Topology', 
+                    description: 'A central hub or switch connects all devices. All communication goes through the central device.',
+                    characteristics: ['Central connection point', 'Easy to troubleshoot', 'Single point of failure', 'Scalable'],
+                    useCases: ['Office networks', 'Home networks', 'Basic LANs']
+                },
+                'tree-basic': {
+                    title: 'Tree Topology',
+                    description: 'A hierarchical structure with a root node connected to child nodes, forming a tree-like structure.',
+                    characteristics: ['Hierarchical structure', 'Scalable design', 'Centralized control', 'Point-to-point wiring'],
+                    useCases: ['Departmental networks', 'Small campus networks', 'Organizational structures']
+                },
+                'bus': {
+                    title: 'Bus Topology',
+                    description: 'All devices are connected to a single communication line (the bus). Data is transmitted along the bus.',
+                    characteristics: ['Single communication line', 'Simple wiring', 'Collision domain issues', 'Legacy technology'],
+                    useCases: ['Legacy networks', 'Industrial control systems', 'Simple LANs']
+                },
+                'ring': {
+                    title: 'Ring Topology',
+                    description: 'Devices are connected in a circular fashion, forming a closed loop for data transmission.',
+                    characteristics: ['Circular connection', 'Token passing', 'Built-in redundancy', 'Predictable performance'],
+                    useCases: ['Token ring networks', 'SONET/SDH', 'Redundant links']
+                },
+                'partial-mesh': {
+                    title: 'Partial Mesh Topology',
+                    description: 'Some devices are interconnected, but not all devices connect to every other device.',
+                    characteristics: ['Selective connectivity', 'Cost-effective redundancy', 'Balanced performance', 'Strategic connections'],
+                    useCases: ['Core networks', 'WAN designs', 'Critical path redundancy']
+                },
+                'full-mesh': {
+                    title: 'Full Mesh Topology',
+                    description: 'Every device is connected to every other device in the network, providing maximum redundancy.',
+                    characteristics: ['Complete connectivity', 'Maximum redundancy', 'High cost', 'Complex management'],
+                    useCases: ['Critical infrastructure', 'High-availability systems', 'Mission-critical networks']
+                },
+                'hybrid': {
+                    title: 'Hybrid Topology',
+                    description: 'A combination of two or more different network topologies, designed to meet specific requirements.',
+                    characteristics: ['Mixed topologies', 'Flexible design', 'Optimized performance', 'Complex configuration'],
+                    useCases: ['Enterprise networks', 'Complex environments', 'Multi-site organizations']
+                },
+                'hierarchical': {
+                    title: 'Hierarchical Topology',
+                    description: 'A three-tier architecture with Core, Distribution, and Access layers, commonly used in enterprise networks.',
+                    characteristics: ['Three-tier design', 'Scalable architecture', 'Layer separation', 'Enterprise standard'],
+                    useCases: ['Large campus networks', 'Enterprise networks', 'Data centers']
+                }
+            };
+            
+            const info = topologyInfo[topologyType];
+            if (!info) return;
+            
+            // Create and show topology details modal
+            const modal = document.createElement('div');
+            modal.className = 'topology-details-modal';
+            modal.innerHTML = `
+                <div class="topology-details-content">
+                    <div class="topology-details-header">
+                        <h3>${info.title}</h3>
+                        <button class="modal-close-btn" onclick="this.closest('.topology-details-modal').remove()">
+                            <i class='bx bx-x'></i>
+                        </button>
+                    </div>
+                    <div class="topology-details-body">
+                        <p class="topology-description">${info.description}</p>
+                        <div class="topology-characteristics">
+                            <h4>Key Characteristics:</h4>
+                            <ul>
+                                ${info.characteristics.map(char => `<li>${char}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="topology-use-cases">
+                            <h4>Common Use Cases:</h4>
+                            <ul>
+                                ${info.useCases.map(useCase => `<li>${useCase}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Show modal with animation
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                    setTimeout(() => modal.remove(), 300);
+                }
+            });
         }
 
         function goBackToScenarios() {
@@ -10055,6 +11656,49 @@ document.addEventListener('DOMContentLoaded', () => {
             cliOutput.appendChild(outputLine);
         }
 
+        function handlePingCommand(command, device) {
+            const cliOutput = document.getElementById("cli-output");
+            const outputLine = document.createElement('div');
+            
+            const parts = command.split(' ');
+            if (parts.length < 2) {
+                outputLine.textContent = 'Usage: ping <destination_ip>';
+                cliOutput.appendChild(outputLine);
+                return;
+            }
+            
+            const targetIP = parts[1];
+            const targetDevice = devices.find(d => d.ipv4 === targetIP);
+            
+            if (!targetDevice) {
+                outputLine.innerHTML = `PING ${targetIP}: Destination unreachable<br>Request timeout for icmp_seq 1<br>Request timeout for icmp_seq 2<br>Request timeout for icmp_seq 3<br><br>--- ${targetIP} ping statistics ---<br>3 packets transmitted, 0 received, 100% packet loss`;
+                cliOutput.appendChild(outputLine);
+                return;
+            }
+            
+            // Check if devices are connected (basic connectivity test)
+            const sourceConnected = connections.some(conn => conn.device1 === device || conn.device2 === device);
+            const targetConnected = connections.some(conn => conn.device1 === targetDevice || conn.device2 === targetDevice);
+            
+            if (!sourceConnected || !targetConnected) {
+                outputLine.innerHTML = `PING ${targetIP}: Network unreachable<br>Request timeout for icmp_seq 1<br>Request timeout for icmp_seq 2<br>Request timeout for icmp_seq 3<br><br>--- ${targetIP} ping statistics ---<br>3 packets transmitted, 0 received, 100% packet loss`;
+                cliOutput.appendChild(outputLine);
+                return;
+            }
+            
+            // Check if devices are in same subnet
+            if (!areInSameSubnet(device, targetDevice)) {
+                outputLine.innerHTML = `PING ${targetIP}: Destination unreachable (different subnet)<br>Request timeout for icmp_seq 1<br>Request timeout for icmp_seq 2<br>Request timeout for icmp_seq 3<br><br>--- ${targetIP} ping statistics ---<br>3 packets transmitted, 0 received, 100% packet loss`;
+                cliOutput.appendChild(outputLine);
+                return;
+            }
+            
+            // Simulate successful ping
+            const delay = Math.floor(Math.random() * 5) + 1; // 1-5ms delay
+            outputLine.innerHTML = `PING ${targetIP} (${targetIP}): 56 data bytes<br>64 bytes from ${targetIP}: icmp_seq=1 ttl=64 time=${delay}ms<br>64 bytes from ${targetIP}: icmp_seq=2 ttl=64 time=${delay + 1}ms<br>64 bytes from ${targetIP}: icmp_seq=3 ttl=64 time=${delay}ms<br><br>--- ${targetIP} ping statistics ---<br>3 packets transmitted, 3 received, 0% packet loss<br>round-trip min/avg/max/stddev = ${delay}/${delay + 0.5}/${delay + 1}/0.500 ms`;
+            cliOutput.appendChild(outputLine);
+        }
+
         function handleCliCommand(command, device) {
             const startTime = Date.now();
             let output = '';
@@ -10062,6 +11706,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Capture original CLI output
             const originalCliOutput = document.getElementById("cli-output");
             const initialChildCount = originalCliOutput ? originalCliOutput.children.length : 0;
+            
+            // Handle ping command globally (available in all scenarios)
+            if (command.startsWith('ping ')) {
+                handlePingCommand(command, device);
+                return;
+            }
             
             switch (currentScenario.problemType) {
                 case 'network':
@@ -12758,6 +14408,395 @@ document.addEventListener('DOMContentLoaded', () => {
         // Export for global access
         window.openChallengesModal = openChallengesModal;
         window.closeChallengesModal = closeChallengesModal;
+
+        // ===== INTERACTIVE TOPOLOGY SIMULATOR FUNCTIONALITY =====
+        
+        // Topology simulator variables
+        let topologyCanvas = null;
+        let topologyCtx = null;
+        let topologyDevices = [];
+        let topologyConnections = [];
+        let topologyConnectionMode = false;
+        let selectedTopologyDevice = null;
+        let draggedTopologyDevice = null;
+        let topologyDeviceCounter = { router: 0, switch: 0, pc: 0 };
+
+        // Device images for topology canvas
+        const topologyImages = {
+            router: new Image(),
+            switch: new Image(),
+            pc: new Image()
+        };
+
+        // Initialize topology simulator
+        function initTopologySimulator() {
+            topologyCanvas = document.getElementById('topologyReferenceCanvas');
+            if (!topologyCanvas) return;
+            
+            topologyCtx = topologyCanvas.getContext('2d');
+            
+            // Load device images
+            topologyImages.router.src = '{{ url_for("static", filename="img/Router.png") }}';
+            topologyImages.switch.src = '{{ url_for("static", filename="img/Switch.png") }}';
+            topologyImages.pc.src = '{{ url_for("static", filename="img/PC.png") }}';
+
+            // Set up canvas event listeners
+            setupTopologyCanvasEvents();
+            setupTopologyDragAndDrop();
+            
+            // Initial canvas draw
+            drawTopologyCanvas();
+        }
+
+        function setupTopologyCanvasEvents() {
+            // Canvas click handling
+            topologyCanvas.addEventListener('click', (e) => {
+                const rect = topologyCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                if (topologyConnectionMode) {
+                    handleTopologyConnection(x, y);
+                } else {
+                    selectTopologyDevice(x, y);
+                }
+            });
+
+            // Mouse move for dragging
+            topologyCanvas.addEventListener('mousemove', (e) => {
+                if (draggedTopologyDevice) {
+                    const rect = topologyCanvas.getBoundingClientRect();
+                    draggedTopologyDevice.x = e.clientX - rect.left;
+                    draggedTopologyDevice.y = e.clientY - rect.top;
+                    drawTopologyCanvas();
+                }
+            });
+
+            // Mouse up to stop dragging
+            topologyCanvas.addEventListener('mouseup', () => {
+                draggedTopologyDevice = null;
+            });
+        }
+
+        function setupTopologyDragAndDrop() {
+            const topologyDeviceElements = document.querySelectorAll('.topology-device');
+            
+            topologyDeviceElements.forEach(device => {
+                device.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', device.dataset.deviceType);
+                });
+            });
+
+            topologyCanvas.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            topologyCanvas.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const deviceType = e.dataTransfer.getData('text/plain');
+                const rect = topologyCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                addTopologyDevice(deviceType, x, y);
+            });
+        }
+
+        function addTopologyDevice(type, x, y) {
+            topologyDeviceCounter[type]++;
+            const device = {
+                id: `${type}_${topologyDeviceCounter[type]}`,
+                type: type,
+                x: x,
+                y: y,
+                name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${topologyDeviceCounter[type]}`,
+                width: 50,
+                height: 50
+            };
+            
+            topologyDevices.push(device);
+            drawTopologyCanvas();
+        }
+
+        function selectTopologyDevice(x, y) {
+            selectedTopologyDevice = null;
+            for (let device of topologyDevices) {
+                if (x >= device.x - device.width/2 && x <= device.x + device.width/2 &&
+                    y >= device.y - device.height/2 && y <= device.y + device.height/2) {
+                    selectedTopologyDevice = device;
+                    draggedTopologyDevice = device;
+                    break;
+                }
+            }
+            drawTopologyCanvas();
+        }
+
+        function handleTopologyConnection(x, y) {
+            const clickedDevice = findTopologyDeviceAt(x, y);
+            if (!clickedDevice) return;
+
+            if (selectedTopologyDevice && selectedTopologyDevice !== clickedDevice) {
+                // Create connection
+                const connection = {
+                    device1: selectedTopologyDevice,
+                    device2: clickedDevice,
+                    id: `conn_${selectedTopologyDevice.id}_${clickedDevice.id}`
+                };
+                
+                // Check if connection already exists
+                const exists = topologyConnections.some(conn => 
+                    (conn.device1 === selectedTopologyDevice && conn.device2 === clickedDevice) ||
+                    (conn.device1 === clickedDevice && conn.device2 === selectedTopologyDevice)
+                );
+                
+                if (!exists) {
+                    topologyConnections.push(connection);
+                }
+                
+                selectedTopologyDevice = null;
+            } else {
+                selectedTopologyDevice = clickedDevice;
+            }
+            
+            drawTopologyCanvas();
+        }
+
+        function findTopologyDeviceAt(x, y) {
+            for (let device of topologyDevices) {
+                if (x >= device.x - device.width/2 && x <= device.x + device.width/2 &&
+                    y >= device.y - device.height/2 && y <= device.y + device.height/2) {
+                    return device;
+                }
+            }
+            return null;
+        }
+
+        function drawTopologyCanvas() {
+            if (!topologyCtx) return;
+            
+            // Clear canvas
+            topologyCtx.clearRect(0, 0, topologyCanvas.width, topologyCanvas.height);
+            
+            // Draw connections
+            topologyConnections.forEach(connection => {
+                topologyCtx.strokeStyle = '#3B82F6';
+                topologyCtx.lineWidth = 2;
+                topologyCtx.beginPath();
+                topologyCtx.moveTo(connection.device1.x, connection.device1.y);
+                topologyCtx.lineTo(connection.device2.x, connection.device2.y);
+                topologyCtx.stroke();
+            });
+            
+            // Draw devices
+            topologyDevices.forEach(device => {
+                // Device background
+                topologyCtx.fillStyle = device === selectedTopologyDevice ? '#F59E0B' : '#1E293B';
+                topologyCtx.strokeStyle = device === selectedTopologyDevice ? '#F59E0B' : '#3B82F6';
+                topologyCtx.lineWidth = 2;
+                
+                topologyCtx.fillRect(
+                    device.x - device.width/2, 
+                    device.y - device.height/2, 
+                    device.width, 
+                    device.height
+                );
+                topologyCtx.strokeRect(
+                    device.x - device.width/2, 
+                    device.y - device.height/2, 
+                    device.width, 
+                    device.height
+                );
+                
+                // Device icon/text
+                topologyCtx.fillStyle = '#FFFFFF';
+                topologyCtx.font = '12px Arial';
+                topologyCtx.textAlign = 'center';
+                
+                let icon = '';
+                switch(device.type) {
+                    case 'router': icon = '🔀'; break;
+                    case 'switch': icon = '🔄'; break;
+                    case 'pc': icon = '💻'; break;
+                }
+                
+                topologyCtx.fillText(icon, device.x, device.y + 5);
+                
+                // Device name
+                topologyCtx.font = '10px Arial';
+                topologyCtx.fillText(device.name, device.x, device.y + 35);
+            });
+        }
+
+        // Topology template functions
+        function loadTopologyTemplate(topologyType) {
+            clearTopologyCanvas();
+            
+            switch(topologyType) {
+                case 'point-to-point':
+                    addTopologyDevice('router', 150, 200);
+                    addTopologyDevice('router', 450, 200);
+                    setTimeout(() => {
+                        if (topologyDevices.length >= 2) {
+                            topologyConnections.push({
+                                device1: topologyDevices[0],
+                                device2: topologyDevices[1],
+                                id: 'conn_template_1'
+                            });
+                            drawTopologyCanvas();
+                        }
+                    }, 100);
+                    break;
+                    
+                case 'star':
+                    addTopologyDevice('switch', 300, 200);
+                    addTopologyDevice('pc', 200, 120);
+                    addTopologyDevice('pc', 400, 120);
+                    addTopologyDevice('pc', 200, 280);
+                    addTopologyDevice('pc', 400, 280);
+                    setTimeout(() => {
+                        const center = topologyDevices[0];
+                        for (let i = 1; i < topologyDevices.length; i++) {
+                            topologyConnections.push({
+                                device1: center,
+                                device2: topologyDevices[i],
+                                id: `conn_star_${i}`
+                            });
+                        }
+                        drawTopologyCanvas();
+                    }, 100);
+                    break;
+                    
+                case 'ring':
+                    addTopologyDevice('router', 300, 100);
+                    addTopologyDevice('router', 450, 200);
+                    addTopologyDevice('router', 300, 300);
+                    addTopologyDevice('router', 150, 200);
+                    setTimeout(() => {
+                        for (let i = 0; i < topologyDevices.length; i++) {
+                            const next = (i + 1) % topologyDevices.length;
+                            topologyConnections.push({
+                                device1: topologyDevices[i],
+                                device2: topologyDevices[next],
+                                id: `conn_ring_${i}`
+                            });
+                        }
+                        drawTopologyCanvas();
+                    }, 100);
+                    break;
+                    
+                case 'mesh':
+                    addTopologyDevice('router', 200, 150);
+                    addTopologyDevice('router', 400, 150);
+                    addTopologyDevice('router', 300, 250);
+                    setTimeout(() => {
+                        for (let i = 0; i < topologyDevices.length; i++) {
+                            for (let j = i + 1; j < topologyDevices.length; j++) {
+                                topologyConnections.push({
+                                    device1: topologyDevices[i],
+                                    device2: topologyDevices[j],
+                                    id: `conn_mesh_${i}_${j}`
+                                });
+                            }
+                        }
+                        drawTopologyCanvas();
+                    }, 100);
+                    break;
+                    
+                case 'tree':
+                    addTopologyDevice('router', 300, 100);
+                    addTopologyDevice('switch', 200, 200);
+                    addTopologyDevice('switch', 400, 200);
+                    addTopologyDevice('pc', 150, 300);
+                    addTopologyDevice('pc', 250, 300);
+                    addTopologyDevice('pc', 350, 300);
+                    addTopologyDevice('pc', 450, 300);
+                    setTimeout(() => {
+                        topologyConnections.push({
+                            device1: topologyDevices[0],
+                            device2: topologyDevices[1],
+                            id: 'conn_tree_1'
+                        });
+                        topologyConnections.push({
+                            device1: topologyDevices[0],
+                            device2: topologyDevices[2],
+                            id: 'conn_tree_2'
+                        });
+                        topologyConnections.push({
+                            device1: topologyDevices[1],
+                            device2: topologyDevices[3],
+                            id: 'conn_tree_3'
+                        });
+                        topologyConnections.push({
+                            device1: topologyDevices[1],
+                            device2: topologyDevices[4],
+                            id: 'conn_tree_4'
+                        });
+                        topologyConnections.push({
+                            device1: topologyDevices[2],
+                            device2: topologyDevices[5],
+                            id: 'conn_tree_5'
+                        });
+                        topologyConnections.push({
+                            device1: topologyDevices[2],
+                            device2: topologyDevices[6],
+                            id: 'conn_tree_6'
+                        });
+                        drawTopologyCanvas();
+                    }, 100);
+                    break;
+            }
+        }
+
+        function clearTopologyCanvas() {
+            topologyDevices = [];
+            topologyConnections = [];
+            selectedTopologyDevice = null;
+            draggedTopologyDevice = null;
+            topologyDeviceCounter = { router: 0, switch: 0, pc: 0 };
+            drawTopologyCanvas();
+        }
+
+        function toggleTopologyConnectionMode() {
+            topologyConnectionMode = !topologyConnectionMode;
+            const btn = event.target;
+            btn.classList.toggle('active', topologyConnectionMode);
+            btn.textContent = topologyConnectionMode ? '🔗 Connecting...' : '🔗 Connect';
+            topologyCanvas.className = topologyConnectionMode ? 'connection-mode' : '';
+            selectedTopologyDevice = null;
+            drawTopologyCanvas();
+        }
+
+        function validateTopologyConfiguration() {
+            let validation = {
+                devices: topologyDevices.length,
+                connections: topologyConnections.length,
+                deviceTypes: {}
+            };
+            
+            topologyDevices.forEach(device => {
+                validation.deviceTypes[device.type] = (validation.deviceTypes[device.type] || 0) + 1;
+            });
+            
+            const message = `Topology Analysis:\\n` +
+                          `• Devices: ${validation.devices}\\n` +
+                          `• Connections: ${validation.connections}\\n` +
+                          `• Routers: ${validation.deviceTypes.router || 0}\\n` +
+                          `• Switches: ${validation.deviceTypes.switch || 0}\\n` +
+                          `• PCs: ${validation.deviceTypes.pc || 0}`;
+            
+            alert(message);
+        }
+
+        // Initialize topology simulator when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initTopologySimulator, 1000);
+        });
+
+        // Export topology functions for global access
+        window.loadTopologyTemplate = loadTopologyTemplate;
+        window.clearTopologyCanvas = clearTopologyCanvas;
+        window.toggleTopologyConnectionMode = toggleTopologyConnectionMode;
+        window.validateTopologyConfiguration = validateTopologyConfiguration;
     </script>
 
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>

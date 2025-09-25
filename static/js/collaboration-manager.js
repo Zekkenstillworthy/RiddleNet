@@ -1,16 +1,37 @@
 // Enhanced Collaboration Management for Admin Activities
 class CollaborationManager {
     constructor() {
+        // Guard against multiple instances
+        if (window.collaborationManagerInstance) {
+            console.log('🔒 CollaborationManager already exists, returning existing instance');
+            return window.collaborationManagerInstance;
+        }
+        
+        console.log('🔧 Initializing new CollaborationManager...');
         this.collaborationSettings = new Map();
         this.activeCollaborations = new Map();
+        this.isInitialized = false;
+        
+        // Store this instance globally
+        window.collaborationManagerInstance = this;
+        
         this.init();
     }
 
     init() {
+        // Prevent double initialization
+        if (this.isInitialized) {
+            console.log('🔒 CollaborationManager already initialized, skipping');
+            return;
+        }
+        
         document.addEventListener('DOMContentLoaded', () => {
             this.initializeCollaborationControls();
             this.loadExistingSettings();
-        });
+        }, { once: true }); // Use once: true to prevent duplicate listeners
+        
+        this.isInitialized = true;
+        console.log('✅ CollaborationManager initialized');
     }
 
     // Initialize collaboration controls for activities
@@ -49,6 +70,7 @@ class CollaborationManager {
                     <option value="small-groups" data-type="small-groups">Small Groups (3-4)</option>
                     <option value="large-groups" data-type="large-groups">Large Groups (5+)</option>
                     <option value="class-wide" data-type="class-wide">Class-wide Collaboration</option>
+                    <option value="simulation-teams" data-type="simulation-teams">Simulation Teams (Admin Managed)</option>
                 </select>
             </div>
             
@@ -98,6 +120,34 @@ class CollaborationManager {
                     <label class="form-label">Collaboration Duration (minutes)</label>
                     <input type="number" class="form-control" id="collaborationDuration" min="5" max="180" value="60">
                 </div>
+                
+                <!-- Simulation-specific options -->
+                <div class="simulation-collaboration-options" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Target Class for Team Assignment</label>
+                        <select class="form-control" id="targetSimulationClass">
+                            <option value="">Select a class...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoCreateTeams">
+                            <label class="form-check-label" for="autoCreateTeams">
+                                Automatically create teams when simulation starts
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="preserveTeamsAcrossSessions" checked>
+                            <label class="form-check-label" for="preserveTeamsAcrossSessions">
+                                Keep same teams across multiple simulation sessions
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="admin-controls">
@@ -120,6 +170,16 @@ class CollaborationManager {
                         </label>
                     </div>
                 </div>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="allowAdminJoin" checked>
+                        <label class="form-check-label" for="allowAdminJoin">
+                            Allow Admin to Join Sessions
+                            <span class="help-icon" data-tooltip="Permits teachers to join active collaboration sessions" data-tooltip-position="top">?</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -133,20 +193,151 @@ class CollaborationManager {
 
         // Bind events
         this.bindCollaborationEvents(collaborationSection);
+        
+        // Load available classes for simulation teams
+        this.loadAvailableClassesForCollaboration();
     }
 
     bindCollaborationEvents(section) {
         const typeSelect = section.querySelector('.collaboration-type');
         const optionsDiv = section.querySelector('.collaboration-options');
+        const simulationOptions = section.querySelector('.simulation-collaboration-options');
         
         typeSelect.addEventListener('change', (e) => {
             const value = e.target.value;
             if (value === 'individual') {
                 optionsDiv.style.display = 'none';
+                if (simulationOptions) simulationOptions.style.display = 'none';
             } else {
                 optionsDiv.style.display = 'block';
                 this.updateCollaborationOptions(value, optionsDiv);
+                
+                // Show simulation-specific options for simulation teams
+                if (simulationOptions) {
+                    simulationOptions.style.display = value === 'simulation-teams' ? 'block' : 'none';
+                }
             }
+        });
+    }
+
+    loadAvailableClassesForCollaboration() {
+        const classSelect = document.getElementById('targetSimulationClass');
+        if (!classSelect) return;
+        
+        // Add error handling and fail-fast
+        fetch('/admin/api/collaboration/classes')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.classes) {
+                    classSelect.innerHTML = '<option value="">Select a class...</option>';
+                    data.classes.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls.id;
+                        option.textContent = `${cls.name} (${cls.student_count} students)`;
+                        classSelect.appendChild(option);
+                    });
+                } else {
+                    classSelect.innerHTML = '<option value="">No classes available</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading classes:', error.message);
+                classSelect.innerHTML = '<option value="">Error loading classes</option>';
+            });
+    }
+
+    // Method to create a collaboration session for a specific simulation
+    createSimulationCollaboration(simulationId, collaborationSettings) {
+        return fetch('/admin/api/collaboration/simulation-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                simulation_id: simulationId,
+                collaboration_settings: collaborationSettings,
+                admin_created: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Simulation collaboration session created:', data.session_id);
+                return data;
+            } else {
+                throw new Error(data.error || 'Failed to create collaboration session');
+            }
+        });
+    }
+
+    // Method to join a student to a simulation collaboration team
+    assignStudentToSimulationTeam(sessionId, studentId, teamId) {
+        return fetch(`/admin/api/collaboration/session/${sessionId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                team_id: teamId
+            })
+        })
+        .then(response => response.json());
+    }
+
+    // Method to get collaboration settings for a simulation
+    getSimulationCollaborationSettings(simulationId) {
+        return fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`)
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                // Attempt JSON parse safely
+                const text = await response.text();
+                try { return JSON.parse(text); } catch (e) { throw new Error('Invalid JSON in collaboration settings response'); }
+            })
+            .then(data => {
+                if (data.success) {
+                    return data.collaboration_settings || data.settings || {};
+                } else {
+                    throw new Error(data.error || 'Failed to load collaboration settings');
+                }
+            })
+            .catch(err => {
+                console.warn('Collaboration settings load failed:', err.message);
+                return {}; // graceful fallback
+            });
+    }
+
+    // Method to save collaboration settings for a simulation
+    saveSimulationCollaborationSettings(simulationId, settings) {
+        return fetch(`/admin/api/collaboration/simulation/${simulationId}/collaboration`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                collaboration_settings: settings
+            })
+        })
+        .then(async response => {
+            const text = await response.text();
+            let data;
+            try { data = JSON.parse(text); } catch { throw new Error('Invalid JSON saving collaboration settings'); }
+            if (response.ok && data.success) {
+                console.log('Collaboration settings saved for simulation:', simulationId);
+                return data;
+            }
+            throw new Error(data && data.error ? data.error : `Save failed (HTTP ${response.status})`);
+        })
+        .catch(err => {
+            console.error('Save collaboration settings error:', err.message);
+            throw err;
         });
     }
 
@@ -964,6 +1155,10 @@ class CollaborationManager {
     }
 }
 
-// Initialize collaboration manager
-const collaborationManager = new CollaborationManager();
-window.collaborationManager = collaborationManager;
+// Initialize collaboration manager with singleton pattern
+if (!window.collaborationManager) {
+    const collaborationManager = new CollaborationManager();
+    window.collaborationManager = collaborationManager;
+} else {
+    console.log('🔒 CollaborationManager already exists, using existing instance');
+}

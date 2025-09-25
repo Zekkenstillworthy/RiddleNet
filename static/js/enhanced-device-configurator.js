@@ -31,7 +31,8 @@ class EnhancedDeviceConfigurator {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3><i class="fas fa-cogs"></i> Device Configuration</h3>
-                    <button class="modal-close" onclick="this.closeConfigModal()">
+                    <!-- Use global instance method to avoid invalid 'this' context -->
+                    <button class="modal-close" onclick="window.deviceConfigurator?.closeConfigModal()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -52,7 +53,8 @@ class EnhancedDeviceConfigurator {
                         <button class="tab-btn" data-tab="validation">Validation</button>
                     </div>
 
-                    <div class="tab-content">
+                    <!-- NOTE: Using a unique container class to avoid collisions with global .tab-content styles on admin pages -->
+                    <div class="tab-content device-config-tab-wrapper">
                         <!-- Basic Configuration -->
                         <div class="tab-panel active" id="basic-panel">
                             <div class="config-section">
@@ -368,6 +370,9 @@ class EnhancedDeviceConfigurator {
                 background: var(--glass-bg-hover);
                 color: var(--text-primary);
             }
+
+            /* Ensure embedded configurator content isn't suppressed by global admin .tab-content styles */
+            #enhanced-device-config-modal .tab-content { display: block !important; }
 
             .tab-panel {
                 display: none;

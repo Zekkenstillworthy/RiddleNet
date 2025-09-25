@@ -1047,6 +1047,116 @@ def run_simulation(simulation_id):
         else:
             # Fallback to legacy root-level fields
             simulation_topology = simulation_config
+        
+        # Check lobby participation
+        lobby_id = request.args.get('lobby_id')
+        lobby = None
+        team_assignment = None
+        
+        if lobby_id:
+            # Check if user is in this lobby
+            from services.troubleshooting_lobbies import lobby_manager
+            from admin.models.collaboration import CollaborationLobby, TeamAssignment
+            
+            # Get lobby from memory first
+            lobby = lobby_manager.get_lobby(lobby_id)
+            if not lobby:
+                # Try to restore from database
+                db_lobby = CollaborationLobby.query.get(lobby_id)
+                if db_lobby and db_lobby.is_active:
+                    # Restore lobby to memory (simplified restoration)
+                    lobby_config = {
+                        'name': db_lobby.name,
+                        'scenario_type': db_lobby.scenario_type,
+                        'scenario_id': db_lobby.scenario_id,
+                        'max_participants': db_lobby.max_participants,
+                        'class_id': db_lobby.class_id,
+                        'simulation_id': db_lobby.simulation_id,
+                        'admin_created': True
+                    }
+                    lobby = lobby_manager.create_lobby(
+                        creator_id=db_lobby.creator_id,
+                        creator_name=db_lobby.creator_name,
+                        creator_profile_image=db_lobby.creator_profile_image,
+                        lobby_config=lobby_config,
+                        lobby_id=lobby_id
+                    )
+            
+            # Check team assignment
+            if lobby:
+                team_assignment = TeamAssignment.query.filter_by(
+                    lobby_id=lobby_id,
+                    user_id=user.id
+                ).first()
+        
+        # Import collaboration model and get settings
+        from admin.models.collaboration import CollaborationSetting
+        
+        # Get collaboration settings
+        collaboration_setting = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
+
+        # Check if user has access to this simulation - now with proper import
+        from admin.models.simulation import SimulationAttempt
+        from admin.models.class_model import Class
+        from flask_login import current_user
+        from flask import url_for
+        
+        user_class_ids = [class_obj.id for class_obj in user.enrolled_classes.all()]
+        simulation_class_ids = [assignment.class_id for assignment in simulation.class_assignments]
+        
+        if not any(class_id in user_class_ids for class_id in simulation_class_ids):
+            flash('You do not have access to this simulation.', 'error')
+            return redirect(url_for('user.dashboard'))
+        
+        # Get user progress for this simulation
+        progress_model = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id
+        ).first()
+        
+        if not progress_model:
+            # Create initial progress
+            progress_model = SimulationAttempt(
+                user_id=user.id,
+                simulation_id=simulation_id,
+                current_step=1,
+                total_score=0,
+                is_completed=False
+            )
+            db.session.add(progress_model)
+            db.session.commit()
+        
+        # Debug logging for device count investigation
+        debug_file_path = r'c:\Users\gilbe\OneDrive\Desktop\RiddleNet\user_debug.txt'
+        try:
+            device_count = len(simulation_topology.get('devices', [])) if simulation_topology else 0
+            debug_msg = f"DEBUG [USER SIMULATION {simulation_id}]: Device count = {device_count}\n"
+            debug_msg += f"DEBUG [USER SIMULATION {simulation_id}]: Topology source = {'network_topology' if network_topology and (network_topology.get('devices') or network_topology.get('connections')) else 'simulation_config fallback'}\n"
+            if simulation_topology and 'devices' in simulation_topology:
+                device_types = [d.get('type', 'unknown') for d in simulation_topology['devices']]
+                debug_msg += f"DEBUG [USER SIMULATION {simulation_id}]: Device types = {device_types}\n"
+            
+            print("USER ROUTE DEBUG:")
+            print(debug_msg)
+            print("=" * 80)  # Separator to make it stand out
+            
+            # Also log to file for easier debugging
+            with open(debug_file_path, 'w', encoding='utf-8') as f:
+                f.write(f"{datetime.now().isoformat()}: USER ROUTE\n")
+                f.write(debug_msg + "\n")
+                f.write("=" * 50 + "\n")
+                
+            # Also use Flask logger
+            current_app.logger.info(debug_msg)
+        except Exception as e:
+            error_msg = f"DEBUG [USER SIMULATION {simulation_id}]: Error logging device info: {e}"
+            print("USER ROUTE ERROR:")
+            print(error_msg)
+            try:
+                with open(debug_file_path, 'w', encoding='utf-8') as f:
+                    f.write(f"{datetime.now().isoformat()}: USER ERROR: {error_msg}\n")
+            except Exception as e2:
+                print(f"Could not write error to file: {e2}")
             
         # Prepare simulation data for the template with troubleshooting support
         simulation_data = {
@@ -1188,11 +1298,22 @@ def run_simulation(simulation_id):
         # Provide assignment gating info to UI
         gating = check_assignment_gating(user, simulation.id)
 
-        return render_template('user/dynamic_simulation.html',
-                               user=user,
-                               simulation=simulation_data,
-                               progress=progress,
-                               gating=gating)
+        # Prepare context for template including collaboration data
+        context = {
+            'user': user,
+            'simulation': simulation_data,
+            'progress': progress,
+            'gating': gating,
+            'lobby': lobby.to_dict() if lobby else None,
+            'team_assignment': {
+                'team_number': team_assignment.team_number,
+                'role': team_assignment.role
+            } if team_assignment else None,
+            'collaboration_enabled': collaboration_setting.collaboration_enabled if collaboration_setting else False,
+            'collaboration_settings': collaboration_setting.to_dict() if collaboration_setting else {}
+        }
+
+        return render_template('user/dynamic_simulation.html', **context)
 
     except Exception as e:
         print(f"Error loading simulation {simulation_id}: {e}")
@@ -1486,6 +1607,14 @@ def update_network_state(simulation_id):
         # Get simulation to check if topology validation is needed
         simulation = Simulation.query.get(simulation_id)
         simulation_config = simulation.simulation_config or {} if simulation else {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
         topology_enabled = simulation_config.get('topology_enabled', False)
         selected_topology = simulation_config.get('selected_topology', '')
         
@@ -1534,6 +1663,12 @@ def update_network_state(simulation_id):
         # Update session data with network state
         if not attempt.session_data:
             attempt.session_data = {}
+        elif isinstance(attempt.session_data, str):
+            # Handle case where session_data is stored as JSON string
+            try:
+                attempt.session_data = json.loads(attempt.session_data)
+            except (json.JSONDecodeError, ValueError):
+                attempt.session_data = {}
 
         # Prepare update data
         update_data = {
@@ -1591,13 +1726,32 @@ def get_simulation_topology_config(simulation_id):
     """Get topology configuration for a specific simulation"""
     try:
         user = get_user_from_session()
+        if not user:
+            return jsonify({'error': 'User not authenticated'}), 401
         
         # Get simulation
         simulation = Simulation.query.get_or_404(simulation_id)
         simulation_config = simulation.simulation_config or {}
         
-        if not simulation_config.get('topology_enabled', False):
-            return jsonify({'error': 'Topology not enabled for this simulation'}), 400
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        # Check if topology is enabled - if not, return empty config instead of error
+        topology_enabled = simulation_config.get('topology_enabled', False)
+        if not topology_enabled:
+            return jsonify({
+                'success': True,
+                'topology_enabled': False,
+                'selected_topology': '',
+                'topology_config': {},
+                'topology_requirements': {},
+                'topology_data': None,
+                'message': 'Topology not enabled for this simulation'
+            })
         
         # Get selected topology details
         selected_topology = simulation_config.get('selected_topology', '')
@@ -1652,6 +1806,13 @@ def validate_simulation_topology(simulation_id):
         # Get simulation and topology configuration
         simulation = Simulation.query.get_or_404(simulation_id)
         simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
         
         if not simulation_config.get('topology_enabled', False):
             return jsonify({'error': 'Topology validation not enabled for this simulation'}), 400
@@ -1774,6 +1935,7 @@ def execute_cli_command(simulation_id):
                 device_rules = cli_rules
 
             def matches(rule_cmd, actual_cmd, match_type, case_sensitive=False):
+        
                 mt = (match_type or 'exact').lower()
                 cs = bool(case_sensitive)
                 if mt == 'regex':
@@ -1855,6 +2017,14 @@ def execute_cli_command(simulation_id):
             rule_score_delta = 0
         
         # Update session data with command history
+        if not attempt.session_data:
+            attempt.session_data = {}
+        elif isinstance(attempt.session_data, str):
+            try:
+                attempt.session_data = json.loads(attempt.session_data)
+            except (json.JSONDecodeError, ValueError):
+                attempt.session_data = {}
+        
         if 'cliHistory' not in attempt.session_data:
             attempt.session_data['cliHistory'] = {}
         
@@ -1889,6 +2059,121 @@ def execute_cli_command(simulation_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/simulation/<int:simulation_id>/qr')
+def generate_qr_code(simulation_id):
+    """Generate QR code for simulation confirmation"""
+    try:
+        # Get simulation to ensure it exists
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Generate confirmation URL
+        from itsdangerous import URLSafeTimedSerializer
+        from flask import current_app
+        
+        serializer = URLSafeTimedSerializer(current_app.secret_key)
+        token = serializer.dumps({'simulation_id': simulation_id}, salt='simulation-confirm')
+        
+        # Build full confirmation URL
+        confirm_url = url_for('dynamic_simulations.confirm_simulation', 
+                             simulation_id=simulation_id, 
+                             token=token, 
+                             _external=True)
+        
+        # Generate QR code
+        import qrcode
+        from io import BytesIO
+        import base64
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(confirm_url)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to PNG bytes
+        img_buffer = BytesIO()
+        img.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+        
+        from flask import Response
+        return Response(
+            img_buffer.getvalue(),
+            mimetype='image/png',
+            headers={
+                'Content-Disposition': f'inline; filename=simulation_{simulation_id}_qr.png'
+            }
+        )
+        
+    except Exception as e:
+        from flask import abort
+        print(f"Error generating QR code for simulation {simulation_id}: {e}")
+        abort(500)
+
+@dynamic_sim_bp.route('/simulation/<int:simulation_id>/confirm')
+def confirm_simulation(simulation_id):
+    """Display simulation confirmation page"""
+    try:
+        # Get simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Verify token if provided
+        token = request.args.get('token')
+        token_valid = False
+        token_data = None
+        
+        if token:
+            try:
+                from services.qr_service import QRCodeService
+                qr_service = QRCodeService()
+                
+                verification_result = qr_service.verify_qr_token(token, simulation_id)
+                
+                if verification_result['valid']:
+                    token_valid = True
+                    token_data = verification_result['data']
+            except Exception as e:
+                print(f"Token verification error: {e}")
+                token_valid = False
+        
+        # Get simulation data for display
+        simulation_data = {
+            'id': simulation.id,
+            'title': simulation.title,
+            'description': simulation.description,
+            'simulation_type': simulation.simulation_type,
+            'category': simulation.category,
+            'difficulty': simulation.difficulty,
+            'estimated_duration': simulation.estimated_duration,
+            'is_published': simulation.is_published,
+            'is_active': simulation.is_active
+        }
+        
+        # Generate start URL
+        start_url = url_for('dynamic_simulations.run_simulation', 
+                           simulation_id=simulation_id, 
+                           _external=True)
+        
+        return render_template('user/simulation_confirmation.html',
+                             simulation=simulation_data,
+                             start_url=start_url,
+                             token_valid=token_valid,
+                             token_data=token_data)
+        
+    except Exception as e:
+        print(f"Error in confirm_simulation: {e}")
+        flash(f'Error loading simulation confirmation: {str(e)}', 'error')
+        return render_template('user/simulation_confirmation.html',
+                             simulation=None,
+                             start_url=None,
+                             token_valid=False,
+                             token_data=None)
 
 def process_cli_command(command, device_id, session_data):
     """Process CLI command and return appropriate response"""
@@ -2567,6 +2852,11 @@ def autosave_progress(simulation_id):
         # Merge into session_data and timestamp
         if not attempt.session_data:
             attempt.session_data = {}
+        elif isinstance(attempt.session_data, str):
+            try:
+                attempt.session_data = json.loads(attempt.session_data)
+            except (json.JSONDecodeError, ValueError):
+                attempt.session_data = {}
         # Shallow merge expected keys
         for k in ['networkTopology', 'deviceStates', 'cliHistory']:
             if k in progress_data:
@@ -2739,7 +3029,13 @@ def update_device_configuration(simulation_id):
             return jsonify({'success': False, 'error': 'No active simulation attempt found'}), 404
 
         # Parse existing session data
-        network_state = attempt.session_data or {}
+        session_data = attempt.session_data or {}
+        if isinstance(session_data, str):
+            try:
+                session_data = json.loads(session_data)
+            except (json.JSONDecodeError, ValueError):
+                session_data = {}
+        network_state = session_data
         device_states = network_state.get('deviceStates', {})
         network_devices = network_state.get('networkDevices', [])
         
@@ -2808,7 +3104,13 @@ def get_simulation_topology(simulation_id):
         
         attempt_topology = None
         if attempt and attempt.session_data:
-            attempt_topology = attempt.session_data.get('networkTopology')
+            session_data = attempt.session_data
+            if isinstance(session_data, str):
+                try:
+                    session_data = json.loads(session_data)
+                except (json.JSONDecodeError, ValueError):
+                    session_data = {}
+            attempt_topology = session_data.get('networkTopology')
         
         # Determine source and topology to return
         if attempt_topology:
@@ -2873,7 +3175,13 @@ def get_device_configuration(simulation_id, device_id):
             return jsonify({'success': False, 'error': 'No active simulation attempt found'}), 404
         
         # Parse session data
-        network_state = attempt.session_data or {}
+        session_data = attempt.session_data or {}
+        if isinstance(session_data, str):
+            try:
+                session_data = json.loads(session_data)
+            except (json.JSONDecodeError, ValueError):
+                session_data = {}
+        network_state = session_data
         device_states = network_state.get('deviceStates', {})
         
         # Get device configuration
@@ -3038,6 +3346,211 @@ def check_assignment_gating(user, simulation_id):
 def register_dynamic_routes(app):
     """Register all dynamic simulation routes"""
     app.register_blueprint(dynamic_sim_bp)
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/collaboration-settings', methods=['GET'])
+@user_login_required
+def get_collaboration_settings(simulation_id):
+    """Get collaboration settings for a simulation"""
+    try:
+        from admin.models.collaboration import CollaborationSetting
+        
+        # Get collaboration settings for this simulation
+        settings = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
+        
+        if not settings:
+            return jsonify({
+                'success': True,
+                'settings': {
+                    'collaboration_enabled': False,
+                    'team_size': 2,
+                    'shared_terminal': False,
+                    'individual_terminals': True,
+                    'follow_leader': False,
+                    'chat_enabled': False,
+                    'transcript_logging': False,
+                    'allow_late_join': True,
+                    'require_instructor': False,
+                    'time_window': None,
+                    'roles': ['Leader', 'Observer', 'Operator']
+                }
+            })
+        
+        return jsonify({
+            'success': True,
+            'settings': {
+                'collaboration_enabled': settings.collaboration_enabled,
+                'team_size': settings.team_size or 2,
+                'shared_terminal': settings.shared_terminal or False,
+                'individual_terminals': settings.individual_terminals if settings.individual_terminals is not None else True,
+                'follow_leader': settings.follow_leader or False,
+                'chat_enabled': settings.chat_enabled or False,
+                'transcript_logging': settings.transcript_logging or False,
+                'allow_late_join': settings.allow_late_join if settings.allow_late_join is not None else True,
+                'require_instructor': settings.require_instructor or False,
+                'time_window': settings.time_window,
+                'roles': settings.roles or ['Leader', 'Observer', 'Operator']
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting collaboration settings for simulation {simulation_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/join-lobby', methods=['POST'])
+@user_login_required
+def join_collaboration_lobby(simulation_id):
+    """Join a collaboration lobby for a simulation"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        lobby_id = data.get('lobby_id')
+        
+        if not lobby_id:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby ID is required'
+            }), 400
+        
+        # Get collaboration settings to verify lobby is allowed
+        from admin.models.collaboration import CollaborationSetting, CollaborationLobby, TeamAssignment
+        
+        setting = CollaborationSetting.query.filter_by(simulation_id=simulation_id).first()
+        if not setting or not setting.collaboration_enabled:
+            return jsonify({
+                'success': False,
+                'error': 'Collaboration is not enabled for this simulation'
+            }), 400
+        
+        # Check if lobby exists and is active
+        db_lobby = CollaborationLobby.query.get(lobby_id)
+        if not db_lobby or not db_lobby.is_active or db_lobby.simulation_id != simulation_id:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby not found or inactive'
+            }), 404
+        
+        # Try to get lobby from memory or restore it
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        lobby = lobby_manager.get_lobby(lobby_id)
+        if not lobby:
+            # Restore lobby to memory
+            lobby_config = {
+                'name': db_lobby.name,
+                'scenario_type': db_lobby.scenario_type,
+                'scenario_id': db_lobby.scenario_id,
+                'max_participants': db_lobby.max_participants,
+                'class_id': db_lobby.class_id,
+                'simulation_id': db_lobby.simulation_id,
+                'admin_created': True,
+                'collaboration_settings': setting.to_dict()
+            }
+            lobby = lobby_manager.create_lobby(
+                creator_id=db_lobby.creator_id,
+                creator_name=db_lobby.creator_name,
+                creator_profile_image=db_lobby.creator_profile_image,
+                lobby_config=lobby_config,
+                lobby_id=lobby_id
+            )
+        
+        # Check if user can join (not already in lobby)
+        existing_assignment = TeamAssignment.query.filter_by(
+            lobby_id=lobby_id,
+            user_id=user.id
+        ).first()
+        
+        if existing_assignment:
+            return jsonify({
+                'success': True,
+                'message': 'Already in lobby',
+                'team_assignment': {
+                    'team_number': existing_assignment.team_number,
+                    'role': existing_assignment.role
+                },
+                'lobby': lobby.to_dict()
+            })
+        
+        # Add user to lobby memory
+        success = lobby_manager.add_participant(
+            lobby_id,
+            str(user.id),
+            user.username,
+            getattr(user, 'profile_img', None)
+        )
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to join lobby - may be full'
+            }), 400
+        
+        # Assign to team based on collaboration settings
+        team_size = setting.team_size or 2
+        existing_teams = TeamAssignment.query.filter_by(lobby_id=lobby_id).all()
+        
+        # Group by team number to find available team
+        teams = {}
+        for assignment in existing_teams:
+            team_num = assignment.team_number
+            if team_num not in teams:
+                teams[team_num] = []
+            teams[team_num].append(assignment)
+        
+        # Find team with space or create new one
+        assigned_team = None
+        for team_num, members in teams.items():
+            if len(members) < team_size:
+                assigned_team = team_num
+                break
+        
+        if assigned_team is None:
+            # Create new team
+            assigned_team = len(teams) + 1
+        
+        # Determine role (simple: first member is leader, others are members)
+        team_members = teams.get(assigned_team, [])
+        role = 'leader' if len(team_members) == 0 else 'member'
+        
+        # Create team assignment in database
+        assignment = TeamAssignment(
+            lobby_id=lobby_id,
+            user_id=user.id,
+            team_number=assigned_team,
+            role=role,
+            joined_at=db.func.now()
+        )
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        # Emit socket event to notify other participants
+        from socket_events import socketio
+        if socketio:
+            socketio.emit('user_joined_lobby', {
+                'lobby_id': lobby_id,
+                'user_id': str(user.id),
+                'username': user.username,
+                'team_number': assigned_team,
+                'role': role
+            }, room=f'lobby_{lobby_id}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Successfully joined lobby',
+            'team_assignment': {
+                'team_number': assigned_team,
+                'role': role
+            },
+            'lobby': lobby.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error joining collaboration lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # Export the blueprint for direct import
 __all__ = ['dynamic_sim_bp', 'register_dynamic_routes']

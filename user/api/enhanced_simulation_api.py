@@ -5,7 +5,8 @@ Provides comprehensive API support for the new network simulation engine
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
-from user.models import db, DynamicSimulation, User, SimulationProgress
+from user.models import db, User, SimulationProgress
+from admin.models.simulation import Simulation
 from user.utils import validate_simulation_access
 import json
 from datetime import datetime
@@ -23,7 +24,7 @@ def update_device_configuration(simulation_id):
     """
     try:
         # Validate simulation access
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         
@@ -84,7 +85,7 @@ def add_network_device(simulation_id):
     Add a new device to network simulation
     """
     try:
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         
@@ -143,7 +144,7 @@ def create_network_connection(simulation_id):
     Create connection between network devices
     """
     try:
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         
@@ -217,7 +218,7 @@ def validate_network_simulation(simulation_id):
     Validate network simulation configuration
     """
     try:
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         
@@ -262,7 +263,7 @@ def export_simulation_data(simulation_id):
     Export complete simulation data
     """
     try:
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         
@@ -314,7 +315,7 @@ def execute_cli_command(simulation_id):
     Execute CLI command on network device
     """
     try:
-        simulation = DynamicSimulation.query.get_or_404(simulation_id)
+        simulation = Simulation.query.get_or_404(simulation_id)
         if not validate_simulation_access(simulation, current_user):
             return jsonify({'error': 'Access denied'}), 403
         

@@ -8,6 +8,7 @@ from admin import db
 from datetime import datetime
 from utils.auth_decorators import admin_required
 from utils.render_utils import render_safe_template
+import json
 
 # Create the troubleshooting blueprint 
 troubleshooting_bp = Blueprint('admin_troubleshooting', __name__, url_prefix='/admin/troubleshooting')
@@ -156,6 +157,14 @@ def save_simulation_editor(simulation_id):
         simulation.solution_topology = data.get('solution_topology', {})
         simulation.required_steps = data.get('required_steps', [])
         simulation.updated_at = datetime.utcnow()
+        
+        # Handle collaboration settings
+        collaboration_config = data.get('collaborationConfig', {})
+        if collaboration_config:
+            # Store collaboration settings as JSON if the model supports it
+            if hasattr(simulation, 'collaboration_settings'):
+                simulation.collaboration_settings = json.dumps(collaboration_config)
+            # Alternatively, you might want to create a separate CollaborationSettings model
         
         db.session.commit()
         

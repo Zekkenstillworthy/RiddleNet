@@ -5,7 +5,16 @@
 (function() {
     'use strict';
     
+    // Guard against multiple initializations
+    if (window.adminSocketInitialized) {
+        console.log('🔒 Admin WebSocket Enabler already initialized, skipping');
+        return;
+    }
+    
     console.log('🔧 Admin WebSocket Enabler initializing...');
+    
+    // Mark as initialized
+    window.adminSocketInitialized = true;
     
     // Check if we're on an admin page
     const isAdminPage = window.location.pathname.includes('/admin') || 
@@ -108,7 +117,7 @@
                 document.dispatchEvent(event);
                 
             }, 1000); // Wait 1 second for other scripts to load
-        });
+        }, { once: true }); // Use once: true to prevent duplicate listeners
         
         console.log('✅ Admin WebSocket Enabler setup complete');
         

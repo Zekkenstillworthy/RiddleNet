@@ -401,37 +401,49 @@ class SimulationEngineIntegration {
         if (!this.existingSimulation || !this.engineInstance) return;
         
         try {
+            // Clear existing engine data first to prevent duplication
+            if (this.engineInstance.devices) this.engineInstance.devices = [];
+            if (this.engineInstance.connections) this.engineInstance.connections = [];
+            
             // Transfer existing simulation data to new engine
             const existingData = this.existingSimulation.data || this.existingSimulation.simulation || {};
             const existingProgress = this.existingSimulation.progress || {};
 
-            const importedIds = new Set((this.engineInstance.devices || []).map(d => String(d.id)));
+            const importedIds = new Set();
             const importDeviceOnce = (dev) => {
                 if (!dev) return;
                 const key = String(dev.id || dev.label || dev.name || Math.random());
-                if (importedIds.has(key)) return;
+                if (importedIds.has(key)) {
+                    console.log(`⚠️ Skipping duplicate device: ${key}`);
+                    return;
+                }
                 const created = this.engineInstance.importDevice(dev);
                 if (created && created.id) importedIds.add(String(created.id));
             };
 
-            // A) From JSON topology (preferred)
-            const topo = existingData.topology || existingData.simulation_config || null;
-            if (topo && topo.devices) {
-                const devsArr = Array.isArray(topo.devices) ? topo.devices : Object.values(topo.devices);
-                devsArr.forEach(importDeviceOnce);
-            }
-            // Connections from JSON topology
-            const rawLinks = topo ? (topo.links || topo.connections || []) : [];
-            const linksArr = Array.isArray(rawLinks) ? rawLinks : Object.values(rawLinks);
-            linksArr.forEach(link => this.engineInstance.importConnection(link));
-
-            // B) From running DynamicSimulation instance state (networkDevices/networkConnections)
+            // Priority: Use networkDevices from existing simulation if available (most up-to-date)
             const ds = this.existingSimulation;
             if (Array.isArray(ds.networkDevices) && ds.networkDevices.length) {
+                console.log(`🔄 Loading ${ds.networkDevices.length} devices from simulation state`);
                 ds.networkDevices.forEach(importDeviceOnce);
-            }
-            if (Array.isArray(ds.networkConnections) && ds.networkConnections.length) {
-                ds.networkConnections.forEach(conn => this.engineInstance.importConnection(conn));
+                
+                // Also load connections from existing simulation
+                if (Array.isArray(ds.networkConnections) && ds.networkConnections.length) {
+                    ds.networkConnections.forEach(conn => this.engineInstance.importConnection(conn));
+                }
+            } else {
+                // Fallback: From JSON topology (if no existing simulation devices)
+                const topo = existingData.topology || existingData.simulation_config || null;
+                if (topo && topo.devices) {
+                    console.log(`🔄 Loading devices from topology config`);
+                    const devsArr = Array.isArray(topo.devices) ? topo.devices : Object.values(topo.devices);
+                    devsArr.forEach(importDeviceOnce);
+                    
+                    // Connections from JSON topology
+                    const rawLinks = topo ? (topo.links || topo.connections || []) : [];
+                    const linksArr = Array.isArray(rawLinks) ? rawLinks : Object.values(rawLinks);
+                    linksArr.forEach(link => this.engineInstance.importConnection(link));
+                }
             }
 
             // Transfer progress data

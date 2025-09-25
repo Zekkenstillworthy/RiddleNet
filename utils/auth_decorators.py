@@ -139,3 +139,18 @@ def user_required(f):
         
         return f(*args, **kwargs)
     return decorated_function
+
+def user_login_required(f):
+    """
+    Decorator to require user login (alias for user_required for compatibility)
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            if request.is_json:
+                return jsonify({'error': 'Authentication required'}), 401
+            from flask import redirect, url_for, session
+            return redirect(url_for('user.login'))
+        
+        return f(*args, **kwargs)
+    return decorated_function

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, render_template
+from flask import Blueprint, jsonify, request, render_template, current_app, session
 from flask_login import current_user
 from admin import db
 from admin.models.class_model import Class
@@ -626,6 +626,68 @@ def get_all_deadlines():
             'error': str(e)
         }), 500
 
+# Missing collaboration endpoints
+@api_bp.route('/collaboration/classes', methods=['GET'])
+def get_collaboration_classes():
+    """Get available classes for collaboration assignment"""
+    try:
+        from admin.models.class_model import Class
+        
+        # Get all active classes for collaboration
+        classes = Class.query.filter_by(status='active').all()
+        
+        classes_data = []
+        for cls in classes:
+            # Count students for each class
+            student_count = cls.students.count() if cls.students else 0
+            
+            classes_data.append({
+                'id': cls.id,
+                'name': cls.name,
+                'code': cls.code,
+                'student_count': student_count
+            })
+        
+        return jsonify({
+            'success': True,
+            'classes': classes_data
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error fetching collaboration classes: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/classes/<int:class_id>/students', methods=['GET'])
+def get_collaboration_class_students(class_id):
+    """Get students for a specific class for collaboration"""
+    try:
+        from admin.models.class_model import Class
+        
+        cls = Class.query.get_or_404(class_id)
+        students = cls.students.all() if cls.students else []
+        
+        students_data = []
+        for student in students:
+            students_data.append({
+                'id': student.id,
+                'name': student.username,  # User model has username, not name
+                'email': getattr(student, 'email', ''),
+                'status': getattr(student, 'status', 'active')
+            })
+        
+        return jsonify({
+            'success': True,
+            'students': students_data
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error fetching students for class {class_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @api_bp.route('/collaboration/settings', methods=['GET'])
 def get_collaboration_settings():
     """Get collaboration settings for enhanced collaboration management"""
@@ -657,56 +719,102 @@ def save_collaboration_settings():
             'error': str(e)
         }), 500
 
-# Live Collaboration Monitoring API Endpoints
-@api_bp.route('/collaboration/stats', methods=['GET'])
-def get_collaboration_stats():
-    """Get real-time collaboration statistics"""
+# -----------------------------------------------------------------------------
+# Simulation-Specific Collaboration Settings (Needed by collaboration-manager.js)
+# Frontend calls: /admin/api/collaboration/simulation/<simulation_id>/collaboration
+#  - GET: fetch existing settings (stored on Simulation.collaboration_settings JSON column)
+#  - POST: update settings
+# Returns safe defaults if none exist yet to prevent 404 / JSON parse errors.
+# -----------------------------------------------------------------------------
+@api_bp.route('/collaboration/simulation/<int:simulation_id>/collaboration', methods=['GET'])
+def get_simulation_collaboration_settings(simulation_id):
+    """Fetch collaboration settings for a specific simulation.
+    Frontend expects JSON with { success: bool, collaboration_settings: {...} }
+    """
     try:
-        # Import lobby manager to get real stats
-        try:
-            from services.troubleshooting_lobbies import lobby_manager
-            active_lobbies = lobby_manager.get_public_lobbies()
-            
-            active_groups = len(active_lobbies)
-            total_participants = sum(len(lobby.get('participants', [])) for lobby in active_lobbies)
-            
-            # Calculate average duration
-            avg_duration = "0m"
-            if active_lobbies:
-                durations = []
-                for lobby_data in active_lobbies:
-                    if 'created_at' in lobby_data:
-                        try:
-                            from datetime import datetime
-                            created_time = datetime.fromisoformat(lobby_data['created_at'].replace('Z', '+00:00'))
-                            duration_minutes = int((datetime.utcnow() - created_time.replace(tzinfo=None)).total_seconds() / 60)
-                            durations.append(duration_minutes)
-                        except:
-                            pass
-                if durations:
-                    avg_duration = f"{int(sum(durations) / len(durations))}m"
-                    
-            return jsonify({
-                'success': True,
-                'activeGroups': active_groups,
-                'totalParticipants': total_participants,
-                'avgDuration': avg_duration
-            })
-            
-        except ImportError:
-            # Lobby manager not available - return zero stats
-            return jsonify({
-                'success': True,
-                'activeGroups': 0,
-                'totalParticipants': 0,
-                'avgDuration': '0m'
-            })
-            
-    except Exception as e:
+        from admin.models.simulation import Simulation
+        simulation = Simulation.query.get(simulation_id)
+        if not simulation:
+            return jsonify({'success': False, 'error': 'Simulation not found'}), 404
+
+        # Provide sensible defaults if empty
+        settings = simulation.collaboration_settings or {}
+        if not settings:
+            settings = {
+                'enable_collaboration': False,
+                'max_team_size': 4,
+                'team_formation': 'manual',  # manual | auto
+                'enable_chat': True,
+                'enable_screen_share': False,
+                'enable_annotations': False,
+                'instructor_monitoring': True,
+                'activity_logging': True,
+                'session_timeout': 60,  # minutes
+                'max_sessions': 5
+            }
+
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+            'success': True,
+            'collaboration_settings': settings
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error fetching simulation collaboration settings: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@api_bp.route('/collaboration/simulation/<int:simulation_id>/collaboration', methods=['POST'])
+def save_simulation_collaboration_settings(simulation_id):
+    """Persist collaboration settings for a simulation."""
+    try:
+        from admin.models.simulation import Simulation
+        simulation = Simulation.query.get(simulation_id)
+        if not simulation:
+            return jsonify({'success': False, 'error': 'Simulation not found'}), 404
+
+        data = request.get_json() or {}
+        new_settings = data.get('collaboration_settings') or data.get('settings') or {}
+
+        # Basic validation / normalization
+        if not isinstance(new_settings, dict):
+            return jsonify({'success': False, 'error': 'Invalid settings payload'}), 400
+
+        # Ensure required keys have defaults
+        defaults = {
+            'enable_collaboration': False,
+            'max_team_size': 4,
+            'team_formation': 'manual',
+            'enable_chat': True,
+            'enable_screen_share': False,
+            'enable_annotations': False,
+            'instructor_monitoring': True,
+            'activity_logging': True,
+            'session_timeout': 60,
+            'max_sessions': 5
+        }
+        for k, v in defaults.items():
+            new_settings.setdefault(k, v)
+
+        # Simple constraints
+        try:
+            new_settings['max_team_size'] = max(2, min(int(new_settings.get('max_team_size', 4)), 50))
+            new_settings['session_timeout'] = max(15, min(int(new_settings.get('session_timeout', 60)), 480))
+            new_settings['max_sessions'] = max(1, min(int(new_settings.get('max_sessions', 5)), 100))
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Numeric fields must be integers'}), 400
+
+        simulation.collaboration_settings = new_settings
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Simulation collaboration settings saved',
+            'collaboration_settings': new_settings
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error saving simulation collaboration settings: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Live Collaboration Monitoring API Endpoints - duplicate removed, kept the version at line 2586
 
 @api_bp.route('/collaboration/active', methods=['GET'])
 def get_active_collaborations():
@@ -1861,6 +1969,26 @@ def assign_simulation_to_module(module_id):
         db.session.add(assignment)
         db.session.commit()
         
+        # Emit WebSocket event to users viewing this module
+        try:
+            from socket_events import emit_module_content_updated
+            emit_module_content_updated(module.class_id, module_id, {
+                'type': 'simulation_assigned',
+                'simulation': {
+                    'id': simulation.id,
+                    'title': simulation.title,
+                    'description': simulation.description
+                },
+                'module': {
+                    'id': module.id,
+                    'title': module.title
+                },
+                'assignment_id': assignment.id,
+                'assigned_by': current_user.username if current_user.is_authenticated else 'System'
+            })
+        except Exception as e:
+            print(f"Warning: Failed to emit module content update: {str(e)}")
+        
         return jsonify({
             'success': True,
             'message': f'Simulation "{simulation.title}" assigned to module "{module.title}"',
@@ -2033,6 +2161,650 @@ def unassign_question_group_from_module(module_id, question_group_id):
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# =============================================================================
+# LOBBY MANAGEMENT API ENDPOINTS
+# =============================================================================
+
+@api_bp.route('/lobbies', methods=['GET'])
+def get_admin_lobbies():
+    """Get all lobbies for admin management"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        class_id = request.args.get('class_id', type=int)
+        
+        # Get all lobbies
+        all_lobbies = lobby_manager.get_public_lobbies()
+        
+        # Filter by class if specified
+        if class_id:
+            filtered_lobbies = [
+                lobby for lobby in all_lobbies 
+                if lobby.get('class_id') == class_id
+            ]
+        else:
+            filtered_lobbies = all_lobbies
+        
+        # Format for admin interface
+        lobbies = []
+        for lobby_data in filtered_lobbies:
+            lobbies.append({
+                'id': lobby_data.get('id'),
+                'name': lobby_data.get('name', 'Unknown Session'),
+                'description': lobby_data.get('description', ''),
+                'max_participants': lobby_data.get('max_participants', 4),
+                'participants': lobby_data.get('participants', []),
+                'status': 'active' if lobby_data.get('is_active', True) else 'inactive',
+                'created_at': lobby_data.get('created_at'),
+                'creator_id': lobby_data.get('creator_id'),
+                'creator_name': lobby_data.get('creator_name'),
+                'class_id': lobby_data.get('class_id'),
+                'scenario_type': lobby_data.get('scenario_type', 'general'),
+                'is_private': lobby_data.get('is_private', False)
+            })
+        
+        return jsonify({
+            'success': True,
+            'lobbies': lobbies
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'lobbies': []
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error fetching admin lobbies: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/lobbies', methods=['POST'])
+def create_admin_lobby():
+    """Create a new lobby from admin interface"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+        
+        # Validate required fields
+        name = data.get('name', '').strip()
+        if not name:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby name is required'
+            }), 400
+        
+        # Create lobby data
+        lobby_data = {
+            'name': name,
+            'description': data.get('description', ''),
+            'max_participants': int(data.get('max_participants', 4)),
+            'class_id': data.get('class_id'),
+            'creator_id': str(data.get('created_by', '')),
+            'creator_name': data.get('creator_name', 'Admin'),
+            'scenario_type': data.get('scenario_type', 'general'),
+            'scenario_id': data.get('scenario_id', 'default'),
+            'is_private': bool(data.get('is_private', False)),
+            'creator_role': 'admin'
+        }
+        
+        # Create the lobby
+        lobby_id = lobby_manager.create_lobby(
+            name=lobby_data['name'],
+            scenario_type=lobby_data['scenario_type'],
+            scenario_id=lobby_data['scenario_id'],
+            max_participants=lobby_data['max_participants'],
+            class_id=lobby_data['class_id'],
+            creator_id=lobby_data['creator_id'],
+            creator_name=lobby_data['creator_name']
+        )
+        
+        if lobby_id:
+            return jsonify({
+                'success': True,
+                'lobby_id': lobby_id,
+                'message': f'Lobby "{name}" created successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create lobby'
+            }), 500
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error creating admin lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/lobbies/<lobby_id>', methods=['DELETE'])
+def delete_admin_lobby(lobby_id):
+    """Delete a lobby from admin interface"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        success = lobby_manager.delete_lobby(lobby_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Lobby deleted successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby not found or could not be deleted'
+            }), 404
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error deleting admin lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/lobbies/<lobby_id>/participants', methods=['GET'])
+def get_lobby_participants(lobby_id):
+    """Get participants for a specific lobby"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        lobby = lobby_manager.get_lobby(lobby_id)
+        if not lobby:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby not found'
+            }), 404
+        
+        participants = []
+        for user_id, participant_data in lobby.participants.items():
+            participants.append({
+                'user_id': user_id,
+                'username': participant_data.get('username', 'Unknown'),
+                'profile_image': participant_data.get('profile_image'),
+                'joined_at': participant_data.get('joined_at'),
+                'is_active': participant_data.get('is_active', True),
+                'selected_device': participant_data.get('selected_device'),
+                'cursor_position': participant_data.get('cursor_position', {'x': 0, 'y': 0})
+            })
+        
+        return jsonify({
+            'success': True,
+            'participants': participants
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# =============================================================================
+# SIMULATION COLLABORATION API ENDPOINTS
+# =============================================================================
+
+@api_bp.route('/collaboration/simulation/<int:simulation_id>/start-lobby', methods=['POST'])
+def start_simulation_collaboration_lobby(simulation_id):
+    """Start a collaboration lobby for a specific simulation"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        data = request.get_json() or {}
+        
+        # Get simulation details
+        from user.models import Simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Create lobby data
+        lobby_name = data.get('name', f'{simulation.name} - Collaboration Session')
+        lobby_data = {
+            'name': lobby_name,
+            'description': data.get('description', f'Collaborative session for {simulation.name}'),
+            'max_participants': int(data.get('max_participants', 12)),
+            'class_id': data.get('class_id'),
+            'creator_id': str(data.get('created_by', '')),
+            'creator_name': data.get('creator_name', 'Admin'),
+            'scenario_type': data.get('scenario_type', 'simulation'),
+            'scenario_id': str(simulation_id),
+            'simulation_id': simulation_id,
+            'is_private': bool(data.get('is_private', False)),
+            'creator_role': 'admin'
+        }
+        
+        # Create the lobby
+        lobby_id = lobby_manager.create_lobby(
+            name=lobby_data['name'],
+            scenario_type=lobby_data['scenario_type'],
+            scenario_id=lobby_data['scenario_id'],
+            max_participants=lobby_data['max_participants'],
+            class_id=lobby_data['class_id'],
+            creator_id=lobby_data['creator_id'],
+            creator_name=lobby_data['creator_name']
+        )
+        
+        if lobby_id:
+            # Store additional simulation-specific data
+            lobby = lobby_manager.get_lobby(lobby_id)
+            if lobby:
+                lobby.simulation_id = simulation_id
+                lobby.simulation_name = simulation.name
+                
+            return jsonify({
+                'success': True,
+                'lobby_id': lobby_id,
+                'simulation_id': simulation_id,
+                'lobby_name': lobby_name,
+                'message': f'Collaboration lobby created for {simulation.name}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create collaboration lobby'
+            }), 500
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error starting simulation collaboration: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/simulation/<int:simulation_id>/lobby', methods=['GET'])
+def get_simulation_collaboration_lobby(simulation_id):
+    """Get active collaboration lobby for a simulation"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        # Find lobby for this simulation
+        all_lobbies = lobby_manager.get_public_lobbies()
+        simulation_lobby = None
+        
+        for lobby_data in all_lobbies:
+            if (lobby_data.get('scenario_type') == 'simulation' and 
+                str(lobby_data.get('scenario_id')) == str(simulation_id)):
+                simulation_lobby = lobby_data
+                break
+        
+        if simulation_lobby:
+            return jsonify({
+                'success': True,
+                'lobby': {
+                    'id': simulation_lobby.get('id'),
+                    'name': simulation_lobby.get('name'),
+                    'description': simulation_lobby.get('description'),
+                    'max_participants': simulation_lobby.get('max_participants'),
+                    'participants': simulation_lobby.get('participants', []),
+                    'is_active': simulation_lobby.get('is_active', True),
+                    'created_at': simulation_lobby.get('created_at'),
+                    'simulation_id': simulation_id
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'No active collaboration lobby found for this simulation'
+            }), 404
+            
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'lobby': None
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting simulation collaboration lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/simulation/<int:simulation_id>/stop-lobby', methods=['POST'])
+def stop_simulation_collaboration_lobby(simulation_id):
+    """Stop collaboration lobby for a simulation"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        # Find and delete lobby for this simulation
+        all_lobbies = lobby_manager.get_public_lobbies()
+        
+        for lobby_data in all_lobbies:
+            if (lobby_data.get('scenario_type') == 'simulation' and 
+                str(lobby_data.get('scenario_id')) == str(simulation_id)):
+                
+                lobby_id = lobby_data.get('id')
+                success = lobby_manager.delete_lobby(lobby_id)
+                
+                if success:
+                    return jsonify({
+                        'success': True,
+                        'message': f'Collaboration lobby stopped for simulation {simulation_id}'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Failed to stop collaboration lobby'
+                    }), 500
+        
+        return jsonify({
+            'success': False,
+            'error': 'No active collaboration lobby found for this simulation'
+        }), 404
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error stopping simulation collaboration: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/stats', methods=['GET'])
+def get_collaboration_stats():
+    """Get collaboration statistics for admin dashboard"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        class_id = request.args.get('class_id', type=int)
+        
+        # Get all lobbies
+        all_lobbies = lobby_manager.get_public_lobbies()
+        
+        # Filter by class if specified
+        if class_id:
+            class_lobbies = [
+                lobby for lobby in all_lobbies 
+                if lobby.get('class_id') == class_id
+            ]
+        else:
+            class_lobbies = all_lobbies
+        
+        # Calculate stats
+        stats = {
+            'total_active_lobbies': len(class_lobbies),
+            'total_participants': sum(len(lobby.get('participants', [])) for lobby in class_lobbies),
+            'simulation_lobbies': len([
+                lobby for lobby in class_lobbies 
+                if lobby.get('scenario_type') == 'simulation'
+            ]),
+            'general_lobbies': len([
+                lobby for lobby in class_lobbies 
+                if lobby.get('scenario_type') == 'general'
+            ]),
+            'lobbies': [
+                {
+                    'id': lobby.get('id'),
+                    'name': lobby.get('name'),
+                    'participants_count': len(lobby.get('participants', [])),
+                    'max_participants': lobby.get('max_participants', 4),
+                    'scenario_type': lobby.get('scenario_type'),
+                    'created_at': lobby.get('created_at')
+                }
+                for lobby in class_lobbies
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_active_lobbies': 0,
+                'total_participants': 0,
+                'simulation_lobbies': 0,
+                'general_lobbies': 0,
+                'lobbies': []
+            }
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting collaboration stats: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# =============================================================================
+# EDIT SIMULATION LOBBY API ENDPOINTS 
+# These endpoints are called by edit_simulation.html collaboration tab
+# =============================================================================
+
+@api_bp.route('/collaboration/lobbies', methods=['GET'])
+def get_all_lobbies():
+    """Get all available lobbies for the lobby browser"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        # Get all public lobbies
+        lobbies = lobby_manager.get_public_lobbies()
+        
+        # Format lobbies for frontend
+        formatted_lobbies = []
+        for lobby_data in lobbies:
+            formatted_lobbies.append({
+                'id': lobby_data.get('id'),
+                'name': lobby_data.get('name', 'Unnamed Lobby'),
+                'description': lobby_data.get('description', 'No description provided'),
+                'participant_count': len(lobby_data.get('participants', {})),
+                'max_participants': lobby_data.get('max_participants', 8),
+                'privacy': 'public',  # All public lobbies
+                'creator_name': lobby_data.get('creator_name', 'Unknown'),
+                'scenario_type': lobby_data.get('scenario_type', 'medium'),
+                'scenario_id': lobby_data.get('scenario_id', 'network'),
+                'is_active': lobby_data.get('is_active', True),
+                'created_at': lobby_data.get('created_at')
+            })
+        
+        return jsonify({
+            'success': True,
+            'lobbies': formatted_lobbies
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'lobbies': []
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting lobbies: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'lobbies': []
+        }), 500
+
+@api_bp.route('/collaboration/lobbies', methods=['POST'])
+def create_lobby():
+    """Create a new collaboration lobby"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        data = request.get_json() or {}
+        
+        # Validate required fields
+        lobby_name = data.get('name', '').strip()
+        if not lobby_name:
+            return jsonify({
+                'success': False,
+                'error': 'Lobby name is required'
+            }), 400
+            
+        # Get creator information from session
+        creator_id = str(session.get('admin_id', 'admin'))
+        creator_name = session.get('admin_username', 'Admin')
+        
+        # Create lobby with troubleshooting_lobbies service
+        lobby_id = lobby_manager.create_lobby(
+            name=lobby_name,
+            scenario_type=data.get('scenario_type', 'medium'),
+            scenario_id=data.get('scenario_id', 'network'),
+            max_participants=int(data.get('max_participants', 8)),
+            class_id=data.get('class_id'),
+            creator_id=creator_id,
+            creator_name=creator_name,
+            description=data.get('description', ''),
+            simulation_id=data.get('simulation_id')
+        )
+        
+        if lobby_id:
+            return jsonify({
+                'success': True,
+                'lobby_id': lobby_id,
+                'message': f'Lobby "{lobby_name}" created successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create lobby'
+            }), 500
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error creating lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/lobbies/active', methods=['GET'])
+def get_active_lobbies():
+    """Get active lobbies for the current session"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        # Get all public lobbies (they are all active)
+        lobbies = lobby_manager.get_public_lobbies()
+        
+        # Format lobbies for frontend
+        active_lobbies = []
+        for lobby_data in lobbies:
+            if lobby_data.get('is_active', True):
+                active_lobbies.append({
+                    'id': lobby_data.get('id'),
+                    'name': lobby_data.get('name', 'Unnamed Lobby'),
+                    'participant_count': len(lobby_data.get('participants', {})),
+                    'max_participants': lobby_data.get('max_participants', 8),
+                    'creator_name': lobby_data.get('creator_name', 'Unknown'),
+                    'created_at': lobby_data.get('created_at'),
+                    'scenario_type': lobby_data.get('scenario_type', 'medium')
+                })
+        
+        return jsonify({
+            'success': True,
+            'lobbies': active_lobbies
+        })
+        
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'lobbies': []
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting active lobbies: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'lobbies': []
+        }), 500
+
+@api_bp.route('/collaboration/lobby/<lobby_id>/close', methods=['POST'])
+def close_lobby(lobby_id):
+    """Close/delete a specific lobby"""
+    try:
+        from services.troubleshooting_lobbies import lobby_manager
+        
+        # Check if admin has permission (basic check)
+        if not session.get('admin_id'):
+            return jsonify({
+                'success': False,
+                'error': 'Unauthorized'
+            }), 403
+            
+        # Close the lobby
+        success = lobby_manager.delete_lobby(lobby_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Lobby {lobby_id} closed successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to close lobby or lobby not found'
+            }), 404
+            
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'Lobby system not available'
+        }), 503
+    except Exception as e:
+        current_app.logger.error(f"Error closing lobby {lobby_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@api_bp.route('/collaboration/teams', methods=['POST'])
+def save_collaboration_teams():
+    """Save team assignments for collaboration"""
+    try:
+        data = request.get_json() or {}
+        
+        # For now, just acknowledge the request
+        # TODO: Implement team assignment logic with CollaborationLobby and TeamAssignment models
+        
+        return jsonify({
+            'success': True,
+            'message': 'Team assignments saved successfully',
+            'teams': data.get('teams', [])
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error saving teams: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

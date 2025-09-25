@@ -976,6 +976,42 @@ def topology():
         completed_topologies=completed_topologies
     )
 
+@user_bp.route('/topology/gamified')
+@user_login_required
+def gamified_topology():
+    """Render the gamified topology simulation page."""
+    from services.gamified_topology_service import GamifiedTopologyService
+    
+    try:
+        service = GamifiedTopologyService()
+        
+        # Get user progress and scenarios
+        user_progress = service.get_user_progress(current_user.id)
+        scenarios = service.get_available_scenarios(current_user.id)
+        
+        # Format data for the frontend
+        gamified_data = {
+            'userProgress': {
+                'total_completed': user_progress.get('total_completed', 0),
+                'total_scenarios': user_progress.get('total_scenarios', 0),
+                'total_score': user_progress.get('total_score', 0),
+                'completion_percentage': user_progress.get('completion_percentage', 0),
+                'current_level': user_progress.get('current_level', 1),
+                'achievements': user_progress.get('achievements', [])
+            },
+            'scenarios': scenarios
+        }
+        
+        return render_template(
+            'user/gamified_topology.html',
+            gamified_data=gamified_data
+        )
+        
+    except Exception as e:
+        print(f"Error in gamified topology route: {e}")
+        flash('Error loading gamified topology. Please try again.', 'error')
+        return redirect(url_for('user.topology'))
+
 @user_bp.route('/topology/challenges')
 @user_login_required
 def get_topology_challenges():
@@ -1588,3 +1624,13 @@ def debug_auth():
     # Test our debug function
     context = get_current_user_context()
     return f"<h2>Debug Authentication Results:</h2><pre>{context}</pre>"
+
+# Register the gamified topology routes blueprint
+try:
+    from user.routes.gamified_topology_routes import gamified_topology_bp
+    user_bp.register_blueprint(gamified_topology_bp, url_prefix='/topology')
+    print("Successfully registered gamified topology routes")
+except ImportError as e:
+    print(f"Warning: Could not import gamified topology routes: {e}")
+except Exception as e:
+    print(f"Error registering gamified topology routes: {e}")

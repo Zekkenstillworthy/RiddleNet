@@ -198,6 +198,20 @@ def create_app(config=None):
         except Exception as e:
             print(f"⚠️ Error registering admin essay controller blueprint: {e}")
             
+        try:
+            from admin.routes.collaboration_api import admin_collaboration_api_bp
+            app.register_blueprint(admin_collaboration_api_bp)
+            print("✅ Admin collaboration API blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering admin collaboration API blueprint: {e}")
+            
+        try:
+            from admin.routes.rnet_viewer_routes import rnet_viewer_bp
+            app.register_blueprint(rnet_viewer_bp)
+            print("✅ RNet file viewer blueprint registered")
+        except Exception as e:
+            print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
+            
         '''
         
         # Print registered rules for debugging        print("Registered URL rules:")
@@ -206,6 +220,14 @@ def create_app(config=None):
     except ImportError as e:
         # If a blueprint can't be imported, continue without it
         print(f"Warning: Could not import blueprint: {e}")
+    
+    # Register RNet file viewer blueprint (moved out of commented section)
+    try:
+        from admin.routes.rnet_viewer_routes import rnet_viewer_bp
+        app.register_blueprint(rnet_viewer_bp)
+        print("✅ RNet file viewer blueprint registered")
+    except Exception as e:
+        print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
     
     # Add context processors for static file server
     @app.context_processor

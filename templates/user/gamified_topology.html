@@ -1,0 +1,681 @@
+{% extends 'user/base.html' %}
+
+{% block head %}
+<title>Network Topology Simulation | RiddleNet</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet"/>
+
+<!-- Initialize gamified topology data -->
+<script>
+    const GAMIFIED_TOPOLOGY_DATA = {
+        scenarios: {{ scenarios|tojson|safe if scenarios else '[]' }},
+        userProgress: {{ user_progress|tojson|safe if user_progress else '{}' }},
+        recentActivity: {{ recent_activity|tojson|safe if recent_activity else '[]' }},
+        achievements: {{ achievements|tojson|safe if achievements else '{}' }}
+    };
+    console.log("Loaded gamified topology data:", GAMIFIED_TOPOLOGY_DATA);
+</script>
+
+<!-- Load enhanced topology scripts -->
+<script src="/static/js/topology-requirements.js"></script>
+<script src="/static/js/topology-validator.js"></script>
+<script src="/static/js/gamified-topology.js"></script>
+
+<style>
+    body {
+        background-color: #0a0a0f;
+        margin: 0;
+        padding: 0;
+        font-family: "Poppins", sans-serif;
+        color: #fff;
+        overflow-x: hidden;
+    }
+
+    #app {
+        display: flex;
+        background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+        min-height: 100vh;
+    }
+
+    /* Sidebar with scenario selection */
+    #scenario-panel {
+        width: 350px;
+        background: linear-gradient(180deg, #00C3B5 0%, #00645C 100%);
+        padding: 20px;
+        border-right: 3px solid #fff;
+        color: #fff;
+        overflow-y: auto;
+        max-height: 100vh;
+    }
+
+    .panel-header {
+        text-align: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .panel-header h2 {
+        font-size: 28px;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .progress-overview {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-stat {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #FFD700, #FFA500);
+        transition: width 0.3s ease;
+    }
+
+    .topology-category {
+        margin-bottom: 25px;
+    }
+
+    .category-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #FFD700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .scenario-grid {
+        display: grid;
+        gap: 10px;
+    }
+
+    .scenario-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        backdrop-filter: blur(10px);
+    }
+
+    .scenario-card:hover {
+        border-color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 195, 181, 0.3);
+    }
+
+    .scenario-card.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .scenario-card.completed::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        color: #4CAF50;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .difficulty-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .difficulty-easy { background: #4CAF50; }
+    .difficulty-medium { background: #FF9800; }
+    .difficulty-hard { background: #F44336; }
+
+    .scenario-name {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #fff;
+    }
+
+    .scenario-description {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    .scenario-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Main canvas area */
+    #simulation-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        position: relative;
+    }
+
+    .simulation-header {
+        background: linear-gradient(90deg, #00C3B5, #00645C);
+        color: #fff;
+        padding: 15px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 3px solid #00C3B5;
+    }
+
+    .simulation-title {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .simulation-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .timer-display {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 15px;
+        border-radius: 25px;
+        font-family: 'Courier New', monospace;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .score-display {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        color: #000;
+        padding: 8px 15px;
+        border-radius: 25px;
+        font-weight: bold;
+    }
+
+    .control-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid #fff;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .control-btn:hover {
+        background: #fff;
+        color: #00C3B5;
+    }
+
+    .control-btn.active {
+        background: #FFD700;
+        color: #000;
+        border-color: #FFD700;
+    }
+
+    /* Device palette */
+    #device-palette {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 180px;
+        background: linear-gradient(180deg, #00C3B5, #00645C);
+        padding: 20px;
+        color: #fff;
+        z-index: 100;
+        max-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .palette-section {
+        margin-bottom: 25px;
+    }
+
+    .palette-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-align: center;
+        color: #FFD700;
+    }
+
+    .device {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #fff;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+
+    .device:hover {
+        background: #fff;
+        color: #00C3B5;
+        transform: scale(1.05);
+    }
+
+    .device img {
+        width: 40px;
+        height: 40px;
+        display: block;
+        margin: 0 auto 8px;
+    }
+
+    .device-name {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .requirements-panel {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+
+    .requirement-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 13px;
+    }
+
+    /* Canvas area */
+    #canvas-container {
+        flex: 1;
+        position: relative;
+        background: linear-gradient(45deg, #f0f8ff 0%, #e6f3ff 100%);
+        margin-right: 180px; /* Space for device palette */
+    }
+
+    #Canvas {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
+    }
+
+    /* Tutorial modal */
+    .tutorial-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .tutorial-content {
+        background: linear-gradient(135deg, #00C3B5, #00645C);
+        border: 3px solid #fff;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 600px;
+        color: #fff;
+        text-align: center;
+    }
+
+    .tutorial-step {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        border-left: 4px solid #FFD700;
+    }
+
+    .tutorial-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+    }
+
+    .tutorial-btn {
+        background: #FFD700;
+        color: #000;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .tutorial-btn:hover {
+        background: #FFA500;
+        transform: translateY(-2px);
+    }
+
+    .tutorial-btn:disabled {
+        background: #666;
+        color: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Achievement notifications */
+    .achievement-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        color: #000;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        z-index: 1001;
+        transform: translateX(400px);
+        transition: transform 0.5s ease;
+        min-width: 300px;
+    }
+
+    .achievement-notification.show {
+        transform: translateX(0);
+    }
+
+    .achievement-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .achievement-description {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    /* Responsive design */
+    @media (max-width: 1200px) {
+        #scenario-panel {
+            width: 300px;
+        }
+        
+        #device-palette {
+            width: 150px;
+        }
+        
+        #canvas-container {
+            margin-right: 150px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        #app {
+            flex-direction: column;
+        }
+        
+        #scenario-panel {
+            width: 100%;
+            max-height: 40vh;
+        }
+        
+        #simulation-area {
+            flex: none;
+            height: 60vh;
+        }
+        
+        #device-palette {
+            position: relative;
+            width: 100%;
+            padding: 10px;
+        }
+        
+        #canvas-container {
+            margin-right: 0;
+        }
+        
+        .simulation-controls {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    }
+
+    /* Loading states */
+    .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+        color: #00C3B5;
+        font-size: 18px;
+    }
+
+    .spinner {
+        border: 3px solid rgba(0, 195, 181, 0.3);
+        border-top: 3px solid #00C3B5;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-right: 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Highlight animations */
+    .highlight-pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+    }
+</style>
+
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+{% endblock %}
+
+{% block content %}
+<div id="app">
+    <!-- Scenario Selection Panel -->
+    <div id="scenario-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-network-wired"></i> Topology Lab</h2>
+        </div>
+        
+        <!-- Progress Overview -->
+        <div class="progress-overview">
+            <h4><i class="fas fa-chart-line"></i> Your Progress</h4>
+            <div class="progress-stat">
+                <span>Completed:</span>
+                <span id="completed-count">{{ user_progress.get('total_completed', 0) }}/{{ user_progress.get('total_scenarios', 0) }}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ user_progress.get('completion_percentage', 0) }}%"></div>
+            </div>
+            <div class="progress-stat">
+                <span>Total Score:</span>
+                <span id="total-score">{{ user_progress.get('total_score', 0) }}</span>
+            </div>
+        </div>
+        
+        <!-- Scenario Categories -->
+        <div id="scenario-categories">
+            <!-- Categories will be populated by JavaScript -->
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="palette-section">
+            <div class="palette-title">Quick Actions</div>
+            <button class="control-btn" onclick="showAchievements()" style="width: 100%; margin-bottom: 10px;">
+                <i class="fas fa-trophy"></i> Achievements
+            </button>
+            <button class="control-btn" onclick="showLeaderboard()" style="width: 100%; margin-bottom: 10px;">
+                <i class="fas fa-medal"></i> Leaderboard
+            </button>
+            <button class="control-btn" onclick="resetProgress()" style="width: 100%;">
+                <i class="fas fa-redo"></i> Reset Progress
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Simulation Area -->
+    <div id="simulation-area">
+        <!-- Simulation Header -->
+        <div class="simulation-header">
+            <div class="simulation-title" id="current-scenario-title">
+                Select a Scenario to Begin
+            </div>
+            <div class="simulation-controls">
+                <div class="timer-display" id="timer-display" style="display: none;">
+                    ⏱️ <span id="timer">00:00</span>
+                </div>
+                <div class="score-display" id="score-display" style="display: none;">
+                    🏆 <span id="current-score">0</span>
+                </div>
+                <button class="control-btn" id="hint-btn" onclick="getHint()" style="display: none;">
+                    <i class="fas fa-lightbulb"></i> Hint
+                </button>
+                <button class="control-btn" id="tutorial-btn" onclick="showTutorial()" style="display: none;">
+                    <i class="fas fa-question-circle"></i> Tutorial
+                </button>
+                <button class="control-btn" id="validate-btn" onclick="validateTopology()" style="display: none;">
+                    <i class="fas fa-check"></i> Validate
+                </button>
+            </div>
+        </div>
+        
+        <!-- Canvas Container -->
+        <div id="canvas-container">
+            <canvas id="Canvas"></canvas>
+            
+            <!-- Welcome Message (shown when no scenario selected) -->
+            <div id="welcome-message" class="loading">
+                <div>
+                    <h3>🌟 Welcome to the Gamified Topology Lab! 🌟</h3>
+                    <p>Select a scenario from the left panel to start building network topologies.</p>
+                    <p>Progress through Easy → Medium → Hard difficulties to unlock new challenges!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Device Palette -->
+        <div id="device-palette" style="display: none;">
+            <div class="palette-section">
+                <div class="palette-title">Devices</div>
+                <div class="device" draggable="true" data-type="pc">
+                    <img src="{{ url_for('static', filename='img/PC.png') }}" alt="PC">
+                    <div class="device-name">PC</div>
+                </div>
+                <div class="device" draggable="true" data-type="router">
+                    <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router">
+                    <div class="device-name">Router</div>
+                </div>
+                <div class="device" draggable="true" data-type="switch">
+                    <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch">
+                    <div class="device-name">Switch</div>
+                </div>
+                <div class="device" draggable="true" data-type="server">
+                    <img src="{{ url_for('static', filename='img/Server.png') }}" alt="Server">
+                    <div class="device-name">Server</div>
+                </div>
+            </div>
+            
+            <div class="palette-section">
+                <div class="palette-title">Tools</div>
+                <button class="control-btn" id="connection-mode-btn" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-link"></i> Connect Mode
+                </button>
+                <button class="control-btn" id="delete-device-btn" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-trash"></i> Delete Device
+                </button>
+                <button class="control-btn" id="delete-connection-btn" style="width: 100%; margin-bottom: 10px;">
+                    <i class="fas fa-unlink"></i> Delete Connection
+                </button>
+                <button class="control-btn" id="clear-canvas-btn" style="width: 100%;">
+                    <i class="fas fa-eraser"></i> Clear All
+                </button>
+            </div>
+            
+            <!-- Requirements Panel -->
+            <div class="requirements-panel" id="requirements-panel" style="display: none;">
+                <div class="palette-title">Requirements</div>
+                <div id="requirements-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tutorial Modal -->
+<div class="tutorial-modal" id="tutorial-modal">
+    <div class="tutorial-content">
+        <h3 id="tutorial-title">Tutorial</h3>
+        <div id="tutorial-steps"></div>
+        <div class="tutorial-navigation">
+            <button class="tutorial-btn" id="tutorial-prev" onclick="previousTutorialStep()">
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <button class="tutorial-btn" id="tutorial-close" onclick="closeTutorial()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button class="tutorial-btn" id="tutorial-next" onclick="nextTutorialStep()">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Achievement Notification -->
+<div class="achievement-notification" id="achievement-notification">
+    <div class="achievement-title" id="achievement-title"></div>
+    <div class="achievement-description" id="achievement-description"></div>
+</div>
+
+<!-- Audio elements -->
+<audio id="clickSound" src="{{ url_for('user.serve_audio', filename='Start.mp3') }}"></audio>
+<audio id="successSound" src="{{ url_for('user.serve_audio', filename='success.mp3') }}"></audio>
+<audio id="achievementSound" src="{{ url_for('user.serve_audio', filename='achievement.mp3') }}"></audio>
+
+<script>
+// Initialize the gamified topology system when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGamifiedTopology();
+});
+</script>
+{% endblock %}

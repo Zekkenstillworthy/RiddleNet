@@ -1870,6 +1870,94 @@ window.onclick = function(event) {
         closeQuestionsModal();
     }
 }
+
+// WebSocket Connection for Real-Time Module Updates
+if (typeof socketClient !== 'undefined' && socketClient) {
+    // Join module room for real-time updates
+    {% if module %}
+    socketClient.emit('join_module_room', {module_id: {{ module.id }}});
+    console.log('🔌 Joined module room: module_{{ module.id }}');
+    {% endif %}
+
+    // Listen for module content updates
+    socketClient.on('module_content_updated', function(data) {
+        console.log('📢 Module content updated:', data);
+        handleModuleContentUpdate(data);
+    });
+
+    // Listen for class module updates (including simulation links)
+    socketClient.on('class_module_updated', function(data) {
+        console.log('📢 Class module updated:', data);
+        if (data.type === 'simulation_link') {
+            handleSimulationLinkUpdate(data);
+        } else {
+            handleModuleContentUpdate(data);
+        }
+    });
+
+    // Handle page unload - leave module room
+    window.addEventListener('beforeunload', function() {
+        {% if module %}
+        socketClient.emit('leave_module_room', {module_id: {{ module.id }}});
+        console.log('👋 Left module room: module_{{ module.id }}');
+        {% endif %}
+    });
+}
+
+function handleModuleContentUpdate(data) {
+    try {
+        {% if module %}
+        // Only handle updates for current module
+        if (data.module_id === {{ module.id }}) {
+            console.log('🔄 Processing module content update for current module');
+            
+            // Show notification
+            if (typeof showNotification === 'function') {
+                showNotification('Module content has been updated by your instructor', 'info');
+            }
+            
+            // Refresh the page to show latest content
+            setTimeout(function() {
+                window.location.reload();
+            }, 1500);
+        }
+        {% endif %}
+    } catch (error) {
+        console.error('❌ Error handling module content update:', error);
+    }
+}
+
+function handleSimulationLinkUpdate(data) {
+    try {
+        {% if module %}
+        // Only handle updates for current module
+        if (data.module_id === {{ module.id }}) {
+            console.log('🔗 Processing simulation link update for current module');
+            
+            let message = '';
+            if (data.action === 'linked') {
+                message = 'A new simulation has been added to this module by your instructor';
+            } else if (data.action === 'unlinked') {
+                message = 'A simulation has been removed from this module by your instructor';
+            } else {
+                message = 'Module simulations have been updated by your instructor';
+            }
+            
+            // Show notification
+            if (typeof showNotification === 'function') {
+                showNotification(message, 'info');
+            }
+            
+            // Refresh the page to show latest simulation links
+            setTimeout(function() {
+                window.location.reload();
+            }, 2000);
+        }
+        {% endif %}
+    } catch (error) {
+        console.error('❌ Error handling simulation link update:', error);
+    }
+}
 </script>
 
 <!-- Questions Modal -->
