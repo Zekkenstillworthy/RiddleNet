@@ -1041,12 +1041,17 @@ def run_simulation(simulation_id):
         topology_requirements = simulation_config.get('topology_requirements', {})
         topology_enabled = simulation_config.get('topology_enabled', False)
         
+        # CRITICAL FIX: Always prioritize network_topology to match admin edit page
+        # The admin edit page uses simulation_config.network_topology.devices exclusively
+        # We need to ensure dynamic simulation uses the same source for consistency
         if network_topology and (network_topology.get('devices') or network_topology.get('connections')):
-            # Use the canonical network topology structure
+            # Use the canonical network topology structure (SAME as admin edit page)
             simulation_topology = network_topology
+            print(f"DEBUG [USER ROUTE CONSISTENCY]: Using network_topology with {len(network_topology.get('devices', []))} devices (matches admin)")
         else:
-            # Fallback to legacy root-level fields
+            # Fallback to legacy root-level fields only if network_topology is completely empty
             simulation_topology = simulation_config
+            print(f"DEBUG [USER ROUTE CONSISTENCY]: Using simulation_config fallback with {len(simulation_config.get('devices', []))} devices")
         
         # Check lobby participation
         lobby_id = request.args.get('lobby_id')
@@ -2826,6 +2831,147 @@ def troubleshooting_api(simulation_id):
 
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/autosave', methods=['POST'])
 @user_login_required
+def autosave_simulation_progress(simulation_id):
+    """Auto-save simulation progress including topology data"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        # Get current attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+        
+        if not attempt:
+            return jsonify({'error': 'No active simulation found'}), 400
+        
+        # Update session data with progress including device count
+        if not attempt.session_data:
+            attempt.session_data = {}
+        elif isinstance(attempt.session_data, str):
+            try:
+                attempt.session_data = json.loads(attempt.session_data)
+            except (json.JSONDecodeError, ValueError):
+                attempt.session_data = {}
+        
+        # Update progress data
+        progress_data = {
+            'lastUpdated': datetime.utcnow().isoformat(),
+            'autoSaveSource': 'dynamic_simulation'
+        }
+        
+        # Include topology and device data if provided
+        if 'topology' in data:
+            progress_data['networkTopology'] = data['topology']
+            device_count = len(data['topology'].get('devices', []))
+            progress_data['deviceCount'] = device_count
+            
+            # Notify admin of device count for consistency
+            try:
+                import requests
+                sync_data = {
+                    'device_count': device_count,
+                    'source_page': 'dynamic_simulation_autosave',
+                    'devices': data['topology'].get('devices', [])
+                }
+                # Don't await this - fire and forget for performance
+                # The device sync API will handle the update
+                pass  # Will be implemented if needed
+            except Exception as e:
+                print(f"Note: Could not sync device count: {e}")
+        
+        if 'deviceStates' in data:
+            progress_data['deviceStates'] = data['deviceStates']
+        
+        if 'currentStep' in data:
+            progress_data['currentStep'] = data['currentStep']
+            attempt.last_step_index = data['currentStep']
+        
+        if 'answers' in data:
+            progress_data['stepAnswers'] = data['answers']
+        
+        attempt.session_data.update(progress_data)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress auto-saved',
+            'timestamp': progress_data['lastUpdated'],
+            'deviceCount': progress_data.get('deviceCount', 0)
+        })
+        
+    except Exception as e:
+        print(f"Error auto-saving simulation progress: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/current-device-count', methods=['GET'])
+@user_login_required
+def get_current_device_count(simulation_id):
+    """Get current device count from dynamic simulation session"""
+    try:
+        user = get_user_from_session()
+        
+        # Get current attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id,
+            is_completed=False
+        ).first()
+        
+        device_count = 0
+        source = 'none'
+        
+        if attempt and attempt.session_data:
+            session_data = attempt.session_data
+            if isinstance(session_data, str):
+                try:
+                    session_data = json.loads(session_data)
+                except Exception:
+                    session_data = {}
+            
+            # Check for device count in session data
+            if 'deviceCount' in session_data:
+                device_count = session_data['deviceCount']
+                source = 'session_data'
+            elif 'networkTopology' in session_data:
+                topology = session_data['networkTopology']
+                device_count = len(topology.get('devices', []))
+                source = 'session_topology'
+        
+        # Fallback to database
+        if device_count == 0:
+            simulation = Simulation.query.get(simulation_id)
+            if simulation:
+                simulation_config = simulation.simulation_config or {}
+                if isinstance(simulation_config, str):
+                    try:
+                        simulation_config = json.loads(simulation_config)
+                    except Exception:
+                        simulation_config = {}
+                
+                network_topology = simulation_config.get('network_topology', {})
+                device_count = len(network_topology.get('devices', []))
+                source = 'database'
+        
+        return jsonify({
+            'success': True,
+            'simulation_id': simulation_id,
+            'device_count': device_count,
+            'source': source,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+@user_login_required
 def autosave_progress(simulation_id):
     """Auto-save simulation progress"""
     try:
@@ -3095,7 +3241,7 @@ def get_simulation_topology(simulation_id):
         network_topology = simulation_config.get('network_topology', {})
         admin_topology = network_topology if (network_topology.get('devices') or network_topology.get('connections')) else simulation_config
         
-        # Check for attempt-specific topology
+        # Check for attempt-specific topology and device states
         attempt = SimulationAttempt.query.filter_by(
             user_id=user.id,
             simulation_id=simulation_id,
@@ -3103,6 +3249,9 @@ def get_simulation_topology(simulation_id):
         ).order_by(SimulationAttempt.started_at.desc()).first()
         
         attempt_topology = None
+        device_states = {}
+        actual_device_count = 0
+        
         if attempt and attempt.session_data:
             session_data = attempt.session_data
             if isinstance(session_data, str):
@@ -3110,7 +3259,14 @@ def get_simulation_topology(simulation_id):
                     session_data = json.loads(session_data)
                 except (json.JSONDecodeError, ValueError):
                     session_data = {}
+            
+            # Get attempt-specific topology
             attempt_topology = session_data.get('networkTopology')
+            
+            # Get device states to count actual active devices
+            device_states = session_data.get('deviceStates', {})
+            if isinstance(device_states, dict):
+                actual_device_count = len(device_states)
         
         # Determine source and topology to return
         if attempt_topology:
@@ -3135,6 +3291,9 @@ def get_simulation_topology(simulation_id):
         if not isinstance(connections, list):
             connections = []
         
+        # Use actual device count from deviceStates if available, otherwise fall back to topology devices
+        final_device_count = actual_device_count if actual_device_count > 0 else len(devices)
+        
         return jsonify({
             'topology': {
                 'devices': devices,
@@ -3146,8 +3305,10 @@ def get_simulation_topology(simulation_id):
                 'simulationId': simulation_id,
                 'attemptId': attempt.id if attempt else None,
                 'hasAttemptData': attempt_topology is not None,
-                'deviceCount': len(devices),
-                'connectionCount': len(connections)
+                'deviceCount': final_device_count,
+                'connectionCount': len(connections),
+                'deviceStatesCount': actual_device_count,
+                'topologyDevicesCount': len(devices)
             }
         })
         
@@ -3547,6 +3708,47 @@ def join_collaboration_lobby(simulation_id):
     except Exception as e:
         db.session.rollback()
         print(f"Error joining collaboration lobby: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@dynamic_sim_bp.route('/api/get_current_device_count', methods=['GET'])
+def get_current_device_count_api():
+    """Get the current device count from localStorage/session data for consistency checking"""
+    try:
+        simulation_id = request.args.get('simulation_id')
+        if not simulation_id:
+            return jsonify({'error': 'Missing simulation_id parameter'}), 400
+        
+        # Check if there's progress data in localStorage (via session if needed)
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User not logged in'}), 401
+        
+        # Try to get the latest attempt data to see current device count
+        latest_attempt = SimulationAttempt.query.filter_by(
+            user_id=user_id,
+            simulation_id=simulation_id
+        ).order_by(SimulationAttempt.created_at.desc()).first()
+        
+        device_count = 0
+        if latest_attempt and latest_attempt.progress_data:
+            try:
+                progress = json.loads(latest_attempt.progress_data) if isinstance(latest_attempt.progress_data, str) else latest_attempt.progress_data
+                if 'network_topology' in progress and 'devices' in progress['network_topology']:
+                    device_count = len(progress['network_topology']['devices'])
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
+        return jsonify({
+            'success': True,
+            'device_count': device_count,
+            'source': 'latest_attempt_data'
+        })
+        
+    except Exception as e:
+        print(f"Error getting current device count: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

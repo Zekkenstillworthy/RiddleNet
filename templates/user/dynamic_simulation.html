@@ -2211,6 +2211,8 @@
 
 {% block content %}
 <div class="simulation-wrapper dynamic-simulation">
+    <!-- Hidden session data for safe JS access -->
+    <div id="session-data" data-user-id="{{ session.user_id|default('') }}" data-username="{{ session.username|default('') }}" style="display: none;"></div>
     <!-- Header -->
     <div class="simulation-header">
         <div class="header-left">
@@ -3213,7 +3215,9 @@ window.teamSessionManager = {
         if (participantsList) {
             participantsList.innerHTML = this.participants.map(participant => {
                 const avatarLetter = participant.username.charAt(0).toUpperCase();
-                const isCurrentUser = participant.user_id === {{ session.user_id|default('null') }};
+                // Compare against current user id from DOM dataset to avoid template injection
+                const currentUserId = this.getCurrentUserId();
+                const isCurrentUser = String(participant.user_id) === String(currentUserId);
                 const roleText = participant.role || 'Member';
                 const statusClass = participant.online ? 'online' : 'offline';
                 
@@ -3353,13 +3357,16 @@ window.teamSessionManager = {
     },
     
     getCurrentUserId() {
-        // Extract from template context or global variable
-        return '{{ current_user.id }}' || window.currentUser?.id;
+        // Read from hidden session data element or fallback to window.currentUser
+        const el = document.getElementById('session-data');
+        const id = el?.dataset?.userId || window.currentUser?.id || null;
+        return id;
     },
     
     getCurrentUsername() {
-        // Extract from template context or global variable
-        return '{{ current_user.username }}' || window.currentUser?.username;
+        // Read from hidden session data element or fallback to window.currentUser
+        const el = document.getElementById('session-data');
+        return el?.dataset?.username || window.currentUser?.username || '';
     }
 };
 
@@ -3795,11 +3802,14 @@ class DynamicSimulation {
         this.loadSteps();
         this.loadCurrentStep();
         
-        // Try to restore previous progress first, then load topology if no progress exists
+        // FIXED: Always prioritize admin topology over cached progress for consistency
+        // Load topology from admin configuration first (authoritative source)
+        this.loadTopologyFromConfig();
+        
+        // Then try to restore additional progress data (scores, steps) without overwriting topology
         this.loadSavedProgress().then((hasProgress) => {
-            if (!hasProgress) {
-                // Only load topology if no saved progress was found
-                this.loadTopologyFromConfig();
+            if (hasProgress) {
+                console.log('📂 Loaded additional progress data (preserving admin topology)');
             }
         });
         
@@ -5501,12 +5511,24 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         const deviceCountEl = document.getElementById('device-count');
         const connectionCountEl = document.getElementById('connection-count');
         
+        // DEBUG: Log device count updates
+        console.log('🔄 [DYNAMIC-SIM] updateNetworkStatus called');
+        console.log('📱 [DYNAMIC-SIM] Current networkDevices count:', this.networkDevices.length);
+        console.log('📱 [DYNAMIC-SIM] networkDevices array:', this.networkDevices);
+        console.log('🔗 [DYNAMIC-SIM] Current networkConnections count:', this.networkConnections.length);
+        
         if (deviceCountEl) {
             deviceCountEl.textContent = `Devices: ${this.networkDevices.length}`;
+            console.log('✅ [DYNAMIC-SIM] Updated device-count element to:', `Devices: ${this.networkDevices.length}`);
+        } else {
+            console.warn('⚠️ [DYNAMIC-SIM] device-count element not found!');
         }
         
         if (connectionCountEl) {
             connectionCountEl.textContent = `Connections: ${this.networkConnections.length}`;
+            console.log('✅ [DYNAMIC-SIM] Updated connection-count element to:', `Connections: ${this.networkConnections.length}`);
+        } else {
+            console.warn('⚠️ [DYNAMIC-SIM] connection-count element not found!');
         }
     }
     
@@ -7249,91 +7271,86 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         
         console.log('🚀 Starting topology loading process...');
         
-        // Enhanced topology loading with priority order:
-        // 1. Attempt-specific topology (from progress data)
-        // 2. Admin-defined topology (from simulation.simulation_config.network_topology)
-        // 3. Direct devices from simulation config (from simulation.simulation_config.devices)
-        // 4. Legacy topology (from simulation.topology)
+        // CRITICAL FIX: Modified priority order to ensure consistency with admin edit page
+        // Admin edit page uses simulation.simulation_config.network_topology.devices exclusively
+        // We need to prioritize that source over attempt/localStorage data for consistency
+        // New priority order:
+        // 1. Admin-defined topology (from simulation.simulation_config.network_topology) - HIGHEST PRIORITY
+        // 2. Direct devices from simulation config (from simulation.simulation_config.devices)
+        // 3. Legacy topology (from simulation.topology)
+        // 4. Attempt-specific topology (from progress data) - LOWEST PRIORITY for consistency
         
         let topology = null;
         let source = 'none';
         
-        // First, try to get attempt-specific topology from API
+        // Get topology sources
+        const configTopology = this.simulation.simulation_config;
+        const adminTopology = this.simulation.topology;
+        
+        console.log('🔍 [DYNAMIC-SIM] Checking topology sources (prioritizing admin sources):', {
+            configTopology: configTopology,
+            adminTopology: adminTopology,
+            networkTopology: configTopology?.network_topology,
+            directDevices: configTopology?.devices,
+            networkTopologyDeviceCount: configTopology?.network_topology?.devices?.length || 0,
+            directDevicesCount: configTopology?.devices?.length || 0,
+            adminTopologyDeviceCount: adminTopology?.devices?.length || 0
+        });
+        
+        // PRIORITY 1: Check if we have network_topology in simulation config (MATCHES ADMIN EDIT PAGE)
+        if (configTopology && configTopology.network_topology && 
+            (configTopology.network_topology.devices || configTopology.network_topology.connections)) {
+            topology = configTopology.network_topology;
+            source = 'config_network_topology';
+            console.log('✅ [DYNAMIC-SIM] Using config_network_topology with', topology.devices?.length || 0, 'devices (MATCHES ADMIN)');
+            this.loadTopologyData(topology);
+            this.topologyLoaded = true;
+            this.topologyLoading = false;
+            return;
+        } 
+        // PRIORITY 2: Check for direct devices array in simulation config
+        else if (configTopology && configTopology.devices && Array.isArray(configTopology.devices) && configTopology.devices.length > 0) {
+            topology = {
+                devices: configTopology.devices,
+                connections: configTopology.connections || configTopology.links || []
+            };
+            source = 'config_devices';
+            console.log('✅ [DYNAMIC-SIM] Using config_devices with', topology.devices?.length || 0, 'devices');
+            this.loadTopologyData(topology);
+            this.topologyLoaded = true;
+            this.topologyLoading = false;
+            return;
+        }
+        // PRIORITY 3: Legacy topology from simulation.topology
+        else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
+            topology = adminTopology;
+            source = 'admin_topology';
+            console.log('✅ [DYNAMIC-SIM] Using admin_topology with', topology.devices?.length || 0, 'devices');
+            this.loadTopologyData(topology);
+            this.topologyLoaded = true;
+            this.topologyLoading = false;
+            return;
+        }
+        
+        // PRIORITY 4: Only if no admin topology exists, try attempt-specific topology
+        console.log('� [DYNAMIC-SIM] No admin topology found, checking attempt topology as fallback...');
         this.getAttemptTopology().then(attemptTopology => {
             if (attemptTopology && (attemptTopology.devices || attemptTopology.connections)) {
                 topology = attemptTopology;
                 source = 'attempt';
-            } else {
-                // Fall back to admin-defined or legacy topology
-                const configTopology = this.simulation.simulation_config;
-                const adminTopology = this.simulation.topology;
-                
-                console.log('🔍 Checking topology sources:', {
-                    configTopology: configTopology,
-                    adminTopology: adminTopology,
-                    networkTopology: configTopology?.network_topology,
-                    directDevices: configTopology?.devices
-                });
-                
-                // Check if we have network_topology in simulation config (preferred source)
-                if (configTopology && configTopology.network_topology && 
-                    (configTopology.network_topology.devices || configTopology.network_topology.connections)) {
-                    topology = configTopology.network_topology;
-                    source = 'config_network_topology';
-                } 
-                // Check for direct devices array in simulation config
-                else if (configTopology && configTopology.devices && Array.isArray(configTopology.devices) && configTopology.devices.length > 0) {
-                    topology = {
-                        devices: configTopology.devices,
-                        connections: configTopology.connections || configTopology.links || []
-                    };
-                    source = 'config_devices';
-                }
-                // Legacy topology from simulation.topology
-                else if (adminTopology && (adminTopology.devices || adminTopology.connections || adminTopology.links)) {
-                    topology = adminTopology;
-                    source = 'admin_topology';
-                } 
-                // Fallback to any devices in config topology
-                else if (configTopology && (configTopology.connections || configTopology.links)) {
-                    topology = configTopology;
-                    source = 'config_fallback';
-                }
-            }
-            
-            console.log(`🔧 Loading topology from ${source}:`, topology);
-            
-            if (topology) {
+                console.log('⚠️ [DYNAMIC-SIM] Using attempt topology as fallback with', topology.devices?.length || 0, 'devices');
                 this.loadTopologyData(topology);
-                this.topologyLoaded = true;
             } else {
                 console.log('ℹ️ No topology data found - starting with empty canvas');
                 console.log('🔍 Available simulation data:', this.simulation);
                 this.showTopologyHelperText();
-                this.topologyLoaded = true;
             }
-            
-            // Clear loading flag
+            this.topologyLoaded = true;
             this.topologyLoading = false;
         }).catch(error => {
-            console.warn('Failed to get attempt topology, using fallback:', error);
-            
-            // Fallback to admin/legacy topology
-            const adminTopology = this.simulation.topology;
-            const configTopology = this.simulation.simulation_config;
-            
-            if (configTopology && configTopology.network_topology) {
-                topology = configTopology.network_topology;
-                source = 'admin';
-            } else {
-                topology = adminTopology || configTopology;
-                source = 'legacy';
-            }
-            
-            if (topology) {
-                console.log(`🔧 Loading fallback topology from ${source}:`, topology);
-                this.loadTopologyData(topology);
-            }
+            console.warn('Failed to get attempt topology:', error);
+            console.log('ℹ️ No topology data available - starting with empty canvas');
+            this.showTopologyHelperText();
             this.topologyLoaded = true;
             this.topologyLoading = false;
         });
@@ -9111,9 +9128,9 @@ DynamicSimulation.prototype.loadSavedProgress = function() {
     });
 };
 
-// Restore progress data
+// Restore progress data (FIXED: Exclude topology to prevent cache conflicts)
 DynamicSimulation.prototype.restoreProgressData = function(progressData) {
-    console.log('📂 Restoring progress data:', progressData);
+    console.log('📂 Restoring progress data (excluding topology to maintain admin consistency):', progressData);
     
     if (progressData.currentStepIndex !== undefined) {
         this.currentStepIndex = progressData.currentStepIndex;
@@ -9123,92 +9140,42 @@ DynamicSimulation.prototype.restoreProgressData = function(progressData) {
         this.score = progressData.score;
     }
     
-    if (progressData.networkDevices && Array.isArray(progressData.networkDevices)) {
-        // Clear existing devices first to avoid duplicates
-        this.networkDevices = [];
-        
-        // Filter out invalid devices before restoring
-        const validDevices = progressData.networkDevices.filter(device => 
-            device && 
-            typeof device.x === 'number' && 
-            typeof device.y === 'number' && 
-            device.id && 
-            device.type
-        );
-        
-        // Restore devices one by one to ensure proper state management
-        validDevices.forEach(device => {
-            this.addNetworkDevice({
-                id: device.id,
-                type: device.type,
-                x: device.x,
-                y: device.y,
-                label: device.label || device.name,
-                config: device.config || {},
-                ip: device.ip,
-                subnet: device.subnet,
-                interfaces: device.interfaces || [],
-                meta: device.meta || {}
-            });
-        });
-        
-        console.log(`📂 Restored ${this.networkDevices.length} valid devices`);
-    }
+    // FIXED: Skip restoring cached devices to prevent conflicts with admin topology
+    // if (progressData.networkDevices && Array.isArray(progressData.networkDevices)) {
+    //     console.log('⚠️ Skipping cached device restoration to maintain admin topology consistency');
+    // }
     
-    if (progressData.networkConnections && Array.isArray(progressData.networkConnections)) {
-        // Clear existing connections first to avoid duplicates
-        this.networkConnections = [];
-        
-        // Filter out invalid connections before restoring
-        const validConnections = progressData.networkConnections.filter(connection =>
-            connection &&
-            connection.from &&
-            connection.to &&
-            connection.id
-        );
-        
-        // Add connections back
-        this.networkConnections = validConnections;
-        console.log(`📂 Restored ${this.networkConnections.length} valid connections`);
-    }
+    // FIXED: Skip restoring cached connections to prevent conflicts with admin topology
+    // if (progressData.networkConnections && Array.isArray(progressData.networkConnections)) {
+    //     console.log('⚠️ Skipping cached connection restoration to maintain admin topology consistency');
+    // }
+    
+    console.log('📂 Progress restored (topology preserved from admin configuration)');
     
     // Update UI to reflect restored progress
     this.updateProgressDisplay();
     
-    // MVP: Safe canvas rendering with error handling
-    try {
-        this.renderCanvas();
-    } catch (error) {
-        console.warn('⚠️ MVP Failed to render canvas after restoring progress:', error);
-        // Clear potentially corrupted data and retry with empty state
-        this.networkDevices = [];
-        this.networkConnections = [];
-        try {
-            this.renderCanvas();
-            console.log('✅ MVP Canvas recovered after clearing corrupted data');
-        } catch (retryError) {
-            console.error('❌ MVP Canvas render failed even after clearing data:', retryError);
-        }
-    }
+    // Note: Canvas rendering will be handled by loadTopologyFromConfig() since we load topology separately
 };
 
-// Auto-save progress
+// Auto-save progress (FIXED: Exclude topology to prevent admin conflicts)
 DynamicSimulation.prototype.autoSaveProgress = function() {
     try {
         const progressData = {
             currentStepIndex: this.currentStepIndex,
             score: this.score,
-            networkDevices: this.networkDevices,
-            networkConnections: this.networkConnections,
+            // FIXED: Exclude topology data to prevent conflicts with admin configuration
+            // networkDevices: this.networkDevices,
+            // networkConnections: this.networkConnections,
             timestamp: new Date().toISOString()
         };
         
-        // Save to localStorage
+        // Save to localStorage (topology excluded to maintain admin consistency)
         localStorage.setItem(`simulation_${this.simulationId}_progress`, JSON.stringify(progressData));
         
         // Optionally save to server
         if (this.simulationId) {
-            fetch(`/user/api/simulation/${this.simulationId}/autosave`, {
+            fetch(`/dynamic/api/simulation/${this.simulationId}/autosave`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -10916,29 +10883,59 @@ class SimulationPerformanceFeedback {
     }
     
     handleAdminSimulationUpdate(data) {
-        console.log('🔄 Handling admin simulation update:', data);
+        console.log('🔄 [DYNAMIC-SIM] Handling admin simulation update:', data);
+        console.log('📊 [DYNAMIC-SIM] Current networkDevices count before update:', this.networkDevices.length);
         
         // Show notification to user
         this.showNotification('Admin updated the simulation - syncing changes...', 'info');
         
         // Handle topology updates
         if (data.update_data && data.update_data.topology_updated) {
-            console.log('📡 Topology updated by admin - refreshing network view');
+            console.log('📡 [DYNAMIC-SIM] Topology updated by admin - refreshing network view');
+            console.log('🔍 [DYNAMIC-SIM] Admin update data:', data.update_data);
             
             // Update initial topology if provided
             if (data.update_data.initial_topology) {
+                console.log('🗂️ [DYNAMIC-SIM] Updating initial topology:', data.update_data.initial_topology);
                 window.initialTopology = data.update_data.initial_topology;
+                
+                // Update network devices from topology data
+                if (data.update_data.initial_topology.devices && Array.isArray(data.update_data.initial_topology.devices)) {
+                    this.networkDevices = data.update_data.initial_topology.devices;
+                    console.log('✅ [DYNAMIC-SIM] Updated networkDevices from topology:', this.networkDevices.length, 'devices');
+                    console.log('📱 [DYNAMIC-SIM] New networkDevices array:', this.networkDevices);
+                } else {
+                    console.warn('⚠️ [DYNAMIC-SIM] No devices found in initial_topology or not an array');
+                }
                 
                 // Refresh network simulation if it exists
                 if (window.networkSimulation && window.networkSimulation.clearAndLoadTopology) {
+                    console.log('🔄 [DYNAMIC-SIM] Refreshing network simulation with new topology');
                     window.networkSimulation.clearAndLoadTopology(data.update_data.initial_topology);
+                }
+                
+                // Update device count display
+                if (this.updateNetworkStatus) {
+                    this.updateNetworkStatus();
                 }
             }
             
             // Update devices if provided
             if (data.update_data.devices && Array.isArray(data.update_data.devices)) {
+                console.log('📱 [DYNAMIC-SIM] Updating devices from admin:', data.update_data.devices.length, 'devices');
+                console.log('📱 [DYNAMIC-SIM] Device data received:', data.update_data.devices);
                 window.simulationDevices = data.update_data.devices;
                 this.syncDeviceConfigurations(data.update_data.devices);
+                
+                // Update device count display immediately
+                if (this.updateNetworkStatus) {
+                    console.log('🔄 [DYNAMIC-SIM] Calling updateNetworkStatus after device update');
+                    this.updateNetworkStatus();
+                } else {
+                    console.warn('⚠️ [DYNAMIC-SIM] updateNetworkStatus function not available!');
+                }
+            } else {
+                console.log('📱 [DYNAMIC-SIM] No devices array found in admin update data');
             }
             
             // Update solution topology if provided
@@ -12011,12 +12008,23 @@ function testButtonState() {
 window.testButtonState = testButtonState;
 
 // Initialize collaboration system for dynamic simulation
-window.currentUser = {
-    id: {{ session.user_id|default('null') }},
-    username: "{{ session.username|default('') }}",
-    is_admin: false,
-    profile_img: null
-};
+(function initCurrentUser() {
+    try {
+        const el = document.getElementById('session-data');
+        const userId = el?.dataset?.userId || null;
+        const username = el?.dataset?.username || '';
+        window.currentUser = {
+            id: userId,
+            username: username,
+            is_admin: false,
+            profile_img: null
+        };
+        console.log('[DYNAMIC-SIM] Initialized currentUser from DOM dataset:', window.currentUser);
+    } catch (e) {
+        console.warn('[DYNAMIC-SIM] Failed to initialize currentUser, using defaults.', e);
+        window.currentUser = { id: null, username: '', is_admin: false, profile_img: null };
+    }
+})();
 
 // Simulation state sync function for collaboration
 window.syncSimulationState = function(stateData, syncType = 'full') {

@@ -1057,6 +1057,9 @@ class UserDeviceConfigurator {
 // Initialize global instance
 let userDeviceConfigurator;
 document.addEventListener('DOMContentLoaded', () => {
-    userDeviceConfigurator = new UserDeviceConfigurator();
-    window.userDeviceConfigurator = userDeviceConfigurator;
+    // Only initialize if not already created by the template
+    if (!window.userDeviceConfigurator && !window.__UserDeviceConfiguratorInitialized) {
+        userDeviceConfigurator = new UserDeviceConfigurator();
+        window.userDeviceConfigurator = userDeviceConfigurator;
+    }
 });

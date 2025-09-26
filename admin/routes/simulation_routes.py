@@ -244,6 +244,10 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
                     if device.get('config') and len(device.get('config', {})) > 0:
                         device_configs[device.get('id')] = device.get('config')
                 
+                # Calculate device count for real-time sync
+                device_count = len(devices) if devices else 0
+                topology_device_count = len(data.get('initial_topology', {}).get('devices', [])) if data.get('initial_topology') else 0
+                
                 emit_admin_simulation_updated(simulation_id, {
                     'title': data.get('title'),
                     'description': data.get('description'),
@@ -251,6 +255,7 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
                     'initial_topology': data.get('initial_topology', {}),
                     'solution_topology': data.get('solution_topology', {}),
                     'devices': devices,
+                    'device_count': max(device_count, topology_device_count),  # Use highest count for accuracy
                     'device_configs_updated': device_configs_updated,
                     'device_configs': device_configs,
                     'updated_by': current_user.username if current_user.is_authenticated else 'System'
@@ -1157,7 +1162,7 @@ def quick_create_simulation():
 @admin_simulation_bp.route('/api/create', methods=['POST'])
 @login_required
 @teacher_required
-def create_simulation_api():
+def create_simulation_from_class_api():
     """API endpoint for creating new simulations from class content selector"""
     try:
         data = request.get_json()

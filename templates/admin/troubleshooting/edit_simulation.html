@@ -1355,7 +1355,7 @@
 
 {% block content %}
 <!-- Custom Admin Top Navigation Bar -->
-<nav class="admin-top-navbar">
+<nav class="admin-top-navbar" data-session-user-id="{{ session.user_id if session.user_id is defined else '' }}">
     <!-- Logo Section -->
     <div class="top-navbar-logo">
         <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="RiddleNet Logo">
@@ -1365,7 +1365,13 @@
         </div>
     </div>
 
-    
+    <!-- Canonical Dynamic Device Count Badge -->
+    <div class="top-navbar-nav" style="gap: 8px;">
+        <div class="top-nav-item" title="Canonical device count from Dynamic Simulation">
+            <i class="fas fa-layer-group"></i>
+            <span id="admin-dynamic-device-count">Devices: --</span>
+        </div>
+    </div>
 
     <!-- Navigation Menu - Save and Exit Actions -->
     <div class="top-navbar-nav">
@@ -2613,6 +2619,7 @@ class SimulationEditor {
         };
 
         this.devices.push(device);
+        console.log('➕ [ADMIN-EDIT] Added device:', device.name, '| Total devices now:', this.devices.length);
         this.renderDevice(device);
         this.showToast(`${device.name} added successfully`, 'success');
     // Keep connectivity console device list in sync
@@ -2648,6 +2655,9 @@ class SimulationEditor {
     }
 
     renderDevice(device) {
+        console.log('🎨 [ADMIN-EDIT] Rendering device:', device);
+        console.log('📱 [ADMIN-EDIT] Current total devices in editor:', this.devices.length);
+        
         const canvas = document.getElementById('canvas-content');
         if (!canvas) return;
 
@@ -3296,6 +3306,20 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
     loadSimulationData() {
     if (this.simulationData && Object.keys(this.simulationData).length > 0) {
+            // DEBUG: Log admin simulation data loading
+            console.log('🔄 [ADMIN-EDIT] Loading simulation data:', this.simulationData);
+            
+            // Log device count information
+            const deviceCount = this.simulationData.initial_topology?.devices?.length || 0;
+            const networkTopologyDevices = this.simulationData.simulation_config?.network_topology?.devices?.length || 0;
+            const configDevices = this.simulationData.simulation_config?.devices?.length || 0;
+            
+            console.log('📱 [ADMIN-EDIT] Device count analysis:');
+            console.log('   - Initial topology devices:', deviceCount);
+            console.log('   - Network topology devices:', networkTopologyDevices);
+            console.log('   - Config devices:', configDevices);
+            console.log('   - Simulation config:', this.simulationData.simulation_config);
+            
             // Load basic info
             this.setFieldValue('simulation-title', this.simulationData.title);
             this.setFieldValue('simulation-description', this.simulationData.description);
@@ -3321,6 +3345,9 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
             // Load initial topology
             if (this.simulationData.initial_topology && Array.isArray(this.simulationData.initial_topology.devices)) {
+                console.log('✅ [ADMIN-EDIT] Loading initial topology with', this.simulationData.initial_topology.devices.length, 'devices');
+                console.log('📱 [ADMIN-EDIT] Initial topology devices:', this.simulationData.initial_topology.devices);
+                
                 this.devices = [...this.simulationData.initial_topology.devices];
                 this.devices.forEach(device => {
                     this.renderDevice(device);
@@ -3521,9 +3548,11 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 
         const simulationData = this.getSimulationData();
         
-        // Debug: Log the difficulty value being sent
-        console.log('Simulation data being sent:', simulationData);
-        console.log('Difficulty value:', simulationData.difficulty);
+        // DEBUG: Log device information being saved
+        console.log('🔄 [ADMIN-EDIT] Saving simulation with data:', simulationData);
+        console.log('📱 [ADMIN-EDIT] Device count in save:', simulationData.initial_topology?.devices?.length || 0);
+        console.log('📱 [ADMIN-EDIT] Devices being saved:', simulationData.initial_topology?.devices);
+        console.log('🔧 [ADMIN-EDIT] Difficulty value:', simulationData.difficulty);
         
         // Basic validation
         if (!simulationData.title.trim()) {
@@ -3564,6 +3593,11 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
                 // Broadcast the simulation update via WebSocket
                 try {
                     broadcastSimulationUpdate(simulationData);
+                    // Also refresh the canonical dynamic device count locally
+                    if (typeof refreshAdminDynamicDeviceCount === 'function') {
+                        console.log('🆙 [ADMIN-EDIT] Save successful – refreshing canonical dynamic device count');
+                        refreshAdminDynamicDeviceCount();
+                    }
                 } catch (e) {
                     console.warn('Failed to broadcast simulation update:', e);
                 }
@@ -3738,7 +3772,12 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 // Initialize the editor
 let editor;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 [ADMIN-EDIT] Page loaded - initializing simulation editor');
     editor = new SimulationEditor();
+    
+    // Log editor initialization
+    console.log('✅ [ADMIN-EDIT] Editor initialized with', editor.devices?.length || 0, 'devices');
+    
     // Expose helpers for inline onclicks
     window.addStep = () => editor?.addStep();
     window.addHint = () => editor?.addHint();
@@ -4002,6 +4041,8 @@ function exitEditor() {
 
 <!-- Device configurator (kept); removed network validation and testing scripts -->
 <script src="{{ url_for('static', filename='js/enhanced-device-configurator.js') }}"></script>
+<!-- Device Count Synchronization System -->
+<script src="{{ url_for('static', filename='js/device-count-sync.js') }}"></script>
 
 <script>
 // Removed network validation gating and tester integration
@@ -4848,6 +4889,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('WebSocket error:', error);
                 });
 
+                // Listen for admin simulation updates to refresh canonical count
+                socket.on('admin_simulation_update', function(payload) {
+                    try {
+                        const incomingId = payload?.simulation_id;
+                        if (!incomingId || !simulationId || incomingId !== simulationId) return;
+                        console.log('📡 [ADMIN-EDIT] Received admin_simulation_update for current simulation. Refreshing dynamic device count...');
+                        refreshAdminDynamicDeviceCount();
+                    } catch (e) {
+                        console.warn('⚠️ [ADMIN-EDIT] Failed handling admin_simulation_update:', e);
+                    }
+                });
+
                 // Get simulation ID from the current page
                 const simJson = document.getElementById('simulation-json');
                 const simData = simJson ? JSON.parse(simJson.textContent || '{}') : {};
@@ -4855,6 +4908,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (simulationId) {
                     console.log('Admin editor initialized for simulation:', simulationId);
+                    // Fetch canonical device count from Dynamic Simulation API on load
+                    refreshAdminDynamicDeviceCount();
                 }
             } catch (e) {
                 console.error('Failed to initialize WebSocket:', e);
@@ -4875,6 +4930,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     updated_by: 'admin',
                     timestamp: Date.now()
                 });
+            }
+        }
+
+        // Fetch canonical device count from Dynamic Simulation API and update UI
+        async function refreshAdminDynamicDeviceCount() {
+            try {
+                const simId = simulationId || getSimulationIdFromUrl();
+                if (!simId) {
+                    console.warn('⚠️ [ADMIN-EDIT] refreshAdminDynamicDeviceCount: No simulationId available');
+                    return;
+                }
+                const res = await fetch(`/dynamic/api/simulation/${simId}/topology`, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) {
+                    console.warn('⚠️ [ADMIN-EDIT] Failed to fetch dynamic topology. HTTP', res.status);
+                    return;
+                }
+                const data = await res.json();
+                const meta = data?.metadata || {};
+                const canonicalDeviceCount = (typeof meta.deviceCount === 'number') ? meta.deviceCount : (data?.topology?.devices?.length || 0);
+                const el = document.getElementById('admin-dynamic-device-count');
+                if (el) {
+                    el.textContent = `Devices: ${canonicalDeviceCount}`;
+                }
+                console.log('📊 [ADMIN-EDIT] Canonical device count (from dynamic):', canonicalDeviceCount, { metadata: meta });
+            } catch (err) {
+                console.error('❌ [ADMIN-EDIT] Error refreshing dynamic device count:', err);
             }
         }
     </script>
@@ -5167,6 +5248,53 @@ document.addEventListener('DOMContentLoaded', function() {
             clearAllCursors();
         }
 
+        function handleLobbyCreated(data) {
+            console.log('🎉 Lobby created:', data);
+            showToast('Lobby created successfully', 'success');
+            
+            // Update current lobby data if this admin created it
+            if (data.lobby && data.lobby.creator_id === getCurrentUserId()) {
+                currentLobby = data.lobby;
+                updateCurrentLobbyDisplay();
+            }
+        }
+
+        function handleLobbyUpdated(data) {
+            console.log('🔄 Lobby updated:', data);
+            
+            // Update current lobby data
+            if (currentLobby && data.lobby && data.lobby.id === currentLobby.id) {
+                currentLobby = data.lobby;
+                updateCurrentLobbyDisplay();
+                updateParticipantsList(data.lobby.participants || []);
+            }
+
+            // Refresh canonical device count when lobby updates (e.g., device sync)
+            try {
+                if (typeof refreshAdminDynamicDeviceCount === 'function') {
+                    console.log('🔁 [ADMIN-EDIT] Lobby updated – refreshing canonical dynamic device count');
+                    refreshAdminDynamicDeviceCount();
+                }
+            } catch (e) {
+                console.warn('⚠️ [ADMIN-EDIT] Failed to refresh device count on lobby update:', e);
+            }
+        }
+
+        function handleLobbyClosed(data) {
+            console.log('🚪 Lobby closed:', data);
+            showToast('Lobby has been closed', 'warning');
+            
+            // If this was our current lobby, clear it
+            if (currentLobby && data.lobby_id === currentLobby.id) {
+                currentLobby = null;
+                isCollaborationActive = false;
+                document.getElementById('current-lobby-section').style.display = 'none';
+                hideCollaborationPanel();
+                collaborationParticipants.clear();
+                clearAllCursors();
+            }
+        }
+
         function handleParticipantJoined(data) {
             collaborationParticipants.set(data.participant.id, data.participant);
             updateParticipantsList(Array.from(collaborationParticipants.values()));
@@ -5248,6 +5376,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function hideCollaborationPanel() {
             document.getElementById('collaboration-panel').style.display = 'none';
+        }
+
+        function getCurrentUserId() {
+            // Get current admin user ID from DOM data attribute to avoid templating in JS
+            if (window.currentUser && window.currentUser.id) return window.currentUser.id;
+            const navEl = document.querySelector('nav.admin-top-navbar');
+            const idStr = navEl ? navEl.getAttribute('data-session-user-id') : null;
+            const parsed = idStr && idStr !== '' ? parseInt(idStr, 10) : null;
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function updateCurrentLobbyDisplay() {
+            if (!currentLobby) {
+                document.getElementById('current-lobby-section').style.display = 'none';
+                return;
+            }
+
+            // Show the current lobby section
+            const lobbySection = document.getElementById('current-lobby-section');
+            lobbySection.style.display = 'block';
+
+            // Update lobby details
+            const lobbyNameElement = document.getElementById('current-lobby-name');
+            const lobbyStatusElement = document.getElementById('current-lobby-status');
+            const participantCountElement = document.getElementById('current-lobby-participants-count');
+
+            if (lobbyNameElement) lobbyNameElement.textContent = currentLobby.name;
+            if (lobbyStatusElement) lobbyStatusElement.textContent = currentLobby.is_active ? 'Active' : 'Inactive';
+            if (participantCountElement) participantCountElement.textContent = currentLobby.participants?.length || 0;
+
+            // Update participants list
+            if (currentLobby.participants) {
+                updateParticipantsList(currentLobby.participants);
+            }
         }
 
         function toggleCollaborationPanel() {

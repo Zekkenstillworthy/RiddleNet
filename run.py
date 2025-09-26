@@ -259,6 +259,7 @@ try:
         ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        
         ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
     ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
+    ('admin.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),  # Device count synchronization API
     ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),  # Admin collaboration API
     ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),  # Instructor labs dashboard
     ('admin.routes.lab_api', 'lab_api', None, None),  # Instructor-scoped lab API
