@@ -2671,23 +2671,29 @@ def create_lobby():
         creator_id = str(session.get('admin_id', 'admin'))
         creator_name = session.get('admin_username', 'Admin')
         
+        # Create lobby config
+        lobby_config = {
+            'name': lobby_name,
+            'scenario_type': data.get('scenario_type', 'medium'),
+            'scenario_id': data.get('scenario_id', 'network'),
+            'max_participants': int(data.get('max_participants', 8)),
+            'class_id': data.get('class_id'),
+            'description': data.get('description', ''),
+            'simulation_id': data.get('simulation_id')
+        }
+        
         # Create lobby with troubleshooting_lobbies service
-        lobby_id = lobby_manager.create_lobby(
-            name=lobby_name,
-            scenario_type=data.get('scenario_type', 'medium'),
-            scenario_id=data.get('scenario_id', 'network'),
-            max_participants=int(data.get('max_participants', 8)),
-            class_id=data.get('class_id'),
+        lobby = lobby_manager.create_lobby(
             creator_id=creator_id,
             creator_name=creator_name,
-            description=data.get('description', ''),
-            simulation_id=data.get('simulation_id')
+            lobby_config=lobby_config
         )
         
-        if lobby_id:
+        if lobby:
             return jsonify({
                 'success': True,
-                'lobby_id': lobby_id,
+                'lobby_id': lobby.id,
+                'lobby': lobby.to_dict(),
                 'message': f'Lobby "{lobby_name}" created successfully'
             })
         else:

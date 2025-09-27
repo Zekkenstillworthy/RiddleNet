@@ -1256,9 +1256,28 @@ def export_simulation_rnetfile(simulation_id):
         
         simulation = simulation_data['simulation']
         
+        # Helper function to safely parse JSON fields that might be strings
+        def safe_json_parse(value, default=None):
+            if isinstance(value, str):
+                try:
+                    return json.loads(value)
+                except (json.JSONDecodeError, TypeError):
+                    return default
+            return value if value is not None else default
+        
+        # Ensure JSON fields are properly parsed
+        step_definitions = safe_json_parse(simulation.get('step_definitions'), [])
+        validation_rules = safe_json_parse(simulation.get('validation_rules'), {})
+        simulation_config = safe_json_parse(simulation.get('simulation_config'), {})
+        initial_state = safe_json_parse(simulation.get('initial_state'), {})
+        expected_outcomes = safe_json_parse(simulation.get('expected_outcomes'), {})
+        hints = safe_json_parse(simulation.get('hints'), [])
+        tags = safe_json_parse(simulation.get('tags'), [])
+        learning_objectives = safe_json_parse(simulation.get('learning_objectives'), [])
+        prerequisite_knowledge = safe_json_parse(simulation.get('prerequisite_knowledge'), [])
+        
         # Create rnetfile format export
         from datetime import datetime
-        import json
         from services.qr_service import QRCodeService
         
         # Prepare export metadata
@@ -1296,34 +1315,35 @@ def export_simulation_rnetfile(simulation_id):
                 'qr_metadata': qr_result.get('file_metadata') if qr_result['success'] else None
             },
             'simulation': {
-                'id': simulation.id,
-                'title': simulation.title,
-                'description': simulation.description,
-                'simulation_type': simulation.simulation_type,
-                'category': simulation.category,
-                'difficulty': simulation.difficulty,
-                'learning_objectives': simulation.learning_objectives,
-                'prerequisite_knowledge': simulation.prerequisite_knowledge,
-                'estimated_duration': simulation.estimated_duration,
-                'base_score': simulation.base_score,
-                'time_bonus': simulation.time_bonus,
-                'perfect_completion_bonus': simulation.perfect_completion_bonus,
-                'tags': simulation.tags,
-                'version': simulation.version,
-                'step_definitions': simulation.step_definitions,
-                'validation_rules': simulation.validation_rules,
-                'simulation_config': simulation.simulation_config,
-                'initial_state': simulation.initial_state,
-                'expected_outcomes': simulation.expected_outcomes,
-                'hints': simulation.hints
+                'id': simulation.get('id', simulation_id),
+                'title': simulation.get('title', 'Untitled Simulation'),
+                'description': simulation.get('description', ''),
+                'simulation_type': simulation.get('simulation_type', 'network'),
+                'category': simulation.get('category', 'general'),
+                'difficulty': simulation.get('difficulty', 'medium'),
+                'learning_objectives': learning_objectives,
+                'prerequisite_knowledge': prerequisite_knowledge,
+                'estimated_duration': simulation.get('estimated_duration', 30),
+                'base_score': simulation.get('base_score', 100),
+                'time_bonus': simulation.get('time_bonus', 20),
+                'perfect_completion_bonus': simulation.get('perfect_completion_bonus', 30),
+                'tags': tags,
+                'version': simulation.get('version', '1.0'),
+                'step_definitions': step_definitions,
+                'validation_rules': validation_rules,
+                'simulation_config': simulation_config,
+                'initial_state': initial_state,
+                'expected_outcomes': expected_outcomes,
+                'hints': hints
             }
         }
         
         # Create file response
         from flask import Response
-        import json
         
-        filename = f"{simulation.title.replace(' ', '_').replace('/', '_')}_v{simulation.version}.rnet"
+        title = simulation.get('title', 'Untitled_Simulation')
+        version = simulation.get('version', '1.0')
+        filename = f"{title.replace(' ', '_').replace('/', '_')}_v{version}.rnet"
         response = Response(
             json.dumps(rnetfile_data, indent=2),
             mimetype='application/json',

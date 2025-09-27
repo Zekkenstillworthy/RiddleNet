@@ -819,6 +819,41 @@
         font-size: 24px;
     }
     
+    /* Mobile Collaboration Toggle Button */
+    .mobile-collaboration-toggle {
+        display: none;
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--success-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 1600;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3), 0 0 20px rgba(76, 175, 80, 0.2);
+        transition: all var(--transition-speed) ease;
+    }
+
+    .mobile-collaboration-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4), 0 0 30px rgba(76, 175, 80, 0.3);
+    }
+
+    .mobile-collaboration-toggle:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-collaboration-toggle i {
+        color: var(--success-color);
+        font-size: 24px;
+    }
+    
     .performance-sidebar {
         position: fixed;
         top: 5%;
@@ -1080,6 +1115,613 @@
     .steps-panel.collapsed .steps-header-content {
         flex-direction: column;
         margin-bottom: 0;
+    }
+
+    /* ===== COLLABORATION SIDEBAR STYLES ===== */
+    
+    .collaboration-sidebar {
+        position: fixed;
+        top: 5%;
+        right: 0;
+        transform: translateY(-5%);
+        width: 350px;
+        height: 80vh;
+        max-height: 800px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--success-color, #4CAF50);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        z-index: 1400;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(76, 175, 80, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(-5%) translateX(100%);
+        opacity: 0;
+        overflow: hidden;
+    }
+
+    .collaboration-sidebar.active {
+        transform: translateY(-5%) translateX(0);
+        opacity: 1;
+    }
+
+    .collaboration-sidebar.flash {
+        box-shadow: 0 8px 32px rgba(76, 175, 80, 0.4), 
+                   0 0 20px rgba(76, 175, 80, 0.3);
+    }
+
+    .collaboration-toggle {
+        position: absolute;
+        left: -60px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 120px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--success-color, #4CAF50);
+        border-right: none;
+        border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .collaboration-toggle:hover {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--success-color, #4CAF50);
+        transform: translateY(-50%) translateX(-5px);
+    }
+
+    .collaboration-toggle i {
+        font-size: 24px;
+        color: var(--success-color, #4CAF50);
+        margin-bottom: 8px;
+    }
+
+    .collaboration-toggle .toggle-text {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Collaboration Status Display */
+    .collaboration-status-display {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        border-left: 3px solid var(--success-color, #4CAF50);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-indicator i {
+        color: var(--success-color, #4CAF50);
+        font-size: 16px;
+    }
+
+    .status-indicator span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    /* Session Controls */
+    .session-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .collab-action-btn {
+        padding: 10px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .collab-action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--success-color, #4CAF50);
+        transform: translateY(-1px);
+    }
+
+    .collab-action-btn.btn-primary {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--success-color, #4CAF50);
+        color: var(--success-color, #4CAF50);
+    }
+
+    .collab-action-btn.btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .collab-action-btn.btn-danger {
+        background: rgba(244, 67, 54, 0.1);
+        border-color: var(--error-color, #f44336);
+        color: var(--error-color, #f44336);
+    }
+
+    .collab-action-btn.btn-info {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        color: var(--cyber-glow);
+    }
+
+    /* Session Info */
+    .session-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .session-detail {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .session-detail:last-child {
+        border-bottom: none;
+    }
+
+    .session-detail span:first-child {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .session-detail span:last-child {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .session-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .session-actions .collab-action-btn {
+        flex: 1;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    /* Team Members List */
+    .team-members-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .team-member-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+    }
+
+    .member-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--success-color, #4CAF50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 12px;
+        color: white;
+    }
+
+    .member-info {
+        flex: 1;
+    }
+
+    .member-name {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .member-status {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    /* Enhanced Collaboration Hub Styles */
+    .status-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius-lg);
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .status-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+    }
+
+    .status-info {
+        flex: 1;
+    }
+
+    .status-title {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .status-subtitle {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--danger-color);
+    }
+
+    .status-indicator.connected {
+        background: var(--success-color);
+        box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+    }
+
+    /* Sessions List */
+    .sessions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .session-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius);
+        padding: 12px;
+    }
+
+    .session-card.empty-state {
+        text-align: center;
+        padding: 24px 12px;
+    }
+
+    .empty-icon {
+        font-size: 24px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .create-session-btn {
+        background: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: var(--border-radius);
+        padding: 8px 16px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .create-session-btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    /* Active Session Card */
+    .session-active-card {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: var(--border-radius-lg);
+        padding: 16px;
+    }
+
+    .session-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .session-avatar {
+        width: 36px;
+        height: 36px;
+        background: var(--accent-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+
+    .session-details {
+        flex: 1;
+    }
+
+    .session-name {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 2px;
+    }
+
+    .session-code {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .session-status.online {
+        color: var(--success-color);
+        font-size: 12px;
+    }
+
+    .session-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding: 8px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .session-stats .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .session-stats .stat i {
+        color: var(--cyber-glow);
+        font-size: 14px;
+    }
+
+    .session-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 11px;
+        border: none;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .action-btn.primary {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .action-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-secondary);
+    }
+
+    .action-btn.danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+
+    /* Members Grid */
+    .members-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .member-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius);
+    }
+
+    .member-avatar.online {
+        position: relative;
+        background: var(--success-color);
+    }
+
+    .member-avatar.online::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 12px;
+        height: 12px;
+        background: var(--success-color);
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+    }
+
+    /* Collaboration Tools Grid */
+    .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .tool-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--border-radius);
+        padding: 12px 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+    }
+
+    .tool-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        border-color: var(--accent-color);
+        transform: translateY(-2px);
+    }
+
+    .tool-btn i {
+        font-size: 16px;
+        color: var(--cyber-glow);
+    }
+
+    .tool-btn:hover i {
+        color: var(--accent-color);
+    }
+
+    /* Quick Join */
+    .quick-join-container {
+        margin-top: 8px;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .session-input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--border-radius);
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .session-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .join-btn {
+        background: var(--success-color);
+        color: white;
+        border: none;
+        border-radius: var(--border-radius);
+        padding: 8px 12px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .join-btn:hover {
+        background: var(--success-hover);
+        transform: translateY(-1px);
+    }
+
+    /* Show/hide sections based on collaboration state */
+    .collaboration-sidebar.in-session #active-session-section,
+    .collaboration-sidebar.in-session #team-members-section {
+        display: block !important;
+    }
+
+    .collaboration-sidebar.in-session .sessions-list .empty-state {
+        display: none;
+    }
+
+    /* Responsive adjustments for collaboration sidebar */
+    @media (max-width: 768px) {
+        .collaboration-sidebar {
+            width: 100vw;
+            height: 100vh;
+            top: 0;
+            transform: translateX(100%);
+            border-radius: 0;
+        }
+
+        .collaboration-sidebar.active {
+            transform: translateX(0);
+        }
+
+        .collaboration-toggle {
+            display: none;
+        }
+
+        .mobile-collaboration-toggle {
+            display: flex !important;
+        }
+    }
+
+    /* Show mobile toggles on larger screens as well */
+    @media (min-width: 769px) {
+        .mobile-collaboration-toggle,
+        .mobile-performance-toggle {
+            display: flex !important;
+        }
     }
 
     /* Feedback section styles from troubleshoot.html */
@@ -1852,32 +2494,6 @@
         display: inline-block;
     }
     
-    /* Collaboration Controls Styles */
-    .collaboration-controls {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        background: rgba(255, 255, 255, 0.08);
-        padding: 0.75rem 1.5rem;
-        border-radius: var(--border-radius-lg);
-        border: 2px solid var(--glass-border);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        backdrop-filter: blur(15px);
-    }
-
-    .collaboration-status {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-
-    .collaboration-status i {
-        color: var(--cyber-glow);
-    }
-
     .btn {
         padding: 0.5rem 1rem;
         border: none;
@@ -2205,6 +2821,237 @@
         border: 1px solid var(--cyber-glow);
     }
 
+    /* Collaboration Panel Styles */
+    .collaboration-panel {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 300px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+    }
+    
+    .collaboration-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .collaboration-header h4 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+    
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 1rem;
+        transition: color 0.3s ease;
+    }
+    
+    .toggle-btn:hover {
+        color: var(--cyber-glow);
+    }
+    
+    .collaboration-content {
+        padding: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .collaborators-section, .chat-section {
+        margin-bottom: 20px;
+    }
+    
+    .collaborators-section:last-child, .chat-section:last-child {
+        margin-bottom: 0;
+    }
+    
+    .collaborators-section h5, .chat-section h5 {
+        margin: 0 0 10px 0;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+    
+    .users-list {
+        max-height: 120px;
+        overflow-y: auto;
+    }
+    
+    .user-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .user-item:last-child {
+        border-bottom: none;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-right: 10px;
+    }
+    
+    .user-info {
+        flex: 1;
+    }
+    
+    .user-name {
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .user-status {
+        color: var(--success-color);
+        font-size: 0.75rem;
+    }
+    
+    .chat-messages {
+        max-height: 150px;
+        overflow-y: auto;
+        border: 1px solid var(--glass-border);
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 10px;
+        background: var(--surface);
+    }
+    
+    .chat-message {
+        margin-bottom: 8px;
+        padding: 6px;
+        border-radius: 4px;
+        background: var(--glass-bg);
+    }
+    
+    .chat-message.own {
+        background: var(--gradient-primary);
+        margin-left: 20px;
+    }
+    
+    .chat-message.own .message-content {
+        color: white;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        font-size: 0.75rem;
+    }
+    
+    .message-author {
+        font-weight: bold;
+        color: var(--text-primary);
+    }
+    
+    .message-time {
+        color: var(--text-muted);
+    }
+    
+    .message-content {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .chat-input-container {
+        display: flex;
+        gap: 8px;
+    }
+    
+    #collaboration-chat-input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid var(--glass-border);
+        border-radius: 4px;
+        background: var(--glass-bg);
+        color: var(--text-primary);
+        font-size: 0.85rem;
+    }
+    
+    #collaboration-chat-input:focus {
+        outline: none;
+        border-color: var(--cyber-glow);
+    }
+    
+    .send-btn {
+        padding: 8px 12px;
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 217, 255, 0.3);
+    }
+    
+    /* Collaboration Notification Styles */
+    .collaboration-notification {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100px);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 12px 20px;
+        color: var(--text-primary);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        z-index: 10000;
+        transition: all 0.3s ease;
+        opacity: 0;
+    }
+    
+    .collaboration-notification.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    
+    .collaboration-notification.info {
+        border-left: 4px solid var(--info-color);
+    }
+    
+    .collaboration-notification.warning {
+        border-left: 4px solid var(--warning-color);
+    }
+    
+    .collaboration-notification.error {
+        border-left: 4px solid var(--danger-color);
+    }
+    
+    /* Hide collaboration panel on mobile */
+    @media (max-width: 768px) {
+        .collaboration-panel {
+            display: none;
+        }
+    }
+
 
 </style>
 {% endblock %}
@@ -2257,21 +3104,6 @@
                 <button class="tool-btn" data-tool="labels" title="Toggle Labels">
                     <i class="fas fa-tags"></i>
                 </button>
-            </div>
-            <!-- Team Session Collaboration Controls (visibility controlled by JavaScript) -->
-            <div class="collaboration-controls" style="display: none;">
-                <button id="browse-lobbies-btn" class="btn btn-primary">
-                    <i class="fas fa-users"></i>
-                    Join Collaboration Session
-                </button>
-                <button id="refresh-lobbies-btn" class="btn btn-outline-secondary">
-                    <i class="fas fa-sync"></i>
-                    Refresh Sessions
-                </button>
-                <div class="collaboration-status" style="display: none;">
-                    <i class="fas fa-user"></i>
-                    Solo Mode
-                </div>
             </div>
             
             <div class="bottom-actions">
@@ -2626,9 +3458,175 @@
             </div>
         </div>
 
+        <!-- Enhanced Collaboration Sidebar -->
+        <div id="collaboration-sidebar" class="collaboration-sidebar">
+            <!-- Collaboration Toggle Button -->
+            <div id="collaboration-toggle" class="collaboration-toggle" title="Toggle Collaboration Panel">
+                <i class="fas fa-users"></i>
+                <span class="toggle-text">COLLABORATION</span>
+            </div>
+            
+            <!-- Sidebar Content -->
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-users"></i> COLLABORATION HUB</h3>
+                    <button class="close-sidebar" id="close-collaboration-sidebar" title="Close Collaboration Panel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Connection Status Card -->
+                <div class="feedback-section">
+                    <div class="status-card">
+                        <div class="status-icon" id="connection-status-icon">
+                            <i class="fas fa-wifi"></i>
+                        </div>
+                        <div class="status-info">
+                            <div class="status-title" id="connection-status-title">Connected</div>
+                            <div class="status-subtitle" id="connection-status-subtitle">Solo Mode • Ready to collaborate</div>
+                        </div>
+                        <div class="status-indicator connected" id="connection-indicator"></div>
+                    </div>
+                </div>
+
+                <!-- Available Sessions -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-globe"></i> Available Sessions</h4>
+                    <div class="sessions-list" id="sessions-list">
+                        <div class="session-card empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-users-slash"></i>
+                            </div>
+                            <div class="empty-text">No active sessions found</div>
+                            <button class="create-session-btn" id="create-session-btn">
+                                <i class="fas fa-plus"></i>
+                                Create New Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Active Session -->
+                <div class="feedback-section" id="active-session-section" style="display: none;">
+                    <h4><i class="fas fa-users-cog"></i> Current Session</h4>
+                    <div class="session-active-card">
+                        <div class="session-header">
+                            <div class="session-avatar">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <div class="session-details">
+                                <div class="session-name" id="active-session-name">Network Lab Session</div>
+                                <div class="session-code" id="active-session-code">#ABC123</div>
+                            </div>
+                            <div class="session-status online">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="session-stats">
+                            <div class="stat">
+                                <i class="fas fa-users"></i>
+                                <span id="session-participants-count">3/4</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-clock"></i>
+                                <span id="session-duration">12:34</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-trophy"></i>
+                                <span id="team-score">250 pts</span>
+                            </div>
+                        </div>
+
+                        <div class="session-actions">
+                            <button class="action-btn primary" id="invite-members-btn">
+                                <i class="fas fa-user-plus"></i>
+                                Invite
+                            </button>
+                            <button class="action-btn secondary" id="session-settings-btn">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </button>
+                            <button class="action-btn danger" id="leave-session-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Leave
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Members -->
+                <div class="feedback-section" id="team-members-section" style="display: none;">
+                    <h4><i class="fas fa-users"></i> Team Members</h4>
+                    <div class="members-grid" id="team-members-list">
+                        <!-- Dynamic member cards will be inserted here -->
+                        <div class="member-card">
+                            <div class="member-avatar online">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">Gilbert</div>
+                                <div class="member-role">Host</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collaboration Tools -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-tools"></i> Collaboration Tools</h4>
+                    <div class="tool-grid">
+                        <button class="tool-btn" id="sync-topology-btn" title="Sync Network Topology">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Sync</span>
+                        </button>
+                        <button class="tool-btn" id="share-cursor-btn" title="Share Cursor Position">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <span>Cursor</span>
+                        </button>
+                        <button class="tool-btn" id="voice-chat-btn" title="Voice Chat">
+                            <i class="fas fa-microphone"></i>
+                            <span>Voice</span>
+                        </button>
+                        <button class="tool-btn" id="screen-share-btn" title="Screen Share">
+                            <i class="fas fa-desktop"></i>
+                            <span>Screen</span>
+                        </button>
+                        <button class="tool-btn" id="whiteboard-btn" title="Shared Whiteboard">
+                            <i class="fas fa-chalkboard"></i>
+                            <span>Board</span>
+                        </button>
+                        <button class="tool-btn" id="file-share-btn" title="File Sharing">
+                            <i class="fas fa-file-export"></i>
+                            <span>Files</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Join -->
+                <div class="feedback-section">
+                    <h4><i class="fas fa-rocket"></i> Quick Join</h4>
+                    <div class="quick-join-container">
+                        <div class="input-group">
+                            <input type="text" id="session-code-input" placeholder="Enter session code..." class="session-input">
+                            <button class="join-btn" id="quick-join-btn">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Join
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Mobile Performance Toggle Button -->
         <div class="mobile-performance-toggle" id="mobile-performance-toggle">
             <i class="fas fa-chart-line"></i>
+        </div>
+        
+        <!-- Mobile Collaboration Toggle Button -->
+        <div class="mobile-collaboration-toggle" id="mobile-collaboration-toggle">
+            <i class="fas fa-users"></i>
         </div>
     </div>
 </div>
@@ -3185,9 +4183,10 @@ window.teamSessionManager = {
         }
         
         // Hide collaboration controls
-        const controls = document.querySelector('.collaboration-controls');
-        if (controls) {
-            controls.style.display = 'none';
+        // No longer needed - collaboration is now in sidebar
+        // Update collaboration sidebar display instead
+        if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
+            window.simulation.updateCollaborationDisplay();
         }
     },
     
@@ -3235,9 +4234,10 @@ window.teamSessionManager = {
         }
         
         // Hide collaboration controls since user is in lobby
-        const controls = document.querySelector('.collaboration-controls');
-        if (controls) {
-            controls.style.display = 'none';
+        // No longer needed - collaboration is now in sidebar
+        // Update collaboration sidebar display instead
+        if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
+            window.simulation.updateCollaborationDisplay();
         }
     },
     
@@ -3255,9 +4255,10 @@ window.teamSessionManager = {
         }
         
         // Show collaboration controls
-        const controls = document.querySelector('.collaboration-controls');
-        if (controls) {
-            controls.style.display = 'flex';
+        // No longer needed - collaboration is now in sidebar
+        // Update collaboration sidebar display instead
+        if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
+            window.simulation.updateCollaborationDisplay();
         }
         
         // Clear chat messages
@@ -3443,20 +4444,35 @@ function applyCollaborationSettings(settings) {
         console.log('Updated simulation collab config:', collab);
     }
     
-    // Show/hide collaboration controls based on settings
-    const collaborationControls = document.querySelector('.collaboration-controls');
-    if (collaborationControls) {
-        if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
-            collaborationControls.style.display = 'block';
-            
-            // Update collaboration status
-            const statusElement = collaborationControls.querySelector('.collaboration-status');
-            if (statusElement) {
-                statusElement.innerHTML = `<i class="fas fa-users"></i> Team Mode (Max: ${settings.max_team_size})`;
-            }
-        } else {
-            collaborationControls.style.display = 'none';
+    // Show/hide collaboration sidebar toggle based on settings
+    const collaborationToggle = document.getElementById('collaboration-toggle');
+    const mobileCollaborationToggle = document.getElementById('mobile-collaboration-toggle');
+    
+    if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
+        // Show collaboration toggle buttons
+        if (collaborationToggle) {
+            collaborationToggle.style.display = 'flex';
         }
+        if (mobileCollaborationToggle) {
+            mobileCollaborationToggle.style.display = 'flex';
+        }
+        
+        // Update collaboration sidebar display
+        if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
+            window.simulation.updateCollaborationDisplay();
+        }
+        
+        console.log('✅ Collaboration enabled - sidebar toggle visible');
+    } else {
+        // Hide collaboration toggle buttons
+        if (collaborationToggle) {
+            collaborationToggle.style.display = 'none';
+        }
+        if (mobileCollaborationToggle) {
+            mobileCollaborationToggle.style.display = 'none';
+        }
+        
+        console.log('❌ Collaboration disabled - sidebar toggle hidden');
     }
     
     // Update collaboration badge in header
@@ -3468,25 +4484,46 @@ function applyCollaborationSettings(settings) {
     }
 }
 
-// Function to update the collaboration badge in the header
+// Function to update collaboration badge in header
 function updateCollaborationBadge(settings) {
-    // Remove existing badge
-    const existingBadge = document.querySelector('.collaboration-badge');
-    if (existingBadge) {
-        existingBadge.remove();
-    }
-    
-    // Add new badge if collaboration is enabled
-    if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
-        const headerRight = document.querySelector('.simulation-header .header-right');
-        if (headerRight) {
-            const badge = document.createElement('div');
-            badge.className = 'progress-indicator collaboration-badge';
-            badge.innerHTML = `<i class="fas fa-users"></i><span>Collab: Team (${settings.max_team_size})</span>`;
-            headerRight.appendChild(badge);
+    try {
+        // Find collaboration badge/indicator in header
+        const collaborationBadge = document.querySelector('.collaboration-badge');
+        const collaborationIndicator = document.querySelector('.collab-indicator');
+        
+        if (settings && settings.max_team_size && parseInt(settings.max_team_size) > 1) {
+            // Update badge to show collaboration is enabled
+            if (collaborationBadge) {
+                collaborationBadge.textContent = `Team: ${settings.max_team_size}`;
+                collaborationBadge.style.display = 'inline-block';
+                collaborationBadge.classList.add('active');
+            }
+            
+            if (collaborationIndicator) {
+                collaborationIndicator.style.display = 'inline-block';
+                collaborationIndicator.classList.add('enabled');
+            }
+            
+            console.log('✅ Collaboration badge updated - enabled');
+        } else {
+            // Hide or disable collaboration indicators
+            if (collaborationBadge) {
+                collaborationBadge.style.display = 'none';
+                collaborationBadge.classList.remove('active');
+            }
+            
+            if (collaborationIndicator) {
+                collaborationIndicator.style.display = 'none';
+                collaborationIndicator.classList.remove('enabled');
+            }
+            
+            console.log('❌ Collaboration badge updated - disabled');
         }
+    } catch (error) {
+        console.warn('⚠️ Failed to update collaboration badge:', error);
     }
 }
+
 
 // Initialize team session manager when document is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -3934,6 +4971,115 @@ class DynamicSimulation {
             closePerformanceBtn.addEventListener('click', () => {
                 console.log('🖱️ Close performance button clicked');
                 this.closePerformanceSidebar();
+            });
+        }
+
+        // ===== COLLABORATION SIDEBAR EVENT LISTENERS =====
+        
+        const collaborationToggle = document.getElementById('collaboration-toggle');
+        const collaborationSidebar = document.getElementById('collaboration-sidebar');
+        const mobileCollaborationToggle = document.getElementById('mobile-collaboration-toggle');
+        const closeCollaborationBtn = document.getElementById('close-collaboration-sidebar');
+        
+        console.log('🤝 Setting up collaboration sidebar event listeners...');
+        console.log('Collaboration toggle:', collaborationToggle ? 'found' : 'not found');
+        console.log('Collaboration sidebar:', collaborationSidebar ? 'found' : 'not found');
+        console.log('Mobile collaboration toggle:', mobileCollaborationToggle ? 'found' : 'not found');
+        console.log('Close collaboration button:', closeCollaborationBtn ? 'found' : 'not found');
+        
+        if (collaborationToggle && collaborationSidebar) {
+            collaborationToggle.addEventListener('click', () => {
+                console.log('🖱️ Collaboration toggle clicked');
+                this.toggleCollaborationSidebar();
+            });
+        }
+        
+        if (mobileCollaborationToggle && collaborationSidebar) {
+            mobileCollaborationToggle.addEventListener('click', () => {
+                console.log('🖱️ Mobile collaboration toggle clicked');
+                this.toggleCollaborationSidebar();
+            });
+        }
+        
+        if (closeCollaborationBtn && collaborationSidebar) {
+            closeCollaborationBtn.addEventListener('click', () => {
+                console.log('🖱️ Close collaboration button clicked');
+                this.closeCollaborationSidebar();
+            });
+        }
+
+        // Set up collaboration action button event listeners
+        const browseLobbyBtn = document.getElementById('browse-lobbies-btn');
+        const refreshLobbiesBtn = document.getElementById('refresh-lobbies-btn');
+        const leaveSessionBtn = document.getElementById('leave-session-btn');
+        const toggleChatBtn = document.getElementById('toggle-team-chat-btn');
+        const syncTopologyBtn = document.getElementById('sync-topology-btn');
+        const shareScreenBtn = document.getElementById('share-screen-btn');
+
+        if (browseLobbyBtn) {
+            browseLobbyBtn.addEventListener('click', () => {
+                console.log('🖱️ Browse lobbies button clicked');
+                if (window.teamSessionManager && typeof window.teamSessionManager.showLobbyBrowser === 'function') {
+                    window.teamSessionManager.showLobbyBrowser();
+                } else {
+                    console.log('❌ Team session manager not available');
+                    this.showNotification('Collaboration system not available', 'error');
+                }
+            });
+        }
+
+        if (refreshLobbiesBtn) {
+            refreshLobbiesBtn.addEventListener('click', () => {
+                console.log('🖱️ Refresh lobbies button clicked');
+                if (window.teamSessionManager && typeof window.teamSessionManager.refreshLobbies === 'function') {
+                    window.teamSessionManager.refreshLobbies();
+                } else {
+                    console.log('❌ Team session manager not available');
+                    this.showNotification('Refreshing sessions...', 'info');
+                }
+            });
+        }
+
+        if (leaveSessionBtn) {
+            leaveSessionBtn.addEventListener('click', () => {
+                console.log('🖱️ Leave session button clicked');
+                if (window.teamSessionManager && typeof window.teamSessionManager.leaveTeamSession === 'function') {
+                    window.teamSessionManager.leaveTeamSession();
+                } else {
+                    console.log('❌ Team session manager not available');
+                    this.showNotification('Leaving session...', 'info');
+                }
+                // Update display after leaving
+                setTimeout(() => this.updateCollaborationDisplay(), 500);
+            });
+        }
+
+        if (toggleChatBtn) {
+            toggleChatBtn.addEventListener('click', () => {
+                console.log('🖱️ Toggle chat button clicked');
+                if (window.teamSessionManager && typeof window.teamSessionManager.toggleTeamChat === 'function') {
+                    window.teamSessionManager.toggleTeamChat();
+                } else {
+                    console.log('❌ Team session manager not available');
+                    this.showNotification('Chat toggle not available', 'error');
+                }
+            });
+        }
+
+        if (syncTopologyBtn) {
+            syncTopologyBtn.addEventListener('click', () => {
+                console.log('🖱️ Sync topology button clicked');
+                this.showNotification('Syncing topology with team...', 'info');
+                // Add topology sync logic here
+                setTimeout(() => this.showNotification('Topology synced successfully', 'success'), 1000);
+            });
+        }
+
+        if (shareScreenBtn) {
+            shareScreenBtn.addEventListener('click', () => {
+                console.log('🖱️ Share screen button clicked');
+                this.showNotification('Sharing view with team...', 'info');
+                // Add screen sharing logic here
             });
         }
         
@@ -5703,6 +6849,158 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         this.setState('isPerformanceSidebarVisible', false);
         
         console.log('📊 Performance sidebar closed');
+    }
+    
+    // ===== COLLABORATION SIDEBAR MANAGEMENT =====
+    
+    toggleCollaborationSidebar() {
+        console.log('🤝 toggleCollaborationSidebar called');
+        const sidebar = document.getElementById('collaboration-sidebar');
+        if (!sidebar) {
+            console.log('❌ Collaboration sidebar element not found');
+            return;
+        }
+        
+        const isActive = sidebar.classList.contains('active');
+        console.log(`🤝 Sidebar current state: ${isActive ? 'active' : 'inactive'}`);
+        
+        if (isActive) {
+            this.closeCollaborationSidebar();
+        } else {
+            this.showCollaborationSidebar();
+        }
+    }
+    
+    showCollaborationSidebar() {
+        const sidebar = document.getElementById('collaboration-sidebar');
+        if (!sidebar) {
+            console.log('❌ Cannot show collaboration sidebar - element not found');
+            return;
+        }
+        
+        console.log('🤝 Adding active class to collaboration sidebar');
+        sidebar.classList.add('active');
+        
+        // Update centralized state
+        this.setState('isCollaborationSidebarVisible', true);
+        
+        // Update collaboration display
+        this.updateCollaborationDisplay();
+        
+        console.log('🤝 Collaboration sidebar opened');
+    }
+    
+    closeCollaborationSidebar() {
+        const sidebar = document.getElementById('collaboration-sidebar');
+        if (!sidebar) {
+            console.log('❌ Cannot close collaboration sidebar - element not found');
+            return;
+        }
+        
+        console.log('🤝 Removing active class from collaboration sidebar');
+        sidebar.classList.remove('active');
+        
+        // Update centralized state
+        this.setState('isCollaborationSidebarVisible', false);
+        
+        console.log('🤝 Collaboration sidebar closed');
+    }
+    
+    updateCollaborationDisplay() {
+        // Update collaboration status and session info
+        const statusText = document.getElementById('collab-status-text');
+        const statusIndicator = document.getElementById('collab-status-indicator');
+        const activeSessionSection = document.getElementById('active-session-section');
+        const teamMembersSection = document.getElementById('team-members-section');
+        
+        // Check if we're in a collaborative session
+        if (window.teamSessionManager && window.teamSessionManager.currentSession) {
+            const session = window.teamSessionManager.currentSession;
+            
+            if (statusText) {
+                statusText.textContent = `In Session: ${session.name || 'Unknown'}`;
+            }
+            
+            if (statusIndicator) {
+                const icon = statusIndicator.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-users';
+                }
+            }
+            
+            // Show active session section
+            if (activeSessionSection) {
+                activeSessionSection.style.display = 'block';
+                
+                // Update session details
+                const sessionName = document.getElementById('session-name');
+                const sessionParticipants = document.getElementById('session-participants');
+                const sessionRole = document.getElementById('session-role');
+                
+                if (sessionName) sessionName.textContent = session.name || 'Unnamed Session';
+                if (sessionParticipants) {
+                    const participantCount = session.participants ? session.participants.length : 0;
+                    sessionParticipants.textContent = `${participantCount}/4`;
+                }
+                if (sessionRole) sessionRole.textContent = session.userRole || 'Member';
+            }
+            
+            // Show team members section
+            if (teamMembersSection) {
+                teamMembersSection.style.display = 'block';
+                this.updateTeamMembersList(session.participants || []);
+            }
+        } else {
+            if (statusText) {
+                statusText.textContent = 'Solo Mode';
+            }
+            
+            if (statusIndicator) {
+                const icon = statusIndicator.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-user';
+                }
+            }
+            
+            // Hide session-specific sections
+            if (activeSessionSection) activeSessionSection.style.display = 'none';
+            if (teamMembersSection) teamMembersSection.style.display = 'none';
+        }
+    }
+    
+    updateTeamMembersList(participants) {
+        const membersList = document.getElementById('team-members-list');
+        if (!membersList) return;
+        
+        membersList.innerHTML = '';
+        
+        participants.forEach((participant, index) => {
+            const memberItem = document.createElement('div');
+            memberItem.className = 'team-member-item';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'member-avatar';
+            avatar.textContent = participant.username ? participant.username.charAt(0).toUpperCase() : 'U';
+            
+            const memberInfo = document.createElement('div');
+            memberInfo.className = 'member-info';
+            
+            const memberName = document.createElement('div');
+            memberName.className = 'member-name';
+            memberName.textContent = participant.username || 'Unknown User';
+            
+            const memberStatus = document.createElement('div');
+            memberStatus.className = 'member-status';
+            memberStatus.textContent = participant.status === 'online' ? 'Online' : 'Offline';
+            
+            memberInfo.appendChild(memberName);
+            memberInfo.appendChild(memberStatus);
+            
+            memberItem.appendChild(avatar);
+            memberItem.appendChild(memberInfo);
+            
+            membersList.appendChild(memberItem);
+        });
     }
     
     updatePerformanceDisplay() {

@@ -112,341 +112,68 @@ class CollaborationRealTime {
     }
     
     createCollaborationUI() {
-        // Create collaboration panel
-        this.collaborationPanel = document.createElement('div');
-        this.collaborationPanel.className = 'collaboration-panel';
-        this.collaborationPanel.innerHTML = `
-            <div class="collaboration-header">
-                <h4><i class="fas fa-users"></i> Live Collaboration</h4>
-                <button class="collapse-btn" onclick="this.closest('.collaboration-panel').classList.toggle('collapsed')">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-            
-            <div class="collaboration-content">
-                <div class="collaborators-section">
-                    <h5>Active Users (<span class="user-count">0</span>)</h5>
-                    <div class="users-list"></div>
+        // Check if collaboration UI already exists
+        if (this.collaborationPanel) return;
+        
+        // Create collaboration panel HTML
+        const collaborationHTML = `
+            <div id="collaboration-panel" class="collaboration-panel">
+                <div class="collaboration-header">
+                    <h4><i class="fas fa-users"></i> Collaboration</h4>
+                    <button id="collaboration-toggle" class="toggle-btn">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
                 </div>
-                
-                <div class="chat-section">
-                    <h5>Team Chat</h5>
-                    <div class="chat-messages"></div>
-                    <div class="chat-input-container">
-                        <input type="text" class="chat-input" placeholder="Type a message..." maxlength="500">
-                        <button class="send-message-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                <div class="collaboration-content">
+                    <div class="collaborators-section">
+                        <h5>Online Users (<span id="user-count">0</span>)</h5>
+                        <div id="collaborators-list" class="users-list"></div>
+                    </div>
+                    <div class="chat-section">
+                        <h5>Team Chat</h5>
+                        <div id="collaboration-chat" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="collaboration-chat-input" placeholder="Type a message...">
+                            <button id="collaboration-chat-send" class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
         
-        // Add to page
-        document.body.appendChild(this.collaborationPanel);
+        // Insert collaboration panel into page
+        document.body.insertAdjacentHTML('beforeend', collaborationHTML);
         
-        // Get references
-        this.usersList = this.collaborationPanel.querySelector('.users-list');
-        this.chatContainer = this.collaborationPanel.querySelector('.chat-messages');
-        this.chatInput = this.collaborationPanel.querySelector('.chat-input');
-        this.sendBtn = this.collaborationPanel.querySelector('.send-message-btn');
-        this.userCount = this.collaborationPanel.querySelector('.user-count');
+        // Get references to UI elements
+        this.collaborationPanel = document.getElementById('collaboration-panel');
+        this.chatContainer = document.getElementById('collaboration-chat');
+        this.usersList = document.getElementById('collaborators-list');
+        this.userCount = document.getElementById('user-count');
+        this.chatInput = document.getElementById('collaboration-chat-input');
+        this.sendBtn = document.getElementById('collaboration-chat-send');
         
-        // Setup chat functionality
+        // Set up event handlers
         this.setupChatHandlers();
+        this.setupPanelToggle();
         
-        // Add CSS
-        this.addCollaborationCSS();
+        console.log('✅ Collaboration UI created successfully');
     }
     
-    addCollaborationCSS() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .collaboration-panel {
-                position: fixed;
-                top: 80px;
-                right: 20px;
-                width: 350px;
-                max-height: 70vh;
-                background: var(--glass-bg, rgba(15, 23, 42, 0.95));
-                border: 1px solid var(--glass-border, rgba(59, 130, 246, 0.3));
-                border-radius: 16px;
-                backdrop-filter: blur(10px);
-                z-index: 1000;
-                transition: all 0.3s ease;
-                overflow: hidden;
-            }
-            
-            .collaboration-panel.collapsed .collaboration-content {
-                display: none;
-            }
-            
-            .collaboration-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 15px 20px;
-                border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
-                background: var(--primary-color, #0F172A);
-            }
-            
-            .collaboration-header h4 {
-                color: var(--text-primary, #F8FAFC);
-                margin: 0;
-                font-size: 14px;
-                font-weight: 600;
-            }
-            
-            .collaboration-header h4 i {
-                color: var(--accent-color, #3B82F6);
-                margin-right: 8px;
-            }
-            
-            .collapse-btn {
-                background: none;
-                border: none;
-                color: var(--text-secondary, #CBD5E1);
-                cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
-                transition: all 0.2s;
-            }
-            
-            .collapse-btn:hover {
-                background: var(--surface-hover, rgba(255, 255, 255, 0.1));
-                color: var(--accent-color, #3B82F6);
-            }
-            
-            .collaboration-content {
-                padding: 20px;
-                max-height: calc(70vh - 60px);
-                overflow-y: auto;
-            }
-            
-            .collaborators-section, .chat-section {
-                margin-bottom: 20px;
-            }
-            
-            .collaborators-section h5, .chat-section h5 {
-                color: var(--text-primary, #F8FAFC);
-                margin: 0 0 10px 0;
-                font-size: 12px;
-                text-transform: uppercase;
-                font-weight: 600;
-                letter-spacing: 0.5px;
-            }
-            
-            .user-item {
-                display: flex;
-                align-items: center;
-                padding: 8px 12px;
-                margin: 4px 0;
-                background: var(--surface, rgba(30, 41, 59, 0.5));
-                border-radius: 8px;
-                border-left: 3px solid var(--accent-color, #3B82F6);
-                position: relative;
-            }
-            
-            .user-item.admin {
-                border-left-color: var(--warning-color, #F59E0B);
-            }
-            
-            .user-item.current-user {
-                background: var(--accent-color, #3B82F6);
-                color: white;
-            }
-            
-            .user-avatar {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                background: var(--accent-color, #3B82F6);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-right: 8px;
-                font-size: 10px;
-                font-weight: 600;
-            }
-            
-            .user-info {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .user-name {
-                font-weight: 500;
-                font-size: 13px;
-                color: var(--text-primary, #F8FAFC);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .user-status {
-                font-size: 10px;
-                color: var(--text-muted, #64748B);
-                margin-top: 2px;
-            }
-            
-            .typing-indicator {
-                position: absolute;
-                right: 8px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: var(--success-color, #10B981);
-                font-size: 10px;
-                animation: pulse 1.5s infinite;
-            }
-            
-            .chat-messages {
-                max-height: 200px;
-                overflow-y: auto;
-                background: var(--surface, rgba(30, 41, 59, 0.3));
-                border-radius: 8px;
-                padding: 12px;
-                margin-bottom: 12px;
-            }
-            
-            .chat-message {
-                margin-bottom: 12px;
-                padding: 8px 12px;
-                background: var(--glass-bg-light, rgba(255, 255, 255, 0.05));
-                border-radius: 8px;
-                border-left: 3px solid var(--accent-color, #3B82F6);
-            }
-            
-            .chat-message.own {
-                background: var(--accent-color, #3B82F6);
-                color: white;
-                margin-left: 20px;
-                border-left-color: white;
-            }
-            
-            .chat-message.admin {
-                border-left-color: var(--warning-color, #F59E0B);
-            }
-            
-            .message-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 4px;
-            }
-            
-            .message-author {
-                font-weight: 600;
-                font-size: 11px;
-                color: var(--text-secondary, #CBD5E1);
-            }
-            
-            .message-time {
-                font-size: 10px;
-                color: var(--text-muted, #64748B);
-            }
-            
-            .message-content {
-                font-size: 13px;
-                line-height: 1.4;
-                color: var(--text-primary, #F8FAFC);
-                word-wrap: break-word;
-            }
-            
-            .chat-input-container {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .chat-input {
-                flex: 1;
-                padding: 8px 12px;
-                background: var(--surface, rgba(30, 41, 59, 0.5));
-                border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
-                border-radius: 8px;
-                color: var(--text-primary, #F8FAFC);
-                font-size: 13px;
-                outline: none;
-            }
-            
-            .chat-input:focus {
-                border-color: var(--accent-color, #3B82F6);
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-            }
-            
-            .send-message-btn {
-                padding: 8px 12px;
-                background: var(--accent-color, #3B82F6);
-                border: none;
-                border-radius: 8px;
-                color: white;
-                cursor: pointer;
-                transition: all 0.2s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .send-message-btn:hover {
-                background: var(--cyber-glow, #00D9FF);
-                transform: translateY(-1px);
-            }
-            
-            .collaboration-notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 16px;
-                border-radius: 8px;
-                color: white;
-                font-size: 13px;
-                z-index: 1001;
-                opacity: 0;
-                transform: translateX(100%);
-                transition: all 0.3s ease;
-            }
-            
-            .collaboration-notification.show {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            
-            .collaboration-notification.info {
-                background: var(--accent-color, #3B82F6);
-            }
-            
-            .collaboration-notification.warning {
-                background: var(--warning-color, #F59E0B);
-            }
-            
-            .collaboration-notification.error {
-                background: var(--danger-color, #EF4444);
-            }
-            
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-            }
-            
-            /* Scrollbar styling */
-            .chat-messages::-webkit-scrollbar,
-            .collaboration-content::-webkit-scrollbar {
-                width: 4px;
-            }
-            
-            .chat-messages::-webkit-scrollbar-track,
-            .collaboration-content::-webkit-scrollbar-track {
-                background: var(--surface, rgba(30, 41, 59, 0.3));
-                border-radius: 2px;
-            }
-            
-            .chat-messages::-webkit-scrollbar-thumb,
-            .collaboration-content::-webkit-scrollbar-thumb {
-                background: var(--accent-color, #3B82F6);
-                border-radius: 2px;
-            }
-        `;
-        document.head.appendChild(style);
+    setupPanelToggle() {
+        const toggleBtn = document.getElementById('collaboration-toggle');
+        const content = this.collaborationPanel.querySelector('.collaboration-content');
+        
+        if (toggleBtn && content) {
+            toggleBtn.addEventListener('click', () => {
+                const isCollapsed = content.style.display === 'none';
+                content.style.display = isCollapsed ? 'block' : 'none';
+                toggleBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
+            });
+        }
     }
+    
     
     setupChatHandlers() {
         const sendMessage = () => {
