@@ -1311,8 +1311,10 @@ def run_simulation(simulation_id):
             'gating': gating,
             'lobby': lobby.to_dict() if lobby else None,
             'team_assignment': {
-                'team_number': team_assignment.team_number,
-                'role': team_assignment.role
+                'team_name': team_assignment.team_name,
+                'team_leader': team_assignment.team_leader,
+                'team_members': team_assignment.team_members or [],
+                'is_active': team_assignment.is_active
             } if team_assignment else None,
             'collaboration_enabled': collaboration_setting.collaboration_enabled if collaboration_setting else False,
             'collaboration_settings': collaboration_setting.to_dict() if collaboration_setting else {}
@@ -3615,18 +3617,21 @@ def join_collaboration_lobby(simulation_id):
             )
         
         # Check if user can join (not already in lobby)
-        existing_assignment = TeamAssignment.query.filter_by(
-            lobby_id=lobby_id,
-            user_id=user.id
-        ).first()
+        # Check if user is already assigned to a team in this lobby
+        existing_assignments = TeamAssignment.query.filter_by(lobby_id=lobby_id).all()
+        existing_assignment = None
+        for assignment in existing_assignments:
+            if str(user.id) in (assignment.team_members or []):
+                existing_assignment = assignment
+                break
         
         if existing_assignment:
             return jsonify({
                 'success': True,
                 'message': 'Already in lobby',
                 'team_assignment': {
-                    'team_number': existing_assignment.team_number,
-                    'role': existing_assignment.role
+                    'team_name': existing_assignment.team_name,
+                    'is_team_leader': existing_assignment.team_leader is not None
                 },
                 'lobby': lobby.to_dict()
             })
@@ -3649,39 +3654,56 @@ def join_collaboration_lobby(simulation_id):
         team_size = setting.team_size or 2
         existing_teams = TeamAssignment.query.filter_by(lobby_id=lobby_id).all()
         
-        # Group by team number to find available team
+        # Group by team name to find available team
         teams = {}
         for assignment in existing_teams:
-            team_num = assignment.team_number
-            if team_num not in teams:
-                teams[team_num] = []
-            teams[team_num].append(assignment)
+            team_name = assignment.team_name
+            if team_name not in teams:
+                teams[team_name] = []
+            teams[team_name].append(assignment)
         
         # Find team with space or create new one
         assigned_team = None
-        for team_num, members in teams.items():
+        for team_name, members in teams.items():
             if len(members) < team_size:
-                assigned_team = team_num
+                assigned_team = team_name
                 break
         
         if assigned_team is None:
             # Create new team
-            assigned_team = len(teams) + 1
+            assigned_team = f"Team {len(teams) + 1}"
         
-        # Determine role (simple: first member is leader, others are members)
+        # Determine if user should be team leader (simple: first member is leader)
         team_members = teams.get(assigned_team, [])
-        role = 'leader' if len(team_members) == 0 else 'member'
+        is_leader = len(team_members) == 0
         
-        # Create team assignment in database
-        assignment = TeamAssignment(
-            lobby_id=lobby_id,
-            user_id=user.id,
-            team_number=assigned_team,
-            role=role,
-            joined_at=db.func.now()
-        )
-        
-        db.session.add(assignment)
+        # Create or update team assignment in database
+        if assigned_team in teams and teams[assigned_team]:
+            # Update existing team assignment
+            team_assignment = teams[assigned_team][0]  # Get the first (and should be only) assignment for this team
+            current_members = team_assignment.team_members or []
+            if str(user.id) not in current_members:
+                current_members.append(str(user.id))
+                team_assignment.team_members = current_members
+                # Update leader if this is first member
+                if not team_assignment.team_leader:
+                    team_assignment.team_leader = str(user.id)
+                    is_leader = True
+                else:
+                    is_leader = team_assignment.team_leader == str(user.id)
+        else:
+            # Create new team assignment
+            team_assignment = TeamAssignment(
+                lobby_id=lobby_id,
+                class_id=lobby.class_id,
+                simulation_id=simulation_id,
+                team_name=assigned_team,
+                team_members=[str(user.id)],
+                team_leader=str(user.id),  # First member is leader
+                created_by=1  # System created
+            )
+            is_leader = True
+            db.session.add(team_assignment)
         db.session.commit()
         
         # Emit socket event to notify other participants
@@ -3691,16 +3713,16 @@ def join_collaboration_lobby(simulation_id):
                 'lobby_id': lobby_id,
                 'user_id': str(user.id),
                 'username': user.username,
-                'team_number': assigned_team,
-                'role': role
+                'team_name': assigned_team,
+                'is_team_leader': is_leader
             }, room=f'lobby_{lobby_id}')
         
         return jsonify({
             'success': True,
             'message': 'Successfully joined lobby',
             'team_assignment': {
-                'team_number': assigned_team,
-                'role': role
+                'team_name': assigned_team,
+                'is_team_leader': is_leader
             },
             'lobby': lobby.to_dict()
         })

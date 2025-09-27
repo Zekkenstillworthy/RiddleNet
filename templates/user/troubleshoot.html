@@ -1897,6 +1897,8 @@
     }
 
     /* Gamified Difficulty Selection Styles */
+
+    /* Gamified Difficulty Selection Styles */
     .difficulty-selection-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -6579,6 +6581,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 </div>
+
+        
+
     <script>
         // ===== PERFORMANCE FEEDBACK SIDEBAR SYSTEM =====
         
@@ -7253,7 +7258,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hintsContainer) return;
                 
                 // Update hints counter in Live Performance if a scenario is active
-                updateHintsCounter();
+                if (typeof updateHintsCounter === 'function') {
+                    updateHintsCounter();
+                }
                 
                 // Limit to 3 most recent hints
                 const existingHints = hintsContainer.querySelectorAll('.hint-item');
@@ -12099,9 +12106,128 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('🔄 Solo Mode activated by default');
         }
 
-        // Removed collaboration functionality
+        // ===== COLLABORATION LOBBY SYSTEM =====
+        
 
-        // closeLobbyBrowser function removed
+
+
+
+
+
+
+
+
+
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'info') {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas ${getToastIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            // Style the toast
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--surface-card);
+                border: 1px solid var(--border-light);
+                border-radius: 8px;
+                padding: 12px 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function getToastIcon(type) {
+            switch (type) {
+                case 'success': return 'fa-check-circle';
+                case 'error': return 'fa-exclamation-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                case 'info':
+                default: return 'fa-info-circle';
+            }
+        }
+
+
+
+
+
+            
+
+
+
+
+
+
+
+
+
+
+
+        // Enhanced Mode Management Functions with Collaboration
+        function activateSoloMode() {
+            console.log('🎯 Solo Mode activated!');
+            currentMode = 'solo';
+            
+            // Save mode preference
+            localStorage.setItem('riddlenet_mode_preference', 'solo');
+            
+            // Update button states
+            updateModeButtons();
+            
+            // Show solo features
+            showSoloFeatures();
+            
+            // Hide collaboration features in solo mode
+            // Collaboration features removed
+            
+            console.log('✅ Solo Mode setup complete');
+        }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -12125,63 +12251,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Duplicate collaboration intro functions removed
         
-        // Function to join a troubleshooting-specific room when scenario is selected
-        function joinTroubleshootingRoom(scenarioId) {
-            if (scenarioId && window.socketClient) {
-                window.socketClient.emit('join_troubleshooting', {
-                    scenario_id: scenarioId,
-                    page: 'troubleshooting'
-                });
-                console.log('Joined troubleshooting room:', scenarioId);
-            }
-        }
-        // Admin messages event handler
-        function setupAdminMessages() {
-            if (window.socketClient) {
-                window.socketClient.on('admin_troubleshooting_message', function (data) {
-                    console.log('Admin troubleshooting message:', data);
-                    window.socketClient.showNotification(
-                        `Message from ${data.admin_name}`,
-                        data.message
-                    );
-                });
-            }
-        }
 
-        // Emit troubleshooting events when user interacts
-        window.emitTroubleshootingUpdate = function (updateData) {
-            if (window.socketClient) {
-                window.socketClient.emit('troubleshooting_progress', {
-                    ...updateData,
-                    timestamp: new Date().toISOString(),
-                    user_id: '{{ current_user.id if current_user.is_authenticated else "anonymous" }}'
-                });
-            }
-        };
 
-        // Override scenario selection to join appropriate rooms
-        function setupScenarioSelection() {
-            const originalSelectScenario = window.selectScenario;
-            if (originalSelectScenario) {
-                window.selectScenario = function (scenarioId) {
-                    const result = originalSelectScenario(scenarioId);
-                    joinTroubleshootingRoom(scenarioId);
-                    return result;
-                };
-            }
-        }
 
-    // ===== COLLABORATIVE TROUBLESHOOTING JAVASCRIPT =====
-    // Lobby Management Variables
-    // The collaborative-session-btn is already set up with onclick="showLobbyBrowser()"
-    // All duplicate functions have been removed and consolidated
 
-        // Unified Event Handlers - Merged from multiple DOMContentLoaded blocks
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Setting up consolidated troubleshooting WebSocket and UI handlers...');
-            
-            // Initialize difficulty access based on progress
-            updateDifficultyAccess();
+
+
+
+
+
             
             // Retry updating difficulty access after scenarios load (with delays)
             setTimeout(() => {
@@ -12219,20 +12297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.socketClient.getMyLobby();
                 }, 1000);
 
-                // === LOBBY BROWSER EVENT HANDLERS ===
-                
-                // Handle public lobbies response
-                window.socketClient.on('public_lobbies', function(data) {
-                    console.log('📋 Received public lobbies:', data);
-                    if (data.success && data.lobbies) {
-                        console.log('🔄 Updating lobby grid with', data.lobbies.length, 'lobbies');
-                        updateLobbyGrid(data.lobbies);
-                        console.log('✅ Lobby grid updated successfully');
-                    } else {
-                        console.error('❌ Failed to get public lobbies:', data);
-                        updateLobbyGrid([]); // Show empty state
-                    }
-                });
+
 
 
 
@@ -12691,8 +12756,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Collaborative enhancements and testing code removed
-        });
+
     </script>
 
     <!-- ===== SCENARIO TIMER SYSTEM ===== -->
@@ -13471,7 +13535,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 timerStatus.textContent = 'Ready';
                 timerStatus.classList.remove('paused', 'expired');
             }
-    }
+        }
 
         // Initialize timer system when page loads
         document.addEventListener('DOMContentLoaded', function() {
@@ -14799,6 +14863,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.validateTopologyConfiguration = validateTopologyConfiguration;
     </script>
 
+    <!-- Team Session Lobby Browser Modal -->
     <audio id="clickSound" src="{{ url_for('static', filename='audio/Start.mp3') }}"></audio>
     <audio id="exitSound" src="{{ url_for('static', filename='audio/Exit.mp3') }}"></audio>
     <audio id="bgSound" src="{{ url_for('static', filename='audio/Bg_sound.mp3') }}"></audio>

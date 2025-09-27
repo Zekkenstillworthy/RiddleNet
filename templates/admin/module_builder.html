@@ -1964,6 +1964,12 @@ textarea.form-control {
                         People
                     </a>
                 </li>
+                <li class="tab-item">
+                    <a href="#" class="tab-link" onclick="switchTab('collaboration'); return false;">
+                        <i class="fas fa-user-friends"></i>
+                        Collaboration
+                    </a>
+                </li>
             </ul>
         </nav>
     </div>
@@ -2168,6 +2174,70 @@ textarea.form-control {
                     <i class="fas fa-users"></i>
                     <h3>Select a Class to View People</h3>
                     <p>Choose a class to see instructors and students.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Collaboration Tab -->
+            <div id="collaboration-content" class="tab-content">
+                {% if selected_class %}
+                <div class="create-section">
+                    <button class="create-btn" onclick="createCollaborationLobby()">
+                        <i class="fas fa-plus-circle"></i>
+                        Create Collaboration Lobby
+                    </button>
+                </div>
+                
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-user-friends"></i>
+                            Active Collaboration Sessions
+                            <span class="item-counter" id="activeLobbyCount">(0)</span>
+                        </h2>
+                        <button class="action-btn secondary" onclick="refreshCollaborationLobbies()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="content-grid" id="collaborationLobbies">
+                        <div class="empty-state" id="noLobbiesMessage">
+                            <i class="fas fa-users-slash"></i>
+                            <h3>No Active Collaboration Sessions</h3>
+                            <p>Create a collaboration lobby to allow students to work together on simulations.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+                
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-history"></i>
+                            Collaboration History
+                            <span class="item-counter" id="collaborationHistoryCount">(0)</span>
+                        </h2>
+                        <button class="action-btn secondary" onclick="exportCollaborationData()">
+                            <i class="fas fa-download"></i>
+                            Export Data
+                        </button>
+                    </div>
+                    
+                    <div class="content-grid" id="collaborationHistory">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <h3>No Collaboration History</h3>
+                            <p>Past collaboration sessions will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-friends"></i>
+                    <h3>Select a Class to Manage Collaboration</h3>
+                    <p>Choose a class to create and manage collaboration sessions.</p>
                 </div>
                 {% endif %}
             </div>
@@ -3192,6 +3262,481 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('⚠️ Collaboration manager initialization failed:', error.message);
         }
     }, 500);
+
+    // ============================================================================
+    // COLLABORATION MANAGEMENT FUNCTIONS
+    // ============================================================================
+
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all tab links
+        document.querySelectorAll('.tab-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        const tabContent = document.getElementById(tabName + '-content');
+        if (tabContent) {
+            tabContent.classList.add('active');
+        }
+        
+        // Add active class to selected tab link
+        document.querySelector(`[onclick="switchTab('${tabName}'); return false;"]`).classList.add('active');
+        
+        // Initialize tab-specific functionality
+        if (tabName === 'collaboration') {
+            initializeCollaborationTab();
+        }
+    }
+
+    function initializeCollaborationTab() {
+        if (!window.selectedClass) {
+            console.warn('No class selected for collaboration');
+            return;
+        }
+        
+        console.log('Initializing collaboration tab for class:', window.selectedClass.id);
+        refreshCollaborationLobbies();
+        loadCollaborationHistory();
+    }
+
+    function createCollaborationLobby() {
+        if (!window.selectedClass) {
+            showToast('Please select a class first', 'error');
+            return;
+        }
+        
+        // Show collaboration lobby creation modal
+        showCollaborationLobbyModal();
+    }
+
+    function showCollaborationLobbyModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-users"></i>
+                        Create Collaboration Lobby
+                    </h5>
+                    <button type="button" class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCollaborationForm">
+                        <div class="form-group">
+                            <label for="lobbyName" class="form-label">Lobby Name *</label>
+                            <input type="text" class="form-control" id="lobbyName" required 
+                                   placeholder="e.g., Network Configuration Lab">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lobbyDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="lobbyDescription" rows="3"
+                                      placeholder="Brief description of the collaboration session"></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="maxParticipants" class="form-label">Max Participants</label>
+                                    <input type="number" class="form-control" id="maxParticipants" 
+                                           value="6" min="2" max="20">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="simulationId" class="form-label">Target Simulation</label>
+                                    <select class="form-select" id="simulationId">
+                                        <option value="">Any Simulation</option>
+                                        <!-- Simulations will be loaded dynamically -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableChat" checked>
+                            <label class="form-check-label" for="enableChat">
+                                Enable Chat
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="adminMonitoring" checked>
+                            <label class="form-check-label" for="adminMonitoring">
+                                Admin Monitoring
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="saveLogs">
+                            <label class="form-check-label" for="saveLogs">
+                                Save Session Logs
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitCollaborationLobby()">
+                        <i class="fas fa-plus-circle"></i>
+                        Create Lobby
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        loadSimulationsForLobby();
+        
+        // Focus on lobby name input
+        setTimeout(() => {
+            document.getElementById('lobbyName').focus();
+        }, 100);
+    }
+
+    function loadSimulationsForLobby() {
+        if (!window.selectedClass) return;
+        
+        fetch(`/admin/api/classes/${window.selectedClass.id}/simulations`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const simulationSelect = document.getElementById('simulationId');
+                    if (simulationSelect) {
+                        simulationSelect.innerHTML = '<option value="">Any Simulation</option>';
+                        data.simulations.forEach(sim => {
+                            const option = document.createElement('option');
+                            option.value = sim.id;
+                            option.textContent = `${sim.title} (${sim.difficulty})`;
+                            simulationSelect.appendChild(option);
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading simulations:', error);
+            });
+    }
+
+    function submitCollaborationLobby() {
+        const form = document.getElementById('createCollaborationForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        const formData = {
+            name: document.getElementById('lobbyName').value,
+            description: document.getElementById('lobbyDescription').value,
+            max_participants: parseInt(document.getElementById('maxParticipants').value),
+            simulation_id: document.getElementById('simulationId').value || null,
+            class_id: window.selectedClass.id,
+            enable_chat: document.getElementById('enableChat').checked,
+            admin_monitoring: document.getElementById('adminMonitoring').checked,
+            save_logs: document.getElementById('saveLogs').checked,
+            scenario_type: 'simulation',
+            scenario_id: 'network_collaboration'
+        };
+        
+        // Show loading state
+        const submitBtn = document.querySelector('[onclick="submitCollaborationLobby()"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        submitBtn.disabled = true;
+        
+        fetch('/admin/api/collaboration/lobby', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Collaboration lobby created successfully!', 'success');
+                document.querySelector('.modal-overlay').remove();
+                refreshCollaborationLobbies();
+            } else {
+                showToast('Error: ' + (data.error || 'Failed to create lobby'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating lobby:', error);
+            showToast('Network error creating lobby', 'error');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+
+    function refreshCollaborationLobbies() {
+        if (!window.selectedClass) return;
+        
+        fetch(`/admin/api/collaboration/lobbies?class_id=${window.selectedClass.id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayCollaborationLobbies(data.lobbies);
+                    updateLobbyCount(data.lobbies.length);
+                } else {
+                    console.error('Error loading lobbies:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching lobbies:', error);
+            });
+    }
+
+    function displayCollaborationLobbies(lobbies) {
+        const container = document.getElementById('collaborationLobbies');
+        const noLobbiesMessage = document.getElementById('noLobbiesMessage');
+        
+        if (!lobbies || lobbies.length === 0) {
+            noLobbiesMessage.style.display = 'block';
+            container.innerHTML = '';
+            container.appendChild(noLobbiesMessage);
+            return;
+        }
+        
+        noLobbiesMessage.style.display = 'none';
+        container.innerHTML = '';
+        
+        lobbies.forEach(lobby => {
+            const lobbyCard = createLobbyCard(lobby);
+            container.appendChild(lobbyCard);
+        });
+    }
+
+    function createLobbyCard(lobby) {
+        const card = document.createElement('div');
+        card.className = 'unified-card collaboration-lobby-card';
+        card.setAttribute('data-lobby-id', lobby.id);
+        
+        const statusClass = lobby.is_active ? 'success' : 'danger';
+        const statusText = lobby.is_active ? 'Active' : 'Inactive';
+        const participantCount = lobby.participants ? lobby.participants.length : 0;
+        
+        card.innerHTML = `
+            <div class="module-header">
+                <div class="module-info">
+                    <h4 class="lesson-title">
+                        ${lobby.name}
+                        <span class="status-badge status-${statusClass}">${statusText}</span>
+                    </h4>
+                    <p class="lesson-description">${lobby.description || 'No description'}</p>
+                    <div class="module-meta">
+                        <span><i class="fas fa-users"></i> ${participantCount}/${lobby.max_participants} participants</span>
+                        <span><i class="fas fa-clock"></i> Created ${formatTimeAgo(lobby.created_at)}</span>
+                    </div>
+                </div>
+                <div class="module-actions">
+                    <button class="action-btn" onclick="joinCollaborationLobby('${lobby.id}')"
+                            title="Join as monitor">
+                        <i class="fas fa-eye"></i>
+                        Monitor
+                    </button>
+                    <button class="action-btn secondary" onclick="manageCollaborationLobby('${lobby.id}')"
+                            title="Manage lobby">
+                        <i class="fas fa-cog"></i>
+                        Manage
+                    </button>
+                    <button class="action-btn danger" onclick="stopCollaborationLobby('${lobby.id}')"
+                            title="Stop lobby">
+                        <i class="fas fa-stop"></i>
+                        Stop
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    function updateLobbyCount(count) {
+        const counter = document.getElementById('activeLobbyCount');
+        if (counter) {
+            counter.textContent = `(${count})`;
+        }
+    }
+
+    function joinCollaborationLobby(lobbyId) {
+        // Open monitoring interface for the lobby
+        window.open(`/admin/collaboration/${lobbyId}/monitor`, '_blank');
+        showToast('Opening collaboration monitoring interface...', 'info');
+    }
+
+    function manageCollaborationLobby(lobbyId) {
+        showToast('Collaboration management interface coming soon...', 'info');
+    }
+
+    function stopCollaborationLobby(lobbyId) {
+        if (!confirm('Are you sure you want to stop this collaboration lobby? This will disconnect all participants.')) {
+            return;
+        }
+        
+        fetch(`/admin/api/collaboration/lobby/${lobbyId}/stop`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Collaboration lobby stopped successfully', 'success');
+                refreshCollaborationLobbies();
+            } else {
+                showToast('Error: ' + (data.error || 'Failed to stop lobby'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping lobby:', error);
+            showToast('Network error stopping lobby', 'error');
+        });
+    }
+
+    function loadCollaborationHistory() {
+        if (!window.selectedClass) return;
+        
+        fetch(`/admin/api/collaboration/history?class_id=${window.selectedClass.id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayCollaborationHistory(data.sessions);
+                    updateHistoryCount(data.sessions.length);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading collaboration history:', error);
+            });
+    }
+
+    function displayCollaborationHistory(sessions) {
+        const container = document.getElementById('collaborationHistory');
+        
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <h3>No Collaboration History</h3>
+                    <p>Past collaboration sessions will appear here.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        sessions.forEach(session => {
+            const sessionCard = createHistoryCard(session);
+            container.appendChild(sessionCard);
+        });
+    }
+
+    function createHistoryCard(session) {
+        const card = document.createElement('div');
+        card.className = 'unified-card';
+        
+        card.innerHTML = `
+            <div class="module-header">
+                <div class="module-info">
+                    <h4 class="lesson-title">${session.name}</h4>
+                    <p class="lesson-description">Duration: ${session.duration || 'Unknown'}</p>
+                    <div class="module-meta">
+                        <span><i class="fas fa-users"></i> ${session.participant_count} participants</span>
+                        <span><i class="fas fa-calendar"></i> ${formatDate(session.ended_at)}</span>
+                    </div>
+                </div>
+                <div class="module-actions">
+                    <button class="action-btn secondary" onclick="viewCollaborationReport('${session.id}')"
+                            title="View session report">
+                        <i class="fas fa-chart-bar"></i>
+                        Report
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    function updateHistoryCount(count) {
+        const counter = document.getElementById('collaborationHistoryCount');
+        if (counter) {
+            counter.textContent = `(${count})`;
+        }
+    }
+
+    function exportCollaborationData() {
+        if (!window.selectedClass) {
+            showToast('Please select a class first', 'error');
+            return;
+        }
+        
+        showToast('Preparing collaboration data export...', 'info');
+        
+        fetch(`/admin/api/collaboration/export?class_id=${window.selectedClass.id}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Export failed');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `collaboration-data-${window.selectedClass.name}-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                showToast('Collaboration data exported successfully!', 'success');
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                showToast('Error exporting collaboration data', 'error');
+            });
+    }
+
+    function viewCollaborationReport(sessionId) {
+        window.open(`/admin/collaboration/${sessionId}/report`, '_blank');
+    }
+
+    function formatTimeAgo(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} minutes ago`;
+        if (diffHours < 24) return `${diffHours} hours ago`;
+        return `${diffDays} days ago`;
+    }
+
+    function formatDate(timestamp) {
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    function showToast(message, type = 'info') {
+        // Use existing toast system if available
+        if (window.moduleBuilder && window.moduleBuilder.showToast) {
+            window.moduleBuilder.showToast(message, type);
+        } else {
+            console.log(`Toast (${type}): ${message}`);
+            alert(message); // Fallback
+        }
+    }
+
 });
 
 // Enhanced UI Components Scripts
