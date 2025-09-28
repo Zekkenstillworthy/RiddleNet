@@ -2050,6 +2050,18 @@
         color: var(--success-color);
     }
 
+    .status-success {
+        background: rgba(16, 185, 129, 0.3);
+        color: var(--neon-green);
+        box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+    }
+
+    .status-error {
+        background: rgba(239, 68, 68, 0.3);
+        color: var(--danger-color);
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
     .step-description {
         color: var(--text-secondary);
         line-height: 1.5;
@@ -4288,15 +4300,27 @@ window.teamSessionManager = {
         const closeCollaborationBtn = document.getElementById('close-collaboration-sidebar');
         
         if (collaborationToggle) {
-            collaborationToggle.addEventListener('click', () => this.toggleCollaborationSidebar());
+            collaborationToggle.addEventListener('click', () => {
+                if (window.dynamicSimulationInstance && window.dynamicSimulationInstance.toggleCollaborationSidebar) {
+                    window.dynamicSimulationInstance.toggleCollaborationSidebar();
+                }
+            });
         }
         
         if (mobileCollaborationToggle) {
-            mobileCollaborationToggle.addEventListener('click', () => this.toggleCollaborationSidebar());
+            mobileCollaborationToggle.addEventListener('click', () => {
+                if (window.dynamicSimulationInstance && window.dynamicSimulationInstance.toggleCollaborationSidebar) {
+                    window.dynamicSimulationInstance.toggleCollaborationSidebar();
+                }
+            });
         }
         
         if (closeCollaborationBtn) {
-            closeCollaborationBtn.addEventListener('click', () => this.hideCollaborationSidebar());
+            closeCollaborationBtn.addEventListener('click', () => {
+                if (window.dynamicSimulationInstance && window.dynamicSimulationInstance.closeCollaborationSidebar) {
+                    window.dynamicSimulationInstance.closeCollaborationSidebar();
+                }
+            });
         }
         
         // Collaboration tools
@@ -4703,7 +4727,8 @@ window.teamSessionManager = {
     async loadLobbiesFromDatabase(simulationId) {
         console.log('💽 [LOBBY DEBUG] Loading lobbies from database for simulation:', simulationId);
         try {
-            const response = await fetch(`/api/lobbies/${simulationId}`);
+            // Try user API endpoint first
+            const response = await fetch(`/api/troubleshooting/collaborative/lobbies`);
             console.log('💽 [LOBBY DEBUG] Database response status:', response.status);
             
             if (response.ok) {
@@ -4711,9 +4736,13 @@ window.teamSessionManager = {
                 console.log('💽 [LOBBY DEBUG] Database lobbies received:', data);
                 
                 if (data.success && data.lobbies) {
-                    console.log('💽 [LOBBY DEBUG] Processing', data.lobbies.length, 'database lobbies');
-                    this.updateLobbyList(data.lobbies);
-                    return data.lobbies;
+                    // Filter lobbies for this simulation if possible
+                    const filteredLobbies = data.lobbies.filter(lobby => 
+                        !lobby.simulation_id || lobby.simulation_id == simulationId
+                    );
+                    console.log('💽 [LOBBY DEBUG] Processing', filteredLobbies.length, 'filtered database lobbies');
+                    this.updateLobbyList(filteredLobbies);
+                    return filteredLobbies;
                 }
             } else {
                 console.warn('⚠️ [LOBBY DEBUG] Database lobby fetch failed:', response.statusText);
@@ -10670,6 +10699,7 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
         const div = document.createElement('div');
         div.className = `step-item ${index === 0 ? 'active' : ''}`;
         div.setAttribute('data-step', index);
+        div.setAttribute('data-step-index', index);
         
         div.innerHTML = `
             <div class="step-header">
@@ -12530,6 +12560,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize simulation with enhanced event system
     window.simulation = new DynamicSimulation(simulationData, progressData);
+    window.dynamicSimulationInstance = window.simulation; // Make available for team session manager
     window.simulation.initialized = true; // Mark as initialized
     console.log('🚀 DynamicSimulation instance created successfully');
     
@@ -13554,20 +13585,82 @@ class SimulationPerformanceFeedback {
     }
     
     validateCurrentSolution() {
-        if (this.realTimeEnabled && window.socketClient) {
-            window.socketClient.emit('validate_solution', {
-                session_id: this.sessionId,
-                current_solution: {
-                    devices: window.networkDevices || [],
-                    connections: window.networkConnections || [],
-                    configurations: this.getDeviceConfigurations()
-                },
-                scenario_id: window.currentModule?.id || 'dynamic_simulation'
-            });
+        // Enhanced validation using step-based approach
+        this.validateAllSteps();
+    }
+    
+    async collectNetworkState() {
+        // Use existing canvas state if available
+        // Expecting shape: { devices: [...], networkConnections: [...] }
+        const s = window.__networkState || {};
+        s.devices = s.devices || (window.dynamicSim?.networkDevices || this.networkDevices || []);
+        s.networkConnections = s.networkConnections || (window.dynamicSim?.networkConnections || this.networkConnections || []);
+        return s;
+    }
+
+    updateStepStatus(idx, ok, msg) {
+        const status = document.getElementById(`status-${idx}`);
+        const stepEl = document.querySelector(`.step-item:nth-child(${idx + 1})`);
+        if (!status || !stepEl) return;
+        
+        status.classList.remove('status-pending', 'status-error', 'status-success', 'status-active');
+        stepEl.classList.remove('pending', 'error', 'success');
+        
+        if (ok) {
+            status.classList.add('status-success');
+            stepEl.classList.add('success');
+            status.textContent = 'Passed';
         } else {
-            // Fallback local validation
-            this.performLocalValidation();
+            status.classList.add('status-error');
+            stepEl.classList.add('error');
+            status.textContent = 'Failed';
         }
+        
+        if (msg) {
+            const descEl = stepEl.querySelector('.step-description');
+            if (descEl) {
+                descEl.setAttribute('data-feedback', msg);
+                descEl.title = msg;
+            }
+        }
+    }
+
+    async validateAllSteps() {
+        const steps = this.simulation.step_definitions || this.steps || [];
+        const simulationId = this.simulation.id || window.location.pathname.split('/').pop();
+        const state = await this.collectNetworkState();
+        
+        for (let i = 0; i < steps.length; i++) {
+            const step = steps[i] || {};
+            const body = {
+                stepIndex: i,
+                stepType: step.type,
+                validation: step.validation || {},
+                networkState: state,
+                topology: {
+                    connections: (this.networkConnections || []).map(c => ({ from: c.from, to: c.to }))
+                }
+            };
+            
+            try {
+                const res = await fetch(`/dynamic/api/simulation/${simulationId}/validate-step`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+                this.updateStepStatus(i, !!json.valid, json.message || '');
+                
+                // Update score if validation passed
+                if (json.valid && json.score) {
+                    this.metrics.score += json.score;
+                }
+            } catch (e) {
+                this.updateStepStatus(i, false, String(e));
+            }
+        }
+        
+        this.updateScoreDisplay();
     }
     
     performLocalValidation() {
