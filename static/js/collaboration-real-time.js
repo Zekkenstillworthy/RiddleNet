@@ -1,291 +1,606 @@
 /**
- * Real-time Collaboration System for RiddleNet
- * Handles real-time collaboration for both admin class content management and student simulations
+ * RiddleNet Collaboration Real-Time Module
+ * Handles team sessions, real-time synchronization, chat functionality, and collaboration features
  */
 
 class CollaborationRealTime {
-    constructor(options = {}) {
-        this.socket = io();
-        this.sessionType = options.sessionType || 'simulation'; // 'admin_class_content' or 'simulation'
-        this.sessionId = options.sessionId || null;
-        this.currentUser = options.currentUser || null;
-        this.isInitialized = false;
-        this.collaborators = new Map();
-        this.isCollaborationEnabled = options.enableCollaboration !== false;
+    constructor() {
+        this.socket = null;
+        this.isConnected = false;
+        this.currentSession = null;
+        this.currentUser = null;
+        this.teamMembers = new Map();
+        this.deviceLocks = new Map();
+        this.chatHistory = [];
+        this.networkState = {};
         
-        // UI elements
-        this.collaborationPanel = null;
+        // UI Elements
         this.chatContainer = null;
-        this.usersList = null;
+        this.chatInput = null;
+        this.participantsList = null;
+        this.sessionStatus = null;
         
-        // Callbacks
-        this.onContentUpdate = options.onContentUpdate || (() => {});
-        this.onUserJoined = options.onUserJoined || (() => {});
-        this.onUserLeft = options.onUserLeft || (() => {});
+        // Event handlers
+        this.eventHandlers = new Map();
+        this.networkUpdateHandlers = [];
+        this.chatMessageHandlers = [];
+        this.deviceLockHandlers = [];
         
-        if (this.isCollaborationEnabled) {
-            this.init();
-        }
+        // Configuration
+        this.config = {
+            autoReconnect: true,
+            maxReconnectAttempts: 5,
+            reconnectInterval: 3000,
+            heartbeatInterval: 30000,
+            chatMaxMessages: 100,
+            cursorUpdateThrottle: 100
+        };
+        
+        // State
+        this.reconnectAttempts = 0;
+        this.lastHeartbeat = null;
+        this.cursorUpdateThrottleTimer = null;
+        
+        this.init();
     }
     
+    /**
+     * Initialize the collaboration system
+     */
     init() {
-        if (this.isInitialized) return;
+        console.log('🤝 Initializing Collaboration Real-Time System');
         
-        console.log('🤝 Initializing real-time collaboration system...');
+        this.setupSocketConnection();
+        this.setupUIElements();
+        this.setupEventListeners();
+        this.loadCurrentUser();
         
-        this.setupSocketEvents();
-        this.createCollaborationUI();
-        this.joinCollaborationSession();
+        // Check if user is already in a session
+        this.checkExistingSession();
         
-        // Auto-leave on page unload
-        window.addEventListener('beforeunload', () => {
-            this.leaveCollaborationSession();
-        });
-        
-        this.isInitialized = true;
         console.log('✅ Collaboration system initialized');
     }
     
-    setupSocketEvents() {
-        // Join/leave events
-        this.socket.on('collaboration_session_joined', (data) => {
-            console.log('👥 Joined collaboration session:', data);
-            this.updateCollaboratorsList(data.current_users);
-            this.showNotification(`You joined the collaboration session`, 'info');
+    /**
+     * Setup Socket.IO connection
+     */
+    setupSocketConnection() {
+        if (!window.io) {
+            console.error('❌ Socket.IO not available');
+            return;
+        }
+        
+        this.socket = window.io();
+        
+        // Connection events
+        this.socket.on('connect', () => {
+            console.log('✅ Connected to collaboration server');
+            this.isConnected = true;
+            this.reconnectAttempts = 0;
+            this.startHeartbeat();
+            this.emit('connected');
         });
         
-        this.socket.on('user_joined_collaboration', (data) => {
-            console.log('👤 User joined:', data.user.username);
-            this.addCollaborator(data.user);
-            this.showNotification(`${data.user.username} joined the session`, 'info');
-            this.onUserJoined(data.user);
+        this.socket.on('disconnect', () => {
+            console.log('❌ Disconnected from collaboration server');
+            this.isConnected = false;
+            this.stopHeartbeat();
+            this.emit('disconnected');
+            
+            if (this.config.autoReconnect) {
+                this.attemptReconnect();
+            }
         });
         
-        this.socket.on('user_left_collaboration', (data) => {
-            console.log('👋 User left:', data.user.username);
-            this.removeCollaborator(data.user.user_id);
-            this.showNotification(`${data.user.username} left the session`, 'warning');
-            this.onUserLeft(data.user);
+        this.socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            this.emit('connection_error', error);
         });
         
-        // Content synchronization
-        this.socket.on('collaboration_content_update', (data) => {
-            console.log('📝 Content update from:', data.username);
-            this.handleContentUpdate(data);
+        // Team session events
+        this.setupTeamSessionEvents();
+        
+        // Real-time collaboration events
+        this.setupCollaborationEvents();
+        
+        // Chat events
+        this.setupChatEvents();
+        
+        // Admin events
+        this.setupAdminEvents();
+    }
+    
+    /**
+     * Setup team session WebSocket events
+     */
+    setupTeamSessionEvents() {
+        // Session management
+        this.socket.on('team_session_created', (data) => {
+            console.log('🤝 Team session created:', data);
+            if (data.success) {
+                this.handleSessionCreated(data);
+            } else {
+                this.emit('session_error', data.error);
+            }
         });
         
-        this.socket.on('collaboration_simulation_state_update', (data) => {
-            console.log('🔄 Simulation state update from:', data.username);
-            this.handleSimulationStateUpdate(data);
+        this.socket.on('team_session_joined', (data) => {
+            console.log('🤝 Team session joined:', data);
+            if (data.success) {
+                this.handleSessionJoined(data);
+            } else {
+                this.emit('session_error', data.error);
+            }
         });
         
-        this.socket.on('collaboration_admin_content_update', (data) => {
-            console.log('📋 Admin content update from:', data.username);
-            this.handleAdminContentUpdate(data);
+        this.socket.on('team_session_left', (data) => {
+            console.log('🤝 Team session left:', data);
+            this.handleSessionLeft(data);
         });
         
-        // Chat messages
-        this.socket.on('collaboration_chat_message', (data) => {
-            console.log('💬 Chat message from:', data.username);
-            this.displayChatMessage(data);
+        this.socket.on('team_session_status', (data) => {
+            if (data.success && data.in_session) {
+                this.currentSession = data.session;
+                this.emit('session_status_updated', data.session);
+            }
         });
         
-        // Cursor and selection tracking
-        this.socket.on('collaboration_cursor_update', (data) => {
-            this.updateCollaboratorCursor(data);
+        // Team member events
+        this.socket.on('team_member_joined', (data) => {
+            console.log('👥 Team member joined:', data);
+            this.handleMemberJoined(data);
         });
         
-        this.socket.on('collaboration_selection_update', (data) => {
-            this.updateCollaboratorSelection(data);
+        this.socket.on('team_member_left', (data) => {
+            console.log('👥 Team member left:', data);
+            this.handleMemberLeft(data);
         });
         
-        // Typing indicators
-        this.socket.on('collaboration_typing_indicator', (data) => {
-            this.updateTypingIndicator(data);
+        // Session invitations
+        this.socket.on('team_session_invitation', (data) => {
+            console.log('📧 Team session invitation:', data);
+            this.handleSessionInvitation(data);
         });
         
-        // Error handling
-        this.socket.on('collaboration_error', (data) => {
-            console.error('❌ Collaboration error:', data.error);
-            this.showNotification(`Collaboration error: ${data.error}`, 'error');
+        // Admin session management
+        this.socket.on('team_session_ended_by_admin', (data) => {
+            console.log('🛑 Session ended by admin:', data);
+            this.handleSessionEndedByAdmin(data);
         });
     }
     
-    createCollaborationUI() {
-        // Check if collaboration UI already exists
-        if (this.collaborationPanel) return;
+    /**
+     * Setup real-time collaboration WebSocket events
+     */
+    setupCollaborationEvents() {
+        // Network updates
+        this.socket.on('team_network_updated', (data) => {
+            console.log('🔄 Network updated by team member:', data);
+            this.handleNetworkUpdate(data);
+        });
         
-        // Create collaboration panel HTML
-        const collaborationHTML = `
-            <div id="collaboration-panel" class="collaboration-panel">
-                <div class="collaboration-header">
-                    <h4><i class="fas fa-users"></i> Collaboration</h4>
-                    <button id="collaboration-toggle" class="toggle-btn">
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                </div>
-                <div class="collaboration-content">
-                    <div class="collaborators-section">
-                        <h5>Online Users (<span id="user-count">0</span>)</h5>
-                        <div id="collaborators-list" class="users-list"></div>
-                    </div>
-                    <div class="chat-section">
-                        <h5>Team Chat</h5>
-                        <div id="collaboration-chat" class="chat-messages"></div>
-                        <div class="chat-input-container">
-                            <input type="text" id="collaboration-chat-input" placeholder="Type a message...">
-                            <button id="collaboration-chat-send" class="send-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        this.socket.on('team_network_update_result', (data) => {
+            if (!data.success) {
+                console.error('❌ Network update failed:', data.error);
+                this.emit('network_update_error', data.error);
+            }
+        });
         
-        // Insert collaboration panel into page
-        document.body.insertAdjacentHTML('beforeend', collaborationHTML);
+        // Device locking
+        this.socket.on('team_device_locked', (data) => {
+            console.log('🔒 Device locked by team member:', data);
+            this.handleDeviceLocked(data);
+        });
         
-        // Get references to UI elements
-        this.collaborationPanel = document.getElementById('collaboration-panel');
-        this.chatContainer = document.getElementById('collaboration-chat');
-        this.usersList = document.getElementById('collaborators-list');
-        this.userCount = document.getElementById('user-count');
-        this.chatInput = document.getElementById('collaboration-chat-input');
-        this.sendBtn = document.getElementById('collaboration-chat-send');
+        this.socket.on('team_device_unlocked', (data) => {
+            console.log('🔓 Device unlocked by team member:', data);
+            this.handleDeviceUnlocked(data);
+        });
         
-        // Set up event handlers
-        this.setupChatHandlers();
-        this.setupPanelToggle();
+        this.socket.on('team_device_lock_result', (data) => {
+            this.emit('device_lock_result', data);
+        });
         
-        console.log('✅ Collaboration UI created successfully');
+        this.socket.on('team_device_unlock_result', (data) => {
+            this.emit('device_unlock_result', data);
+        });
+        
+        // CLI commands
+        this.socket.on('team_cli_executed', (data) => {
+            console.log('💻 CLI command executed by team member:', data);
+            this.handleCLIExecuted(data);
+        });
+        
+        this.socket.on('team_cli_result', (data) => {
+            this.emit('cli_result', data);
+        });
+        
+        // Progress updates
+        this.socket.on('team_progress_updated', (data) => {
+            console.log('📈 Progress updated by team member:', data);
+            this.handleProgressUpdate(data);
+        });
+        
+        // Cursor updates
+        this.socket.on('team_cursor_moved', (data) => {
+            this.handleCursorUpdate(data);
+        });
     }
     
-    setupPanelToggle() {
-        const toggleBtn = document.getElementById('collaboration-toggle');
-        const content = this.collaborationPanel.querySelector('.collaboration-content');
+    /**
+     * Setup chat WebSocket events
+     */
+    setupChatEvents() {
+        this.socket.on('team_chat_message', (data) => {
+            console.log('💬 Team chat message:', data);
+            this.handleChatMessage(data);
+        });
         
-        if (toggleBtn && content) {
-            toggleBtn.addEventListener('click', () => {
-                const isCollapsed = content.style.display === 'none';
-                content.style.display = isCollapsed ? 'block' : 'none';
-                toggleBtn.innerHTML = isCollapsed ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
+        this.socket.on('team_chat_sent', (data) => {
+            if (!data.success) {
+                console.error('❌ Failed to send chat message:', data.error);
+                this.emit('chat_error', data.error);
+            }
+        });
+        
+        this.socket.on('team_chat_error', (data) => {
+            console.error('❌ Chat error:', data.error);
+            this.emit('chat_error', data.error);
+        });
+    }
+    
+    /**
+     * Setup admin WebSocket events
+     */
+    setupAdminEvents() {
+        this.socket.on('admin_team_sessions', (data) => {
+            this.emit('admin_sessions_updated', data);
+        });
+        
+        this.socket.on('admin_team_session_ended', (data) => {
+            this.emit('admin_session_ended', data);
+        });
+    }
+    
+    /**
+     * Setup UI elements
+     */
+    setupUIElements() {
+        // Chat elements
+        this.chatContainer = document.getElementById('chat-messages');
+        this.chatInput = document.getElementById('chat-input');
+        
+        // Participants list
+        this.participantsList = document.getElementById('participants-list');
+        
+        // Session status
+        this.sessionStatus = document.getElementById('session-status');
+        
+        // Create UI if elements don't exist
+        if (!this.chatContainer) {
+            this.createChatUI();
+        }
+    }
+    
+    /**
+     * Create chat UI if it doesn't exist
+     */
+    createChatUI() {
+        // This will be called by the main templates to create UI elements
+        console.log('🎨 Chat UI elements not found - should be created by template');
+    }
+    
+    /**
+     * Setup DOM event listeners
+     */
+    setupEventListeners() {
+        if (this.chatInput) {
+            this.chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendChatMessage(this.chatInput.value.trim());
+                    this.chatInput.value = '';
+                }
             });
         }
+        
+        // Window unload - cleanup
+        window.addEventListener('beforeunload', () => {
+            this.cleanup();
+        });
+        
+        // Mouse movement for cursor tracking (throttled)
+        document.addEventListener('mousemove', (e) => {
+            this.throttledCursorUpdate(e);
+        });
     }
     
-    
-    setupChatHandlers() {
-        const sendMessage = () => {
-            const message = this.chatInput.value.trim();
-            if (message) {
-                this.sendChatMessage(message);
-                this.chatInput.value = '';
+    /**
+     * Load current user information
+     */
+    loadCurrentUser() {
+        // Try to get user from various sources
+        if (window.currentUser) {
+            this.currentUser = window.currentUser;
+        } else if (window.sessionUser) {
+            this.currentUser = window.sessionUser;
+        } else {
+            // Try to extract from DOM or session
+            const userElement = document.querySelector('[data-user-id]');
+            if (userElement) {
+                this.currentUser = {
+                    id: userElement.dataset.userId,
+                    username: userElement.dataset.username || 'Unknown'
+                };
             }
-        };
-        
-        this.sendBtn.addEventListener('click', sendMessage);
-        this.chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
-        // Typing indicators
-        let typingTimer;
-        this.chatInput.addEventListener('input', () => {
-            this.sendTypingIndicator(true, 'chat');
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(() => {
-                this.sendTypingIndicator(false, 'chat');
-            }, 1000);
-        });
-    }
-    
-    joinCollaborationSession() {
-        if (!this.sessionId) return;
-        
-        this.socket.emit('join_collaboration_session', {
-            session_type: this.sessionType,
-            session_id: this.sessionId,
-            user_info: this.currentUser
-        });
-    }
-    
-    leaveCollaborationSession() {
-        if (!this.sessionId) return;
-        
-        this.socket.emit('leave_collaboration_session', {
-            session_type: this.sessionType,
-            session_id: this.sessionId
-        });
-    }
-    
-    updateCollaboratorsList(users) {
-        this.usersList.innerHTML = '';
-        this.userCount.textContent = users.length;
-        
-        users.forEach(user => {
-            this.addCollaboratorToList(user);
-        });
-    }
-    
-    addCollaborator(user) {
-        this.collaborators.set(user.user_id, user);
-        this.addCollaboratorToList(user);
-        this.userCount.textContent = this.collaborators.size + 1; // +1 for current user
-    }
-    
-    removeCollaborator(userId) {
-        this.collaborators.delete(userId);
-        const userElement = this.usersList.querySelector(`[data-user-id="${userId}"]`);
-        if (userElement) {
-            userElement.remove();
         }
-        this.userCount.textContent = this.collaborators.size + 1;
+        
+        console.log('👤 Current user loaded:', this.currentUser);
     }
     
-    addCollaboratorToList(user) {
-        const userElement = document.createElement('div');
-        userElement.className = `user-item ${user.is_admin ? 'admin' : ''}`;
-        userElement.setAttribute('data-user-id', user.user_id);
-        
-        const initials = user.username.substring(0, 2).toUpperCase();
-        
-        userElement.innerHTML = `
-            <div class="user-avatar">${initials}</div>
-            <div class="user-info">
-                <div class="user-name">${user.username} ${user.is_admin ? '(Admin)' : ''}</div>
-                <div class="user-status">Online</div>
-            </div>
-            <div class="typing-indicator" style="display: none;">
-                <i class="fas fa-circle"></i>
-            </div>
-        `;
-        
-        this.usersList.appendChild(userElement);
+    /**
+     * Check if user is already in a session
+     */
+    checkExistingSession() {
+        if (this.isConnected) {
+            this.socket.emit('get_team_session_status');
+        }
     }
     
-    sendChatMessage(message) {
-        this.socket.emit('collaboration_chat_message', {
-            session_type: this.sessionType,
-            session_id: this.sessionId,
-            message: message
+    // ===== SESSION MANAGEMENT =====
+    
+    /**
+     * Create a new team session
+     */
+    createTeamSession(simulationId, teamMembers, settings = null) {
+        if (!this.isConnected) {
+            this.emit('session_error', 'Not connected to server');
+            return;
+        }
+        
+        console.log('🤝 Creating team session:', { simulationId, teamMembers, settings });
+        
+        this.socket.emit('create_team_session', {
+            simulation_id: simulationId,
+            team_members: teamMembers,
+            settings: settings
         });
     }
     
-    displayChatMessage(messageData) {
+    /**
+     * Join an existing team session
+     */
+    joinTeamSession(sessionId) {
+        if (!this.isConnected) {
+            this.emit('session_error', 'Not connected to server');
+            return;
+        }
+        
+        console.log('🤝 Joining team session:', sessionId);
+        
+        this.socket.emit('join_team_session', {
+            session_id: sessionId
+        });
+    }
+    
+    /**
+     * Leave current team session
+     */
+    leaveTeamSession() {
+        if (!this.isConnected) {
+            return;
+        }
+        
+        console.log('🤝 Leaving team session');
+        
+        this.socket.emit('leave_team_session');
+    }
+    
+    /**
+     * Get current session status
+     */
+    getSessionStatus() {
+        if (this.isConnected) {
+            this.socket.emit('get_team_session_status');
+        }
+        return this.currentSession;
+    }
+    
+    // ===== NETWORK COLLABORATION =====
+    
+    /**
+     * Update network state
+     */
+    updateNetworkState(changes) {
+        if (!this.isConnected || !this.currentSession) {
+            console.warn('⚠️ Cannot update network: not in session');
+            return;
+        }
+        
+        this.socket.emit('team_network_update', {
+            changes: changes
+        });
+        
+        // Update local state optimistically
+        this.applyNetworkChanges(changes);
+    }
+    
+    /**
+     * Apply network changes locally
+     */
+    applyNetworkChanges(changes) {
+        if (changes.devices) {
+            this.networkState.devices = { ...this.networkState.devices, ...changes.devices };
+        }
+        
+        if (changes.connections) {
+            this.networkState.connections = [...(this.networkState.connections || []), ...changes.connections];
+        }
+        
+        if (changes.removed_devices) {
+            changes.removed_devices.forEach(deviceId => {
+                if (this.networkState.devices) {
+                    delete this.networkState.devices[deviceId];
+                }
+            });
+        }
+        
+        if (changes.removed_connections) {
+            if (this.networkState.connections) {
+                this.networkState.connections = this.networkState.connections.filter(
+                    conn => !changes.removed_connections.includes(conn.id)
+                );
+            }
+        }
+    }
+    
+    /**
+     * Lock a device for exclusive editing
+     */
+    lockDevice(deviceId) {
+        if (!this.isConnected || !this.currentSession) {
+            return Promise.reject('Not in session');
+        }
+        
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject('Lock request timeout');
+            }, 5000);
+            
+            const handler = (data) => {
+                clearTimeout(timeout);
+                this.off('device_lock_result', handler);
+                
+                if (data.success) {
+                    resolve(data);
+                } else {
+                    reject(data.error);
+                }
+            };
+            
+            this.on('device_lock_result', handler);
+            
+            this.socket.emit('team_device_lock', {
+                device_id: deviceId
+            });
+        });
+    }
+    
+    /**
+     * Unlock a device
+     */
+    unlockDevice(deviceId) {
+        if (!this.isConnected || !this.currentSession) {
+            return Promise.reject('Not in session');
+        }
+        
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject('Unlock request timeout');
+            }, 5000);
+            
+            const handler = (data) => {
+                clearTimeout(timeout);
+                this.off('device_unlock_result', handler);
+                
+                if (data.success) {
+                    resolve(data);
+                } else {
+                    reject(data.error);
+                }
+            };
+            
+            this.on('device_unlock_result', handler);
+            
+            this.socket.emit('team_device_unlock', {
+                device_id: deviceId
+            });
+        });
+    }
+    
+    /**
+     * Execute CLI command
+     */
+    executeCLICommand(deviceId, command) {
+        if (!this.isConnected || !this.currentSession) {
+            return Promise.reject('Not in session');
+        }
+        
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject('CLI command timeout');
+            }, 10000);
+            
+            const handler = (data) => {
+                clearTimeout(timeout);
+                this.off('cli_result', handler);
+                
+                if (data.success) {
+                    resolve(data);
+                } else {
+                    reject(data.error);
+                }
+            };
+            
+            this.on('cli_result', handler);
+            
+            this.socket.emit('team_cli_command', {
+                device_id: deviceId,
+                command: command
+            });
+        });
+    }
+    
+    // ===== CHAT FUNCTIONALITY =====
+    
+    /**
+     * Send a chat message
+     */
+    sendChatMessage(message, messageType = 'text') {
+        if (!this.isConnected || !this.currentSession) {
+            console.warn('⚠️ Cannot send message: not in session');
+            return;
+        }
+        
+        if (!message.trim()) {
+            return;
+        }
+        
+        this.socket.emit('team_chat_message', {
+            message: message.trim(),
+            message_type: messageType
+        });
+    }
+    
+    /**
+     * Add message to chat history
+     */
+    addChatMessage(messageData) {
+        this.chatHistory.push(messageData);
+        
+        // Keep only last N messages
+        if (this.chatHistory.length > this.config.chatMaxMessages) {
+            this.chatHistory = this.chatHistory.slice(-this.config.chatMaxMessages);
+        }
+        
+        this.updateChatUI(messageData);
+    }
+    
+    /**
+     * Update chat UI with new message
+     */
+    updateChatUI(messageData) {
+        if (!this.chatContainer) return;
+        
         const messageElement = document.createElement('div');
-        const isOwn = this.currentUser && messageData.user_id === this.currentUser.id;
+        messageElement.className = `chat-message ${messageData.user_id === this.currentUser?.id ? 'own-message' : 'other-message'}`;
         
-        messageElement.className = `chat-message ${isOwn ? 'own' : ''} ${messageData.is_admin ? 'admin' : ''}`;
-        
-        const time = new Date(messageData.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const timestamp = new Date(messageData.timestamp).toLocaleTimeString();
         
         messageElement.innerHTML = `
             <div class="message-header">
                 <span class="message-author">${messageData.username}</span>
-                <span class="message-time">${time}</span>
+                <span class="message-time">${timestamp}</span>
             </div>
             <div class="message-content">${this.escapeHtml(messageData.message)}</div>
         `;
@@ -294,198 +609,630 @@ class CollaborationRealTime {
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
     
-    sendTypingIndicator(isTyping, fieldId) {
-        this.socket.emit('collaboration_typing_indicator', {
-            session_type: this.sessionType,
-            session_id: this.sessionId,
-            is_typing: isTyping,
-            field_id: fieldId
+    /**
+     * Clear chat history
+     */
+    clearChat() {
+        this.chatHistory = [];
+        if (this.chatContainer) {
+            this.chatContainer.innerHTML = '';
+        }
+    }
+    
+    // ===== PROGRESS TRACKING =====
+    
+    /**
+     * Update progress
+     */
+    updateProgress(progressData) {
+        if (!this.isConnected || !this.currentSession) {
+            return;
+        }
+        
+        this.socket.emit('team_progress_update', {
+            progress: progressData
         });
     }
     
-    updateTypingIndicator(data) {
-        const userElement = this.usersList.querySelector(`[data-user-id="${data.user_id}"]`);
-        if (userElement) {
-            const indicator = userElement.querySelector('.typing-indicator');
-            indicator.style.display = data.is_typing ? 'block' : 'none';
+    // ===== CURSOR TRACKING =====
+    
+    /**
+     * Update cursor position (throttled)
+     */
+    throttledCursorUpdate(event) {
+        if (!this.currentSession) return;
+        
+        if (this.cursorUpdateThrottleTimer) {
+            clearTimeout(this.cursorUpdateThrottleTimer);
         }
+        
+        this.cursorUpdateThrottleTimer = setTimeout(() => {
+            this.updateCursorPosition({
+                x: event.clientX,
+                y: event.clientY
+            });
+        }, this.config.cursorUpdateThrottle);
     }
     
-    handleContentUpdate(data) {
-        console.log('📝 Processing content update:', data);
-        this.onContentUpdate(data);
+    /**
+     * Update cursor position
+     */
+    updateCursorPosition(position) {
+        if (!this.isConnected || !this.currentSession) {
+            return;
+        }
+        
+        this.socket.emit('team_cursor_update', {
+            position: position
+        });
+    }
+
+    
+    // ===== EVENT HANDLERS =====
+    
+    /**
+     * Handle session created
+     */
+    handleSessionCreated(data) {
+        this.currentSession = data.session || { session_id: data.session_id };
+        this.emit('session_created', data);
     }
     
-    handleSimulationStateUpdate(data) {
-        console.log('🔄 Processing simulation state update:', data);
-        if (this.sessionType === 'simulation' && window.networkSimulation) {
-            // Update simulation state based on the received data
-            if (data.state_data.deviceStates) {
-                window.networkSimulation.updateDeviceStates(data.state_data.deviceStates);
-            }
-            if (data.state_data.topology) {
-                window.networkSimulation.updateTopology(data.state_data.topology);
+    /**
+     * Handle session joined
+     */
+    handleSessionJoined(data) {
+        this.currentSession = data.session;
+        this.networkState = data.session?.network_state || {};
+        
+        // Load existing chat history
+        if (data.session?.recent_chat) {
+            this.chatHistory = data.session.recent_chat;
+            this.loadChatHistory();
+        }
+        
+        // Load team members
+        if (data.session?.participants) {
+            this.updateTeamMembers(data.session.participants);
+        }
+        
+        this.emit('session_joined', data);
+    }
+    
+    /**
+     * Handle session left
+     */
+    handleSessionLeft(data) {
+        this.currentSession = null;
+        this.networkState = {};
+        this.teamMembers.clear();
+        this.deviceLocks.clear();
+        this.clearChat();
+        
+        this.emit('session_left', data);
+    }
+    
+    /**
+     * Handle team member joined
+     */
+    handleMemberJoined(data) {
+        this.teamMembers.set(data.user_id, {
+            id: data.user_id,
+            username: data.username,
+            status: 'online'
+        });
+        
+        this.updateParticipantsUI();
+        this.emit('member_joined', data);
+        
+        // Show notification
+        this.showNotification(`${data.username} joined the session`, 'info');
+    }
+    
+    /**
+     * Handle team member left
+     */
+    handleMemberLeft(data) {
+        this.teamMembers.delete(data.user_id);
+        
+        // Remove any device locks held by this member
+        for (const [deviceId, userId] of this.deviceLocks.entries()) {
+            if (userId === data.user_id) {
+                this.deviceLocks.delete(deviceId);
             }
         }
+        
+        this.updateParticipantsUI();
+        this.emit('member_left', data);
+        
+        // Show notification
+        this.showNotification(`${data.username} left the session`, 'info');
     }
     
-    handleAdminContentUpdate(data) {
-        console.log('📋 Processing admin content update:', data);
-        if (this.sessionType === 'admin_class_content') {
-            // Refresh content based on update type
-            switch (data.sync_type) {
-                case 'assignments':
-                    this.refreshAssignments(data.content_data);
-                    break;
-                case 'modules':
-                    this.refreshModules(data.content_data);
-                    break;
-                case 'simulations':
-                    this.refreshSimulations(data.content_data);
-                    break;
-                default:
-                    this.refreshAllContent(data.content_data);
-            }
+    /**
+     * Handle session invitation
+     */
+    handleSessionInvitation(data) {
+        this.emit('session_invitation', data);
+        
+        // Show invitation modal/notification
+        this.showSessionInvitation(data);
+    }
+    
+    /**
+     * Handle session ended by admin
+     */
+    handleSessionEndedByAdmin(data) {
+        this.showNotification(`Session ended by ${data.admin_name}`, 'warning');
+        this.handleSessionLeft(data);
+        this.emit('session_ended_by_admin', data);
+    }
+    
+    /**
+     * Handle network update from team member
+     */
+    handleNetworkUpdate(data) {
+        console.log('🔄 Applying network changes from:', data.username);
+        
+        // Apply changes to local state
+        if (data.network_state) {
+            this.networkState = data.network_state;
+        } else if (data.changes) {
+            this.applyNetworkChanges(data.changes);
         }
+        
+        // Notify listeners
+        this.networkUpdateHandlers.forEach(handler => {
+            try {
+                handler(data);
+            } catch (error) {
+                console.error('❌ Error in network update handler:', error);
+            }
+        });
+        
+        this.emit('network_updated', data);
     }
     
-    syncContentChange(changeData) {
-        this.socket.emit('collaboration_content_change', {
-            session_type: this.sessionType,
-            session_id: this.sessionId,
-            change_data: changeData
+    /**
+     * Handle device locked
+     */
+    handleDeviceLocked(data) {
+        this.deviceLocks.set(data.device_id, data.locked_by);
+        
+        this.deviceLockHandlers.forEach(handler => {
+            try {
+                handler({
+                    deviceId: data.device_id,
+                    lockedBy: data.locked_by,
+                    username: data.username,
+                    action: 'locked'
+                });
+            } catch (error) {
+                console.error('❌ Error in device lock handler:', error);
+            }
+        });
+        
+        this.emit('device_locked', data);
+    }
+    
+    /**
+     * Handle device unlocked
+     */
+    handleDeviceUnlocked(data) {
+        this.deviceLocks.delete(data.device_id);
+        
+        this.deviceLockHandlers.forEach(handler => {
+            try {
+                handler({
+                    deviceId: data.device_id,
+                    username: data.username,
+                    action: 'unlocked'
+                });
+            } catch (error) {
+                console.error('❌ Error in device unlock handler:', error);
+            }
+        });
+        
+        this.emit('device_unlocked', data);
+    }
+    
+    /**
+     * Handle CLI command executed
+     */
+    handleCLIExecuted(data) {
+        console.log(`💻 ${data.username} executed: ${data.command} on ${data.device_id}`);
+        this.emit('cli_executed', data);
+    }
+    
+    /**
+     * Handle progress update
+     */
+    handleProgressUpdate(data) {
+        console.log(`📈 Progress updated by ${data.username}`);
+        this.emit('progress_updated', data);
+    }
+    
+    /**
+     * Handle cursor update
+     */
+    handleCursorUpdate(data) {
+        this.emit('cursor_updated', data);
+    }
+    
+    /**
+     * Handle chat message
+     */
+    handleChatMessage(data) {
+        this.addChatMessage(data);
+        
+        this.chatMessageHandlers.forEach(handler => {
+            try {
+                handler(data);
+            } catch (error) {
+                console.error('❌ Error in chat message handler:', error);
+            }
+        });
+        
+        this.emit('chat_message', data);
+    }
+    
+    // ===== UI UPDATES =====
+    
+    /**
+     * Update team members in participants list
+     */
+    updateTeamMembers(participants) {
+        this.teamMembers.clear();
+        
+        for (const [userId, userData] of Object.entries(participants)) {
+            this.teamMembers.set(userId, userData);
+        }
+        
+        this.updateParticipantsUI();
+    }
+    
+    /**
+     * Update participants UI
+     */
+    updateParticipantsUI() {
+        if (!this.participantsList) return;
+        
+        this.participantsList.innerHTML = '';
+        
+        this.teamMembers.forEach((member, userId) => {
+            const memberElement = document.createElement('div');
+            memberElement.className = 'participant-item';
+            memberElement.innerHTML = `
+                <div class="participant-info">
+                    <span class="participant-name">${member.username}</span>
+                    <span class="participant-status ${member.status}">${member.status}</span>
+                </div>
+            `;
+            this.participantsList.appendChild(memberElement);
         });
     }
     
-    syncSimulationState(stateData, syncType = 'full') {
-        if (this.sessionType === 'simulation') {
-            this.socket.emit('collaboration_simulation_state_sync', {
-                simulation_id: this.sessionId,
-                state_data: stateData,
-                sync_type: syncType
-            });
+    /**
+     * Load chat history into UI
+     */
+    loadChatHistory() {
+        if (!this.chatContainer) return;
+        
+        this.chatContainer.innerHTML = '';
+        this.chatHistory.forEach(message => {
+            this.updateChatUI(message);
+        });
+    }
+    
+    /**
+     * Show session invitation dialog
+     */
+    showSessionInvitation(data) {
+        // This would show a modal or notification
+        // Implementation depends on the UI framework being used
+        console.log('📧 Session invitation:', data);
+        
+        const accept = confirm(`${data.created_by} invited you to join a collaboration session. Accept?`);
+        if (accept) {
+            this.joinTeamSession(data.session_id);
         }
     }
     
-    syncAdminContent(contentData, syncType = 'full') {
-        if (this.sessionType === 'admin_class_content') {
-            this.socket.emit('collaboration_admin_content_sync', {
-                class_id: this.sessionId,
-                content_data: contentData,
-                sync_type: syncType
-            });
-        }
-    }
-    
+    /**
+     * Show notification
+     */
     showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `collaboration-notification ${type}`;
-        notification.textContent = message;
+        console.log(`📢 ${type.toUpperCase()}: ${message}`);
         
-        document.body.appendChild(notification);
+        // Try to use existing notification system
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        } else if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            // Fallback to console
+            console.log(`Notification [${type}]: ${message}`);
+        }
+    }
+    
+    // ===== EVENT SYSTEM =====
+    
+    /**
+     * Add event listener
+     */
+    on(event, handler) {
+        if (!this.eventHandlers.has(event)) {
+            this.eventHandlers.set(event, []);
+        }
+        this.eventHandlers.get(event).push(handler);
+    }
+    
+    /**
+     * Remove event listener
+     */
+    off(event, handler) {
+        if (!this.eventHandlers.has(event)) return;
         
-        // Trigger animation
-        setTimeout(() => notification.classList.add('show'), 100);
+        const handlers = this.eventHandlers.get(event);
+        const index = handlers.indexOf(handler);
+        if (index > -1) {
+            handlers.splice(index, 1);
+        }
+    }
+    
+    /**
+     * Emit event
+     */
+    emit(event, data) {
+        if (!this.eventHandlers.has(event)) return;
         
-        // Auto-remove after 3 seconds
+        this.eventHandlers.get(event).forEach(handler => {
+            try {
+                handler(data);
+            } catch (error) {
+                console.error(`❌ Error in event handler for ${event}:`, error);
+            }
+        });
+    }
+    
+    // ===== HANDLER REGISTRATION =====
+    
+    /**
+     * Register network update handler
+     */
+    onNetworkUpdate(handler) {
+        this.networkUpdateHandlers.push(handler);
+    }
+    
+    /**
+     * Register chat message handler
+     */
+    onChatMessage(handler) {
+        this.chatMessageHandlers.push(handler);
+    }
+    
+    /**
+     * Register device lock handler
+     */
+    onDeviceLock(handler) {
+        this.deviceLockHandlers.push(handler);
+    }
+    
+    // ===== CONNECTION MANAGEMENT =====
+    
+    /**
+     * Start heartbeat to maintain connection
+     */
+    startHeartbeat() {
+        this.stopHeartbeat();
+        
+        this.heartbeatInterval = setInterval(() => {
+            if (this.isConnected) {
+                this.lastHeartbeat = Date.now();
+                // Heartbeat is handled automatically by Socket.IO
+            }
+        }, this.config.heartbeatInterval);
+    }
+    
+    /**
+     * Stop heartbeat
+     */
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    }
+    
+    /**
+     * Attempt to reconnect
+     */
+    attemptReconnect() {
+        if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+            console.error('❌ Max reconnection attempts reached');
+            this.emit('reconnect_failed');
+            return;
+        }
+        
+        this.reconnectAttempts++;
+        console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+        
         setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => document.body.removeChild(notification), 300);
-        }, 3000);
+            if (!this.isConnected) {
+                this.socket.connect();
+            }
+        }, this.config.reconnectInterval);
     }
     
-    refreshAssignments(data) {
-        // Implement assignment refresh logic
-        if (window.location.pathname.includes('class-content-selector')) {
-            // Refresh assignments section
-            console.log('🔄 Refreshing assignments section');
+    // ===== UTILITY METHODS =====
+    
+    /**
+     * Check if device is locked
+     */
+    isDeviceLocked(deviceId) {
+        return this.deviceLocks.has(deviceId);
+    }
+    
+    /**
+     * Check if current user has device locked
+     */
+    hasDeviceLocked(deviceId) {
+        return this.deviceLocks.get(deviceId) === this.currentUser?.id;
+    }
+    
+    /**
+     * Get device lock owner
+     */
+    getDeviceLockOwner(deviceId) {
+        const userId = this.deviceLocks.get(deviceId);
+        if (userId) {
+            const member = this.teamMembers.get(userId);
+            return member ? member.username : 'Unknown';
         }
+        return null;
     }
     
-    refreshModules(data) {
-        // Implement modules refresh logic
-        console.log('🔄 Refreshing modules section');
+    /**
+     * Check if user is in a session
+     */
+    isInSession() {
+        return this.currentSession !== null;
     }
     
-    refreshSimulations(data) {
-        // Implement simulations refresh logic  
-        console.log('🔄 Refreshing simulations section');
+    /**
+     * Get session info
+     */
+    getSessionInfo() {
+        return {
+            session: this.currentSession,
+            networkState: this.networkState,
+            teamMembers: Array.from(this.teamMembers.values()),
+            deviceLocks: Array.from(this.deviceLocks.entries()),
+            chatHistory: this.chatHistory
+        };
     }
     
-    refreshAllContent(data) {
-        // Implement full content refresh logic
-        console.log('🔄 Refreshing all content');
-        if (typeof window.refreshClassContent === 'function') {
-            window.refreshClassContent();
-        }
-    }
-    
-    updateCollaboratorCursor(data) {
-        // Implement cursor tracking if needed
-        console.log('👆 Cursor update from:', data.username);
-    }
-    
-    updateCollaboratorSelection(data) {
-        // Implement selection tracking if needed
-        console.log('📋 Selection update from:', data.username);
-    }
-    
+    /**
+     * Escape HTML to prevent XSS
+     */
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
     
-    destroy() {
-        this.leaveCollaborationSession();
-        if (this.collaborationPanel) {
-            this.collaborationPanel.remove();
+    /**
+     * Cleanup resources
+     */
+    cleanup() {
+        console.log('🧹 Cleaning up collaboration system');
+        
+        this.stopHeartbeat();
+        
+        if (this.cursorUpdateThrottleTimer) {
+            clearTimeout(this.cursorUpdateThrottleTimer);
         }
-        this.isInitialized = false;
+        
+        if (this.currentSession) {
+            this.leaveTeamSession();
+        }
+        
+        if (this.socket) {
+            this.socket.disconnect();
+        }
+        
+        this.eventHandlers.clear();
+        this.networkUpdateHandlers = [];
+        this.chatMessageHandlers = [];
+        this.deviceLockHandlers = [];
+        
+        console.log('✅ Collaboration cleanup complete');
     }
 }
 
-// Global collaboration instance
-window.CollaborationRealTime = CollaborationRealTime;
+// ===== GLOBAL INTEGRATION =====
 
-// Auto-initialize for specific pages
-document.addEventListener('DOMContentLoaded', () => {
-    // Auto-initialize for simulation pages (only for non-admin users)
-    if (window.location.pathname.includes('/dynamic/simulation/')) {
-        const simulationId = window.location.pathname.match(/\/dynamic\/simulation\/(\d+)/)?.[1];
-        if (simulationId && window.currentUser) {
-            // Check if the current user is an admin - if so, disable collaboration panel
-            const isAdmin = window.currentUser?.is_admin || 
-                            window.currentUser?.user_type === 'admin' || 
-                            window.currentUser?.role === 'admin' ||
-                            window.location.pathname.includes('/admin/');
-            
-            if (!isAdmin) {
-                window.collaborationSystem = new CollaborationRealTime({
-                    sessionType: 'simulation',
-                    sessionId: simulationId,
-                    currentUser: window.currentUser,
-                    enableCollaboration: true
-                });
-            } else {
-                console.log('🔐 Admin user detected - collaboration panel disabled for admins');
-            }
-        }
-    }
+// Create global instance
+window.collaborationRealTime = new CollaborationRealTime();
+
+// Expose convenience methods
+window.createTeamSession = (simulationId, teamMembers, settings) => {
+    return window.collaborationRealTime.createTeamSession(simulationId, teamMembers, settings);
+};
+
+window.joinTeamSession = (sessionId) => {
+    return window.collaborationRealTime.joinTeamSession(sessionId);
+};
+
+window.leaveTeamSession = () => {
+    return window.collaborationRealTime.leaveTeamSession();
+};
+
+window.sendTeamChatMessage = (message) => {
+    return window.collaborationRealTime.sendChatMessage(message);
+};
+
+window.lockDevice = (deviceId) => {
+    return window.collaborationRealTime.lockDevice(deviceId);
+};
+
+window.unlockDevice = (deviceId) => {
+    return window.collaborationRealTime.unlockDevice(deviceId);
+};
+
+window.isDeviceLocked = (deviceId) => {
+    return window.collaborationRealTime.isDeviceLocked(deviceId);
+};
+
+window.hasDeviceLocked = (deviceId) => {
+    return window.collaborationRealTime.hasDeviceLocked(deviceId);
+};
+
+// ===== INTEGRATION WITH EXISTING SYSTEMS =====
+
+// Integration with Dynamic Simulation
+if (window.DynamicSimulation && window.DynamicSimulation.prototype) {
+    // Extend DynamicSimulation with collaboration features
+    const originalUpdateNetworkState = window.DynamicSimulation.prototype.updateNetworkState;
     
-    // DISABLED: Admin collaboration panel removed
-    // Admins should manage collaboration sessions, not join them
-    /*
-    if (window.location.pathname.includes('/admin/class-content-selector')) {
-        const classId = new URLSearchParams(window.location.search).get('class_id');
-        if (classId && window.currentUser) {
-            window.collaborationSystem = new CollaborationRealTime({
-                sessionType: 'admin_class_content',
-                sessionId: classId,
-                currentUser: window.currentUser,
-                enableCollaboration: true
-            });
+    window.DynamicSimulation.prototype.updateNetworkState = function(changes) {
+        // Call original method
+        if (originalUpdateNetworkState) {
+            originalUpdateNetworkState.call(this, changes);
         }
-    }
-    */
-});
+        
+        // Send to collaboration system
+        if (window.collaborationRealTime.isInSession()) {
+            window.collaborationRealTime.updateNetworkState(changes);
+        }
+    };
+}
+
+// Integration with Device Configurator
+if (window.deviceConfigurator) {
+    // Override device operations to include locking
+    const originalConfigureDevice = window.deviceConfigurator.configureDevice;
+    
+    window.deviceConfigurator.configureDevice = async function(deviceId, config) {
+        if (window.collaborationRealTime.isInSession()) {
+            try {
+                await window.collaborationRealTime.lockDevice(deviceId);
+                const result = await originalConfigureDevice.call(this, deviceId, config);
+                await window.collaborationRealTime.unlockDevice(deviceId);
+                return result;
+            } catch (error) {
+                console.error('❌ Device configuration failed:', error);
+                throw error;
+            }
+        } else {
+            return originalConfigureDevice.call(this, deviceId, config);
+        }
+    };
+}
+
+console.log('✅ Collaboration Real-Time Module loaded successfully');
+
+// Export for modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CollaborationRealTime;
+}

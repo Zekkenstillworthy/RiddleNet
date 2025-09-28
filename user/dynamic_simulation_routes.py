@@ -1086,13 +1086,33 @@ def run_simulation(simulation_id):
                         lobby_config=lobby_config,
                         lobby_id=lobby_id
                     )
+                    print(f"DEBUG: Restored lobby {lobby_id} from database for user simulation")
+                else:
+                    print(f"DEBUG: Could not find or restore lobby {lobby_id} from database")
+            else:
+                print(f"DEBUG: Found existing lobby {lobby_id} in memory")
             
             # Check team assignment
             if lobby:
-                team_assignment = TeamAssignment.query.filter_by(
+                # Look for team assignment where user is a member
+                team_assignments = TeamAssignment.query.filter_by(
                     lobby_id=lobby_id,
-                    user_id=user.id
-                ).first()
+                    is_active=True
+                ).all()
+                
+                # Find assignment where user is in team_members
+                team_assignment = None
+                for assignment in team_assignments:
+                    if assignment.team_members and str(user.id) in [str(member_id) for member_id in assignment.team_members]:
+                        team_assignment = assignment
+                        break
+                
+                if not team_assignment:
+                    print(f"DEBUG: No team assignment found for user {user.id} in lobby {lobby_id}")
+                else:
+                    print(f"DEBUG: Found team assignment '{team_assignment.team_name}' for user {user.id} in lobby {lobby_id}")
+            else:
+                print(f"WARNING: Lobby {lobby_id} not found, collaboration session will not be inherited")
         
         # Import collaboration model and get settings
         from admin.models.collaboration import CollaborationSetting

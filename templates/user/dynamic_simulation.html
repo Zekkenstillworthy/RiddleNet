@@ -1453,6 +1453,24 @@
         background: var(--accent-hover);
         transform: translateY(-1px);
     }
+    
+    .create-session-btn.secondary {
+        background: var(--glass-bg);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border);
+    }
+    
+    .create-session-btn.secondary:hover {
+        background: var(--surface-hover);
+        border-color: var(--accent-color);
+    }
+    
+    .session-actions-group {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
 
     /* Active Session Card */
     .session-active-card {
@@ -3052,6 +3070,127 @@
         }
     }
 
+    /* Custom modal styles for vanilla JS implementation */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1050;
+        overflow-x: hidden;
+        overflow-y: auto;
+        outline: 0;
+    }
+    
+    .modal.show {
+        display: block !important;
+    }
+    
+    .modal-dialog {
+        position: relative;
+        width: auto;
+        margin: 1.75rem auto;
+        max-width: 500px;
+        pointer-events: none;
+    }
+    
+    .modal-lg {
+        max-width: 800px;
+    }
+    
+    .modal-content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+        background-color: var(--surface);
+        background-clip: padding-box;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        border-top-left-radius: calc(var(--border-radius) - 1px);
+        border-top-right-radius: calc(var(--border-radius) - 1px);
+    }
+    
+    .modal-title {
+        margin-bottom: 0;
+        line-height: 1.5;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .modal-body {
+        position: relative;
+        flex: 1 1 auto;
+        padding: 1rem;
+        color: var(--text-primary);
+    }
+    
+    .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0.75rem;
+        border-top: 1px solid var(--border-color);
+        border-bottom-right-radius: calc(var(--border-radius) - 1px);
+        border-bottom-left-radius: calc(var(--border-radius) - 1px);
+    }
+    
+    .close {
+        float: right;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--text-secondary);
+        text-shadow: none;
+        opacity: 0.5;
+        background: none;
+        border: 0;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        transition: opacity 0.15s ease-in-out;
+    }
+    
+    .close:hover {
+        color: var(--text-primary);
+        opacity: 0.75;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1040;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-backdrop.fade {
+        opacity: 0;
+    }
+    
+    .modal-backdrop.show {
+        opacity: 1;
+    }
+    
+    body.modal-open {
+        overflow: hidden;
+    }
 
 </style>
 {% endblock %}
@@ -3498,25 +3637,31 @@
                                 <i class="fas fa-users-slash"></i>
                             </div>
                             <div class="empty-text">No active sessions found</div>
-                            <button class="create-session-btn" id="create-session-btn">
-                                <i class="fas fa-plus"></i>
-                                Create New Session
-                            </button>
+                            <div class="session-actions-group">
+                                <button class="create-session-btn" id="browse-lobbies-btn">
+                                    <i class="fas fa-search"></i>
+                                    Browse Sessions
+                                </button>
+                                <button class="create-session-btn secondary" id="refresh-lobbies-btn">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Refresh
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- My Active Session -->
-                <div class="feedback-section" id="active-session-section" style="display: none;">
+                <div class="feedback-section" id="active-session-section" style="display: block;">
                     <h4><i class="fas fa-users-cog"></i> Current Session</h4>
                     <div class="session-active-card">
                         <div class="session-header">
                             <div class="session-avatar">
-                                <i class="fas fa-network-wired"></i>
+                                <i class="fas fa-user"></i>
                             </div>
                             <div class="session-details">
-                                <div class="session-name" id="active-session-name">Network Lab Session</div>
-                                <div class="session-code" id="active-session-code">#ABC123</div>
+                                <div class="session-name" id="active-session-name">Solo Session</div>
+                                <div class="session-code" id="active-session-code">#SOLO</div>
                             </div>
                             <div class="session-status online">
                                 <i class="fas fa-circle"></i>
@@ -3525,39 +3670,39 @@
                         
                         <div class="session-stats">
                             <div class="stat">
-                                <i class="fas fa-users"></i>
-                                <span id="session-participants-count">3/4</span>
+                                <i class="fas fa-user"></i>
+                                <span id="session-participants-count">1/1</span>
                             </div>
                             <div class="stat">
                                 <i class="fas fa-clock"></i>
-                                <span id="session-duration">12:34</span>
+                                <span id="session-duration">00:00</span>
                             </div>
                             <div class="stat">
                                 <i class="fas fa-trophy"></i>
-                                <span id="team-score">250 pts</span>
+                                <span id="team-score">0 pts</span>
                             </div>
                         </div>
 
                         <div class="session-actions">
                             <button class="action-btn primary" id="invite-members-btn">
-                                <i class="fas fa-user-plus"></i>
-                                Invite
+                                <i class="fas fa-users"></i>
+                                Browse Sessions
                             </button>
                             <button class="action-btn secondary" id="session-settings-btn">
                                 <i class="fas fa-cog"></i>
                                 Settings
                             </button>
-                            <button class="action-btn danger" id="leave-session-btn">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Leave
+                            <button class="action-btn secondary" id="refresh-session-btn">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Team Members -->
-                <div class="feedback-section" id="team-members-section" style="display: none;">
-                    <h4><i class="fas fa-users"></i> Team Members</h4>
+                <div class="feedback-section" id="team-members-section" style="display: block;">
+                    <h4><i class="fas fa-users"></i> Session Members</h4>
                     <div class="members-grid" id="team-members-list">
                         <!-- Dynamic member cards will be inserted here -->
                         <div class="member-card">
@@ -3565,8 +3710,17 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="member-info">
-                                <div class="member-name">Gilbert</div>
-                                <div class="member-role">Host</div>
+                                <div class="member-name">You</div>
+                                <div class="member-role">Solo</div>
+                            </div>
+                        </div>
+                        <div class="member-card" style="opacity: 0.5; border: 2px dashed var(--glass-border);">
+                            <div class="member-avatar">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">Join Team?</div>
+                                <div class="member-role">Browse Sessions</div>
                             </div>
                         </div>
                     </div>
@@ -3643,11 +3797,36 @@
         const progress = progEl ? JSON.parse(progEl.textContent || '{}') : {};
         window.simulation = simulation;
         window.progress = progress;
+        
+        // Initialize session start time if not already set
+        if (!window.simulation.startTime) {
+            window.simulation.startTime = Date.now();
+        }
+        
+        // Initialize session timer
+        if (!window.sessionTimer) {
+            window.sessionTimer = setInterval(() => {
+                const sessionDuration = document.getElementById('session-duration');
+                if (sessionDuration && window.simulation && window.simulation.startTime) {
+                    const elapsed = Date.now() - window.simulation.startTime;
+                    const minutes = Math.floor(elapsed / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    sessionDuration.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
 
         // Load and apply collaboration settings if simulation ID is available
         if (simulation.id) {
             loadCollaborationSettings(simulation.id);
         }
+        
+        // Initialize collaboration display after a brief delay to ensure DOM is ready
+        setTimeout(() => {
+            if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
+                window.simulation.updateCollaborationDisplay();
+            }
+        }, 100);
 
         // HUD: score + progress
         const scoreEl = document.getElementById('current-score');
@@ -3858,191 +4037,725 @@ if (!document.getElementById('team-session-panel')) {
     document.body.insertAdjacentHTML('beforeend', teamSessionPanelHTML);
 }
 
-// Team Session Management Functions
-window.teamSessionManager = {
-    selectedTopology: null,
-    simulationId: null,
-    
-    // Initialize topology functionality (deprecated/removed)
-    init() {
-        // Topology functionality has been removed
-        console.log('Topology functionality has been removed from this simulation');
-        return;
+// Add modal close functionality to handle vanilla JS modal operations
+function initializeModalHandlers() {
+    // Handle lobby browser modal close
+    const lobbyModal = document.getElementById('lobby-browser-modal');
+    if (lobbyModal) {
+        // Close button handler
+        const closeBtn = lobbyModal.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                window.teamSessionManager && window.teamSessionManager.hideModals();
+            });
+        }
+        
+        // Background click handler
+        lobbyModal.addEventListener('click', (e) => {
+            if (e.target === lobbyModal) {
+                window.teamSessionManager && window.teamSessionManager.hideModals();
+            }
+        });
     }
-};
+    
+    // Handle create lobby modal close  
+    const createModal = document.getElementById('create-lobby-modal');
+    if (createModal) {
+        // Close button handler
+        const closeBtn = createModal.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                window.teamSessionManager && window.teamSessionManager.hideModals();
+            });
+        }
+        
+        // Background click handler
+        createModal.addEventListener('click', (e) => {
+            if (e.target === createModal) {
+                window.teamSessionManager && window.teamSessionManager.hideModals();
+            }
+        });
+    }
+    
+    // ESC key handler for modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const visibleModal = document.querySelector('.modal.show');
+            if (visibleModal && window.teamSessionManager) {
+                window.teamSessionManager.hideModals();
+            }
+        }
+    });
+}
 
-// Team Session Management Functions
+// Initialize modal handlers
+initializeModalHandlers();
+
+// Team Session Management Functions - CONSOLIDATED WITH DEBUG LOGGING
 window.teamSessionManager = {
+    // Core state
     currentSession: null,
     currentLobby: null,
     participants: [],
     socket: null,
+    chatHistory: [],
     
-    // Initialize team session functionality
+    // UI elements
+    uiElements: {
+        sidebar: null,
+        sessionsList: null,
+        activeSessionSection: null,
+        participantsList: null,
+        chatContainer: null,
+        chatInput: null,
+        connectionStatus: null,
+        sessionName: null,
+        sessionCode: null,
+        participantsCount: null
+    },
+    
+    // Integration with collaboration system
+    collaborationSystem: null,
+    
+    /**
+     * Initialize team session functionality
+     */
     init() {
-        console.log('Initializing team session manager');
+        console.log('🚀 [TEAM SESSION] Initializing teamSessionManager...');
         
-        // Always bind events and socket handlers, visibility will be controlled by settings
+        // Get collaboration system reference
+        this.collaborationSystem = window.collaborationRealTime;
+        
+        if (!this.collaborationSystem) {
+            console.error('❌ [TEAM SESSION] Collaboration system not available');
+            return;
+        }
+        
+        // Initialize UI elements
+        this.initializeUIElements();
+        
+        // Bind UI events
         this.bindEvents();
         
-        // Initialize socket if available
-        if (window.socket) {
-            this.socket = window.socket;
-            this.bindSocketEvents();
-            this.checkExistingSession();
+        // Setup socket integration
+        this.setupSocketIntegration();
+        
+        // Setup collaboration system event handlers
+        this.setupCollaborationEventHandlers();
+        
+        console.log('✅ [TEAM SESSION] TeamSessionManager initialized');
+    },
+    
+    /**
+     * Initialize UI elements
+     */
+    initializeUIElements() {
+        this.uiElements = {
+            sidebar: document.getElementById('collaboration-sidebar'),
+            sessionsList: document.getElementById('sessions-list'),
+            activeSessionSection: document.getElementById('active-session-section'),
+            participantsList: document.getElementById('team-members-list'),
+            chatContainer: document.getElementById('chat-messages'),
+            chatInput: document.getElementById('chat-input'),
+            connectionStatus: document.getElementById('connection-status-title'),
+            sessionName: document.getElementById('active-session-name'),
+            sessionCode: document.getElementById('active-session-code'),
+            participantsCount: document.getElementById('session-participants-count'),
+            sessionDuration: document.getElementById('session-duration')
+        };
+        
+        // Check if UI elements exist
+        Object.entries(this.uiElements).forEach(([key, element]) => {
+            if (!element) {
+                console.warn(`⚠️ [TEAM SESSION] UI element '${key}' not found`);
+            }
+        });
+    },
+    
+    /**
+     * Setup socket integration with collaboration system
+     */
+    setupSocketIntegration() {
+        if (this.collaborationSystem && this.collaborationSystem.socket) {
+            this.socket = this.collaborationSystem.socket;
+            console.log('✅ [TEAM SESSION] Using collaboration system socket');
+        } else {
+            console.warn('⚠️ [TEAM SESSION] Collaboration socket not available');
         }
     },
     
-    // Bind UI event handlers
+    /**
+     * Setup event handlers for collaboration system
+     */
+    setupCollaborationEventHandlers() {
+        if (!this.collaborationSystem) return;
+        
+        // Session events
+        this.collaborationSystem.on('session_created', (data) => {
+            this.handleSessionCreated(data);
+        });
+        
+        this.collaborationSystem.on('session_joined', (data) => {
+            this.handleSessionJoined(data);
+        });
+        
+        this.collaborationSystem.on('session_left', (data) => {
+            this.handleSessionLeft(data);
+        });
+        
+        this.collaborationSystem.on('member_joined', (data) => {
+            this.handleMemberJoined(data);
+        });
+        
+        this.collaborationSystem.on('member_left', (data) => {
+            this.handleMemberLeft(data);
+        });
+        
+        this.collaborationSystem.on('chat_message', (data) => {
+            this.handleChatMessage(data);
+        });
+        
+        this.collaborationSystem.on('session_invitation', (data) => {
+            this.handleSessionInvitation(data);
+        });
+        
+        // Connection events
+        this.collaborationSystem.on('connected', () => {
+            this.updateConnectionStatus(true);
+        });
+        
+        this.collaborationSystem.on('disconnected', () => {
+            this.updateConnectionStatus(false);
+        });
+        
+        console.log('✅ [TEAM SESSION] Collaboration event handlers setup complete');
+    },
+    
+    
+    /**
+     * Bind UI event handlers
+     */
     bindEvents() {
+        console.log('🔗 [TEAM SESSION] Binding UI events...');
+        
+        // Browse sessions button
         const browseLobbyBtn = document.getElementById('browse-lobbies-btn');
-        const refreshLobbiesBtn = document.getElementById('refresh-lobbies-btn');
-        const createLobbySubmit = document.getElementById('create-lobby-submit');
-        const leaveLobbyBtn = document.getElementById('leave-team-btn');
-        const chatToggleBtn = document.getElementById('team-chat-toggle');
-        const chatSendBtn = document.getElementById('chat-send-btn');
-        const chatInput = document.getElementById('chat-input');
-        
         if (browseLobbyBtn) {
-            browseLobbyBtn.addEventListener('click', () => this.showLobbyBrowser());
+            browseLobbyBtn.addEventListener('click', () => this.showSessionBrowser());
         }
         
+        // Refresh sessions button
+        const refreshLobbiesBtn = document.getElementById('refresh-lobbies-btn');
         if (refreshLobbiesBtn) {
-            refreshLobbiesBtn.addEventListener('click', () => this.refreshLobbies());
+            refreshLobbiesBtn.addEventListener('click', () => this.refreshSessions());
         }
         
-        // Remove create lobby functionality - now disabled for users
+        // Quick join functionality
+        const quickJoinBtn = document.getElementById('quick-join-btn');
+        const sessionCodeInput = document.getElementById('session-code-input');
         
-        if (createLobbySubmit) {
-            createLobbySubmit.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.createTeamLobby();
-            });
+        if (quickJoinBtn) {
+            quickJoinBtn.addEventListener('click', () => this.quickJoinSession());
         }
         
-        if (leaveLobbyBtn) {
-            leaveLobbyBtn.addEventListener('click', () => this.leaveTeamSession());
-        }
-        
-        if (chatToggleBtn) {
-            chatToggleBtn.addEventListener('click', () => this.toggleTeamChat());
-        }
-        
-        if (chatSendBtn) {
-            chatSendBtn.addEventListener('click', () => this.sendTeamMessage());
-        }
-        
-        if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendTeamMessage();
+        if (sessionCodeInput) {
+            sessionCodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.quickJoinSession();
                 }
             });
         }
+        
+        // Session management buttons
+        const inviteMembersBtn = document.getElementById('invite-members-btn');
+        if (inviteMembersBtn) {
+            inviteMembersBtn.addEventListener('click', () => this.showSessionBrowser());
+        }
+        
+        const sessionSettingsBtn = document.getElementById('session-settings-btn');
+        if (sessionSettingsBtn) {
+            sessionSettingsBtn.addEventListener('click', () => this.showSessionSettings());
+        }
+        
+        const refreshSessionBtn = document.getElementById('refresh-session-btn');
+        if (refreshSessionBtn) {
+            refreshSessionBtn.addEventListener('click', () => this.refreshCurrentSession());
+        }
+        
+        // Collaboration toggle
+        const collaborationToggle = document.getElementById('collaboration-toggle');
+        const mobileCollaborationToggle = document.getElementById('mobile-collaboration-toggle');
+        const closeCollaborationBtn = document.getElementById('close-collaboration-sidebar');
+        
+        if (collaborationToggle) {
+            collaborationToggle.addEventListener('click', () => this.toggleCollaborationSidebar());
+        }
+        
+        if (mobileCollaborationToggle) {
+            mobileCollaborationToggle.addEventListener('click', () => this.toggleCollaborationSidebar());
+        }
+        
+        if (closeCollaborationBtn) {
+            closeCollaborationBtn.addEventListener('click', () => this.hideCollaborationSidebar());
+        }
+        
+        // Collaboration tools
+        const syncTopologyBtn = document.getElementById('sync-topology-btn');
+        if (syncTopologyBtn) {
+            syncTopologyBtn.addEventListener('click', () => this.syncNetworkTopology());
+        }
+        
+        const shareCursorBtn = document.getElementById('share-cursor-btn');
+        if (shareCursorBtn) {
+            shareCursorBtn.addEventListener('click', () => this.toggleCursorSharing());
+        }
+        
+        console.log('✅ [TEAM SESSION] UI events bound successfully');
     },
     
-    // Bind socket event handlers
-    bindSocketEvents() {
-        if (!this.socket) return;
+    /**
+     * Show session browser modal
+     */
+    showSessionBrowser() {
+        console.log('🌐 [TEAM SESSION] Opening session browser...');
+        this.refreshSessions();
+        // Browser modal would be shown here
+        this.showNotification('Session browser opened', 'info');
+    },
+    
+    /**
+     * Refresh available sessions
+     */
+    async refreshSessions() {
+        console.log('🔄 [TEAM SESSION] Refreshing sessions...');
         
-        this.socket.on('team_session_joined', (data) => {
-            console.log('Team session joined:', data);
-            this.updateSessionUI(data.session);
-            this.showNotification(`Joined team: ${data.session.name}`, 'success');
-            this.hideModals();
-        });
+        try {
+            // Request updated session list from collaboration system
+            if (this.socket) {
+                this.socket.emit('get_public_lobbies', {
+                    simulation_id: this.getSimulationId()
+                });
+            }
+        } catch (error) {
+            console.error('❌ [TEAM SESSION] Error refreshing sessions:', error);
+            this.showNotification('Failed to refresh sessions', 'error');
+        }
+    },
+    
+    /**
+     * Quick join session by code
+     */
+    quickJoinSession() {
+        const sessionCode = this.uiElements.sessionCodeInput?.value?.trim();
         
-        this.socket.on('team_session_left', (data) => {
-            console.log('Team session left:', data);
-            this.hideSessionUI();
-            this.showNotification('Left team session', 'info');
-        });
+        if (!sessionCode) {
+            this.showNotification('Please enter a session code', 'warning');
+            return;
+        }
         
-        this.socket.on('team_session_updated', (data) => {
-            console.log('Team session updated:', data);
-            if (this.currentSession && this.currentSession.id === data.session.id) {
-                this.updateSessionUI(data.session);
+        console.log('🚀 [TEAM SESSION] Quick joining session:', sessionCode);
+        
+        if (this.collaborationSystem) {
+            this.collaborationSystem.joinTeamSession(sessionCode);
+        } else {
+            this.showNotification('Collaboration system not available', 'error');
+        }
+    },
+    
+    /**
+     * Create a new team session
+     */
+    createTeamSession(teamMembers = [], settings = null) {
+        console.log('🎯 [TEAM SESSION] Creating team session...');
+        
+        const simulationId = this.getSimulationId();
+        
+        if (!simulationId) {
+            this.showNotification('Cannot create session: no simulation ID', 'error');
+            return;
+        }
+        
+        if (this.collaborationSystem) {
+            this.collaborationSystem.createTeamSession(simulationId, teamMembers, settings);
+        } else {
+            this.showNotification('Collaboration system not available', 'error');
+        }
+    },
+    
+    /**
+     * Join a team session
+     */
+    joinTeamSession(sessionId) {
+        console.log('🤝 [TEAM SESSION] Joining team session:', sessionId);
+        
+        if (this.collaborationSystem) {
+            this.collaborationSystem.joinTeamSession(sessionId);
+        } else {
+            this.showNotification('Collaboration system not available', 'error');
+        }
+    },
+    
+    /**
+     * Leave current team session
+     */
+    leaveTeamSession() {
+        console.log('👋 [TEAM SESSION] Leaving team session...');
+        
+        if (this.collaborationSystem) {
+            this.collaborationSystem.leaveTeamSession();
+        } else {
+            this.showNotification('Collaboration system not available', 'error');
+        }
+    },
+    
+    // ===== EVENT HANDLERS =====
+    
+    /**
+     * Handle session created
+     */
+    handleSessionCreated(data) {
+        console.log('🎯 [TEAM SESSION] Session created:', data);
+        this.currentSession = data.session;
+        this.updateSessionUI();
+        this.showNotification('Team session created successfully!', 'success');
+    },
+    
+    /**
+     * Handle session joined
+     */
+    handleSessionJoined(data) {
+        console.log('🤝 [TEAM SESSION] Session joined:', data);
+        this.currentSession = data.session;
+        
+        // Update participants
+        if (data.session?.participants) {
+            this.participants = Object.values(data.session.participants);
+        }
+        
+        // Load chat history
+        if (data.session?.recent_chat) {
+            this.loadChatHistory(data.session.recent_chat);
+        }
+        
+        this.updateSessionUI();
+        this.showCollaborationSidebar();
+        this.showNotification(`Joined session: ${data.session?.name || 'Team Session'}`, 'success');
+    },
+    
+    /**
+     * Handle session left
+     */
+    handleSessionLeft(data) {
+        console.log('👋 [TEAM SESSION] Session left:', data);
+        this.currentSession = null;
+        this.participants = [];
+        this.clearChatHistory();
+        this.updateSessionUI();
+        this.showNotification('Left team session', 'info');
+    },
+    
+    /**
+     * Handle member joined
+     */
+    handleMemberJoined(data) {
+        console.log('� [TEAM SESSION] Member joined:', data);
+        
+        // Add to participants if not already present
+        const existingIndex = this.participants.findIndex(p => p.id === data.user_id);
+        if (existingIndex === -1) {
+            this.participants.push({
+                id: data.user_id,
+                username: data.username,
+                status: 'online'
+            });
+        }
+        
+        this.updateParticipantsUI();
+        this.showNotification(`${data.username} joined the session`, 'info');
+    },
+    
+    /**
+     * Handle member left
+     */
+    handleMemberLeft(data) {
+        console.log('� [TEAM SESSION] Member left:', data);
+        
+        // Remove from participants
+        this.participants = this.participants.filter(p => p.id !== data.user_id);
+        
+        this.updateParticipantsUI();
+        this.showNotification(`${data.username} left the session`, 'warning');
+    },
+    
+    /**
+     * Handle chat message
+     */
+    handleChatMessage(data) {
+        console.log('💬 [TEAM SESSION] Chat message received:', data);
+        this.addChatMessage(data);
+    },
+    
+    /**
+     * Handle session invitation
+     */
+    handleSessionInvitation(data) {
+        console.log('📧 [TEAM SESSION] Session invitation:', data);
+        
+        const accept = confirm(
+            `${data.created_by} invited you to join their collaboration session. Would you like to join?`
+        );
+        
+        if (accept) {
+            this.joinTeamSession(data.session_id);
+        }
+    },
+    
+    // ===== UI MANAGEMENT =====
+    
+    /**
+     * Update connection status
+     */
+    updateConnectionStatus(connected) {
+        if (this.uiElements.connectionStatus) {
+            this.uiElements.connectionStatus.textContent = connected ? 'Connected' : 'Disconnected';
+        }
+        
+        const statusSubtitle = document.getElementById('connection-status-subtitle');
+        if (statusSubtitle) {
+            statusSubtitle.textContent = connected 
+                ? (this.currentSession ? 'In Team Session' : 'Solo Mode • Ready to collaborate')
+                : 'Connection Lost';
+        }
+        
+        const indicator = document.getElementById('connection-indicator');
+        if (indicator) {
+            indicator.className = `status-indicator ${connected ? 'connected' : 'disconnected'}`;
+        }
+    },
+    
+    /**
+     * Update session UI
+     */
+    updateSessionUI() {
+        const inSession = !!this.currentSession;
+        
+        // Update session name and code
+        if (this.uiElements.sessionName) {
+            this.uiElements.sessionName.textContent = inSession 
+                ? (this.currentSession.name || 'Team Session')
+                : 'Solo Session';
+        }
+        
+        if (this.uiElements.sessionCode) {
+            this.uiElements.sessionCode.textContent = inSession 
+                ? `#${this.currentSession.id?.substring(0, 8) || 'TEAM'}`
+                : '#SOLO';
+        }
+        
+        // Update participants count
+        this.updateParticipantsCount();
+        
+        // Update UI sections visibility
+        this.updateSectionVisibility(inSession);
+        
+        // Update sidebar state
+        if (inSession) {
+            this.uiElements.sidebar?.classList.add('in-session');
+        } else {
+            this.uiElements.sidebar?.classList.remove('in-session');
+        }
+    },
+    
+    /**
+     * Update participants count display
+     */
+    updateParticipantsCount() {
+        if (this.uiElements.participantsCount) {
+            const count = this.currentSession ? this.participants.length : 1;
+            const maxCount = this.currentSession?.max_participants || 1;
+            this.uiElements.participantsCount.textContent = `${count}/${maxCount}`;
+        }
+    },
+    
+    /**
+     * Update section visibility based on session state
+     */
+    updateSectionVisibility(inSession) {
+        // Show/hide session-specific sections
+        const sessionSections = [
+            this.uiElements.activeSessionSection,
+            document.getElementById('team-members-section')
+        ];
+        
+        sessionSections.forEach(section => {
+            if (section) {
+                section.style.display = inSession ? 'block' : 'block';
             }
         });
+    },
+    
+    /**
+     * Update participants list UI
+     */
+    updateParticipantsUI() {
+        if (!this.uiElements.participantsList) return;
         
-        this.socket.on('lobbies_updated', (data) => {
-            console.log('Lobbies updated:', data);
-            this.updateLobbyList(data.lobbies);
+        this.uiElements.participantsList.innerHTML = '';
+        
+        // Add current participants
+        this.participants.forEach(participant => {
+            const memberCard = document.createElement('div');
+            memberCard.className = 'member-card';
+            memberCard.innerHTML = `
+                <div class="member-avatar online">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="member-info">
+                    <div class="member-name">${participant.username}</div>
+                    <div class="member-role">${participant.status}</div>
+                </div>
+            `;
+            this.uiElements.participantsList.appendChild(memberCard);
         });
         
-        // Add lobby chat message handler
-        this.socket.on('lobby_chat_message', (data) => {
-            console.log('Received lobby chat message:', data);
-            this.addTeamChatMessage(data);
-        });
+        // Add "add member" placeholder if in session
+        if (this.currentSession) {
+            const addMemberCard = document.createElement('div');
+            addMemberCard.className = 'member-card';
+            addMemberCard.style.opacity = '0.5';
+            addMemberCard.style.border = '2px dashed var(--glass-border)';
+            addMemberCard.style.cursor = 'pointer';
+            addMemberCard.innerHTML = `
+                <div class="member-avatar">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="member-info">
+                    <div class="member-name">Invite Member</div>
+                    <div class="member-role">Share session code</div>
+                </div>
+            `;
+            addMemberCard.addEventListener('click', () => this.showInviteDialog());
+            this.uiElements.participantsList.appendChild(addMemberCard);
+        } else {
+            // Show "join team" placeholder for solo mode
+            const joinTeamCard = document.createElement('div');
+            joinTeamCard.className = 'member-card';
+            joinTeamCard.style.opacity = '0.5';
+            joinTeamCard.style.border = '2px dashed var(--glass-border)';
+            joinTeamCard.style.cursor = 'pointer';
+            joinTeamCard.innerHTML = `
+                <div class="member-avatar">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="member-info">
+                    <div class="member-name">Join Team?</div>
+                    <div class="member-role">Browse Sessions</div>
+                </div>
+            `;
+            joinTeamCard.addEventListener('click', () => this.showSessionBrowser());
+            this.uiElements.participantsList.appendChild(joinTeamCard);
+        }
         
-        // Add lobby join/leave handlers
-        this.socket.on('lobby_joined', (data) => {
-            console.log('Joined lobby:', data);
-            this.currentLobby = data.lobby;
-            this.showNotification(`Joined collaboration session: ${data.lobby.name}`, 'success');
-            this.hideModals();
-            this.showSessionUI(data.lobby);
-        });
+        this.updateParticipantsCount();
+    },
+
+    // Show session browser modal
+    showSessionBrowser() {
+        console.log('🌐 [LOBBY DEBUG] Showing session browser...');
         
-        this.socket.on('lobby_left', (data) => {
-            console.log('Left lobby:', data);
-            this.currentLobby = null;
-            this.hideSessionUI();
-            this.showNotification('Left collaboration session', 'info');
-        });
-        
-        this.socket.on('lobby_created', (data) => {
-            console.log('Lobby created:', data);
-            this.showNotification(`Created lobby: ${data.lobby.name}`, 'success');
-            this.hideModals();
+        // Load lobbies from database first
+        this.loadLobbiesFromDatabase(this.getSimulationId()).then(lobbies => {
+            console.log('🌐 [LOBBY DEBUG] Lobbies loaded, showing modal...');
             
-            // Auto-join the created lobby
-            this.joinTeamLobby(data.lobby.id);
+            // Then get real-time updates via socket
+            if (this.socket) {
+                console.log('🌐 [LOBBY DEBUG] Getting real-time updates via socket...');
+                this.socket.emit('get_public_lobbies', {
+                    simulation_id: this.getSimulationId()
+                });
+            } else {
+                console.warn('⚠️ [LOBBY DEBUG] No socket available for real-time updates - using database data only');
+            }
+            
+            // Show modal using vanilla JavaScript
+            const modal = document.getElementById('lobby-browser-modal');
+            console.log('🌐 [LOBBY DEBUG] Modal element found:', !!modal);
+            if (modal) {
+                modal.classList.add('show');
+                modal.style.display = 'block';
+                modal.setAttribute('aria-hidden', 'false');
+                // Add modal backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                backdrop.id = 'lobby-modal-backdrop';
+                document.body.appendChild(backdrop);
+                document.body.classList.add('modal-open');
+                console.log('🌐 [LOBBY DEBUG] Modal shown successfully');
+            } else {
+                console.error('❌ [LOBBY DEBUG] lobby-browser-modal element not found in DOM');
+            }
+        }).catch(error => {
+            console.error('❌ [LOBBY DEBUG] Error loading lobbies:', error);
         });
+    },
+    
+    // Load lobbies from database
+    async loadLobbiesFromDatabase(simulationId) {
+        console.log('💽 [LOBBY DEBUG] Loading lobbies from database for simulation:', simulationId);
+        try {
+            const response = await fetch(`/api/lobbies/${simulationId}`);
+            console.log('💽 [LOBBY DEBUG] Database response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('💽 [LOBBY DEBUG] Database lobbies received:', data);
+                
+                if (data.success && data.lobbies) {
+                    console.log('💽 [LOBBY DEBUG] Processing', data.lobbies.length, 'database lobbies');
+                    this.updateLobbyList(data.lobbies);
+                    return data.lobbies;
+                }
+            } else {
+                console.warn('⚠️ [LOBBY DEBUG] Database lobby fetch failed:', response.statusText);
+            }
+        } catch (error) {
+            console.error('❌ [LOBBY DEBUG] Database lobby loading error:', error);
+        }
+        return [];
+    },
+
+    // Refresh available lobbies from both database and real-time
+    refreshLobbies() {
+        console.log('🔄 [LOBBY DEBUG] refreshLobbies called');
+        console.log('🔄 [LOBBY DEBUG] Socket available:', !!this.socket);
         
-        this.socket.on('team_chat_message', (data) => {
-            console.log('Team chat message received:', data);
-            if (this.currentSession && this.currentSession.id === data.session_id) {
-                this.addTeamChatMessage(data);
+        const simulationId = this.getSimulationId();
+        console.log('🔄 [LOBBY DEBUG] Simulation ID:', simulationId);
+        
+        // Load lobbies from database first for persistence
+        this.loadLobbiesFromDatabase(simulationId).then((dbLobbies) => {
+            console.log('🔄 [LOBBY DEBUG] Database lobbies loaded:', dbLobbies?.length || 0);
+            
+            // Then get real-time updates via socket for live data
+            if (this.socket && simulationId) {
+                console.log('🔄 [LOBBY DEBUG] Emitting get_public_lobbies for real-time refresh...');
+                this.socket.emit('get_public_lobbies', {
+                    simulation_id: simulationId
+                });
+            } else {
+                console.error('❌ [LOBBY DEBUG] No socket available for real-time refresh');
+            }
+        }).catch(error => {
+            console.error('❌ [LOBBY DEBUG] Database loading failed, falling back to socket only:', error);
+            
+            // Fallback to socket-only if database fails
+            if (this.socket && simulationId) {
+                this.socket.emit('get_public_lobbies', {
+                    simulation_id: simulationId
+                });
             }
         });
         
-        this.socket.on('team_session_error', (data) => {
-            console.error('Team session error:', data);
-            this.showNotification(data.message || 'Team session error occurred', 'error');
-        });
-    },
-    
-    // Check for existing team session
-    checkExistingSession() {
-        if (this.socket) {
-            this.socket.emit('check_team_session', {
-                simulation_id: this.getSimulationId(),
-                user_id: this.getCurrentUserId()
-            });
-        }
-    },
-    
-    // Show lobby browser modal
-    showLobbyBrowser() {
-        console.log('Showing lobby browser');
-        
-        // Load available lobbies
-        if (this.socket) {
-            this.socket.emit('get_available_lobbies', {
-                simulation_id: this.getSimulationId()
-            });
-        }
-        
-        $('#lobby-browser-modal').modal('show');
-    },
-    
-    // Refresh available lobbies
-    refreshLobbies() {
-        console.log('Refreshing collaboration lobbies');
-        this.loadPublicLobbies();
         this.showNotification('Refreshed collaboration sessions', 'info');
     },
     
@@ -4100,11 +4813,20 @@ window.teamSessionManager = {
     // Send a team chat message
     sendTeamMessage() {
         const messageInput = document.getElementById('chat-input');
+        if (!messageInput) {
+            console.error('💬 [CHAT DEBUG] Chat input element not found');
+            this.showNotification('Chat input not available', 'error');
+            return;
+        }
+        
         const message = messageInput.value.trim();
         
         if (!message) {
+            console.warn('💬 [CHAT DEBUG] Empty message, not sending');
             return;
         }
+        
+        console.log('💬 [CHAT DEBUG] Sending message:', message);
 
         // For collaboration lobbies, use the lobby chat system
         if (this.currentLobby) {
@@ -4115,10 +4837,21 @@ window.teamSessionManager = {
                 username: this.getCurrentUsername()
             };
 
-            console.log('Sending lobby chat message:', messageData);
+            console.log('💬 [CHAT DEBUG] Sending lobby chat message:', messageData);
             
-            if (this.socket) {
+            if (this.socket && this.socket.connected) {
                 this.socket.emit('send_lobby_chat', messageData);
+                
+                // Add message locally with pending status
+                this.addTeamChatMessage({
+                    ...messageData,
+                    timestamp: new Date().toISOString(),
+                    pending: true
+                });
+            } else {
+                console.error('💬 [CHAT DEBUG] Socket not connected for lobby chat');
+                this.showNotification('Connection lost. Please try again.', 'error');
+                return;
             }
         } 
         // Fallback to team session if no lobby
@@ -4131,14 +4864,30 @@ window.teamSessionManager = {
                 timestamp: new Date().toISOString()
             };
 
-            console.log('Sending team message:', messageData);
+            console.log('💬 [CHAT DEBUG] Sending team message:', messageData);
             
-            if (this.socket) {
+            if (this.socket && this.socket.connected) {
                 this.socket.emit('team_chat_message', messageData);
+                
+                // Add message locally with pending status
+                this.addTeamChatMessage({
+                    ...messageData,
+                    pending: true
+                });
+            } else {
+                console.error('💬 [CHAT DEBUG] Socket not connected for team chat');
+                this.showNotification('Connection lost. Please try again.', 'error');
+                return;
             }
+        } else {
+            console.warn('💬 [CHAT DEBUG] No active lobby or session to send message to');
+            this.showNotification('No active collaboration session', 'warning');
+            return;
         }
 
+        // Clear input after sending
         messageInput.value = '';
+        console.log('💬 [CHAT DEBUG] Message sent and input cleared');
     },
     
     // Update team session UI
@@ -4161,25 +4910,15 @@ window.teamSessionManager = {
         }
         
         // Update participants list
-        const participantsList = document.getElementById('team-participants');
-        if (participantsList) {
-            participantsList.innerHTML = this.participants.map(participant => {
-                const avatarLetter = participant.username.charAt(0).toUpperCase();
-                const isCurrentUser = participant.user_id === this.getCurrentUserId();
-                const roleText = participant.role || 'Member';
-                const statusClass = participant.online ? 'online' : 'offline';
-                
-                return `
-                    <div class="participant-item">
-                        <div class="participant-avatar">${avatarLetter}</div>
-                        <div class="participant-info">
-                            <div class="participant-name">${participant.username}${isCurrentUser ? ' (You)' : ''}</div>
-                            <div class="participant-role">${roleText}</div>
-                        </div>
-                        <div class="participant-status ${statusClass}">${participant.online ? 'Online' : 'Offline'}</div>
-                    </div>
-                `;
-            }).join('');
+        this.updateParticipantsList();
+        
+        // Ensure chat interface is properly initialized
+        this.initializeChatInterface();
+        
+        // Join the team session room for real-time updates
+        if (this.socket && sessionData.id) {
+            console.log('🏠 [SESSION DEBUG] Joining team session room:', sessionData.id);
+            this.socket.emit('join_team_session', { session_id: sessionData.id });
         }
         
         // Hide collaboration controls
@@ -4270,23 +5009,37 @@ window.teamSessionManager = {
     
     // Update lobby list in browser modal
     updateLobbyList(lobbies) {
-        console.log('Updating lobby list:', lobbies);
+        console.log('📋 [LOBBY DEBUG] updateLobbyList called with:', lobbies);
+        console.log('📋 [LOBBY DEBUG] Lobbies type:', typeof lobbies);
+        console.log('📋 [LOBBY DEBUG] Is Array:', Array.isArray(lobbies));
+        console.log('📋 [LOBBY DEBUG] Length:', lobbies ? lobbies.length : 'N/A');
         
         const lobbyGrid = document.getElementById('lobby-grid');
         const noLobbies = document.getElementById('no-lobbies');
         
-        if (!lobbyGrid || !noLobbies) return;
+        console.log('📋 [LOBBY DEBUG] DOM elements found:', {
+            lobbyGrid: !!lobbyGrid,
+            noLobbies: !!noLobbies
+        });
+        
+        if (!lobbyGrid || !noLobbies) {
+            console.error('❌ [LOBBY DEBUG] Required DOM elements not found!');
+            return;
+        }
         
         if (!lobbies || lobbies.length === 0) {
+            console.log('📋 [LOBBY DEBUG] No lobbies to display');
             lobbyGrid.style.display = 'none';
             noLobbies.style.display = 'block';
             return;
         }
         
+        console.log('📋 [LOBBY DEBUG] Displaying', lobbies.length, 'lobbies');
         lobbyGrid.style.display = 'grid';
         noLobbies.style.display = 'none';
         
-        lobbyGrid.innerHTML = lobbies.map(lobby => {
+        lobbyGrid.innerHTML = lobbies.map((lobby, index) => {
+            console.log(`📋 [LOBBY DEBUG] Processing lobby ${index}:`, lobby);
             const participantCount = lobby.participants ? lobby.participants.length : 0;
             const maxParticipants = lobby.max_participants || 4;
             const isFull = participantCount >= maxParticipants;
@@ -4311,33 +5064,117 @@ window.teamSessionManager = {
                 </div>
             `;
         }).join('');
+        
+        console.log('📋 [LOBBY DEBUG] Lobby grid HTML updated successfully');
     },
     
     // Add chat message to UI
+    // Add a chat message to the team chat display
     addTeamChatMessage(messageData) {
-        console.log('Adding team chat message:', messageData);
+        console.log('💬 [CHAT DEBUG] Adding team chat message:', messageData);
         
         const chatMessages = document.getElementById('chat-messages');
-        if (!chatMessages) return;
+        if (!chatMessages) {
+            console.error('💬 [CHAT DEBUG] Chat messages container not found');
+            return;
+        }
         
-        const isCurrentUser = messageData.user_id === this.getCurrentUserId();
+        const currentUserId = this.getCurrentUserId();
+        const isCurrentUser = messageData.user_id === currentUserId || messageData.user_id === String(currentUserId);
         const messageClass = isCurrentUser ? 'chat-message own' : 'chat-message';
         
+        // Format timestamp if available
+        let timeStr = '';
+        if (messageData.timestamp) {
+            try {
+                const date = new Date(messageData.timestamp);
+                timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                console.warn('💬 [CHAT DEBUG] Invalid timestamp:', messageData.timestamp);
+                timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        } else {
+            timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Create message HTML with better styling and structure
         const messageHtml = `
-            <div class="${messageClass}">
-                <div class="chat-author">${messageData.username}</div>
-                <div class="chat-text">${messageData.message}</div>
+            <div class="${messageClass}" data-user-id="${messageData.user_id}" data-message-id="${Date.now()}">
+                <div class="chat-message-header">
+                    <span class="chat-author">${messageData.username || 'Unknown User'}</span>
+                    <span class="chat-time">${timeStr}</span>
+                </div>
+                <div class="chat-text">${this.sanitizeMessage(messageData.message)}</div>
+                ${messageData.pending ? '<div class="chat-pending">Sending...</div>' : ''}
             </div>
         `;
         
         chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+        
+        // Auto-scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Show chat if it's hidden and this is a new message from another user
+        if (!isCurrentUser) {
+            const chatElement = document.getElementById('team-chat');
+            const chatToggle = document.getElementById('team-chat-toggle');
+            
+            if (chatElement && chatElement.style.display === 'none') {
+                // Flash the chat toggle to indicate new message
+                if (chatToggle) {
+                    chatToggle.classList.add('has-new-message');
+                    setTimeout(() => {
+                        chatToggle.classList.remove('has-new-message');
+                    }, 3000);
+                }
+            }
+        }
+        
+        console.log('💬 [CHAT DEBUG] Message added to chat display');
+    },
+    
+    // Sanitize message content to prevent XSS
+    sanitizeMessage(message) {
+        if (!message) return '';
+        return message.replace(/[<>&"']/g, function(match) {
+            return {
+                '<': '&lt;',
+                '>': '&gt;',
+                '&': '&amp;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[match];
+        });
     },
     
     // Hide all modals
     hideModals() {
-        $('#lobby-browser-modal').modal('hide');
-        $('#create-lobby-modal').modal('hide');
+        // Hide lobby browser modal
+        const lobbyModal = document.getElementById('lobby-browser-modal');
+        if (lobbyModal) {
+            lobbyModal.classList.remove('show');
+            lobbyModal.style.display = 'none';
+            lobbyModal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // Hide create lobby modal
+        const createModal = document.getElementById('create-lobby-modal');
+        if (createModal) {
+            createModal.classList.remove('show');
+            createModal.style.display = 'none';
+            createModal.setAttribute('aria-hidden', 'true');
+        }
+        
+        // Remove backdrop and modal-open class
+        const backdrop = document.getElementById('lobby-modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+        const createBackdrop = document.getElementById('create-modal-backdrop');
+        if (createBackdrop) {
+            createBackdrop.remove();
+        }
+        document.body.classList.remove('modal-open');
     },
     
     // Show notification
@@ -4354,7 +5191,17 @@ window.teamSessionManager = {
     getSimulationId() {
         // Extract simulation ID from URL or simulation data
         const pathParts = window.location.pathname.split('/');
-        return pathParts[pathParts.indexOf('simulation') + 1] || window.simulation?.id;
+        const urlSimId = pathParts[pathParts.indexOf('simulation') + 1];
+        const windowSimId = window.simulation?.id;
+        const simId = urlSimId || windowSimId;
+        
+        console.log('🔍 [LOBBY DEBUG] getSimulationId called:');
+        console.log('🔍 [LOBBY DEBUG] - URL path parts:', pathParts);
+        console.log('🔍 [LOBBY DEBUG] - URL sim ID:', urlSimId);
+        console.log('🔍 [LOBBY DEBUG] - Window sim ID:', windowSimId);
+        console.log('🔍 [LOBBY DEBUG] - Final sim ID:', simId);
+        
+        return simId;
     },
     
     getCurrentUserId() {
@@ -4368,6 +5215,113 @@ window.teamSessionManager = {
         // Read from hidden session data element or fallback to window.currentUser
         const el = document.getElementById('session-data');
         return el?.dataset?.username || window.currentUser?.username || '';
+    },
+    
+    // Debug function to manually test lobby loading
+    async debugTestLobbyLoading() {
+        console.log('🧪 [LOBBY DEBUG] Manual test lobby loading...');
+        console.log('🧪 [LOBBY DEBUG] Socket status:', {
+            hasSocket: !!this.socket,
+            socketConnected: this.socket?.connected,
+            socketId: this.socket?.id
+        });
+        
+        const simulationId = this.getSimulationId();
+        
+        // First test database loading
+        console.log('🧪 [LOBBY DEBUG] Testing database loading...');
+        try {
+            await this.loadLobbiesFromDatabase();
+            console.log('🧪 [LOBBY DEBUG] Database loading test completed');
+        } catch (error) {
+            console.error('🧪 [LOBBY DEBUG] Database loading test failed:', error);
+        }
+        
+        // Then test socket loading
+        if (this.socket) {
+            console.log('🧪 [LOBBY DEBUG] Testing socket loading - emitting get_public_lobbies for simulation:', simulationId);
+            this.socket.emit('get_public_lobbies', {
+                simulation_id: simulationId
+            });
+        } else {
+            console.error('🧪 [LOBBY DEBUG] No socket available for socket test');
+        }
+    }
+};
+
+// Global socket availability monitor
+(function setupSocketMonitor() {
+    let socketCheckInterval;
+    
+    // Monitor for socket availability
+    function checkForSocket() {
+        const hasSocket = !!(window.socket || (window.socketClient && window.socketClient.socket));
+        
+        if (hasSocket && window.teamSessionManager && !window.teamSessionManager.socket) {
+            console.log('🔌 [LOBBY DEBUG] Socket became available, reconnecting teamSessionManager...');
+            clearInterval(socketCheckInterval);
+            window.teamSessionManager.initializeSocket();
+        }
+    }
+    
+    // Start monitoring if socket is not immediately available
+    if (window.teamSessionManager && !window.teamSessionManager.socket) {
+        console.log('🔍 [LOBBY DEBUG] Starting socket availability monitor...');
+        socketCheckInterval = setInterval(checkForSocket, 1000);
+        
+        // Clean up after 30 seconds to avoid infinite checking
+        setTimeout(() => {
+            if (socketCheckInterval) {
+                console.log('⏰ [LOBBY DEBUG] Socket monitor timeout, stopping checks');
+                clearInterval(socketCheckInterval);
+            }
+        }, 30000);
+    }
+    
+    // Listen for custom socket ready events
+    window.addEventListener('socket-ready', () => {
+        console.log('📡 [LOBBY DEBUG] socket-ready event received');
+        if (window.teamSessionManager && !window.teamSessionManager.socket) {
+            window.teamSessionManager.initializeSocket();
+        }
+    });
+    
+    // Listen for socketClient ready events specifically
+    window.addEventListener('socketClient-ready', () => {
+        console.log('📡 [LOBBY DEBUG] socketClient-ready event received');
+        if (window.teamSessionManager && !window.teamSessionManager.socket) {
+            window.teamSessionManager.initializeSocket();
+        }
+    });
+})();
+
+// Global debug functions for lobby testing
+window.debugLobbySystem = function() {
+    console.log('🔧 [LOBBY DEBUG] Lobby System Debug Info:');
+    console.log('  teamSessionManager:', !!window.teamSessionManager);
+    console.log('  teamSessionManager.socket:', !!window.teamSessionManager?.socket);
+    console.log('  window.socket:', !!window.socket);
+    console.log('  window.socketClient:', !!window.socketClient);
+    console.log('  socketClient.socket:', !!window.socketClient?.socket);
+    
+    if (window.teamSessionManager) {
+        console.log('  Simulation ID:', window.teamSessionManager.getSimulationId());
+        console.log('  Current Session:', window.teamSessionManager.currentSession);
+        console.log('  Current Lobby:', window.teamSessionManager.currentLobby);
+    }
+    
+    return {
+        teamSessionManager: window.teamSessionManager,
+        socket: window.socket,
+        socketClient: window.socketClient
+    };
+};
+
+window.testLobbyLoading = function() {
+    if (window.teamSessionManager && typeof window.teamSessionManager.debugTestLobbyLoading === 'function') {
+        window.teamSessionManager.debugTestLobbyLoading();
+    } else {
+        console.error('❌ teamSessionManager not available or missing debug function');
     }
 };
 
@@ -4527,12 +5481,40 @@ function updateCollaborationBadge(settings) {
 
 // Initialize team session manager when document is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 [LOBBY DEBUG] DOMContentLoaded event fired');
+    console.log('🚀 [LOBBY DEBUG] teamSessionManager available:', !!window.teamSessionManager);
+    console.log('🚀 [LOBBY DEBUG] teamSessionManagerInitialized:', window.teamSessionManagerInitialized);
+    
     if (!window.teamSessionManagerInitialized) {
+        console.log('🚀 [LOBBY DEBUG] Initializing teamSessionManager...');
+        
+        // Add debug functions to global scope
+        window.debugLobbySystem = window.debugLobbySystem;
+        window.testLobbyLoading = window.testLobbyLoading;
+        
         window.teamSessionManager.init();
         window.teamSessionManagerInitialized = true;
-        console.log('✅ Team Session Manager initialized (first time)');
+        console.log('✅ [LOBBY DEBUG] Team Session Manager initialized (first time)');
+        
+        // Also load collaboration settings
+        const simulationId = window.teamSessionManager.getSimulationId();
+        if (simulationId) {
+            console.log('🚀 [LOBBY DEBUG] Loading collaboration settings for simulation:', simulationId);
+            loadCollaborationSettings(simulationId);
+        } else {
+            console.warn('⚠️ [LOBBY DEBUG] No simulation ID available for loading collaboration settings');
+        }
+        
+        // Add a delayed retry for socket connection if still not available
+        setTimeout(() => {
+            if (!window.teamSessionManager.socket) {
+                console.log('⏰ [LOBBY DEBUG] Delayed socket retry attempt...');
+                window.teamSessionManager.setupSocketRetry();
+            }
+        }, 2000);
+        
     } else {
-        console.log('🔧 Team Session Manager already initialized, skipping...');
+        console.log('🔧 [LOBBY DEBUG] Team Session Manager already initialized, skipping...');
     }
 });
 
@@ -4573,7 +5555,6 @@ class DynamicSimulation {
             firstDevice: null,
             
             connections: [], // Legacy support
-            
             
             // Performance tracking
             performanceMetrics: {
@@ -6933,16 +7914,40 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 activeSessionSection.style.display = 'block';
                 
                 // Update session details
-                const sessionName = document.getElementById('session-name');
-                const sessionParticipants = document.getElementById('session-participants');
+                const sessionName = document.getElementById('active-session-name');
+                const sessionCode = document.getElementById('active-session-code');
+                const sessionParticipants = document.getElementById('session-participants-count');
                 const sessionRole = document.getElementById('session-role');
                 
                 if (sessionName) sessionName.textContent = session.name || 'Unnamed Session';
+                if (sessionCode) sessionCode.textContent = `#${session.code || 'TEAM'}`;
                 if (sessionParticipants) {
                     const participantCount = session.participants ? session.participants.length : 0;
                     sessionParticipants.textContent = `${participantCount}/4`;
                 }
                 if (sessionRole) sessionRole.textContent = session.userRole || 'Member';
+                
+                // Update session avatar
+                const sessionAvatar = activeSessionSection.querySelector('.session-avatar i');
+                if (sessionAvatar) {
+                    sessionAvatar.className = 'fas fa-users';
+                }
+                
+                // Update action buttons for team session
+                const inviteBtn = document.getElementById('invite-members-btn');
+                const refreshBtn = document.getElementById('refresh-session-btn');
+                const leaveBtn = document.getElementById('leave-session-btn');
+                
+                if (inviteBtn) {
+                    inviteBtn.innerHTML = '<i class="fas fa-user-plus"></i> Invite';
+                    inviteBtn.className = 'action-btn primary';
+                }
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'none'; // Hide refresh in team mode
+                }
+                if (leaveBtn) {
+                    leaveBtn.style.display = 'inline-block'; // Show leave button
+                }
             }
             
             // Show team members section
@@ -6951,8 +7956,9 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 this.updateTeamMembersList(session.participants || []);
             }
         } else {
+            // Solo mode - always show session information
             if (statusText) {
-                statusText.textContent = 'Solo Mode';
+                statusText.textContent = 'Solo Mode - Working Independently';
             }
             
             if (statusIndicator) {
@@ -6962,9 +7968,60 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 }
             }
             
-            // Hide session-specific sections
-            if (activeSessionSection) activeSessionSection.style.display = 'none';
-            if (teamMembersSection) teamMembersSection.style.display = 'none';
+            // Show active session section with solo information
+            if (activeSessionSection) {
+                activeSessionSection.style.display = 'block';
+                
+                // Update session details for solo mode
+                const sessionName = document.getElementById('active-session-name');
+                const sessionCode = document.getElementById('active-session-code');
+                const sessionParticipants = document.getElementById('session-participants-count');
+                
+                if (sessionName) sessionName.textContent = 'Solo Session';
+                if (sessionCode) sessionCode.textContent = '#SOLO';
+                if (sessionParticipants) sessionParticipants.textContent = '1/1';
+                
+                // Update session avatar for solo mode
+                const sessionAvatar = activeSessionSection.querySelector('.session-avatar i');
+                if (sessionAvatar) {
+                    sessionAvatar.className = 'fas fa-user';
+                }
+                
+                // Update action buttons for solo mode
+                const inviteBtn = document.getElementById('invite-members-btn');
+                const refreshBtn = document.getElementById('refresh-session-btn');
+                const leaveBtn = document.getElementById('leave-session-btn');
+                
+                if (inviteBtn) {
+                    inviteBtn.innerHTML = '<i class="fas fa-users"></i> Browse Sessions';
+                    inviteBtn.className = 'action-btn primary';
+                }
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'inline-block'; // Show refresh in solo mode
+                }
+                if (leaveBtn) {
+                    leaveBtn.style.display = 'none'; // Hide leave button in solo mode
+                }
+            }
+            
+            // Show team members section with solo placeholder
+            if (teamMembersSection) {
+                teamMembersSection.style.display = 'block';
+                // Solo members display is already set in HTML template
+            }
+        }
+        
+        // Update session timer
+        this.updateSessionTimer();
+    }
+
+    updateSessionTimer() {
+        const sessionDuration = document.getElementById('session-duration');
+        if (sessionDuration && window.simulation && window.simulation.startTime) {
+            const elapsed = Date.now() - window.simulation.startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            sessionDuration.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
     }
     

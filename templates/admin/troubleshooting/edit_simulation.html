@@ -2010,6 +2010,10 @@ width: 500;
                         <i class="fas fa-save"></i>
                         <span>Save</span>
                     </button>
+                    <button class="panel-tab" onclick="viewAsStudent()" title="View as Student">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>Preview</span>
+                    </button>
                     {% if simulation %}
                     <button class="panel-tab" onclick="exportSimulation()" title="Export as .rnet file">
                         <i class="fas fa-download"></i>
@@ -5682,6 +5686,48 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         showCreateLobby();
     }
 
+    function viewAsStudent() {
+        const simulationId = getSimulationIdFromUrl();
+        if (!simulationId) {
+            showToast('Please save the simulation first', 'warning');
+            return;
+        }
+
+        let studentUrl = `/dynamic/simulation/${simulationId}`;
+        
+        // If we have an active lobby, include it in the URL
+        if (currentLobby && currentLobby.id) {
+            studentUrl += `?lobby_id=${currentLobby.id}`;
+            showToast(`Opening student view with collaboration session: ${currentLobby.name}`, 'info');
+        } else {
+            showToast('Opening student view (no collaboration session)', 'info');
+        }
+        
+        // Open in new tab to preserve the admin edit session
+        window.open(studentUrl, '_blank');
+    }
+
+    function viewAsStudent() {
+        const simulationId = getSimulationIdFromUrl();
+        if (!simulationId) {
+            showToast('Please save the simulation first', 'warning');
+            return;
+        }
+
+        let studentUrl = `/dynamic/simulation/${simulationId}`;
+        
+        // If we have an active lobby, include it in the URL
+        if (currentLobby && currentLobby.id) {
+            studentUrl += `?lobby_id=${currentLobby.id}`;
+            showToast(`Opening student view with collaboration session: ${currentLobby.name}`, 'info');
+        } else {
+            showToast('Opening student view (no collaboration session)', 'info');
+        }
+        
+        // Open in new tab to preserve the admin edit session
+        window.open(studentUrl, '_blank');
+    }
+
     function handleChatInput(event) {
         if (event.key === 'Enter') {
             sendChatMessage();
@@ -6373,6 +6419,7 @@ function showNotification(message, type) {
 
     function renderActiveLobbies(lobbies) {
         const container = document.getElementById('active-lobbies-list');
+        const emptyState = document.querySelector('#active-lobbies-container .empty-state');
         
         // Check if the container exists before trying to modify it
         if (!container) {
@@ -6381,10 +6428,17 @@ function showNotification(message, type) {
         }
 
         if (lobbies.length === 0) {
+            // Show empty state and hide lobbies list
+            if (emptyState) emptyState.style.display = 'block';
+            container.style.display = 'none';
             container.innerHTML = '<div class="no-lobbies-message" style="text-align: center; padding: 20px; color: var(--text-muted);">No active lobbies. Create one to start collaborating!</div>';
             return;
         }
 
+        // Hide empty state and show lobbies list
+        if (emptyState) emptyState.style.display = 'none';
+        container.style.display = 'block';
+        
         container.innerHTML = '';
         lobbies.forEach(lobby => {
             const item = document.createElement('div');
@@ -6719,7 +6773,7 @@ function showNotification(message, type) {
             } else {
                 console.log('loadClasses function not available - class loading skipped');
                 // Define a placeholder loadClasses function
-                window.loadClasses = function() {
+                window.loadClasses = function() { 
                     console.log('📚 [ADMIN-EDIT] Loading classes for collaboration...');
                     // This would normally populate class selection dropdowns
                     // For now, just log that the function was called
@@ -6745,9 +6799,16 @@ function showNotification(message, type) {
                 return;
             }
 
-            // Generate QR code URL
-            const qrUrl = `/dynamic/simulation/${simulationId}/qr`;
-            const confirmUrl = `/dynamic/simulation/${simulationId}/confirm`;
+            // Generate QR code URL with lobby_id if collaboration is active
+            let qrUrl = `/dynamic/simulation/${simulationId}/qr`;
+            let confirmUrl = `/dynamic/simulation/${simulationId}`;
+            
+            // If we have an active lobby, include it in the URLs
+            if (currentLobby && currentLobby.id) {
+                const lobbyParam = `lobby_id=${currentLobby.id}`;
+                qrUrl = `/dynamic/simulation/${simulationId}/qr?${lobbyParam}`;
+                confirmUrl = `/dynamic/simulation/${simulationId}?${lobbyParam}`;
+            }
 
             // Set QR code image
             const qrImage = document.getElementById('qrCodeImage');

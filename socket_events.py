@@ -1,11 +1,13 @@
 from socket_manager import socketio, authenticated_only, admin_only, user_connections
 from flask_socketio import emit, join_room, leave_room
+from flask import request
 from flask_login import current_user
 from utils.auth_decorators import admin_required
 from __init__ import db
 from datetime import datetime, timedelta
 from typing import List
 import json
+import time
 
 try:
     # Use a lazy import to avoid circular dependencies
@@ -51,7 +53,7 @@ def emit_admin_simulation_updated(simulation_id: int, update_data: dict):
         
         # Also emit to any class rooms that might have this simulation assigned
         from admin.models.simulation import Simulation
-        from admin.models.class_assignment import ClassAssignment
+        from admin.models.class_content import ClassAssignment
         
         simulation = Simulation.query.get(simulation_id)
         if simulation:
@@ -718,6 +720,16 @@ except ImportError as e:
     print(f"⚠️ Warning: Could not import lobby manager: {e}")
     lobby_manager = None
 
+# ===== COLLABORATION SERVICE INTEGRATION =====
+# Import the collaboration service
+try:
+    from services.collaboration_service import get_collaboration_service
+    collaboration_service = get_collaboration_service()
+    print("✅ Collaboration service imported successfully")
+except ImportError as e:
+    print(f"⚠️ Warning: Could not import collaboration service: {e}")
+    collaboration_service = None
+
 # Lobby Management Events
 @socketio.on('create_troubleshooting_lobby')
 @authenticated_only
@@ -761,10 +773,11 @@ def handle_join_lobby(data):
             # Join the lobby room
             join_room(room_name)
             
-            # Notify user of successful join
+            # Notify user of successful join with chat history
             emit('lobby_joined', {
                 'success': True,
-                'lobby': lobby.to_dict()
+                'lobby': lobby.to_dict(),
+                'chat_history': lobby.chat_history  # Send chat history to new participant
             })
             
             # Notify other participants of new user
@@ -1538,6 +1551,104 @@ def handle_send_lobby_chat(data):
         print(f"❌ Error sending chat message: {str(e)}")
         emit('lobby_chat_error', {'error': str(e)})
 
+# Team Session Chat Events (separate from lobby chat)
+@socketio.on('team_chat_message')
+@authenticated_only
+def handle_team_chat_message(data):
+    """Handle team session chat messages (non-lobby based collaboration)"""
+    try:
+        session_id = data.get('session_id')
+        user_id = data.get('user_id', str(current_user.id))
+        username = data.get('username', getattr(current_user, 'username', 'Unknown'))
+        message = data.get('message', '').strip()
+        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
+        
+        if not message:
+            emit('team_chat_error', {'error': 'Message cannot be empty'})
+            return
+        
+        if not session_id:
+            emit('team_chat_error', {'error': 'Session ID required'})
+            return
+        
+        # Create message data
+        message_data = {
+            'user_id': user_id,
+            'username': username,
+            'message': message,
+            'timestamp': timestamp,
+            'session_id': session_id
+        }
+        
+        # Broadcast to all users in the team session room
+        room_name = f'team_session_{session_id}'
+        emit('team_chat_message', message_data, room=room_name)
+        
+        print(f"💬 Team chat message from {username} in session {session_id}: {message}")
+        
+    except Exception as e:
+        print(f"❌ Error sending team chat message: {str(e)}")
+        emit('team_chat_error', {'error': str(e)})
+
+@socketio.on('join_team_session')
+@authenticated_only
+def handle_join_team_session(data):
+    """Join a team session room for chat and collaboration"""
+    try:
+        session_id = data.get('session_id')
+        if not session_id:
+            emit('team_session_error', {'error': 'Session ID required'})
+            return
+        
+        room_name = f'team_session_{session_id}'
+        join_room(room_name)
+        
+        # Notify user of successful join
+        emit('team_session_joined', {
+            'success': True,
+            'session_id': session_id,
+            'room': room_name
+        })
+        
+        # Notify other participants
+        emit('participant_joined_team', {
+            'user_id': str(current_user.id),
+            'username': getattr(current_user, 'username', 'Unknown'),
+            'session_id': session_id
+        }, room=room_name, include_self=False)
+        
+        print(f"✅ User {current_user.username} joined team session {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error joining team session: {str(e)}")
+        emit('team_session_error', {'error': str(e)})
+
+@socketio.on('leave_team_session')
+@authenticated_only
+def handle_leave_team_session(data):
+    """Leave a team session room"""
+    try:
+        session_id = data.get('session_id')
+        if not session_id:
+            return
+        
+        room_name = f'team_session_{session_id}'
+        leave_room(room_name)
+        
+        # Notify other participants
+        emit('participant_left_team', {
+            'user_id': str(current_user.id),
+            'username': getattr(current_user, 'username', 'Unknown'),
+            'session_id': session_id
+        }, room=room_name)
+        
+        emit('team_session_left', {'success': True})
+        print(f"✅ User {current_user.username} left team session {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error leaving team session: {str(e)}")
+        emit('team_session_error', {'error': str(e)})
+
 # Full State Synchronization
 @socketio.on('request_full_sync')
 @authenticated_only
@@ -1651,6 +1762,437 @@ def handle_admin_close_lobby(data):
             'success': False,
             'error': str(e)
         })
+
+# ===== TEAM SESSION COLLABORATION EVENTS =====
+
+@socketio.on('create_team_session')
+@authenticated_only
+def handle_create_team_session(data):
+    """Create a new team collaboration session"""
+    if not collaboration_service:
+        emit('team_session_created', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        simulation_id = data.get('simulation_id')
+        team_members = data.get('team_members', [])
+        settings = data.get('settings')
+        
+        if not simulation_id:
+            emit('team_session_created', {'success': False, 'error': 'Simulation ID required'})
+            return
+        
+        if not team_members:
+            emit('team_session_created', {'success': False, 'error': 'Team members required'})
+            return
+        
+        # Create team session
+        result = collaboration_service.create_team_session(
+            simulation_id=simulation_id,
+            team_members=team_members,
+            created_by=str(current_user.id),
+            settings=settings
+        )
+        
+        if result['success']:
+            session_id = result['session_id']
+            
+            # Join the team session room
+            join_room(f'team_session_{session_id}')
+            
+            # Notify all team members about the new session
+            for member_id in team_members:
+                emit('team_session_invitation', {
+                    'session_id': session_id,
+                    'simulation_id': simulation_id,
+                    'created_by': current_user.username,
+                    'team_members': team_members
+                }, room=f'user_{member_id}')
+        
+        emit('team_session_created', result)
+        print(f"🤝 Team session created by {current_user.username}: {result.get('session_id')}")
+        
+    except Exception as e:
+        print(f"❌ Error creating team session: {str(e)}")
+        emit('team_session_created', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('join_team_session')
+@authenticated_only
+def handle_join_team_session(data):
+    """Join an existing team session"""
+    if not collaboration_service:
+        emit('team_session_joined', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            emit('team_session_joined', {'success': False, 'error': 'Session ID required'})
+            return
+        
+        user_info = {
+            'username': current_user.username,
+            'profile_img': getattr(current_user, 'profile_img', None)
+        }
+        
+        result = collaboration_service.join_session(session_id, str(current_user.id), user_info)
+        
+        if result['success']:
+            # Join the team session room
+            join_room(f'team_session_{session_id}')
+            
+            # Notify other team members
+            emit('team_member_joined', {
+                'user_id': str(current_user.id),
+                'username': current_user.username,
+                'session_id': session_id
+            }, room=f'team_session_{session_id}', include_self=False)
+        
+        emit('team_session_joined', result)
+        print(f"🤝 User {current_user.username} joined team session {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error joining team session: {str(e)}")
+        emit('team_session_joined', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('leave_team_session')
+@authenticated_only
+def handle_leave_team_session(data=None):
+    """Leave current team session"""
+    if not collaboration_service:
+        emit('team_session_left', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        result = collaboration_service.leave_session(str(current_user.id))
+        
+        if result['success']:
+            # Get session from user mapping to find session_id
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                session_id = session.session_id
+                
+                # Leave the room
+                leave_room(f'team_session_{session_id}')
+                
+                # Notify other team members
+                emit('team_member_left', {
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'session_id': session_id
+                }, room=f'team_session_{session_id}')
+        
+        emit('team_session_left', result)
+        print(f"🤝 User {current_user.username} left team session")
+        
+    except Exception as e:
+        print(f"❌ Error leaving team session: {str(e)}")
+        emit('team_session_left', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('team_network_update')
+@authenticated_only
+def handle_team_network_update(data):
+    """Handle real-time network topology updates in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        changes = data.get('changes', {})
+        
+        result = collaboration_service.update_network_state(str(current_user.id), changes)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Broadcast changes to other team members
+                emit('team_network_updated', {
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'changes': changes,
+                    'network_state': result['network_state'],
+                    'timestamp': datetime.utcnow().isoformat()
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+        emit('team_network_update_result', result)
+        
+    except Exception as e:
+        print(f"❌ Error updating team network: {str(e)}")
+        emit('team_network_update_error', {'error': str(e)})
+
+@socketio.on('team_device_lock')
+@authenticated_only
+def handle_team_device_lock(data):
+    """Handle device locking in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        device_id = data.get('device_id')
+        
+        if not device_id:
+            emit('team_device_lock_result', {'success': False, 'error': 'Device ID required'})
+            return
+        
+        result = collaboration_service.lock_device(str(current_user.id), device_id)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Notify other team members
+                emit('team_device_locked', {
+                    'device_id': device_id,
+                    'locked_by': str(current_user.id),
+                    'username': current_user.username
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+        emit('team_device_lock_result', result)
+        
+    except Exception as e:
+        print(f"❌ Error locking device: {str(e)}")
+        emit('team_device_lock_result', {'success': False, 'error': str(e)})
+
+@socketio.on('team_device_unlock')
+@authenticated_only
+def handle_team_device_unlock(data):
+    """Handle device unlocking in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        device_id = data.get('device_id')
+        
+        if not device_id:
+            emit('team_device_unlock_result', {'success': False, 'error': 'Device ID required'})
+            return
+        
+        result = collaboration_service.unlock_device(str(current_user.id), device_id)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Notify other team members
+                emit('team_device_unlocked', {
+                    'device_id': device_id,
+                    'user_id': str(current_user.id),
+                    'username': current_user.username
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+        emit('team_device_unlock_result', result)
+        
+    except Exception as e:
+        print(f"❌ Error unlocking device: {str(e)}")
+        emit('team_device_unlock_result', {'success': False, 'error': str(e)})
+
+@socketio.on('team_chat_message')
+@authenticated_only
+def handle_team_chat_message(data):
+    """Handle team session chat messages"""
+    if not collaboration_service:
+        return
+    
+    try:
+        message = data.get('message', '').strip()
+        message_type = data.get('message_type', 'text')
+        
+        if not message:
+            emit('team_chat_error', {'error': 'Message cannot be empty'})
+            return
+        
+        result = collaboration_service.send_chat_message(str(current_user.id), message, message_type)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Broadcast message to all team members
+                emit('team_chat_message', result['message'], room=f'team_session_{session.session_id}')
+        
+        emit('team_chat_sent', result)
+        
+    except Exception as e:
+        print(f"❌ Error sending team chat: {str(e)}")
+        emit('team_chat_error', {'error': str(e)})
+
+@socketio.on('team_cli_command')
+@authenticated_only
+def handle_team_cli_command(data):
+    """Handle CLI command execution in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        device_id = data.get('device_id')
+        command = data.get('command', '').strip()
+        
+        if not device_id or not command:
+            emit('team_cli_result', {'success': False, 'error': 'Device ID and command required'})
+            return
+        
+        result = collaboration_service.execute_cli_command(str(current_user.id), device_id, command)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Broadcast command execution to team members
+                emit('team_cli_executed', {
+                    'device_id': device_id,
+                    'command': command,
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'timestamp': result['command_entry']['timestamp']
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+        emit('team_cli_result', result)
+        
+    except Exception as e:
+        print(f"❌ Error executing team CLI command: {str(e)}")
+        emit('team_cli_result', {'success': False, 'error': str(e)})
+
+@socketio.on('team_progress_update')
+@authenticated_only
+def handle_team_progress_update(data):
+    """Handle progress updates in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        progress_data = data.get('progress', {})
+        
+        result = collaboration_service.update_progress(str(current_user.id), progress_data)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Broadcast progress to team members
+                emit('team_progress_updated', {
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'progress': progress_data,
+                    'shared_progress': result['shared_progress']
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+        emit('team_progress_result', result)
+        
+    except Exception as e:
+        print(f"❌ Error updating team progress: {str(e)}")
+        emit('team_progress_result', {'success': False, 'error': str(e)})
+
+@socketio.on('team_cursor_update')
+@authenticated_only
+def handle_team_cursor_update(data):
+    """Handle cursor position updates in team session"""
+    if not collaboration_service:
+        return
+    
+    try:
+        position = data.get('position', {'x': 0, 'y': 0})
+        
+        result = collaboration_service.update_cursor_position(str(current_user.id), position)
+        
+        if result['success']:
+            session = collaboration_service.get_user_session(str(current_user.id))
+            if session:
+                # Broadcast cursor position to team members
+                emit('team_cursor_moved', {
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'position': position
+                }, room=f'team_session_{session.session_id}', include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error updating team cursor: {str(e)}")
+
+@socketio.on('get_team_session_status')
+@authenticated_only
+def handle_get_team_session_status(data=None):
+    """Get current team session status for user"""
+    if not collaboration_service:
+        emit('team_session_status', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        session = collaboration_service.get_user_session(str(current_user.id))
+        
+        if session:
+            emit('team_session_status', {
+                'success': True,
+                'in_session': True,
+                'session': session.to_dict()
+            })
+        else:
+            emit('team_session_status', {
+                'success': True,
+                'in_session': False,
+                'session': None
+            })
+        
+    except Exception as e:
+        print(f"❌ Error getting team session status: {str(e)}")
+        emit('team_session_status', {'success': False, 'error': str(e)})
+
+# Admin Team Session Management
+@socketio.on('admin_get_team_sessions')
+@admin_only
+def handle_admin_get_team_sessions(data=None):
+    """Get all active team sessions for admin monitoring"""
+    if not collaboration_service:
+        emit('admin_team_sessions', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        sessions = collaboration_service.get_active_sessions()
+        stats = collaboration_service.get_session_stats()
+        
+        emit('admin_team_sessions', {
+            'success': True,
+            'sessions': sessions,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        print(f"❌ Error getting admin team sessions: {str(e)}")
+        emit('admin_team_sessions', {'success': False, 'error': str(e)})
+
+@socketio.on('admin_end_team_session')
+@admin_only
+def handle_admin_end_team_session(data):
+    """Force end a team session (admin only)"""
+    if not collaboration_service:
+        emit('admin_team_session_ended', {'success': False, 'error': 'Collaboration service not available'})
+        return
+    
+    try:
+        session_id = data.get('session_id')
+        
+        if not session_id:
+            emit('admin_team_session_ended', {'success': False, 'error': 'Session ID required'})
+            return
+        
+        result = collaboration_service.force_end_session(session_id, str(current_user.id))
+        
+        if result['success']:
+            # Notify all participants in the session
+            emit('team_session_ended_by_admin', {
+                'session_id': session_id,
+                'admin_name': current_user.username,
+                'message': 'Session ended by administrator'
+            }, room=f'team_session_{session_id}')
+        
+        emit('admin_team_session_ended', result)
+        print(f"🛑 Admin {current_user.username} ended team session {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error ending team session: {str(e)}")
+        emit('admin_team_session_ended', {'success': False, 'error': str(e)})
 
 # ===== LIVE LEADERBOARD SYSTEM =====
 @socketio.on('join_leaderboard')
