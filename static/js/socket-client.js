@@ -815,17 +815,77 @@ class SocketClient {
     }
     
     /**
-     * Update troubleshooting progress in collaborative session
+     * Send collaboration chat message
      */
-    updateCollaborativeTroubleshootingProgress(progressData) {
-        return this.emit('update_troubleshooting_progress', progressData);
+    sendCollaborationChat(message, sessionId) {
+        return this.emit('collaboration_chat_message', {
+            message: message,
+            session_id: sessionId,
+            timestamp: new Date().toISOString()
+        });
     }
     
     /**
-     * Request full lobby state synchronization
+     * Send team chat message
      */
-    requestLobbySync() {
-        return this.emit('request_full_sync');
+    sendTeamChat(message, sessionId) {
+        return this.emit('team_chat_message', {
+            message: message,
+            session_id: sessionId,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    /**
+     * Join collaboration session for chat
+     */
+    joinCollaborationSession(sessionId) {
+        return this.emit('join_collaboration_session', {
+            session_id: sessionId
+        });
+    }
+    
+    /**
+     * Leave collaboration session
+     */
+    leaveCollaborationSession(sessionId) {
+        return this.emit('leave_collaboration_session', {
+            session_id: sessionId
+        });
+    }
+    
+    /**
+     * Enhanced chat input handling helper
+     */
+    setupChatInputHandling(inputElement, sendCallback) {
+        if (!inputElement || typeof sendCallback !== 'function') return;
+        
+        // Clear any existing event listeners to prevent conflicts
+        inputElement.onkeydown = null;
+        inputElement.onkeypress = null;
+        
+        // Use keydown for better key handling including backspace
+        inputElement.addEventListener('keydown', function(e) {
+            // Only intercept Enter for sending, allow all other keys
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                const message = this.value.trim();
+                if (message) {
+                    sendCallback(message);
+                    this.value = '';
+                    this.focus();
+                }
+            }
+            // All other keys (backspace, delete, arrows, typing) work normally
+        });
+        
+        // Ensure proper input behavior
+        inputElement.addEventListener('input', function(e) {
+            // Allow normal input behavior - no interference
+        });
+        
+        console.log('✅ [SOCKET] Enhanced chat input handling configured');
     }
 
     // === DEVICE AND CONNECTION MANAGEMENT ===

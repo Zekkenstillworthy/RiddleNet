@@ -174,6 +174,8 @@ def edit_simulation(simulation_id):
             tutorial=ensure_dict(sim_config, 'tutorial'),
             achievements=ensure_dict(sim_config, 'achievements'),
             scoring=ensure_dict(sim_config, 'scoring'),
+            # Task mode toggle surfaced to editor (default 'both' for backward compat)
+            task_mode=sim_config.get('task_mode', 'both'),
             required_steps=step_defs,
             created_at=simulation.get('created_at'),
             updated_at=simulation.get('updated_at'),
@@ -221,7 +223,12 @@ def save_simulation_from_troubleshooting_editor(simulation_id):
                 'collab': data.get('collab', {}),
                 'tutorial': data.get('tutorial', {}),
                 'achievements': data.get('achievements', {}),
-                'scoring': data.get('scoring', {})
+                'scoring': data.get('scoring', {}),
+                # Task mode configuration - normalize 'both' to 'combined'
+                'task_mode': 'combined' if data.get('task_mode') == 'both' else data.get('task_mode', 'combined'),
+                # Store admin-created topology and device templates for configuration mode
+                'admin_topology': data.get('admin_topology', {}),
+                'device_templates': data.get('device_templates', {})
             }
         }
 
@@ -399,7 +406,9 @@ def create_simulation_from_troubleshooting_editor():
                 'collab': data.get('collab', {}),
                 'tutorial': data.get('tutorial', {}),
                 'achievements': data.get('achievements', {}),
-                'scoring': data.get('scoring', {})
+                'scoring': data.get('scoring', {}),
+                # Include task mode so it can be mapped into simulation_config
+                'task_mode': data.get('task_mode', 'both')
             }
         }
 
@@ -679,9 +688,39 @@ def get_simulation_api(simulation_id):
 def update_simulation_api(simulation_id):
     """Update simulation"""
     try:
+        from admin.models.simulation import Simulation
+        
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
+        
+        # Handle task mode configuration
+        if 'task_mode' in data:
+            task_mode = data.get('task_mode', 'combined')
+            
+            # Get existing simulation to update its config
+            simulation = Simulation.query.get_or_404(simulation_id)
+            simulation_config = simulation.simulation_config or {}
+            
+            # Parse simulation_config if it's a string
+            if isinstance(simulation_config, str):
+                try:
+                    simulation_config = json.loads(simulation_config)
+                except (json.JSONDecodeError, ValueError):
+                    simulation_config = {}
+            
+            # Update task mode configuration
+            simulation_config['task_mode'] = task_mode
+            
+            # If configuration mode, store admin-created topology and device templates
+            if task_mode in ['configuration', 'combined']:
+                if 'admin_topology' in data:
+                    simulation_config['admin_topology'] = data.get('admin_topology', {})
+                if 'device_templates' in data:
+                    simulation_config['device_templates'] = data.get('device_templates', {})
+            
+            # Update the data dict with the modified config
+            data['simulation_config'] = simulation_config
         
         result = simulation_controller.update_simulation(simulation_id, data)
         
@@ -693,6 +732,7 @@ def update_simulation_api(simulation_id):
             emit_admin_simulation_updated(simulation_id, {
                 'api_update': True,
                 'updated_data': data,
+                'task_mode_updated': 'task_mode' in data,
                 'updated_by': current_user.username if current_user.is_authenticated else 'System'
             })
         except Exception as e:
@@ -902,6 +942,9 @@ def create_explicit_assignment():
     """Create an explicit assignment with custom settings"""
     try:
         data = request.get_json() or {}
+        print(f"🔍 Assignment endpoint called with data: {data}")
+        print(f"🔍 Current user: {current_user}")
+        print(f"🔍 Current user ID: {getattr(current_user, 'id', None)}")
 
         # Required fields
         simulation_id = data.get('simulation_id')
@@ -920,10 +963,12 @@ def create_explicit_assignment():
                     title = f"Assignment: {sim.title}"
                 else:
                     title = f"Assignment for Simulation {simulation_id}"
-            except Exception:
+            except Exception as e_sim:
+                print(f"⚠️  Error getting simulation for title: {e_sim}")
                 # Fallback if model lookup fails for any reason
                 title = f"Assignment for Simulation {simulation_id}"
 
+        print(f"🔍 About to call assignment_service.create_explicit_assignment")
         assignment = assignment_service.create_explicit_assignment(
             simulation_id=simulation_id,
             class_id=class_id,
@@ -935,6 +980,7 @@ def create_explicit_assignment():
             assigned_by=getattr(current_user, 'id', None)
         )
         
+        print(f"✅ Assignment created successfully: {assignment}")
         # Generate appropriate success message
         assignment_target = "module" if data.get('module_id') else "class"
         
@@ -946,6 +992,9 @@ def create_explicit_assignment():
         })
         
     except Exception as e:
+        print(f"❌ Error in create_explicit_assignment: {type(e).__name__}: {str(e)}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
         return jsonify({'error': f'Failed to create explicit assignment: {str(e)}'}), 500
 
 @admin_simulation_bp.route('/api/assignments/auto-assign/<int:simulation_id>', methods=['POST'])
@@ -1254,6 +1303,7 @@ def export_simulation_rnetfile(simulation_id):
         if 'error' in simulation_data:
             return jsonify({'error': simulation_data['error']}), 404
         
+
         simulation = simulation_data['simulation']
         
         # Helper function to safely parse JSON fields that might be strings
@@ -1446,3 +1496,74 @@ def import_simulation_rnetfile(simulation_id):
     except Exception as e:
         current_app.logger.error(f"Error importing simulation {simulation_id}: {str(e)}")
         return jsonify({'error': f'Failed to import simulation: {str(e)}'}), 500
+
+
+# Task Mode Configuration API Endpoints
+@admin_simulation_bp.route('/api/<int:simulation_id>/task_mode', methods=['GET'])
+@login_required
+@teacher_required
+def get_admin_task_mode(simulation_id):
+    """Get task mode configuration for simulation editing"""
+    try:
+        from admin.models.simulation import Simulation
+        
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        task_mode = simulation_config.get('task_mode', 'combined')
+        
+        return jsonify({
+            'task_mode': task_mode,
+            'topology_locked': task_mode == 'configuration',
+            'configuration_enabled': task_mode in ['configuration', 'combined']
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get task mode: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/admin_topology', methods=['GET'])
+@login_required
+@teacher_required
+def get_admin_topology_data(simulation_id):
+    """Get admin-created topology and device templates for configuration mode"""
+    try:
+        from admin.models.simulation import Simulation
+        
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        # Get admin topology and device templates
+        admin_topology = simulation_config.get('admin_topology', {})
+        device_templates = simulation_config.get('device_templates', {})
+        
+        # Fall back to existing topology if no admin topology is set
+        if not admin_topology:
+            admin_topology = simulation_config.get('network_topology', {})
+        
+        # Fall back to existing devices if no device templates are set
+        if not device_templates:
+            device_templates = simulation_config.get('devices', [])
+        
+        return jsonify({
+            'admin_topology': admin_topology,
+            'device_templates': device_templates,
+            'task_mode': simulation_config.get('task_mode', 'combined')
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get admin topology: {str(e)}'}), 500

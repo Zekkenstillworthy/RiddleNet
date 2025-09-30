@@ -220,6 +220,9 @@ class TeamSession:
     def send_chat_message(self, user_id: str, message: str, message_type: str = 'text') -> Dict[str, Any]:
         """Send a chat message"""
         with self.state_lock:
+            if user_id not in self.team_members:
+                return {'success': False, 'error': 'User not assigned to this team'}
+            
             if user_id not in self.participants:
                 return {'success': False, 'error': 'User not in session'}
             
@@ -232,7 +235,8 @@ class TeamSession:
                 'username': self.participants[user_id]['username'],
                 'message': message,
                 'message_type': message_type,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat(),
+                'session_id': self.session_id
             }
             
             self.chat_messages.append(chat_message)
@@ -244,6 +248,16 @@ class TeamSession:
             self.last_activity = datetime.utcnow()
             
             return {'success': True, 'message': chat_message}
+    
+    def get_chat_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get recent chat messages"""
+        return self.chat_messages[-limit:] if self.chat_messages else []
+    
+    def clear_chat_history(self) -> bool:
+        """Clear chat history (admin only)"""
+        with self.state_lock:
+            self.chat_messages = []
+            return True
     
     def update_progress(self, user_id: str, progress_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update user's progress in the session"""
@@ -493,18 +507,89 @@ class CollaborationService:
         
         return session.unlock_device(device_id, user_id)
     
-    def send_chat_message(self, user_id: str, message: str, message_type: str = 'text') -> Dict[str, Any]:
-        """Send a chat message in user's session"""
-        session = self.get_user_session(user_id)
-        if not session:
-            return {'success': False, 'error': 'User not in any session'}
-        
-        result = session.send_chat_message(user_id, message, message_type)
-        if result['success']:
-            self.stats['total_messages_sent'] += 1
-        
-        return result
+    def send_chat_message(self, session_id: str, user_id: str, message: str, message_type: str = 'text') -> Dict[str, Any]:
+        """Send a chat message to a team session"""
+        with self.service_lock:
+            if session_id not in self.active_sessions:
+                return {'success': False, 'error': 'Session not found'}
+            
+            session = self.active_sessions[session_id]
+            result = session.send_chat_message(user_id, message, message_type)
+            
+            if result['success']:
+                # Update statistics
+                self.stats['total_messages_sent'] += 1
+                
+                # Broadcast to all session participants
+                self._broadcast_chat_message(session_id, result['message'])
+            
+            return result
     
+    def get_chat_history(self, session_id: str, user_id: str, limit: int = 50) -> Dict[str, Any]:
+        """Get chat history for a session"""
+        with self.service_lock:
+            if session_id not in self.active_sessions:
+                return {'success': False, 'error': 'Session not found'}
+            
+            session = self.active_sessions[session_id]
+            
+            # Check if user is in session
+            if user_id not in session.team_members:
+                return {'success': False, 'error': 'User not in session'}
+            
+            chat_history = session.get_chat_history(limit)
+            
+            return {
+                'success': True,
+                'chat_history': chat_history,
+                'session_id': session_id
+            }
+    
+    def _broadcast_chat_message(self, session_id: str, message: Dict[str, Any]):
+        """Broadcast chat message to all session participants"""
+        # This would integrate with your WebSocket system
+        # For now, we'll emit a generic event that can be caught by socket handlers
+        if hasattr(self, 'socketio') and self.socketio:
+            self.socketio.emit('collaboration_chat_message', {
+                'session_id': session_id,
+                'message': message,
+                'success': True
+            }, room=f'session_{session_id}')
+            
+            # Also emit as team_chat_message for compatibility
+            self.socketio.emit('team_chat_message', message, room=f'session_{session_id}')
+    
+    def clear_chat_history(self, session_id: str, admin_user_id: str) -> Dict[str, Any]:
+        """Clear chat history for a session (admin only)"""
+        with self.service_lock:
+            if session_id not in self.active_sessions:
+                return {'success': False, 'error': 'Session not found'}
+            
+            session = self.active_sessions[session_id]
+            session.clear_chat_history()
+            
+            # Add system message about chat clear
+            system_message = {
+                'id': str(uuid.uuid4()),
+                'user_id': 'system',
+                'username': 'System',
+                'message': 'Chat history cleared by administrator',
+                'message_type': 'system',
+                'timestamp': datetime.utcnow().isoformat(),
+                'session_id': session_id
+            }
+            
+            session.chat_messages.append(system_message)
+            
+            # Broadcast clear event
+            if hasattr(self, 'socketio') and self.socketio:
+                self.socketio.emit('chat_history_cleared', {
+                    'session_id': session_id,
+                    'cleared_by': admin_user_id
+                }, room=f'session_{session_id}')
+            
+            return {'success': True, 'message': 'Chat history cleared'}
+
     def execute_cli_command(self, user_id: str, device_id: str, command: str) -> Dict[str, Any]:
         """Execute CLI command in user's session"""
         session = self.get_user_session(user_id)
@@ -616,11 +701,13 @@ class CollaborationService:
 
 
 # Global collaboration service instance
-collaboration_service = CollaborationService()
+_collaboration_service = None
 
-def get_collaboration_service() -> CollaborationService:
-    """Get the global collaboration service instance"""
-    return collaboration_service
+def get_collaboration_service():
+    global _collaboration_service
+    if _collaboration_service is None:
+        _collaboration_service = CollaborationService()
+    return _collaboration_service
 
 # Utility functions for integration with other parts of the system
 

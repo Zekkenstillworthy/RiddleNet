@@ -2301,26 +2301,40 @@ def delete_admin_lobby(lobby_id):
     try:
         from services.troubleshooting_lobbies import lobby_manager
         
+        current_app.logger.info(f"Admin attempting to delete lobby: {lobby_id}")
+        
+        # Check if lobby exists first
+        lobby = lobby_manager.get_lobby_by_id(lobby_id)
+        if not lobby:
+            current_app.logger.warning(f"Lobby {lobby_id} not found for deletion")
+            return jsonify({
+                'success': False,
+                'error': f'Lobby {lobby_id} not found'
+            }), 404
+        
         success = lobby_manager.delete_lobby(lobby_id)
         
         if success:
+            current_app.logger.info(f"Successfully deleted lobby: {lobby_id}")
             return jsonify({
                 'success': True,
                 'message': 'Lobby deleted successfully'
             })
         else:
+            current_app.logger.error(f"Failed to delete lobby: {lobby_id}")
             return jsonify({
                 'success': False,
-                'error': 'Lobby not found or could not be deleted'
-            }), 404
+                'error': 'Lobby could not be deleted'
+            }), 500
             
-    except ImportError:
+    except ImportError as e:
+        current_app.logger.error(f"Lobby system import error: {e}")
         return jsonify({
             'success': False,
             'error': 'Lobby system not available'
         }), 503
     except Exception as e:
-        current_app.logger.error(f"Error deleting admin lobby: {e}")
+        current_app.logger.error(f"Error deleting admin lobby {lobby_id}: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

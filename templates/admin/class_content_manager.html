@@ -3861,35 +3861,31 @@ select::-webkit-scrollbar-thumb {
     font-weight: 600;
 }
 
-.chat-messages {
-    background-color: rgba(248, 249, 250, 0.1) !important;
-    border: 1px solid var(--glass-border) !important;
-}
+/* Chat styles moved to collaboration-manager.css to avoid conflicts */
 
-.chat-message {
-    margin-bottom: 0.5rem;
-}
-
-.chat-bubble {
-    display: inline-block;
-    max-width: 80%;
-    word-wrap: break-word;
-}
-
-.text-right .chat-bubble {
-    background-color: var(--cyber-glow) !important;
-    color: var(--primary-color) !important;
-    margin-left: auto;
-}
-
-.text-left .chat-bubble {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    color: var(--text-primary) !important;
-}
-
-.bg-warning .chat-bubble {
-    background-color: var(--warning-color) !important;
-    color: var(--primary-color) !important;
+/* Additional responsive design for lobby system */
+@media (max-width: 768px) {
+    .team-session-panel {
+        width: 280px !important;
+        right: 10px !important;
+        top: 10px !important;
+    }
+    
+    .lobby-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chat-messages {
+        max-height: 200px;
+    }
+    
+    .enhanced-chat-container {
+        width: calc(100vw - 40px) !important;
+        height: 60vh !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        left: 20px !important;
+    }
 }
 
 /* Additional responsive design for lobby system */
@@ -14077,6 +14073,136 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Real-time Collaboration System -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/collaboration-real-time.js') }}"></script>
+
+<!-- Global collaboration functions for admin simulation editor -->
+<script>
+// Global collaboration functions for admin simulation editor compatibility
+window.updateParticipantsList = function(participants) {
+    console.log('🔄 [ADMIN] Global updateParticipantsList called with:', participants);
+    
+    // Try to use the collaboration object's method first
+    if (window.collaboration && typeof window.collaboration.updateParticipantsList === 'function') {
+        window.collaboration.updateParticipantsList();
+        return;
+    }
+    
+    // Fallback: Update any participant lists found in the DOM
+    const participantsList = document.getElementById('team-participants');
+    if (!participantsList) {
+        console.warn('⚠️ [ADMIN] No participants list element found');
+        return;
+    }
+    
+    // Handle both array and object formats
+    let participantsArray = [];
+    if (Array.isArray(participants)) {
+        participantsArray = participants;
+    } else if (typeof participants === 'object' && participants !== null) {
+        participantsArray = Object.values(participants);
+    } else {
+        console.warn('⚠️ [ADMIN] Invalid participants format:', participants);
+        return;
+    }
+    
+    participantsList.innerHTML = participantsArray.map(participant => {
+        const username = participant.username || participant.name || 'Unknown';
+        const avatarLetter = username.charAt(0).toUpperCase();
+        const roleText = participant.role || 'Participant';
+        const isOnline = participant.is_active !== false && participant.online !== false;
+        const statusClass = isOnline ? 'text-success' : 'text-muted';
+        const statusIcon = isOnline ? 'fa-circle' : 'fa-circle';
+        
+        return `
+            <div class="participant-item d-flex align-items-center p-2 border-bottom">
+                <div class="participant-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                    ${avatarLetter}
+                </div>
+                <div class="participant-info flex-grow-1">
+                    <div class="participant-name font-weight-bold">${username}</div>
+                    <small class="participant-role text-muted">${roleText}</small>
+                </div>
+                <div class="participant-status ${statusClass}">
+                    <i class="fas ${statusIcon}" style="font-size: 0.6rem;"></i>
+                    <small>${isOnline ? 'Online' : 'Offline'}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    console.log('✅ [ADMIN] Updated participants list with', participantsArray.length, 'participants');
+};
+
+// Global lobby joined handler for admin simulation editor compatibility
+window.handleLobbyJoined = function(data) {
+    console.log('🤝 [ADMIN] Global handleLobbyJoined called with:', data);
+    
+    // Try to use the collaboration object's method first
+    if (window.collaboration && typeof window.collaboration.showSessionUI === 'function') {
+        window.collaboration.showSessionUI(data.lobby || data);
+        return;
+    }
+    
+    // Fallback: Handle lobby joining manually
+    if (data.success && data.lobby) {
+        // Show notification
+        if (typeof showToast === 'function') {
+            showToast(`Joined lobby: ${data.lobby.name}`, 'success');
+        } else {
+            console.log('✅ [ADMIN] Joined lobby:', data.lobby.name);
+        }
+        
+        // Update participants list
+        if (data.lobby.participants) {
+            window.updateParticipantsList(data.lobby.participants);
+        }
+        
+        // Show session UI if available
+        const sessionPanel = document.getElementById('team-session-panel');
+        if (sessionPanel) {
+            sessionPanel.style.display = 'block';
+        }
+        
+        const teamNameEl = document.getElementById('current-team-name');
+        if (teamNameEl) {
+            teamNameEl.textContent = `${data.lobby.name} (Monitoring)`;
+        }
+    } else {
+        // Handle error
+        const errorMsg = data.error || 'Failed to join lobby';
+        if (typeof showToast === 'function') {
+            showToast(errorMsg, 'error');
+        } else {
+            console.error('❌ [ADMIN] Lobby join failed:', errorMsg);
+        }
+    }
+};
+
+// Global lobby left handler
+window.handleLobbyLeft = function(data) {
+    console.log('👋 [ADMIN] Global handleLobbyLeft called with:', data);
+    
+    // Try to use the collaboration object's method first
+    if (window.collaboration && typeof window.collaboration.hideSessionUI === 'function') {
+        window.collaboration.hideSessionUI();
+        return;
+    }
+    
+    // Fallback: Handle lobby leaving manually
+    const sessionPanel = document.getElementById('team-session-panel');
+    if (sessionPanel) {
+        sessionPanel.style.display = 'none';
+    }
+    
+    if (typeof showToast === 'function') {
+        showToast('Left lobby', 'info');
+    } else {
+        console.log('✅ [ADMIN] Left lobby');
+    }
+};
+
+console.log('✅ [ADMIN] Global collaboration functions loaded');
+</script>
+
 <!-- Removed extra stray </script> tag -->
 
 {% endblock %}

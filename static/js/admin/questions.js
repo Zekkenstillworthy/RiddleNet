@@ -320,7 +320,7 @@ function viewQuestionGroup(groupId, groupName, groupDescription) {
             }
             return response.json();
         })
-        .then(data => {
+    .then(data => {
             if (data.success) {
                 displayGroupQuestions(data.questions, groupName, groupDescription, groupId);
             } else {
@@ -1539,11 +1539,11 @@ function submitGroupingForm(form) {
 function showNotification(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
     
-    // Create notification container if it doesn't exist
-    let container = document.getElementById('notification-container');
+    // Locate or create notification container using class (no global ID)
+    let container = document.querySelector('.notification-container');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'notification-container';
+        container.className = 'notification-container';
         container.style.cssText = `
             position: fixed;
             top: 24px;
@@ -1749,7 +1749,7 @@ function loadUngroupedQuestionsInModal() {
     const container = document.querySelector('#ungroupedQuestionsModal .ungrouped-questions-container');
     
     if (!container) return;
-    
+ 
     container.innerHTML = '<div class="loading-spinner" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading questions...</div>';
     
     fetch('/admin/questions/ungrouped?format=json')

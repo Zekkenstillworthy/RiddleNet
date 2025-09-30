@@ -6,6 +6,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape.css') }}">
 
 <style>
     :root {
@@ -82,7 +84,7 @@
         --font-size-lg: 16px;
         --font-size-xl: 18px;
 
-    /* Enhanced z-index system */
+        /* Enhanced z-index system */
     --z-palette: 100; /* Updated per request */
         /* Performance sidebar sits above base content and palette for reliable clicks, but below modals */
         --z-performance-sidebar: 150;
@@ -92,7 +94,73 @@
     --performance-sidebar-width: 350px;
     }
     
-    /* DISABLE ALL ANIMATIONS AND TRANSITIONS */
+    /* ========================================
+       LANDSCAPE ORIENTATION OPTIMIZATIONS
+       ======================================== */
+    
+    /* Mobile Landscape Mode - Troubleshooting Simulation */
+    @media screen and (max-width: 896px) and (orientation: landscape) {
+        body {
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .troubleshoot-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            padding: 0;
+            margin: 0;
+        }
+        
+        /* Network diagram optimized for landscape */
+        .network-diagram-area {
+            flex: 2.5;
+            height: 100vh;
+            border-right: 1px solid var(--glass-border);
+        }
+        
+        /* Tools and controls panel for landscape */
+        .troubleshoot-panel {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: var(--space-sm);
+            background: var(--glass-bg);
+        }
+        
+        /* Device palette optimized for landscape */
+        .device-palette {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .device-item {
+            min-height: var(--touch-target-min);
+            width: 100%;
+        }
+        
+        /* Hide header/navigation in landscape simulation mode */
+        .simulation-header, .breadcrumb {
+            display: none;
+        }
+        
+        /* Performance sidebar adjustments */
+        .performance-sidebar {
+            --performance-sidebar-width: 280px;
+            height: 100vh;
+        }
+        
+        /* Modal optimizations for landscape */
+        .modal-content {
+            width: 70vw;
+            height: 50vh;
+            max-height: 80vh;
+        }
+    }    /* DISABLE ALL ANIMATIONS AND TRANSITIONS */
     *, *::before, *::after {
         animation-duration: 0s !important;
         animation-delay: 0s !important;
@@ -2445,8 +2513,130 @@
     }
 </style>
 
+<!-- Auto-Landscape Optimization System -->
+<script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
+<script>
+    initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.troubleshoot-container', pageKey: 'troubleshoot' });
+</script>
+
 
 <script>
+// Landscape Orientation Detection and Layout Optimization for Troubleshooting
+document.addEventListener('DOMContentLoaded', function() {
+    // Create landscape detection system
+    function handleOrientationChange() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const isMobile = window.innerWidth <= 896;
+        const body = document.body;
+        
+        // Add landscape-mobile class for enhanced CSS targeting
+        if (isMobile && isLandscape) {
+            body.classList.add('landscape-mobile');
+            body.classList.remove('portrait-mobile');
+            
+            // Optimize for landscape troubleshooting experience
+            optimizeTroubleshootLandscapeLayout();
+        } else if (isMobile) {
+            body.classList.add('portrait-mobile');
+            body.classList.remove('landscape-mobile');
+            
+            // Optimize for portrait mobile experience
+            optimizeTroubleshootPortraitLayout();
+        } else {
+            body.classList.remove('landscape-mobile', 'portrait-mobile');
+        }
+    }
+    
+    function optimizeTroubleshootLandscapeLayout() {
+        // Hide unnecessary elements for full troubleshooting focus
+        const elementsToHide = document.querySelectorAll('.simulation-header, .breadcrumb');
+        elementsToHide.forEach(el => {
+            if (el) el.style.display = 'none';
+        });
+        
+        // Optimize main container for landscape
+        const container = document.querySelector('.troubleshoot-container, .main-container');
+        if (container) {
+            container.style.display = 'flex';
+            container.style.flexDirection = 'row';
+            container.style.height = '100vh';
+            container.style.width = '100vw';
+            container.style.padding = '0';
+            container.style.margin = '0';
+        }
+        
+        // Optimize network diagram area
+        const networkArea = document.querySelector('.network-diagram-area, .topology-area');
+        if (networkArea) {
+            networkArea.style.flex = '2.5';
+            networkArea.style.height = '100vh';
+        }
+        
+        // Optimize device palette for landscape
+        const devicePalette = document.getElementById('device-palette');
+        if (devicePalette) {
+            devicePalette.style.position = 'fixed';
+            devicePalette.style.right = '0';
+            devicePalette.style.top = '0';
+            devicePalette.style.height = '100vh';
+            devicePalette.style.width = '280px';
+            devicePalette.style.overflowY = 'auto';
+            devicePalette.style.zIndex = '100';
+        }
+        
+        // Adjust performance sidebar
+        const perfSidebar = document.getElementById('performance-sidebar');
+        if (perfSidebar) {
+            perfSidebar.style.width = '280px';
+            perfSidebar.style.height = '100vh';
+        }
+    }
+    
+    function optimizeTroubleshootPortraitLayout() {
+        // Restore hidden elements
+        const elementsToShow = document.querySelectorAll('.simulation-header, .breadcrumb');
+        elementsToShow.forEach(el => {
+            if (el) el.style.display = '';
+        });
+        
+        // Reset container layout
+        const container = document.querySelector('.troubleshoot-container, .main-container');
+        if (container) {
+            container.style.display = '';
+            container.style.flexDirection = '';
+            container.style.height = '';
+            container.style.width = '';
+            container.style.padding = '';
+            container.style.margin = '';
+        }
+        
+        // Reset device palette
+        const devicePalette = document.getElementById('device-palette');
+        if (devicePalette) {
+            devicePalette.style.position = '';
+            devicePalette.style.right = '';
+            devicePalette.style.top = '';
+            devicePalette.style.height = '';
+            devicePalette.style.width = '';
+            devicePalette.style.overflowY = '';
+            devicePalette.style.zIndex = '';
+        }
+    }
+    
+    // Listen for orientation changes
+    handleOrientationChange();
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(handleOrientationChange, 100);
+    });
+    
+    // Screen orientation API support
+    if (screen.orientation) {
+        screen.orientation.addEventListener('change', handleOrientationChange);
+    }
+});
+
 // --- Device Palette Dynamic Adjustment (added) ---
 document.addEventListener('DOMContentLoaded', () => {
     const devicePalette = document.getElementById('device-palette');

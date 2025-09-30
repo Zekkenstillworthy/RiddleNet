@@ -333,8 +333,9 @@
   
   .form-input {
     width: 100%;
-    padding: 10px 14px;
+    padding: 12px 14px;
     font-size: 0.9rem;
+    min-height: 48px; /* Mobile-friendly touch target */
     background: linear-gradient(145deg, rgba(0, 0, 0, 0.3), rgba(20, 20, 40, 0.4));
     border: 2px solid rgba(0, 217, 255, 0.3);
     border-radius: 8px;
@@ -342,6 +343,7 @@
     transition: all 0.4s ease;
     font-family: inherit;
     position: relative;
+    box-sizing: border-box;
   }
   
   .form-input:focus {
@@ -372,7 +374,8 @@
   
   /* Cyber button styles */
   .cyber-btn {
-    padding: 10px 20px;
+    padding: 12px 20px;
+    min-height: 48px; /* Mobile-friendly touch target */
     border: none;
     border-radius: 6px;
     font-size: 0.9rem;
@@ -388,6 +391,7 @@
     position: relative;
     overflow: hidden;
     font-family: 'Orbitron', sans-serif;
+    box-sizing: border-box;
   }
 
   .cyber-btn::before {
@@ -585,26 +589,6 @@
     overflow: hidden;
   }
 
-  .profile-image-container::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 140px;
-    height: 140px;
-    border: 2px dashed rgba(0, 217, 255, 0.3);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 1;
-  }
-
-  .profile-image-container:hover::before {
-    opacity: 1;
-    width: 150px;
-    height: 150px;
-  }
 
   /* Cropping preview overlay */
   .crop-preview-overlay {
@@ -822,11 +806,28 @@
     
     .buttons-row {
       flex-direction: column;
+      gap: 16px;
     }
     
     .cyber-btn {
       width: 100%;
-      padding: 12px 16px;
+      padding: 14px 16px;
+      min-height: 52px; /* Enhanced touch target for mobile */
+    }
+    
+    .form-input {
+      font-size: 16px; /* Prevent zoom on iOS */
+      padding: 14px 16px;
+      min-height: 52px; /* Enhanced touch target */
+    }
+    
+    .stats-cards {
+      flex-direction: column;
+    }
+    
+    .stat-card {
+      min-width: auto;
+      padding: 20px;
     }
     
     .profile-header-title h1:before,
@@ -854,15 +855,30 @@
     }
     
     .form-input {
-      padding: 12px 14px;
+      padding: 16px 14px;
+      font-size: 16px; /* Prevent zoom on iOS */
+      min-height: 56px; /* Enhanced touch target for small screens */
     }
     
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .cyber-btn {
+      min-height: 56px; /* Enhanced touch target for small screens */
+      padding: 16px 14px;
     }
     
     .profile-details-section {
       min-width: 250px;
+    }
+    
+    .buttons-row {
+      gap: 20px;
+    }
+    
+    .stat-card {
+      padding: 16px;
     }
   }
   
@@ -918,8 +934,8 @@
                    style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); background-color: #fff; object-fit: cover; cursor: pointer; transition: all 0.3s ease;"
                    class="profile-image"
                    data-original-src="{{ url_for('static', filename='img/profiles/' + user.profile_img) }}"
-                   onclick="document.getElementById('profile_img').click()"
-                   onerror="this.src='{{ url_for('static', filename='img/Logo.png') }}'; this.style.padding='10px';">
+                   data-fallback-src="{{ url_for('static', filename='img/Logo.png') }}"
+                   onclick="document.getElementById('profile_img').click()">
               {% else %}
               <img id="profile-img-preview"
                    style="height: 120px; width: 120px; border-radius: 50%; border: 4px solid var(--cyber-glow); object-fit: cover; cursor: pointer; transition: all 0.3s ease; padding: 10px; background-color: #fff;"
@@ -928,6 +944,7 @@
                    alt="Profile Image"
                    class="profile-image"
                    data-original-src="{{ url_for('static', filename='img/Logo.png') }}"
+                   data-fallback-src="{{ url_for('static', filename='img/Logo.png') }}"
                    onclick="document.getElementById('profile_img').click()">
               {% endif %}
               
@@ -939,57 +956,8 @@
                         class="upload-btn">
                     <i class="fas fa-camera"></i> Change Photo
                 </button>
-                <button type="button" 
-                        id="reset-preview-btn"
-                        onclick="resetPreview()" 
-                        class="upload-btn"
-                        style="background: linear-gradient(135deg, #ff4757, #ff3838); margin-left: 8px; display: none;">
-                    <i class="fas fa-undo"></i> Reset
-                </button>
-                <button type="button" 
-                        id="compare-preview-btn"
-                        onclick="toggleCompareView()" 
-                        class="upload-btn"
-                        style="background: linear-gradient(135deg, #3742fa, #2f3542); margin-left: 8px; display: none;">
-                    <i class="fas fa-exchange-alt"></i> Compare
-                </button>
               </div>
-              
-              <!-- Enhanced Preview Comparison Container -->
-              <div id="comparison-container" style="display: none; margin-top: 16px; text-align: center;">
-                <div style="
-                    display: flex; 
-                    justify-content: space-around; 
-                    align-items: center; 
-                    gap: 20px;
-                    background: rgba(0, 0, 0, 0.2);
-                    padding: 16px;
-                    border-radius: 12px;
-                    border: 1px solid rgba(0, 217, 255, 0.2);
-                ">
-                  <div style="text-align: center;">
-                    <p style="color: var(--cyber-glow); font-size: 0.8rem; margin: 0 0 8px 0; font-weight: 600;">BEFORE</p>
-                    <img id="original-preview" 
-                         style="height: 80px; width: 80px; border-radius: 50%; border: 2px solid #666; object-fit: cover;"
-                         alt="Original Profile">
-                  </div>
-                  <div style="
-                    display: flex; 
-                    align-items: center; 
-                    color: var(--cyber-glow); 
-                    font-size: 1.5rem;
-                    animation: pulse 2s infinite;
-                  ">
-                    <i class="fas fa-arrow-right"></i>
-                  </div>
-                  <div style="text-align: center;">
-                    <p style="color: var(--neon-green); font-size: 0.8rem; margin: 0 0 8px 0; font-weight: 600;">AFTER</p>
-                    <img id="new-preview" 
-                         style="height: 80px; width: 80px; border-radius: 50%; border: 2px solid var(--neon-green); object-fit: cover;"
-                         alt="New Profile">
-                  </div>
-                </div>
-              </div>
+
             </div>
             
             <div class="profile-user-info">
@@ -1144,26 +1112,12 @@ function previewImage(event) {
             indicator.innerHTML = `<i class="fas fa-star"></i> NEW`;
             container.appendChild(indicator);
             
-            // Show reset and compare buttons
-            const resetBtn = document.getElementById('reset-preview-btn');
-            const compareBtn = document.getElementById('compare-preview-btn');
-            if (resetBtn) {
-                resetBtn.style.display = 'inline-block';
-                resetBtn.style.animation = 'fadeInScale 0.3s ease-out';
-            }
-            if (compareBtn) {
-                compareBtn.style.display = 'inline-block';
-                compareBtn.style.animation = 'fadeInScale 0.3s ease-out 0.1s both';
-            }
+
             
             // Show enhanced success notification with detailed image info
             const dimensions = `${img.width}×${img.height}`;
             const aspectRatio = (img.width / img.height).toFixed(2);
-            showImagePreviewNotification(
-                '✅ Preview Ready!', 
-                `Image loaded successfully (${dimensions}, ${aspectRatio}:1 ratio). Click "Update Profile" to save.`,
-                'success'
-            );
+      // Removed automatic preview ready notification per request.
             
             // Add subtle bounce animation to preview
             preview.style.animation = 'profilePulse 0.6s ease-in-out';
@@ -1217,110 +1171,8 @@ function previewImage(event) {
     // Read the file as data URL (base64)
     reader.readAsDataURL(file);
 }
-                if (indicator.parentElement) {
-                    indicator.style.opacity = '0';
-                    indicator.style.transform = 'scale(0.5)';
-                    setTimeout(() => {
-                        if (indicator.parentElement) {
-                            indicator.remove();
-                        }
-                    }, 300);
-                }
-            }, 10000);
-        };
-        
-        img.onerror = function() {
-            showImagePreviewNotification('❌ Invalid Image', 'The selected file is not a valid image.');
-            event.target.value = '';
-            preview.classList.remove('loading');
-        };
-        
-        img.src = e.target.result;
-    };
-    
-    reader.onerror = function() {
-        showImagePreviewNotification('❌ Read Error', 'Error reading file. Please try again.');
-        event.target.value = '';
-        preview.classList.remove('loading');
-    };
-    
-    // Read the file as data URL (base64)
-    reader.readAsDataURL(file);
-}
 
-// Reset preview function with enhanced feedback
-function resetPreview() {
-    const preview = document.getElementById('profile-img-preview');
-    const fileInput = document.getElementById('profile_img');
-    const resetBtn = document.getElementById('reset-preview-btn');
-    const compareBtn = document.getElementById('compare-preview-btn');
-    const container = preview.parentElement;
-    const comparisonContainer = document.getElementById('comparison-container');
-    
-    // Clear file input
-    fileInput.value = '';
-    
-    // Remove preview state classes
-    preview.classList.remove('loading', 'updated', 'preview-active');
-    
-    // Remove preview indicator
-    const indicator = container.querySelector('.preview-indicator');
-    if (indicator) {
-        indicator.remove();
-    }
-    
-    // Reset to original image
-    const originalImageSrc = preview.dataset.originalSrc || "{{ url_for('static', filename='img/Logo.png') }}";
-    preview.src = originalImageSrc;
-    
-    // Hide buttons
-    resetBtn.style.display = 'none';
-    compareBtn.style.display = 'none';
-    comparisonContainer.style.display = 'none';
-    
-    // Reset styling
-    preview.style.filter = 'brightness(1)';
-    preview.style.transform = 'scale(1)';
-    
-    // Show notification
-    showImagePreviewNotification('🔄 Preview Reset', 'Returned to original profile image.', 'info');
-}
 
-// Enhanced comparison view toggle
-function toggleCompareView() {
-    const comparisonContainer = document.getElementById('comparison-container');
-    const compareBtn = document.getElementById('compare-preview-btn');
-    const preview = document.getElementById('profile-img-preview');
-    const originalPreview = document.getElementById('original-preview');
-    const newPreview = document.getElementById('new-preview');
-    
-    if (comparisonContainer.style.display === 'none') {
-        // Show comparison view
-        comparisonContainer.style.display = 'block';
-        comparisonContainer.style.animation = 'fadeInUp 0.4s ease-out';
-        
-        // Update comparison images
-        const originalSrc = preview.dataset.originalSrc || "{{ url_for('static', filename='img/Logo.png') }}";
-        originalPreview.src = originalSrc;
-        newPreview.src = preview.src;
-        
-        // Update button text
-        compareBtn.innerHTML = '<i class="fas fa-times"></i> Close';
-        compareBtn.style.background = 'linear-gradient(135deg, #ff4757, #ff3838)';
-        
-        showImagePreviewNotification('🔍 Comparison View', 'Comparing original and new profile images.', 'info');
-    } else {
-        // Hide comparison view
-        comparisonContainer.style.animation = 'fadeOutDown 0.4s ease-out';
-        setTimeout(() => {
-            comparisonContainer.style.display = 'none';
-        }, 400);
-        
-        // Reset button
-        compareBtn.innerHTML = '<i class="fas fa-exchange-alt"></i> Compare';
-        compareBtn.style.background = 'linear-gradient(135deg, #3742fa, #2f3542)';
-    }
-}
 
 // Enhanced image drag and drop functionality
 function setupImageDragDrop() {
@@ -1375,99 +1227,9 @@ function setupImageDragDrop() {
 }
 
 // Enhanced notification function for image preview
-function showImagePreviewNotification(title, message, type = 'success') {
-    const notification = document.createElement('div');
-    
-    // Determine colors based on type
-    let bgGradient, textColor, iconColor;
-    switch(type) {
-        case 'error':
-            bgGradient = 'linear-gradient(135deg, #ff4757, #ff3838)';
-            textColor = '#fff';
-            iconColor = '#fff';
-            break;
-        case 'warning':
-            bgGradient = 'linear-gradient(135deg, #ffa502, #ff7675)';
-            textColor = '#000';
-            iconColor = '#000';
-            break;
-        default: // success
-            bgGradient = 'linear-gradient(135deg, var(--cyber-glow), #00b8d4)';
-            textColor = '#000';
-            iconColor = '#000';
-    }
-    
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${bgGradient};
-        color: ${textColor};
-        padding: 16px 24px;
-        border-radius: 15px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        z-index: 10000;
-        opacity: 0;
-        transform: translateX(100%) scale(0.9);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        max-width: 350px;
-        word-wrap: break-word;
-    `;
-    
-    notification.innerHTML = `
-        <div style="display: flex; align-items: flex-start; gap: 10px;">
-            <div style="font-size: 1.2rem; margin-top: 2px;">${title.split(' ')[0]}</div>
-            <div style="flex: 1;">
-                <div style="font-weight: 700; margin-bottom: 4px;">${title.substring(title.indexOf(' ') + 1)}</div>
-                <div style="font-size: 0.8rem; opacity: 0.9; line-height: 1.3;">${message}</div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateX(0) scale(1)';
-    }, 100);
-    
-    // Add hover interaction
-    notification.addEventListener('mouseenter', () => {
-        notification.style.transform = 'translateX(0) scale(1.02)';
-    });
-    
-    notification.addEventListener('mouseleave', () => {
-        notification.style.transform = 'translateX(0) scale(1)';
-    });
-    
-    // Click to dismiss
-    notification.addEventListener('click', () => {
-        dismissNotification(notification);
-    });
-    
-    // Auto-dismiss after delay (longer for errors)
-    const delay = type === 'error' ? 5000 : 3500;
-    setTimeout(() => {
-        if (notification.parentNode) {
-            dismissNotification(notification);
-        }
-    }, delay);
-}
-
-function dismissNotification(notification) {
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(100%) scale(0.9)';
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 400);
-}
+// Notifications disabled per request: stub functions
+function showImagePreviewNotification() { /* no-op */ }
+function dismissNotification() { /* no-op */ }
 
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize profile image preview system
@@ -1475,6 +1237,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (preview) {
         // Store original image source for reset functionality
         preview.dataset.originalSrc = preview.src;
+        
+        // Add error handling for profile image
+        preview.addEventListener('error', function() {
+            this.src = this.dataset.fallbackSrc;
+            this.style.padding = '10px';
+        });
         
         // Setup drag and drop functionality
         setupImageDragDrop();
@@ -1553,22 +1321,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     
-    // Initialize welcome message
-    setTimeout(() => {
-        showImagePreviewNotification('👋 Profile Ready', 'Click on your profile image to upload a new photo!');
-    }, 1000);
-});
-    if (profileImage) {
-        profileImage.addEventListener('mouseenter', function() {
-            this.style.filter = 'brightness(1.1) contrast(1.1)';
-            this.style.boxShadow = '0 0 40px rgba(0, 217, 255, 0.7)';
-        });
-        
-        profileImage.addEventListener('mouseleave', function() {
-            this.style.filter = 'brightness(1) contrast(1)';
-            this.style.boxShadow = '0 0 25px rgba(0, 217, 255, 0.4)';
-        });
-    }
+    
     
     // Password validation
     const newPassword = document.getElementById('password');
@@ -1653,75 +1406,9 @@ document.addEventListener('DOMContentLoaded', function () {
         console.warn('SocketClient not available for profile WebSocket integration');
     }
     
-    // Profile-specific notification function
-    function showProfileNotification(title, message, type = 'info') {
-        // Use the base template notification function if available
-        if (window.socketClient && window.socketClient.showNotification) {
-            window.socketClient.showNotification(title, message, type);
-        } else {
-            // Fallback notification system
-            createProfileNotification(title, message, type);
-        }
-    }
-    
-    function createProfileNotification(title, message, type) {
-        const notification = document.createElement('div');
-        notification.className = `profile-notification ${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <h4>${title}</h4>
-                <p>${message}</p>
-            </div>
-            <button class="notification-close">&times;</button>
-        `;
-        
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'success' ? 'rgba(46, 204, 113, 0.9)' : 
-                      type === 'error' ? 'rgba(231, 76, 60, 0.9)' : 
-                      'rgba(52, 152, 219, 0.9)'};
-            color: white;
-            padding: 16px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 10000;
-            min-width: 300px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // Close button functionality
-        const closeBtn = notification.querySelector('.notification-close');
-        closeBtn.addEventListener('click', () => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        });
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }
-        }, 5000);
-    }
+  // Notifications disabled; stub functions retained for compatibility.
+  function showProfileNotification() { /* no-op */ }
+  function createProfileNotification() { /* no-op */ }
     
     function updateProfileDisplay(profileData) {
         // Update username if changed
@@ -1751,8 +1438,9 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+    
+    // Initialize drag and drop functionality
+    setupImageDragDrop();
 });
-
-setupImageDragDrop();
 </script>
 {% endblock %}

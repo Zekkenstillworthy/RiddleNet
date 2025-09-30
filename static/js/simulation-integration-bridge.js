@@ -100,6 +100,10 @@ class SimulationEngineIntegration {
             }
             
             this.engineInstance = new NetworkSimulationEngine(canvasId);
+            
+            // Export to global scope for MVP Device Interfaces tab switching
+            window.networkEngine = this.engineInstance;
+            console.log('🚀 Initializing Network Simulation Engine');
 
             // Attempt to gracefully stop legacy SimulationEngine if present to reduce event noise
             if (window.simulationEngine && typeof window.simulationEngine.destroy === 'function') {

@@ -248,7 +248,20 @@ def create_module(class_id):
         # Note: difficulty_level and required_materials fields don't exist in the Module model
         
         db.session.add(module)
-        db.session.commit()
+        
+        # Use sequence synchronization to prevent duplicate key errors
+        try:
+            from utils.sequence_sync import commit_with_sequence_retry
+            print(f"🔧 Committing module with sequence retry...")
+            commit_with_sequence_retry('modules', 'id')
+        except ImportError:
+            # Fallback if sequence_sync is not available
+            print(f"⚠️  sequence_sync not available, using regular commit")
+            db.session.commit()
+        except Exception as seq_error:
+            print(f"❌ Error creating module: {seq_error}")
+            raise
+            
         logging.debug(f'Module created: id={module.id}')
         
         # Process lesson data if any
@@ -298,7 +311,20 @@ def create_module(class_id):
             )
             db.session.add(default_lesson)
         
-        db.session.commit()
+        # Commit lessons with sequence sync
+        if 'lesson_titles' in locals() and any(title.strip() for title in lesson_titles):
+            try:
+                from utils.sequence_sync import commit_with_sequence_retry
+                print(f"🔧 Committing lessons with sequence retry...")
+                commit_with_sequence_retry('lessons', 'id')
+            except ImportError:
+                print(f"⚠️  sequence_sync not available for lessons, using regular commit")
+                db.session.commit()
+            except Exception as lesson_error:
+                print(f"❌ Error creating lessons: {lesson_error}")
+                raise
+        else:
+            db.session.commit()
         
         # Emit WebSocket event for real-time updates
         try:

@@ -186,6 +186,16 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 15px;
+        overflow-x: auto; /* Enable horizontal scroll */
+        display: block; /* Allow table to be scrollable */
+    }
+
+    .attempts-table thead,
+    .attempts-table tbody,
+    .attempts-table tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
     }
 
     .attempts-table th,
@@ -193,6 +203,7 @@
         padding: 12px;
         text-align: left;
         border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap; /* Prevent text wrapping */
     }
 
     .attempts-table th {
@@ -210,6 +221,68 @@
         color: #666;
         font-style: italic;
         padding: 40px;
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        .recent-attempts {
+            padding: 20px;
+        }
+
+        /* Card-style layout for mobile */
+        .attempts-table {
+            display: block;
+        }
+
+        .attempts-table thead {
+            display: none; /* Hide headers on mobile */
+        }
+
+        .attempts-table tbody {
+            display: block;
+        }
+
+        .attempts-table tbody tr {
+            display: block;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .attempts-table tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .attempts-table td {
+            display: block;
+            padding: 8px 0;
+            border: none;
+            text-align: left;
+            white-space: normal;
+            position: relative;
+            padding-left: 120px;
+        }
+
+        .attempts-table td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 0;
+            top: 8px;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            width: 110px;
+        }
+
+        .btn {
+            min-height: 44px; /* Touch-friendly buttons */
+            padding: 10px 16px;
+        }
     }
 </style>
 {% endblock %}
@@ -338,16 +411,16 @@
             <tbody>
                 {% for attempt in recent_attempts %}
                     <tr>
-                        <td>{{ attempt.simulation.title if attempt.simulation else 'Unknown' }}</td>
-                        <td>{{ attempt.started_at.strftime('%m/%d/%Y %H:%M') if attempt.started_at else 'N/A' }}</td>
-                        <td>
+                        <td data-label="Simulation">{{ attempt.simulation.title if attempt.simulation else 'Unknown' }}</td>
+                        <td data-label="Started">{{ attempt.started_at.strftime('%m/%d/%Y %H:%M') if attempt.started_at else 'N/A' }}</td>
+                        <td data-label="Status">
                             <span class="progress-badge {{ 'completed' if attempt.is_completed else 'not-attempted' }}">
                                 {{ 'Completed' if attempt.is_completed else 'In Progress' }}
                             </span>
                         </td>
-                        <td>{{ attempt.total_score or 0 }}</td>
-                        <td>{{ "%.1f"|format(attempt.duration_minutes or 0) }} min</td>
-                        <td>
+                        <td data-label="Score">{{ attempt.total_score or 0 }}</td>
+                        <td data-label="Duration">{{ "%.1f"|format(attempt.duration_minutes or 0) }} min</td>
+                        <td data-label="Actions">
                             {% if attempt.is_completed %}
                                 <a href="{{ url_for('user_simulation.simulation_results', 
                                                   simulation_id=attempt.simulation_id, 

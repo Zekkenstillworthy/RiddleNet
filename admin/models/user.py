@@ -74,6 +74,7 @@ class Admin(db.Model, UserMixin):
     password_hash = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), nullable=True)
     role = db.Column(db.String(50), default='admin')
+    profile_img = db.Column(db.String(150), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
     

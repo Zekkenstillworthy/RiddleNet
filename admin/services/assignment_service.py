@@ -129,7 +129,14 @@ class EnhancedAssignmentService:
         )
         
         db.session.add(assignment)
-        self._commit_with_sequence_retry()
+        
+        # Use the new sequence sync utility
+        try:
+            from utils.sequence_sync import commit_with_sequence_retry
+            commit_with_sequence_retry('simulation_assignments', 'id')
+        except ImportError:
+            # Fallback to the old method
+            self._commit_with_sequence_retry()
         
         # Real-time notification
         target_type = 'module' if module_id else 'class'
@@ -192,6 +199,9 @@ class EnhancedAssignmentService:
                                  description: str = "", due_date: Optional[datetime] = None,
                                  max_attempts: int = 3) -> SimulationAssignment:
         """Create an explicit assignment with custom settings"""
+        print(f"🔧 AssignmentService.create_explicit_assignment called")
+        print(f"🔧 Params: sim_id={simulation_id}, class_id={class_id}, title={title}")
+        
         assigned_by_id = 1
         try:
             # Prefer the actual logged-in admin if available
@@ -202,11 +212,16 @@ class EnhancedAssignmentService:
                 if uid is not None:
                     try:
                         assigned_by_id = int(uid)
+                        print(f"🔧 Using current user ID as assigned_by: {assigned_by_id}")
                     except (TypeError, ValueError):
+                        print(f"🔧 Failed to convert user ID to int, using default: 1")
                         pass
-        except Exception:
+        except Exception as auth_e:
+            print(f"🔧 Error getting current user, using default assigned_by=1: {auth_e}")
             # If anything goes wrong, keep default fallback
             pass
+            
+        print(f"🔧 Creating SimulationAssignment object...")
         assignment = SimulationAssignment(
             title=title,
             description=description,
@@ -220,14 +235,31 @@ class EnhancedAssignmentService:
             is_published=True
         )
         
+        print(f"🔧 Adding assignment to database session...")
         db.session.add(assignment)
-        # Proactively ensure sequence alignment before attempting commit
-        self._sync_pk_sequence()
-        self._commit_with_sequence_retry()
         
+        print(f"🔧 Committing assignment with sequence retry...")
+        # Use the new sequence sync utility
+        try:
+            from utils.sequence_sync import commit_with_sequence_retry
+            commit_with_sequence_retry('simulation_assignments', 'id')
+        except ImportError:
+            # Fallback to the old method if new utility is not available
+            print(f"🔧 Using fallback sequence sync method...")
+            self._sync_pk_sequence()
+            self._commit_with_sequence_retry()
+        
+        print(f"🔧 Assignment committed successfully, ID: {assignment.id}")
+
         # Real-time notification
-        emit_assignment_created(assignment.id, class_id, 'explicit')
+        try:
+            print(f"🔧 Emitting assignment_created notification...")
+            emit_assignment_created(assignment.id, class_id, 'explicit')
+            print(f"🔧 Notification emitted successfully")
+        except Exception as emit_e:
+            print(f"⚠️  Error emitting assignment_created: {emit_e}")
         
+        print(f"🔧 Assignment creation completed successfully")
         return assignment
     
     def auto_assign_new_simulation(self, simulation_id: int) -> List[SimulationAssignment]:

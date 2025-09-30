@@ -40,6 +40,9 @@ class CollaborationRealTime {
         this.reconnectAttempts = 0;
         this.lastHeartbeat = null;
         this.cursorUpdateThrottleTimer = null;
+    // Track processed chat message IDs to prevent duplicates
+    this._processedChatIds = new Set();
+    this._lastChatPrune = Date.now();
         
         this.init();
     }
@@ -236,19 +239,71 @@ class CollaborationRealTime {
             this.handleChatMessage(data);
         });
         
+        this.socket.on('collaboration_chat_message', (data) => {
+            console.log('💬 Collaboration chat message:', data);
+            if (data.success && data.message) {
+                this.handleChatMessage(data.message);
+            }
+        });
+        
+        this.socket.on('lobby_chat_message', (data) => {
+            console.log('💬 Lobby chat message:', data);
+            this.handleChatMessage(data);
+        });
+        
+        this.socket.on('collaboration_session_joined', (data) => {
+            console.log('🤝 Collaboration session joined:', data);
+            if (data.chat_history && Array.isArray(data.chat_history)) {
+                data.chat_history.forEach(message => {
+                    this.handleChatMessage(message);
+                });
+            }
+        });
+        
+        this.socket.on('collaboration_participant_joined', (data) => {
+            console.log('👋 Participant joined session:', data);
+            this.handleChatMessage({
+                id: 'join_' + Date.now(),
+                user_id: 'system',
+                username: 'System',
+                message: `${data.username} joined the session`,
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        });
+        
+        this.socket.on('collaboration_participant_left', (data) => {
+            console.log('👋 Participant left session:', data);
+            this.handleChatMessage({
+                id: 'leave_' + Date.now(),
+                user_id: 'system',
+                username: 'System',
+                message: `${data.username} left the session`,
+                timestamp: new Date().toISOString(),
+                message_type: 'system'
+            });
+        });
+        
         this.socket.on('team_chat_sent', (data) => {
             if (!data.success) {
                 console.error('❌ Failed to send chat message:', data.error);
                 this.emit('chat_error', data.error);
+                this.showChatError(data.error);
             }
         });
         
         this.socket.on('team_chat_error', (data) => {
             console.error('❌ Chat error:', data.error);
             this.emit('chat_error', data.error);
+            this.showChatError(data.error);
+        });
+        
+        this.socket.on('collaboration_chat_error', (data) => {
+            console.error('❌ Collaboration chat error:', data.error);
+            this.showChatError(data.error);
         });
     }
-    
+
     /**
      * Setup admin WebSocket events
      */
@@ -268,7 +323,7 @@ class CollaborationRealTime {
     setupUIElements() {
         // Chat elements
         this.chatContainer = document.getElementById('chat-messages');
-        this.chatInput = document.getElementById('chat-input');
+        this.chatInput = document.getElementById('collaboration-chat-input');
         
         // Participants list
         this.participantsList = document.getElementById('participants-list');
@@ -294,14 +349,50 @@ class CollaborationRealTime {
      * Setup DOM event listeners
      */
     setupEventListeners() {
-        if (this.chatInput) {
-            this.chatInput.addEventListener('keypress', (e) => {
+        // Chat input handling with proper key event management
+    // Support multiple possible chat input IDs for backward compatibility
+    const chatInput = document.getElementById('collaboration-chat-input') ||
+              document.getElementById('team-chat-input') ||
+              document.getElementById('chat-input');
+        
+        if (chatInput) {
+            // Use keydown for Enter key only, let all other keys work normally
+            const handleChatKeydown = (e) => {
+                // If default was already prevented by another listener, do nothing (let native behavior happen)
+                // Respect text editing keys (Backspace/Delete) – do not prevent them
+                // Only intercept plain Enter (no shift) to send
+                // Only intercept Enter key for sending messages
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    this.sendChatMessage(this.chatInput.value.trim());
-                    this.chatInput.value = '';
+                    e.stopPropagation();
+                    this.sendChatMessage(chatInput.value.trim());
+                    chatInput.value = '';
                 }
-            });
+                // All other keys (backspace, delete, arrows, typing) work normally
+            };
+            
+            // Remove any existing listeners first
+            chatInput.removeEventListener('keydown', handleChatKeydown);
+            chatInput.addEventListener('keydown', handleChatKeydown);
+        }
+        
+        // Add send button listener
+        const sendBtn = document.getElementById('collaboration-send-chat-btn') || 
+                       document.getElementById('team-chat-send-btn');
+        
+        if (sendBtn) {
+            const handleSendClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (chatInput) {
+                    this.sendChatMessage(chatInput.value.trim());
+                    chatInput.value = '';
+                    chatInput.focus();
+                }
+            };
+            
+            sendBtn.removeEventListener('click', handleSendClick);
+            sendBtn.addEventListener('click', handleSendClick);
         }
         
         // Window unload - cleanup
@@ -556,69 +647,234 @@ class CollaborationRealTime {
     /**
      * Send a chat message
      */
-    sendChatMessage(message, messageType = 'text') {
+    sendChatMessage(message) {
+        if (!message) return;
         if (!this.isConnected || !this.currentSession) {
             console.warn('⚠️ Cannot send message: not in session');
+            if (window.simulation && typeof window.simulation.showToast === 'function') {
+                window.simulation.showToast('Join a collaboration session before chatting', 'warning');
+            } else if (window.showNotification) {
+                window.showNotification('Join a collaboration session before chatting', 'warning');
+            }
             return;
         }
         
-        if (!message.trim()) {
+        const messageData = {
+            message: message,
+            session_id: this.currentSession.id,
+            timestamp: new Date().toISOString(),
+            user_id: this.currentUser?.id || 'unknown',
+            username: this.currentUser?.username || 'Anonymous'
+        };
+        
+        console.log('💬 Sending chat message:', messageData);
+        // Send to server (don't render locally, wait for server response)
+        this.socket.emit('collaboration_chat_message', messageData);
+    }
+    
+    /**
+     * Handle chat message
+     */
+    handleChatMessage(data) {
+        console.log('💬 Received chat message:', data);
+
+        // Deduplicate: if message has an id we've already processed, skip
+        const msgId = data.id || (data.timestamp + '_' + data.user_id + '_' + (data.message||data.content||''));
+        if (this._processedChatIds.has(msgId)) {
+            console.log('💬 Skipping duplicate message:', msgId);
             return;
         }
+        this._recordChatId(msgId);
         
-        this.socket.emit('team_chat_message', {
-            message: message.trim(),
-            message_type: messageType
+        // Add to local chat history first
+        this.addChatMessage(data);
+        
+        // Update team session manager chat if available
+        if (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function') {
+            window.teamSessionManager.addTeamChatMessage(data);
+        }
+        
+        // Update enhanced team session manager if available
+        if (window.enhancedTeamSessionManager && typeof window.enhancedTeamSessionManager.addChatMessage === 'function') {
+            window.enhancedTeamSessionManager.addChatMessage(data);
+        }
+        
+        // Emit chat event for other components
+        this.emit('chat_message', data);
+    }
+
+    /**
+     * Internal helper to record processed chat IDs with periodic pruning
+     */
+    _recordChatId(id) {
+        this._processedChatIds.add(id);
+        // Prune every 2 minutes to avoid unbounded growth
+        const now = Date.now();
+        if (now - this._lastChatPrune > 120000 && this._processedChatIds.size > 500) {
+            this._processedChatIds = new Set(Array.from(this._processedChatIds).slice(-300));
+            this._lastChatPrune = now;
+        }
+    }
+
+    /**
+     * Re-render currently visible chat containers from chatHistory
+     */
+    reloadVisibleChatContainers() {
+        const chatContainers = [
+            'chat-messages-container',
+            'team-chat-messages',
+            'enhanced-chat-messages',
+            'collaboration-chat-messages'
+        ];
+        chatContainers.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = '';
+                this.chatHistory.forEach(m => this.addMessageToContainer(el, m));
+            }
+        });
+        this.updateChatMessageCounter();
+    }
+    
+    /**
+     * Add chat message to local history and UI
+     */
+    addChatMessage(data) {
+        // Add to chat history
+        this.chatHistory.push(data);
+        
+        // Limit chat history size
+        if (this.chatHistory.length > this.config.chatMaxMessages) {
+            this.chatHistory.shift();
+        }
+        
+        // Update chat UI
+        this.updateChatUI(data);
+    }
+    
+    /**
+     * Show chat error to user
+     */
+    showChatError(error) {
+        if (window.simulation && typeof window.simulation.showToast === 'function') {
+            window.simulation.showToast(`Chat error: ${error}`, 'error');
+        } else if (window.showNotification) {
+            window.showNotification(`Chat error: ${error}`, 'error');
+        }
+    }
+
+    /**
+     * Load chat history into UI
+     */
+    loadChatHistory() {
+        if (!this.chatContainer) return;
+        
+        this.chatContainer.innerHTML = '';
+        this.chatHistory.forEach(message => {
+            this.addMessageToContainer(this.chatContainer, message);
         });
     }
     
     /**
-     * Add message to chat history
+     * Display chat message in UI containers
      */
-    addChatMessage(messageData) {
-        this.chatHistory.push(messageData);
+    displayChatMessage(data) {
+        // Find chat containers and update them
+        const chatContainers = [
+            'chat-messages-container',
+            'team-chat-messages', 
+            'enhanced-chat-messages',
+            'collaboration-chat-messages'
+        ];
         
-        // Keep only last N messages
-        if (this.chatHistory.length > this.config.chatMaxMessages) {
-            this.chatHistory = this.chatHistory.slice(-this.config.chatMaxMessages);
-        }
+        chatContainers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                this.addMessageToContainer(container, data);
+            }
+        });
+    }
+    
+    /**
+     * Add message to a specific container
+     */
+    addMessageToContainer(container, data) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${data.message_type || 'text'} ${data.isOwnMessage ? 'own-message' : ''}`;
         
-        this.updateChatUI(messageData);
+        const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'now';
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <span class="message-author">${data.username || 'Unknown'}</span>
+                <span class="message-time">${timestamp}</span>
+            </div>
+            <div class="message-content">${data.message || data.content || ''}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
     }
     
     /**
      * Update chat UI with new message
      */
-    updateChatUI(messageData) {
-        if (!this.chatContainer) return;
+    updateChatUI(data) {
+        // Find chat containers and update them
+        const chatContainers = [
+            'chat-messages-container',
+            'team-chat-messages',
+            'enhanced-chat-messages',
+            'collaboration-chat-messages'
+        ];
         
-        const messageElement = document.createElement('div');
-        messageElement.className = `chat-message ${messageData.user_id === this.currentUser?.id ? 'own-message' : 'other-message'}`;
+        chatContainers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                this.addMessageToContainer(container, data);
+            }
+        });
         
-        const timestamp = new Date(messageData.timestamp).toLocaleTimeString();
-        
-        messageElement.innerHTML = `
-            <div class="message-header">
-                <span class="message-author">${messageData.username}</span>
-                <span class="message-time">${timestamp}</span>
-            </div>
-            <div class="message-content">${this.escapeHtml(messageData.message)}</div>
-        `;
-        
-        this.chatContainer.appendChild(messageElement);
-        this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+        // Update chat message counter if available
+        this.updateChatMessageCounter();
     }
     
     /**
-     * Clear chat history
+     * Update chat message counter
      */
-    clearChat() {
-        this.chatHistory = [];
-        if (this.chatContainer) {
-            this.chatContainer.innerHTML = '';
+    updateChatMessageCounter() {
+        const counter = document.querySelector('.chat-message-counter');
+        if (counter) {
+            counter.textContent = this.chatHistory.length;
         }
     }
     
+    /**
+     * Clear chat history and UI
+     */
+    clearChat() {
+        this.chatHistory = [];
+        
+        const chatContainers = [
+            'chat-messages-container',
+            'team-chat-messages',
+            'enhanced-chat-messages', 
+            'collaboration-chat-messages'
+        ];
+        
+        chatContainers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '';
+            }
+        });
+        
+        this.updateChatMessageCounter();
+    }
+
     // ===== PROGRESS TRACKING =====
     
     /**
@@ -859,23 +1115,8 @@ class CollaborationRealTime {
         this.emit('cursor_updated', data);
     }
     
-    /**
-     * Handle chat message
-     */
-    handleChatMessage(data) {
-        this.addChatMessage(data);
-        
-        this.chatMessageHandlers.forEach(handler => {
-            try {
-                handler(data);
-            } catch (error) {
-                console.error('❌ Error in chat message handler:', error);
-            }
-        });
-        
-        this.emit('chat_message', data);
-    }
-    
+
+
     // ===== UI UPDATES =====
     
     /**
@@ -909,18 +1150,6 @@ class CollaborationRealTime {
                 </div>
             `;
             this.participantsList.appendChild(memberElement);
-        });
-    }
-    
-    /**
-     * Load chat history into UI
-     */
-    loadChatHistory() {
-        if (!this.chatContainer) return;
-        
-        this.chatContainer.innerHTML = '';
-        this.chatHistory.forEach(message => {
-            this.updateChatUI(message);
         });
     }
     
@@ -1110,15 +1339,6 @@ class CollaborationRealTime {
             deviceLocks: Array.from(this.deviceLocks.entries()),
             chatHistory: this.chatHistory
         };
-    }
-    
-    /**
-     * Escape HTML to prevent XSS
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
     
     /**

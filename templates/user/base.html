@@ -3,10 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landscape-optimizations.css') }}">
     {% block head %}{% endblock %}
 </head>
 
@@ -586,14 +588,16 @@
         border-color: var(--cyber-glow);
     }
 
-    /* Responsive Design */
+    /* Responsive Design - Enhanced for Mobile */
     @media (max-width: 1024px) {
         #sidebar {
             width: var(--sidebar-collapsed-width);
-    }        #sidebar .logo-name,
-    #sidebar ul li a span,
-    .user-profile-top .profile-details,
-    .user-profile-top .profile-meta {
+        }
+        
+        #sidebar .logo-name,
+        #sidebar ul li a span,
+        .user-profile-top .profile-details,
+        .user-profile-top .profile-meta {
             opacity: 0;
             width: 0;
         }
@@ -613,37 +617,67 @@
     }
 
     @media (max-width: 768px) {
+        :root {
+            --sidebar-width: 300px; /* Wider on mobile for better touch */
+        }
+        
         .mobile-toggle {
             display: flex;
+            width: 56px;
+            height: 56px;
+            top: 16px;
+            left: 16px;
+        }
+        
+        .mobile-toggle i {
+            font-size: 1.5rem;
         }
 
         #sidebar {
             transform: translateX(-100%);
             width: var(--sidebar-width);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
         }
 
         #sidebar.mobile-open {
             transform: translateX(0);
-    }        #sidebar.mobile-open .logo-name,
-    #sidebar.mobile-open ul li a span,
-    #sidebar.mobile-open .user-profile-top .profile-details,
-    #sidebar.mobile-open .user-profile-top .profile-meta {
+        }
+        
+        #sidebar.mobile-open .logo-name,
+        #sidebar.mobile-open ul li a span,
+        #sidebar.mobile-open .user-profile-top .profile-details,
+        #sidebar.mobile-open .user-profile-top .profile-meta {
             opacity: 1;
             width: auto;
         }
 
         #sidebar.mobile-open ul li a {
             justify-content: flex-start;
-            padding: 16px 20px;
+            padding: 20px 24px; /* Larger touch targets */
             box-sizing: border-box;
+            min-height: 56px; /* Ensure touch-friendly size */
         }
 
         #sidebar.mobile-open ul li a i {
-            margin-right: 16px;
+            margin-right: 20px;
+            font-size: 1.3rem; /* Larger icons */
+        }
+        
+        #sidebar.mobile-open ul li a span {
+            font-size: 1rem; /* Larger text */
         }
 
         .main-content {
             margin-left: 0;
+            padding: 16px; /* Reduced padding on mobile */
+            min-height: calc(100vh - 32px);
+        }
+        
+        /* Enhanced page containers for mobile */
+        .page-container,
+        .page-container-centered,
+        .page-container-narrow {
+            padding: 16px;
         }
 
         .mobile-backdrop {
@@ -652,7 +686,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 99;
             opacity: 0;
             visibility: hidden;
@@ -663,16 +698,96 @@
             opacity: 1;
             visibility: visible;
         }
+        
+        /* Hide desktop toggle on mobile */
+        .sidebar-toggle {
+            display: none;
+        }
+        
+        /* Enhanced mobile profile section */
+        .user-profile-top .profile-info {
+            padding: 16px 20px;
+        }
+        
+        .user-profile-top .profile-avatar {
+            width: 52px;
+            height: 52px;
+        }
+        
+        .user-profile-top .profile-name {
+            font-size: 1rem;
+            max-width: 180px;
+        }
     }
 
     @media (max-width: 480px) {
+        :root {
+            --sidebar-width: 280px; /* Slightly narrower for very small screens */
+        }
+        
         .mobile-toggle {
-            width: 45px;
-            height: 45px;
+            width: 48px;
+            height: 48px;
+            top: 12px;
+            left: 12px;
         }
 
         .mobile-toggle i {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+        }
+        
+        .main-content {
+            padding: 12px;
+        }
+        
+        .page-container,
+        .page-container-centered,
+        .page-container-narrow {
+            padding: 12px;
+        }
+        
+        /* Adjust cards for small screens */
+        .card,
+        .content-card {
+            padding: 16px;
+            border-radius: 12px;
+        }
+        
+        /* Enhanced navigation for very small screens */
+        #sidebar.mobile-open ul li a {
+            padding: 18px 20px;
+            font-size: 0.95rem;
+        }
+        
+        #sidebar.mobile-open ul li a i {
+            font-size: 1.2rem;
+        }
+    }
+    
+    /* Touch-friendly enhancements */
+    @media (hover: none) and (pointer: coarse) {
+        /* This targets touch devices */
+        #sidebar ul li a:hover {
+            transform: none; /* Remove hover animations that don't work on touch */
+        }
+        
+        #sidebar ul li a:active {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(0.98);
+        }
+        
+        .mobile-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .card:hover,
+        .content-card:hover {
+            transform: none; /* Remove hover effects on touch devices */
+        }
+        
+        .card:active,
+        .content-card:active {
+            transform: scale(0.98);
         }
     }
 
@@ -1277,6 +1392,9 @@
             }, 5000);
         }
     </script>
+    
+    <!-- Enhanced Landscape Optimizations -->
+    <script src="{{ url_for('static', filename='js/enhanced-landscape-optimizer.js') }}"></script>
     {% endblock %}
 </body>
 

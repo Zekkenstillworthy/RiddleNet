@@ -106,7 +106,7 @@ class EnhancedDeviceConfigurator {
                                 </div>
                                 <div class="form-group">
                                     <label>Default Gateway</label>
-                                    <input type="text" id="default-gateway" placeholder="192.168.1.1">
+                                    <input type="text" id="device-default-gateway" placeholder="192.168.1.1">
                                     <small class="validation-hint">Required for inter-subnet communication</small>
                                 </div>
                                 <div class="form-group">
@@ -654,7 +654,7 @@ class EnhancedDeviceConfigurator {
         // Network settings
         document.getElementById('ip-address').value = config.ipAddress || '';
         document.getElementById('subnet-mask').value = config.subnetMask || '255.255.255.0';
-        document.getElementById('default-gateway').value = config.gateway || '';
+        document.getElementById('device-default-gateway').value = config.gateway || '';
         document.getElementById('dns-server').value = config.dnsServer || '';
 
         // Show/hide sections based on device type
@@ -788,7 +788,7 @@ class EnhancedDeviceConfigurator {
             // Network configuration
             ipAddress: document.getElementById('ip-address').value,
             subnetMask: document.getElementById('subnet-mask').value,
-            gateway: document.getElementById('default-gateway').value,
+            gateway: document.getElementById('device-default-gateway').value,
             dnsServer: document.getElementById('dns-server').value,
 
             // Advanced configurations
@@ -926,7 +926,7 @@ class EnhancedDeviceConfigurator {
         const config = {
             ipAddress: document.getElementById('ip-address').value,
             subnetMask: document.getElementById('subnet-mask').value,
-            gateway: document.getElementById('default-gateway').value,
+            gateway: document.getElementById('device-default-gateway').value,
             dnsServer: document.getElementById('dns-server').value
         };
 
@@ -1046,7 +1046,7 @@ class EnhancedDeviceConfigurator {
 
         // Real-time IP validation
         document.addEventListener('input', (e) => {
-            if (e.target.id === 'ip-address' || e.target.id === 'default-gateway' || e.target.id === 'dns-server') {
+            if (e.target.id === 'ip-address' || e.target.id === 'device-default-gateway' || e.target.id === 'dns-server') {
                 setTimeout(() => this.validateCurrentDeviceConfig(), 300);
             }
         });

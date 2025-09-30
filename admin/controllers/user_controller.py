@@ -622,6 +622,108 @@ class UserController:
             return jsonify({'success': False, 'message': str(e)}), 500
 
     @staticmethod
+    @user_bp.route('/profile')
+    @login_required
+    def admin_profile():
+        """Admin profile page"""
+        return render_template('admin/profile.html', admin=current_user, active_page='profile')
+    
+    @staticmethod
+    @user_bp.route('/update_profile', methods=['POST'])
+    @login_required
+    def update_admin_profile():
+        """Update admin profile"""
+        from werkzeug.utils import secure_filename
+        
+        if not isinstance(current_user, Admin):
+            flash('Access denied', 'error')
+            return redirect(url_for('auth.login'))
+        
+        admin = current_user
+        
+        # Get form data
+        username = request.form.get('username', '').strip()
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        email = request.form.get('email', '').strip()
+        profile_img = request.files.get('profile_img')
+        
+        try:
+            # Validate username
+            if not username:
+                flash('Username is required', 'error')
+                return redirect(url_for('admin_user.admin_profile'))
+            
+            # Check if username is already taken by another admin
+            existing_admin = Admin.query.filter(Admin.username == username, Admin.id != admin.id).first()
+            if existing_admin:
+                flash('Username is already taken', 'error')
+                return redirect(url_for('admin_user.admin_profile'))
+            
+            # Handle password update
+            if new_password:
+                # Validate current password if changing password
+                if not current_password:
+                    flash('Current password is required to change password', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
+                
+                if not admin.check_password(current_password):
+                    flash('Current password is incorrect', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
+                
+                # Check if new passwords match
+                if new_password != confirm_password:
+                    flash('New passwords do not match', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
+                
+                # Validate password strength
+                if len(new_password) < 6:
+                    flash('Password must be at least 6 characters long', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
+                
+                admin.set_password(new_password)
+            
+            # Handle profile image upload
+            if profile_img and profile_img.filename:
+                # Validate file type
+                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                file_extension = profile_img.filename.rsplit('.', 1)[1].lower() if '.' in profile_img.filename else ''
+                
+                if file_extension not in allowed_extensions:
+                    flash('Invalid file type. Please upload PNG, JPG, JPEG, or GIF files only.', 'error')
+                    return redirect(url_for('admin_user.admin_profile'))
+                
+                # Create filename with admin ID to avoid conflicts
+                img_filename = f"admin_{admin.id}_{secure_filename(profile_img.filename)}"
+                
+                # Ensure the static/img/profiles directory exists
+                profiles_dir = os.path.join('static', 'img', 'profiles')
+                if not os.path.exists(profiles_dir):
+                    os.makedirs(profiles_dir)
+                
+                # Save the file
+                img_path = os.path.join(profiles_dir, img_filename)
+                profile_img.save(img_path)
+                
+                # Update admin profile image (store just the filename, not the full path)
+                admin.profile_img = img_filename
+            
+            # Update admin fields
+            admin.username = username
+            admin.email = email
+            
+            # Save changes
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating profile: {str(e)}', 'error')
+        
+        return redirect(url_for('admin_user.admin_profile'))
+
+    @staticmethod
     @user_bp.route('/available-classes')
     @login_required
     def get_available_classes():

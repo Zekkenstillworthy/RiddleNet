@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import List
 import json
 import time
+import uuid
 
 try:
     # Use a lazy import to avoid circular dependencies
@@ -940,6 +941,214 @@ def handle_get_my_lobby(data=None):
             'error': str(e)
         })
 
+# ===== TEAM LOBBY HANDLERS =====
+@socketio.on('join_team_lobby')
+@authenticated_only
+def handle_join_team_lobby(data):
+    """Join a team lobby (collaboration session)"""
+    if not lobby_manager:
+        emit('team_lobby_joined', {'success': False, 'error': 'Lobby system not available'})
+        return
+    
+    try:
+        lobby_id = data.get('lobby_id')
+        if not lobby_id:
+            emit('team_lobby_joined', {'success': False, 'error': 'Lobby ID required'})
+            return
+        
+        # Join the lobby
+        result = lobby_manager.join_lobby(
+            lobby_id=lobby_id,
+            user_id=str(current_user.id),
+            user_info={
+                'username': current_user.username,
+                'profile_image': getattr(current_user, 'profile_img', None)
+            }
+        )
+        
+        if result['success']:
+            lobby = lobby_manager.get_lobby_by_id(lobby_id)
+            if lobby:
+                room_name = f'lobby_{lobby_id}'
+                join_room(room_name)
+                
+                # Also join session room for chat compatibility
+                join_room(f'session_{lobby_id}')
+                
+                emit('team_lobby_joined', {
+                    'success': True,
+                    'lobby': lobby.to_dict(),
+                    'team_assignment': result.get('team_assignment'),
+                    'chat_history': lobby.chat_history[-20:] if lobby.chat_history else []
+                })
+                
+                # Notify other participants of new user
+                participant_data = lobby.participants[str(current_user.id)]
+                join_event_data = {
+                    'user_id': str(current_user.id),
+                    'username': current_user.username,
+                    'participant_data': participant_data
+                }
+                
+                emit('participant_joined', join_event_data, room=room_name, include_self=False)
+                
+                # Send current network state to new participant
+                emit('network_state_sync', {
+                    'network_state': lobby.network_state,
+                    'participants': lobby.participants
+                })
+                
+                print(f"✅ User {current_user.username} joined team lobby {lobby.id}")
+        else:
+            emit('team_lobby_joined', result)
+            
+    except Exception as e:
+        print(f"❌ Error joining team lobby: {str(e)}")
+        emit('team_lobby_joined', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('join_lobby')
+@authenticated_only  
+def handle_join_lobby_generic(data):
+    """Generic join lobby handler for collaboration sessions"""  
+    if not lobby_manager:
+        emit('lobby_joined', {'success': False, 'error': 'Lobby system not available'})
+        return
+    
+    try:
+        lobby_id = data.get('lobby_id')
+        
+        if not lobby_id:
+            emit('lobby_joined', {'success': False, 'error': 'Lobby ID required'})
+            return
+        
+        result = lobby_manager.join_lobby(
+            lobby_id=lobby_id,
+            user_id=str(current_user.id),
+            user_info={
+                'username': current_user.username,
+                'profile_image': getattr(current_user, 'profile_img', None)
+            }
+        )
+        
+        if result['success']:
+            lobby = result['lobby']
+            room_name = f"lobby_{lobby.id}"
+            
+            # Join the lobby room
+            join_room(room_name)
+            
+            # Notify user of successful join
+            emit('lobby_joined', {
+                'success': True,
+                'lobby': lobby.to_dict()
+            })
+            
+            # Notify other participants of new user
+            participant_data = lobby.participants[str(current_user.id)]
+            join_event_data = {
+                'user_id': str(current_user.id),
+                'username': current_user.username,
+                'participant_data': participant_data
+            }
+            
+            emit('participant_joined', join_event_data, room=room_name, include_self=False)
+            
+            # Send current network state to new participant  
+            emit('network_state_sync', {
+                'network_state': lobby.network_state,
+                'participants': lobby.participants
+            })
+            
+            print(f"✅ User {current_user.username} joined lobby {lobby.id}")
+        else:
+            emit('lobby_joined', result)
+            
+    except Exception as e:
+        print(f"❌ Error joining lobby: {str(e)}")
+        emit('lobby_joined', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('leave_team_lobby')
+@authenticated_only
+def handle_leave_team_lobby(data=None):
+    """Leave current team lobby"""
+    if not lobby_manager:
+        emit('team_lobby_left', {'success': False, 'error': 'Lobby system not available'})
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        
+        if lobby:
+            room_name = f"team_lobby_{lobby.id}"
+            
+            # Notify other participants
+            emit('participant_left', {
+                'user_id': str(current_user.id),
+                'username': current_user.username
+            }, room=room_name, include_self=False)
+            
+            # Leave the room
+            leave_room(room_name)
+            
+            # Remove from lobby
+            lobby_manager.leave_lobby(str(current_user.id))
+            
+            emit('team_lobby_left', {'success': True})
+            print(f"✅ User {current_user.username} left team lobby {lobby.id}")
+        else:
+            emit('team_lobby_left', {'success': True, 'message': 'Not in any lobby'})
+        
+    except Exception as e:
+        print(f"❌ Error leaving team lobby: {str(e)}")
+        emit('team_lobby_left', {
+            'success': False,
+            'error': str(e)
+        })
+
+@socketio.on('leave_lobby')
+@authenticated_only
+def handle_leave_lobby_generic(data=None):
+    """Generic leave lobby handler"""
+    if not lobby_manager:
+        emit('lobby_left', {'success': False, 'error': 'Lobby system not available'})
+        return
+    
+    try:
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        
+        if lobby:
+            room_name = f"lobby_{lobby.id}"
+            
+            # Notify other participants
+            emit('participant_left', {
+                'user_id': str(current_user.id),
+                'username': current_user.username
+            }, room=room_name, include_self=False)
+            
+            # Leave the room
+            leave_room(room_name)
+            
+            # Remove from lobby
+            lobby_manager.leave_lobby(str(current_user.id))
+            
+            emit('lobby_left', {'success': True})
+            print(f"✅ User {current_user.username} left lobby {lobby.id}")
+        else:
+            emit('lobby_left', {'success': True, 'message': 'Not in any lobby'})
+        
+    except Exception as e:
+        print(f"❌ Error leaving lobby: {str(e)}")
+        emit('lobby_left', {
+            'success': False,
+            'error': str(e)
+        })
+
 # Real-time Collaboration Events
 @socketio.on('update_cursor_position')
 @authenticated_only
@@ -1551,4244 +1760,567 @@ def handle_send_lobby_chat(data):
         print(f"❌ Error sending chat message: {str(e)}")
         emit('lobby_chat_error', {'error': str(e)})
 
-# Team Session Chat Events (separate from lobby chat)
-@socketio.on('team_chat_message')
-@authenticated_only
-def handle_team_chat_message(data):
-    """Handle team session chat messages (non-lobby based collaboration)"""
-    try:
-        session_id = data.get('session_id')
-        user_id = data.get('user_id', str(current_user.id))
-        username = data.get('username', getattr(current_user, 'username', 'Unknown'))
-        message = data.get('message', '').strip()
-        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
-        
-        if not message:
-            emit('team_chat_error', {'error': 'Message cannot be empty'})
-            return
-        
-        if not session_id:
-            emit('team_chat_error', {'error': 'Session ID required'})
-            return
-        
-        # Create message data
-        message_data = {
-            'user_id': user_id,
-            'username': username,
-            'message': message,
-            'timestamp': timestamp,
-            'session_id': session_id
-        }
-        
-        # Broadcast to all users in the team session room
-        room_name = f'team_session_{session_id}'
-        emit('team_chat_message', message_data, room=room_name)
-        
-        print(f"💬 Team chat message from {username} in session {session_id}: {message}")
-        
-    except Exception as e:
-        print(f"❌ Error sending team chat message: {str(e)}")
-        emit('team_chat_error', {'error': str(e)})
-
-@socketio.on('join_team_session')
-@authenticated_only
-def handle_join_team_session(data):
-    """Join a team session room for chat and collaboration"""
-    try:
-        session_id = data.get('session_id')
-        if not session_id:
-            emit('team_session_error', {'error': 'Session ID required'})
-            return
-        
-        room_name = f'team_session_{session_id}'
-        join_room(room_name)
-        
-        # Notify user of successful join
-        emit('team_session_joined', {
-            'success': True,
-            'session_id': session_id,
-            'room': room_name
-        })
-        
-        # Notify other participants
-        emit('participant_joined_team', {
-            'user_id': str(current_user.id),
-            'username': getattr(current_user, 'username', 'Unknown'),
-            'session_id': session_id
-        }, room=room_name, include_self=False)
-        
-        print(f"✅ User {current_user.username} joined team session {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error joining team session: {str(e)}")
-        emit('team_session_error', {'error': str(e)})
-
-@socketio.on('leave_team_session')
-@authenticated_only
-def handle_leave_team_session(data):
-    """Leave a team session room"""
-    try:
-        session_id = data.get('session_id')
-        if not session_id:
-            return
-        
-        room_name = f'team_session_{session_id}'
-        leave_room(room_name)
-        
-        # Notify other participants
-        emit('participant_left_team', {
-            'user_id': str(current_user.id),
-            'username': getattr(current_user, 'username', 'Unknown'),
-            'session_id': session_id
-        }, room=room_name)
-        
-        emit('team_session_left', {'success': True})
-        print(f"✅ User {current_user.username} left team session {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error leaving team session: {str(e)}")
-        emit('team_session_error', {'error': str(e)})
-
-# Full State Synchronization
-@socketio.on('request_full_sync')
-@authenticated_only
-def handle_full_sync_request(data=None):
-    """Handle request for full lobby state synchronization"""
-    if not lobby_manager:
-        return
-    
-    try:
-        lobby = lobby_manager.get_user_lobby(str(current_user.id))
-        if not lobby:
-            return
-        
-        # Send complete lobby state to requesting user
-        emit('full_state_sync', {
-            'lobby': lobby.to_dict(),
-            'network_state': lobby.network_state,
-            'device_locks': lobby.device_locks,
-            'participants': lobby.participants,
-            'progress': getattr(lobby, 'progress', {}),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"🔄 Full sync sent to {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error sending full sync: {str(e)}")
-
-# Browse lobbies room for discovery
-@socketio.on('join_lobby_browser')
-@authenticated_only
-def handle_join_lobby_browser(data=None):
-    """Join the lobby browser room to receive lobby updates"""
-    join_room('troubleshooting_browser')
-    emit('joined_lobby_browser', {'success': True})
-    print(f"✅ User {current_user.username} joined lobby browser")
-
-@socketio.on('leave_lobby_browser')
-@authenticated_only
-def handle_leave_lobby_browser(data=None):
-    """Leave the lobby browser room"""
-    leave_room('troubleshooting_browser')
-    emit('left_lobby_browser', {'success': True})
-    print(f"✅ User {current_user.username} left lobby browser")
-
-# Admin lobby management
-@socketio.on('admin_get_all_lobbies')
-@admin_only
-def handle_admin_get_all_lobbies(data=None):
-    """Get all lobbies for admin monitoring"""
-    if not lobby_manager:
-        emit('admin_lobbies', {'success': False, 'error': 'Lobby system not available'})
-        return
-    
-    try:
-        all_lobbies = [lobby.to_dict() for lobby in lobby_manager.lobbies.values()]
-        stats = lobby_manager.get_stats()
-        
-        emit('admin_lobbies', {
-            'success': True,
-            'lobbies': all_lobbies,
-            'stats': stats
-        })
-    except Exception as e:
-        print(f"❌ Error getting admin lobbies: {str(e)}")
-        emit('admin_lobbies', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('admin_close_lobby')
-@admin_only
-def handle_admin_close_lobby(data):
-    """Allow admin to close a lobby"""
-    if not lobby_manager:
-        emit('admin_lobby_closed', {'success': False, 'error': 'Lobby system not available'})
-        return
-    
-    try:
-        lobby_id = data.get('lobby_id')
-        if not lobby_id:
-            emit('admin_lobby_closed', {'success': False, 'error': 'Lobby ID required'})
-            return
-        
-        lobby = lobby_manager.get_lobby_by_id(lobby_id)
-        if not lobby:
-            emit('admin_lobby_closed', {'success': False, 'error': 'Lobby not found'})
-            return
-        
-        # Notify participants
-        room_name = f"troubleshooting_lobby_{lobby.id}"
-        emit('lobby_closed_by_admin', {
-            'message': 'This session has been closed by an administrator.',
-            'admin_name': current_user.username
-        }, room=room_name)
-        
-        # Mark lobby as inactive
-        lobby.is_active = False
-        lobby.add_chat_message('system', f"Session closed by administrator {current_user.username}", 'system')
-        
-        # Force leave all participants
-        for user_id in list(lobby.participants.keys()):
-            lobby_manager.leave_lobby(user_id)
-        
-        emit('admin_lobby_closed', {'success': True, 'lobby_id': lobby_id})
-        print(f"✅ Admin {current_user.username} closed lobby {lobby_id}")
-        
-    except Exception as e:
-        print(f"❌ Error closing lobby: {str(e)}")
-        emit('admin_lobby_closed', {
-            'success': False,
-            'error': str(e)
-        })
-
-# ===== TEAM SESSION COLLABORATION EVENTS =====
-
-@socketio.on('create_team_session')
-@authenticated_only
-def handle_create_team_session(data):
-    """Create a new team collaboration session"""
-    if not collaboration_service:
-        emit('team_session_created', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        simulation_id = data.get('simulation_id')
-        team_members = data.get('team_members', [])
-        settings = data.get('settings')
-        
-        if not simulation_id:
-            emit('team_session_created', {'success': False, 'error': 'Simulation ID required'})
-            return
-        
-        if not team_members:
-            emit('team_session_created', {'success': False, 'error': 'Team members required'})
-            return
-        
-        # Create team session
-        result = collaboration_service.create_team_session(
-            simulation_id=simulation_id,
-            team_members=team_members,
-            created_by=str(current_user.id),
-            settings=settings
-        )
-        
-        if result['success']:
-            session_id = result['session_id']
-            
-            # Join the team session room
-            join_room(f'team_session_{session_id}')
-            
-            # Notify all team members about the new session
-            for member_id in team_members:
-                emit('team_session_invitation', {
-                    'session_id': session_id,
-                    'simulation_id': simulation_id,
-                    'created_by': current_user.username,
-                    'team_members': team_members
-                }, room=f'user_{member_id}')
-        
-        emit('team_session_created', result)
-        print(f"🤝 Team session created by {current_user.username}: {result.get('session_id')}")
-        
-    except Exception as e:
-        print(f"❌ Error creating team session: {str(e)}")
-        emit('team_session_created', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('join_team_session')
-@authenticated_only
-def handle_join_team_session(data):
-    """Join an existing team session"""
-    if not collaboration_service:
-        emit('team_session_joined', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        
-        if not session_id:
-            emit('team_session_joined', {'success': False, 'error': 'Session ID required'})
-            return
-        
-        user_info = {
-            'username': current_user.username,
-            'profile_img': getattr(current_user, 'profile_img', None)
-        }
-        
-        result = collaboration_service.join_session(session_id, str(current_user.id), user_info)
-        
-        if result['success']:
-            # Join the team session room
-            join_room(f'team_session_{session_id}')
-            
-            # Notify other team members
-            emit('team_member_joined', {
-                'user_id': str(current_user.id),
-                'username': current_user.username,
-                'session_id': session_id
-            }, room=f'team_session_{session_id}', include_self=False)
-        
-        emit('team_session_joined', result)
-        print(f"🤝 User {current_user.username} joined team session {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error joining team session: {str(e)}")
-        emit('team_session_joined', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('leave_team_session')
-@authenticated_only
-def handle_leave_team_session(data=None):
-    """Leave current team session"""
-    if not collaboration_service:
-        emit('team_session_left', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        result = collaboration_service.leave_session(str(current_user.id))
-        
-        if result['success']:
-            # Get session from user mapping to find session_id
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                session_id = session.session_id
-                
-                # Leave the room
-                leave_room(f'team_session_{session_id}')
-                
-                # Notify other team members
-                emit('team_member_left', {
-                    'user_id': str(current_user.id),
-                    'username': current_user.username,
-                    'session_id': session_id
-                }, room=f'team_session_{session_id}')
-        
-        emit('team_session_left', result)
-        print(f"🤝 User {current_user.username} left team session")
-        
-    except Exception as e:
-        print(f"❌ Error leaving team session: {str(e)}")
-        emit('team_session_left', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('team_network_update')
-@authenticated_only
-def handle_team_network_update(data):
-    """Handle real-time network topology updates in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        changes = data.get('changes', {})
-        
-        result = collaboration_service.update_network_state(str(current_user.id), changes)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Broadcast changes to other team members
-                emit('team_network_updated', {
-                    'user_id': str(current_user.id),
-                    'username': current_user.username,
-                    'changes': changes,
-                    'network_state': result['network_state'],
-                    'timestamp': datetime.utcnow().isoformat()
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-        emit('team_network_update_result', result)
-        
-    except Exception as e:
-        print(f"❌ Error updating team network: {str(e)}")
-        emit('team_network_update_error', {'error': str(e)})
-
-@socketio.on('team_device_lock')
-@authenticated_only
-def handle_team_device_lock(data):
-    """Handle device locking in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        device_id = data.get('device_id')
-        
-        if not device_id:
-            emit('team_device_lock_result', {'success': False, 'error': 'Device ID required'})
-            return
-        
-        result = collaboration_service.lock_device(str(current_user.id), device_id)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Notify other team members
-                emit('team_device_locked', {
-                    'device_id': device_id,
-                    'locked_by': str(current_user.id),
-                    'username': current_user.username
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-        emit('team_device_lock_result', result)
-        
-    except Exception as e:
-        print(f"❌ Error locking device: {str(e)}")
-        emit('team_device_lock_result', {'success': False, 'error': str(e)})
-
-@socketio.on('team_device_unlock')
-@authenticated_only
-def handle_team_device_unlock(data):
-    """Handle device unlocking in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        device_id = data.get('device_id')
-        
-        if not device_id:
-            emit('team_device_unlock_result', {'success': False, 'error': 'Device ID required'})
-            return
-        
-        result = collaboration_service.unlock_device(str(current_user.id), device_id)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Notify other team members
-                emit('team_device_unlocked', {
-                    'device_id': device_id,
-                    'user_id': str(current_user.id),
-                    'username': current_user.username
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-        emit('team_device_unlock_result', result)
-        
-    except Exception as e:
-        print(f"❌ Error unlocking device: {str(e)}")
-        emit('team_device_unlock_result', {'success': False, 'error': str(e)})
-
-@socketio.on('team_chat_message')
-@authenticated_only
-def handle_team_chat_message(data):
-    """Handle team session chat messages"""
-    if not collaboration_service:
-        return
-    
-    try:
-        message = data.get('message', '').strip()
-        message_type = data.get('message_type', 'text')
-        
-        if not message:
-            emit('team_chat_error', {'error': 'Message cannot be empty'})
-            return
-        
-        result = collaboration_service.send_chat_message(str(current_user.id), message, message_type)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Broadcast message to all team members
-                emit('team_chat_message', result['message'], room=f'team_session_{session.session_id}')
-        
-        emit('team_chat_sent', result)
-        
-    except Exception as e:
-        print(f"❌ Error sending team chat: {str(e)}")
-        emit('team_chat_error', {'error': str(e)})
-
-@socketio.on('team_cli_command')
-@authenticated_only
-def handle_team_cli_command(data):
-    """Handle CLI command execution in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        device_id = data.get('device_id')
-        command = data.get('command', '').strip()
-        
-        if not device_id or not command:
-            emit('team_cli_result', {'success': False, 'error': 'Device ID and command required'})
-            return
-        
-        result = collaboration_service.execute_cli_command(str(current_user.id), device_id, command)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Broadcast command execution to team members
-                emit('team_cli_executed', {
-                    'device_id': device_id,
-                    'command': command,
-                    'user_id': str(current_user.id),
-                    'username': current_user.username,
-                    'timestamp': result['command_entry']['timestamp']
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-        emit('team_cli_result', result)
-        
-    except Exception as e:
-        print(f"❌ Error executing team CLI command: {str(e)}")
-        emit('team_cli_result', {'success': False, 'error': str(e)})
-
-@socketio.on('team_progress_update')
-@authenticated_only
-def handle_team_progress_update(data):
-    """Handle progress updates in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        progress_data = data.get('progress', {})
-        
-        result = collaboration_service.update_progress(str(current_user.id), progress_data)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Broadcast progress to team members
-                emit('team_progress_updated', {
-                    'user_id': str(current_user.id),
-                    'username': current_user.username,
-                    'progress': progress_data,
-                    'shared_progress': result['shared_progress']
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-        emit('team_progress_result', result)
-        
-    except Exception as e:
-        print(f"❌ Error updating team progress: {str(e)}")
-        emit('team_progress_result', {'success': False, 'error': str(e)})
-
-@socketio.on('team_cursor_update')
-@authenticated_only
-def handle_team_cursor_update(data):
-    """Handle cursor position updates in team session"""
-    if not collaboration_service:
-        return
-    
-    try:
-        position = data.get('position', {'x': 0, 'y': 0})
-        
-        result = collaboration_service.update_cursor_position(str(current_user.id), position)
-        
-        if result['success']:
-            session = collaboration_service.get_user_session(str(current_user.id))
-            if session:
-                # Broadcast cursor position to team members
-                emit('team_cursor_moved', {
-                    'user_id': str(current_user.id),
-                    'username': current_user.username,
-                    'position': position
-                }, room=f'team_session_{session.session_id}', include_self=False)
-        
-    except Exception as e:
-        print(f"❌ Error updating team cursor: {str(e)}")
-
-@socketio.on('get_team_session_status')
-@authenticated_only
-def handle_get_team_session_status(data=None):
-    """Get current team session status for user"""
-    if not collaboration_service:
-        emit('team_session_status', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        session = collaboration_service.get_user_session(str(current_user.id))
-        
-        if session:
-            emit('team_session_status', {
-                'success': True,
-                'in_session': True,
-                'session': session.to_dict()
-            })
-        else:
-            emit('team_session_status', {
-                'success': True,
-                'in_session': False,
-                'session': None
-            })
-        
-    except Exception as e:
-        print(f"❌ Error getting team session status: {str(e)}")
-        emit('team_session_status', {'success': False, 'error': str(e)})
-
-# Admin Team Session Management
-@socketio.on('admin_get_team_sessions')
-@admin_only
-def handle_admin_get_team_sessions(data=None):
-    """Get all active team sessions for admin monitoring"""
-    if not collaboration_service:
-        emit('admin_team_sessions', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        sessions = collaboration_service.get_active_sessions()
-        stats = collaboration_service.get_session_stats()
-        
-        emit('admin_team_sessions', {
-            'success': True,
-            'sessions': sessions,
-            'stats': stats
-        })
-        
-    except Exception as e:
-        print(f"❌ Error getting admin team sessions: {str(e)}")
-        emit('admin_team_sessions', {'success': False, 'error': str(e)})
-
-@socketio.on('admin_end_team_session')
-@admin_only
-def handle_admin_end_team_session(data):
-    """Force end a team session (admin only)"""
-    if not collaboration_service:
-        emit('admin_team_session_ended', {'success': False, 'error': 'Collaboration service not available'})
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        
-        if not session_id:
-            emit('admin_team_session_ended', {'success': False, 'error': 'Session ID required'})
-            return
-        
-        result = collaboration_service.force_end_session(session_id, str(current_user.id))
-        
-        if result['success']:
-            # Notify all participants in the session
-            emit('team_session_ended_by_admin', {
-                'session_id': session_id,
-                'admin_name': current_user.username,
-                'message': 'Session ended by administrator'
-            }, room=f'team_session_{session_id}')
-        
-        emit('admin_team_session_ended', result)
-        print(f"🛑 Admin {current_user.username} ended team session {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error ending team session: {str(e)}")
-        emit('admin_team_session_ended', {'success': False, 'error': str(e)})
-
-# ===== LIVE LEADERBOARD SYSTEM =====
-@socketio.on('join_leaderboard')
-@authenticated_only
-def handle_join_leaderboard(data):
-    """Join leaderboard room for real-time updates"""
-    try:
-        user_id = data.get('user_id', str(current_user.id))
-        page = data.get('page', 'leaderboard')
-        
-        # Join leaderboard room
-        join_room('leaderboard_room')
-        
-        # Join category-specific rooms
-        categories = ['networking', 'troubleshooting', 'collaboration', 'topology', 'crimping', 'riddle']
-        for category in categories:
-            join_room(f'leaderboard_{category}')
-        
-        # Send current leaderboard data
-        leaderboard_data = get_live_leaderboard_data()
-        emit('leaderboard_initialized', leaderboard_data)
-        
-        print(f"✅ User {current_user.username} joined leaderboard room")
-        
-    except Exception as e:
-        print(f"❌ Error joining leaderboard: {str(e)}")
-        emit('leaderboard_error', {'error': str(e)})
-
-@socketio.on('get_leaderboard_data')
-@authenticated_only
-def handle_get_leaderboard_data(data):
-    """Get current leaderboard data with filters"""
-    try:
-        category = data.get('category', 'all')
-        time_period = data.get('time_period', 'all_time')
-        limit = data.get('limit', 50)
-        
-        leaderboard_data = get_filtered_leaderboard_data(category, time_period, limit)
-        emit('leaderboard_data', leaderboard_data)
-        
-    except Exception as e:
-        print(f"❌ Error getting leaderboard data: {str(e)}")
-        emit('leaderboard_error', {'error': str(e)})
-
-@socketio.on('score_achieved')
-@authenticated_only
-def handle_score_achieved(data):
-    """Handle new score achievement and update leaderboards"""
-    try:
-        from user.models.score import Score
-        
-        category = data.get('category', 'general')
-        score = data.get('score', 0)
-        
-        # Save score to database
-        new_score = Score(
-            user_id=current_user.id,
-            score=score,
-            category=category,
-            date_attempted=datetime.utcnow()
-        )
-        db.session.add(new_score)
-        db.session.commit()
-        
-        # Get user's previous best score
-        previous_best = db.session.query(Score).filter(
-            Score.user_id == current_user.id,
-            Score.category == category,
-            Score.id != new_score.id
-        ).order_by(Score.score.desc()).first()
-        
-        previous_score = previous_best.score if previous_best else 0
-        is_new_high_score = score > previous_score
-        
-        # Get updated leaderboard data
-        leaderboard_data = get_live_leaderboard_data()
-        
-        # Find user's new rank
-        user_rank = get_user_rank(current_user.id, category)
-        
-        # Broadcast to all leaderboard rooms
-        broadcast_data = {
-            'type': 'score_update',
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'category': category,
-            'score': score,
-            'previous_score': previous_score,
-            'is_new_high_score': is_new_high_score,
-            'new_rank': user_rank,
-            'timestamp': datetime.utcnow().isoformat(),
-            'leaderboard_data': leaderboard_data
-        }
-        
-        # Broadcast to all users in leaderboard room
-        socketio.emit('live_leaderboard_update', broadcast_data, room='leaderboard_room')
-        
-        # Broadcast to category-specific room
-        socketio.emit('category_leaderboard_update', broadcast_data, room=f'leaderboard_{category}')
-        
-        # Special broadcast for new high scores
-        if is_new_high_score:
-            socketio.emit('new_high_score_achieved', {
-                'user_id': current_user.id,
-                'username': current_user.username,
-                'category': category,
-                'score': score,
-                'rank': user_rank,
-                'timestamp': datetime.utcnow().isoformat()
-            }, room='leaderboard_room')
-        
-        # Send confirmation to user
-        emit('score_saved_successfully', {
-            'score': score,
-            'category': category,
-            'rank': user_rank,
-            'is_new_high_score': is_new_high_score
-        })
-        
-        print(f"🏆 Score achieved: {current_user.username} scored {score} in {category}")
-        
-    except Exception as e:
-        print(f"❌ Error handling score achievement: {str(e)}")
-        emit('score_save_error', {'error': str(e)})
-
-def get_live_leaderboard_data():
-    """Get comprehensive leaderboard data for real-time updates"""
-    try:
-        from user.models.score import Score
-        from user.models.user import User
-        from sqlalchemy import func
-        
-        # Get overall leaderboard (top score per user)
-        overall_leaderboard = db.session.query(
-            User.id,
-            User.username,
-            User.profile_img,
-            func.max(Score.score).label('best_score'),
-            func.max(Score.date_attempted).label('latest_attempt'),
-            Score.category
-        ).select_from(User).join(Score).group_by(
-            User.id, User.username, User.profile_img
-        ).order_by(func.max(Score.score).desc()).limit(50).all()
-        
-        # Get category-specific leaderboards
-        categories = ['networking', 'troubleshooting', 'collaboration', 'topology', 'crimping', 'riddle']
-        category_leaderboards = {}
-        
-        for category in categories:
-            category_data = db.session.query(
-                User.id,
-                User.username,
-                User.profile_img,
-                func.max(Score.score).label('best_score'),
-                func.max(Score.date_attempted).label('latest_attempt')
-            ).select_from(User).join(Score).filter(
-                Score.category == category
-            ).group_by(
-                User.id, User.username, User.profile_img
-            ).order_by(func.max(Score.score).desc()).limit(20).all()
-            
-            category_leaderboards[category] = [
-                {
-                    'user_id': entry.id,
-                    'username': entry.username,
-                    'profile_img': entry.profile_img,
-                    'score': entry.best_score,
-                    'category': category,
-                    'date_attempted': entry.latest_attempt.isoformat() if entry.latest_attempt else None
-                } for entry in category_data
-            ]
-        
-        # Format overall leaderboard
-        overall_entries = []
-        for entry in overall_leaderboard:
-            overall_entries.append({
-                'user_id': entry.id,
-                'username': entry.username,
-                'profile_img': entry.profile_img,
-                'score': entry.best_score,
-                'category': entry.category,
-                'date_attempted': entry.latest_attempt.isoformat() if entry.latest_attempt else None
-            })
-        
-        return {
-            'overall': overall_entries,
-            'categories': category_leaderboards,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-    except Exception as e:
-        print(f"❌ Error getting leaderboard data: {str(e)}")
-        return {'overall': [], 'categories': {}, 'timestamp': datetime.utcnow().isoformat()}
-
-def get_filtered_leaderboard_data(category='all', time_period='all_time', limit=50):
-    """Get filtered leaderboard data based on category and time period"""
-    try:
-        from user.models.score import Score
-        from user.models.user import User
-        from sqlalchemy import func
-        
-        # Base query
-        query = db.session.query(
-            User.id,
-            User.username,
-            User.profile_img,
-            func.max(Score.score).label('best_score'),
-            func.max(Score.date_attempted).label('latest_attempt'),
-            Score.category
-        ).select_from(User).join(Score)
-        
-        # Apply category filter
-        if category != 'all':
-            query = query.filter(Score.category == category)
-        
-        # Apply time period filter
-        if time_period != 'all_time':
-            now = datetime.utcnow()
-            if time_period == 'daily':
-                cutoff = now - datetime.timedelta(days=1)
-            elif time_period == 'weekly':
-                cutoff = now - datetime.timedelta(weeks=1)
-            elif time_period == 'monthly':
-                cutoff = now - datetime.timedelta(days=30)
-            else:
-                cutoff = now - datetime.timedelta(days=365)  # yearly
-            
-            query = query.filter(Score.date_attempted >= cutoff)
-        
-        # Group and order
-        results = query.group_by(
-            User.id, User.username, User.profile_img
-        ).order_by(func.max(Score.score).desc()).limit(limit).all()
-        
-        # Format results
-        entries = []
-        for entry in results:
-            entries.append({
-                'user_id': entry.id,
-                'username': entry.username,
-                'profile_img': entry.profile_img,
-                'score': entry.best_score,
-                'category': entry.category,
-                'date_attempted': entry.latest_attempt.isoformat() if entry.latest_attempt else None
-            })
-        
-        return {
-            'entries': entries,
-            'category': category,
-            'time_period': time_period,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-    except Exception as e:
-        print(f"❌ Error getting filtered leaderboard data: {str(e)}")
-        return {'entries': [], 'category': category, 'time_period': time_period, 'timestamp': datetime.utcnow().isoformat()}
-
-def get_user_rank(user_id, category='all'):
-    """Get specific user's rank in leaderboard"""
-    try:
-        from user.models.score import Score
-        from user.models.user import User
-        from sqlalchemy import func
-        
-        # Get user's best score
-        user_score_query = db.session.query(
-            func.max(Score.score).label('best_score')
-        ).filter(Score.user_id == user_id)
-        
-        if category != 'all':
-            user_score_query = user_score_query.filter(Score.category == category)
-        
-        user_best_score = user_score_query.scalar()
-        
-        if not user_best_score:
-            return None
-        
-        # Count users with better scores
-        rank_query = db.session.query(
-            func.count(func.distinct(Score.user_id)).label('rank')
-        ).filter(Score.score > user_best_score)
-        
-        if category != 'all':
-            rank_query = rank_query.filter(Score.category == category)
-        
-        users_above = rank_query.scalar() or 0
-        
-        return users_above + 1
-        
-    except Exception as e:
-        print(f"❌ Error getting user rank: {str(e)}")
-        return None
-
-# ===== REAL-TIME ANNOUNCEMENT SYSTEM =====
-@socketio.on('join_announcements')
-@authenticated_only
-def handle_join_announcements(data=None):
-    """Join announcement rooms for real-time updates"""
-    try:
-        user_id = current_user.id
-        username = getattr(current_user, 'username', f'User{user_id}')
-        
-        print(f"📢 DEBUG: User {username} joining announcement rooms")
-        print(f"📢 DEBUG: Session ID: {request.sid}")
-        print(f"📢 DEBUG: Join data: {data}")
-        
-        # Join multiple announcement rooms for different targeting
-        join_room('announcements')          # General announcements room
-        join_room('all_users')             # All users room  
-        join_room('dashboard')             # Dashboard-specific room
-        join_room(f'user_{user_id}')       # User-specific room
-        
-        rooms_joined = ['announcements', 'all_users', 'dashboard', f'user_{user_id}']
-        
-        # Admin users get additional admin announcement room
-        if hasattr(current_user, '__tablename__') and current_user.__tablename__ in ['admins', 'admin_users']:
-            join_room('admin_announcements')
-            rooms_joined.append('admin_announcements')
-            print(f"📢 DEBUG: Admin user {username} joined admin announcement room")
-        
-        print(f"📢 DEBUG: User {username} joined rooms: {rooms_joined}")
-        
-        emit('announcements_joined', {
-            'success': True,
-            'user_id': user_id,
-            'username': username,
-            'rooms': rooms_joined,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"✅ User {username} successfully joined announcement rooms")
-        
-    except Exception as e:
-        print(f"❌ Error joining announcement rooms: {str(e)}")
-        emit('announcements_error', {
-            'success': False,
-            'error': str(e),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-@socketio.on('get_recent_announcements') 
-@authenticated_only
-def handle_get_recent_announcements(data=None):
-    """Get recent announcements for the current user"""
-    try:
-        user_id = current_user.id
-        username = getattr(current_user, 'username', f'User{user_id}')
-        
-        print(f"📢 DEBUG: User {username} requesting recent announcements")
-        print(f"📢 DEBUG: Request data: {data}")
-        
-        # Use the existing notification endpoint to get recent announcements
-        from user.routes.notification_routes import get_recent_announcements
-        from flask import make_response
-        
-        # Create a mock request context to call the function
-        with socketio.test_client().application.app_context():
-            with socketio.test_client().application.test_request_context():
-                # Import and use the session
-                from flask import session
-                session['_user_id'] = str(user_id)
-                
-                try:
-                    # Get announcements from the existing API
-                    result = get_recent_announcements()
-                    if hasattr(result, 'get_json'):
-                        announcement_data = result.get_json()
-                    else:
-                        announcement_data = result
-                        
-                    print(f"📢 DEBUG: Retrieved announcements: {announcement_data}")
-                    
-                    emit('recent_announcements', {
-                        'success': True,
-                        'announcements': announcement_data.get('announcements', []),
-                        'count': announcement_data.get('count', 0),
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
-                    
-                    print(f"✅ Recent announcements sent to {username}")
-                    
-                except Exception as inner_e:
-                    print(f"❌ Error calling announcement API: {inner_e}")
-                    # Fallback: return empty list
-                    emit('recent_announcements', {
-                        'success': True,
-                        'announcements': [],
-                        'count': 0,
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
-        
-    except Exception as e:
-        print(f"❌ Error getting recent announcements: {str(e)}")
-        emit('announcements_error', {
-            'success': False,
-            'error': str(e),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-@socketio.on('broadcast_announcement')
-@admin_only
-def handle_broadcast_announcement(data):
-    """Broadcast announcement to all users or specific targets - ADMIN ONLY"""
-    try:
-        admin_username = getattr(current_user, 'username', 'Unknown Admin')
-        
-        print(f"📢 DEBUG: Admin {admin_username} broadcasting announcement")
-        print(f"📢 DEBUG: Session ID: {request.sid}")
-        print(f"📢 DEBUG: Announcement data: {data}")
-        
-        title = data.get('title', 'System Announcement').strip()
-        message = data.get('message', '').strip()
-        priority = data.get('priority', 'normal')
-        target = data.get('target', 'all_users')
-        
-        # Validation
-        if not message:
-            print(f"📢 DEBUG: Empty message detected")
-            emit('announcement_error', {
-                'success': False,
-                'error': 'Message cannot be empty',
-                'timestamp': datetime.utcnow().isoformat()
-            })
-            return
-        
-        # Create announcement data
-        announcement_data = {
-            'id': f"announcement_{int(datetime.utcnow().timestamp() * 1000)}",
-            'title': title,
-            'message': message,
-            'content': message,  # For compatibility
-            'priority': priority,
-            'admin_name': admin_username,
-            'type': 'system_announcement',
-            'created_at': datetime.utcnow().isoformat(),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        print(f"📢 DEBUG: Prepared announcement: {announcement_data}")
-        
-        # Use the notification service for proper persistence and broadcasting
-        try:
-            from services.notification_service import get_notification_service, NotificationPriority
-            notification_service = get_notification_service(socketio)
-            
-            # Convert priority string to enum if needed
-            priority_enum = NotificationPriority.NORMAL
-            if priority == 'high':
-                priority_enum = NotificationPriority.HIGH
-            elif priority == 'urgent':
-                priority_enum = NotificationPriority.URGENT
-            elif priority == 'low':
-                priority_enum = NotificationPriority.LOW
-            
-            # Send via notification service for persistence
-            result = notification_service.send_system_announcement(
-                title=title,
-                message=message,
-                priority=priority_enum
-            )
-            
-            print(f"📢 DEBUG: Notification service result: {result}")
-            
-        except Exception as service_error:
-            print(f"⚠️ Notification service failed, using direct WebSocket: {service_error}")
-        
-        # Direct WebSocket broadcast for immediate delivery
-        broadcast_count = 0
-        
-        if target == 'all_users' or target == 'everyone':
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            socketio.emit('new_announcement', announcement_data, room='announcements')
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-            broadcast_count += 3
-            print(f"📢 DEBUG: Broadcasted to all_users, announcements, and dashboard rooms")
-            
-        elif target == 'dashboard_users':
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-            broadcast_count += 1
-            print(f"📢 DEBUG: Broadcasted to dashboard room only")
-            
-        elif target.startswith('user_'):
-            user_id = target.replace('user_', '')
-            socketio.emit('new_announcement', announcement_data, room=f'user_{user_id}')
-            broadcast_count += 1
-            print(f"📢 DEBUG: Broadcasted to specific user: {user_id}")
-            
-        else:
-            # Default fallback
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            broadcast_count += 1
-            print(f"📢 DEBUG: Broadcasted to all_users (fallback)")
-        
-        # Send confirmation to admin
-        emit('announcement_sent', {
-            'success': True,
-            'announcement': announcement_data,
-            'target': target,
-            'broadcast_count': broadcast_count,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"✅ Announcement broadcast successful: '{title}' to {target}")
-        
-    except Exception as e:
-        print(f"❌ Error broadcasting announcement: {str(e)}")
-        emit('announcement_error', {
-            'success': False,
-            'error': str(e),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-# Helper function for programmatic announcements
-def emit_system_announcement(title, message, priority='normal', target='all_users'):
-    """Emit system announcement programmatically"""
-    try:
-        announcement_data = {
-            'id': f"system_{int(datetime.utcnow().timestamp() * 1000)}",
-            'title': title,
-            'message': message,
-            'content': message,
-            'priority': priority,
-            'admin_name': 'System',
-            'type': 'system_announcement',
-            'created_at': datetime.utcnow().isoformat(),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        print(f"📢 DEBUG: System announcement: {announcement_data}")
-        
-        # Broadcast to target rooms
-        if target == 'all_users':
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            socketio.emit('new_announcement', announcement_data, room='announcements') 
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-        elif target == 'dashboard':
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-        elif target.startswith('user_'):
-            socketio.emit('new_announcement', announcement_data, room=target)
-        
-        print(f"✅ System announcement emitted: {title}")
-        return {'success': True, 'announcement': announcement_data}
-        
-    except Exception as e:
-        print(f"❌ Error emitting system announcement: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-# ===== REAL-TIME PERFORMANCE FEEDBACK SYSTEM =====
-try:
-    from services.feedback_service import feedback_service
-    print("✅ Feedback service imported successfully")
-except ImportError as e:
-    print(f"⚠️ Warning: Could not import feedback service: {e}")
-    feedback_service = None
-
-# Performance Feedback Events
-@socketio.on('start_feedback_session')
-@authenticated_only
-def handle_start_feedback_session(data):
-    """Start a new real-time feedback session"""
-    if not feedback_service:
-        emit('feedback_session_started', {'success': False, 'error': 'Feedback system not available'})
-        return
-    
-    try:
-        scenario_id = data.get('scenario_id', 'default')
-        lobby_id = data.get('lobby_id')
-        
-        session_id = feedback_service.start_session(
-            user_id=current_user.id,
-            scenario_id=scenario_id,
-            lobby_id=lobby_id
-        )
-        
-        emit('feedback_session_started', {
-            'success': True,
-            'session_id': session_id,
-            'scenario_id': scenario_id
-        })
-        
-        print(f"✅ Feedback session started for user {current_user.username}: {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error starting feedback session: {str(e)}")
-        emit('feedback_session_started', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('start_simulation_session')
-@authenticated_only
-def handle_start_simulation_session(data):
-    """Start a new simulation session (Dynamic Simulation compatibility)"""
-    if not feedback_service:
-        emit('simulation_session_started', {'success': False, 'error': 'Feedback system not available'})
-        return
-    
-    try:
-        scenario_id = data.get('scenario_id', 'dynamic_simulation')
-        simulation_type = data.get('simulation_type', 'dynamic_simulation')
-        
-        # Use feedback service for consistency
-        session_data = feedback_service.start_session(
-            user_id=current_user.id,
-            scenario_id=scenario_id,
-            lobby_id=None
-        )
-        
-        emit('simulation_session_started', {
-            'success': True,
-            'session_id': session_data['session_id'],
-            'scenario_id': scenario_id,
-            'simulation_type': simulation_type,
-            'start_time': session_data['start_time']
-        })
-        
-        print(f"✅ Simulation session started for user {current_user.username}: {session_data['session_id']}")
-        
-    except Exception as e:
-        print(f"❌ Error starting simulation session: {str(e)}")
-        emit('simulation_session_started', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('end_feedback_session')
-@authenticated_only
-def handle_end_feedback_session(data):
-    """End a feedback session"""
-    if not feedback_service:
-        emit('feedback_session_ended', {'success': False, 'error': 'Feedback system not available'})
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        
-        if not session_id:
-            emit('feedback_session_ended', {'success': False, 'error': 'Session ID required'})
-            return
-        
-        session_analytics = feedback_service.end_session(session_id)
-        
-        emit('feedback_session_ended', {
-            'success': True,
-            'session_analytics': session_analytics
-        })
-        
-        print(f"✅ Feedback session ended for user {current_user.username}: {session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error ending feedback session: {str(e)}")
-        emit('feedback_session_ended', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('track_user_action')
-@authenticated_only
-def handle_track_user_action(data):
-    """Track and provide real-time feedback for user actions"""
-    if not feedback_service:
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        action_type = data.get('action_type')
-        action_data = data.get('action_data', {})
-        scenario_context = data.get('scenario_context', {})
-        
-        if not session_id or not action_type:
-            emit('feedback_error', {'error': 'Session ID and action type required'})
-            return
-        
-        # Add user context to action data
-        action_data.update({
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        # Record feedback and get real-time response
-        feedback_data = feedback_service.record_feedback(
-            session_id=session_id,
-            user_id=current_user.id,
-            action_type=action_type,
-            action_data=action_data,
-            scenario_context=scenario_context
-        )
-        
-        # Send real-time feedback to user (Network Learning Arena compatible)
-        emit('real_time_feedback', feedback_data)
-        emit('action_tracked', {
-            'session_id': session_id,
-            'action_type': action_type,
-            'success': feedback_data.get('type') == 'success',
-            'feedback': feedback_data
-        })
-        
-        # If in collaborative session, notify other participants
-        lobby_id = action_data.get('lobby_id')
-        if lobby_id:
-            room_name = f"troubleshooting_lobby_{lobby_id}"
-            emit('participant_action_feedback', {
-                'user_id': current_user.id,
-                'username': current_user.username,
-                'action_type': action_type,
-                'feedback': feedback_data
-            }, room=room_name, include_self=False)
-        
-        print(f"📊 Action tracked for {current_user.username}: {action_type} -> {feedback_data['type']}")
-        
-    except Exception as e:
-        print(f"❌ Error tracking user action: {str(e)}")
-        emit('feedback_error', {'error': str(e)})
-
-@socketio.on('log_simulation_action')
-@authenticated_only
-def handle_log_simulation_action(data):
-    """Log simulation action (Dynamic Simulation compatibility)"""
-    # Route to the standard action tracking system
-    handle_track_user_action(data)
-
-@socketio.on('get_progress_update')
-@authenticated_only
-def handle_get_progress_update(data):
-    """Get current progress for a session"""
-    if not feedback_service:
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        
-        if not session_id:
-            emit('progress_update_error', {'error': 'Session ID required'})
-            return
-        
-        analytics = feedback_service.get_session_analytics(session_id)
-        
-        if analytics:
-            emit('progress_update', {
-                'session_id': session_id,
-                'current_score': analytics['session']['total_score'],
-                'completion_percentage': analytics['session']['completion_percentage'],
-                'successful_actions': analytics['session']['successful_actions'],
-                'total_actions': analytics['session']['total_actions'],
-                'recommendations': analytics['recommendations']
-            })
-        else:
-            emit('progress_update_error', {'error': 'Session not found'})
-        
-    except Exception as e:
-        print(f"❌ Error getting progress update: {str(e)}")
-        emit('progress_update_error', {'error': str(e)})
-
-@socketio.on('get_session_analytics')
-@authenticated_only
-def handle_get_session_analytics(data):
-    """Get detailed analytics for a completed session"""
-    if not feedback_service:
-        emit('session_analytics', {'success': False, 'error': 'Feedback system not available'})
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        
-        if not session_id:
-            emit('session_analytics', {'success': False, 'error': 'Session ID required'})
-            return
-        
-        analytics = feedback_service.get_session_analytics(session_id)
-        
-        if analytics:
-            emit('session_analytics', {
-                'success': True,
-                'analytics': analytics
-            })
-        else:
-            emit('session_analytics', {
-                'success': False,
-                'error': 'Session not found'
-            })
-        
-    except Exception as e:
-        print(f"❌ Error getting session analytics: {str(e)}")
-        emit('session_analytics', {
-            'success': False,
-            'error': str(e)
-        })
-
-@socketio.on('request_hint')
-@authenticated_only
-def handle_request_hint(data):
-    """Handle hint requests and provide contextual help"""
-    try:
-        session_id = data.get('session_id')
-        current_context = data.get('context', {})
-        hint_type = data.get('hint_type', 'general')
-        
-        # Generate contextual hints based on current state
-        hints = {
-            'device_placement': [
-                "Try placing devices according to the network topology diagram.",
-                "Make sure to follow the logical network hierarchy.",
-                "Consider the physical constraints and cable lengths."
-            ],
-            'connection_creation': [
-                "Check device compatibility before connecting.",
-                "Use the appropriate cable type for the connection.",
-                "Verify that both devices have available ports."
-            ],
-            'cli_command': [
-                "Start with basic connectivity tests like 'ping'.",
-                "Use 'show' commands to check device status.",
-                "Remember to enter configuration mode for changes."
-            ],
-            'configuration': [
-                "Double-check IP addresses and subnet masks.",
-                "Ensure routing protocols are configured correctly.",
-                "Save your configuration after making changes."
-            ],
-            'general': [
-                "Take your time to analyze the problem step by step.",
-                "Use the network diagram as a reference.",
-                "Don't hesitate to use troubleshooting commands."
-            ]
-        }
-        
-        hint_messages = hints.get(hint_type, hints['general'])
-        selected_hint = hint_messages[0]  # Could be randomized or context-aware
-        
-        # Track hint usage if session exists
-        if session_id and feedback_service:
-            feedback_service.record_feedback(
-                session_id=session_id,
-                user_id=current_user.id,
-                action_type='hint_request',
-                action_data={
-                    'hint_type': hint_type,
-                    'context': current_context,
-                    'hint_provided': selected_hint
-                }
-            )
-        
-        emit('hint_provided', {
-            'hint': selected_hint,
-            'hint_type': hint_type,
-            'icon': 'fas fa-lightbulb',
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        # Network Learning Arena compatible response
-        emit('smart_hint_response', {
-            'session_id': session_id,
-            'hint': selected_hint,
-            'type': hint_type,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"💡 Hint provided to {current_user.username}: {hint_type}")
-        
-    except Exception as e:
-        print(f"❌ Error providing hint: {str(e)}")
-        emit('hint_error', {'error': str(e)})
-
-@socketio.on('unlock_achievement')
-@authenticated_only 
-def handle_unlock_achievement(data):
-    """Handle achievement unlock requests and notifications"""
-    try:
-        session_id = data.get('session_id')
-        achievement_id = data.get('achievement_id')
-        achievement_data = data.get('achievement_data', {})
-        
-        if not session_id or not achievement_id:
-            emit('achievement_error', {'error': 'Session ID and achievement ID required'})
-            return
-        
-        # Achievement definitions
-        achievements = {
-            'first-device': {
-                'id': 'first-device',
-                'name': 'First Steps',
-                'description': 'Placed your first network device',
-                'icon': '🖥️',
-                'points': 25
-            },
-            'network-builder': {
-                'id': 'network-builder', 
-                'name': 'Network Builder',
-                'description': 'Created a complex network topology',
-                'icon': '🏗️',
-                'points': 50
-            },
-            'speed-demon': {
-                'id': 'speed-demon',
-                'name': 'Speed Demon',
-                'description': 'Completed scenario in record time',
-                'icon': '⚡',
-                'points': 75
-            },
-            'perfectionist': {
-                'id': 'perfectionist',
-                'name': 'Perfectionist',
-                'description': 'Completed without any mistakes',
-                'icon': '💎',
-                'points': 100
-            },
-            'configuration-master': {
-                'id': 'configuration-master',
-                'name': 'Configuration Master',
-                'description': 'Expertly configured multiple devices',
-                'icon': '⚙️',
-                'points': 60
-            }
-        }
-        
-        achievement = achievements.get(achievement_id)
-        if not achievement:
-            emit('achievement_error', {'error': 'Unknown achievement'})
-            return
-        
-        # Store achievement (you could save to database here)
-        # For now, just notify the client
-        
-        emit('achievement_unlocked', {
-            'session_id': session_id,
-            'achievement': achievement,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"🏆 Achievement unlocked for {current_user.username}: {achievement['name']}")
-        
-    except Exception as e:
-        print(f"❌ Error unlocking achievement: {str(e)}")
-        emit('achievement_error', {'error': str(e)})
-
-@socketio.on('validate_solution')
-@authenticated_only
-def handle_validate_solution(data):
-    """Validate complete solution and provide comprehensive feedback"""
-    if not feedback_service:
-        emit('solution_validation', {'success': False, 'error': 'Feedback system not available'})
-        return
-    
-    try:
-        session_id = data.get('session_id')
-        solution_data = data.get('solution', {})
-        scenario_requirements = data.get('requirements', {})
-        
-        if not session_id:
-            emit('solution_validation', {'success': False, 'error': 'Session ID required'})
-            return
-        
-        # Validate solution components
-        validation_results = {
-            'overall_score': 0,
-            'component_scores': {},
-            'missing_components': [],
-            'errors': [],
-            'recommendations': []
-        }
-        
-        # Validate devices
-        required_devices = scenario_requirements.get('devices', [])
-        solution_devices = solution_data.get('devices', [])
-        
-        device_score = 0
-        for req_device in required_devices:
-            matching_device = next(
-                (d for d in solution_devices if d.get('type') == req_device.get('type')),
-                None
-            )
-            if matching_device:
-                device_score += 20
-            else:
-                validation_results['missing_components'].append(f"Missing {req_device.get('type')} device")
-        
-        validation_results['component_scores']['devices'] = device_score
-        
-        # Validate connections
-        required_connections = scenario_requirements.get('connections', [])
-        solution_connections = solution_data.get('connections', [])
-        
-        connection_score = 0
-        for req_conn in required_connections:
-            # Check if connection exists (simplified validation)
-            if len(solution_connections) >= len(required_connections):
-                connection_score += 15
-        
-        validation_results['component_scores']['connections'] = connection_score
-        
-        # Validate configurations
-        required_configs = scenario_requirements.get('configurations', {})
-        solution_configs = solution_data.get('configurations', {})
-        
-        config_score = 0
-        for device_id, req_config in required_configs.items():
-            solution_config = solution_configs.get(device_id, {})
-            if solution_config:
-                config_score += 25
-        
-        validation_results['component_scores']['configurations'] = config_score
-        
-        # Calculate overall score
-        validation_results['overall_score'] = sum(validation_results['component_scores'].values())
-        
-        # Generate recommendations
-        if validation_results['overall_score'] < 60:
-            validation_results['recommendations'].append("Review the network requirements and topology")
-        if device_score < 40:
-            validation_results['recommendations'].append("Ensure all required devices are properly placed")
-        if connection_score < 30:
-            validation_results['recommendations'].append("Check all network connections and cable types")
-        if config_score < 50:
-            validation_results['recommendations'].append("Verify device configurations and IP settings")
-        
-        # Record validation feedback
-        feedback_service.record_feedback(
-            session_id=session_id,
-            user_id=current_user.id,
-            action_type='solution_validation',
-            action_data={
-                'solution': solution_data,
-                'validation_results': validation_results,
-                'overall_score': validation_results['overall_score']
-            }
-        )
-        
-        emit('solution_validation', {
-            'success': True,
-            'validation_results': validation_results,
-            'is_complete': validation_results['overall_score'] >= 80,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"✅ Solution validated for {current_user.username}: {validation_results['overall_score']}%")
-        
-    except Exception as e:
-        print(f"❌ Error validating solution: {str(e)}")
-        emit('solution_validation', {
-            'success': False,
-            'error': str(e)
-        })
-
-# Live Leaderboard System Implementation
-from sqlalchemy import desc, func
-
-# Store connected users for leaderboard rooms
-leaderboard_users = {}
-
-@socketio.on('join_leaderboard')
-@authenticated_only
-def handle_join_leaderboard(data):
-    """Join live leaderboard room and get real-time updates"""
-    try:
-        user_id = data.get('user_id', current_user.id)
-        page = data.get('page', 'leaderboard')
-        
-        # Join general leaderboard room
-        join_room('leaderboard')
-        
-        # Track user in leaderboard room
-        leaderboard_users[current_user.id] = {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'page': page,
-            'joined_at': datetime.utcnow().isoformat()
-        }
-        
-        # Get initial leaderboard data
-        initial_data = get_live_leaderboard_data()
-        
-        # Send initial data to user
-        emit('leaderboard_initialized', {
-            'overall': initial_data['overall'],
-            'categories': initial_data['categories'],
-            'recent_achievements': initial_data['recent_achievements'],
-            'user_stats': initial_data['user_stats']
-        })
-        
-        # Notify others that user joined leaderboard
-        emit('user_joined_leaderboard', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'page': page
-        }, room='leaderboard', include_self=False)
-        
-        print(f"✅ User {current_user.username} joined live leaderboard from {page}")
-        
-    except Exception as e:
-        print(f"❌ Error joining leaderboard: {str(e)}")
-        emit('leaderboard_error', {'error': str(e)})
-
-@socketio.on('leave_leaderboard')
-@authenticated_only
-def handle_leave_leaderboard():
-    """Leave live leaderboard room"""
-    try:
-        leave_room('leaderboard')
-        
-        # Remove user from tracking
-        if current_user.id in leaderboard_users:
-            del leaderboard_users[current_user.id]
-        
-        emit('user_left_leaderboard', {
-            'user_id': current_user.id,
-            'username': current_user.username
-        }, room='leaderboard')
-        
-        print(f"✅ User {current_user.username} left live leaderboard")
-        
-    except Exception as e:
-        print(f"❌ Error leaving leaderboard: {str(e)}")
-
-@socketio.on('get_leaderboard_data')
-@authenticated_only
-def handle_get_leaderboard_data(data):
-    """Get filtered leaderboard data based on category and time period"""
-    try:
-        category = data.get('category', 'all')
-        time_period = data.get('time_period', 'all_time')
-        limit = data.get('limit', 20)
-        
-        filtered_data = get_filtered_leaderboard_data(category, time_period, limit)
-        
-        emit('leaderboard_data', {
-            'category': category,
-            'time_period': time_period,
-            'entries': filtered_data['entries'],
-            'total_count': filtered_data['total_count'],
-            'user_rank': filtered_data['user_rank']
-        })
-        
-        print(f"✅ Leaderboard data sent to {current_user.username}: {category} - {time_period}")
-        
-    except Exception as e:
-        print(f"❌ Error getting leaderboard data: {str(e)}")
-        emit('leaderboard_error', {'error': str(e)})
-
-@socketio.on('score_achieved')
-@authenticated_only
-def handle_score_achieved(data):
-    """Handle new score achievements and update leaderboard"""
-    try:
-        score = data.get('score')
-        category = data.get('category')
-        challenge_type = data.get('challenge_type')
-        
-        if not score or not category:
-            return
-        
-        # Check if this is a new high score
-        is_new_high_score = check_new_high_score(current_user.id, category, score)
-        
-        # Get updated leaderboard data
-        updated_data = get_live_leaderboard_data()
-        
-        # Broadcast to all leaderboard users
-        emit('live_leaderboard_update', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'score': score,
-            'category': category,
-            'challenge_type': challenge_type,
-            'is_new_high_score': is_new_high_score,
-            'leaderboard_data': updated_data,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='leaderboard')
-        
-        # Handle new high score achievements
-        if is_new_high_score:
-            emit('new_high_score_achieved', {
-                'user_id': current_user.id,
-                'username': current_user.username,
-                'score': score,
-                'category': category,
-                'previous_best': get_user_previous_best(current_user.id, category),
-                'new_rank': get_user_rank(current_user.id, category)
-            }, room='leaderboard')
-        
-        print(f"✅ Score achievement broadcast: {current_user.username} - {score}% in {category}")
-        
-    except Exception as e:
-        print(f"❌ Error handling score achievement: {str(e)}")
-
-def get_live_leaderboard_data():
-    """Get comprehensive live leaderboard data"""
-    try:
-        # Import Score model
-        from user.models.score import Score
-        
-        # Get overall leaderboard (best scores across all categories)
-        overall_query = db.session.query(
-            Score.user_id,
-            UserModel.username,
-            UserModel.profile_img,
-            func.max(Score.score).label('best_score'),
-            func.max(Score.date_attempted).label('latest_attempt'),
-            Score.category
-        ).join(UserModel, Score.user_id == UserModel.id)\
-         .group_by(Score.user_id, UserModel.username, UserModel.profile_img, Score.category)\
-         .subquery()
-        
-        # Get the absolute best score per user
-        overall_leaderboard = db.session.query(
-            overall_query.c.user_id,
-            overall_query.c.username,
-            overall_query.c.profile_img,
-            func.max(overall_query.c.best_score).label('score'),
-            func.max(overall_query.c.latest_attempt).label('date_attempted'),
-            overall_query.c.category
-        ).group_by(overall_query.c.user_id, overall_query.c.username, overall_query.c.profile_img, overall_query.c.category)\
-         .order_by(desc(func.max(overall_query.c.best_score)))\
-         .limit(20).all()
-        
-        # Get category-specific leaderboards
-        categories = ['networking', 'topology', 'troubleshooting', 'crimping', 'riddle', 'collaboration']
-        category_leaderboards = {}
-        
-        for category in categories:
-            category_data = db.session.query(
-                Score.user_id,
-                UserModel.username,
-                UserModel.profile_img,
-                func.max(Score.score).label('score'),
-                func.max(Score.date_attempted).label('date_attempted')
-            ).join(UserModel, Score.user_id == UserModel.id)\
-             .filter(Score.category == category)\
-             .group_by(Score.user_id, UserModel.username, UserModel.profile_img)\
-             .order_by(desc(func.max(Score.score)))\
-             .limit(10).all()
-            
-            category_leaderboards[category] = [
-                {
-                    'user_id': entry.user_id,
-                    'username': entry.username,
-                    'profile_img': entry.profile_img,
-                    'score': entry.score,
-                    'date_attempted': entry.date_attempted.isoformat() if entry.date_attempted else None,
-                    'category': category
-                }
-                for entry in category_data
-            ]
-        
-        # Get recent achievements (last 24 hours)
-        recent_cutoff = datetime.utcnow() - timedelta(hours=24)
-        recent_achievements = db.session.query(
-            Score.user_id,
-            UserModel.username,
-            UserModel.profile_img,
-            Score.score,
-            Score.category,
-            Score.date_attempted
-        ).join(UserModel, Score.user_id == UserModel.id)\
-         .filter(Score.date_attempted >= recent_cutoff)\
-         .order_by(desc(Score.date_attempted))\
-         .limit(10).all()
-        
-        # Get user statistics
-        user_stats = None
-        if current_user.is_authenticated:
-            user_stats = get_user_leaderboard_stats(current_user.id)
-        
-        return {
-            'overall': [
-                {
-                    'user_id': entry.user_id,
-                    'username': entry.username,
-                    'profile_img': entry.profile_img,
-                    'score': entry.score,
-                    'date_attempted': entry.date_attempted.isoformat() if entry.date_attempted else None,
-                    'category': entry.category
-                }
-                for entry in overall_leaderboard
-            ],
-            'categories': category_leaderboards,
-            'recent_achievements': [
-                {
-                    'user_id': entry.user_id,
-                    'username': entry.username,
-                    'profile_img': entry.profile_img,
-                    'score': entry.score,
-                    'category': entry.category,
-                    'date_attempted': entry.date_attempted.isoformat() if entry.date_attempted else None
-                }
-                for entry in recent_achievements
-            ],
-            'user_stats': user_stats
-        }
-        
-    except Exception as e:
-        print(f"❌ Error getting live leaderboard data: {str(e)}")
-        return {
-            'overall': [],
-            'categories': {},
-            'recent_achievements': [],
-            'user_stats': None
-        }
-
-def get_filtered_leaderboard_data(category='all', time_period='all_time', limit=20):
-    """Get filtered leaderboard data based on category and time period"""
-    try:
-        from user.models.score import Score
-        
-        # Base query
-        query = db.session.query(
-            Score.user_id,
-            UserModel.username,
-            UserModel.profile_img,
-            func.max(Score.score).label('score'),
-            func.max(Score.date_attempted).label('date_attempted'),
-            Score.category
-        ).join(UserModel, Score.user_id == UserModel.id)
-        
-        # Apply category filter
-        if category != 'all':
-            query = query.filter(Score.category == category)
-        
-        # Apply time period filter
-        if time_period != 'all_time':
-            cutoff_date = datetime.utcnow()
-            
-            if time_period == 'daily':
-                cutoff_date = cutoff_date - timedelta(days=1)
-            elif time_period == 'weekly':
-                cutoff_date = cutoff_date - timedelta(weeks=1)
-            elif time_period == 'monthly':
-                cutoff_date = cutoff_date - timedelta(days=30)
-            
-            query = query.filter(Score.date_attempted >= cutoff_date)
-        
-        # Group and order
-        if category == 'all':
-            # For overall leaderboard, get best score per user across all categories
-            subquery = query.group_by(Score.user_id, UserModel.username, UserModel.profile_img, Score.category).subquery()
-            
-            final_query = db.session.query(
-                subquery.c.user_id,
-                subquery.c.username,
-                subquery.c.profile_img,
-                func.max(subquery.c.score).label('score'),
-                func.max(subquery.c.date_attempted).label('date_attempted'),
-                subquery.c.category
-            ).group_by(subquery.c.user_id, subquery.c.username, subquery.c.profile_img, subquery.c.category)\
-             .order_by(desc(func.max(subquery.c.score)))\
-             .limit(limit)
-            
-            results = final_query.all()
-        else:
-            # For category-specific leaderboard
-            results = query.group_by(Score.user_id, UserModel.username, UserModel.profile_img, Score.category)\
-                          .order_by(desc(func.max(Score.score)))\
-                          .limit(limit).all()
-        
-        # Get user's rank if authenticated
-        user_rank = None
-        if current_user.is_authenticated:
-            user_rank = get_user_rank(current_user.id, category)
-        
-        return {
-            'entries': [
-                {
-                    'user_id': entry.user_id,
-                    'username': entry.username,
-                    'profile_img': entry.profile_img,
-                    'score': entry.score,
-                    'date_attempted': entry.date_attempted.isoformat() if entry.date_attempted else None,
-                    'category': entry.category if hasattr(entry, 'category') else category
-                }
-                for entry in results
-            ],
-            'total_count': len(results),
-            'user_rank': user_rank
-        }
-        
-    except Exception as e:
-        print(f"❌ Error getting filtered leaderboard data: {str(e)}")
-        return {
-            'entries': [],
-            'total_count': 0,
-            'user_rank': None
-        }
-
-def check_new_high_score(user_id, category, new_score):
-    """Check if the new score is a personal best"""
-    try:
-        from user.models.score import Score
-        
-        best_score = db.session.query(func.max(Score.score)).filter(
-            Score.user_id == user_id,
-            Score.category == category
-        ).scalar()
-        
-        return best_score is None or new_score > best_score
-        
-    except Exception as e:
-        print(f"❌ Error checking high score: {str(e)}")
-        return False
-
-def get_user_previous_best(user_id, category):
-    """Get user's previous best score in a category"""
-    try:
-        from user.models.score import Score
-        
-        previous_best = db.session.query(func.max(Score.score)).filter(
-            Score.user_id == user_id,
-            Score.category == category
-        ).scalar()
-        
-        return previous_best or 0
-        
-    except Exception as e:
-        print(f"❌ Error getting previous best: {str(e)}")
-        return 0
-
-def get_user_rank(user_id, category='all'):
-    """Get user's current rank in specified category"""
-    try:
-        from user.models.score import Score
-        
-        if category == 'all':
-            # Get rank across all categories (best overall score)
-            user_best_score = db.session.query(func.max(Score.score)).filter(
-                Score.user_id == user_id
-            ).scalar()
-            
-            if user_best_score is None:
-                return None
-            
-            better_users = db.session.query(func.count(func.distinct(Score.user_id))).filter(
-                Score.score > user_best_score
-            ).scalar()
-            
-            return better_users + 1
-        else:
-            # Get rank in specific category
-            user_best_score = db.session.query(func.max(Score.score)).filter(
-                Score.user_id == user_id,
-                Score.category == category
-            ).scalar()
-            
-            if user_best_score is None:
-                return None
-            
-            better_users = db.session.query(func.count(func.distinct(Score.user_id))).filter(
-                Score.category == category,
-                Score.score > user_best_score
-            ).scalar()
-            
-            return better_users + 1
-        
-    except Exception as e:
-        print(f"❌ Error getting user rank: {str(e)}")
-        return None
-
-def get_user_leaderboard_stats(user_id):
-    """Get comprehensive user statistics for leaderboard"""
-    try:
-        from user.models.score import Score
-        
-        # Get user's best scores per category
-        category_scores = db.session.query(
-            Score.category,
-            func.max(Score.score).label('best_score'),
-            func.count(Score.id).label('attempt_count')
-        ).filter(Score.user_id == user_id)\
-         .group_by(Score.category)\
-         .all()
-        
-        # Get overall statistics
-        total_attempts = db.session.query(func.count(Score.id)).filter(
-            Score.user_id == user_id
-        ).scalar()
-        
-        overall_best = db.session.query(func.max(Score.score)).filter(
-            Score.user_id == user_id
-        ).scalar()
-        
-        # Get recent activity
-        recent_cutoff = datetime.utcnow() - timedelta(days=7)
-        recent_activity = db.session.query(func.count(Score.id)).filter(
-            Score.user_id == user_id,
-            Score.date_attempted >= recent_cutoff
-        ).scalar()
-        
-        return {
-            'category_scores': {
-                entry.category: {
-                    'best_score': entry.best_score,
-                    'attempt_count': entry.attempt_count,
-                    'rank': get_user_rank(user_id, entry.category)
-                }
-                for entry in category_scores
-            },
-            'overall_stats': {
-                'total_attempts': total_attempts,
-                'overall_best': overall_best,
-                'overall_rank': get_user_rank(user_id, 'all'),
-                'recent_activity': recent_activity
-            }
-        }
-        
-    except Exception as e:
-        print(f"❌ Error getting user stats: {str(e)}")
-        return None
-
-# ===== SCENARIO TIMER SYSTEM =====
-try:
-    from admin.models.scenario_timer import ScenarioTimer
-    print("✅ Scenario timer model imported successfully")
-except ImportError as e:
-    print(f"⚠️ Warning: Could not import scenario timer model: {e}")
-    ScenarioTimer = None
-
-# Timer Management Events
-@socketio.on('start_scenario_timer')
-@authenticated_only
-def handle_start_scenario_timer(data):
-    """Start a new scenario timer"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        scenario_id = data.get('scenario_id')
-        scenario_type = data.get('scenario_type', 'troubleshooting')
-        difficulty = data.get('difficulty', 'medium')
-        time_limit_minutes = data.get('time_limit_minutes')
-        lobby_id = data.get('lobby_id')
-        is_collaborative = bool(lobby_id)
-        
-        if not scenario_id:
-            emit('timer_error', {'error': 'Scenario ID required'})
-            return
-        
-        # Check for existing active timer
-        existing_timer = ScenarioTimer.get_active_timer(current_user.id, scenario_id)
-        if existing_timer:
-            emit('timer_already_active', {
-                'timer': existing_timer.to_dict(),
-                'message': 'Timer already active for this scenario'
-            })
-            return
-        
-        # Create new timer
-        timer = ScenarioTimer.create_timer(
-            user_id=current_user.id,
-            scenario_id=scenario_id,
-            scenario_type=scenario_type,
-            difficulty=difficulty,
-            time_limit_minutes=time_limit_minutes,
-            lobby_id=lobby_id,
-            is_collaborative=is_collaborative
-        )
-        
-        db.session.add(timer)
-        db.session.commit()
-        
-        # Join timer room
-        timer_room = f"timer_{timer.id}"
-        join_room(timer_room)
-        
-        # If collaborative, sync with lobby participants
-        if is_collaborative and lobby_id:
-            lobby_room = f"troubleshooting_lobby_{lobby_id}"
-            emit('collaborative_timer_started', {
-                'timer': timer.to_dict(),
-                'started_by': current_user.username
-            }, room=lobby_room, include_self=False)
-        
-        # Send timer started confirmation
-        emit('timer_started', {
-            'success': True,
-            'timer': timer.to_dict(),
-            'room': timer_room
-        })
-        
-        print(f"✅ Timer started for {current_user.username}: {scenario_id} ({difficulty})")
-        
-    except Exception as e:
-        print(f"❌ Error starting timer: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('get_timer_status')
-@authenticated_only
-def handle_get_timer_status(data):
-    """Get current timer status"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        scenario_id = data.get('scenario_id')
-        timer_id = data.get('timer_id')
-        
-        timer = None
-        if timer_id:
-            timer = ScenarioTimer.query.get(timer_id)
-        elif scenario_id:
-            timer = ScenarioTimer.get_active_timer(current_user.id, scenario_id)
-        else:
-            timer = ScenarioTimer.get_active_timer(current_user.id)
-        
-        if timer:
-            emit('timer_status', {
-                'success': True,
-                'timer': timer.to_dict(),
-                'remaining_seconds': timer.get_current_remaining_seconds()
-            })
-        else:
-            emit('timer_status', {
-                'success': False,
-                'message': 'No active timer found'
-            })
-            
-    except Exception as e:
-        print(f"❌ Error getting timer status: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('pause_timer')
-@authenticated_only
-def handle_pause_timer(data):
-    """Pause an active timer"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        timer_id = data.get('timer_id')
-        reason = data.get('reason', 'User paused')
-        
-        timer = ScenarioTimer.query.get(timer_id)
-        if not timer or timer.user_id != current_user.id:
-            emit('timer_error', {'error': 'Timer not found or unauthorized'})
-            return
-        
-        if timer.is_paused:
-            emit('timer_error', {'error': 'Timer is already paused'})
-            return
-        
-        # Update timer state
-        timer.is_paused = True
-        timer.pause_time = datetime.utcnow()
-        timer.remaining_seconds = timer.get_current_remaining_seconds()
-        timer.add_pause_event('pause', reason)
-        
-        db.session.commit()
-        
-        # Notify participants if collaborative
-        if timer.is_collaborative and timer.lobby_id:
-            lobby_room = f"troubleshooting_lobby_{timer.lobby_id}"
-            emit('timer_paused', {
-                'timer_id': timer.id,
-                'paused_by': current_user.username,
-                'reason': reason,
-                'remaining_seconds': timer.remaining_seconds
-            }, room=lobby_room)
-        
-        emit('timer_paused_success', {
-            'timer': timer.to_dict(),
-            'message': 'Timer paused successfully'
-        })
-        
-        print(f"⏸️ Timer paused by {current_user.username}: {timer.scenario_id}")
-        
-    except Exception as e:
-        print(f"❌ Error pausing timer: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('resume_timer')
-@authenticated_only
-def handle_resume_timer(data):
-    """Resume a paused timer"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        timer_id = data.get('timer_id')
-        
-        timer = ScenarioTimer.query.get(timer_id)
-        if not timer or timer.user_id != current_user.id:
-            emit('timer_error', {'error': 'Timer not found or unauthorized'})
-            return
-        
-        if not timer.is_paused:
-            emit('timer_error', {'error': 'Timer is not paused'})
-            return
-        
-        # Update timer state
-        timer.is_paused = False
-        timer.resume_time = datetime.utcnow()
-        timer.add_pause_event('resume')
-        
-        db.session.commit()
-        
-        # Notify participants if collaborative
-        if timer.is_collaborative and timer.lobby_id:
-            lobby_room = f"troubleshooting_lobby_{timer.lobby_id}"
-            emit('timer_resumed', {
-                'timer_id': timer.id,
-                'resumed_by': current_user.username,
-                'remaining_seconds': timer.get_current_remaining_seconds()
-            }, room=lobby_room)
-        
-        emit('timer_resumed_success', {
-            'timer': timer.to_dict(),
-            'message': 'Timer resumed successfully'
-        })
-        
-        print(f"▶️ Timer resumed by {current_user.username}: {timer.scenario_id}")
-        
-    except Exception as e:
-        print(f"❌ Error resuming timer: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('extend_timer')
-@authenticated_only
-def handle_extend_timer(data):
-    """Extend timer duration (admin only or emergency situations)"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        timer_id = data.get('timer_id')
-        additional_minutes = data.get('additional_minutes', 5)
-        reason = data.get('reason', 'Emergency extension')
-        
-        # Check if user has permission to extend (timer owner or admin)
-        timer = ScenarioTimer.query.get(timer_id)
-        if not timer:
-            emit('timer_error', {'error': 'Timer not found'})
-            return
-        
-        can_extend = (timer.user_id == current_user.id or 
-                     getattr(current_user, 'is_admin', False) or
-                     hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins')
-        
-        if not can_extend:
-            emit('timer_error', {'error': 'Unauthorized to extend timer'})
-            return
-        
-        # Add extension
-        additional_seconds = additional_minutes * 60
-        timer.add_timer_extension(
-            additional_seconds=additional_seconds,
-            reason=reason,
-            granted_by=current_user.username
-        )
-        
-        db.session.commit()
-        
-        # Notify all participants
-        timer_room = f"timer_{timer.id}"
-        emit('timer_extended', {
-            'timer': timer.to_dict(),
-            'additional_minutes': additional_minutes,
-            'reason': reason,
-            'extended_by': current_user.username
-        }, room=timer_room)
-        
-        # Notify lobby if collaborative
-        if timer.is_collaborative and timer.lobby_id:
-            lobby_room = f"troubleshooting_lobby_{timer.lobby_id}"
-            emit('collaborative_timer_extended', {
-                'timer_id': timer.id,
-                'additional_minutes': additional_minutes,
-                'reason': reason,
-                'extended_by': current_user.username
-            }, room=lobby_room)
-        
-        print(f"⏰ Timer extended by {current_user.username}: +{additional_minutes} minutes")
-        
-    except Exception as e:
-        print(f"❌ Error extending timer: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('complete_scenario')
-@authenticated_only
-def handle_complete_scenario(data):
-    """Mark scenario as completed and stop timer"""
-    if not ScenarioTimer:
-        emit('timer_error', {'error': 'Timer system not available'})
-        return
-    
-    try:
-        timer_id = data.get('timer_id')
-        final_score = data.get('final_score', 0)
-        completion_percentage = data.get('completion_percentage', 100)
-        solution_data = data.get('solution_data', {})
-        
-        timer = ScenarioTimer.query.get(timer_id)
-        if not timer or timer.user_id != current_user.id:
-            emit('timer_error', {'error': 'Timer not found or unauthorized'})
-            return
-        
-        # Complete the timer
-        timer.is_completed = True
-        timer.is_active = False
-        timer.end_time = datetime.utcnow()
-        timer.elapsed_seconds = int((timer.end_time - timer.start_time).total_seconds())
-        timer.final_score = final_score
-        timer.completion_percentage = completion_percentage
-        
-        # Calculate time bonus
-        remaining = timer.get_current_remaining_seconds()
-        if remaining > 0:
-            # Give bonus based on time remaining (up to 20% of final score)
-            time_bonus_percentage = (remaining / timer.time_limit_seconds) * 0.2
-            timer.time_bonus = int(final_score * time_bonus_percentage)
-        
-        # Calculate performance metrics
-        timer.time_efficiency = timer.calculate_time_efficiency(completion_percentage)
-        timer.pressure_score = timer.calculate_pressure_score()
-        
-        db.session.commit()
-        
-        # Notify participants if collaborative
-        if timer.is_collaborative and timer.lobby_id:
-            lobby_room = f"troubleshooting_lobby_{timer.lobby_id}"
-            emit('scenario_completed_by_participant', {
-                'timer_id': timer.id,
-                'completed_by': current_user.username,
-                'final_score': final_score,
-                'completion_time': timer.elapsed_seconds,
-                'time_bonus': timer.time_bonus
-            }, room=lobby_room, include_self=False)
-        
-        # Send completion confirmation
-        emit('scenario_completed_success', {
-            'timer': timer.to_dict(),
-            'performance_summary': {
-                'final_score': final_score,
-                'time_bonus': timer.time_bonus,
-                'total_score': final_score + timer.time_bonus,
-                'time_efficiency': timer.time_efficiency,
-                'pressure_score': timer.pressure_score,
-                'completion_time': timer.elapsed_seconds
-            }
-        })
-        
-        print(f"✅ Scenario completed by {current_user.username}: {timer.scenario_id} - Score: {final_score}")
-        
-    except Exception as e:
-        print(f"❌ Error completing scenario: {str(e)}")
-        emit('timer_error', {'error': str(e)})
-
-@socketio.on('timer_warning_acknowledged')
-@authenticated_only
-def handle_timer_warning_acknowledged(data):
-    """Acknowledge timer warning"""
-    try:
-        timer_id = data.get('timer_id')
-        warning_type = data.get('warning_type')
-        remaining_seconds = data.get('remaining_seconds')
-        
-        timer = ScenarioTimer.query.get(timer_id)
-        if timer and timer.user_id == current_user.id:
-            timer.add_warning_event(warning_type, remaining_seconds)
-            db.session.commit()
-        
-        print(f"⚠️ Warning acknowledged by {current_user.username}: {warning_type}")
-        
-    except Exception as e:
-        print(f"❌ Error acknowledging warning: {str(e)}")
-
-@socketio.on('get_timer_analytics')
-@authenticated_only
-def handle_get_timer_analytics(data):
-    """Get timer analytics for user"""
-    if not ScenarioTimer:
-        emit('timer_analytics', {'success': False, 'error': 'Timer system not available'})
-        return
-    
-    try:
-        scenario_type = data.get('scenario_type')
-        time_period = data.get('time_period', 'all_time')
-        
-        # Get user timer statistics
-        stats = ScenarioTimer.get_user_timer_stats(current_user.id, scenario_type)
-        
-        # Get recent timers
-        query = ScenarioTimer.query.filter_by(
-            user_id=current_user.id,
-            is_completed=True
-        ).order_by(ScenarioTimer.created_at.desc())
-        
-        if scenario_type:
-            query = query.filter_by(scenario_type=scenario_type)
-        
-        # Apply time filter
-        if time_period != 'all_time':
-            cutoff = datetime.utcnow()
-            if time_period == 'weekly':
-                cutoff -= timedelta(weeks=1)
-            elif time_period == 'monthly':
-                cutoff -= timedelta(days=30)
-            else:  # daily
-                cutoff -= timedelta(days=1)
-            
-            query = query.filter(ScenarioTimer.created_at >= cutoff)
-        
-        recent_timers = query.limit(10).all()
-        
-        emit('timer_analytics', {
-            'success': True,
-            'stats': stats,
-            'recent_timers': [timer.to_dict() for timer in recent_timers],
-            'time_period': time_period
-        })
-        
-    except Exception as e:
-        print(f"❌ Error getting timer analytics: {str(e)}")
-        emit('timer_analytics', {'success': False, 'error': str(e)})
-
-# Auto-expiration handling
-@socketio.on('check_timer_expiration')
-@authenticated_only
-def handle_check_timer_expiration(data):
-    """Check if timer has expired and handle auto-submission"""
-    if not ScenarioTimer:
-        return
-    
-    try:
-        timer_id = data.get('timer_id')
-        
-        timer = ScenarioTimer.query.get(timer_id)
-        if not timer or timer.user_id != current_user.id:
-            return
-        
-        remaining = timer.get_current_remaining_seconds()
-        
-        if remaining <= 0 and not timer.is_expired:
-            # Timer has expired
-            timer.is_expired = True
-            timer.is_active = False
-            timer.auto_submitted = True
-            timer.end_time = datetime.utcnow()
-            timer.elapsed_seconds = timer.time_limit_seconds
-            
-            # Get current progress for auto-submission
-            current_progress = data.get('current_progress', {})
-            timer.completion_percentage = current_progress.get('completion_percentage', 0)
-            timer.final_score = current_progress.get('current_score', 0)
-            
-            # No time bonus for expired timers
-            timer.time_bonus = 0
-            timer.time_efficiency = timer.calculate_time_efficiency()
-            timer.pressure_score = 0  # No pressure score for expired timers
-            
-            db.session.commit()
-            
-            # Notify user of expiration and auto-submission
-            emit('timer_expired', {
-                'timer': timer.to_dict(),
-                'auto_submitted': True,
-                'final_score': timer.final_score,
-                'message': 'Time expired - scenario auto-submitted'
-            })
-            
-            # Notify collaborative participants
-            if timer.is_collaborative and timer.lobby_id:
-                lobby_room = f"troubleshooting_lobby_{timer.lobby_id}"
-                emit('participant_timer_expired', {
-                    'user_id': current_user.id,
-                    'username': current_user.username,
-                    'timer_id': timer.id,
-                    'auto_submitted': True
-                }, room=lobby_room, include_self=False)
-            
-            print(f"⏰❌ Timer expired and auto-submitted for {current_user.username}: {timer.scenario_id}")
-        
-        elif remaining <= 300 and remaining > 280:  # 5 minute warning
-            timer.add_warning_event('5_minute_warning', remaining)
-            db.session.commit()
-            
-            emit('timer_warning', {
-                'type': '5_minute_warning',
-                'remaining_seconds': remaining,
-                'message': timer.get_warning_message('5_minute_warning', remaining),
-                'urgency': 'medium'
-            })
-            
-        elif remaining <= 60 and remaining > 55:  # 1 minute warning
-            timer.add_warning_event('1_minute_warning', remaining)
-            db.session.commit()
-            
-            emit('timer_warning', {
-                'type': '1_minute_warning',
-                'remaining_seconds': remaining,
-                'message': timer.get_warning_message('1_minute_warning', remaining),
-                'urgency': 'high'
-            })
-            
-        elif remaining <= 30 and remaining > 25:  # 30 second warning
-            timer.add_warning_event('30_second_warning', remaining)
-            db.session.commit()
-            
-            emit('timer_warning', {
-                'type': '30_second_warning',
-                'remaining_seconds': remaining,
-                'message': timer.get_warning_message('30_second_warning', remaining),
-                'urgency': 'critical'
-            })
-        
-        # Send current status
-        emit('timer_status_update', {
-            'timer_id': timer.id,
-            'remaining_seconds': remaining,
-            'is_expired': timer.is_expired,
-            'auto_submitted': timer.auto_submitted
-        })
-        
-    except Exception as e:
-        print(f"❌ Error checking timer expiration: {str(e)}")
-
-# Collaborative timer synchronization
-@socketio.on('sync_collaborative_timer')
-@authenticated_only
-def handle_sync_collaborative_timer(data):
-    """Synchronize timer across collaborative session participants"""
-    if not ScenarioTimer:
-        return
-    
-    try:
-        lobby_id = data.get('lobby_id')
-        timer_action = data.get('action')  # 'start', 'pause', 'resume', 'complete'
-        timer_data = data.get('timer_data', {})
-        
-        if not lobby_id:
-            return
-        
-        lobby_room = f"troubleshooting_lobby_{lobby_id}"
-        
-        # Broadcast timer sync to all participants
-        emit('timer_sync_update', {
-            'action': timer_action,
-            'timer_data': timer_data,
-            'sync_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=lobby_room, include_self=False)
-        
-        print(f"🔄 Timer sync broadcast by {current_user.username}: {timer_action}")
-        
-    except Exception as e:
-        print(f"❌ Error syncing collaborative timer: {str(e)}")
-
-print("✅ Socket events module loaded successfully with live leaderboard and timer systems")
-
-# ===== ENHANCED ADMIN WEBSOCKET EVENTS =====
-
-@socketio.on('join_admin_room')
-@admin_only
-def handle_join_admin_room(data=None):
-    """Join admin room for real-time admin updates"""
-    try:
-        join_room('admin_room')
-        emit('joined_admin_room', {'success': True, 'message': 'Connected to admin updates'})
-        print(f"👑 Admin {current_user.username} joined admin room")
-        
-        # Send current admin stats on join
-        emit_admin_dashboard_stats()
-        
-    except Exception as e:
-        print(f"❌ Error joining admin room: {str(e)}")
-        emit('admin_room_error', {'error': str(e)})
-
-@socketio.on('join_admin_dashboard')
-@admin_only
-def handle_join_admin_dashboard(data=None):
-    """Join admin dashboard room for real-time dashboard updates"""
-    try:
-        join_room('admin_dashboard')
-        emit('joined_admin_dashboard', {'success': True})
-        print(f"📊 Admin {current_user.username} joined dashboard room")
-        
-        # Send initial dashboard data
-        emit_admin_dashboard_stats()
-        emit_recent_admin_activity()
-        
-    except Exception as e:
-        print(f"❌ Error joining admin dashboard: {str(e)}")
-        emit('admin_dashboard_error', {'error': str(e)})
-
-@socketio.on('join_user_management')
-@admin_only
-def handle_join_user_management(data=None):
-    """Join user management room for real-time user activity updates"""
-    try:
-        join_room('user_management')
-        emit('joined_user_management', {'success': True})
-        print(f"👥 Admin {current_user.username} joined user management room")
-        
-        # Send current user stats
-        emit_user_management_stats()
-        
-    except Exception as e:
-        print(f"❌ Error joining user management: {str(e)}")
-        emit('user_management_error', {'error': str(e)})
-
-@socketio.on('join_notification_center')
-@admin_only
-def handle_join_notification_center(data=None):
-    """Join notification center room for real-time notification management"""
-    try:
-        join_room('notification_center')
-        emit('joined_notification_center', {'success': True})
-        print(f"🔔 Admin {current_user.username} joined notification center room")
-        
-        # Send current notification stats
-        emit_notification_stats()
-        
-    except Exception as e:
-        print(f"❌ Error joining notification center: {str(e)}")
-        emit('notification_center_error', {'error': str(e)})
-
-@socketio.on('join_analytics_room')
-@admin_only
-def handle_join_analytics_room(data=None):
-    """Join analytics room for real-time analytics updates"""
-    try:
-        join_room('analytics_room')
-        emit('joined_analytics_room', {'success': True})
-        print(f"📈 Admin {current_user.username} joined analytics room")
-        
-        # Send current analytics data
-        emit_analytics_data()
-        
-    except Exception as e:
-        print(f"❌ Error joining analytics room: {str(e)}")
-        emit('analytics_room_error', {'error': str(e)})
-
-@socketio.on('admin_presence')
-@admin_only
-def handle_admin_presence(data):
-    """Update admin presence information"""
-    try:
-        page = data.get('page', 'unknown')
-        timestamp = data.get('timestamp', datetime.utcnow().timestamp() * 1000)
-        user_agent = data.get('user_agent', 'Unknown')
-        
-        # Store admin presence info (could be stored in cache/db if needed)
-        presence_data = {
-            'admin_id': current_user.id,
-            'admin_name': current_user.username,
-            'page': page,
-            'timestamp': timestamp,
-            'user_agent': user_agent
-        }
-        
-        # Broadcast admin presence to other admins
-        emit('admin_presence_update', presence_data, room='admin_room', include_self=False)
-        
-        print(f"👑 Admin presence updated: {current_user.username} on {page}")
-        
-    except Exception as e:
-        print(f"❌ Error updating admin presence: {str(e)}")
-
-# Content Management Events
-@socketio.on('content_auto_saved')
-@admin_only
-def handle_content_auto_saved(data):
-    """Handle content auto-save events"""
-    try:
-        content_id = data.get('content_id')
-        content_type = data.get('content_type')
-        auto_save_data = {
-            'content_id': content_id,
-            'content_type': content_type,
-            'saved_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat(),
-            'message': f'{content_type} auto-saved'
-        }
-        
-        # Broadcast to other admins working on content
-        emit('content_auto_saved_broadcast', auto_save_data, room='module_builder', include_self=False)
-        
-        # Confirm to sender
-        emit('content_auto_save_confirmed', auto_save_data)
-        
-        print(f"💾 Content auto-saved: {content_type} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling content auto-save: {str(e)}")
-
-@socketio.on('concurrent_edit_detected')
-@admin_only
-def handle_concurrent_edit_detected(data):
-    """Handle concurrent editing detection"""
-    try:
-        content_id = data.get('content_id')
-        content_type = data.get('content_type')
-        
-        warning_data = {
-            'content_id': content_id,
-            'content_type': content_type,
-            'editor': current_user.username,
-            'message': f'{current_user.username} is also editing this {content_type}',
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Warn other editors
-        emit('concurrent_edit_warning', warning_data, room='module_builder', include_self=False)
-        
-        print(f"⚠️ Concurrent editing detected: {content_type} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling concurrent edit detection: {str(e)}")
-
-@socketio.on('content_published')
-@admin_only
-def handle_content_published(data):
-    """Handle content publishing events"""
-    try:
-        content_data = data.get('content')
-        content_type = data.get('content_type', 'content')
-        class_id = data.get('class_id')
-        
-        publish_data = {
-            'content': content_data,
-            'content_type': content_type,
-            'class_id': class_id,
-            'published_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin rooms
-        emit('content_published_broadcast', publish_data, room='admin_room')
-        emit('content_published_broadcast', publish_data, room='module_builder')
-        
-        # Notify students in class if class_id provided
-        if class_id:
-            emit('new_content_available', {
-                'content_type': content_type,
-                'content_title': content_data.get('title', 'New Content'),
-                'class_id': class_id,
-                'published_by': current_user.username
-            }, room=f'class_{class_id}')
-        
-        print(f"📤 Content published: {content_type} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling content publishing: {str(e)}")
-
-# User Management Events
-@socketio.on('user_status_changed')
-@admin_only
-def handle_user_status_changed(data):
-    """Handle user status changes (enable/disable/role changes)"""
-    try:
-        user_id = data.get('user_id')
-        old_status = data.get('old_status')
-        new_status = data.get('new_status')
-        action = data.get('action')  # 'enable', 'disable', 'role_change', etc.
-        
-        status_change_data = {
-            'user_id': user_id,
-            'old_status': old_status,
-            'new_status': new_status,
-            'action': action,
-            'changed_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin rooms
-        emit('user_status_changed_broadcast', status_change_data, room='admin_room')
-        emit('user_status_changed_broadcast', status_change_data, room='user_management')
-        
-        # Update real-time user stats
-        emit_user_management_stats()
-        
-        print(f"👤 User status changed: User {user_id} {action} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling user status change: {str(e)}")
-
-@socketio.on('bulk_user_action')
-@admin_only
-def handle_bulk_user_action(data):
-    """Handle bulk user actions"""
-    try:
-        user_ids = data.get('user_ids', [])
-        action = data.get('action')
-        additional_data = data.get('additional_data', {})
-        
-        bulk_action_data = {
-            'user_ids': user_ids,
-            'action': action,
-            'additional_data': additional_data,
-            'executed_by': current_user.username,
-            'affected_count': len(user_ids),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin rooms
-        emit('bulk_user_action_broadcast', bulk_action_data, room='admin_room')
-        emit('bulk_user_action_broadcast', bulk_action_data, room='user_management')
-        
-        print(f"👥 Bulk user action: {action} on {len(user_ids)} users by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling bulk user action: {str(e)}")
-
-# Simulation Management Events
-@socketio.on('simulation_created')
-@admin_only
-def handle_simulation_created_admin(data):
-    """Handle simulation creation by admin"""
-    try:
-        simulation_data = data.get('simulation')
-        category = data.get('category')
-        
-        creation_data = {
-            'simulation': simulation_data,
-            'category': category,
-            'created_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin rooms
-        emit('simulation_created_broadcast', creation_data, room='admin_room')
-        emit('simulation_created_broadcast', creation_data, room='simulation_builder')
-        
-        print(f"🎮 Simulation created: {simulation_data.get('title', 'Unknown')} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling simulation creation: {str(e)}")
-
-@socketio.on('simulation_auto_saved')
-@admin_only
-def handle_simulation_auto_saved(data):
-    """Handle simulation auto-save events"""
-    try:
-        simulation_id = data.get('simulation_id')
-        auto_save_data = {
-            'simulation_id': simulation_id,
-            'saved_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat(),
-            'message': 'Simulation auto-saved'
-        }
-        
-        # Broadcast to simulation builder room
-        emit('simulation_auto_saved_broadcast', auto_save_data, room='admin_room', include_self=False)
-        
-        # Confirm to sender
-        emit('simulation_auto_save_confirmed', auto_save_data)
-        
-        print(f"💾 Simulation auto-saved: {simulation_id} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling simulation auto-save: {str(e)}")
-
-@socketio.on('simulation_validated')
-@admin_only
-def handle_simulation_validated(data):
-    """Handle simulation validation results"""
-    try:
-        simulation_id = data.get('simulation_id')
-        validation_results = data.get('validation_results')
-        is_valid = data.get('is_valid')
-        
-        validation_data = {
-            'simulation_id': simulation_id,
-            'validation_results': validation_results,
-            'is_valid': is_valid,
-            'validated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin room
-        emit('simulation_validated_broadcast', validation_data, room='admin_room')
-        
-        print(f"✅ Simulation validated: {simulation_id} ({'valid' if is_valid else 'invalid'}) by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling simulation validation: {str(e)}")
-
-# Analytics Events
-@socketio.on('request_analytics_update')
-@admin_only
-def handle_request_analytics_update(data):
-    """Handle request for analytics data update"""
-    try:
-        analytics_type = data.get('analytics_type', 'general')
-        time_range = data.get('time_range', 'last_7_days')
-        
-        # Emit current analytics data
-        emit_analytics_data(analytics_type, time_range)
-        
-        print(f"📊 Analytics update requested: {analytics_type} for {time_range} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling analytics update request: {str(e)}")
-
-@socketio.on('performance_threshold_breach')
-@admin_only
-def handle_performance_threshold_breach(data):
-    """Handle performance threshold breach alerts"""
-    try:
-        metric_name = data.get('metric_name')
-        current_value = data.get('current_value')
-        threshold_value = data.get('threshold_value')
-        severity = data.get('severity', 'warning')
-        
-        alert_data = {
-            'metric_name': metric_name,
-            'current_value': current_value,
-            'threshold_value': threshold_value,
-            'severity': severity,
-            'timestamp': datetime.utcnow().isoformat(),
-            'message': f'{metric_name} threshold breached: {current_value} > {threshold_value}'
-        }
-        
-        # Broadcast performance alert to all admin rooms
-        emit('performance_alert_broadcast', alert_data, room='admin_room')
-        emit('performance_alert_broadcast', alert_data, room='admin_dashboard')
-        emit('performance_alert_broadcast', alert_data, room='analytics_room')
-        
-        print(f"🚨 Performance alert: {metric_name} threshold breached")
-        
-    except Exception as e:
-        print(f"❌ Error handling performance threshold breach: {str(e)}")
-
-# WebSocket Monitoring Events
-@socketio.on('websocket_connection_stats')
-@admin_only
-def handle_websocket_connection_stats(data):
-    """Handle WebSocket connection statistics updates"""
-    try:
-        stats_data = data.get('stats')
-        
-        # Broadcast WebSocket stats to admin monitoring
-        emit('websocket_stats_updated', {
-            'stats': stats_data,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='admin_collaboration_monitoring')
-        
-        print(f"🔌 WebSocket stats updated by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling WebSocket stats: {str(e)}")
-
-@socketio.on('connection_diagnostic_request')
-@admin_only
-def handle_connection_diagnostic_request(data):
-    """Handle connection diagnostic requests"""
-    try:
-        diagnostic_type = data.get('diagnostic_type', 'general')
-        target_user_id = data.get('target_user_id')
-        
-        diagnostic_data = {
-            'diagnostic_type': diagnostic_type,
-            'target_user_id': target_user_id,
-            'requested_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat(),
-            'results': {
-                'connection_status': 'active',
-                'latency': '45ms',
-                'transport': 'websocket',
-                'rooms': ['admin_room', 'admin_collaboration_monitoring']
-            }
-        }
-        
-        # Send diagnostic results
-        emit('connection_diagnostic_results', diagnostic_data)
-        
-        print(f"🔍 Connection diagnostic requested: {diagnostic_type} by {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error handling connection diagnostic: {str(e)}")
-
-# Helper Functions for Admin Events
-def emit_admin_dashboard_stats():
-    """Emit current admin dashboard statistics"""
-    try:
-        # Get dashboard stats (would normally come from database queries)
-        stats = {
-            'total_users': get_total_users_count(),
-            'active_users': get_active_users_count(),
-            'total_classes': get_total_classes_count(),
-            'pending_submissions': get_pending_submissions_count(),
-            'system_load': get_system_load_percentage(),
-            'active_simulations': get_active_simulations_count(),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Broadcast to admin dashboard
-        socketio.emit('dashboard_stats_update', stats, room='admin_dashboard')
-        
-    except Exception as e:
-        print(f"❌ Error emitting dashboard stats: {str(e)}")
-
-def emit_recent_admin_activity():
-    """Emit recent admin activity feed"""
-    try:
-        # Get recent activity (would normally come from audit log)
-        activities = [
-            {
-                'id': 1,
-                'admin_name': 'System',
-                'action': 'User Login',
-                'details': 'Student user logged in',
-                'timestamp': datetime.utcnow().isoformat(),
-                'type': 'info'
-            },
-            {
-                'id': 2,
-                'admin_name': current_user.username,
-                'action': 'Content Created',
-                'details': 'New module created',
-                'timestamp': datetime.utcnow().isoformat(),
-                'type': 'success'
-            }
-        ]
-        
-        socketio.emit('recent_activity_update', {
-            'activities': activities,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='admin_dashboard')
-        
-    except Exception as e:
-        print(f"❌ Error emitting recent activity: {str(e)}")
-
-def emit_user_management_stats():
-    """Emit user management statistics"""
-    try:
-        stats = {
-            'total_users': get_total_users_count(),
-            'active_users': get_active_users_count(),
-            'inactive_users': get_inactive_users_count(),
-            'new_registrations_today': get_new_registrations_today(),
-            'online_users': get_online_users_count(),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        socketio.emit('user_management_stats_update', stats, room='user_management')
-        
-    except Exception as e:
-        print(f"❌ Error emitting user management stats: {str(e)}")
-
-def emit_notification_stats():
-    """Emit notification statistics"""
-    try:
-        stats = {
-            'total_notifications': get_total_notifications_count(),
-            'unread_notifications': get_unread_notifications_count(),
-            'notifications_sent_today': get_notifications_sent_today(),
-            'notification_delivery_rate': get_notification_delivery_rate(),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        socketio.emit('notification_stats_update', stats, room='notification_center')
-        
-    except Exception as e:
-        print(f"❌ Error emitting notification stats: {str(e)}")
-
-def emit_analytics_data(analytics_type='general', time_range='last_7_days'):
-    """Emit analytics data"""
-    try:
-        # Generate analytics data based on type and time range
-        analytics_data = {
-            'analytics_type': analytics_type,
-            'time_range': time_range,
-            'data': get_analytics_data(analytics_type, time_range),
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        socketio.emit('analytics_data_update', analytics_data, room='analytics_room')
-        
-    except Exception as e:
-        print(f"❌ Error emitting analytics data: {str(e)}")
-
-# Placeholder functions for statistics (these would be implemented with actual database queries)
-def get_total_users_count():
-    try:
-        if UserModel:
-            return UserModel.query.count()
-        return 150  # Placeholder
-    except:
-        return 150
-
-def get_active_users_count():
-    try:
-        # Would check for users active in last 24 hours
-        return 45  # Placeholder
-    except:
-        return 45
-
-def get_total_classes_count():
-    try:
-        from admin.models.class_model import Class
-        return Class.query.count()
-    except:
-        return 12
-
-def get_pending_submissions_count():
-    try:
-        # Would check for ungraded submissions
-        return 8  # Placeholder
-    except:
-        return 8
-
-def get_system_load_percentage():
-    try:
-        import psutil
-        return psutil.cpu_percent()
-    except:
-        return 35  # Placeholder
-
-def get_active_simulations_count():
-    try:
-        # Would check for currently running simulations
-        return 5  # Placeholder
-    except:
-        return 5
-
-def get_inactive_users_count():
-    return get_total_users_count() - get_active_users_count()
-
-def get_new_registrations_today():
-    try:
-        # Would check for users registered today
-        return 3  # Placeholder
-    except:
-        return 3
-
-def get_online_users_count():
-    try:
-        # Would check currently connected users
-        return len(leaderboard_users) if 'leaderboard_users' in globals() else 15
-    except:
-        return 15
-
-def get_total_notifications_count():
-    try:
-        # Would get from notification table
-        return 245  # Placeholder
-    except:
-        return 245
-
-def get_unread_notifications_count():
-    try:
-        # Would get unread notifications
-        return 18  # Placeholder
-    except:
-        return 18
-
-def get_notifications_sent_today():
-    try:
-        # Would check notifications sent today
-        return 67  # Placeholder
-    except:
-        return 67
-
-def get_notification_delivery_rate():
-    try:
-        # Would calculate delivery success rate
-        return 94.5  # Placeholder percentage
-    except:
-        return 94.5
-
-def get_analytics_data(analytics_type, time_range):
-    """Get analytics data based on type and time range"""
-    try:
-        # This would be implemented with actual database queries
-        return {
-            'user_activity': [10, 15, 8, 23, 18, 12, 20],
-            'simulation_completions': [5, 8, 3, 12, 9, 6, 11],
-            'performance_metrics': {
-                'average_score': 78.5,
-                'completion_rate': 85.2,
-                'engagement_time': 45.3
-            }
-        }
-    except:
-        return {}
-
-@socketio.on('join_admin_collaboration_monitoring')
-@admin_only
-def handle_join_admin_collaboration_monitoring(data=None):
-    """Join admin collaboration monitoring room for real-time collaboration tracking"""
-    try:
-        join_room('admin_collaboration_monitoring')
-        emit('joined_collaboration_monitoring', {
-            'success': True, 
-            'message': 'Connected to collaboration monitoring'
-        })
-        print(f"👑 Admin {current_user.username} joined collaboration monitoring room")
-        
-        # Send current collaboration stats on join
-        if lobby_manager:
-            active_lobbies = lobby_manager.get_public_lobbies()
-            total_participants = sum(len(lobby.get('participants', [])) for lobby in active_lobbies)
-            
-            # Calculate average duration (simplified)
-            avg_duration = "0m"
-            if active_lobbies:
-                durations = []
-                for lobby_data in active_lobbies:
-                    if 'created_at' in lobby_data:
-                        try:
-                            created_time = datetime.fromisoformat(lobby_data['created_at'].replace('Z', '+00:00'))
-                            duration_minutes = int((datetime.utcnow() - created_time.replace(tzinfo=None)).total_seconds() / 60)
-                            durations.append(duration_minutes)
-                        except:
-                            pass
-                if durations:
-                    avg_duration = f"{int(sum(durations) / len(durations))}m"
-            
-            emit('stats_updated', {
-                'activeGroups': len(active_lobbies),
-                'totalParticipants': total_participants,
-                'avgDuration': avg_duration
-            })
-            
-            # Send current active collaborations
-            collaboration_sessions = []
-            for lobby_data in active_lobbies:
-                collaboration_sessions.append({
-                    'id': lobby_data.get('id'),
-                    'activity_name': lobby_data.get('name', 'Unknown Session'),
-                    'participants': [p.get('username', 'Unknown') for p in lobby_data.get('participants', [])],
-                    'duration': avg_duration,  # Simplified - would need actual calculation per lobby
-                    'status': 'active'
-                })
-            
-            if collaboration_sessions:
-                emit('collaboration_list_update', collaboration_sessions)
-        
-    except Exception as e:
-        print(f"❌ Error joining collaboration monitoring room: {str(e)}")
-        emit('collaboration_monitoring_error', {'error': str(e)})
-
-@socketio.on('join_module_builder')
-@admin_only
-def handle_join_module_builder(data):
-    """Join module builder room for real-time module updates"""
-    try:
-        class_id = data.get('class_id')
-        
-        # Join general module builder room
-        join_room('module_builder')
-        
-        # Join class-specific room if class_id provided
-        if class_id:
-            join_room(f'class_{class_id}')
-            emit('joined_module_builder', {
-                'success': True, 
-                'class_id': class_id,
-                'rooms': ['module_builder', f'class_{class_id}']
-            })
-        else:
-            emit('joined_module_builder', {
-                'success': True,
-                'rooms': ['module_builder']
-            })
-        
-        print(f"🏗️ Admin {current_user.username} joined module builder room")
-        
-    except Exception as e:
-        print(f"❌ Error joining module builder: {str(e)}")
-        emit('module_builder_error', {'error': str(e)})
-
-@socketio.on('leave_module_builder')
-@authenticated_only
-def handle_leave_module_builder(data=None):
-    """Leave module builder room"""
-    try:
-        class_id = data.get('class_id') if data else None
-        
-        leave_room('module_builder')
-        if class_id:
-            leave_room(f'class_{class_id}')
-        
-        emit('left_module_builder', {'success': True})
-        print(f"🏗️ User {current_user.username} left module builder room")
-    except Exception as e:
-        print(f"❌ Error leaving module builder: {str(e)}")
-
-# Collaboration Team Management Events
-@socketio.on('join_collaboration_session')
-@authenticated_only
-def handle_join_collaboration_session(data):
-    """Join a collaboration session for real-time team updates"""
-    try:
-        simulation_id = data.get('simulation_id')
-        class_id = data.get('class_id')
-        
-        if simulation_id:
-            join_room(f'collaboration_sim_{simulation_id}')
-        
-        if class_id:
-            join_room(f'collaboration_class_{class_id}')
-        
-        emit('joined_collaboration_session', {
-            'success': True,
-            'simulation_id': simulation_id,
-            'class_id': class_id
-        })
-        
-        print(f"🤝 User {current_user.username} joined collaboration session (sim: {simulation_id}, class: {class_id})")
-        
-    except Exception as e:
-        print(f"❌ Error joining collaboration session: {str(e)}")
-        emit('collaboration_session_error', {'error': str(e)})
-
-@socketio.on('update_team_assignment')
-@admin_only  
-def handle_update_team_assignment(data):
-    """Handle real-time team assignment updates"""
-    try:
-        simulation_id = data.get('simulation_id')
-        class_id = data.get('class_id')
-        teams = data.get('teams', [])
-        
-        # Broadcast team updates to all users in the collaboration session
-        room_name = f'collaboration_sim_{simulation_id}' if simulation_id else f'collaboration_class_{class_id}'
-        
-        emit('team_assignment_updated', {
-            'simulation_id': simulation_id,
-            'class_id': class_id,
-            'teams': teams,
-            'updated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-        print(f"🤝 Team assignment updated by {current_user.username} for simulation {simulation_id}")
-        
-    except Exception as e:
-        print(f"❌ Error updating team assignment: {str(e)}")
-        emit('team_update_error', {'error': str(e)})
-
-@socketio.on('collaboration_settings_changed')
-@admin_only
-def handle_collaboration_settings_changed(data):
-    """Handle real-time collaboration settings updates"""
-    try:
-        simulation_id = data.get('simulation_id')
-        settings = data.get('settings', {})
-        
-        # Broadcast settings changes to all users in the collaboration session
-        room_name = f'collaboration_sim_{simulation_id}'
-        
-        emit('collaboration_settings_updated', {
-            'simulation_id': simulation_id,
-            'settings': settings,
-            'updated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-        print(f"⚙️ Collaboration settings updated by {current_user.username} for simulation {simulation_id}")
-        
-    except Exception as e:
-        print(f"❌ Error updating collaboration settings: {str(e)}")
-        emit('settings_update_error', {'error': str(e)})
-        
-    except Exception as e:
-        print(f"❌ Error leaving module builder: {str(e)}")
-
-@socketio.on('module_created')
-@admin_only
-def handle_module_created(data):
-    """Handle module creation event and broadcast to other admins"""
-    try:
-        module_data = data.get('module')
-        class_id = data.get('class_id')
-        
-        if not module_data or not class_id:
-            emit('module_creation_error', {'error': 'Module data and class_id required'})
-            return
-        
-        # Broadcast to admin room
-        socketio.emit('module_created_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'created_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='admin_room')
-        
-        # Broadcast to module builder room
-        socketio.emit('module_created_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'created_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='module_builder')
-        
-        # Broadcast to class-specific room
-        socketio.emit('module_created_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'created_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=f'class_{class_id}')
-        
-        emit('module_creation_success', {'message': 'Module creation broadcasted'})
-        print(f"📝 Module creation broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
-        
-    except Exception as e:
-        print(f"❌ Error broadcasting module creation: {str(e)}")
-        emit('module_creation_error', {'error': str(e)})
-
-@socketio.on('module_updated')
-@admin_only
-def handle_module_updated(data):
-    """Handle module update event and broadcast to other admins"""
-    try:
-        module_data = data.get('module')
-        class_id = data.get('class_id')
-        
-        if not module_data or not class_id:
-            emit('module_update_error', {'error': 'Module data and class_id required'})
-            return
-        
-        # Broadcast to admin room
-        socketio.emit('module_updated_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'updated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='admin_room')
-        
-        # Broadcast to module builder room
-        socketio.emit('module_updated_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'updated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room='module_builder')
-        
-        # Broadcast to class-specific room
-        socketio.emit('module_updated_broadcast', {
-            'module': module_data,
-            'class_id': class_id,
-            'updated_by': current_user.username,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=f'class_{class_id}')
-        
-        emit('module_update_success', {'message': 'Module update broadcasted'})
-        print(f"📝 Module update broadcasted by {current_user.username}: {module_data.get('title', 'Unknown')}")
-        
-    except Exception as e:
-        print(f"❌ Error broadcasting module update: {str(e)}")
-        emit('module_update_error', {'error': str(e)})
-
-# Helper functions for module WebSocket events
-def emit_module_deleted(module_data, class_id):
-    """Helper function to emit module deletion events"""
-    try:
-        from socket_manager import socketio
-        
-        broadcast_data = {
-            'module': module_data,
-            'class_id': class_id,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Emit to admin room
-        socketio.emit('module_deleted_broadcast', broadcast_data, room='admin_room')
-        
-        # Emit to module builder room
-        socketio.emit('module_deleted_broadcast', broadcast_data, room='module_builder')
-        
-        # Emit to class-specific room
-        socketio.emit('module_deleted_broadcast', broadcast_data, room=f'class_{class_id}')
-        
-        print(f"📡 Module deletion events emitted for module {module_data.get('id')} in class {class_id}")
-        
-    except Exception as e:
-        print(f"❌ Error emitting module deletion events: {str(e)}")
-
-def emit_module_created(module_data, class_id, created_by):
-    """Helper function to emit module creation events"""
-    try:
-        from socket_manager import socketio
-        
-        broadcast_data = {
-            'module': module_data,
-            'class_id': class_id,
-            'created_by': created_by,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Emit to admin room
-        socketio.emit('module_created_broadcast', broadcast_data, room='admin_room')
-        
-        # Emit to module builder room
-        socketio.emit('module_created_broadcast', broadcast_data, room='module_builder')
-        
-        # Emit to class-specific room
-        socketio.emit('module_created_broadcast', broadcast_data, room=f'class_{class_id}')
-        
-        print(f"📡 Module creation events emitted for module {module_data.get('title')} in class {class_id}")
-        
-    except Exception as e:
-        print(f"❌ Error emitting module creation events: {str(e)}")
-
-def emit_module_updated(module_data, class_id, updated_by):
-    """Helper function to emit module update events"""
-    try:
-        from socket_manager import socketio
-        
-        broadcast_data = {
-            'module': module_data,
-            'class_id': class_id,
-            'updated_by': updated_by,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Emit to admin room
-        socketio.emit('module_updated_broadcast', broadcast_data, room='admin_room')
-        
-        # Emit to module builder room
-        socketio.emit('module_updated_broadcast', broadcast_data, room='module_builder')
-        
-        # Emit to class-specific room
-        socketio.emit('module_updated_broadcast', broadcast_data, room=f'class_{class_id}')
-        
-        print(f"📡 Module update events emitted for module {module_data.get('title')} in class {class_id}")
-        
-    except Exception as e:
-        print(f"❌ Error emitting module update events: {str(e)}")
-
-# ===== ADMIN WEBSOCKET TEST HANDLERS =====
-
-@socketio.on('admin_test_message')
-@authenticated_only
-def handle_admin_test_message(data):
-    """Handle admin test messages for WebSocket testing"""
-    try:
-        message = data.get('message', 'Test message')
-        message_id = data.get('messageId', 'unknown')
-        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
-        
-        print(f"📨 Admin test message received: {message} (ID: {message_id})")
-        
-        # Emit response back to sender
-        emit('admin_test_response', {
-            'original_message': message,
-            'message_id': message_id,
-            'response': 'Message received successfully',
-            'timestamp': timestamp,
-            'response_timestamp': datetime.utcnow().isoformat(),
-            'status': 'success'
-        })
-        
-    except Exception as e:
-        print(f"❌ Error handling admin test message: {str(e)}")
-        emit('admin_test_response', {
-            'error': str(e),
-            'status': 'error'
-        })
-
-@socketio.on('admin_echo_test')
-@authenticated_only
-def handle_admin_echo_test(data):
-    """Handle admin echo test for response time testing"""
-    try:
-        message = data.get('message', 'Echo test')
-        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
-        
-        # Echo the message back immediately
-        emit('admin_echo_response', {
-            'message': f"Echo: {message}",
-            'original_timestamp': timestamp,
-            'echo_timestamp': datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"❌ Error in admin echo test: {str(e)}")
-
-@socketio.on('admin_broadcast_test')
-@authenticated_only
-@admin_only
-def handle_admin_broadcast_test(data):
-    """Handle admin broadcast testing"""
-    try:
-        message = data.get('message', 'Admin broadcast test')
-        target = data.get('target', 'all_admins')
-        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
-        
-        broadcast_data = {
-            'message': message,
-            'from': current_user.username if current_user.is_authenticated else 'Admin',
-            'timestamp': timestamp,
-            'test_id': f"broadcast_{int(datetime.utcnow().timestamp())}"
-        }
-        
-        if target == 'all_admins':
-            # Broadcast to admin room
-            socketio.emit('admin_broadcast_received', broadcast_data, room='admin_room')
-        else:
-            # Broadcast to all connected clients
-            socketio.emit('admin_broadcast_received', broadcast_data)
-        
-        print(f"📡 Admin broadcast test sent: {message} (target: {target})")
-        
-        # Confirm to sender
-        emit('admin_broadcast_test_response', {
-            'status': 'sent',
-            'target': target,
-            'message': message,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"❌ Error in admin broadcast test: {str(e)}")
-        emit('admin_broadcast_test_response', {
-            'status': 'error',
-            'error': str(e)
-        })
-
-@socketio.on('admin_join_room')
-@authenticated_only
-@admin_only
-def handle_admin_join_room(data):
-    """Handle admin joining test rooms"""
-    try:
-        room = data.get('room', 'admin_test_room')
-        join_room(room)
-        
-        print(f"👥 Admin {current_user.username} joined room: {room}")
-        
-        # Notify others in the room
-        emit('admin_room_user_joined', {
-            'user': current_user.username,
-            'room': room,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room, include_self=False)
-        
-        # Confirm to sender
-        emit('admin_room_joined', {
-            'room': room,
-            'status': 'joined',
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"❌ Error joining admin room: {str(e)}")
-
-@socketio.on('admin_leave_room')
-@authenticated_only
-@admin_only
-def handle_admin_leave_room(data):
-    """Handle admin leaving test rooms"""
-    try:
-        room = data.get('room', 'admin_test_room')
-        leave_room(room)
-        
-        print(f"👋 Admin {current_user.username} left room: {room}")
-        
-        # Notify others in the room
-        emit('admin_room_user_left', {
-            'user': current_user.username,
-            'room': room,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room)
-        
-        # Confirm to sender
-        emit('admin_room_left', {
-            'room': room,
-            'status': 'left',
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"❌ Error leaving admin room: {str(e)}")
-
-@socketio.on('admin_room_message')
-@authenticated_only
-@admin_only
-def handle_admin_room_message(data):
-    """Handle admin room messages for testing"""
-    try:
-        room = data.get('room', 'admin_test_room')
-        message = data.get('message', 'Test room message')
-        
-        room_message_data = {
-            'user': current_user.username,
-            'message': message,
-            'room': room,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Send to everyone in the room
-        socketio.emit('admin_room_message_received', room_message_data, room=room)
-        
-        print(f"💬 Room message sent to {room}: {message}")
-        
-    except Exception as e:
-        print(f"❌ Error sending room message: {str(e)}")
-
-@socketio.on('admin_monitoring_request')
-@authenticated_only
-@admin_only
-def handle_admin_monitoring_request(data):
-    """Handle admin monitoring data requests"""
-    try:
-        metrics = data.get('metrics', ['connection_count', 'active_rooms'])
-        timestamp = data.get('timestamp', datetime.utcnow().isoformat())
-        
-        # Simulate monitoring data (in real implementation, get actual metrics)
-        monitoring_data = {
-            'connection_count': len(socketio.server.manager.rooms.get('/', {})),
-            'active_rooms': list(socketio.server.manager.rooms.get('/', {}).keys()),
-            'message_rate': '10/sec',  # Simulated
-            'server_status': 'healthy',
-            'timestamp': datetime.utcnow().isoformat(),
-            'request_timestamp': timestamp
-        }
-        
-        emit('admin_monitoring_response', monitoring_data)
-        
-        print(f"📊 Monitoring data sent: {len(monitoring_data)} metrics")
-        
-    except Exception as e:
-        print(f"❌ Error getting monitoring data: {str(e)}")
-        emit('admin_monitoring_response', {
-            'error': str(e),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-# ===== REAL-TIME ANNOUNCEMENT SYSTEM =====
-# Enhanced announcement system for real-time dashboard updates
-
-@socketio.on('broadcast_announcement')
-@admin_only
-def handle_broadcast_announcement(data):
-    """Broadcast announcement to all users or specific targets"""
-    try:
-        print(f"📢 DEBUG: Broadcast announcement called by {current_user.username}")
-        print(f"📢 DEBUG: Session ID: {request.sid}")
-        print(f"📢 DEBUG: Announcement data: {data}")
-        print(f"📢 DEBUG: Request timestamp: {datetime.utcnow().isoformat()}")
-        
-        title = data.get('title', 'System Announcement')
-        message = data.get('message', '')
-        priority = data.get('priority', 'normal')
-        target = data.get('target', 'all_users')
-        
-        if not message.strip():
-            print(f"📢 DEBUG: Empty message detected, sending error")
-            emit('announcement_error', {'error': 'Message cannot be empty'})
-            return
-        
-        announcement_data = {
-            'id': f"announcement_{datetime.utcnow().timestamp()}",
-            'title': title,
-            'message': message,
-            'priority': priority,
-            'admin_name': current_user.username,
-            'timestamp': datetime.utcnow().isoformat(),
-            'type': 'announcement'
-        }
-        
-        print(f"📢 DEBUG: Prepared announcement data: {announcement_data}")
-        
-        # Broadcast to target audience
-        if target == 'all_users':
-            # Send to all connected users
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            socketio.emit('notification', announcement_data, room='all_users')
-            print(f"📢 DEBUG: Sent announcement to all_users room")
-            
-        elif target == 'dashboard_users':
-            # Send specifically to dashboard users
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-            socketio.emit('notification', announcement_data, room='dashboard')
-            print(f"� DEBUG: Sent announcement to dashboard room")
-            
-        elif target.startswith('user_'):
-            # Send to specific user
-            user_id = target.replace('user_', '')
-            socketio.emit('new_announcement', announcement_data, room=f'user_{user_id}')
-            socketio.emit('notification', announcement_data, room=f'user_{user_id}')
-            print(f"📢 DEBUG: Sent announcement to user_{user_id}")
-            
-        else:
-            # Default to all users
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            socketio.emit('notification', announcement_data, room='all_users')
-            print(f"📢 DEBUG: Sent announcement to all_users (default)")
-        
-        # Send confirmation back to admin
-        emit('announcement_sent', {
-            'success': True,
-            'announcement': announcement_data,
-            'target': target
-        })
-        
-        print(f"📢 Announcement broadcast successfully: {title}")
-        
-    except Exception as e:
-        print(f"❌ Error broadcasting announcement: {str(e)}")
-        emit('announcement_error', {'error': str(e)})
-
-@socketio.on('join_announcements')
-@authenticated_only
-def handle_join_announcements(data=None):
-    """Join announcement room for real-time updates"""
-    try:
-        print(f"📢 DEBUG: User {current_user.username} joining announcement rooms")
-        print(f"📢 DEBUG: Session ID: {request.sid}")
-        print(f"📢 DEBUG: Join data: {data}")
-        
-        join_room('announcements')
-        print(f"📢 DEBUG: Joined 'announcements' room")
-        
-        join_room('all_users')  # Also join general user room
-        print(f"📢 DEBUG: Joined 'all_users' room")
-        
-        rooms_joined = ['announcements', 'all_users']
-        
-        if hasattr(current_user, '__tablename__') and current_user.__tablename__ == 'admins':
-            join_room('admin_announcements')
-            rooms_joined.append('admin_announcements')
-            print(f"📢 DEBUG: Admin user joined 'admin_announcements' room")
-        
-        print(f"📢 DEBUG: Total rooms joined: {rooms_joined}")
-            
-        emit('announcements_joined', {
-            'success': True,
-            'user_id': current_user.id,
-            'rooms': rooms_joined,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"📢 User {current_user.username} joined announcement rooms")
-        
-    except Exception as e:
-        print(f"❌ Error joining announcement rooms: {str(e)}")
-        emit('announcements_error', {'error': str(e)})
-
-@socketio.on('get_recent_announcements')
-@authenticated_only
-def handle_get_recent_announcements(data=None):
-    """Get recent announcements for user"""
-    try:
-        print(f"📢 DEBUG: User {current_user.username} requesting recent announcements")
-        print(f"📢 DEBUG: Session ID: {request.sid}")
-        print(f"📢 DEBUG: Request data: {data}")
-        
-        # In a real implementation, this would query the database
-        # For now, return empty list or sample data
-        recent_announcements = []
-        
-        emit('recent_announcements', {
-            'announcements': recent_announcements,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        print(f"📢 Recent announcements sent to {current_user.username}")
-        
-    except Exception as e:
-        print(f"❌ Error getting recent announcements: {str(e)}")
-        emit('announcements_error', {'error': str(e)})
-
-# Helper function to send system announcements
-def send_system_announcement(title, message, priority='normal', target='all_users'):
-    """Helper function to send system announcements programmatically"""
-    try:
-        announcement_data = {
-            'id': f"system_announcement_{datetime.utcnow().timestamp()}",
-            'title': title,
-            'message': message,
-            'priority': priority,
-            'admin_name': 'System',
-            'timestamp': datetime.utcnow().isoformat(),
-            'type': 'system_announcement'
-        }
-        
-        print(f"📢 DEBUG: System announcement: {announcement_data}")
-        
-        # Broadcast based on target
-        if target == 'all_users':
-            socketio.emit('new_announcement', announcement_data, room='all_users')
-            socketio.emit('notification', announcement_data, room='all_users')
-        elif target == 'dashboard_users':
-            socketio.emit('new_announcement', announcement_data, room='dashboard')
-            socketio.emit('notification', announcement_data, room='dashboard')
-        
-        print(f"📢 System announcement sent: {title}")
-        return {'success': True, 'announcement': announcement_data}
-        
-    except Exception as e:
-        print(f"❌ Error sending system announcement: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-print("🚀 Admin WebSocket test handlers loaded successfully")
-print("📢 Real-time announcement system loaded successfully")
-
-# ===== COLLABORATION FEATURES =====
-
-# REMOVED: Duplicate collaboration handler that was causing user_connections conflicts
-# The simpler collaboration handler above should be sufficient
-
-# REMOVED: Duplicate collaboration leave handler that was causing user_connections conflicts
-
-@socketio.on('collaboration_cursor_move')
-@authenticated_only
-def handle_collaboration_cursor_move(data):
-    """Handle cursor movement in collaboration sessions"""
-    try:
-        session_type = data.get('session_type')
-        session_id = data.get('session_id')
-        cursor_data = data.get('cursor_data', {})
-        
-        room_name = f"collaboration_{session_type}_{session_id}"
-        
-        # Broadcast cursor position to other users
-        socketio.emit('collaboration_cursor_update', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'cursor_data': cursor_data,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-    except Exception as e:
-        print(f"❌ Error handling cursor move: {str(e)}")
-
-@socketio.on('collaboration_selection_change')
-@authenticated_only
-def handle_collaboration_selection_change(data):
-    """Handle selection changes in collaboration sessions"""
-    try:
-        session_type = data.get('session_type')
-        session_id = data.get('session_id')
-        selection_data = data.get('selection_data', {})
-        
-        room_name = f"collaboration_{session_type}_{session_id}"
-        
-        # Broadcast selection to other users
-        socketio.emit('collaboration_selection_update', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'selection_data': selection_data,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-    except Exception as e:
-        print(f"❌ Error handling selection change: {str(e)}")
-
-@socketio.on('collaboration_content_change')
-@authenticated_only
-def handle_collaboration_content_change(data):
-    """Handle real-time content changes in collaboration sessions"""
-    try:
-        session_type = data.get('session_type')
-        session_id = data.get('session_id')
-        change_data = data.get('change_data', {})
-        
-        room_name = f"collaboration_{session_type}_{session_id}"
-        
-        # Broadcast content changes to other users
-        socketio.emit('collaboration_content_update', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'change_data': change_data,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-        print(f"📝 Content change by {current_user.username} in {session_type}_{session_id}")
-        
-    except Exception as e:
-        print(f"❌ Error handling content change: {str(e)}")
-
 @socketio.on('collaboration_chat_message')
 @authenticated_only
 def handle_collaboration_chat_message(data):
-    """Handle chat messages in collaboration sessions"""
+    """Handle chat message in collaboration session"""
     try:
-        session_type = data.get('session_type')
-        session_id = data.get('session_id')
+        print(f"💬 Received collaboration chat message from {current_user.username}: {data}")
+        
         message = data.get('message', '').strip()
+        session_id = data.get('session_id')
         
         if not message:
+            emit('collaboration_chat_error', {'error': 'Message cannot be empty'})
             return
         
-        room_name = f"collaboration_{session_type}_{session_id}"
+        if not session_id:
+            emit('collaboration_chat_error', {'error': 'Session ID required'})
+            return
         
+        # Create standardized message object
         chat_message = {
-            'id': f"msg_{datetime.utcnow().timestamp()}",
-            'user_id': current_user.id,
+            'id': str(uuid.uuid4()) if 'uuid' in globals() else f'msg_{int(time.time())}',
+            'user_id': str(current_user.id),
             'username': current_user.username,
-            'profile_img': getattr(current_user, 'profile_img', None),
             'message': message,
+            'message_type': 'text',
             'timestamp': datetime.utcnow().isoformat(),
-            'is_admin': hasattr(current_user, 'role') and 'admin' in str(current_user.role).lower()
+            'session_id': session_id
         }
         
-        # Broadcast message to all users in the session
-        socketio.emit('collaboration_chat_message', chat_message, room=room_name)
-        
-        print(f"💬 Chat message from {current_user.username} in {session_type}_{session_id}")
-        
+        # Use collaboration service if available
+        if collaboration_service:
+            result = collaboration_service.send_chat_message(
+                session_id=session_id,
+                user_id=str(current_user.id),
+                message=message,
+                message_type='text'
+            )
+            
+            if result['success']:
+                # Broadcast to all session participants
+                emit('collaboration_chat_message', {
+                    'success': True,
+                    'message': result['message'],
+                    'session_id': session_id
+                }, room=f'session_{session_id}')
+                
+                # Also emit as team_chat_message for compatibility
+                emit('team_chat_message', result['message'], room=f'session_{session_id}')
+                
+                print(f"✅ Chat message sent and broadcasted: {message[:50]}...")
+            else:
+                emit('collaboration_chat_error', {'error': result['error']})
+        else:
+            # Fallback: broadcast directly to session room
+            emit('collaboration_chat_message', {
+                'success': True,
+                'message': chat_message,
+                'session_id': session_id
+            }, room=f'session_{session_id}')
+            
+            # Also emit as team_chat_message for compatibility
+            emit('team_chat_message', chat_message, room=f'session_{session_id}')
+            
+            print(f"✅ Chat message broadcasted (fallback): {message[:50]}...")
+            
     except Exception as e:
-        print(f"❌ Error handling chat message: {str(e)}")
+        print(f"❌ Error handling collaboration chat message: {str(e)}")
+        emit('collaboration_chat_error', {
+            'error': f'Failed to send message: {str(e)}'
+        })
 
-@socketio.on('collaboration_simulation_state_sync')
+@socketio.on('team_chat_message')
 @authenticated_only
-def handle_collaboration_simulation_state_sync(data):
-    """Handle simulation state synchronization between collaborators"""
+def handle_team_chat_message(data):
+    """Handle team chat message (compatibility endpoint)"""
     try:
-        simulation_id = data.get('simulation_id')
-        state_data = data.get('state_data', {})
-        sync_type = data.get('sync_type', 'full')  # 'full', 'device', 'topology', 'step'
+        print(f"💬 Received team chat message from {current_user.username}: {data}")
         
-        room_name = f"collaboration_simulation_{simulation_id}"
+        message = data.get('message', '').strip()
+        session_id = data.get('session_id') or data.get('lobby_id')
         
-        # Broadcast state sync to other users
-        socketio.emit('collaboration_simulation_state_update', {
-            'user_id': current_user.id,
+        if not message:
+            emit('team_chat_error', {'error': 'Message cannot be empty'})
+            return
+        
+        # Create message object
+        chat_message = {
+            'id': str(uuid.uuid4()) if 'uuid' in globals() else f'msg_{int(time.time())}',
+            'user_id': str(current_user.id),
             'username': current_user.username,
-            'simulation_id': simulation_id,
-            'state_data': state_data,
-            'sync_type': sync_type,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
+            'message': message,
+            'message_type': 'text',
+            'timestamp': datetime.utcnow().isoformat(),
+            'session_id': session_id
+        }
         
-        print(f"🔄 Simulation state sync by {current_user.username} for simulation {simulation_id}")
+        # Broadcast to session participants
+        if session_id:
+            emit('team_chat_message', chat_message, room=f'session_{session_id}')
+            emit('collaboration_chat_message', {
+                'success': True,
+                'message': chat_message,
+                'session_id': session_id
+            }, room=f'session_{session_id}')
+        else:
+            # Broadcast to all connected users as fallback
+            emit('team_chat_message', chat_message, broadcast=True)
         
-    except Exception as e:
-        print(f"❌ Error handling simulation state sync: {str(e)}")
-
-@socketio.on('collaboration_admin_content_sync')
-@authenticated_only
-def handle_collaboration_admin_content_sync(data):
-    """Handle admin content synchronization between collaborators"""
-    try:
-        class_id = data.get('class_id')
-        content_data = data.get('content_data', {})
-        sync_type = data.get('sync_type', 'full')  # 'full', 'assignments', 'modules', 'simulations'
-        
-        room_name = f"collaboration_admin_class_content_{class_id}"
-        
-        # Broadcast content sync to other admins
-        socketio.emit('collaboration_admin_content_update', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'class_id': class_id,
-            'content_data': content_data,
-            'sync_type': sync_type,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
-        
-        print(f"📋 Admin content sync by {current_user.username} for class {class_id}")
+        print(f"✅ Team chat message broadcasted: {message[:50]}...")
         
     except Exception as e:
-        print(f"❌ Error handling admin content sync: {str(e)}")
+        print(f"❌ Error handling team chat message: {str(e)}")
+        emit('team_chat_error', {
+            'error': f'Failed to send message: {str(e)}'
+        })
 
-@socketio.on('collaboration_typing_indicator')
+@socketio.on('join_collaboration_session')
 @authenticated_only
-def handle_collaboration_typing_indicator(data):
-    """Handle typing indicators in collaboration sessions"""
+def handle_join_collaboration_session(data):
+    """Join a collaboration session room for chat"""
     try:
-        session_type = data.get('session_type')
         session_id = data.get('session_id')
-        is_typing = data.get('is_typing', False)
-        field_id = data.get('field_id', '')
+        if not session_id:
+            emit('collaboration_join_error', {'error': 'Session ID required'})
+            return
         
-        room_name = f"collaboration_{session_type}_{session_id}"
+        # Join the session room
+        join_room(f'session_{session_id}')
         
-        # Broadcast typing indicator
-        socketio.emit('collaboration_typing_indicator', {
-            'user_id': current_user.id,
-            'username': current_user.username,
-            'is_typing': is_typing,
-            'field_id': field_id,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=room_name, include_self=False)
+        # Get chat history if collaboration service is available
+        chat_history = []
+        if collaboration_service:
+            history_result = collaboration_service.get_chat_history(
+                session_id=session_id,
+                user_id=str(current_user.id),
+                limit=50
+            )
+            if history_result['success']:
+                chat_history = history_result['chat_history']
         
-    except Exception as e:
-        print(f"❌ Error handling typing indicator: {str(e)}")
-
-@socketio.on('get_collaboration_session_info')
-@authenticated_only
-def handle_get_collaboration_session_info(data):
-    """Get information about a collaboration session"""
-    try:
-        session_type = data.get('session_type')
-        session_id = data.get('session_id')
-        
-        current_users = [u for u in user_connections.values() 
-                        if u['session_type'] == session_type and u['session_id'] == session_id]
-        
-        emit('collaboration_session_info', {
-            'session_type': session_type,
+        emit('collaboration_session_joined', {
+            'success': True,
             'session_id': session_id,
-            'current_users': current_users,
-            'total_users': len(current_users),
-            'timestamp': datetime.utcnow().isoformat()
+            'chat_history': chat_history,
+            'user_id': str(current_user.id),
+            'username': current_user.username
         })
         
+        # Notify other participants
+        emit('collaboration_participant_joined', {
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'session_id': session_id
+        }, room=f'session_{session_id}', include_self=False)
+        
+        print(f"✅ User {current_user.username} joined collaboration session {session_id}")
+        
     except Exception as e:
-        print(f"❌ Error getting collaboration session info: {str(e)}")
-        emit('collaboration_error', {'error': str(e)})
+        print(f"❌ Error joining collaboration session: {str(e)}")
+        emit('collaboration_join_error', {
+            'error': f'Failed to join session: {str(e)}'
+        })
 
-print("👥 Collaboration socket events loaded successfully")
+@socketio.on('leave_collaboration_session')
+@authenticated_only
+def handle_leave_collaboration_session(data):
+    """Leave a collaboration session room"""
+    try:
+        session_id = data.get('session_id')
+        if not session_id:
+            return
+        
+        # Leave the session room
+        leave_room(f'session_{session_id}')
+        
+        # Notify other participants
+        emit('collaboration_participant_left', {
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'session_id': session_id
+        }, room=f'session_{session_id}')
+        
+        emit('collaboration_session_left', {
+            'success': True,
+            'session_id': session_id
+        })
+        
+        print(f"✅ User {current_user.username} left collaboration session {session_id}")
+        
+    except Exception as e:
+        print(f"❌ Error leaving collaboration session: {str(e)}")
+
+@socketio.on('send_lobby_chat')
+@authenticated_only
+def handle_send_lobby_chat(data):
+    """Handle lobby chat message (for troubleshooting lobbies)"""
+    try:
+        if not lobby_manager:
+            emit('lobby_chat_error', {'error': 'Lobby system not available'})
+            return
+        
+        message = data.get('message', '').strip()
+        message_type = data.get('type', 'text')
+        
+        if not message:
+            emit('lobby_chat_error', {'error': 'Message cannot be empty'})
+            return
+        
+        # Get user's current lobby
+        lobby = lobby_manager.get_user_lobby(str(current_user.id))
+        if not lobby:
+            emit('lobby_chat_error', {'error': 'You are not in any lobby'})
+            return
+        
+        # Create chat message
+        chat_message = {
+            'id': str(uuid.uuid4()) if 'uuid' in globals() else f'msg_{int(time.time())}',
+            'user_id': str(current_user.id),
+            'username': current_user.username,
+            'message': message,
+            'message_type': message_type,
+            'timestamp': datetime.utcnow().isoformat(),
+            'lobby_id': lobby.id
+        }
+        
+        # Add to lobby chat history
+        lobby.chat_history.append(chat_message)
+        
+        # Keep only last 100 messages
+        if len(lobby.chat_history) > 100:
+            lobby.chat_history = lobby.chat_history[-100:]
+        
+        # Broadcast to all lobby participants
+        emit('lobby_chat_message', chat_message, room=f'lobby_{lobby.id}')
+        
+        print(f"✅ Lobby chat message sent: {message[:50]}...")
+        
+    except Exception as e:
+        print(f"❌ Error handling lobby chat: {str(e)}")
+        emit('lobby_chat_error', {
+            'error': f'Failed to send message: {str(e)}'
+        })
+
+# ===== MVP TEAM CHAT HANDLERS =====
+# Import team chat service
+try:
+    from services.team_chat_service import get_team_chat_service
+    team_chat_service = get_team_chat_service()
+    print("✅ Team chat service imported successfully")
+except ImportError as e:
+    print(f"⚠️ Warning: Could not import team chat service: {e}")
+    team_chat_service = None
+
+# Team Chat Events
+@socketio.on('team_chat_send')
+@authenticated_only
+def handle_team_chat_send(data):
+    """Handle sending team chat messages"""
+    if not team_chat_service:
+        emit('team_chat_error', {
+            'code': 'server_error',
+            'message': 'Team chat service not available'
+        })
+        return
+    
+    try:
+        # Extract payload data
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        content = data.get('content', '').strip()
+        
+        # Validate required fields
+        if not simulation_session_id:
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'simulation_session_id is required'
+            })
+            return
+        
+        if not content:
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'Message content cannot be empty'
+            })
+            return
+        
+        # Check if either team_id or lobby_id is provided
+        if not team_id and not lobby_id:
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'Either team_id or lobby_id must be provided'
+            })
+            return
+        
+        # Authorization check - verify user is in the session/team/lobby
+        # For MVP, we trust the client to send correct session/team info
+        # In production, add proper membership validation here
+        
+        # Check if chat is enabled (use existing collaboration settings)
+        try:
+            from admin.models.collaboration import CollaborationSetting
+            if simulation_session_id:
+                # Check collaboration settings for this simulation
+                settings = CollaborationSetting.query.filter_by(
+                    simulation_id=simulation_session_id
+                ).first()
+                
+                if settings and not settings.chat_enabled:
+                    emit('team_chat_error', {
+                        'code': 'chat_disabled',
+                        'message': 'Chat is disabled for this simulation'
+                    })
+                    return
+        except Exception as e:
+            print(f"⚠️ Could not check chat settings: {e}")
+        
+        # Save message using team chat service
+        result = team_chat_service.save_message(
+            simulation_session_id=int(simulation_session_id),
+            user_id=current_user.id,
+            username=current_user.username,
+            content=content,
+            team_id=int(team_id) if team_id else None,
+            lobby_id=int(lobby_id) if lobby_id else None
+        )
+        
+        if result['success']:
+            # Construct room key for broadcasting
+            if team_id:
+                room_key = f"sim:{simulation_session_id}:team:{team_id}"
+            else:
+                room_key = f"sim:{simulation_session_id}:lobby:{lobby_id}"
+            
+            # Prepare broadcast message
+            message_data = result['message']
+            message_data['is_self'] = False  # Will be overridden by clients
+            
+            # Broadcast to room participants
+            emit('team_chat_message', message_data, room=room_key)
+            
+            print(f"✅ Team chat message sent by {current_user.username} to {room_key}")
+        else:
+            # Handle service errors
+            error_code = 'server_error'
+            if 'rate limit' in result['error'].lower():
+                error_code = 'rate_limited'
+            elif 'content' in result['error'].lower():
+                error_code = 'invalid_payload'
+            
+            emit('team_chat_error', {
+                'code': error_code,
+                'message': result['error']
+            })
+            
+    except Exception as e:
+        print(f"❌ Error handling team chat send: {str(e)}")
+        emit('team_chat_error', {
+            'code': 'server_error',
+            'message': f'Server error: {str(e)}'
+        })
+
+@socketio.on('team_chat_history_request')
+@authenticated_only
+def handle_team_chat_history_request(data):
+    """Handle team chat history requests"""
+    if not team_chat_service:
+        emit('team_chat_error', {
+            'code': 'server_error',
+            'message': 'Team chat service not available'
+        })
+        return
+    
+    try:
+        # Extract payload data
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        limit = data.get('limit', 50)
+        
+        # Validate required fields
+        if not simulation_session_id:
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'simulation_session_id is required'
+            })
+            return
+        
+        # Check if either team_id or lobby_id is provided
+        if not team_id and not lobby_id:
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'Either team_id or lobby_id must be provided'
+            })
+            return
+        
+        # Enforce limit bounds
+        limit = min(max(1, int(limit)), 100)
+        
+        # Authorization check - verify user is in the session/team/lobby
+        # For MVP, we trust the client to send correct session/team info
+        
+        # Fetch messages using team chat service
+        result = team_chat_service.fetch_recent(
+            simulation_session_id=int(simulation_session_id),
+            team_id=int(team_id) if team_id else None,
+            lobby_id=int(lobby_id) if lobby_id else None,
+            limit=limit
+        )
+        
+        if result['success']:
+            # Send history to requesting user
+            emit('team_chat_history', {
+                'messages': result['messages'],
+                'simulation_session_id': simulation_session_id,
+                'team_id': team_id,
+                'lobby_id': lobby_id,
+                'count': result['count']
+            })
+            
+            print(f"✅ Team chat history sent to {current_user.username}: {result['count']} messages")
+        else:
+            emit('team_chat_error', {
+                'code': 'server_error',
+                'message': result['error']
+            })
+            
+    except Exception as e:
+        print(f"❌ Error handling team chat history request: {str(e)}")
+        emit('team_chat_error', {
+            'code': 'server_error',
+            'message': f'Server error: {str(e)}'
+        })
+
+@socketio.on('user_typing_start')
+@authenticated_only
+def handle_user_typing_start(data):
+    """Handle user typing start events"""
+    try:
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        
+        if not simulation_session_id or (not team_id and not lobby_id):
+            return
+        
+        # Construct room key
+        if team_id:
+            room_key = f"sim:{simulation_session_id}:team:{team_id}"
+        else:
+            room_key = f"sim:{simulation_session_id}:lobby:{lobby_id}"
+        
+        # Broadcast typing start to other participants
+        emit('user_typing_start', {
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'simulation_session_id': simulation_session_id,
+            'team_id': team_id,
+            'lobby_id': lobby_id
+        }, room=room_key, include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error handling typing start: {str(e)}")
+
+@socketio.on('user_typing_stop')
+@authenticated_only
+def handle_user_typing_stop(data):
+    """Handle user typing stop events"""
+    try:
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        
+        if not simulation_session_id or (not team_id and not lobby_id):
+            return
+        
+        # Construct room key
+        if team_id:
+            room_key = f"sim:{simulation_session_id}:team:{team_id}"
+        else:
+            room_key = f"sim:{simulation_session_id}:lobby:{lobby_id}"
+        
+        # Broadcast typing stop to other participants
+        emit('user_typing_stop', {
+            'user_id': current_user.id,
+            'simulation_session_id': simulation_session_id,
+            'team_id': team_id,
+            'lobby_id': lobby_id
+        }, room=room_key, include_self=False)
+        
+    except Exception as e:
+        print(f"❌ Error handling typing stop: {str(e)}")
+
+# Room management for team chat
+@socketio.on('join_team_chat_room')
+@authenticated_only
+def handle_join_team_chat_room(data):
+    """Join team chat room for receiving messages"""
+    try:
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        
+        if not simulation_session_id or (not team_id and not lobby_id):
+            emit('team_chat_error', {
+                'code': 'invalid_payload',
+                'message': 'Missing required room parameters'
+            })
+            return
+        
+        # Construct room key
+        if team_id:
+            room_key = f"sim:{simulation_session_id}:team:{team_id}"
+        else:
+            room_key = f"sim:{simulation_session_id}:lobby:{lobby_id}"
+        
+        # Join the room
+        join_room(room_key)
+        
+        emit('team_chat_room_joined', {
+            'room': room_key,
+            'simulation_session_id': simulation_session_id,
+            'team_id': team_id,
+            'lobby_id': lobby_id
+        })
+        
+        print(f"✅ User {current_user.username} joined team chat room: {room_key}")
+        
+    except Exception as e:
+        print(f"❌ Error joining team chat room: {str(e)}")
+        emit('team_chat_error', {
+            'code': 'server_error',
+            'message': f'Failed to join room: {str(e)}'
+        })
+
+@socketio.on('leave_team_chat_room')
+@authenticated_only
+def handle_leave_team_chat_room(data):
+    """Leave team chat room"""
+    try:
+        simulation_session_id = data.get('simulation_session_id')
+        team_id = data.get('team_id')
+        lobby_id = data.get('lobby_id')
+        
+        if not simulation_session_id or (not team_id and not lobby_id):
+            return
+        
+        # Construct room key
+        if team_id:
+            room_key = f"sim:{simulation_session_id}:team:{team_id}"
+        else:
+            room_key = f"sim:{simulation_session_id}:lobby:{lobby_id}"
+        
+        # Leave the room
+        leave_room(room_key)
+        
+        emit('team_chat_room_left', {
+            'room': room_key
+        })
+        
+        print(f"✅ User {current_user.username} left team chat room: {room_key}")
+        
+    except Exception as e:
+        print(f"❌ Error leaving team chat room: {str(e)}")

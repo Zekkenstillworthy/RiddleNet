@@ -665,6 +665,10 @@ class LobbyManager:
             current_app.logger.info(f"Admin closed lobby {lobby_id}")
             return True
 
+    def delete_lobby(self, lobby_id: str) -> bool:
+        """Delete a lobby permanently (alias for close_lobby)"""
+        return self.close_lobby(lobby_id)
+
 
 # Global lobby manager instance
 lobby_manager = LobbyManager()

@@ -1625,6 +1625,12 @@ def debug_auth():
     context = get_current_user_context()
     return f"<h2>Debug Authentication Results:</h2><pre>{context}</pre>"
 
+@user_bp.route('/landscape-test')
+@user_login_required
+def landscape_test():
+    """Test page for mobile landscape optimizations"""
+    return render_template('landscape-test.html')
+
 # Register the gamified topology routes blueprint
 try:
     from user.routes.gamified_topology_routes import gamified_topology_bp

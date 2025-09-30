@@ -25,6 +25,7 @@ migrate = Migrate()
 login_manager = LoginManager()
 mail = Mail()
 
+
 # Note: SocketIO is imported and initialized in run.py to avoid circular imports
 
 def create_app(config=None):

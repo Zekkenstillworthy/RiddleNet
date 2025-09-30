@@ -609,8 +609,8 @@ class NetworkSimulationEngine {
         const clickedDevice = this.getDeviceAt(mouseX, mouseY);
         
         if (clickedDevice) {
-            // Route through Presenter pattern instead of direct View call
-            this.presentDeviceConfiguration(clickedDevice);
+            // Show MVP Device Interfaces popup
+            this.showMVPDeviceInterfacesPopup(clickedDevice);
         }
     }
     
@@ -646,6 +646,34 @@ class NetworkSimulationEngine {
     }
     
     handleKeyDown(e) {
+        // Guard: ignore global shortcuts when focus is inside any CLI/input element
+        const active = document.activeElement;
+        const isFormEl = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        const inMVPOverlay = !!(active && active.closest && active.closest('#mvp-device-interfaces'));
+        const isCLI = isFormEl && (
+            active.classList.contains('cli-input') ||
+            active.classList.contains('mvp-cli-input') ||
+            active.id === 'mvp-cli-input' ||
+            (active.id && active.id.startsWith('cli-input-'))
+        );
+        const isConfigInput = isFormEl && inMVPOverlay && active.classList.contains('mvp-input');
+
+        if (isCLI || isConfigInput) {
+            // Allow full native editing including Backspace/Delete/Arrows.
+            // Only intercept our explicit Ctrl+ shortcuts if desired.
+            if (e.ctrlKey) {
+                if (e.key === 's') { e.preventDefault(); this.setTool('select'); }
+                if (e.key === 'm') { e.preventDefault(); this.setTool('move'); }
+                // NOTE: Don't hijack Ctrl+C/X/V inside CLI
+            }
+            return; // Never process further while typing in CLI
+        } else if (isFormEl) {
+            // In other generic inputs, preserve copy/paste; only custom shortcuts if safe
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); this.setTool('select'); }
+            return;
+        }
+        
+        // Normal keyboard shortcuts when not typing
         switch (e.key) {
             case 'Delete':
                 if (this.selectedDevice) {
@@ -748,7 +776,10 @@ class NetworkSimulationEngine {
         this.selectedDevice = device;
         this.needsRender = true;
         
-        console.log('📱 Selected device:', device.id);
+        console.log('📱 Selected device:', device.id, '(Double-click to open MVP Device Interfaces)');
+        
+        // Optional: Show a brief notification or tooltip about double-click
+        this.showDeviceSelectionHint(device);
     }
     
     selectConnection(connection) {
@@ -1222,24 +1253,429 @@ class NetworkSimulationEngine {
     openDeviceConfig(device) {
         console.log('⚙️ Opening device config for:', device.id);
         
-        // Ensure Views are available for reuse
-        this.ensureViewsAvailable();
-        
-        // If interface panel feature enabled and device has interfaces, show interface summary first
-        if (this.enableInterfacePanel !== false && device && device.interfaces && Object.keys(device.interfaces).length) {
-            this.showInterfacePanel(device);
-            return;
-        }
-
-        // Trigger full configurator directly
-        if (window.userDeviceConfigurator?.openDeviceConfiguration) {
-            window.userDeviceConfigurator.openDeviceConfiguration(device);
-        } else if (typeof this.showDeviceConfigModal === 'function') {
-            this.showDeviceConfigModal(device);
-        }
+        // Use new MVP Device Interfaces popup
+        this.showMVPDeviceInterfacesPopup(device);
     }
 
-    // ===== DEVICE INTERFACE PANEL (Quick View) =====
+    // ===== NEW MVP DEVICE INTERFACES IMPLEMENTATION =====
+    
+    /**
+     * Show the MVP Device Interfaces popup with Config and CLI tabs
+     */
+    showMVPDeviceInterfacesPopup(device) {
+        console.log(`🖥️ MVP: Opening Device Interfaces for ${device.label || device.name}`);
+        
+        // Clear any existing device popups first (MVP pattern)
+        this.clearExistingDeviceViews();
+        
+        // Create the new MVP Device Interfaces popup
+        const modalHtml = this.createMVPDeviceInterfacesHTML(device);
+        
+        // Add to DOM
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Store current device reference in Presenter state
+        this.currentConfigDevice = device;
+        
+        // Setup event listeners for the new popup
+        this.setupMVPInterfacesEventListeners(device);
+        
+        // Initialize with Config tab active
+        this.switchMVPDeviceTab('config');
+        
+        // Focus first input after animation completes
+        setTimeout(() => {
+            const firstInput = document.querySelector('#mvp-device-interfaces input:first-of-type');
+            if (firstInput) firstInput.focus();
+        }, 300);
+    }
+    
+    /**
+     * Generate the HTML for the MVP Device Interfaces popup
+     */
+    createMVPDeviceInterfacesHTML(device) {
+        const deviceIcon = this.getIconChar(device.type);
+        const interfaces = device.interfaces || {};
+        const interfaceKeys = Object.keys(interfaces);
+        const totalInterfaces = interfaceKeys.length;
+        const activeInterfaces = interfaceKeys.filter(key => 
+            interfaces[key].status === 'up' || (!interfaces[key].status && interfaces[key].connected)
+        ).length;
+        const connectedInterfaces = interfaceKeys.filter(key => interfaces[key].connected).length;
+        
+        // Calculate health status
+        let healthStatus = 'Excellent';
+        let healthColor = '#10B981';
+        const healthRatio = totalInterfaces > 0 ? activeInterfaces / totalInterfaces : 1;
+        if (healthRatio < 0.8) {
+            healthStatus = 'Good';
+            healthColor = '#F59E0B';
+        }
+        if (healthRatio < 0.6) {
+            healthStatus = 'Fair';
+            healthColor = '#F97316';
+        }
+        if (healthRatio < 0.3) {
+            healthStatus = 'Poor';
+            healthColor = '#EF4444';
+        }
+        
+        return `
+        <div id="mvp-device-interfaces" class="mvp-device-interfaces-overlay">
+            <div class="mvp-device-interfaces-backdrop" onclick="window.networkEngine.closeMVPDeviceInterfaces()"></div>
+            <div class="mvp-device-interfaces-modal">
+                <div class="mvp-interfaces-header">
+                    <div class="mvp-interfaces-title">
+                        <div class="mvp-device-icon">${deviceIcon}</div>
+                        <div class="mvp-title-text">
+                            <h3>Device Interfaces</h3>
+                            <span class="mvp-device-subtitle">${device.label || device.name} • ${device.type.charAt(0).toUpperCase() + device.type.slice(1)}</span>
+                        </div>
+                    </div>
+                    <div class="mvp-interfaces-controls">
+                        <button class="mvp-btn mvp-btn-info" onclick="window.networkEngine.refreshMVPInterfaces()" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="mvp-btn mvp-btn-secondary" onclick="window.networkEngine.closeMVPDeviceInterfaces()" title="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mvp-interfaces-tabs">
+                    <button class="mvp-tab-btn mvp-tab-active" data-tab="config" onclick="window.networkEngine.switchMVPDeviceTab('config')">
+                        <i class="fas fa-cogs"></i>
+                        <span>Configure</span>
+                    </button>
+                    <button class="mvp-tab-btn" data-tab="cli" onclick="window.networkEngine.switchMVPDeviceTab('cli')">
+                        <i class="fas fa-terminal"></i>
+                        <span>CLI</span>
+                    </button>
+                </div>
+                
+                <div class="mvp-interfaces-content">
+                    <!-- Config Tab Content -->
+                    <div id="mvp-config-tab" class="mvp-tab-content mvp-tab-active">
+                        <div class="mvp-device-overview">
+                            <h4><i class="fas fa-info-circle"></i> Device Overview</h4>
+                            <div class="mvp-overview-grid">
+                                <div class="mvp-stat-card">
+                                    <div class="mvp-stat-icon">
+                                        <i class="fas fa-ethernet"></i>
+                                    </div>
+                                    <div class="mvp-stat-content">
+                                        <div class="mvp-stat-value">${totalInterfaces}</div>
+                                        <div class="mvp-stat-label">Total Interfaces</div>
+                                    </div>
+                                </div>
+                                <div class="mvp-stat-card">
+                                    <div class="mvp-stat-icon mvp-stat-active">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                    <div class="mvp-stat-content">
+                                        <div class="mvp-stat-value">${activeInterfaces}</div>
+                                        <div class="mvp-stat-label">Active</div>
+                                    </div>
+                                </div>
+                                <div class="mvp-stat-card">
+                                    <div class="mvp-stat-icon mvp-stat-connected">
+                                        <i class="fas fa-link"></i>
+                                    </div>
+                                    <div class="mvp-stat-content">
+                                        <div class="mvp-stat-value">${connectedInterfaces}</div>
+                                        <div class="mvp-stat-label">Connected</div>
+                                    </div>
+                                </div>
+                                <div class="mvp-stat-card">
+                                    <div class="mvp-stat-icon mvp-stat-health" style="color: ${healthColor}">
+                                        <i class="fas fa-heartbeat"></i>
+                                    </div>
+                                    <div class="mvp-stat-content">
+                                        <div class="mvp-stat-value" style="color: ${healthColor}">${healthStatus}</div>
+                                        <div class="mvp-stat-label">Health</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mvp-device-config">
+                            <h4><i class="fas fa-cog"></i> Device Configuration</h4>
+                            <div class="mvp-config-form">
+                                <div class="mvp-form-row">
+                                    <div class="mvp-form-group">
+                                        <label>Hostname</label>
+                                        <input type="text" id="mvp-hostname" value="${device.config?.hostname || device.label || device.name}" class="mvp-input">
+                                    </div>
+                                    <div class="mvp-form-group">
+                                        <label>IP Address</label>
+                                        <input type="text" id="mvp-ip-address" value="${device.config?.ipAddress || ''}" class="mvp-input" placeholder="192.168.1.1">
+                                    </div>
+                                </div>
+                                <div class="mvp-form-row">
+                                    <div class="mvp-form-group">
+                                        <label>Subnet Mask</label>
+                                        <input type="text" id="mvp-subnet-mask" value="${device.config?.subnetMask || ''}" class="mvp-input" placeholder="255.255.255.0">
+                                    </div>
+                                    <div class="mvp-form-group">
+                                        <label>Default Gateway</label>
+                                        <input type="text" id="mvp-gateway" value="${device.config?.gateway || ''}" class="mvp-input" placeholder="192.168.1.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mvp-interfaces-list">
+                            <h4><i class="fas fa-list"></i> Interface Details</h4>
+                            ${this.generateMVPInterfacesList(device)}
+                        </div>
+                        
+                        <div class="mvp-config-actions">
+                            <button class="mvp-btn mvp-btn-primary" onclick="window.networkEngine.saveMVPDeviceConfig()">
+                                <i class="fas fa-save"></i>
+                                Save Configuration
+                            </button>
+                            <button class="mvp-btn mvp-btn-secondary" onclick="window.networkEngine.resetMVPDeviceConfig()">
+                                <i class="fas fa-undo"></i>
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- CLI Tab Content -->
+                    <div id="mvp-cli-tab" class="mvp-tab-content">
+                        <div class="mvp-cli-container">
+                            <div class="mvp-cli-header">
+                                <div class="mvp-cli-info">
+                                    <span class="mvp-cli-hostname">${device.label || device.name || 'Device'}</span>
+                                    <span class="mvp-cli-status">Connected</span>
+                                </div>
+                                <div class="mvp-cli-actions">
+                                    <button class="mvp-btn mvp-btn-sm" onclick="window.networkEngine.clearMVPCLI()" title="Clear">
+                                        <i class="fas fa-broom"></i>
+                                    </button>
+                                    <button class="mvp-btn mvp-btn-sm" onclick="window.networkEngine.saveMVPCLIConfig()" title="Save Config">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mvp-cli-output" id="mvp-cli-output">
+                                <div class="mvp-cli-welcome">
+                                    Welcome to ${device.label || device.name} CLI<br>
+                                    RiddleNet Device Simulator v1.0<br>
+                                    Type 'help' for available commands.<br><br>
+                                </div>
+                            </div>
+                            <div class="mvp-cli-input-container">
+                                <span class="mvp-cli-prompt">${device.label || device.name}#</span>
+                                <input type="text" class="mvp-cli-input" id="mvp-cli-input" 
+                                       onkeydown="window.networkEngine.handleMVPCLIInput(event)"
+                                       placeholder="Enter command..." autocomplete="off" spellcheck="false">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+    
+    /**
+     * Generate the interfaces list HTML for the Config tab
+     */
+    generateMVPInterfacesList(device) {
+        const interfaces = device.interfaces || {};
+        const interfaceKeys = Object.keys(interfaces);
+        
+        if (interfaceKeys.length === 0) {
+            return '<p class="mvp-no-interfaces">No interfaces configured</p>';
+        }
+        
+        let html = '<div class="mvp-interfaces-grid">';
+        
+        interfaceKeys.forEach(intName => {
+            const intData = interfaces[intName];
+            const status = intData.status || (intData.connected ? 'up' : 'down');
+            const speed = this.getInterfaceSpeed(device.type, intName);
+            const lastChange = this.getRandomLastChange();
+            
+            html += `
+            <div class="mvp-interface-card mvp-interface-${status}">
+                <div class="mvp-interface-header">
+                    <span class="mvp-interface-name">${intName}</span>
+                    <span class="mvp-interface-status mvp-status-${status}">${status.toUpperCase()}</span>
+                </div>
+                <div class="mvp-interface-details">
+                    <div class="mvp-interface-detail">
+                        <strong>IP:</strong> ${intData.ipAddress || 'Not assigned'}
+                    </div>
+                    <div class="mvp-interface-detail">
+                        <strong>Subnet:</strong> ${intData.subnetMask || 'Not configured'}
+                    </div>
+                    <div class="mvp-interface-detail">
+                        <strong>Speed:</strong> ${speed}
+                    </div>
+                    <div class="mvp-interface-detail">
+                        <strong>Link:</strong> ${intData.connected ? 'Connected' : 'Disconnected'}
+                    </div>
+                    <div class="mvp-interface-detail">
+                        <strong>Last Change:</strong> ${lastChange}
+                    </div>
+                </div>
+                <div class="mvp-interface-actions">
+                    <button class="mvp-btn mvp-btn-sm mvp-toggle-${status === 'up' ? 'down' : 'up'}" 
+                            onclick="window.networkEngine.toggleMVPInterface('${intName}')">
+                        ${status === 'up' ? 'Shutdown' : 'No Shut'}
+                    </button>
+                    <button class="mvp-btn mvp-btn-sm" onclick="window.networkEngine.configureMVPInterface('${intName}')">
+                        Configure
+                    </button>
+                </div>
+            </div>`;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+    
+    /**
+     * Setup event listeners for the MVP Device Interfaces popup
+     */
+    setupMVPInterfacesEventListeners(device) {
+        // Close on Escape key
+        document.addEventListener('keydown', this.handleMVPEscapeKey.bind(this), { once: true });
+        
+        // Auto-save configuration changes
+        const inputs = document.querySelectorAll('#mvp-device-interfaces input');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => this.autoSaveMVPConfig());
+            if (input.classList.contains('mvp-input')) {
+                input.addEventListener('keydown', (ev) => this.handleConfigInputKeyDown(ev));
+            }
+        });
+
+        this.installGlobalKeyLogger();
+    }
+    
+    /**
+     * Handle Escape key to close the popup
+     */
+    handleMVPEscapeKey(event) {
+        if (event.key === 'Escape') {
+            this.closeMVPDeviceInterfaces();
+        }
+    }
+    
+    /**
+     * Switch between Config and CLI tabs
+     */
+    switchMVPDeviceTab(tabName) {
+        console.log(`📑 MVP: Switching to ${tabName} tab`);
+        
+        // Update tab buttons
+        document.querySelectorAll('.mvp-tab-btn').forEach(btn => {
+            btn.classList.remove('mvp-tab-active');
+            if (btn.getAttribute('data-tab') === tabName) {
+                btn.classList.add('mvp-tab-active');
+            }
+        });
+        
+        // Update tab content
+        document.querySelectorAll('.mvp-tab-content').forEach(content => {
+            content.classList.remove('mvp-tab-active');
+        });
+        
+        const activeContent = document.getElementById(`mvp-${tabName}-tab`);
+        if (activeContent) {
+            activeContent.classList.add('mvp-tab-active');
+        }
+        
+        // Focus CLI input when switching to CLI tab
+        if (tabName === 'cli') {
+            setTimeout(() => {
+                const cliInput = document.getElementById('mvp-cli-input');
+                if (cliInput) {
+                    cliInput.focus();
+                }
+            }, 100);
+        }
+    }
+    
+    /**
+     * Close the MVP Device Interfaces popup
+     */
+    closeMVPDeviceInterfaces() {
+        console.log('🚪 MVP: Closing Device Interfaces');
+        const modal = document.getElementById('mvp-device-interfaces');
+        if (modal) {
+            modal.remove();
+        }
+        this.currentConfigDevice = null;
+    }
+    
+    /**
+     * Refresh interface data
+     */
+    refreshMVPInterfaces() {
+        if (!this.currentConfigDevice) return;
+        
+        console.log(`🔄 MVP: Refreshing interfaces for ${this.currentConfigDevice.label}`);
+        
+        // Regenerate interfaces list
+        const interfacesList = document.querySelector('.mvp-interfaces-list');
+        if (interfacesList) {
+            const newHTML = `
+                <h4><i class="fas fa-list"></i> Interface Details</h4>
+                ${this.generateMVPInterfacesList(this.currentConfigDevice)}
+            `;
+            interfacesList.innerHTML = newHTML;
+        }
+        
+        // Update overview statistics
+        this.updateMVPOverviewStats();
+        
+        this.showToast?.('Interfaces refreshed', 'success');
+    }
+    
+    /**
+     * Update overview statistics in the Config tab
+     */
+    updateMVPOverviewStats() {
+        if (!this.currentConfigDevice) return;
+        
+        const interfaces = this.currentConfigDevice.interfaces || {};
+        const interfaceKeys = Object.keys(interfaces);
+        const totalInterfaces = interfaceKeys.length;
+        const activeInterfaces = interfaceKeys.filter(key => 
+            interfaces[key].status === 'up' || (!interfaces[key].status && interfaces[key].connected)
+        ).length;
+        const connectedInterfaces = interfaceKeys.filter(key => interfaces[key].connected).length;
+        
+        // Update stat values
+        const statValues = document.querySelectorAll('.mvp-stat-value');
+        if (statValues[0]) statValues[0].textContent = totalInterfaces;
+        if (statValues[1]) statValues[1].textContent = activeInterfaces;
+        if (statValues[2]) statValues[2].textContent = connectedInterfaces;
+        
+        // Update health status
+        if (statValues[3]) {
+            const healthRatio = totalInterfaces > 0 ? activeInterfaces / totalInterfaces : 1;
+            let healthStatus = 'Excellent';
+            let healthColor = '#10B981';
+            if (healthRatio < 0.8) {
+                healthStatus = 'Good';
+                healthColor = '#F59E0B';
+            }
+            if (healthRatio < 0.6) {
+                healthStatus = 'Fair';
+                healthColor = '#F97316';
+            }
+            if (healthRatio < 0.3) {
+                healthStatus = 'Poor';
+                healthColor = '#EF4444';
+            }
+            statValues[3].textContent = healthStatus;
+            statValues[3].style.color = healthColor;
+        }
+    }
     showInterfacePanel(device) {
         // Presenter ensures no duplicate Views exist
         this.clearExistingDeviceViews();
@@ -2416,7 +2852,632 @@ class NetworkSimulationEngine {
         // Alias for integration bridge
         this.resetNetwork();
     }
+
+    // ===== MVP CLI FUNCTIONALITY =====
+    
+    /**
+     * Handle CLI input in the MVP popup
+     */
+    handleMVPCLIInput(event) {
+        // Robust Backspace fallback: if another listener blocks native deletion,
+        // we detect no value change and manually remove characters.
+        if (event.key === 'Backspace') {
+            const input = event.target;
+            if (input && (input.classList.contains('mvp-cli-input'))) {
+                const before = input.value;
+                const selStart = input.selectionStart;
+                const selEnd = input.selectionEnd;
+                // Allow default first
+                setTimeout(() => {
+                    if (!input.isConnected) return;
+                    const after = input.value;
+                    if (after === before && before.length > 0 && document.activeElement === input) {
+                        let newVal;
+                        if (selStart !== selEnd) {
+                            newVal = before.slice(0, selStart) + before.slice(selEnd);
+                            input.value = newVal;
+                            input.selectionStart = input.selectionEnd = selStart;
+                        } else if (selStart > 0) {
+                            newVal = before.slice(0, selStart - 1) + before.slice(selEnd);
+                            input.value = newVal;
+                            input.selectionStart = input.selectionEnd = selStart - 1;
+                        }
+                        if (newVal !== undefined) {
+                            console.warn('⚠️ Applied Backspace fallback (MVP CLI) — another handler blocked native deletion');
+                        }
+                    }
+                }, 0);
+            }
+            // Do not return; let normal processing continue for other keys below if needed
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const input = event.target;
+            const command = input.value.trim();
+            
+            if (command) {
+                console.log(`💻 MVP: Executing CLI command "${command}"`);
+                this.executeMVPCLICommand(command);
+                input.value = '';
+            }
+        } else if (event.key === 'ArrowUp') {
+            // TODO: Implement command history navigation
+            event.preventDefault();
+        } else if (event.key === 'ArrowDown') {
+            // TODO: Implement command history navigation
+            event.preventDefault();
+        } else if (event.key === 'Tab') {
+            // TODO: Implement command auto-completion
+            event.preventDefault();
+        } else if (event.key === 'Escape') {
+            // Clear the input
+            event.preventDefault();
+            event.target.value = '';
+        } else if (event.key === 'Backspace') {
+            // Debug log to verify Backspace is reaching handler (should not prevent default)
+            console.debug('🔑 MVP CLI Backspace detected');
+        }
+        // Allow all other keys (including Backspace, Delete, etc.) to work normally
+        // by not preventing default behavior
+    }
+
+    handleConfigInputKeyDown(event) {
+        if (event.key !== 'Backspace') return;
+        const input = event.target;
+        if (!input || !input.classList.contains('mvp-input')) return;
+        const before = input.value;
+        const selStart = input.selectionStart;
+        const selEnd = input.selectionEnd;
+        setTimeout(() => {
+            if (!input.isConnected) return;
+            const after = input.value;
+            if (after === before && before.length > 0 && document.activeElement === input) {
+                let newVal;
+                if (selStart !== selEnd) {
+                    newVal = before.slice(0, selStart) + before.slice(selEnd);
+                    input.value = newVal;
+                    input.selectionStart = input.selectionEnd = selStart;
+                } else if (selStart > 0) {
+                    newVal = before.slice(0, selStart - 1) + before.slice(selEnd);
+                    input.value = newVal;
+                    input.selectionStart = input.selectionEnd = selStart - 1;
+                }
+                if (newVal !== undefined) {
+                    console.warn('⚠️ Applied Backspace fallback (Configure input) — another handler blocked native deletion');
+                }
+            }
+        }, 0);
+    }
+
+    installGlobalKeyLogger() {
+        if (window.__mvpKeyLoggerInstalled) return;
+        window.__mvpKeyLoggerInstalled = true;
+        window.__MVP_KEY_DEBUG = false; // opt-in via enableMVPKeyDebug
+        document.addEventListener('keydown', (ev) => {
+            if (!window.__MVP_KEY_DEBUG) return;
+            if (ev.key === 'Backspace') {
+                const tgt = ev.target;
+                const info = {
+                    key: ev.key,
+                    defaultPrevented: ev.defaultPrevented,
+                    tag: tgt.tagName,
+                    id: tgt.id,
+                    classes: tgt.className,
+                    inMVPOverlay: !!(tgt.closest && tgt.closest('#mvp-device-interfaces')),
+                    valueLength: tgt.value?.length,
+                    selection: [tgt.selectionStart, tgt.selectionEnd]
+                };
+                console.log('🛑 [KeyCapture] Backspace event', info);
+            }
+        }, true);
+        console.log('🔍 MVP capture-phase key logger installed. Enable with window.networkEngine.enableMVPKeyDebug(true)');
+    }
+
+    enableMVPKeyDebug(on = true) {
+        window.__MVP_KEY_DEBUG = !!on;
+        console.log(`🧪 MVP key debug ${on ? 'ENABLED' : 'disabled'}`);
+    }
+    
+    /**
+     * Execute a CLI command in the MVP popup
+     */
+    executeMVPCLICommand(command) {
+        const outputDiv = document.getElementById('mvp-cli-output');
+        if (!outputDiv) return;
+        
+        const device = this.currentConfigDevice;
+        const hostname = device?.label || device?.name || 'Device';
+        
+        // Add command to output
+        const commandLine = document.createElement('div');
+        commandLine.className = 'mvp-cli-command-line';
+        commandLine.innerHTML = `<span class="mvp-cli-prompt">${hostname}#</span> ${command}`;
+        outputDiv.appendChild(commandLine);
+        
+        // Process command and show response
+        const response = this.processMVPCLICommand(command);
+        if (response) {
+            const responseLine = document.createElement('div');
+            responseLine.className = 'mvp-cli-response';
+            responseLine.innerHTML = response.replace(/\n/g, '<br>');
+            outputDiv.appendChild(responseLine);
+        }
+        
+        // Scroll to bottom
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+    
+    /**
+     * Process CLI command and return response
+     */
+    processMVPCLICommand(command) {
+        const cmd = command.toLowerCase().trim();
+        const device = this.currentConfigDevice;
+        const hostname = device?.label || device?.name || 'Device';
+        
+        if (cmd === 'help' || cmd === '?') {
+            return `Available commands:
+  show interfaces       - Display interface status
+  show running-config   - Display running configuration  
+  show version         - Display system version
+  show ip route        - Display routing table
+  ping <ip>            - Test connectivity
+  configure terminal   - Enter configuration mode
+  hostname <name>      - Set device hostname
+  interface <name>     - Configure interface
+  ip route <network>   - Add static route
+  write memory         - Save configuration
+  reload              - Restart device
+  clear               - Clear screen
+  exit                - Exit CLI
+  help                - Show this help message`;
+            
+        } else if (cmd === 'show interfaces') {
+            return this.generateMVPShowInterfaces();
+            
+        } else if (cmd === 'show running-config') {
+            return this.generateMVPRunningConfig();
+            
+        } else if (cmd === 'show version') {
+            return `RiddleNet Device Simulator
+Software Version: 1.0.0
+Hardware: Virtual ${device?.type || 'Device'}
+Device: ${hostname}
+Uptime: ${this.getRandomUptime()}
+Configuration register: 0x2102`;
+
+        } else if (cmd === 'show ip route') {
+            return this.generateMVPRoutingTable();
+            
+        } else if (cmd.startsWith('ping ')) {
+            const target = cmd.split(' ')[1];
+            if (!target) {
+                return 'Usage: ping <ip_address>';
+            }
+            return this.simulateMVPPing(target);
+            
+        } else if (cmd === 'configure terminal' || cmd === 'conf t') {
+            return 'Entering configuration mode...\n' + hostname + '(config)#';
+            
+        } else if (cmd.startsWith('hostname ')) {
+            const newHostname = command.split(' ').slice(1).join(' ');
+            if (device) {
+                device.label = device.name = newHostname;
+                if (device.config) device.config.hostname = newHostname;
+                // Update the display
+                setTimeout(() => this.updateMVPHostnameDisplay(newHostname), 100);
+            }
+            return `Hostname changed to: ${newHostname}`;
+            
+        } else if (cmd.startsWith('interface ')) {
+            const intName = command.split(' ').slice(1).join(' ');
+            return `Entering interface configuration mode for ${intName}...\n${hostname}(config-if)#`;
+            
+        } else if (cmd === 'write memory' || cmd === 'write' || cmd === 'wr') {
+            return 'Building configuration...\nConfiguration saved to NVRAM\n[OK]';
+            
+        } else if (cmd === 'reload') {
+            return `Proceed with reload? [confirm] 
+System configuration has been modified. Save? [yes/no]: yes
+Building configuration...
+Reloading device...`;
+
+        } else if (cmd === 'clear' || cmd === 'cls') {
+            // Clear CLI output
+            const outputDiv = document.getElementById('mvp-cli-output');
+            if (outputDiv) {
+                outputDiv.innerHTML = '<div class="mvp-cli-welcome">CLI cleared.</div>';
+            }
+            return '';
+            
+        } else if (cmd === 'exit' || cmd === 'quit') {
+            return 'Goodbye!';
+            
+        } else {
+            return `% Invalid input detected at '^' marker.\n% Unknown command: ${command}\nType 'help' for available commands.`;
+        }
+    }
+    
+    /**
+     * Generate show interfaces output
+     */
+    generateMVPShowInterfaces() {
+        const device = this.currentConfigDevice;
+        if (!device || !device.interfaces) {
+            return 'No interfaces configured.';
+        }
+        
+        let output = '';
+        Object.keys(device.interfaces).forEach(intName => {
+            const intData = device.interfaces[intName];
+            const status = intData.status || (intData.connected ? 'up' : 'down');
+            const protocol = intData.connected ? 'up' : 'down';
+            const ip = intData.ipAddress || 'unassigned';
+            const speed = this.getInterfaceSpeed(device.type, intName);
+            
+            output += `${intName} is ${status}, line protocol is ${protocol}\n`;
+            output += `  Internet address is ${ip}\n`;
+            output += `  MTU ${intData.mtu || '1500'} bytes, BW ${speed}\n`;
+            output += `  Encapsulation ARPA, loopback not set\n`;
+            output += `  Last clearing of "show interface" counters never\n\n`;
+        });
+        
+        return output;
+    }
+    
+    /**
+     * Generate running configuration output
+     */
+    generateMVPRunningConfig() {
+        const device = this.currentConfigDevice;
+        const hostname = device?.label || device?.name || 'Device';
+        
+        let config = `Building configuration...\n\nCurrent configuration :\n!\nversion 15.1\n!\nhostname ${hostname}\n!\n`;
+        
+        if (device && device.interfaces) {
+            Object.keys(device.interfaces).forEach(intName => {
+                const intData = device.interfaces[intName];
+                config += `!\ninterface ${intName}\n`;
+                
+                if (intData.ipAddress) {
+                    config += ` ip address ${intData.ipAddress} ${intData.subnetMask || '255.255.255.0'}\n`;
+                } else {
+                    config += ` no ip address\n`;
+                }
+                
+                if (intData.status === 'down') {
+                    config += ` shutdown\n`;
+                } else {
+                    config += ` no shutdown\n`;
+                }
+            });
+        }
+        
+        config += '!\nend\n';
+        return config;
+    }
+    
+    /**
+     * Generate routing table output
+     */
+    generateMVPRoutingTable() {
+        return `Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       
+Gateway of last resort is not set
+
+      192.168.1.0/24 is variably subnetted, 2 subnets, 2 masks
+C        192.168.1.0/24 is directly connected, Ethernet0/0
+L        192.168.1.1/32 is directly connected, Ethernet0/0`;
+    }
+    
+    /**
+     * Simulate ping command
+     */
+    simulateMVPPing(target) {
+        return `PING ${target}: 56 data bytes
+64 bytes from ${target}: icmp_seq=0 ttl=255 time=1 ms
+64 bytes from ${target}: icmp_seq=1 ttl=255 time=1 ms
+64 bytes from ${target}: icmp_seq=2 ttl=255 time=1 ms
+64 bytes from ${target}: icmp_seq=3 ttl=255 time=1 ms
+
+--- ${target} ping statistics ---
+4 packets transmitted, 4 packets received, 0.00% packet loss
+round-trip min/avg/max = 1/1/1 ms`;
+    }
+    
+    /**
+     * Get random uptime for show version
+     */
+    getRandomUptime() {
+        const days = Math.floor(Math.random() * 30) + 1;
+        const hours = Math.floor(Math.random() * 24);
+        const minutes = Math.floor(Math.random() * 60);
+        return `${days} days, ${hours} hours, ${minutes} minutes`;
+    }
+    
+    /**
+     * Update hostname display in popup
+     */
+    updateMVPHostnameDisplay(newHostname) {
+        // Update CLI prompt
+        const prompts = document.querySelectorAll('.mvp-cli-prompt');
+        prompts.forEach(prompt => {
+            prompt.textContent = newHostname + '#';
+        });
+        
+        // Update header subtitle
+        const subtitle = document.querySelector('.mvp-device-subtitle');
+        if (subtitle) {
+            const parts = subtitle.textContent.split(' • ');
+            if (parts.length >= 2) {
+                subtitle.textContent = newHostname + ' • ' + parts[1];
+            }
+        }
+        
+        // Update CLI hostname display
+        const cliHostname = document.querySelector('.mvp-cli-hostname');
+        if (cliHostname) {
+            cliHostname.textContent = newHostname;
+        }
+    }
+    
+    /**
+     * Clear CLI output
+     */
+    clearMVPCLI() {
+        console.log('🧹 MVP: Clearing CLI output');
+        const outputDiv = document.getElementById('mvp-cli-output');
+        if (outputDiv) {
+            const device = this.currentConfigDevice;
+            const hostname = device?.label || device?.name || 'Device';
+            outputDiv.innerHTML = `
+                <div class="mvp-cli-welcome">
+                    Welcome to ${hostname} CLI<br>
+                    RiddleNet Device Simulator v1.0<br>
+                    Type 'help' for available commands.<br><br>
+                </div>`;
+        }
+    }
+    
+    /**
+     * Save CLI configuration
+     */
+    saveMVPCLIConfig() {
+        console.log('💾 MVP: Saving CLI configuration');
+        this.executeMVPCLICommand('write memory');
+        this.showToast?.('Configuration saved', 'success');
+    }
+
+    // ===== MVP CONFIG FUNCTIONALITY =====
+    
+    /**
+     * Save device configuration from the Config tab
+     */
+    saveMVPDeviceConfig() {
+        if (!this.currentConfigDevice) return;
+        
+        const device = this.currentConfigDevice;
+        
+        // Get values from form
+        const hostname = document.getElementById('mvp-hostname')?.value;
+        const ipAddress = document.getElementById('mvp-ip-address')?.value;
+        const subnetMask = document.getElementById('mvp-subnet-mask')?.value;
+        const gateway = document.getElementById('mvp-gateway')?.value;
+        
+        // Validate inputs
+        if (ipAddress && !this.isValidIP(ipAddress)) {
+            this.showToast?.('Invalid IP address', 'error');
+            return;
+        }
+        
+        if (subnetMask && !this.isValidIP(subnetMask)) {
+            this.showToast?.('Invalid subnet mask', 'error');
+            return;
+        }
+        
+        if (gateway && !this.isValidIP(gateway)) {
+            this.showToast?.('Invalid gateway address', 'error');
+            return;
+        }
+        
+        // Update device configuration
+        if (hostname) {
+            device.label = device.name = hostname;
+            if (!device.config) device.config = {};
+            device.config.hostname = hostname;
+        }
+        
+        if (ipAddress) {
+            if (!device.config) device.config = {};
+            device.config.ipAddress = ipAddress;
+        }
+        
+        if (subnetMask) {
+            if (!device.config) device.config = {};
+            device.config.subnetMask = subnetMask;
+        }
+        
+        if (gateway) {
+            if (!device.config) device.config = {};
+            device.config.gateway = gateway;
+        }
+        
+        // Mark as configured and trigger re-render
+        device.configured = true;
+        this.needsRender = true;
+        
+        console.log(`💾 Saved configuration for ${device.label}:`, device.config);
+        this.showToast?.(`Configuration saved for ${device.label}`, 'success');
+    }
+    
+    /**
+     * Reset device configuration to defaults
+     */
+    resetMVPDeviceConfig() {
+        if (!this.currentConfigDevice) return;
+        
+        const device = this.currentConfigDevice;
+        
+        // Reset form fields to original values
+        const hostnameInput = document.getElementById('mvp-hostname');
+        const ipInput = document.getElementById('mvp-ip-address');
+        const subnetInput = document.getElementById('mvp-subnet-mask');
+        const gatewayInput = document.getElementById('mvp-gateway');
+        
+        if (hostnameInput) hostnameInput.value = device.label || device.name || '';
+        if (ipInput) ipInput.value = device.config?.ipAddress || '';
+        if (subnetInput) subnetInput.value = device.config?.subnetMask || '';
+        if (gatewayInput) gatewayInput.value = device.config?.gateway || '';
+        
+        this.showToast?.('Configuration reset', 'info');
+    }
+    
+    /**
+     * Auto-save configuration changes
+     */
+    autoSaveMVPConfig() {
+        // Debounced auto-save functionality
+        if (this.autoSaveTimeout) {
+            clearTimeout(this.autoSaveTimeout);
+        }
+        
+        this.autoSaveTimeout = setTimeout(() => {
+            this.saveMVPDeviceConfig();
+        }, 2000);
+    }
+    
+    /**
+     * Toggle interface status
+     */
+    toggleMVPInterface(interfaceName) {
+        if (!this.currentConfigDevice) return;
+        
+        const device = this.currentConfigDevice;
+        const interfaces = device.interfaces || {};
+        const intData = interfaces[interfaceName];
+        
+        if (intData) {
+            // Toggle status
+            intData.status = (intData.status === 'up') ? 'down' : 'up';
+            
+            // Re-render interfaces list
+            this.refreshMVPInterfaces();
+            
+            console.log(`🔄 Toggled ${interfaceName} to ${intData.status}`);
+            this.showToast?.(`${interfaceName} ${intData.status}`, 'info');
+        }
+    }
+    
+    /**
+     * Configure specific interface
+     */
+    configureMVPInterface(interfaceName) {
+        console.log(`⚙️ Configuring interface ${interfaceName}`);
+        
+        // Switch to CLI tab and pre-populate interface command
+        this.switchMVPDeviceTab('cli');
+        
+        setTimeout(() => {
+            const cliInput = document.getElementById('mvp-cli-input');
+            if (cliInput) {
+                cliInput.value = `interface ${interfaceName}`;
+                cliInput.focus();
+                // Move cursor to end
+                cliInput.setSelectionRange(cliInput.value.length, cliInput.value.length);
+            }
+        }, 100);
+    }
+
+    /**
+     * Show hint for device selection (MVP pattern)
+     * @param {Object} device - The selected device
+     */
+    showDeviceSelectionHint(device) {
+        // Create temporary tooltip/notification
+        const existingHint = document.getElementById('mvp-device-hint');
+        if (existingHint) {
+            existingHint.remove();
+        }
+
+        const hint = document.createElement('div');
+        hint.id = 'mvp-device-hint';
+        hint.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #1E293B, #334155);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                border-radius: 12px;
+                padding: 16px 20px;
+                color: #F8FAFC;
+                font-size: 0.9rem;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+                animation: mvpHintSlideIn 0.3s ease-out forwards;
+                max-width: 280px;
+                backdrop-filter: blur(10px);
+            ">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <i class="${this.deviceTypes[device.type]?.icon || 'fas fa-cube'}" style="color: #3B82F6; font-size: 1.2rem;"></i>
+                    <span style="color: #CBD5E1;">Device Selected</span>
+                </div>
+                <div style="color: #94A3B8; font-size: 0.8rem; line-height: 1.4;">
+                    <strong style="color: #E2E8F0;">${device.name}</strong><br>
+                    Double-click to open MVP Device Interfaces
+                </div>
+                <div style="
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    cursor: pointer;
+                    color: #64748B;
+                    font-size: 0.8rem;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    transition: all 0.2s ease;
+                " onclick="this.parentElement.parentElement.remove()" title="Close">
+                    ×
+                </div>
+            </div>
+            <style>
+                @keyframes mvpHintSlideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+        `;
+
+        document.body.appendChild(hint);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            if (hint && hint.parentNode) {
+                hint.style.animation = 'mvpHintSlideIn 0.3s ease-in reverse';
+                setTimeout(() => {
+                    if (hint && hint.parentNode) {
+                        hint.remove();
+                    }
+                }, 300);
+            }
+        }, 4000);
+    }
 }
 
 // Export for use in other modules
 window.NetworkSimulationEngine = NetworkSimulationEngine;
+
+// Create global instance for easy access
+window.networkEngine = null;

@@ -143,11 +143,13 @@
 
   .table-content {
     flex: 1;
-    overflow-y: auto;
+    overflow-x: auto; /* Horizontal scroll for mobile */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
 
   .score-table {
     width: 100%;
+    min-width: 500px; /* Minimum width to prevent crushing */
     border-collapse: collapse;
     background: transparent;
   }
@@ -157,13 +159,14 @@
   }
 
   .score-table th {
-    padding: 8px;
+    padding: 12px; /* Larger touch-friendly padding */
     text-align: left;
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 1px;
+    white-space: nowrap; /* Prevent header wrapping */
   }
 
   .score-table tbody tr {
@@ -177,9 +180,10 @@
   }
 
   .score-table td {
-    padding: 8px;
+    padding: 12px; /* Larger touch-friendly padding */
     color: var(--text-secondary);
     font-weight: 500;
+    white-space: nowrap; /* Prevent cell content wrapping */
   }
 
   .score-value-badge {
@@ -419,6 +423,48 @@
       font-size: 0.9rem;
     }
 
+    /* Card-style layout for mobile tables */
+    .score-table thead {
+      display: none; /* Hide headers on mobile */
+    }
+
+    .score-table tbody tr {
+      display: block;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
+    }
+
+    .score-table tbody tr:hover {
+      transform: translateY(-2px);
+    }
+
+    .score-table td {
+      display: block;
+      padding: 8px 0;
+      border: none;
+      text-align: left;
+      white-space: normal;
+      position: relative;
+      padding-left: 120px;
+    }
+
+    .score-table td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 0;
+      top: 8px;
+      font-weight: 600;
+      color: var(--cyber-glow);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      width: 110px;
+    }
+
     .pagination-wrapper {
       flex-direction: column;
       gap: 12px;
@@ -566,18 +612,18 @@
             {% if score %}
               {% for score_item in score %}
               <tr class="score-row" data-score-id="{{ score_item.id }}">
-                <td>
+                <td data-label="Score">
                   <span class="score-value-badge {% if score_item.score >= 80 %}score-high{% elif score_item.score >= 60 %}score-medium{% else %}score-low{% endif %}">
                     {{ score_item.score }}%
                   </span>
                 </td>
-                <td>
+                <td data-label="Category">
                   <span class="category-tag category-{{ score_item.category }}">
                     <i class="fas fa-{% if score_item.category == 'topology' %}project-diagram{% elif score_item.category == 'riddle' %}question-circle{% elif score_item.category == 'troubleshoot' %}wrench{% elif score_item.category == 'crimping' %}plug{% else %}chart-bar{% endif %}"></i>
                     {{ score_item.category|title }}
                   </span>
                 </td>
-                <td class="date-cell">{{ score_item.date_attempted.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td class="date-cell" data-label="Date">{{ score_item.date_attempted.strftime('%Y-%m-%d %H:%M:%S') }}</td>
               </tr>
               {% endfor %}
             {% else %}

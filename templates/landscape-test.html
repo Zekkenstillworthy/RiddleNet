@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>RiddleNet Landscape Test | Enhanced Mobile Optimizations</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landscape-optimizations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+    
+    <style>
+        :root {
+            /* Test theme variables */
+            --primary-color: #0B1426;
+            --secondary-color: #1A2B47;
+            --accent-color: #00D4FF;
+            --success-color: #00FF88;
+            --warning-color: #FF8C42;
+            --danger-color: #FF4757;
+            --cyber-glow: #00D4FF;
+            --neon-green: #39FF14;
+            --network-purple: #8B5CF6;
+            --background: #0B1426;
+            --surface: #1A2B47;
+            --surface-hover: #243B5C;
+            --border-color: rgba(0, 212, 255, 0.2);
+            --glass-bg: rgba(30, 41, 71, 0.8);
+            --text-primary: #FFFFFF;
+            --text-secondary: #B3E5FC;
+            --text-muted: #7DD3FC;
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 80px;
+            --transition-speed: 0.3s;
+            --border-radius: 16px;
+            --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Test-specific styles */
+        .test-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-section {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h2 {
+            color: var(--cyber-glow);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 48px;
+            min-width: 48px;
+            transition: transform 0.1s ease;
+        }
+
+        .test-button:active {
+            transform: scale(0.95);
+        }
+
+        .orientation-info {
+            background: var(--glass-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .landscape-indicator {
+            display: none;
+            background: var(--success-color);
+            color: var(--background);
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .portrait-indicator {
+            display: block;
+            background: var(--warning-color);
+            color: var(--background);
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        @media (orientation: landscape) and (max-width: 896px) {
+            .landscape-indicator {
+                display: block;
+            }
+            .portrait-indicator {
+                display: none;
+            }
+        }
+
+        /* Simulation mockup */
+        .simulation-mockup {
+            display: flex;
+            height: 400px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .mockup-canvas {
+            flex: 2;
+            background: linear-gradient(45deg, var(--background), var(--surface));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .mockup-palette {
+            flex: 0 0 200px;
+            background: var(--surface);
+            border-left: 2px solid var(--border-color);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .mockup-device {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+            cursor: pointer;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .mockup-device:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            max-width: 250px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug Information -->
+    <div class="debug-info" id="debugInfo">
+        <div><strong>Orientation:</strong> <span id="orientation">Unknown</span></div>
+        <div><strong>Viewport:</strong> <span id="viewport">Unknown</span></div>
+        <div><strong>Landscape Mode:</strong> <span id="landscapeMode">Inactive</span></div>
+        <div><strong>Auto-Landscape:</strong> <span id="autoLandscape">Inactive</span></div>
+    </div>
+
+    <div class="test-container">
+        <h1 style="text-align: center; margin-bottom: 30px; color: var(--cyber-glow);">
+            🌐 RiddleNet Landscape Optimization Test
+        </h1>
+
+        <!-- Orientation Status -->
+        <div class="orientation-info">
+            <div class="landscape-indicator">
+                ✅ <strong>Landscape Mode Active</strong> - Mobile landscape optimizations are enabled
+            </div>
+            <div class="portrait-indicator">
+                📱 <strong>Portrait Mode</strong> - Rotate your device to test landscape optimizations
+            </div>
+        </div>
+
+        <!-- Touch Target Testing -->
+        <div class="test-section">
+            <h2>📱 Touch Target Testing</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                All buttons should be at least 44px × 44px for comfortable touch interaction
+            </p>
+            <div class="test-grid">
+                <button class="test-button">LINK UP!</button>
+                <button class="test-button">CHECK</button>
+                <button class="test-button">RESET</button>
+                <button class="test-button">SUBMIT</button>
+                <button class="test-button">SAVE</button>
+                <button class="test-button">CANCEL</button>
+            </div>
+        </div>
+
+        <!-- Navigation Testing -->
+        <div class="test-section">
+            <h2>🧭 Navigation Testing</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                In landscape mode, navigation should collapse to icon-only to save horizontal space
+            </p>
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div style="padding: 10px; background: var(--glass-bg); border-radius: 8px; min-height: 48px; display: flex; align-items: center;">
+                    <i class="fas fa-home" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div style="padding: 10px; background: var(--glass-bg); border-radius: 8px; min-height: 48px; display: flex; align-items: center;">
+                    <i class="fas fa-graduation-cap" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                    <span>Classes</span>
+                </div>
+                <div style="padding: 10px; background: var(--glass-bg); border-radius: 8px; min-height: 48px; display: flex; align-items: center;">
+                    <i class="fas fa-ethernet" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                    <span>Crimping</span>
+                </div>
+                <div style="padding: 10px; background: var(--glass-bg); border-radius: 8px; min-height: 48px; display: flex; align-items: center;">
+                    <i class="fas fa-tools" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                    <span>Link Up!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout Testing -->
+        <div class="test-section">
+            <h2>📐 Layout Testing</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                In landscape mode, layouts should optimize for horizontal space usage
+            </p>
+            <div class="simulation-mockup">
+                <div class="mockup-canvas">
+                    <div>
+                        <i class="fas fa-network-wired" style="font-size: 3rem; color: var(--cyber-glow); margin-bottom: 15px; display: block;"></i>
+                        <div>Simulation Canvas Area</div>
+                        <div style="font-size: 0.9rem; margin-top: 10px;">Should maximize horizontal space in landscape</div>
+                    </div>
+                </div>
+                <div class="mockup-palette">
+                    <h4 style="color: var(--cyber-glow); margin-bottom: 15px;">Device Palette</h4>
+                    <div class="mockup-device">
+                        <i class="fas fa-server"></i>
+                        <span style="margin-left: 8px;">Router</span>
+                    </div>
+                    <div class="mockup-device">
+                        <i class="fas fa-desktop"></i>
+                        <span style="margin-left: 8px;">PC</span>
+                    </div>
+                    <div class="mockup-device">
+                        <i class="fas fa-hdd"></i>
+                        <span style="margin-left: 8px;">Switch</span>
+                    </div>
+                    <div class="mockup-device">
+                        <i class="fas fa-wifi"></i>
+                        <span style="margin-left: 8px;">Access Point</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Testing -->
+        <div class="test-section">
+            <h2>⚡ Performance Testing</h2>
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                Animations should be smooth and responsive in landscape mode
+            </p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="test-button" onclick="testAnimation(this)">Test Animation</button>
+                <button class="test-button" onclick="testTransition(this)">Test Transition</button>
+                <button class="test-button" onclick="testTouch(this)">Test Touch Feedback</button>
+                <button class="test-button" onclick="measureFPS()">Measure FPS</button>
+            </div>
+            <div id="performanceResults" style="margin-top: 15px; padding: 10px; background: var(--glass-bg); border-radius: 6px; min-height: 40px;">
+                Performance results will appear here...
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-landscape Scripts -->
+    <script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/enhanced-landscape-optimizer.js') }}"></script>
+
+    <script>
+        // Debug information updater
+        function updateDebugInfo() {
+            const orientation = window.innerWidth > window.innerHeight ? 'Landscape' : 'Portrait';
+            const viewport = `${window.innerWidth} × ${window.innerHeight}`;
+            const landscapeMode = document.body.classList.contains('auto-landscape-active') ? 'Active' : 'Inactive';
+            const autoLandscape = window.autoLandscapeOptimizer ? 'Loaded' : 'Not Loaded';
+
+            document.getElementById('orientation').textContent = orientation;
+            document.getElementById('viewport').textContent = viewport;
+            document.getElementById('landscapeMode').textContent = landscapeMode;
+            document.getElementById('autoLandscape').textContent = autoLandscape;
+        }
+
+        // Test functions
+        function testAnimation(button) {
+            button.style.animation = 'none';
+            setTimeout(() => {
+                button.style.animation = 'landscapeFadeIn 0.5s ease';
+            }, 10);
+            updateResults('Animation test completed');
+        }
+
+        function testTransition(button) {
+            button.style.transform = 'scale(1.2) rotate(15deg)';
+            setTimeout(() => {
+                button.style.transform = 'scale(1) rotate(0deg)';
+            }, 300);
+            updateResults('Transition test completed');
+        }
+
+        function testTouch(button) {
+            button.style.transform = 'scale(0.9)';
+            button.style.backgroundColor = 'var(--success-color)';
+            setTimeout(() => {
+                button.style.transform = 'scale(1)';
+                button.style.backgroundColor = '';
+            }, 200);
+            updateResults('Touch feedback test completed');
+        }
+
+        function measureFPS() {
+            let frameCount = 0;
+            const startTime = performance.now();
+            
+            function countFrames() {
+                frameCount++;
+                if (performance.now() - startTime < 1000) {
+                    requestAnimationFrame(countFrames);
+                } else {
+                    const fps = Math.round(frameCount);
+                    updateResults(`Current FPS: ${fps} (${fps >= 60 ? 'Excellent' : fps >= 30 ? 'Good' : 'Needs Optimization'})`);
+                }
+            }
+            
+            requestAnimationFrame(countFrames);
+            updateResults('Measuring FPS...');
+        }
+
+        function updateResults(message) {
+            const results = document.getElementById('performanceResults');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML = `<strong>${timestamp}:</strong> ${message}`;
+        }
+
+        // Event listeners
+        window.addEventListener('resize', updateDebugInfo);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateDebugInfo, 100);
+        });
+
+        // Auto-landscape event listeners
+        window.addEventListener('landscapeModeEnabled', () => {
+            updateResults('✅ Landscape mode enabled automatically');
+            updateDebugInfo();
+        });
+
+        window.addEventListener('landscapeModeDisabled', () => {
+            updateResults('📱 Landscape mode disabled');
+            updateDebugInfo();
+        });
+
+        // Initial update
+        setTimeout(updateDebugInfo, 100);
+
+        // Test auto-landscape functionality
+        setInterval(() => {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isMobile = window.innerWidth <= 896;
+            
+            if (isMobile && isLandscape) {
+                if (!document.body.classList.contains('auto-landscape-active')) {
+                    console.log('📱 Should trigger auto-landscape mode');
+                }
+            }
+        }, 1000);
+
+        // Add touch event listeners for testing
+        document.querySelectorAll('.test-button, .mockup-device').forEach(element => {
+            element.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.95)';
+            });
+            
+            element.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 100);
+            });
+        });
+
+        console.log('🌐 RiddleNet Landscape Test Page Loaded');
+        console.log('📱 Rotate your device to landscape mode to test optimizations');
+    </script>
+</body>
+</html>

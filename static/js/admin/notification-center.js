@@ -238,8 +238,22 @@ class NotificationCenter {
             <button onclick="this.parentElement.remove()">×</button>
         `;
 
-        // Add to page
-        const container = document.getElementById('notification-container') || document.body;
+        // Locate or create a reusable notification container (class-based to avoid global ID collisions)
+        let container = document.querySelector('.notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'notification-container';
+            // Inline styles (kept here for parity with other pages; consider centralizing in CSS later)
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '10px';
+            document.body.appendChild(container);
+        }
+
         container.appendChild(notification);
 
         // Auto remove after 5 seconds

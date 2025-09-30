@@ -967,6 +967,51 @@ def my_simulations():
                              user=user,
                              simulations=[])
 
+@dynamic_sim_bp.route('/simulation/<int:simulation_id>/tutorial', methods=['GET'])
+def get_simulation_tutorial(simulation_id):
+    """Get tutorial content for popup display (no auth required for flexibility)"""
+    print(f"🔍 TUTORIAL ROUTE CALLED! simulation_id={simulation_id}")
+    try:
+        # Try to import Tutorial model - handle gracefully if it doesn't exist
+        try:
+            from admin.models.tutorial_system import Tutorial
+            # Get tutorial data for the simulation
+            tutorial = Tutorial.query.filter_by(simulation_id=simulation_id).first()
+            
+            if tutorial and tutorial.steps:
+                # Return tutorial data in a format suitable for popup display
+                tutorial_data = tutorial.to_dict()
+                
+                return jsonify({
+                    'success': True,
+                    'tutorial': tutorial_data
+                })
+        except ImportError:
+            print(f"Tutorial system not available - using fallback for simulation {simulation_id}")
+        except Exception as e:
+            print(f"Error loading tutorial from database: {e}")
+        
+        # Fallback - return empty tutorial structure
+        return jsonify({
+            'success': True,
+            'tutorial': {
+                'id': None,
+                'title': 'Tutorial Not Available',
+                'steps': [{
+                    'step_type': 'text',
+                    'content': 'No tutorial has been created for this simulation yet.',
+                    'order_index': 1
+                }]
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting tutorial for simulation {simulation_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @dynamic_sim_bp.route('/simulation/<int:simulation_id>')
 @user_login_required
 def run_simulation(simulation_id):
@@ -1222,6 +1267,11 @@ def run_simulation(simulation_id):
             except Exception as e2:
                 print(f"Could not write error to file: {e2}")
             
+        # Add task mode configuration
+        task_mode = simulation_config.get('task_mode', 'combined')  # 'topology', 'configuration', 'combined'
+        topology_locked = task_mode in ['configuration']  # Lock topology if config-only mode
+        configuration_enabled = task_mode in ['configuration', 'combined']
+        
         # Prepare simulation data for the template with troubleshooting support
         simulation_data = {
             'id': simulation.id,
@@ -1238,6 +1288,13 @@ def run_simulation(simulation_id):
             'validation': validation,
             'topology': simulation_topology,
             'simulation_config': simulation_config,  # Include full config for backward compatibility
+            
+            # Task mode configuration
+            'task_mode': task_mode,
+            'topology_locked': topology_locked,
+            'configuration_enabled': configuration_enabled,
+            'admin_provided_topology': simulation_config.get('admin_topology', {}),
+            'device_config_templates': simulation_config.get('device_templates', {}),
             
             # Troubleshooting-specific data
             'is_troubleshooting': simulation_config.get('use_troubleshoot_template', False),
@@ -1362,11 +1419,31 @@ def run_simulation(simulation_id):
         # Provide assignment gating info to UI
         gating = check_assignment_gating(user, simulation.id)
 
+        # Clean simulation data for JSON serialization to prevent JavaScript syntax errors
+        def clean_for_json(obj):
+            """Recursively clean objects to ensure JSON serializability"""
+            if obj is None:
+                return None
+            elif isinstance(obj, (str, int, float, bool)):
+                return obj
+            elif isinstance(obj, list):
+                return [clean_for_json(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {str(k): clean_for_json(v) for k, v in obj.items() if v is not None}
+            else:
+                # Convert non-serializable objects to string
+                return str(obj)
+        
+        # Clean the simulation data to prevent JSON serialization issues
+        clean_simulation_data = clean_for_json(simulation_data)
+        clean_progress = clean_for_json(progress)
+
         # Prepare context for template including collaboration data
         context = {
             'user': user,
-            'simulation': simulation_data,
-            'progress': progress,
+            'simulation': clean_simulation_data,
+            'simulation_data': clean_simulation_data,  # Add this for JavaScript compatibility
+            'progress': clean_progress,
             'gating': gating,
             'lobby': lobby.to_dict() if lobby else None,
             'team_assignment': {
@@ -2681,6 +2758,85 @@ def validate_simulation_step(simulation_id):
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/task-mode', methods=['GET'])
+@user_login_required
+def get_task_mode(simulation_id):
+    """Get current task mode for simulation"""
+    try:
+        user = get_user_from_session()
+        if not user:
+            return jsonify({'error': 'User not authenticated'}), 401
+        
+        # Get simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        task_mode = simulation_config.get('task_mode', 'combined')
+        topology_locked = task_mode in ['configuration']
+        configuration_enabled = task_mode in ['configuration', 'combined']
+        
+        return jsonify({
+            'success': True,
+            'task_mode': task_mode,
+            'topology_locked': topology_locked,
+            'configuration_enabled': configuration_enabled,
+            'admin_provided_topology': simulation_config.get('admin_topology', {}),
+            'device_config_templates': simulation_config.get('device_templates', {})
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/admin-topology', methods=['GET'])
+@user_login_required
+def get_admin_topology(simulation_id):
+    """Get admin-provided topology for configuration mode"""
+    try:
+        user = get_user_from_session()
+        if not user:
+            return jsonify({'error': 'User not authenticated'}), 401
+        
+        # Get simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        task_mode = simulation_config.get('task_mode', 'combined')
+        
+        # Only return admin topology if in configuration mode
+        if task_mode not in ['configuration', 'combined']:
+            return jsonify({
+                'success': False,
+                'message': 'Admin topology only available in configuration or combined mode'
+            }), 400
+        
+        admin_topology = simulation_config.get('admin_topology', {})
+        device_templates = simulation_config.get('device_templates', {})
+        
+        return jsonify({
+            'success': True,
+            'admin_topology': admin_topology,
+            'device_templates': device_templates,
+            'task_mode': task_mode
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/complete', methods=['POST'])
 @user_login_required
 def complete_simulation(simulation_id):
@@ -3822,6 +3978,249 @@ def get_current_device_count_api():
             'success': False,
             'error': str(e)
         }), 500
+
+# ===== NETWORK CONFIGURATION API ROUTES =====
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/network-config', methods=['GET'])
+@user_login_required
+def get_network_config_api(simulation_id):
+    """Get network configuration for a simulation"""
+    try:
+        user = get_user_from_session()
+        
+        # Check if user has access to this simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # First try to get user's saved configuration
+        latest_attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id
+        ).order_by(SimulationAttempt.created_at.desc()).first()
+        
+        network_config = {}
+        
+        # Get user's saved configuration from latest attempt
+        if latest_attempt and latest_attempt.progress_data:
+            try:
+                progress = json.loads(latest_attempt.progress_data) if isinstance(latest_attempt.progress_data, str) else latest_attempt.progress_data
+                network_config = progress.get('network_config', {})
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
+        # If no user config, get default from simulation config
+        if not network_config and simulation.simulation_config:
+            try:
+                sim_config = json.loads(simulation.simulation_config) if isinstance(simulation.simulation_config, str) else simulation.simulation_config
+                network_config = sim_config.get('network_config', {})
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
+        # If still no config, provide defaults
+        if not network_config:
+            network_config = {
+                'networkType': 'wired',
+                'networkSubnet': '192.168.1.0/24',
+                'defaultGateway': '192.168.1.1',
+                'ipScheme': 'dhcp',
+                'routingProtocol': 'rip',
+                'vlanConfig': '10 | Management | 192.168.10.0/24\n20 | Users | 192.168.20.0/24',
+                'enableStp': False,
+                'enableServers': True,
+                'enableFirewall': True,
+                'enableAcl': False,
+                'enableNat': False,
+                'firewallRules': 'ALLOW | 192.168.20.0/24 | 192.168.30.0/24 | HTTP\nDENY | ANY | 192.168.30.0/24 | SSH'
+            }
+        
+        return jsonify({
+            'success': True,
+            'network_config': network_config,
+            'simulation_id': simulation_id
+        })
+        
+    except Exception as e:
+        print(f"Error getting network configuration: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/network-config', methods=['POST'])
+@user_login_required
+def save_network_config_api(simulation_id):
+    """Save network configuration for a simulation"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        # Check if user has access to this simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        network_config = data.get('network_config', {})
+        if not network_config:
+            return jsonify({
+                'success': False,
+                'error': 'Network configuration required'
+            }), 400
+        
+        # Validate configuration
+        validation_result = validate_network_config(network_config)
+        if not validation_result['valid']:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid network configuration',
+                'validation_errors': validation_result['errors']
+            }), 400
+        
+        # Get or create simulation attempt
+        attempt = SimulationAttempt.query.filter_by(
+            user_id=user.id,
+            simulation_id=simulation_id
+        ).order_by(SimulationAttempt.created_at.desc()).first()
+        
+        if not attempt:
+            # Create new attempt
+            attempt = SimulationAttempt(
+                user_id=user.id,
+                simulation_id=simulation_id,
+                progress_data={'network_config': network_config}
+            )
+            db.session.add(attempt)
+        else:
+            # Update existing attempt
+            try:
+                progress = json.loads(attempt.progress_data) if isinstance(attempt.progress_data, str) else attempt.progress_data or {}
+            except (json.JSONDecodeError, KeyError):
+                progress = {}
+            
+            progress['network_config'] = network_config
+            attempt.progress_data = json.dumps(progress) if not isinstance(progress, str) else progress
+            attempt.last_updated = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Log the save operation
+        print(f"🌐 Network configuration saved for simulation {simulation_id} by user {user.username}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Network configuration saved successfully',
+            'simulation_id': simulation_id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving network configuration: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/network-config/validate', methods=['POST'])
+@user_login_required
+def validate_network_config_api(simulation_id):
+    """Validate network configuration for a simulation"""
+    try:
+        user = get_user_from_session()
+        data = request.get_json() or {}
+        
+        # Check if user has access to this simulation
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        network_config = data.get('network_config', {})
+        if not network_config:
+            return jsonify({
+                'success': False,
+                'error': 'Network configuration required'
+            }), 400
+        
+        # Perform validation
+        validation_result = validate_network_config(network_config)
+        
+        return jsonify({
+            'success': True,
+            'valid': validation_result['valid'],
+            'errors': validation_result['errors'],
+            'warnings': validation_result.get('warnings', []),
+            'simulation_id': simulation_id
+        })
+        
+    except Exception as e:
+        print(f"Error validating network configuration: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+def validate_network_config(config):
+    """Validate network configuration data"""
+    errors = []
+    warnings = []
+    
+    try:
+        # Required fields
+        required_fields = ['networkType', 'networkSubnet', 'defaultGateway']
+        for field in required_fields:
+            if not config.get(field):
+                errors.append(f'Missing required field: {field}')
+        
+        # IP address validation
+        if config.get('networkSubnet'):
+            subnet = config['networkSubnet']
+            if '/' not in subnet:
+                errors.append('Network subnet must include CIDR notation (e.g., /24)')
+            else:
+                ip_part = subnet.split('/')[0]
+                import re
+                ip_regex = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+                if not re.match(ip_regex, ip_part):
+                    errors.append('Invalid network subnet IP format')
+        
+        if config.get('defaultGateway'):
+            gateway = config['defaultGateway']
+            import re
+            ip_regex = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+            if not re.match(ip_regex, gateway):
+                errors.append('Invalid gateway IP format')
+        
+        # VLAN configuration validation
+        if config.get('vlanConfig'):
+            vlan_lines = config['vlanConfig'].strip().split('\n')
+            for i, line in enumerate(vlan_lines):
+                if line.strip():
+                    parts = [part.strip() for part in line.split('|')]
+                    if len(parts) < 3:
+                        errors.append(f'Invalid VLAN configuration on line {i+1}: expected format "ID | Name | Subnet"')
+                    else:
+                        # Validate VLAN ID
+                        try:
+                            vlan_id = int(parts[0])
+                            if vlan_id < 1 or vlan_id > 4094:
+                                errors.append(f'Invalid VLAN ID {vlan_id}: must be between 1-4094')
+                        except ValueError:
+                            errors.append(f'Invalid VLAN ID on line {i+1}: must be numeric')
+        
+        # Security warnings
+        if config.get('enableFirewall') is False:
+            warnings.append('Firewall is disabled - security risk')
+        
+        if config.get('enableAcl') is False and config.get('enableFirewall') is False:
+            warnings.append('No access controls enabled - high security risk')
+        
+        return {
+            'valid': len(errors) == 0,
+            'errors': errors,
+            'warnings': warnings
+        }
+        
+    except Exception as e:
+        return {
+            'valid': False,
+            'errors': [f'Validation error: {str(e)}'],
+            'warnings': []
+        }
+
+# ===== END NETWORK CONFIGURATION API ROUTES =====
 
 # Export the blueprint for direct import
 __all__ = ['dynamic_sim_bp', 'register_dynamic_routes']

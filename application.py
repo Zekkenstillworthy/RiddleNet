@@ -114,10 +114,6 @@ def register_blueprints():
         from user.api.enhanced_simulation_api import enhanced_simulation_api
         application.register_blueprint(enhanced_simulation_api, url_prefix='/dynamic')
         
-        # Add debug test route
-        from debug_test_route import test_bp
-        application.register_blueprint(test_bp)
-        
         print("✅ User blueprints registered")
     except Exception as e:
         print(f"⚠️ Error registering user blueprints: {e}")
