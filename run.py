@@ -21,13 +21,23 @@ ctx.push()
 from socket_manager import init_socketio
 init_socketio(app)
 
+# Configure structured logging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Inject socketio instance into notification controller
 try:
     from admin.controllers.notification_controller import set_socketio_instance
     set_socketio_instance(socketio)
-    print("✅ SocketIO instance injected into notification controller")
+    logger.info("✅ SocketIO instance injected into notification controller")
 except ImportError as e:
-    print(f"⚠️ Could not inject socketio into notification controller: {e}")
+    logger.warning(f"Could not inject socketio into notification controller: {e}")
+except Exception as e:
+    logger.error(f"Unexpected error injecting socketio: {e}", exc_info=True)
 
 cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
@@ -37,20 +47,50 @@ cors = CORS(app, resources={
 instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 os.makedirs(instance_path, exist_ok=True)
 
+# Initialize database with proper migration support
 with app.app_context():
-    db.create_all()
+    try:
+        # In production, use Flask-Migrate for schema management
+        if app.config.get('FLASK_ENV') == 'production':
+            logger.info("Production mode: Using Flask-Migrate for database management")
+            logger.info("Run 'flask db upgrade' to apply migrations")
+        else:
+            # Development mode: still use create_all for convenience
+            logger.info("Development mode: Creating database tables")
+            db.create_all()
+            logger.info("Database tables created successfully")
+            
+        # Run custom database setup if available
+        try:
+            from admin.utils.database_setup import setup_database, migrate_existing_tables
+            logger.info("Running database migrations and setup...")
+            migrate_existing_tables()
+            setup_database()
+            logger.info("Database setup completed successfully")
+        except ImportError:
+            logger.info("No custom database setup found, skipping")
+        except Exception as e:
+            logger.warning(f"Database setup completed with warnings: {e}")
+            
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}", exc_info=True)
+        if app.config.get('FLASK_ENV') == 'production':
+            logger.critical("Database initialization failed in production mode")
+            raise  # Don't continue in production if DB setup fails
+        else:
+            logger.warning("Continuing with application startup despite database errors")
 
 # Initialize session cleanup middleware
 try:
-    print("🔧 Trying to import session cleanup middleware...")
+    logger.info("Initializing session cleanup middleware...")
     from utils.session_cleanup_middleware import init_session_cleanup
-    print("🔧 Session cleanup middleware imported successfully")
+    logger.info("Session cleanup middleware imported successfully")
     init_session_cleanup(app)
-    print("🔧 Session cleanup middleware initialized")
+    logger.info("Session cleanup middleware initialized successfully")
 except ImportError as e:
-    print(f"❌ Failed to import session cleanup middleware: {e}")
+    logger.warning(f"Failed to import session cleanup middleware: {e}")
 except Exception as e:
-    print(f"❌ Error initializing session cleanup middleware: {e}")
+    logger.error(f"Error initializing session cleanup middleware: {e}", exc_info=True)
 
 quiz_controller = QuizController(app)
 
@@ -121,200 +161,181 @@ def load_user(user_id):
         print(f"❌ No user found in any table for ID {user_id_int}")
         return None
 
-from utils.route_guards import enforce_admin_namespace
-enforce_admin_namespace(app)
-
+# Consolidated before_request handler for better performance
 @app.before_request
-def check_admin_auth():
+def before_request_handler():
+    """Consolidated request handler for authentication and debugging"""
+    
+    # Debug logging (only in debug mode)
+    if app.debug and ('/preview' in request.path or '/class-content-manager' in request.path):
+        logger.debug("="*80)
+        logger.debug(f"REQUEST DEBUG: {request.method} {request.path}")
+        logger.debug(f"Full URL: {request.url}")
+        logger.debug(f"Referrer: {request.referrer}")
+        logger.debug(f"User-Agent: {request.headers.get('User-Agent', 'N/A')[:100]}")
+        if request.args:
+            logger.debug(f"Query params: {dict(request.args)}")
+        logger.debug("="*80)
+    
+    # Admin authentication check
     if request.path.startswith('/admin'):
         from flask import session
-        print("=" * 80)
-        print(f"🚨 BEFORE_REQUEST HANDLER CALLED FOR: {request.path}")
-        print(f"🔍 current_user: {current_user}")
-        print(f"🔍 is_authenticated: {current_user.is_authenticated}")
-        print(f"🔍 current_user type: {type(current_user)}")
-        print(f"🔍 session keys: {list(session.keys())}")
-        print(f"🔍 session _user_id: {session.get('_user_id', 'NOT FOUND')}")
-        print(f"🔍 session auth_namespace: {session.get('auth_namespace', 'NOT FOUND')}")
-        print("=" * 80)
         
-        exempt_routes = [
+        if app.debug:  # Only log in debug mode
+            logger.debug("="*80)
+            logger.debug(f"ADMIN AUTH CHECK: {request.path}")
+            logger.debug(f"current_user: {current_user}")
+            logger.debug(f"is_authenticated: {current_user.is_authenticated}")
+            logger.debug(f"current_user type: {type(current_user)}")
+            logger.debug(f"session keys: {list(session.keys())}")
+            logger.debug(f"session _user_id: {session.get('_user_id', 'NOT FOUND')}")
+            logger.debug(f"session auth_namespace: {session.get('auth_namespace', 'NOT FOUND')}")
+            logger.debug("="*80)
+        
+        # Get exempt routes from configuration instead of hardcoding
+        exempt_routes = app.config.get('ADMIN_EXEMPT_ROUTES', [
             '/admin/login',
-            '/admin/signup',  # Add signup route to exempt routes
-            '/admin/forgot-password',  # Add forgot password route
-            '/admin/reset-password/',  # Add reset password route (with token)
+            '/admin/signup',
+            '/admin/forgot-password',
+            '/admin/reset-password/',
             '/admin/logout',
             '/admin/static/',
             '/admin/topology/',
             '/admin/troubleshooting/'
-        ]
+        ])
         
+        # Check if route is exempt
         if any(request.path.startswith(route) for route in exempt_routes):
-            print(f"✅ Path {request.path} is exempt, allowing through")
+            logger.debug(f"Path {request.path} is exempt, allowing through")
             return None
         
+        # Check authentication
         if not current_user.is_authenticated:
             flash('Please log in to access the admin area', 'warning')
-            # Preserve intended destination so we return here after login
             next_url = (request.full_path if request.query_string else request.path).rstrip('?')
             return redirect(url_for('auth.login', next=next_url))
         
-        # Only check admin instance if user is authenticated
+        # Check admin privileges
         if current_user.is_authenticated:
             from admin.models.user import Admin
             if not isinstance(current_user, Admin):
                 flash('Access denied. Admin credentials required.', 'error')
-                # Preserve intended destination so we return here after login
                 next_url = (request.full_path if request.query_string else request.path).rstrip('?')
                 return redirect(url_for('auth.login', next=next_url))
 
+# Register API blueprints with proper error handling
 try:
     import sys
     import os
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
     from user.api import api_blueprint as user_api_blueprint
     app.register_blueprint(user_api_blueprint, url_prefix='/api')
-    print("API Blueprint registered successfully")
-    try:
-        from user.api.topology_progress_api import topology_progress_bp
-        app.register_blueprint(topology_progress_bp)
-        print("Topology Progress API Blueprint registered successfully")
-    except Exception as e:
-        print(f"Error registering Topology Progress API blueprint: {e}")   
-    try:
-        from user.routes.troubleshooting_routes import troubleshooting_bp
-        app.register_blueprint(troubleshooting_bp)
-        print("User Troubleshooting Blueprint registered successfully")
-        
-        # Register collaborative troubleshooting API blueprint
-        from user.routes.collaborative_troubleshooting_api import collaborative_troubleshooting_api_bp
-        app.register_blueprint(collaborative_troubleshooting_api_bp)
-        print("Collaborative Troubleshooting API Blueprint registered successfully")
-        
-        # Register feedback API blueprint
-        from user.api.feedback_api import feedback_api
-        app.register_blueprint(feedback_api)
-        print("Feedback API Blueprint registered successfully")
-        
-        # Register user notification routes
-        from user.routes.notification_routes import notification_bp
-        app.register_blueprint(notification_bp)
-        print("User Notification Blueprint registered successfully")
-        
-        # Register user assignment routes
-        from user.routes.assignment_routes import user_assignment_bp
-        app.register_blueprint(user_assignment_bp)
-        print("User Assignment Blueprint registered successfully")
-        
-        # Register enhanced simulation API
-        from user.api.enhanced_simulation_api import enhanced_simulation_api
-        app.register_blueprint(enhanced_simulation_api, url_prefix='/dynamic')
-        print("Enhanced Simulation API Blueprint registered successfully")
-        
-        # NOTE: Dynamic simulation blueprint is registered in __init__.py to avoid duplicates
-        print("Dynamic Simulation Blueprint already registered in __init__.py")
-    except Exception as e:
-        print(f"Error registering User Troubleshooting blueprint: {e}")
-    # No separate simulation blueprint registration needed
-        
+    logger.info("User API Blueprint registered successfully")
+    
+    # Register additional user blueprints
+    additional_blueprints = [
+        ('user.api.topology_progress_api', 'topology_progress_bp', None),
+        ('user.routes.troubleshooting_routes', 'troubleshooting_bp', None),
+        ('user.routes.collaborative_troubleshooting_api', 'collaborative_troubleshooting_api_bp', None),
+        ('user.api.feedback_api', 'feedback_api', None),
+        ('user.routes.notification_routes', 'notification_bp', None),
+        ('user.routes.assignment_routes', 'user_assignment_bp', None),
+        ('user.api.enhanced_simulation_api', 'enhanced_simulation_api', '/dynamic'),
+    ]
+    
+    for module_path, blueprint_name, url_prefix in additional_blueprints:
+        try:
+            module = __import__(module_path, fromlist=[blueprint_name])
+            blueprint = getattr(module, blueprint_name)
+            app.register_blueprint(blueprint, url_prefix=url_prefix)
+            logger.info(f"Registered {blueprint_name} from {module_path}")
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"Could not register {blueprint_name} from {module_path}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error registering {blueprint_name}: {e}", exc_info=True)
+            
 except Exception as e:
-    print(f"Error registering API blueprint: {e}")
-    try:
-        import importlib.util
-        api_path = os.path.join(os.path.dirname(__file__), 'user', 'api.py')
-        spec = importlib.util.spec_from_file_location("api_module", api_path)
-        api_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(api_module)
-        app.register_blueprint(api_module.api_blueprint, url_prefix='/api')
-        print("API Blueprint registered successfully using direct file import")
-    except Exception as e2:
-        print(f"Second attempt also failed: {e2}")
+    logger.error(f"Critical error registering user API blueprints: {e}", exc_info=True)
+    # Don't fail completely, continue with app initialization
         
-print("\n=== Registering Admin Blueprints ===")
+# Register Admin Blueprints with structured error handling
+logger.info("Registering Admin Blueprints...")
 try:
     import importlib
-    blueprints_to_register = [        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
+    blueprints_to_register = [
+        ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
         ('admin.controllers.user_controller', 'user_bp', '/admin', 'admin_user_bp'),
         ('admin.controllers.score_controller', 'score_bp', '/admin', None),
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
-
-        
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
         ('admin.controllers.class_controller', 'class_controller', '/admin', None),
         ('admin.controllers.class_content_controller', 'class_content_controller_old', '/admin', None),
         ('admin.controllers.lesson_editor_controller', 'lesson_editor_bp', None, 'lesson_editor_bp'),
-        ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),  # Module management
-        ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),  # Module lesson editor
+        ('admin.controllers.enhanced_module_controller', 'enhanced_module_bp', '/admin', None),
+        ('admin.controllers.module_lesson_editor_controller', 'module_lesson_editor_bp', None, None),
         ('admin.controllers.audit_log_controller', 'audit_log_bp', '/admin', None),
-        ('admin.controllers.notification_controller', 'notification_controller', None, None),  # Notification center
-        ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),  # Lesson management
-        ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),  # Tutorial management
-        ('admin.controllers.rubric_controller', 'rubric_bp', None, None),  # Rubric management
-        ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),  # Admin settings
-
-        ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),  # Admin API routes with internal prefix
-        ('admin.routes.topology_routes', 'topology_bp', None, None),  # No prefix, has /admin/topology in routes
-        ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),  # API routes for topology
-        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),  # No prefix, has /admin/troubleshooting in routes        
-        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),  # API routes for troubleshooting
-    ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),  # Enhanced simulation routes
-    ('admin.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),  # Device count synchronization API
-    ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),  # Admin collaboration API
-    ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),  # Instructor labs dashboard
-    ('admin.routes.lab_api', 'lab_api', None, None),  # Instructor-scoped lab API
-    # Explicitly register RNet viewer blueprint here to guarantee availability before templates render
-    ('admin.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
+        ('admin.controllers.notification_controller', 'notification_controller', None, None),
+        ('admin.controllers.lesson_controller', 'lesson_bp', '/admin', None),
+        ('admin.controllers.tutorial_controller', 'tutorial_bp', None, None),
+        ('admin.controllers.rubric_controller', 'rubric_bp', None, None),
+        ('admin.controllers.admin_settings_controller', 'admin_settings_bp', None, None),
+        ('admin.routes.api_routes', 'api_bp', None, 'admin_api_bp'),
+        ('admin.routes.topology_routes', 'topology_bp', None, None),
+        ('admin.routes.topology_api_routes', 'topology_api_bp', None, None),
+        ('admin.routes.troubleshooting_routes', 'troubleshooting_bp', None, None),
+        ('admin.routes.troubleshooting_api_routes', 'troubleshooting_api_bp', None, None),
+        ('admin.routes.simulation_routes', 'admin_simulation_bp', None, 'admin_simulation_bp'),
+        ('admin.routes.device_sync_api', 'device_sync_bp', None, 'device_sync_bp'),
+        ('admin.routes.collaboration_api', 'admin_collaboration_api_bp', None, 'admin_collaboration_api'),
+        ('admin.controllers.instructor_lab_controller', 'instructor_lab_bp', None, None),
+        ('admin.routes.lab_api', 'lab_api', None, None),
+        ('admin.routes.rnet_viewer_routes', 'rnet_viewer_bp', None, 'rnet_viewer_bp')
     ]
+    
+    successful_registrations = 0
+    failed_registrations = 0
     
     for module_path, blueprint_name, url_prefix, alias_name in blueprints_to_register:
         try:
-            print(f"🔧 Attempting to import {module_path}...")
             module = importlib.import_module(module_path)
-            print(f"✅ Successfully imported {module_path}")
             blueprint = getattr(module, blueprint_name)
-            print(f"✅ Got blueprint {blueprint_name} from {module_path}")
-            
-            # Register with the specified URL prefix (or None if not needed)
             app.register_blueprint(blueprint, url_prefix=url_prefix)
-            print(f"✅ Registered blueprint {blueprint_name}")
             
             # Update the blueprint's template search paths
-            from utils.template_utils import ensure_blueprint_can_find_templates
-            ensure_blueprint_can_find_templates(blueprint, [
-                app.template_folder,
-                os.path.join(app.template_folder, 'admin')
-            ])
+            try:
+                from utils.template_utils import ensure_blueprint_can_find_templates
+                ensure_blueprint_can_find_templates(blueprint, [
+                    app.template_folder,
+                    os.path.join(app.template_folder, 'admin')
+                ])
+            except ImportError:
+                pass  # Template utils not available
             
-            if alias_name:  # If we provided an alias name for clarity
-                print(f"Registered {alias_name} from {module_path}")            
-            else:
-                print(f"Registered {blueprint_name} from {module_path}")
-                
+            display_name = alias_name or blueprint_name
+            logger.info(f"Registered {display_name} from {module_path}")
+            successful_registrations += 1
+            
         except (ImportError, AttributeError) as e:
-            print(f"❌ Could not import or register {blueprint_name} from {module_path}: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.warning(f"Could not register {blueprint_name} from {module_path}: {e}")
+            failed_registrations += 1
+        except Exception as e:
+            logger.error(f"Unexpected error registering {blueprint_name}: {e}", exc_info=True)
+            failed_registrations += 1
     
-    print("Admin blueprints registration complete")
+    logger.info(f"Admin blueprints registration complete: {successful_registrations} successful, {failed_registrations} failed")
+    
 except Exception as e:
-    print(f"General error registering admin blueprints: {e}")
+    logger.error(f"Critical error in admin blueprint registration: {e}", exc_info=True)
 
 # Register Enhanced User Routes for User-Facing Integration
-print("\n=== Registering Enhanced User Routes ===")
+logger.info("Registering Enhanced User Routes...")
 try:
     from user.routes.enhanced.hybrid_routes import enhanced_user_bp
     app.register_blueprint(enhanced_user_bp, url_prefix='/enhanced')
-    print("✅ Enhanced user routes registered successfully")
-    print("   • /enhanced/networking1-simulations - Shows static + database content")
-    print("   • /enhanced/networking2-simulations - Shows static + database content")
-    print("   • /enhanced/class/<id>/enhanced - Shows learning paths as modules")
-    print("   • /simulation/<id> - Unified simulation runner")
-    print("   • /simulation/static/<lesson_key> - Static content runner")
+    logger.info("Enhanced user routes registered successfully")
 except Exception as e:
-    print(f"❌ Error registering enhanced user routes: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.error(f"Error registering enhanced user routes: {e}", exc_info=True)
 
 # Register Progression API for sequential unlock mechanics
 print("\n=== Registering Progression API ===")
@@ -562,74 +583,40 @@ if __name__ == "__main__":
 
     import socket as _socket
 
-    # Add debug middleware to track all requests
-    @app.before_request
-    def debug_requests():
-        if '/preview' in request.path or '/class-content-manager' in request.path:
-            print("🟡" + "="*80)
-            print(f"🟡 REQUEST DEBUG: {request.method} {request.path}")
-            print(f"🟡 Full URL: {request.url}")
-            print(f"🟡 Referrer: {request.referrer}")
-            print(f"🟡 User-Agent: {request.headers.get('User-Agent', 'N/A')[:100]}")
-            if request.args:
-                print(f"🟡 Query params: {dict(request.args)}")
-            print("🟡" + "="*80)
 
-    # Database setup
-    with app.app_context():
-        try:
-            from admin.utils.database_setup import setup_database, migrate_existing_tables
-            
-            # First, try to migrate existing tables
-            print("Checking for database migrations...")
-            migrate_existing_tables()
-            
-            # Then set up database normally
-            setup_database()
-            
-        except Exception as e:
-            print(f"Database setup error: {e}")
-            print("Continuing with application startup...")
 
-    # Start the unified server with WebSocket support
-    # Determine port and host with fallback if default is busy
-    def _find_free_port(preferred: int, tries: int = 10) -> int:
-        port = preferred
-        for _ in range(tries):
-            s = None
+    # Database setup for development mode only
+    if not app.config.get('FLASK_ENV') == 'production':
+        with app.app_context():
             try:
-                s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-                s.bind(('127.0.0.1', port))
-                # If bind succeeds, it's free
-                return port
-            except OSError:
-                port += 1
-            finally:
-                try:
-                    if s:
-                        s.close()
-                except Exception:
-                    pass
-        return preferred  # Fallback to preferred even if busy
-
-    env_port = int(_os.getenv('PORT', '5001'))
-    env_host = _os.getenv('HOST', '127.0.0.1')
+                # Re-run database setup for development
+                db.create_all()
+                logger.info("Development database tables verified")
+            except Exception as e:
+                logger.error(f"Development database setup error: {e}")
     
-    # Force use of port 5001 only - no fallback
+    # Determine host, port and debug mode from environment
+    env_port = int(_os.getenv('PORT', '5001'))
+    env_host = _os.getenv('HOST', '0.0.0.0')  # Changed to 0.0.0.0 for EC2 compatibility
+    debug_mode = _os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes')
+    
+    # Use the configured port (no fallback needed in production)
     chosen_port = env_port
+    chosen_host = env_host
 
-    print(f"🚀 Starting unified Flask-SocketIO server on {env_host}:{chosen_port}...")
-    print("🔌 WebSocket events loaded and ready")
-    print("📁 Static files will be served by Flask's built-in handler")
+    logger.info(f"Starting unified Flask-SocketIO server on {chosen_host}:{chosen_port}...")
+    logger.info(f"Debug mode: {debug_mode}")
+    logger.info("WebSocket events loaded and ready")
+    logger.info("Static files will be served by Flask's built-in handler")
     
     # Start the Flask-SocketIO server
     socketio.run(
         app,
-        debug=True,
-        host=env_host,
+        debug=debug_mode,  # Use environment variable
+        host=chosen_host,
         port=chosen_port,
         use_reloader=False,  # Disable reloader to prevent threading issues
-        allow_unsafe_werkzeug=True  # Allow eventlet with Werkzeug
+        allow_unsafe_werkzeug=debug_mode  # Only allow in debug mode
     )
 
 
