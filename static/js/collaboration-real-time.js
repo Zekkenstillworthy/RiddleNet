@@ -796,11 +796,22 @@ class CollaborationRealTime {
     }
     
     /**
-     * Add message to a specific container
+     * Add message to a specific container with unified styling
      */
     addMessageToContainer(container, data) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${data.message_type || 'text'} ${data.isOwnMessage ? 'own-message' : ''}`;
+        
+        // Determine message type and ownership for unified styling
+        let messageClass = 'unified-chat-message';
+        if (data.isOwnMessage || (this.currentUser && data.user_id === this.currentUser.id)) {
+            messageClass += ' own-message';
+        } else if (data.message_type === 'system') {
+            messageClass += ' system-message';
+        } else {
+            messageClass += ' other-message';
+        }
+        
+        messageDiv.className = messageClass;
         
         const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], {
             hour: '2-digit',
@@ -808,11 +819,11 @@ class CollaborationRealTime {
         }) : 'now';
         
         messageDiv.innerHTML = `
-            <div class="message-header">
-                <span class="message-author">${data.username || 'Unknown'}</span>
-                <span class="message-time">${timestamp}</span>
+            <div class="unified-message-header">
+                <span class="unified-message-author">${data.username || 'Unknown'}</span>
+                <span class="unified-message-time">${timestamp}</span>
             </div>
-            <div class="message-content">${data.message || data.content || ''}</div>
+            <div class="unified-message-content">${data.message || data.content || ''}</div>
         `;
         
         container.appendChild(messageDiv);

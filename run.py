@@ -428,63 +428,63 @@ def setup_jinja_environment():
 # Configure Jinja2 environment
 setup_jinja_environment()
 
-if __name__ == "__main__":
-    import logging
-    from flask import send_from_directory
-    import os as _os
-    import socket as _socket
-    
-    # Setup logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    
-    # Define static folder path
-    STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    
-    # Add optimized static file routes directly to the main app
-    @app.route('/media/video/<path:filename>')
-    def serve_video(filename):
-        """Serve video files with optimized settings"""
-        try:
-            video_path = os.path.join(STATIC_FOLDER, 'video')
-            response = send_from_directory(video_path, filename)
-            
-            # Set proper headers for video streaming
-            response.headers['Accept-Ranges'] = 'bytes'
-            response.headers['Content-Type'] = 'video/mp4'
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Range'
-            
-            logger.info(f"Served video file: {filename}")
-            return response
-        except Exception as e:
-            logger.error(f"Error serving video file {filename}: {e}")
-            return f"Error serving video: {filename}", 404
+# Essential routes that should be available regardless of deployment method
+import logging
+from flask import send_from_directory
+import os as _os
 
-    @app.route('/media/audio/<path:filename>')
-    def serve_audio(filename):
-        """Serve audio files with optimized settings"""
-        try:
-            audio_path = os.path.join(STATIC_FOLDER, 'audio')
-            response = send_from_directory(audio_path, filename)
-            # Set proper headers for audio streaming
-            response.headers['Accept-Ranges'] = 'bytes'
-            response.headers['Content-Type'] = 'audio/mpeg'
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Range'
-            
-            logger.info(f"Served audio file: {filename}")
-            return response
-        except Exception as e:
-            logger.error(f"Error serving audio file {filename}: {e}")
-            return f"Error serving audio: {filename}", 404
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    @app.route('/health')
-    def health_check():
-        return {'status': 'healthy', 'server': 'main'}, 200
-    
+# Define static folder path
+STATIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
+@app.route('/media/video/<path:filename>')
+def serve_video(filename):
+    """Serve video files with optimized settings"""
+    try:
+        video_path = os.path.join(STATIC_FOLDER, 'video')
+        response = send_from_directory(video_path, filename)
+        
+        # Set proper headers for video streaming
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Content-Type'] = 'video/mp4'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        
+        logger.info(f"Served video file: {filename}")
+        return response
+    except Exception as e:
+        logger.error(f"Error serving video file {filename}: {e}")
+        return f"Error serving video: {filename}", 404
+
+@app.route('/media/audio/<path:filename>')
+def serve_audio(filename):
+    """Serve audio files with optimized settings"""
+    try:
+        audio_path = os.path.join(STATIC_FOLDER, 'audio')
+        response = send_from_directory(audio_path, filename)
+        # Set proper headers for audio streaming
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Content-Type'] = 'audio/mpeg'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Range'
+        
+        logger.info(f"Served audio file: {filename}")
+        return response
+    except Exception as e:
+        logger.error(f"Error serving audio file {filename}: {e}")
+        return f"Error serving audio: {filename}", 404
+
+@app.route('/health')
+def health_check():
+    return {'status': 'healthy', 'server': 'main'}, 200
+
+# Debug endpoints - only register when FLASK_DEBUG is enabled
+if os.getenv('FLASK_DEBUG', '').lower() in ('true', '1', 'yes'):
     @app.route('/debug/simulations')
     def debug_simulations():
         """Debug endpoint to check simulations without auth"""
@@ -554,74 +554,13 @@ if __name__ == "__main__":
         except Exception as e:
             return {'error': f'Debug error: {str(e)}'}, 500
 
+if __name__ == "__main__":
+
+
     # Removed debug/test announcement routes (/demo/announcements, /test/announcements, /api/debug/announce)
     # to prevent accidental broadcast of test system announcements in production.
 
-    # DEBUG endpoints for testing module functionality (remove in production)
-    @app.route('/api/debug/modules/<int:module_id>/test-delete', methods=['GET'])
-    def debug_test_module_delete(module_id):
-        """Debug endpoint to test delete functionality without auth"""
-        from flask import jsonify
-        from admin.models.module import Module
-        try:
-            print(f"🔧 DEBUG: Testing delete functionality for module {module_id}")
-            module = Module.query.get(module_id)
-            if not module:
-                return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
-                
-            print(f"✅ Found module: {module.title} (is_active: {module.is_active})")
-            return jsonify({
-                'success': True, 
-                'message': f'Module {module_id} exists and can be deleted',
-                'module': {
-                    'id': module.id,
-                    'title': module.title,
-                    'is_active': module.is_active,
-                    'class_id': module.class_id
-                }
-            })
-            
-        except Exception as e:
-            print(f"❌ DEBUG Exception: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
-
-    @app.route('/api/debug/modules/<int:module_id>/delete-now', methods=['GET'])
-    def debug_delete_module_now(module_id):
-        """Debug endpoint to actually delete a module without auth"""
-        from flask import jsonify
-        from admin.models.module import Module
-        from admin import db
-        from datetime import datetime
-        try:
-            print(f"🔧 DEBUG: Actually deleting module {module_id}")
-            module = Module.query.get(module_id)
-            if not module:
-                return jsonify({'success': False, 'message': f'Module {module_id} not found'}), 404
-                
-            print(f"✅ Found module to delete: {module.title} (is_active: {module.is_active})")
-            
-            # Perform soft delete
-            module.is_active = False
-            module.updated_at = datetime.utcnow()
-            
-            db.session.commit()
-            print(f"✅ Module soft-deleted successfully: {module.id}")
-            
-            return jsonify({
-                'success': True,
-                'message': f'Module {module_id} soft-deleted successfully',
-                'module': {
-                    'id': module.id,
-                    'title': module.title,
-                    'is_active': module.is_active,
-                    'class_id': module.class_id
-                }
-            })
-            
-        except Exception as e:
-            print(f"❌ DEBUG DELETE Exception: {e}")
-            db.session.rollback()
-            return jsonify({'success': False, 'message': str(e)}), 500
+    import socket as _socket
 
     # Add debug middleware to track all requests
     @app.before_request
