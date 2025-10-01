@@ -1567,3 +1567,71 @@ def get_admin_topology_data(simulation_id):
         
     except Exception as e:
         return jsonify({'error': f'Failed to get admin topology: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/task-config', methods=['GET'])
+@login_required
+@teacher_required
+def get_task_configuration(simulation_id):
+    """Get task configuration for a simulation"""
+    try:
+        from admin.models.simulation import Simulation
+        
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        task_config = simulation_config.get('task_config', {})
+        
+        return jsonify({
+            'success': True,
+            'task_config': task_config
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get task configuration: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/task-config', methods=['POST'])
+@login_required
+@teacher_required
+def save_task_configuration(simulation_id):
+    """Save task configuration for a simulation"""
+    try:
+        from admin.models.simulation import Simulation
+        from admin import db
+        
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No task configuration data provided'}), 400
+        
+        simulation = Simulation.query.get_or_404(simulation_id)
+        simulation_config = simulation.simulation_config or {}
+        
+        # Parse simulation_config if it's a string
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except (json.JSONDecodeError, ValueError):
+                simulation_config = {}
+        
+        # Update task configuration
+        simulation_config['task_config'] = data
+        
+        # Save back to simulation
+        simulation.simulation_config = json.dumps(simulation_config) if isinstance(simulation_config, dict) else simulation_config
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Task configuration saved successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to save task configuration: {str(e)}'}), 500

@@ -242,7 +242,7 @@ def create_class():
         db.session.add(new_class)
         db.session.commit()
         
-        # Add question groups if provided
+        # Add Quiz if provided
         if data.get('questionGroups'):
             for group_id in data['questionGroups']:
                 group = QuestionGroup.query.get(group_id)
@@ -328,7 +328,7 @@ def generate_class_code():
 
 @api_bp.route('/question-groups', methods=['GET'])
 def get_question_groups():
-    """Get all question groups"""
+    """Get all Quiz"""
     try:
         groups = QuestionGroup.query.all()
         groups_data = []
@@ -346,12 +346,12 @@ def get_question_groups():
         return jsonify(groups_data)
         
     except Exception as e:
-        print(f"Error fetching question groups: {e}")
+        print(f"Error fetching Quiz: {e}")
         return jsonify([])
 
 @api_bp.route('/question-groups/assignments/explicit', methods=['POST'])
 def assign_question_group_explicit():
-    """Assign question group to class or module explicitly"""
+    """Assign Quiz to class or module explicitly"""
     try:
         print(f"\n🎯 assign_question_group_explicit called")
         print(f"📋 Request method: {request.method}")
@@ -372,14 +372,14 @@ def assign_question_group_explicit():
             print(f"❌ Missing required fields: question_group_id={question_group_id}, class_id={class_id}")
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
-        # Get the question group
-        print(f"🔍 Querying question group with ID: {question_group_id}")
+        # Get the Quiz
+        print(f"🔍 Querying Quiz with ID: {question_group_id}")
         question_group = QuestionGroup.query.get(question_group_id)
         if not question_group:
-            print(f"❌ Question group with ID {question_group_id} not found")
-            return jsonify({'success': False, 'error': 'Question group not found'}), 404
+            print(f"❌ Quiz with ID {question_group_id} not found")
+            return jsonify({'success': False, 'error': 'Quiz not found'}), 404
         
-        print(f"✅ Question group found: {question_group.name} (ID: {question_group.id})")
+        print(f"✅ Quiz found: {question_group.name} (ID: {question_group.id})")
         
         if module_id:
             print(f"🎯 Assigning to specific module (module_id={module_id}, class_id={class_id})")
@@ -399,20 +399,20 @@ def assign_question_group_explicit():
             
             # Check if already assigned
             if question_group not in module.question_groups:
-                print(f"✅ Question group not already assigned, proceeding with assignment")
+                print(f"✅ Quiz not already assigned, proceeding with assignment")
                 module.question_groups.append(question_group)
                 assignment_type = "module"
                 target_name = module.title
-                print(f"✅ Question group '{question_group.name}' added to module '{module.title}'")
+                print(f"✅ Quiz '{question_group.name}' added to module '{module.title}'")
             else:
                 # Idempotent behavior: treat duplicate assignment as success with info
-                print(f"ℹ️ Question group '{question_group.name}' already assigned to module '{module.title}' - returning idempotent success")
+                print(f"ℹ️ Quiz '{question_group.name}' already assigned to module '{module.title}' - returning idempotent success")
                 assignment_type = "module"
                 target_name = module.title
                 return jsonify({
                     'success': True,
                     'already_assigned': True,
-                    'message': f'Question group "{question_group.name}" is already assigned to module: {module.title}. No changes made.'
+                    'message': f'Quiz "{question_group.name}" is already assigned to module: {module.title}. No changes made.'
                 }), 200
         else:
             print(f"🎯 Assigning to entire class (class_id={class_id})")
@@ -429,20 +429,20 @@ def assign_question_group_explicit():
             
             # Check if already assigned
             if question_group not in class_obj.question_groups:
-                print(f"✅ Question group not already assigned to class, proceeding with assignment")
+                print(f"✅ Quiz not already assigned to class, proceeding with assignment")
                 class_obj.question_groups.append(question_group)
                 assignment_type = "class"
                 target_name = class_obj.name
-                print(f"✅ Question group '{question_group.name}' added to class '{class_obj.name}'")
+                print(f"✅ Quiz '{question_group.name}' added to class '{class_obj.name}'")
             else:
                 # Idempotent behavior: treat duplicate assignment as success with info
-                print(f"ℹ️ Question group '{question_group.name}' already assigned to class '{class_obj.name}' - returning idempotent success")
+                print(f"ℹ️ Quiz '{question_group.name}' already assigned to class '{class_obj.name}' - returning idempotent success")
                 assignment_type = "class"
                 target_name = class_obj.name
                 return jsonify({
                     'success': True,
                     'already_assigned': True,
-                    'message': f'Question group "{question_group.name}" is already assigned to class: {class_obj.name}. No changes made.'
+                    'message': f'Quiz "{question_group.name}" is already assigned to class: {class_obj.name}. No changes made.'
                 }), 200
         
         print(f"💾 Attempting to commit database changes...")
@@ -475,7 +475,7 @@ def assign_question_group_explicit():
         except Exception as socket_error:
             print(f"⚠️ Socket notification failed (non-critical): {socket_error}")
         
-        success_message = f'Question group "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
+        success_message = f'Quiz "{question_group.name}" successfully assigned to {assignment_type}: {target_name}'
         print(f"✅ Assignment successful: {success_message}")
         
         return jsonify({
@@ -1743,7 +1743,7 @@ def get_class_deadline_report(class_id):
 # Module Content Assignment Endpoints
 @api_bp.route('/classes/<int:class_id>/question-groups', methods=['GET'])
 def get_class_question_groups(class_id):
-    """Get question groups for a class"""
+    """Get Quiz for a class"""
     try:
         from admin.models.class_model import Class
         
@@ -1811,7 +1811,7 @@ def get_class_simulations(class_id):
 @api_bp.route('/modules/<int:module_id>/content', methods=['GET'])
 @admin_required
 def get_module_content(module_id):
-    """Get content assigned to a module (simulations, assignments, question groups).
+    """Get content assigned to a module (simulations, assignments, Quiz).
 
     Frontend calls this for many module cards during page load. Returning 404s causes
     noisy console errors and breaks UX. If a module is missing (deleted or not in this
@@ -1875,7 +1875,7 @@ def get_module_content(module_id):
                 'assignment_type': getattr(assignment, 'assignment_type', None)
             })
 
-        # Get question groups assigned to this module
+        # Get Quiz assigned to this module
         question_groups_data = []
         if hasattr(module, 'question_groups') and module.question_groups:
             for qg in module.question_groups:
@@ -2039,7 +2039,7 @@ def assign_assignment_to_module(module_id):
 
 @api_bp.route('/modules/<int:module_id>/assign-question-group', methods=['POST'])
 def assign_question_group_to_module(module_id):
-    """Assign a question group to a module"""
+    """Assign a Quiz to a module"""
     try:
         from admin.models.module import Module
         from admin.models.question_group import QuestionGroup
@@ -2052,32 +2052,32 @@ def assign_question_group_to_module(module_id):
         if not question_group_id:
             return jsonify({
                 'success': False,
-                'error': 'Question group ID is required'
+                'error': 'Quiz ID is required'
             }), 400
             
         module = Module.query.get_or_404(module_id)
         question_group = QuestionGroup.query.get_or_404(question_group_id)
         print(f"✅ Module found: {module.id} - {getattr(module, 'title', 'N/A')}")
-        print(f"✅ Question group found: {question_group.id} - {getattr(question_group, 'name', 'N/A')}")
+        print(f"✅ Quiz found: {question_group.id} - {getattr(question_group, 'name', 'N/A')}")
         
         # Check if already assigned
         already_assigned = module.question_groups.filter_by(id=question_group.id).first() is not None
         if already_assigned:
-            print(f"ℹ️ Question group {question_group.id} already assigned to module {module.id} (idempotent success)")
+            print(f"ℹ️ Quiz {question_group.id} already assigned to module {module.id} (idempotent success)")
             return jsonify({
                 'success': True,
-                'message': f'Question group "{question_group.name}" is already assigned to module "{module.title}"',
+                'message': f'Quiz "{question_group.name}" is already assigned to module "{module.title}"',
                 'alreadyAssigned': True
             }), 200
         
-        # Add question group to module
+        # Add Quiz to module
         module.question_groups.append(question_group)
         db.session.commit()
-        print(f"🟢 Assigned question group {question_group.id} to module {module.id}")
+        print(f"🟢 Assigned Quiz {question_group.id} to module {module.id}")
         
         return jsonify({
             'success': True,
-            'message': f'Question group "{question_group.name}" assigned to module "{module.title}"'
+            'message': f'Quiz "{question_group.name}" assigned to module "{module.title}"'
         })
         
     except Exception as e:
@@ -2142,7 +2142,7 @@ def unassign_assignment_from_module(module_id, assignment_id):
 
 @api_bp.route('/modules/<int:module_id>/unassign-question-group/<int:question_group_id>', methods=['DELETE'])
 def unassign_question_group_from_module(module_id, question_group_id):
-    """Remove a question group from a module"""
+    """Remove a Quiz from a module"""
     try:
         from admin.models.module import Module
         from admin.models.question_group import QuestionGroup
@@ -2156,7 +2156,7 @@ def unassign_question_group_from_module(module_id, question_group_id):
         
         return jsonify({
             'success': True,
-            'message': 'Question group unassigned from module'
+            'message': 'Quiz unassigned from module'
         })
         
     except Exception as e:

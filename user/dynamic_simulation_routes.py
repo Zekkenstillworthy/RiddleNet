@@ -4222,5 +4222,284 @@ def validate_network_config(config):
 
 # ===== END NETWORK CONFIGURATION API ROUTES =====
 
+# ===== AUTOMATIC TASK VERIFICATION ROUTES =====
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/check-command', methods=['POST'])
+@user_login_required
+def check_command_execution(simulation_id):
+    """Check if a command executed by the user matches task requirements"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No command data provided'}), 400
+        
+        user = get_user_from_session()
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Get task configuration
+        simulation_config = simulation.simulation_config or {}
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except Exception:
+                simulation_config = {}
+        
+        task_config = simulation_config.get('task_config', {})
+        command_requirements = task_config.get('commandRequirements', {})
+        
+        if not command_requirements.get('enabled', False):
+            return jsonify({
+                'checking_enabled': False,
+                'message': 'Automatic command checking is not enabled for this simulation'
+            })
+        
+        # Get command details from request
+        executed_command = data.get('command', '').strip()
+        device_type = data.get('deviceType', 'unknown').lower()
+        device_name = data.get('deviceName', '')
+        
+        if not executed_command:
+            return jsonify({'error': 'No command provided'}), 400
+        
+        # Check against required commands
+        required_commands = command_requirements.get('commands', [])
+        matches = []
+        
+        for req_cmd in required_commands:
+            if not req_cmd.get('required', True):
+                continue  # Skip optional commands
+                
+            req_device_type = req_cmd.get('deviceType', 'any').lower()
+            req_command_text = req_cmd.get('commandText', '').strip()
+            req_command_type = req_cmd.get('commandType', 'exact').lower()
+            
+            # Check device type match
+            device_match = (req_device_type == 'any' or 
+                          req_device_type == device_type or
+                          device_type == 'any')
+            
+            if not device_match:
+                continue
+            
+            # Check command match based on type
+            command_match = False
+            if req_command_type == 'exact':
+                command_match = executed_command.lower() == req_command_text.lower()
+            elif req_command_type == 'contains':
+                command_match = req_command_text.lower() in executed_command.lower()
+            elif req_command_type == 'pattern':
+                try:
+                    import re
+                    command_match = bool(re.search(req_command_text, executed_command, re.IGNORECASE))
+                except re.error:
+                    command_match = False
+            
+            if command_match:
+                matches.append({
+                    'commandId': req_cmd.get('id', len(matches)),
+                    'description': req_cmd.get('description', ''),
+                    'commandText': req_command_text,
+                    'deviceType': req_device_type
+                })
+        
+        # Get or create user progress tracking
+        progress = get_user_task_progress(user.id, simulation_id)
+        
+        # Update progress with new matches
+        if matches:
+            for match in matches:
+                if match['commandId'] not in progress.get('completed_commands', []):
+                    progress['completed_commands'].append(match['commandId'])
+        
+        # Save progress
+        save_user_task_progress(user.id, simulation_id, progress)
+        
+        # Calculate completion status
+        total_required = len([cmd for cmd in required_commands if cmd.get('required', True)])
+        completed_count = len(progress.get('completed_commands', []))
+        
+        completion_mode = command_requirements.get('completionMode', 'all-commands')
+        is_complete = False
+        
+        if completion_mode == 'all-commands':
+            is_complete = completed_count >= total_required
+        elif completion_mode == 'percentage':
+            required_percentage = command_requirements.get('completionPercentage', 80)
+            is_complete = (completed_count / max(total_required, 1)) * 100 >= required_percentage
+        elif completion_mode == 'minimum-count':
+            minimum_commands = command_requirements.get('minimumCommands', 3)
+            is_complete = completed_count >= minimum_commands
+        
+        return jsonify({
+            'checking_enabled': True,
+            'matches': matches,
+            'match_count': len(matches),
+            'progress': {
+                'completed_commands': progress.get('completed_commands', []),
+                'total_required': total_required,
+                'completed_count': completed_count,
+                'completion_percentage': (completed_count / max(total_required, 1)) * 100,
+                'is_complete': is_complete
+            },
+            'show_progress': command_requirements.get('showProgress', True)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to check command: {str(e)}'}), 500
+
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/task-progress', methods=['GET'])
+@user_login_required
+def get_task_progress(simulation_id):
+    """Get current task progress for the user"""
+    try:
+        user = get_user_from_session()
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Get task configuration
+        simulation_config = simulation.simulation_config or {}
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except Exception:
+                simulation_config = {}
+        
+        task_config = simulation_config.get('task_config', {})
+        
+        # Get user progress
+        progress = get_user_task_progress(user.id, simulation_id)
+        
+        # Calculate progress metrics
+        command_requirements = task_config.get('commandRequirements', {})
+        required_commands = command_requirements.get('commands', [])
+        total_required = len([cmd for cmd in required_commands if cmd.get('required', True)])
+        completed_count = len(progress.get('completed_commands', []))
+        
+        # Device requirements check
+        device_requirements = task_config.get('deviceRequirements', {})
+        device_count_met = check_device_count_requirement(user.id, simulation_id, device_requirements)
+        
+        return jsonify({
+            'task_config': task_config,
+            'progress': {
+                'completed_commands': progress.get('completed_commands', []),
+                'total_required': total_required,
+                'completed_count': completed_count,
+                'completion_percentage': (completed_count / max(total_required, 1)) * 100,
+                'device_count_met': device_count_met,
+                'last_updated': progress.get('last_updated')
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get task progress: {str(e)}'}), 500
+
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/check-devices', methods=['POST'])
+@user_login_required
+def check_device_requirements(simulation_id):
+    """Check if device count and type requirements are met"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No device data provided'}), 400
+        
+        user = get_user_from_session()
+        simulation = Simulation.query.get_or_404(simulation_id)
+        
+        # Get task configuration
+        simulation_config = simulation.simulation_config or {}
+        if isinstance(simulation_config, str):
+            try:
+                simulation_config = json.loads(simulation_config)
+            except Exception:
+                simulation_config = {}
+        
+        task_config = simulation_config.get('task_config', {})
+        device_requirements = task_config.get('deviceRequirements', {})
+        
+        devices = data.get('devices', [])
+        
+        # Check device count requirement
+        required_count = device_requirements.get('deviceCount', 0)
+        actual_count = len(devices)
+        count_met = actual_count >= required_count
+        
+        # Check device type requirements
+        type_requirements_met = True
+        type_details = {}
+        
+        if device_requirements.get('enforceDeviceTypes', False):
+            required_types = device_requirements.get('requiredDeviceTypes', {})
+            actual_types = {}
+            
+            # Count actual device types
+            for device in devices:
+                device_type = device.get('type', '').lower()
+                if device_type.endswith('s'):
+                    device_type = device_type[:-1]  # Remove plural 's'
+                actual_types[device_type] = actual_types.get(device_type, 0) + 1
+            
+            # Check each required type
+            for req_type, req_count in required_types.items():
+                actual_type_count = actual_types.get(req_type, 0)
+                type_met = actual_type_count >= req_count
+                type_details[req_type] = {
+                    'required': req_count,
+                    'actual': actual_type_count,
+                    'met': type_met
+                }
+                if not type_met:
+                    type_requirements_met = False
+        
+        return jsonify({
+            'device_count': {
+                'required': required_count,
+                'actual': actual_count,
+                'met': count_met
+            },
+            'device_types': {
+                'enforce_types': device_requirements.get('enforceDeviceTypes', False),
+                'requirements_met': type_requirements_met,
+                'details': type_details
+            },
+            'overall_met': count_met and type_requirements_met
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to check device requirements: {str(e)}'}), 500
+
+
+def get_user_task_progress(user_id, simulation_id):
+    """Get user's task progress from session or database"""
+    session_key = f'task_progress_{simulation_id}'
+    
+    # Try to get from session first
+    if session_key in session:
+        return session[session_key]
+    
+    # Fallback: create new progress tracking
+    return {
+        'completed_commands': [],
+        'device_count_met': False,
+        'last_updated': datetime.utcnow().isoformat()
+    }
+
+
+def save_user_task_progress(user_id, simulation_id, progress):
+    """Save user's task progress to session"""
+    session_key = f'task_progress_{simulation_id}'
+    progress['last_updated'] = datetime.utcnow().isoformat()
+    session[session_key] = progress
+
+
+def check_device_count_requirement(user_id, simulation_id, device_requirements):
+    """Check if device count requirement is met (stub for now)"""
+    # This would need to be implemented to check current canvas state
+    # For now, return True as devices are checked in real-time via check_device_requirements
+    return True
+
+# ===== END AUTOMATIC TASK VERIFICATION ROUTES =====
+
 # Export the blueprint for direct import
 __all__ = ['dynamic_sim_bp', 'register_dynamic_routes']

@@ -1095,6 +1095,8 @@
         }
     }
 
+   
+
     /* ===== NETWORK GAMIFICATION LEVEL SYSTEM ===== */
     
     /* Level Progress Bar */
@@ -6370,6 +6372,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="bx bx-bar-chart-alt-2"></i>
         </div>
 
+        
+
         <!-- Performance Feedback Sidebar -->
         <div id="performance-sidebar" class="performance-sidebar">
             <!-- Hamburger Toggle Button -->
@@ -6770,6 +6774,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         </div>
+        
+        
 </div>
 
         
@@ -8153,6 +8159,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Performance Feedback System initialization is handled later in a consolidated block
     </script>
+    
+   
+    
     <script>
         const palette = document.getElementById("device-palette");
         const canvas = document.getElementById("Canvas");
@@ -8474,30 +8483,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 canvas.removeEventListener("click", deleteConnection);
             });
-        });
-
-        // Handle dragging devices with collaborative sync
-        canvas.addEventListener("mousedown", (e) => {
-            if (isConnectionMode) return; // Prevent dragging in connection mode
-            const clickedDevice = findDeviceByPosition(e.offsetX, e.offsetY);
-            if (clickedDevice) {
-                // Check if device is locked by another user
-                if (currentDeviceLocks[clickedDevice.id] && 
-                    currentDeviceLocks[clickedDevice.id].locked_by !== window.currentUserId) {
-                    showCollaborativeNotification(
-                        `Device ${clickedDevice.label} is locked by ${currentDeviceLocks[clickedDevice.id].username}`, 
-                        'warning', 
-                        3000
-                    );
-                    return;
-                }
-                
-                isDragging = true;
-                draggedDevice = clickedDevice;
-                
-                // Lock device for editing if in solo mode
-                console.log('🔒 Locking device for editing:', clickedDevice.label);
-            }
         });
 
         canvas.addEventListener("mousemove", (e) => {
@@ -12287,17 +12272,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('🔄 Reset to solo mode');
         }
 
-        function restoreMode() {
-            // Always use solo mode since collaboration is removed
-            currentMode = 'solo';
-            localStorage.setItem('riddlenet_mode_preference', 'solo');
-            updateModeButtons();
-            showSoloFeatures();
-            console.log('🔄 Solo Mode activated by default');
-        }
-
-        // ===== COLLABORATION LOBBY SYSTEM =====
-        
+       
 
 
 
@@ -13761,6 +13736,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.performanceFeedback = new PerformanceFeedbackSystem();
             }
             
+            // Initialize collaboration sidebar system
+            if (!window.collaborationSidebar) {
+                window.collaborationSidebar = new CollaborationSidebar();
+            }
+            
             // Backend integration status check
             console.log('🎯 Performance Feedback System Integration Status:');
             console.log('✅ Frontend sidebar with glassmorphism design');
@@ -13772,6 +13752,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✅ Action logging and sync');
             console.log('✅ Session management with backend');
             console.log('✅ Responsive design with mobile support');
+            
+            console.log('🤝 Collaboration Sidebar System Integration Status:');
+            console.log('✅ Team chat functionality');
+            console.log('✅ Real-time team member display');
+            console.log('✅ Session management integration');
+            console.log('✅ Collaborative tools framework');
+            console.log('✅ Mobile responsive design');
             console.log('🚀 System ready for live performance tracking!');
             
             // Auto-show sidebar after 3 seconds

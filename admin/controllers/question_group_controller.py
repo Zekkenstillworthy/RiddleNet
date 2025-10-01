@@ -38,11 +38,11 @@ class QuestionGroupController:
             try:
                 db.session.add(new_group)
                 db.session.commit()
-                flash('Question group created successfully', 'success')
+                flash('Quiz created successfully', 'success')
                 return redirect(url_for('question_group.index'))
             except Exception as e:
                 db.session.rollback()
-                flash(f'Error creating question group: {str(e)}', 'error')
+                flash(f'Error creating Quiz: {str(e)}', 'error')
                 
         return render_template('admin/add_question_group.html')
     
@@ -65,11 +65,11 @@ class QuestionGroupController:
             
             try:
                 db.session.commit()
-                flash('Question group updated successfully', 'success')
+                flash('Quiz updated successfully', 'success')
                 return redirect(url_for('question_group.index'))
             except Exception as e:
                 db.session.rollback()
-                flash(f'Error updating question group: {str(e)}', 'error')
+                flash(f'Error updating Quiz: {str(e)}', 'error')
                 
         return render_template('admin/edit_question_group.html', group=group)
     
@@ -82,10 +82,10 @@ class QuestionGroupController:
         try:
             db.session.delete(group)
             db.session.commit()
-            flash('Question group deleted successfully', 'success')
+            flash('Quiz deleted successfully', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error deleting question group: {str(e)}', 'error')
+            flash(f'Error deleting Quiz: {str(e)}', 'error')
             
         return redirect(url_for('question_group.index'))
 
@@ -93,7 +93,7 @@ class QuestionGroupController:
     @question_group_bp.route('/api/delete/<int:group_id>', methods=['DELETE', 'POST'])
     @login_required
     def delete_group_api(group_id):
-        """API endpoint to delete a question group and return JSON response"""
+        """API endpoint to delete a Quiz and return JSON response"""
         try:
             group = QuestionGroup.query.get_or_404(group_id)
             group_name = group.name
@@ -103,13 +103,13 @@ class QuestionGroupController:
             
             return jsonify({
                 'success': True, 
-                'message': f'Question group "{group_name}" deleted successfully'
+                'message': f'Quiz "{group_name}" deleted successfully'
             })
         except Exception as e:
             db.session.rollback()
             return jsonify({
                 'success': False, 
-                'message': f'Error deleting question group: {str(e)}'
+                'message': f'Error deleting Quiz: {str(e)}'
             }), 500
     
     @staticmethod
@@ -203,7 +203,7 @@ class QuestionGroupController:
     
     @staticmethod
     def delete_group(group_id):
-        """Delete a question group and count deleted questions"""
+        """Delete a Quiz and count deleted questions"""
         group = QuestionGroup.query.get(group_id)
         if not group:
             return False, 0

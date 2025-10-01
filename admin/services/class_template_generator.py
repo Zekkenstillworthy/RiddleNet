@@ -61,7 +61,7 @@ class ClassTemplateGenerator:
     
     def _prepare_template_data(self, class_obj: Class) -> Dict[str, Any]:
         """Prepare data for template generation"""
-        # Get question groups and their details
+        # Get Quiz and their details
         question_groups = []
         for qg in class_obj.question_groups:
             questions = []
@@ -113,7 +113,7 @@ class ClassTemplateGenerator:
         }
     
     def _extract_modules_from_groups(self, question_groups: List[Dict]) -> List[Dict]:
-        """Extract module structure from question groups"""
+        """Extract module structure from Quiz"""
         modules = {}
         
         for qg in question_groups:
@@ -127,7 +127,7 @@ class ClassTemplateGenerator:
                     'assessments': []
                 }
             
-            # Add lessons based on question groups
+            # Add lessons based on Quiz
             modules[category]['lessons'].append({
                 'id': qg['id'],
                 'name': qg['name'],
@@ -588,7 +588,7 @@ def assessment_detail(assessment_id):
 @flexible_login_required
 def api_get_lesson(lesson_id):
     """API endpoint to get lesson content"""
-    # Get lesson content from question group
+    # Get lesson content from Quiz
     qg = QuestionGroup.query.get_or_404(lesson_id)
     
     return jsonify({{
@@ -652,7 +652,7 @@ def get_class_simulations(class_id):
         return get_default_simulations()
 
 def get_class_question_groups(class_id):
-    """Get question groups for the class"""
+    """Get Quiz for the class"""
     class_obj = Class.query.get(class_id)
     return [qg for qg in class_obj.question_groups]
 
@@ -667,7 +667,7 @@ def get_user_progress(user_id, class_id):
     }}
 
 def format_lesson_content(question_group):
-    """Format question group into lesson content"""
+    """Format Quiz into lesson content"""
     return {{
         'title': question_group.name,
         'description': question_group.description,
@@ -689,7 +689,7 @@ def format_questions(questions):
     return formatted
 
 def get_lessons_for_group(question_group):
-    """Get lessons for a question group"""
+    """Get lessons for a Quiz"""
     return [{{
         'id': question_group.id,
         'name': question_group.name,

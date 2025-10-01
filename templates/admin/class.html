@@ -843,7 +843,7 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Assign Question Groups</label>
+            <label class="form-label">Assign Quiz</label>
             <div
               id="questionGroupsContainer"
               class="border rounded p-3 border-light"
@@ -852,10 +852,10 @@
                 <div class="spinner-border text-light" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-2">Loading question groups...</p>
+                <p class="mt-2">Loading Quiz...</p>
               </div>
               <div id="questionGroupsList" class="d-none">
-                <!-- Question groups will be loaded here dynamically -->
+                <!-- Quiz will be loaded here dynamically -->
               </div>
             </div>
           </div>
@@ -1015,11 +1015,11 @@
               <div class="row">
                 <div class="col-12">
                   <h6 style="color: var(--cyber-glow); margin-bottom: 16px; font-weight: 600;">
-                    <i class="fas fa-question-circle"></i> Question Groups
+                    <i class="fas fa-question-circle"></i> Quiz
                   </h6>
                   <div id="question-groups-list" style="min-height: 150px;">
                     <div class="loading-spinner text-center" style="padding: 40px; color: rgba(255, 255, 255, 0.6);">
-                      <i class="fas fa-spinner fa-spin"></i> Loading question groups...
+                      <i class="fas fa-spinner fa-spin"></i> Loading Quiz...
                     </div>
                   </div>
                 </div>
@@ -1036,7 +1036,7 @@
                     </div>
                     <div class="stat-card" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 16px; text-align: center;">
                       <div style="font-size: 24px; font-weight: 700; color: #10b981;" id="question-groups-count">0</div>
-                      <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 1px;">Question Groups</div>
+                      <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 1px;">Quiz</div>
                     </div>
                     <div class="stat-card" style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; padding: 16px; text-align: center;">
                       <div style="font-size: 24px; font-weight: 700; color: #8b5cf6;" id="avg-questions-per-group">0</div>
@@ -1222,7 +1222,7 @@
     // Initialize with a random code
     generateCodeFromAPI();
 
-    // Load question groups
+    // Load Quiz
     loadQuestionGroups();    // Pagination variables
     let currentPage = 1;
     let itemsPerPage = 5;
@@ -1243,7 +1243,7 @@
       const classCode = document.getElementById("classCodeGen").value;
       const description = document.getElementById("classDescription").value;
 
-      // Get selected question groups
+      // Get selected Quiz
       const selectedGroups = [];
       document
         .querySelectorAll(".question-group-checkbox:checked")
@@ -1390,13 +1390,13 @@
       }
     });
 
-    // Function to load question groups from API
+    // Function to load Quiz from API
     function loadQuestionGroups() {
-      // API call to fetch question groups
+      // API call to fetch Quiz
       fetch("/admin/api/question-groups")
         .then((response) => {
           if (!response.ok) {
-            throw new Error("Failed to fetch question groups");
+            throw new Error("Failed to fetch Quiz");
           }
           return response.json();
         })
@@ -1414,7 +1414,7 @@
 
           if (groups.length === 0) {
             container.innerHTML =
-              '<div class="alert alert-info">No question groups available. Create question groups first.</div>';
+              '<div class="alert alert-info">No Quiz available. Create Quiz first.</div>';
             return;
           }
 
@@ -1443,7 +1443,7 @@
           container.innerHTML = html;
         })
         .catch((error) => {
-          console.error("Error loading question groups:", error);
+          console.error("Error loading Quiz:", error);
           const loadingEl = document.getElementById("questionGroupsLoading");
           if (loadingEl) {
             loadingEl.classList.add("d-none");
@@ -1452,7 +1452,7 @@
           const groupListEl = document.getElementById("questionGroupsList");
           if (groupListEl) {
             groupListEl.classList.remove("d-none");
-            groupListEl.innerHTML = '<div class="alert alert-danger">Failed to load question groups. Please try refreshing the page.</div>';
+            groupListEl.innerHTML = '<div class="alert alert-danger">Failed to load Quiz. Please try refreshing the page.</div>';
           }
         });
     }
@@ -1712,7 +1712,7 @@
               <p><strong style="color: var(--cyber-glow);">Start Date:</strong> <span style="color: rgba(255, 255, 255, 0.9);">${formatDate(classData.startDate)}</span></p>
               <p><strong style="color: var(--cyber-glow);">End Date:</strong> <span style="color: rgba(255, 255, 255, 0.9);">${formatDate(classData.endDate)}</span></p>
               <p><strong style="color: var(--cyber-glow);">Students:</strong> <span style="color: rgba(255, 255, 255, 0.9);">${classData.studentCount || 0}/${classData.maxStudents}</span></p>
-              <p><strong style="color: var(--cyber-glow);">Question Groups:</strong> <span style="color: rgba(255, 255, 255, 0.9);">${classData.questionGroups ? classData.questionGroups.length : 0} assigned</span></p>
+              <p><strong style="color: var(--cyber-glow);">Quiz:</strong> <span style="color: rgba(255, 255, 255, 0.9);">${classData.questionGroups ? classData.questionGroups.length : 0} assigned</span></p>
             </div>
             <div class="col-12 mt-3">
               <h5 style="color: var(--cyber-glow); margin-bottom: 12px; font-weight: 600;">Description</h5>
@@ -1818,8 +1818,8 @@
           questionGroupsListEl.innerHTML = `
             <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
               <i class="fas fa-question-circle" style="font-size: 48px; margin-bottom: 16px; color: rgba(0, 212, 255, 0.4);"></i>
-              <p style="font-size: 16px; margin: 0;">No question groups assigned</p>
-              <p style="font-size: 14px; opacity: 0.8;">Add question groups to enable assessments</p>
+              <p style="font-size: 16px; margin: 0;">No Quiz assigned</p>
+              <p style="font-size: 14px; opacity: 0.8;">Add Quiz to enable assessments</p>
             </div>
           `;
           return;
@@ -2012,14 +2012,14 @@
           setElementValue("classCodeGen", classData.code);
           setElementValue("classDescription", classData.description || '');
           
-          // Check the appropriate question groups
+          // Check the appropriate Quiz
           if (classData.questionGroups) {
             setTimeout(() => {
               classData.questionGroups.forEach(groupId => {
                 const checkbox = document.getElementById(`group${groupId}`);
                 if (checkbox) checkbox.checked = true;
               });
-            }, 500); // Give time for question groups to load
+            }, 500); // Give time for Quiz to load
           }
           
           // Change the create button to update
@@ -2061,7 +2061,7 @@
       const classCode = document.getElementById("classCodeGen").value;
       const description = document.getElementById("classDescription").value;
 
-      // Get selected question groups
+      // Get selected Quiz
       const selectedGroups = [];
       document
         .querySelectorAll(".question-group-checkbox:checked")

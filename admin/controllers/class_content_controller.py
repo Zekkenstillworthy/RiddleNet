@@ -97,7 +97,7 @@ def manage_content(class_id):
         assigned_sim_ids = [sim.id for sim in assigned_simulations]
         available_simulations = [sim for sim in all_simulations if sim.id not in assigned_sim_ids]
         
-        # Get question groups assigned to this class
+        # Get Quiz assigned to this class
         class_question_groups = cls.question_groups.all()
         
         # Get enrolled students and their details
@@ -1358,19 +1358,19 @@ def delete_class_material(class_id, material_id):
         return jsonify({'error': str(e)}), 500
 
 # ========================================
-# QUESTION GROUP MANAGEMENT ENDPOINTS  
+# Quiz MANAGEMENT ENDPOINTS  
 # ========================================
 
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups', methods=['GET'])
 @admin_required
 def get_class_question_groups(class_id):
-    """Get all question groups assigned to a class"""
+    """Get all Quiz assigned to a class"""
     try:
         cls = _require_class_owner(class_id)
         if not cls:
             return jsonify({'error': 'Permission denied'}), 403
         
-        # Get assigned question groups for this class
+        # Get assigned Quiz for this class
         assigned_groups = cls.question_groups.all()
         
         question_groups_data = []
@@ -1392,14 +1392,14 @@ def get_class_question_groups(class_id):
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/create', methods=['POST'])
 @admin_required
 def create_class_question_group(class_id):
-    """Create a new question group and assign it to the class"""
+    """Create a new Quiz and assign it to the class"""
     try:
         data = request.json
         cls = _require_class_owner(class_id)
         if not cls:
             return jsonify({'error': 'Permission denied'}), 403
         
-        # Create a new question group
+        # Create a new Quiz
         new_group = QuestionGroup(
             name=data['name'],
             description=data.get('description', '')
@@ -1415,7 +1415,7 @@ def create_class_question_group(class_id):
         
         return jsonify({
             'success': True,
-            'message': f'Question group "{new_group.name}" created and assigned to class successfully!',
+            'message': f'Quiz "{new_group.name}" created and assigned to class successfully!',
             'question_group': {
                 'id': new_group.id,
                 'name': new_group.name,
@@ -1431,7 +1431,7 @@ def create_class_question_group(class_id):
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
 @admin_required
 def unassign_question_group_from_class(class_id, group_id):
-    """Unassign a question group from a class"""
+    """Unassign a Quiz from a class"""
     try:
         cls = _require_class_owner(class_id)
         if not cls:
@@ -1446,7 +1446,7 @@ def unassign_question_group_from_class(class_id, group_id):
         
         return jsonify({
             'success': True,
-            'message': f'Question group "{group.name}" unassigned from class successfully!'
+            'message': f'Quiz "{group.name}" unassigned from class successfully!'
         })
         
     except Exception as e:
@@ -1456,13 +1456,13 @@ def unassign_question_group_from_class(class_id, group_id):
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/available', methods=['GET'])
 @admin_required
 def get_available_question_groups(class_id):
-    """Get question groups available to assign to the class"""
+    """Get Quiz available to assign to the class"""
     try:
         cls = _require_class_owner(class_id)
         if not cls:
             return jsonify({'error': 'Permission denied'}), 403
         
-        # Get all question groups
+        # Get all Quiz
         all_groups = QuestionGroup.query.filter_by(is_active=True).all()
         
         # Get groups already assigned to this class
@@ -1489,7 +1489,7 @@ def get_available_question_groups(class_id):
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>/assign', methods=['POST'])
 @admin_required
 def assign_question_group_to_class(class_id, group_id):
-    """Assign an existing question group to a class"""
+    """Assign an existing Quiz to a class"""
     try:
         cls = _require_class_owner(class_id)
         if not cls:
@@ -1502,7 +1502,7 @@ def assign_question_group_to_class(class_id, group_id):
             return jsonify({
                 'success': True,
                 'already_assigned': True,
-                'message': f'Question group "{group.name}" is already assigned to this class. No changes made.'
+                'message': f'Quiz "{group.name}" is already assigned to this class. No changes made.'
             }), 200
         
         # Assign the group to the class
@@ -1511,7 +1511,7 @@ def assign_question_group_to_class(class_id, group_id):
         
         return jsonify({
             'success': True,
-            'message': f'Question group "{group.name}" assigned to class successfully!',
+            'message': f'Quiz "{group.name}" assigned to class successfully!',
             'question_group': {
                 'id': group.id,
                 'name': group.name,
@@ -1527,7 +1527,7 @@ def assign_question_group_to_class(class_id, group_id):
 @class_content_controller_old.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['GET'])
 @admin_required
 def get_question_group_details(class_id, group_id):
-    """Get detailed information about a question group"""
+    """Get detailed information about a Quiz"""
     try:
         cls = _require_class_owner(class_id)
         if not cls:
@@ -1537,7 +1537,7 @@ def get_question_group_details(class_id, group_id):
         
         # Check if group is assigned to this class
         if group not in cls.question_groups:
-            return jsonify({'error': 'Question group not assigned to this class'}), 403
+            return jsonify({'error': 'Quiz not assigned to this class'}), 403
         
         # Get questions in the group
         questions_data = []
@@ -1569,7 +1569,7 @@ def get_question_group_details(class_id, group_id):
 @class_content_controller_old.route('/api/question-groups/<int:group_id>', methods=['GET'])
 @admin_required
 def get_question_group_info(group_id):
-    """Get detailed information about a question group (general endpoint)"""
+    """Get detailed information about a Quiz (general endpoint)"""
     try:
         group = QuestionGroup.query.get_or_404(group_id)
         
@@ -1603,7 +1603,7 @@ def get_question_group_info(group_id):
 @class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['GET'])
 @admin_required
 def get_questions_in_group(group_id):
-    """Get all questions in a specific question group"""
+    """Get all questions in a specific Quiz"""
     try:
         group = QuestionGroup.query.get_or_404(group_id)
         
@@ -1632,7 +1632,7 @@ def get_questions_in_group(group_id):
 @class_content_controller_old.route('/api/question-groups/<int:group_id>/questions', methods=['POST'])
 @admin_required
 def create_question_in_group(group_id):
-    """Create a new question in a question group"""
+    """Create a new question in a Quiz"""
     try:
         group = QuestionGroup.query.get_or_404(group_id)
         data = request.json

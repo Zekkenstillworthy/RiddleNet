@@ -202,7 +202,7 @@ def dynamic_class_detail(class_id):
                 # Note: Simulations don't have class_id directly - they're linked through SimulationAssignment
         # The simulation_assignments query above already gets all assigned simulations
         
-        # Get question groups (assessments) for this class
+        # Get Quiz (assessments) for this class
         question_groups = class_obj.question_groups.all() if class_obj else []
         question_groups_data = []
         for qg in question_groups:

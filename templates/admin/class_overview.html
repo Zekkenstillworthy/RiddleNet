@@ -465,7 +465,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ question_groups|length }}</div>
-        <div class="stat-label">Question Groups</div>
+        <div class="stat-label">Quiz</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ class_data.status.title() if class_data.status else 'N/A' }}</div>
@@ -508,12 +508,12 @@
       </div>
     </div>
 
-    <!-- Question Groups Section -->
+    <!-- Quiz Section -->
     <div class="content-section">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-question-circle"></i>
-          Question Groups
+          Quiz
         </h3>
         <button class="btn btn-secondary" onclick="manageQuestionGroups()">
           <i class="fas fa-plus"></i> Manage
@@ -535,7 +535,7 @@
         </div>
         {% else %}
         <div style="text-align: center; color: var(--text-muted); padding: 20px;">
-          No question groups assigned
+          No Quiz assigned
         </div>
         {% endfor %}
       </div>
@@ -666,15 +666,15 @@
   </div>
 </div>
 
-<!-- Question Groups Management Modal -->
+<!-- Quiz Management Modal -->
 <div id="questionGroupsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Manage Question Groups</h3>
+      <h3>Manage Quiz</h3>
       <span class="close-modal" onclick="closeModal('questionGroupsModal')">&times;</span>
     </div>
     <div class="modal-body">
-      <h4 style="margin-bottom: 16px; color: var(--cyber-glow);">Available Question Groups</h4>
+      <h4 style="margin-bottom: 16px; color: var(--cyber-glow);">Available Quiz</h4>
       <div style="max-height: 300px; overflow-y: auto;">
         {% for group in available_question_groups %}
         <div class="question-group-item">
@@ -690,7 +690,7 @@
         </div>
         {% else %}
         <div style="text-align: center; color: var(--text-muted); padding: 20px;">
-          No available question groups to add
+          No available Quiz to add
         </div>
         {% endfor %}
       </div>
@@ -748,7 +748,7 @@ document.getElementById('editClassForm').addEventListener('submit', function(e) 
   });
 });
 
-// Question group management
+// Quiz management
 function addQuestionGroup(groupId) {
   fetch(`/admin/api/classes/{{ class_data.id }}/question-groups`, {
     method: 'POST',
@@ -760,35 +760,35 @@ function addQuestionGroup(groupId) {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      alert('Question group added successfully!');
+      alert('Quiz added successfully!');
       location.reload();
     } else {
-      alert('Error adding question group: ' + data.error);
+      alert('Error adding Quiz: ' + data.error);
     }
   })
   .catch(error => {
     console.error('Error:', error);
-    alert('Error adding question group');
+    alert('Error adding Quiz');
   });
 }
 
 function removeQuestionGroup(groupId) {
-  if (confirm('Are you sure you want to remove this question group from the class?')) {
+  if (confirm('Are you sure you want to remove this Quiz from the class?')) {
     fetch(`/admin/api/classes/{{ class_data.id }}/question-groups/${groupId}`, {
       method: 'DELETE'
     })
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        alert('Question group removed successfully!');
+        alert('Quiz removed successfully!');
         location.reload();
       } else {
-        alert('Error removing question group: ' + data.error);
+        alert('Error removing Quiz: ' + data.error);
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Error removing question group');
+      alert('Error removing Quiz');
     });
   }
 }

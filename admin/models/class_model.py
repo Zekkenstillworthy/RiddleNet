@@ -1,7 +1,7 @@
 from admin import db
 from datetime import datetime
 
-# Association table for many-to-many relationship between classes and question groups
+# Association table for many-to-many relationship between classes and Quiz
 class_question_groups = db.Table('class_question_groups',
     db.Column('class_id', db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), primary_key=True),
     db.Column('question_group_id', db.Integer, db.ForeignKey('question_groups.id', ondelete='CASCADE'), primary_key=True),
@@ -80,10 +80,10 @@ class Class(db.Model):
         }
         
     def to_dict_with_question_groups(self):
-        """Convert class object to dictionary with detailed question groups data"""
+        """Convert class object to dictionary with detailed Quiz data"""
         data = self.to_dict()
         
-        # Add detailed question group data
+        # Add detailed Quiz data
         question_groups_data = []
         for qg in self.question_groups:
             question_types = set()

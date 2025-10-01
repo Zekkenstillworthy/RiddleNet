@@ -11,7 +11,7 @@ question_group_items = db.Table('question_group_items',
 
 class QuestionGroup(db.Model):
     __table_args__ = {'extend_existing': True}
-    """Model for question groups which organize questions into categories"""
+    """Model for Quiz which organize questions into categories"""
     __tablename__ = 'question_groups'
     
     id = db.Column(db.Integer, primary_key=True)

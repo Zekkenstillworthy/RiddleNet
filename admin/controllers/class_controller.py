@@ -87,15 +87,15 @@ def export_class_csv(class_id):
         writer.writerow(['Status', cls.status])
         writer.writerow([])  # Empty row
         
-        # Question groups section
-        writer.writerow(['Assigned Question Groups'])
+        # Quiz section
+        writer.writerow(['Assigned Quiz'])
         writer.writerow(['Group ID', 'Group Name', 'Question Count'])
         if cls.question_groups:
             for group in cls.question_groups:
                 question_count = len(group.questions) if hasattr(group, 'questions') and group.questions else 0
                 writer.writerow([group.id, group.name, question_count])
         else:
-            writer.writerow(['N/A', 'No question groups assigned', '0'])
+            writer.writerow(['N/A', 'No Quiz assigned', '0'])
         writer.writerow([])  # Empty row
         
         # Students section
@@ -252,7 +252,7 @@ def create_class():
             created_by=getattr(current_user, 'id', None)
         )
         
-        # Add question groups if provided
+        # Add Quiz if provided
         if 'questionGroups' in data and data['questionGroups']:
             question_groups = QuestionGroup.query.filter(
                 QuestionGroup.id.in_(data['questionGroups'])
@@ -369,11 +369,11 @@ def update_class(class_id):
         # Set updated_at explicitly
         cls.updated_at = datetime.utcnow()
             
-        # Update question groups if provided
+        # Update Quiz if provided
         if 'questionGroups' in data:
-            # Clear existing question groups
+            # Clear existing Quiz
             cls.question_groups.clear()
-            # Add new question groups
+            # Add new Quiz
             question_groups = QuestionGroup.query.filter(
                 QuestionGroup.id.in_(data['questionGroups'])
             ).all()
@@ -382,7 +382,7 @@ def update_class(class_id):
         
         db.session.commit()
         
-        # Also update template if question groups changed
+        # Also update template if Quiz changed
         try:
             if 'questionGroups' in data:
                 generation_result = template_generator.regenerate_class_resources(class_id)
@@ -613,9 +613,9 @@ def class_overview(class_id):
         students = cls.students.all() if cls.students else []
         print(f"Found {len(students)} students")
         
-        # Get question groups assigned to this class
+        # Get Quiz assigned to this class
         question_groups = cls.question_groups.all() if cls.question_groups else []
-        print(f"Found {len(question_groups)} question groups")
+        print(f"Found {len(question_groups)} Quiz")
         
         # Get class performance data
         performance_data = []
@@ -639,7 +639,7 @@ def class_overview(class_id):
                     'total_assessments': total_assessments
                 })
         
-        # Get available question groups for assignment
+        # Get available Quiz for assignment
         all_question_groups = QuestionGroup.query.all()
         available_question_groups = [qg for qg in all_question_groups if qg not in question_groups]
         
@@ -670,7 +670,7 @@ def class_overview(class_id):
 @class_controller.route('/api/classes/<int:class_id>/question-groups', methods=['POST'])
 @login_required
 def add_question_group_to_class(class_id):
-    """Add a question group to a class"""
+    """Add a Quiz to a class"""
     try:
         data = request.json
         question_group_id = data.get('question_group_id')
@@ -683,16 +683,16 @@ def add_question_group_to_class(class_id):
             return jsonify({
                 "success": True,
                 "already_assigned": True,
-                "message": f"Question group '{question_group.name}' is already assigned to this class. No changes made."
+                "message": f"Quiz '{question_group.name}' is already assigned to this class. No changes made."
             }), 200
         
-        # Add the question group to the class
+        # Add the Quiz to the class
         cls.question_groups.append(question_group)
         db.session.commit()
         
         return jsonify({
             "success": True,
-            "message": f"Question group '{question_group.name}' added to class successfully!"
+            "message": f"Quiz '{question_group.name}' added to class successfully!"
         })
     except Exception as e:
         db.session.rollback()
@@ -701,22 +701,22 @@ def add_question_group_to_class(class_id):
 @class_controller.route('/api/classes/<int:class_id>/question-groups/<int:group_id>', methods=['DELETE'])
 @login_required
 def remove_question_group_from_class(class_id, group_id):
-    """Remove a question group from a class"""
+    """Remove a Quiz from a class"""
     try:
         cls = Class.query.get_or_404(class_id)
         question_group = QuestionGroup.query.get_or_404(group_id)
         
         # Check if assigned
         if question_group not in cls.question_groups:
-            return jsonify({"error": "Question group is not assigned to this class"}), 400
+            return jsonify({"error": "Quiz is not assigned to this class"}), 400
         
-        # Remove the question group from the class
+        # Remove the Quiz from the class
         cls.question_groups.remove(question_group)
         db.session.commit()
         
         return jsonify({
             "success": True,
-            "message": f"Question group '{question_group.name}' removed from class successfully!"
+            "message": f"Quiz '{question_group.name}' removed from class successfully!"
         })
     except Exception as e:
         db.session.rollback()

@@ -241,7 +241,7 @@ def get_questions_by_lesson(lesson_id):
 
 @api_blueprint.route('/questions/module/<int:module_id>', methods=['GET'])
 def get_questions_by_module(module_id):
-    """Get questions assigned to a specific module via question groups"""
+    """Get questions assigned to a specific module via Quiz"""
     try:
         from admin.models.module import Module
         from admin.models.question_group import QuestionGroup
@@ -251,10 +251,10 @@ def get_questions_by_module(module_id):
         if not module:
             return jsonify({"error": "Module not found"}), 404
         
-        # Get all question groups assigned to this module
+        # Get all Quiz assigned to this module
         question_groups = module.question_groups.all()
         
-        # Collect all questions from assigned question groups
+        # Collect all questions from assigned Quiz
         all_questions = []
         total_groups = len(question_groups)
         

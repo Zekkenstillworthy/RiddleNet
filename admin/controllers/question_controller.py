@@ -12,7 +12,7 @@ class QuestionController:
     @question_bp.route('/')
     @login_required
     def index():
-        # Show question groups first instead of all questions
+        # Show Quiz first instead of all questions
         groups = QuestionGroup.query.order_by(QuestionGroup.name).all()
         
         # Get total question count
@@ -36,7 +36,7 @@ class QuestionController:
         format_param = request.args.get('format')
         category = request.args.get('category', 'all')
         
-        # Get all question groups
+        # Get all Quiz
         groups = QuestionGroup.query.all()
         
         # Get all grouped question IDs
@@ -511,12 +511,12 @@ class QuestionController:
     @login_required
     def list_ungrouped():
         """Display ungrouped questions with options to add them to groups"""
-        # Get all question groups for selection
+        # Get all Quiz for selection
         groups = QuestionGroup.query.order_by(QuestionGroup.name).all()
         
         # Check if we need to create a new group
         if len(groups) == 0:
-            flash('You need to create at least one question group first', 'warning')
+            flash('You need to create at least one Quiz first', 'warning')
             return redirect(url_for('question_group.add_group'))
         
         # Get all ungrouped questions
@@ -541,7 +541,7 @@ class QuestionController:
     @question_bp.route('/get_groups', methods=['GET'])
     @login_required
     def get_groups():
-        """API endpoint to get all question groups for the grouping modal"""
+        """API endpoint to get all Quiz for the grouping modal"""
         try:
             groups = QuestionGroup.query.order_by(QuestionGroup.name).all()
             groups_data = [{'id': group.id, 'name': group.name} for group in groups]
@@ -681,7 +681,7 @@ class QuestionController:
         try:
             category = request.args.get('category', 'all')
             
-            # Get all question groups for selection
+            # Get all Quiz for selection
             groups = QuestionGroup.query.all()
             
             # Get all ungrouped questions

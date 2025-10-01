@@ -311,7 +311,7 @@ function addMatchingPair(container) {
     });
 }
 
-// Question Group Management
+// Quiz Management
 function viewQuestionGroup(groupId, groupName, groupDescription) {
     fetch(`/admin/groups/api/${groupId}`)
         .then(response => {
@@ -653,7 +653,7 @@ window.testModalPositioning = testModalPositioning;
 window.editQuestionGroup = editQuestionGroup;
 
 function deleteQuestionGroup(groupId, groupName) {
-    console.log('Requesting deletion of question group:', groupName, 'ID:', groupId);
+    console.log('Requesting deletion of Quiz:', groupName, 'ID:', groupId);
     
     fetch(`/admin/groups/api/delete/${groupId}`, {
         method: 'DELETE',
@@ -669,8 +669,8 @@ function deleteQuestionGroup(groupId, groupName) {
     })
     .then(data => {
         if (data.success) {
-            console.log('Question group deleted successfully:', groupName);
-            showNotification('Question group deleted successfully', 'success');
+            console.log('Quiz deleted successfully:', groupName);
+            showNotification('Quiz deleted successfully', 'success');
             // Emit WebSocket event to refresh data
             if (window.socketClient) {
                 window.socketClient.emit('question_group_deleted', { groupId, groupName });
@@ -1512,8 +1512,8 @@ function submitGroupingForm(form) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log('Questions grouped successfully:', data);
-            showNotification('Questions grouped successfully', 'success');
+            console.log('Quized successfully:', data);
+            showNotification('Quized successfully', 'success');
             closeModal('ungroupedQuestionsModal');
             
             // Emit WebSocket event to refresh data
@@ -1653,8 +1653,8 @@ function setupWebSocketListeners() {
     });
     
     window.socketClient.on('question_group_created', (data) => {
-        console.log('Question group created via WebSocket:', data);
-        showNotification('Question group created successfully', 'success');
+        console.log('Quiz created via WebSocket:', data);
+        showNotification('Quiz created successfully', 'success');
         loadUngroupedQuestions();
         if (typeof loadQuestionGroups === 'function') {
             loadQuestionGroups();
@@ -1662,8 +1662,8 @@ function setupWebSocketListeners() {
     });
     
     window.socketClient.on('question_group_deleted', (data) => {
-        console.log('Question group deleted via WebSocket:', data);
-        showNotification('Question group deleted successfully', 'success');
+        console.log('Quiz deleted via WebSocket:', data);
+        showNotification('Quiz deleted successfully', 'success');
         loadUngroupedQuestions();
         if (typeof loadQuestionGroups === 'function') {
             loadQuestionGroups();
@@ -1671,8 +1671,8 @@ function setupWebSocketListeners() {
     });
     
     window.socketClient.on('questions_grouped', (data) => {
-        console.log('Questions grouped via WebSocket:', data);
-        showNotification('Questions grouped successfully', 'success');
+        console.log('Quized via WebSocket:', data);
+        showNotification('Quized successfully', 'success');
         loadUngroupedQuestions();
         if (typeof loadQuestionGroups === 'function') {
             loadQuestionGroups();

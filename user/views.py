@@ -395,6 +395,15 @@ def crimping_simulation():
                          title="UTP Cable Crimping Simulation", 
                          user=user)
 
+@user_bp.route('/osi-simulation')
+@user_login_required
+def osi_simulation():
+    """OSI Model Simulation - Interactive learning tool for understanding the 7-layer OSI model"""
+    user = UserModel.query.get(session['user_id'])
+    return render_template('user/osi-simulation.html', 
+                         title="OSI Model Simulation", 
+                         user=user)
+
 @user_bp.route('/save_crimping_score', methods=['POST'])
 @user_login_required
 def save_crimping_score():
@@ -442,6 +451,54 @@ def save_crimping_score():
     except Exception as e:
         db.session.rollback()
         print(f"Error saving crimping score: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to save score'
+        }), 500
+
+@user_bp.route('/save_osi_score', methods=['POST'])
+@user_login_required
+def save_osi_score():
+    """Save OSI simulation score"""
+    try:
+        data = request.get_json()
+        user_id = session['user_id']
+        
+        score = data.get('score', 0)
+        layer_accuracy = data.get('layer_accuracy', {})
+        completion_time = data.get('completion_time', 0)
+        
+        # Create a new score entry for OSI simulation
+        new_score = UserScore(
+            user_id=user_id,
+            score=score,
+            category='osi'  # New category for OSI simulation
+        )
+        
+        db.session.add(new_score)
+        db.session.commit()
+        
+        # WebSocket notification for real-time updates (optional)
+        try:
+            from socket_events import socketio
+            socketio.emit('score_updated', {
+                'user_id': user_id,
+                'category': 'osi',
+                'new_score': score,
+                'timestamp': datetime.utcnow().isoformat()
+            }, room=f'user_{user_id}')
+        except Exception as e:
+            print(f"WebSocket notification failed: {e}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'OSI simulation score saved successfully!',
+            'score': score
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving OSI score: {e}")
         return jsonify({
             'status': 'error',
             'message': 'Failed to save score'

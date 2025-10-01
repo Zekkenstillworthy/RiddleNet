@@ -245,7 +245,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
         return routes
     
     def _detect_class_type(self, class_obj: Class) -> str:
-        """Intelligently detect class type from name and question groups"""
+        """Intelligently detect class type from name and Quiz"""
         name_lower = class_obj.name.lower()
         
         # Direct name matching with more comprehensive patterns
@@ -256,7 +256,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
         elif any(pattern in name_lower for pattern in ['security', 'cybersecurity', 'cyber security', 'information security']):
             return 'security'
         
-        # Question group analysis
+        # Quiz analysis
         if class_obj.question_groups:
             categories = [qg.category.lower() if qg.category else '' for qg in class_obj.question_groups]
             category_text = ' '.join(categories)
@@ -720,7 +720,7 @@ class EnhancedClassTemplateGenerator(ClassTemplateGenerator):
               <h3 class="card-title">Create Your First Assessment</h3>
             </div>
             <p class="card-description">
-              No assessments have been created yet. Use the admin panel to add question groups and assessments.
+              No assessments have been created yet. Use the admin panel to add Quiz and assessments.
             </p>
             {{% if user_context and user_context.get('is_admin') %}}
             <a href="/admin/question-groups/create?class_id={data['class_id']}" class="card-button">
@@ -1394,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', function() {{
               <h3 class="card-title">Create Your First Assessment</h3>
             </div>
             <p class="card-description">
-              No assessments have been created yet. Use the admin panel to add question groups and assessments.
+              No assessments have been created yet. Use the admin panel to add Quiz and assessments.
             </p>
             {{% if user_context and user_context.get('is_admin') %}}
             <a href="/admin/question-groups/create?class_id={data['class_id']}" class="card-button">

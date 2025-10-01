@@ -10,7 +10,7 @@ import json
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import or_, and_
 
-# Association table for many-to-many relationship between modules and question groups
+# Association table for many-to-many relationship between modules and Quiz
 module_question_groups = db.Table('module_question_groups',
     db.Column('module_id', db.Integer, db.ForeignKey('modules.id', ondelete='CASCADE'), primary_key=True),
     db.Column('question_group_id', db.Integer, db.ForeignKey('question_groups.id', ondelete='CASCADE'), primary_key=True),

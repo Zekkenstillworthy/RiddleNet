@@ -219,7 +219,7 @@ h1, h2, h3, h4, h5, h6, p {
     justify-content: flex-end;
 }
 
-/* QUESTION GROUP MODAL STYLES */
+/* Quiz MODAL STYLES */
 .question-group-list {
     max-height: 400px;
     overflow-y: auto;
@@ -1694,21 +1694,15 @@ textarea.form-control {
 
 /* CONTENT LAYOUT AND SECTION HEADERS - MATCHING DASHBOARD */
 .class-content {
-    display: flex;
+    display: block;
     min-height: calc(100vh - 300px);
-    gap: 24px;
     padding: 24px;
 }
 
 .content-main {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
 }
 
-.content-sidebar {
-    width: 300px;
-    flex-shrink: 0;
-}
 
 .tab-content {
     display: none;
@@ -1992,115 +1986,10 @@ textarea.form-control {
     box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
 }
 
-/* SIDEBAR STYLING - MATCHING DASHBOARD */
-.content-sidebar {
-    width: 300px;
-    flex-shrink: 0;
-}
-
-.sidebar-section {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
-    transition: all 0.3s ease;
-}
-
-.sidebar-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--cyber-glow), var(--network-purple));
-}
-
-.sidebar-section:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
-}
-
-.sidebar-header {
-    padding: 20px 24px;
-    background: rgba(0, 217, 255, 0.05);
-    border-bottom: 1px solid var(--glass-border);
-    position: relative;
-}
-
-.sidebar-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.sidebar-title::before {
-    content: '';
-    width: 4px;
-    height: 16px;
-    background: linear-gradient(180deg, var(--cyber-glow), var(--network-purple));
-    border-radius: 2px;
-}
-
-.sidebar-content {
-    padding: 20px 24px;
-}
-
-.sidebar-content > div {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-}
-
-.sidebar-content > div:last-child {
-    border-bottom: none;
-}
-
-.sidebar-content > div:hover {
-    background: rgba(0, 217, 255, 0.05);
-    margin: 0 -12px;
-    padding: 12px;
-    border-radius: 8px;
-}
-
-.sidebar-content span {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.sidebar-content strong {
-    color: var(--cyber-glow);
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
 /* RESPONSIVE DESIGN IMPROVEMENTS */
 @media (max-width: 1200px) {
-    .class-content {
-        flex-direction: column;
-    }
-    
-    .content-sidebar {
-        width: 100%;
-        order: -1;
-    }
-    
-    .sidebar-section {
-        margin-bottom: 16px;
-    }
-    
     .content-main {
-        margin-top: 24px;
+        margin-top: 0;
     }
 }
 
@@ -5132,10 +5021,7 @@ select::-webkit-scrollbar-thumb {
                 
                 
                 {% if selected_class %}
-                <button class="action-btn" onclick="window.adminLobbyManager.showLobbyBrowser()" title="Manage Team Sessions">
-                    <i class="fas fa-users"></i>
-                    Team Sessions
-                </button>
+                
                 <a href="{{ url_for('class_controller.class_overview', class_id=selected_class.id) }}" class="action-btn">
                     <i class="fas fa-chart-line"></i>
                     Class Overview
@@ -5256,7 +5142,7 @@ select::-webkit-scrollbar-thumb {
                         <li class="classwork-tab-item">
                             <a href="#" class="classwork-tab-link" onclick="switchClassworkTab('question-groups'); return false;">
                                 <i class="fas fa-question-circle"></i>
-                                Question Groups
+                                Quiz
                             </a>
                         </li>
                     </ul>
@@ -5287,7 +5173,7 @@ select::-webkit-scrollbar-thumb {
                 <div id="classwork-question-groups" class="classwork-tab-content">
                     <div class="loading-state">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading question groups...</p>
+                        <p>Loading Quiz...</p>
                     </div>
                 </div>
                 {% else %}
@@ -5802,28 +5688,7 @@ select::-webkit-scrollbar-thumb {
             </div>
         </div>
 
-        <!-- Sidebar -->
-        <div class="content-sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-header">
-                    <h4 class="sidebar-title">Quick Stats</h4>
-                </div>
-                <div class="sidebar-content">
-                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                        <span>Modules</span>
-                        <strong id="statsModules">0</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                        <span>Students</span>
-                        <strong id="statsStudents">0</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                        <span>Activities</span>
-                        <strong id="statsActivities">0</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 
@@ -6568,7 +6433,6 @@ class CleanModuleBuilder {
     init() {
         this.setupEventListeners();
         this.loadInitialData();
-        this.updateStats();
     }
     
     setupEventListeners() {
@@ -6578,7 +6442,6 @@ class CleanModuleBuilder {
     loadInitialData() {
         if (this.currentClass) {
             this.populateModules();
-            this.updateStats();
         }
     }
     
@@ -6655,13 +6518,7 @@ class CleanModuleBuilder {
         `;
     }
     
-    updateStats() {
-        document.getElementById('statsModules').textContent = this.classContent.modules?.length || 0;
-        document.getElementById('statsStudents').textContent = this.classContent.students?.length || 0;
-        document.getElementById('statsActivities').textContent = 
-            (this.classContent.modules?.length || 0) + 
-            (this.classContent.assignments?.length || 0);
-    }
+
     
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
@@ -8422,12 +8279,12 @@ function loadQuestionGroupsTabContent(container) {
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-question-circle"></i>
-                                Question Groups
+                                Quiz
                                 <span class="item-counter">(${questionGroupsData.question_groups.length})</span>
                             </h2>
                             <button class="action-btn primary" onclick="showCreateQuestionGroupModal()">
                                 <i class="fas fa-plus"></i>
-                                Add Question Group
+                                Add Quiz
                             </button>
                             <button class="action-btn secondary" onclick="showAssignQuestionGroupModal()">
                                 <i class="fas fa-link"></i>
@@ -8474,12 +8331,12 @@ function loadQuestionGroupsTabContent(container) {
                         <div class="section-header">
                             <h2 class="section-title">
                                 <i class="fas fa-question-circle"></i>
-                                Question Groups
+                                Quiz
                                 <span class="item-counter">(0)</span>
                             </h2>
                             <button class="action-btn primary" onclick="showCreateQuestionGroupModal()">
                                 <i class="fas fa-plus"></i>
-                                Add Question Group
+                                Add Quiz
                             </button>
                             <button class="action-btn secondary" onclick="showAssignQuestionGroupModal()">
                                 <i class="fas fa-link"></i>
@@ -8488,11 +8345,11 @@ function loadQuestionGroupsTabContent(container) {
                         </div>
                         <div class="empty-state">
                             <i class="fas fa-question-circle"></i>
-                            <h3>No Question Groups Yet</h3>
-                            <p>Create question groups to organize quiz questions for your class.</p>
+                            <h3>No Quiz Yet</h3>
+                            <p>Create Quiz to organize quiz questions for your class.</p>
                             <button class="action-btn primary" onclick="showCreateQuestionGroupModal()" style="margin-top: 16px;">
                                 <i class="fas fa-plus"></i>
-                                Create First Question Group
+                                Create First Quiz
                             </button>
                         </div>
                     </div>
@@ -8500,12 +8357,12 @@ function loadQuestionGroupsTabContent(container) {
             }
         })
         .catch(error => {
-            console.error('Error loading question groups:', error);
+            console.error('Error loading Quiz:', error);
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <h3>Error Loading Question Groups</h3>
-                    <p>Failed to load question groups. Please try again.</p>
+                    <h3>Error Loading Quiz</h3>
+                    <p>Failed to load Quiz. Please try again.</p>
                     <button class="action-btn primary" onclick="loadClassworkTabContent('question-groups')" style="margin-top: 16px;">
                         <i class="fas fa-refresh"></i>
                         Retry
@@ -8634,7 +8491,7 @@ function loadModuleContent(moduleId) {
                                     <div class="content-type-group">
                                         <span class="content-type-label">
                                             <i class="fas fa-question-circle"></i>
-                                            ${data.question_groups.length} Question Group${data.question_groups.length !== 1 ? 's' : ''}
+                                            ${data.question_groups.length} Quiz${data.question_groups.length !== 1 ? 's' : ''}
                                         </span>
                                         <div class="content-items">
                                             ${data.question_groups.map(qg => `
@@ -8721,7 +8578,7 @@ function showModuleAssignmentModal(moduleId) {
                         </button>
                         <button class="tab-button" onclick="switchAssignmentTab('question-groups')" data-tab="question-groups">
                             <i class="fas fa-question-circle"></i>
-                            Question Groups
+                            Quiz
                         </button>
                     </div>
                     
@@ -8745,12 +8602,12 @@ function showModuleAssignmentModal(moduleId) {
                         </div>
                     </div>
                     
-                    <!-- Question Groups Tab -->
+                    <!-- Quiz Tab -->
                     <div id="question-groups-tab" class="tab-content">
                         <div class="content-list" id="available-question-groups">
                             <div class="loading-indicator">
                                 <i class="fas fa-spinner fa-spin"></i>
-                                Loading question groups...
+                                Loading Quiz...
                             </div>
                         </div>
                     </div>
@@ -8983,19 +8840,19 @@ function loadModuleAvailableQuestionGroups() {
                 container.innerHTML = `
                     <div class="empty-state-small">
                         <i class="fas fa-question-circle"></i>
-                        <p>No question groups available</p>
+                        <p>No Quiz available</p>
                     </div>
                 `;
             }
         })
         .catch(error => {
-            console.error('Error loading question groups:', error);
+            console.error('Error loading Quiz:', error);
             const container = document.getElementById('available-question-groups');
             if (!container) return;
             container.innerHTML = `
                 <div class="error-state-small">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Error loading question groups</p>
+                    <p>Error loading Quiz</p>
                 </div>
             `;
         });
@@ -9102,7 +8959,7 @@ function assignQuestionGroupToModule(questionGroupId) {
     }
     window._assignQGInFlight.add(key);
 
-    console.log('📤 Assigning question group to module:', { moduleId, questionGroupId });
+    console.log('📤 Assigning Quiz to module:', { moduleId, questionGroupId });
     (async function assignQG() {
         try {
             const response = await fetch(`/admin/api/modules/${moduleId}/assign-question-group`, {
@@ -9118,7 +8975,7 @@ function assignQuestionGroupToModule(questionGroupId) {
             const isJSON = ct.includes('application/json');
             const payload = isJSON ? await response.json() : { success: false, error: `Unexpected content-type: ${ct}` };
             if (!response.ok) {
-                console.error('❌ Assign question group failed:', response.status, response.statusText, payload);
+                console.error('❌ Assign Quiz failed:', response.status, response.statusText, payload);
                 throw new Error(payload.error || `HTTP ${response.status}`);
             }
             if (payload.success) {
@@ -9127,11 +8984,11 @@ function assignQuestionGroupToModule(questionGroupId) {
                 loadModuleContent(moduleId); // Refresh module content
             } else {
                 console.warn('⚠️ Assignment response not successful:', payload);
-                moduleBuilder.showToast(payload.error || 'Failed to assign question group', 'error');
+                moduleBuilder.showToast(payload.error || 'Failed to assign Quiz', 'error');
             }
         } catch (error) {
-            console.error('❌ Error assigning question group:', error);
-            moduleBuilder.showToast(error.message || 'Failed to assign question group', 'error');
+            console.error('❌ Error assigning Quiz:', error);
+            moduleBuilder.showToast(error.message || 'Failed to assign Quiz', 'error');
         } finally {
             window._assignQGInFlight.delete(key);
         }
@@ -9197,7 +9054,7 @@ function unassignAssignment(moduleId, assignmentId) {
 }
 
 function unassignQuestionGroup(moduleId, questionGroupId) {
-    if (!confirm('Are you sure you want to remove this question group from the module?')) {
+    if (!confirm('Are you sure you want to remove this Quiz from the module?')) {
         return;
     }
     
@@ -9214,8 +9071,8 @@ function unassignQuestionGroup(moduleId, questionGroupId) {
         }
     })
     .catch(error => {
-        console.error('Error unassigning question group:', error);
-        moduleBuilder.showToast('Failed to unassign question group', 'error');
+        console.error('Error unassigning Quiz:', error);
+        moduleBuilder.showToast('Failed to unassign Quiz', 'error');
     });
 }
 
@@ -9539,7 +9396,7 @@ window.testAssignmentEdit = testAssignmentEdit;
 
 // Simulation management functions
 function editSimulation(simulationId) {
-    window.location.href = `/admin/simulation/edit/${simulationId}`;
+    window.location.href = `/dynamic/simulation/${simulationId}`;
 }
 
 function viewSimulation(simulationId) {
@@ -10469,7 +10326,7 @@ function updateActiveTab(activeTabName) {
 // Enhanced UI Components Scripts
 
 // ========================================
-// QUESTION GROUP MANAGEMENT FUNCTIONS
+// Quiz MANAGEMENT FUNCTIONS
 // ========================================
 
 function showCreateQuestionGroupModal() {
@@ -10477,7 +10334,7 @@ function showCreateQuestionGroupModal() {
         <div class="modal-overlay" id="createQuestionGroupModalOverlay" onclick="closeCreateQuestionGroupModal()">
             <div class="modal-content create-question-group-modal" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <h2><i class="fas fa-question-circle"></i> Create Question Group</h2>
+                    <h2><i class="fas fa-question-circle"></i> Create Quiz</h2>
                     <button class="modal-close" onclick="closeCreateQuestionGroupModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -10490,7 +10347,7 @@ function showCreateQuestionGroupModal() {
                         </div>
                         <div class="form-group">
                             <label for="questionGroupDescription">Description</label>
-                            <textarea id="questionGroupDescription" name="description" rows="3" placeholder="Optional description for this question group"></textarea>
+                            <textarea id="questionGroupDescription" name="description" rows="3" placeholder="Optional description for this Quiz"></textarea>
                         </div>
                     </form>
                 </div>
@@ -10542,14 +10399,14 @@ function createQuestionGroup() {
         if (data.success) {
             moduleBuilder.showToast(data.message, 'success');
             closeCreateQuestionGroupModal();
-            loadClassworkContent(); // Reload to show new question group
+            loadClassworkContent(); // Reload to show new Quiz
         } else {
-            moduleBuilder.showToast(data.error || 'Failed to create question group', 'error');
+            moduleBuilder.showToast(data.error || 'Failed to create Quiz', 'error');
         }
     })
     .catch(error => {
-        console.error('Error creating question group:', error);
-        moduleBuilder.showToast('Failed to create question group', 'error');
+        console.error('Error creating Quiz:', error);
+        moduleBuilder.showToast('Failed to create Quiz', 'error');
     });
 }
 
@@ -10558,7 +10415,7 @@ function showAssignQuestionGroupModal() {
         <div class="modal-overlay" id="assignQuestionGroupModalOverlay" onclick="closeAssignQuestionGroupModal()">
             <div class="modal-content assign-question-group-modal" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <h2><i class="fas fa-link"></i> Assign Question Group</h2>
+                    <h2><i class="fas fa-link"></i> Assign Quiz</h2>
                     <button class="modal-close" onclick="closeAssignQuestionGroupModal()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -10599,15 +10456,15 @@ function showAssignQuestionGroupModal() {
                         </div>
                     </div>
                     
-                    <!-- Question Group Selection -->
+                    <!-- Quiz Selection -->
                     <div class="question-group-selection-section">
-                        <h3><i class="fas fa-question-circle"></i> Select Question Group</h3>
-                        <p class="modal-description">Choose a question group to assign:</p>
+                        <h3><i class="fas fa-question-circle"></i> Select Quiz</h3>
+                        <p class="modal-description">Choose a Quiz to assign:</p>
                         
                         <div id="availableQuestionGroups" class="question-group-list">
                             <div class="loading-state">
                                 <i class="fas fa-spinner fa-spin"></i>
-                                <p>Loading available question groups...</p>
+                                <p>Loading available Quiz...</p>
                             </div>
                         </div>
                     </div>
@@ -10656,8 +10513,8 @@ function loadAvailableQuestionGroups() {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-question-circle"></i>
-                        <h3>No Question Groups Available</h3>
-                        <p>No question groups exist yet.</p>
+                        <h3>No Quiz Available</h3>
+                        <p>No Quiz exist yet.</p>
                         <button class="action-btn primary" onclick="closeAssignQuestionGroupModal(); showCreateQuestionGroupModal();">
                             <i class="fas fa-plus"></i>
                             Create New Group
@@ -10667,12 +10524,12 @@ function loadAvailableQuestionGroups() {
             }
         })
         .catch(error => {
-            console.error('Error loading available question groups:', error);
+            console.error('Error loading available Quiz:', error);
             document.getElementById('availableQuestionGroups').innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h3>Error Loading Groups</h3>
-                    <p>Failed to load available question groups.</p>
+                    <p>Failed to load available Quiz.</p>
                 </div>
             `;
         });
@@ -10737,15 +10594,15 @@ function assignQuestionGroup(groupId) {
             // If already assigned, treat as info and keep modal open
             if (data.already_assigned) {
                 console.log('ℹ️ Already assigned (idempotent success):', data.message);
-                moduleBuilder.showToast(data.message || 'Question group already assigned. No changes made.', 'info');
+                moduleBuilder.showToast(data.message || 'Quiz already assigned. No changes made.', 'info');
             } else {
                 console.log('✅ Assignment successful:', data.message);
                 moduleBuilder.showToast(data.message, 'success');
                 closeAssignQuestionGroupModal();
-                loadClassworkContent(); // Reload to show assigned question group
+                loadClassworkContent(); // Reload to show assigned Quiz
             }
         } else {
-            const errMsg = (data && data.error) ? String(data.error) : 'Failed to assign question group';
+            const errMsg = (data && data.error) ? String(data.error) : 'Failed to assign Quiz';
             // Show a softer message for duplicate assignments
             if (errMsg.toLowerCase().includes('already assigned')) {
                 console.log('ℹ️ Assignment already exists:', errMsg);
@@ -10757,10 +10614,10 @@ function assignQuestionGroup(groupId) {
         }
     })
     .catch(error => {
-        console.error('❌ CRITICAL ERROR assigning question group:', error);
+        console.error('❌ CRITICAL ERROR assigning Quiz:', error);
         console.error('❌ Error details:', error.message);
         console.error('❌ Error stack:', error.stack);
-        moduleBuilder.showToast('Failed to assign question group', 'error');
+        moduleBuilder.showToast('Failed to assign Quiz', 'error');
     });
 }
 
@@ -10829,7 +10686,7 @@ function populateQuestionGroupModuleSelector() {
 }
 
 function unassignQuestionGroup(groupId) {
-    if (!confirm('Are you sure you want to unassign this question group from the class? This will not delete the questions.')) {
+    if (!confirm('Are you sure you want to unassign this Quiz from the class? This will not delete the questions.')) {
         return;
     }
     
@@ -10843,19 +10700,19 @@ function unassignQuestionGroup(groupId) {
     .then(data => {
         if (data.success) {
             moduleBuilder.showToast(data.message, 'success');
-            loadClassworkContent(); // Reload to remove unassigned question group
+            loadClassworkContent(); // Reload to remove unassigned Quiz
         } else {
-            moduleBuilder.showToast(data.error || 'Failed to unassign question group', 'error');
+            moduleBuilder.showToast(data.error || 'Failed to unassign Quiz', 'error');
         }
     })
     .catch(error => {
-        console.error('Error unassigning question group:', error);
-        moduleBuilder.showToast('Failed to unassign question group', 'error');
+        console.error('Error unassigning Quiz:', error);
+        moduleBuilder.showToast('Failed to unassign Quiz', 'error');
     });
 }
 
 function viewQuestionGroup(groupId) {
-    // Show question group details in a modal
+    // Show Quiz details in a modal
     showQuestionGroupDetailsModal(groupId);
 }
 
@@ -10865,14 +10722,14 @@ function manageQuestions(groupId) {
 }
 
 function showQuestionGroupDetailsModal(groupId) {
-    // Fetch question group details and show in modal
+    // Fetch Quiz details and show in modal
     fetch(`/admin/api/question-groups/${groupId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const group = data.question_group;
                 moduleBuilder.showModal({
-                    title: `Question Group: ${group.title}`,
+                    title: `Quiz: ${group.title}`,
                     content: `
                         <div class="question-group-details">
                             <p><strong>Description:</strong> ${group.description || 'No description'}</p>
@@ -10895,8 +10752,8 @@ function showQuestionGroupDetailsModal(groupId) {
             }
         })
         .catch(error => {
-            console.error('Error fetching question group details:', error);
-            moduleBuilder.showToast('Failed to load question group details', 'error');
+            console.error('Error fetching Quiz details:', error);
+            moduleBuilder.showToast('Failed to load Quiz details', 'error');
         });
 }
 
@@ -12162,7 +12019,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
-// Enhanced Debug Functions for Question Group Assignment
+// Enhanced Debug Functions for Quiz Assignment
 window.debugModuleAssignment = function(moduleId) {
     console.group(`🔍 Debug Module Assignment for Module ID: ${moduleId}`);
     
@@ -12195,7 +12052,7 @@ window.debugModuleAssignment = function(moduleId) {
     console.groupEnd();
 };
 
-// Test function for question group API
+// Test function for Quiz API
 window.testQuestionGroupsAPI = function() {
     if (!moduleBuilder?.currentClass?.id) {
         console.error('❌ No current class selected');
@@ -12203,7 +12060,7 @@ window.testQuestionGroupsAPI = function() {
     }
     
     const classId = moduleBuilder.currentClass.id;
-    console.log(`🧪 Testing Question Groups API for class ${classId}`);
+    console.log(`🧪 Testing Quiz API for class ${classId}`);
     
     fetch(`/admin/api/classes/${classId}/question-groups`)
         .then(response => {
@@ -12211,7 +12068,7 @@ window.testQuestionGroupsAPI = function() {
             return response.json();
         })
         .then(data => {
-            console.log('📋 Question Groups Data:', data);
+            console.log('📋 Quiz Data:', data);
         })
         .catch(error => {
             console.error('❌ API Error:', error);
@@ -12251,7 +12108,7 @@ window.checkModalStatus = function() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 Module Assignment Debug Tools Available:');
     console.log('   - debugModuleAssignment(moduleId) - Debug specific module assignment');
-    console.log('   - testQuestionGroupsAPI() - Test question groups API');
+    console.log('   - testQuestionGroupsAPI() - Test Quiz API');
     console.log('   - checkModalStatus() - Check if modal exists and is visible');
     
     // Initialize proper tab state on page load

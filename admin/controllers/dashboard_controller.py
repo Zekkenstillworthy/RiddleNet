@@ -506,7 +506,7 @@ def class_content_manager():
                 if assignment.simulation and assignment.simulation.is_published and assignment.simulation.is_active:
                     class_simulations.append(assignment.simulation)
             
-            # Get question groups assigned to this class
+            # Get Quiz assigned to this class
             question_groups = selected_class.question_groups.all() if selected_class.question_groups else []
             
             # Get class modules
@@ -1231,12 +1231,12 @@ def delete_class_content(class_id, content_type, content_id):
                     message = f'Simulation "{simulation.title}" removed from class view!'
             
         elif content_type == 'assessment':
-            # For assessments (question groups), we remove the relationship rather than delete
+            # For assessments (Quiz), we remove the relationship rather than delete
             from admin.models.class_model import Class
             cls = Class.query.get_or_404(class_id)
             question_group = QuestionGroup.query.get_or_404(content_id)
             
-            # Remove the question group from the class
+            # Remove the Quiz from the class
             if question_group in cls.question_groups:
                 cls.question_groups.remove(question_group)
             
@@ -1506,7 +1506,7 @@ def integrate_educational_tool(class_id):
             })
             
         elif tool_id == 'quiz_builder':
-            # Redirect to question group creation
+            # Redirect to Quiz creation
             return jsonify({
                 'success': True,
                 'message': 'Redirecting to quiz builder...',
