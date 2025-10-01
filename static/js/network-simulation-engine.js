@@ -3035,6 +3035,12 @@ class NetworkSimulationEngine {
         } else if (cmd === 'show interfaces') {
             return this.generateMVPShowInterfaces();
             
+        } else if (cmd === 'show ip interface brief' || cmd === 'show ip int brief') {
+            return this.generateMVPShowIPInterfaceBrief();
+            
+        } else if (cmd === 'show ip interface' || cmd === 'show ip int') {
+            return this.generateMVPShowIPInterface();
+            
         } else if (cmd === 'show running-config') {
             return this.generateMVPRunningConfig();
             
@@ -3103,24 +3109,96 @@ Reloading device...`;
      */
     generateMVPShowInterfaces() {
         const device = this.currentConfigDevice;
-        if (!device || !device.interfaces) {
-            return 'No interfaces configured.';
+        let output = 'Interface                  IP-Address      OK? Method Status                Protocol\n';
+        
+        if (device && device.interfaces) {
+            Object.keys(device.interfaces).forEach(intName => {
+                const intData = device.interfaces[intName];
+                const ip = intData.ipAddress || 'unassigned';
+                const status = intData.status || 'administratively down';
+                const protocol = status === 'up' ? 'up' : 'down';
+                const method = ip !== 'unassigned' ? 'manual' : 'unset';
+                const okStatus = ip !== 'unassigned' ? 'YES' : 'NO';
+                
+                output += `${intName.padEnd(25)} ${ip.padEnd(15)} ${okStatus.padEnd(3)} ${method.padEnd(6)} ${status.padEnd(20)} ${protocol}\n`;
+            });
+        } else {
+            // Default interfaces
+            output += `GigabitEthernet0/0        unassigned      NO  unset  administratively down down\n`;
+            output += `GigabitEthernet0/1        unassigned      NO  unset  administratively down down\n`;
         }
         
+        return output;
+    }
+    
+    /**
+     * Generate show IP interface brief output
+     */
+    generateMVPShowIPInterfaceBrief() {
+        const device = this.currentConfigDevice;
+        let output = 'Interface                  IP-Address      OK? Method Status                Protocol\n';
+        
+        if (device && device.interfaces) {
+            Object.keys(device.interfaces).forEach(intName => {
+                const intData = device.interfaces[intName];
+                const ip = intData.ipAddress || 'unassigned';
+                const status = intData.status || 'administratively down';
+                const protocol = status === 'up' ? 'up' : 'down';
+                const method = ip !== 'unassigned' ? 'manual' : 'unset';
+                const okStatus = ip !== 'unassigned' ? 'YES' : 'NO';
+                
+                output += `${intName.padEnd(25)} ${ip.padEnd(15)} ${okStatus.padEnd(3)} ${method.padEnd(6)} ${status.padEnd(20)} ${protocol}\n`;
+            });
+        } else {
+            // Default interfaces
+            output += `GigabitEthernet0/0        unassigned      NO  unset  administratively down down\n`;
+            output += `GigabitEthernet0/1        unassigned      NO  unset  administratively down down\n`;
+        }
+        
+        return output;
+    }
+    
+    /**
+     * Generate detailed IP interface output
+     */
+    generateMVPShowIPInterface() {
+        const device = this.currentConfigDevice;
         let output = '';
-        Object.keys(device.interfaces).forEach(intName => {
-            const intData = device.interfaces[intName];
-            const status = intData.status || (intData.connected ? 'up' : 'down');
-            const protocol = intData.connected ? 'up' : 'down';
-            const ip = intData.ipAddress || 'unassigned';
-            const speed = this.getInterfaceSpeed(device.type, intName);
-            
-            output += `${intName} is ${status}, line protocol is ${protocol}\n`;
-            output += `  Internet address is ${ip}\n`;
-            output += `  MTU ${intData.mtu || '1500'} bytes, BW ${speed}\n`;
-            output += `  Encapsulation ARPA, loopback not set\n`;
-            output += `  Last clearing of "show interface" counters never\n\n`;
-        });
+        
+        if (device && device.interfaces) {
+            Object.keys(device.interfaces).forEach(intName => {
+                const intData = device.interfaces[intName];
+                const ip = intData.ipAddress || 'unassigned';
+                const status = intData.status || 'administratively down';
+                const protocol = status === 'up' ? 'up' : 'down';
+                
+                output += `${intName} is ${status}, line protocol is ${protocol}\n`;
+                if (ip !== 'unassigned') {
+                    output += `  Internet address is ${ip}\n`;
+                    output += `  Broadcast address is 255.255.255.255\n`;
+                } else {
+                    output += `  Internet protocol processing disabled\n`;
+                }
+                output += `  MTU is 1500 bytes\n`;
+                output += `  Helper address is not set\n`;
+                output += `  Directed broadcast forwarding is disabled\n\n`;
+            });
+        } else {
+            // Default interface output
+            output = `GigabitEthernet0/0 is administratively down, line protocol is down
+  Internet protocol processing disabled
+  MTU is 1500 bytes
+  Helper address is not set
+  Directed broadcast forwarding is disabled
+
+GigabitEthernet0/1 is administratively down, line protocol is down
+  Internet protocol processing disabled
+  MTU is 1500 bytes
+  Helper address is not set
+  Directed broadcast forwarding is disabled
+
+`;
+        }
         
         return output;
     }
@@ -3175,15 +3253,40 @@ L        192.168.1.1/32 is directly connected, Ethernet0/0`;
      * Simulate ping command
      */
     simulateMVPPing(target) {
-        return `PING ${target}: 56 data bytes
-64 bytes from ${target}: icmp_seq=0 ttl=255 time=1 ms
-64 bytes from ${target}: icmp_seq=1 ttl=255 time=1 ms
-64 bytes from ${target}: icmp_seq=2 ttl=255 time=1 ms
-64 bytes from ${target}: icmp_seq=3 ttl=255 time=1 ms
-
---- ${target} ping statistics ---
-4 packets transmitted, 4 packets received, 0.00% packet loss
-round-trip min/avg/max = 1/1/1 ms`;
+        // Validate IP address format
+        const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+        if (!ipRegex.test(target)) {
+            return `% Invalid IP address: ${target}`;
+        }
+        
+        // Check if target device exists
+        let targetExists = false;
+        if (window.editor && window.editor.devices) {
+            for (const device of window.editor.devices) {
+                if (window.deviceConfigurator) {
+                    const config = window.deviceConfigurator.getDeviceConfiguration(device.id);
+                    if (config && config.ipAddress === target) {
+                        targetExists = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Generate realistic ping output
+        const delay = Math.floor(Math.random() * 5) + 1;
+        
+        if (targetExists || ['8.8.8.8', '1.1.1.1', '208.67.222.222'].includes(target)) {
+            return `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = ${delay}/${delay+1}/${delay+3} ms`;
+        } else {
+            return `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)`;
+        }
     }
     
     /**

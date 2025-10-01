@@ -7362,7 +7362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const scoreValue = document.getElementById('current-score');
                 if (scoreValue) {
-                    scoreValue.textContent = this.metrics.score;
+                    scoreValue.textContent = Math.min(100, this.metrics.score);
                 }
             }
 
@@ -7725,12 +7725,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'connection_made':
                         this.metrics.connectionsMade++;
                         this.metrics.actionsCount++;
-                        this.metrics.score += 15;
+                        this.metrics.score = Math.min(100, this.metrics.score + 15);
                         break;
                     case 'configuration_changed':
                         this.metrics.configurationsComplete++;
                         this.metrics.actionsCount++;
-                        this.metrics.score += 25;
+                        this.metrics.score = Math.min(100, this.metrics.score + 25);
                         break;
                     case 'mistake_made':
                         this.metrics.mistakesCount++;
@@ -7744,7 +7744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     case 'action_generic':
                         this.metrics.actionsCount++;
-                        this.metrics.score += 1;
+                        this.metrics.score = Math.min(100, this.metrics.score + 1);
                         break;
                 }
             }
@@ -7986,7 +7986,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update current score with final values
                 const scoreElement = document.getElementById('current-score');
                 if (scoreElement) {
-                    scoreElement.textContent = results.score || 0;
+                    scoreElement.textContent = Math.min(100, results.score || 0);
                 }
                 
                 // Update progress ring with final completion
@@ -8522,6 +8522,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("No device selected to delete.");
             }
         });
+
+        // --- Mode Functions ---
+        function restoreMode() {
+            // Check if there's a stored mode preference
+            const savedMode = localStorage.getItem('troubleshootMode');
+            if (savedMode) {
+                try {
+                    const modeData = JSON.parse(savedMode);
+                    if (modeData.mode) {
+                        // Apply the saved mode settings
+                        console.log('🔄 Restored mode:', modeData.mode);
+                    }
+                } catch (e) {
+                    console.warn('Could not restore mode preference:', e);
+                }
+            }
+        }
+
+        // --- Collaboration Sidebar Class ---
+        class CollaborationSidebar {
+            constructor() {
+                this.isInitialized = false;
+                this.isVisible = false;
+                this.initialize();
+            }
+
+            initialize() {
+                try {
+                    // Initialize collaboration sidebar
+                    this.isInitialized = true;
+                    console.log('✅ CollaborationSidebar initialized');
+                } catch (error) {
+                    console.error('❌ Error initializing CollaborationSidebar:', error);
+                }
+            }
+
+            show() {
+                this.isVisible = true;
+                // Add show logic here
+            }
+
+            hide() {
+                this.isVisible = false;
+                // Add hide logic here
+            }
+
+            toggle() {
+                if (this.isVisible) {
+                    this.hide();
+                } else {
+                    this.show();
+                }
+            }
+        }
 
         window.onload = function () {
             // Restore mode preference first
@@ -11511,6 +11565,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let currentScenario = null;
 
+        // Define scenarios array based on startScenario calls in the HTML
+        let scenarios = [
+            // Easy scenarios
+            { difficulty: 'easy', problemType: 'network', id: 'basic-connectivity' },
+            { difficulty: 'easy', problemType: 'passive', id: 'interface-down' },
+            { difficulty: 'easy', problemType: 'version', id: 'basic-rip-troubleshoot' },
+            { difficulty: 'easy', problemType: 'split', id: 'ospf-neighbor-issue' },
+            { difficulty: 'easy', problemType: 'timers', id: 'vlan-configuration' },
+            { difficulty: 'easy', problemType: 'auth', id: 'spanning-tree-loop' },
+            { difficulty: 'easy', problemType: 'flapping', id: 'dhcp-server-problem' },
+            { difficulty: 'easy', problemType: 'loops', id: 'arp-table-issue' },
+            { difficulty: 'easy', problemType: 'summarization', id: 'static-route-misconfiguration' },
+            
+            // Medium scenarios  
+            { difficulty: 'medium', problemType: 'network', id: 'ring-network-failure' },
+            { difficulty: 'medium', problemType: 'passive', id: 'extended-ring-redundancy' },
+            { difficulty: 'medium', problemType: 'version', id: 'hybrid-star-ring' },
+            { difficulty: 'medium', problemType: 'split', id: 'partial-mesh-ospf' },
+            { difficulty: 'medium', problemType: 'timers', id: 'tree-vlan-segmentation' },
+            { difficulty: 'medium', problemType: 'auth', id: 'rip-version-mismatch' },
+            { difficulty: 'medium', problemType: 'flapping', id: 'bus-collision-domain' },
+            
+            // Hard scenarios
+            { difficulty: 'hard', problemType: 'network', id: 'mpls-vpn-complex' },
+            { difficulty: 'hard', problemType: 'passive', id: 'datacenter-fabric' },
+            { difficulty: 'hard', problemType: 'version', id: 'sd-wan-overlay' },
+            { difficulty: 'hard', problemType: 'split', id: 'full-mesh-convergence' },
+            { difficulty: 'hard', problemType: 'timers', id: 'hybrid-topology-failure' },
+            { difficulty: 'hard', problemType: 'auth', id: 'hierarchical-routing' },
+            { difficulty: 'hard', problemType: 'flapping', id: 'multi-protocol-mesh' }
+        ];
+
         function checkSolution(scenario) {
             let result = false;
             let issues = [];
@@ -11550,8 +11636,59 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalScore = 0;
 
         function updateScore(increment) {
-            totalScore += increment;
+            totalScore = Math.min(100, totalScore + increment);
             console.log(`Total Score: ${totalScore}`);
+        }
+
+        // Add safeguard functions to prevent null errors
+        function enableInteractions() {
+            console.log('🔧 Enabling interactions...');
+            try {
+                const elements = [
+                    'problemSolveBtn',
+                    'connectBtn',
+                    'resetBtn',
+                    'pingBtn',
+                    'checkSolutionBtn'
+                ];
+                
+                elements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.disabled = false;
+                    }
+                });
+                
+                console.log('✅ Interactions enabled successfully');
+            } catch (error) {
+                console.warn('⚠️ Error enabling interactions:', error);
+            }
+        }
+
+        function resetSimulation() {
+            console.log('🔄 Resetting simulation...');
+            try {
+                // Clear canvas and reset state
+                if (typeof devices !== 'undefined') {
+                    devices = [];
+                }
+                if (typeof connections !== 'undefined') {
+                    connections = [];
+                }
+                if (typeof redrawCanvas === 'function') {
+                    redrawCanvas();
+                }
+                
+                // Reset score
+                totalScore = 0;
+                
+                // Re-enable interactions
+                enableInteractions();
+                
+                console.log('✅ Simulation reset successfully');
+            } catch (error) {
+                console.warn('⚠️ Error resetting simulation:', error);
+            }
         }
 
         function showProblemPopup(solved, issues) {
@@ -11881,6 +12018,130 @@ document.addEventListener('DOMContentLoaded', () => {
             cliOutput.appendChild(outputLine);
         }
 
+        function handleShowCommand(command, device) {
+            const cliOutput = document.getElementById("cli-output");
+            const outputLine = document.createElement('div');
+            
+            const parts = command.split(' ');
+            if (parts.length < 2) {
+                outputLine.textContent = 'Usage: show <option>';
+                cliOutput.appendChild(outputLine);
+                return;
+            }
+            
+            const subCommand = parts.slice(1).join(' ');
+            
+            if (subCommand === 'interfaces' || subCommand === 'int') {
+                outputLine.innerHTML = generateInterfacesOutput(device);
+            } else if (subCommand === 'ip interface' || subCommand === 'ip int') {
+                outputLine.innerHTML = generateIPInterfaceOutput(device);
+            } else if (subCommand === 'ip interface brief' || subCommand === 'ip int brief') {
+                outputLine.innerHTML = generateIPInterfaceBriefOutput(device);
+            } else if (subCommand === 'ip route' || subCommand === 'route') {
+                outputLine.innerHTML = generateRoutingTableOutput(device);
+            } else if (subCommand === 'version') {
+                outputLine.innerHTML = generateVersionOutput(device);
+            } else if (subCommand === 'running-config' || subCommand === 'run') {
+                outputLine.innerHTML = generateRunningConfigOutput(device);
+            } else {
+                outputLine.textContent = `% Invalid show command: ${subCommand}`;
+            }
+            
+            cliOutput.appendChild(outputLine);
+        }
+
+        function generateInterfacesOutput(device) {
+            let output = 'Interface                  IP-Address      OK? Method Status                Protocol<br>';
+            
+            if (device.ipv4) {
+                const status = device.status || 'up';
+                const protocol = status === 'up' ? 'up' : 'down';
+                output += `GigabitEthernet0/0        ${device.ipv4}        YES manual ${status}               ${protocol}<br>`;
+            } else {
+                output += 'GigabitEthernet0/0        unassigned      NO  unset  administratively down down<br>';
+            }
+            output += 'GigabitEthernet0/1        unassigned      NO  unset  administratively down down<br>';
+            
+            return output;
+        }
+
+        function generateIPInterfaceOutput(device) {
+            let output = '';
+            
+            if (device.ipv4) {
+                const status = device.status || 'up';
+                const protocol = status === 'up' ? 'up' : 'down';
+                output += `GigabitEthernet0/0 is ${status}, line protocol is ${protocol}<br>`;
+                output += `  Internet address is ${device.ipv4}<br>`;
+                output += `  Broadcast address is 255.255.255.255<br>`;
+            } else {
+                output += 'GigabitEthernet0/0 is administratively down, line protocol is down<br>';
+                output += '  Internet protocol processing disabled<br>';
+            }
+            
+            output += '  MTU is 1500 bytes<br>';
+            output += '  Helper address is not set<br>';
+            output += '  Directed broadcast forwarding is disabled<br><br>';
+            
+            output += 'GigabitEthernet0/1 is administratively down, line protocol is down<br>';
+            output += '  Internet protocol processing disabled<br>';
+            output += '  MTU is 1500 bytes<br>';
+            output += '  Helper address is not set<br>';
+            output += '  Directed broadcast forwarding is disabled<br>';
+            
+            return output;
+        }
+
+        function generateIPInterfaceBriefOutput(device) {
+            let output = 'Interface                  IP-Address      OK? Method Status                Protocol<br>';
+            
+            if (device.ipv4) {
+                const status = device.status || 'up';
+                const protocol = status === 'up' ? 'up' : 'down';
+                output += `GigabitEthernet0/0        ${device.ipv4.padEnd(15)} YES manual ${status.padEnd(20)} ${protocol}<br>`;
+            } else {
+                output += 'GigabitEthernet0/0        unassigned      NO  unset  administratively down down<br>';
+            }
+            output += 'GigabitEthernet0/1        unassigned      NO  unset  administratively down down<br>';
+            
+            return output;
+        }
+
+        function generateRoutingTableOutput(device) {
+            let output = 'Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP<br>';
+            output += '       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area<br><br>';
+            output += 'Gateway of last resort is not set<br><br>';
+            
+            if (device.ipv4) {
+                const network = device.ipv4.split('.').slice(0, 3).join('.') + '.0/24';
+                output += `C        ${network} is directly connected, GigabitEthernet0/0<br>`;
+                output += `L        ${device.ipv4}/32 is directly connected, GigabitEthernet0/0<br>`;
+            }
+            
+            return output;
+        }
+
+        function generateVersionOutput(device) {
+            return `RiddleNet Device Simulator<br>Software Version: 1.0.0<br>Hardware: Virtual ${device.type || 'Device'}<br>Device: ${device.name || 'Device'}<br>Uptime: 0 days, 0 hours, 15 minutes<br>Configuration register: 0x2102`;
+        }
+
+        function generateRunningConfigOutput(device) {
+            let output = 'Building configuration...<br><br>Current configuration :<br>!<br>version 15.1<br>!<br>';
+            output += `hostname ${device.name || 'Device'}<br>!<br>`;
+            
+            if (device.ipv4) {
+                output += 'interface GigabitEthernet0/0<br>';
+                output += ` ip address ${device.ipv4} 255.255.255.0<br>`;
+                output += ' no shutdown<br>!<br>';
+            }
+            
+            output += 'interface GigabitEthernet0/1<br>';
+            output += ' shutdown<br>!<br>';
+            output += 'end';
+            
+            return output;
+        }
+
         function handleCliCommand(command, device) {
             const startTime = Date.now();
             let output = '';
@@ -11892,6 +12153,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // Handle ping command globally (available in all scenarios)
             if (command.startsWith('ping ')) {
                 handlePingCommand(command, device);
+                return;
+            }
+            
+            // Handle show commands globally (available in all scenarios)
+            if (command.startsWith('show ')) {
+                handleShowCommand(command, device);
+                return;
+            }
+            
+            // Check if currentScenario is loaded before accessing properties
+            if (!currentScenario || !currentScenario.problemType) {
+                appendToOutput('⚠️ No scenario loaded. Please wait for scenario to initialize or select a scenario.\n');
                 return;
             }
             
@@ -13370,7 +13643,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof calculateScenarioProgress === 'function') {
                 const progress = calculateScenarioProgress();
                 completionPercentage = progress.completion || 0;
-                currentScore = progress.score || 0;
+                currentScore = Math.min(100, progress.score || 0);
             } else {
                 // Fallback calculation based on devices and connections
                 const deviceCount = devices ? devices.length : 0;
@@ -13386,12 +13659,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
 
                 // Basic scoring
-                currentScore = Math.round(completionPercentage);
+                currentScore = Math.min(100, Math.round(completionPercentage));
             }
 
             return {
                 completion_percentage: completionPercentage,
-                current_score: currentScore,
+                current_score: Math.min(100, currentScore),
                 devices_placed: devices ? devices.length : 0,
                 connections_made: connections ? connections.length : 0
             };

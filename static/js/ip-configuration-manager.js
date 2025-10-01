@@ -1968,7 +1968,48 @@ class IPConfigurationManager {
     // Testing functions
     pingTest() {
         const targetIP = document.getElementById('deviceIP').value || '8.8.8.8';
-        this.displayTestResult('ping', `Pinging ${targetIP}... Success! Average latency: 15ms`);
+        
+        // Validate IP address format
+        const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+        if (!ipRegex.test(targetIP)) {
+            this.displayTestResult('ping', `Invalid IP address format: ${targetIP}`);
+            return;
+        }
+        
+        // Simulate more realistic ping behavior
+        let result = `Pinging ${targetIP}...\n`;
+        let success = true;
+        
+        // Check if it's a local/known address
+        if (['192.168.1.1', '192.168.0.1', '10.0.0.1'].includes(targetIP)) {
+            result += `Reply from ${targetIP}: bytes=32 time=1ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=2ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=1ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=1ms TTL=64\n\n`;
+            result += `Ping statistics for ${targetIP}:\n`;
+            result += `    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)\n`;
+            result += `Approximate round trip times: Minimum = 1ms, Maximum = 2ms, Average = 1ms`;
+        } else if (['8.8.8.8', '1.1.1.1', '208.67.222.222'].includes(targetIP)) {
+            const latency = Math.floor(Math.random() * 20) + 15; // 15-35ms for external
+            result += `Reply from ${targetIP}: bytes=32 time=${latency}ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=${latency+2}ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=${latency-1}ms TTL=64\n`;
+            result += `Reply from ${targetIP}: bytes=32 time=${latency+1}ms TTL=64\n\n`;
+            result += `Ping statistics for ${targetIP}:\n`;
+            result += `    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)\n`;
+            result += `Approximate round trip times: Minimum = ${latency-1}ms, Maximum = ${latency+2}ms, Average = ${latency}ms`;
+        } else {
+            // Unknown address - simulate failure
+            result += `Request timed out.\n`;
+            result += `Request timed out.\n`;
+            result += `Request timed out.\n`;
+            result += `Request timed out.\n\n`;
+            result += `Ping statistics for ${targetIP}:\n`;
+            result += `    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)`;
+            success = false;
+        }
+        
+        this.displayTestResult('ping', result);
     }
 
     dnsTest() {

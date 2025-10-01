@@ -15,28 +15,42 @@ html, body {
     padding: 0 !important;
 }
 
+/* Center header title */
+.header { 
+    text-align: center !important; 
+    width: 100%;
+}
+.header h1 { 
+    margin-left: auto !important; 
+    margin-right: auto !important; 
+    display: inline-block; 
+}
+
+/* Override main-content only for necessary properties, keep sidebar responsiveness */
 .main-content {
     overflow: hidden !important;
     height: 100vh !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* Ensure the OSI simulation takes full viewport */
-.container {
-    height: 100vh !important;
-    max-height: 100vh !important;
-    overflow: hidden !important;
-    margin: 0 !important;
     padding: 2px !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
+    /* Keep the original margin-left and transition for sidebar responsiveness */
 }
 
-/* Prevent any scrolling in drop zones */
-.drop-zone, .draggable-zone {
+/* Ensure the OSI simulation takes full viewport within main-content */
+.osi-simulation-container {
+    height: calc(100vh - 4px) !important;
+    max-height: calc(100vh - 4px) !important;
     overflow: hidden !important;
-    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Enable scrolling in drop zones when needed */
+.drop-zone, .draggable-zone {
+    overflow-y: auto !important;
+    max-height: 500px !important;
 }
 
 /* Optimize for smaller screens */
@@ -112,129 +126,115 @@ html, body {
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="osi-simulation-container">
     <div class="score-display">
-        <i class="fas fa-trophy"></i> Score: <span id="score">0</span>/7
+        <i class="fas fa-trophy"></i> Score: <span id="score">0</span>%
     </div>
 
     <div class="header">
         <h1><i class="fas fa-network-wired"></i> 7 Layers of the OSI Model</h1>
-        <p>Drag the OSI layers from the right to arrange them correctly on the left (7 = top, 1 = bottom)</p>
+        <p></p>
     </div>
 
     <!-- Main OSI Diagram Layout -->
     <div class="osi-diagram-container">
         <!-- Left Drop Zone -->
-                <!-- Drop Zone -->
         <div class="drop-zone">
+            <div class="drop-zone-header">
+                <h3><i class="fas fa-bullseye"></i> Drop Zone</h3>
+                <p>Arrange layers from 7 (top) to 1 (bottom)</p>
+            </div>
             
             <div class="drop-slot" data-layer="7" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">7</div>
-                <div class="slot-label">Application Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="6" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">6</div>
-                <div class="slot-label">Presentation Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="5" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">5</div>
-                <div class="slot-label">Session Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="4" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">4</div>
-                <div class="slot-label">Transport Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="3" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">3</div>
-                <div class="slot-label">Network Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="2" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">2</div>
-                <div class="slot-label">Data Link Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
             <div class="drop-slot" data-layer="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">1</div>
-                <div class="slot-label">Physical Layer</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
         </div>
 
         <!-- Right Draggable Items -->
-        <div class="osi-stack right-stack draggable-zone">
+        <div class="draggable-zone">
+            <div class="draggable-zone-header">
+                <h3><i class="fas fa-hand-pointer"></i> Draggable Layers</h3>
+                <p>Drag these to the correct positions</p>
+            </div>
             
             <div class="osi-layer-pill draggable-item layer-5" data-layer="5" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(5)">
-                <div class="layer-circle">5</div>
                 <div class="layer-content">
                     <div class="layer-name">Session Layer</div>
                     <div class="layer-protocols">NetBIOS RPC...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-2" data-layer="2" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(2)">
-                <div class="layer-circle">2</div>
                 <div class="layer-content">
                     <div class="layer-name">Data Link Layer</div>
                     <div class="layer-protocols">Ethernet MAC...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-7" data-layer="7" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(7)">
-                <div class="layer-circle">7</div>
                 <div class="layer-content">
                     <div class="layer-name">Application Layer</div>
                     <div class="layer-protocols">HTTP FTP SMTP...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-1" data-layer="1" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(1)">
-                <div class="layer-circle">1</div>
                 <div class="layer-content">
                     <div class="layer-name">Physical Layer</div>
                     <div class="layer-protocols">Cables Fiber...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-4" data-layer="4" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(4)">
-                <div class="layer-circle">4</div>
                 <div class="layer-content">
                     <div class="layer-name">Transport Layer</div>
                     <div class="layer-protocols">TCP UDP...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-6" data-layer="6" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(6)">
-                <div class="layer-circle">6</div>
                 <div class="layer-content">
                     <div class="layer-name">Presentation Layer</div>
                     <div class="layer-protocols">SSL/TLS JPEG...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-3" data-layer="3" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(3)">
-                <div class="layer-circle">3</div>
                 <div class="layer-content">
                     <div class="layer-name">Network Layer</div>
                     <div class="layer-protocols">IP ICMP...</div>
                 </div>
-                <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
             </div>
         </div>
     </div>
@@ -254,7 +254,6 @@ html, body {
         </button>
     </div>
 </div>
-
 <!-- Layer Information Modal -->
 <div id="layerModal" class="modal">
     <div class="modal-content">
@@ -268,7 +267,10 @@ let score = 0;
 let currentLayer = 0;
 let animationInterval;
 let draggedElement = null;
-let correctPlacements = 0;
+let correctPlacements = 0; // still tracks layer placements
+// NEW: 14-unit scoring system
+const TOTAL_UNITS = 14; // 7 layer placements + 7 quiz knowledge units
+let unitsCompleted = 0; // increments up to 14
 
 // Layer information data
 const layerInfo = {
@@ -367,63 +369,34 @@ function allowDrop(ev) {
 function drag(ev) {
     draggedElement = ev.currentTarget;
     ev.dataTransfer.setData("text", ev.target.dataset.layer);
-    ev.currentTarget.classList.add('dragging');
 }
 
 function drop(ev) {
     ev.preventDefault();
     ev.currentTarget.classList.remove('drag-over');
-    
     const draggedLayer = ev.dataTransfer.getData("text");
     const dropSlot = ev.currentTarget;
     const targetLayer = dropSlot.dataset.layer;
-    
-    // Check if the dropped layer matches the target slot
     if (draggedLayer === targetLayer) {
-        // Correct placement
         dropSlot.classList.add('correct-placement');
         dropSlot.innerHTML = `
             <div class="placed-layer">
-                <div class="layer-circle correct">${draggedLayer}</div>
                 <div class="layer-content">
                     <div class="layer-name">${layerInfo[draggedLayer].name}</div>
                     <div class="placement-status"><i class="fas fa-check-circle"></i> Correct!</div>
                 </div>
-            </div>
-        `;
-        
-        // Remove the dragged element from the right side
-        if (draggedElement) {
-            draggedElement.remove();
-            draggedElement = null;
-        }
-        
-        // Update score
-        correctPlacements++;
+            </div>`;
+        if (draggedElement) {draggedElement.remove(); draggedElement = null;}
+        correctPlacements++; // still for layer logic
+        unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS); // increment a unit
         updateScore();
         showSuccessAnimation(dropSlot);
-        
-        // Check if all layers are placed correctly
-        if (correctPlacements === 7) {
-            setTimeout(() => {
-                showCompletionCelebration();
-            }, 1000);
-        }
-        
+        // Only trigger completion when ALL units (including quiz) are done now
+        // (Layer placement no longer auto-completes at 7)
     } else {
-        // Incorrect placement
         dropSlot.classList.add('incorrect-placement');
         showErrorAnimation(dropSlot);
-        
-        // Remove incorrect class after animation
-        setTimeout(() => {
-            dropSlot.classList.remove('incorrect-placement');
-        }, 1000);
-    }
-    
-    // Remove dragging class
-    if (draggedElement) {
-        draggedElement.classList.remove('dragging');
+        setTimeout(()=>dropSlot.classList.remove('incorrect-placement'),1000);
     }
 }
 
@@ -431,10 +404,13 @@ function showSuccessAnimation(element) {
     // Create success particle effect
     createParticleEffect(element, 'success');
     
+    // Calculate percentage for this layer
+    const layerPercentage = Math.round((correctPlacements / 7) * 100 * 100) / 100;
+    
     // Play success sound effect (visual representation)
     const successIndicator = document.createElement('div');
     successIndicator.className = 'success-indicator';
-    successIndicator.innerHTML = '<i class="fas fa-star"></i> +10 points!';
+    successIndicator.innerHTML = `<i class="fas fa-star"></i> +${(layerPercentage - ((correctPlacements - 1) / 7) * 100).toFixed(2)}%!`;
     element.appendChild(successIndicator);
     
     setTimeout(() => {
@@ -478,26 +454,22 @@ function createParticleEffect(element, type) {
 }
 
 function showCompletionCelebration() {
-    // Create celebration overlay
+    // Guard: only celebrate if fully completed
+    if (unitsCompleted < TOTAL_UNITS) return;
+    const existing = document.querySelector('.completion-celebration');
+    if (existing) existing.remove();
     const celebration = document.createElement('div');
     celebration.className = 'completion-celebration';
     celebration.innerHTML = `
         <div class="celebration-content">
             <div class="celebration-icon">🎉</div>
             <h2>Congratulations!</h2>
-            <p>You've successfully arranged all OSI layers!</p>
-            <div class="final-score">Final Score: ${score}/70 points</div>
-            <button onclick="resetSimulation()" class="control-button primary">
-                <i class="fas fa-refresh"></i> Try Again
-            </button>
-        </div>
-    `;
+            <p>You achieved a perfect understanding score!</p>
+            <div class="final-score">Final Score: ${score.toFixed(2)}%</div>
+            <button onclick="resetSimulation()" class="control-button primary"><i class="fas fa-refresh"></i> Try Again</button>
+        </div>`;
     document.body.appendChild(celebration);
-    
-    // Create confetti effect
     createConfettiEffect();
-    
-    // Save score
     saveScore();
 }
 
@@ -566,15 +538,12 @@ function closeModal() {
 }
 
 function updateScore() {
-    score = correctPlacements * 10; // 10 points per correct placement
-    document.getElementById('score').textContent = score;
-    
-    // Animate score change
+    // Score derived from 14 total units (each ≈ 7.142857%)
+    score = (unitsCompleted / TOTAL_UNITS) * 100;
     const scoreElement = document.getElementById('score');
+    scoreElement.textContent = score.toFixed(2);
     scoreElement.classList.add('score-update');
-    setTimeout(() => {
-        scoreElement.classList.remove('score-update');
-    }, 500);
+    setTimeout(()=>scoreElement.classList.remove('score-update'),500);
 }
 
 function startDataFlow() {
@@ -605,51 +574,43 @@ function startDataFlow() {
 }
 
 function testKnowledge() {
-    if (correctPlacements < 7) {
-        alert('📚 Please complete the OSI layer arrangement first!');
-        return;
-    }
-    
+    if (correctPlacements < 7) { alert('📚 Please complete the OSI layer arrangement first!'); return; }
+    // 7 knowledge questions -> each correct grants 1 remaining unit.
     const questions = [
-        {
-            question: "Which layer handles routing and logical addressing?",
-            options: ["Transport", "Network", "Data Link", "Session"],
-            correct: 1
-        },
-        {
-            question: "Which protocols operate at the Application layer?",
-            options: ["TCP, UDP", "HTTP, FTP", "IP, ICMP", "Ethernet, WiFi"],
-            correct: 1
-        },
-        {
-            question: "What is the main function of the Transport layer?",
-            options: ["Physical transmission", "End-to-end delivery", "Data encryption", "Frame delivery"],
-            correct: 1
-        }
+        { q: 'Which layer handles routing and logical addressing?', options:['Transport','Network','Data Link','Session'], a:1 },
+        { q: 'Which protocols operate at the Application layer?', options:['TCP, UDP','HTTP, FTP','IP, ICMP','Ethernet, WiFi'], a:1 },
+        { q: 'Main function of the Transport layer?', options:['Physical transmission','End-to-end delivery','Data encryption','Frame delivery'], a:1 },
+        { q: 'Which layer provides encryption / translation?', options:['Presentation','Session','Network','Physical'], a:0 },
+        { q: 'Which layer is responsible for frames & MAC?', options:['Transport','Data Link','Application','Network'], a:1 },
+        { q: 'Raw bit transmission occurs at which layer?', options:['Physical','Data Link','Session','Transport'], a:0 },
+        { q: 'Segmentation & reassembly belong to?', options:['Transport','Network','Session','Application'], a:0 }
     ];
-    
-    let correctAnswers = 0;
-    
-    questions.forEach((q, index) => {
-        const answer = prompt(`Question ${index + 1}: ${q.question}\n\n${q.options.map((opt, i) => `${i + 1}. ${opt}`).join('\n')}\n\nEnter your answer (1-4):`);
-        if (parseInt(answer) - 1 === q.correct) {
-            correctAnswers++;
+    let newlyEarned = 0;
+    questions.forEach((q,i)=>{
+        if (unitsCompleted >= TOTAL_UNITS) return; // already finished
+        const answer = prompt(`Question ${i+1}: ${q.q}\n\n${q.options.map((o,idx)=>`${idx+1}. ${o}`).join('\n')}\n\nEnter 1-4:`);
+        if (!answer) return; // cancel -> skip
+        if (parseInt(answer)-1 === q.a) {
+            newlyEarned++;
+            unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS);
         }
     });
-    
-    const percentage = (correctAnswers / questions.length) * 100;
-    const bonusPoints = correctAnswers * 5;
-    score += bonusPoints;
-    updateScore();
-    
-    alert(`Quiz Results: ${correctAnswers}/${questions.length} correct (${percentage}%)\n\nBonus Points: +${bonusPoints}\nTotal Score: ${score}\n\n${percentage >= 70 ? '🎉 Great job!' : '📚 Keep studying the OSI model!'}`);
+    if (newlyEarned > 0) {
+        updateScore();
+        alert(`Knowledge bonus: +${newlyEarned} unit(s). Progress ${unitsCompleted}/${TOTAL_UNITS} (${score.toFixed(2)}%).`);
+    } else {
+        alert('No additional units earned this time.');
+    }
+    if (unitsCompleted === TOTAL_UNITS) {
+        showCompletionCelebration();
+    }
 }
 
 function resetSimulation() {
     score = 0;
     correctPlacements = 0;
+    unitsCompleted = 0;
     updateScore();
-    
     // Remove completion celebration if it exists
     const celebration = document.querySelector('.completion-celebration');
     if (celebration) {
@@ -662,7 +623,6 @@ function resetSimulation() {
         const layer = slot.dataset.layer;
         slot.innerHTML = `
             <div class="slot-number">${layer}</div>
-            <div class="slot-label">${layerInfo[layer].name}</div>
             <div class="slot-placeholder">Drop here</div>
         `;
     });
@@ -671,8 +631,9 @@ function resetSimulation() {
     const draggableZone = document.querySelector('.draggable-zone');
     const layers = [5, 2, 7, 1, 4, 6, 3]; // Shuffled order
     
-    // Clear existing draggable items
-    document.querySelectorAll('.draggable-item').forEach(item => item.remove());
+    // Clear existing draggable items (but keep the header)
+    const existingItems = draggableZone.querySelectorAll('.draggable-item');
+    existingItems.forEach(item => item.remove());
     
     // Re-add shuffled draggable items
     layers.forEach(layerNum => {
@@ -685,12 +646,10 @@ function resetSimulation() {
         
         const info = layerInfo[layerNum];
         layerElement.innerHTML = `
-            <div class="layer-circle">${layerNum}</div>
             <div class="layer-content">
                 <div class="layer-name">${info.name}</div>
                 <div class="layer-protocols">${info.protocols.slice(0, 2).join(' ')}...</div>
             </div>
-            <div class="drag-handle"><i class="fas fa-grip-lines"></i></div>
         `;
         
         draggableZone.appendChild(layerElement);
@@ -700,25 +659,11 @@ function resetSimulation() {
 }
 
 function saveScore() {
-    if (correctPlacements === 7) {
+    if (unitsCompleted === TOTAL_UNITS) {
         fetch('/save_osi_score', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                score: score,
-                max_score: 70,
-                category: 'osi_model_drag_drop'
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Score saved successfully');
-            }
-        })
-        .catch(error => console.error('Error saving score:', error));
+            method: 'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ score: 100, max_score: 100, category:'osi_model_drag_drop_extended' })
+        }).then(r=>r.json()).then(d=>console.log('Score save result',d)).catch(e=>console.error('Error saving score:',e));
     }
 }
 
@@ -735,10 +680,28 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
     });
     
-    // Add event listeners for drag leave
+    // Add event listeners for drag leave using event delegation
+    document.addEventListener('dragleave', function(e) {
+        if (e.target.classList.contains('drop-slot')) {
+            e.target.classList.remove('drag-over');
+        }
+    });
+    
+    // Ensure draggable items are properly set up
+    document.querySelectorAll('.draggable-item').forEach(item => {
+        item.addEventListener('dragstart', function(e) {
+            drag(e);
+        });
+    });
+    
+    // Ensure drop slots are properly set up
     document.querySelectorAll('.drop-slot').forEach(slot => {
-        slot.addEventListener('dragleave', function(e) {
-            e.currentTarget.classList.remove('drag-over');
+        slot.addEventListener('dragover', function(e) {
+            allowDrop(e);
+        });
+        
+        slot.addEventListener('drop', function(e) {
+            drop(e);
         });
     });
 });

@@ -3009,6 +3009,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (screen.orientation) {
         screen.orientation.addEventListener('change', handleOrientationChange);
     }
+    
+    // Add change event listener to wiring type dropdown
+    const wiringSelect = document.getElementById('wiring-select');
+    if (wiringSelect) {
+        wiringSelect.addEventListener('change', function() {
+            // Reset simulation when wiring type changes
+            resetSimulation();
+        });
+    }
 });
     // Correct wire patterns
     const wirePatterns = {
@@ -3109,6 +3118,9 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         // Set the hidden dropdown value
         document.getElementById('wiring-select').value = type;
+        
+        // Reset the simulation when a new wiring option is selected
+        resetSimulation();
         
         // Update and show the wiring type indicator in h1
         updateMainTitle(type);
@@ -3214,21 +3226,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function enableInteractions() {
-      // Enable all buttons
-      document.querySelector(".action-buttons button").disabled = false;
-      document.querySelector(".lowered-button button").disabled = false;
+      console.log('🔧 Enabling interactions...');
+      try {
+        // Enable all buttons with null checks
+        const actionButton = document.querySelector(".action-buttons button");
+        if (actionButton) {
+          actionButton.disabled = false;
+        }
+        
+        const loweredButton = document.querySelector(".lowered-button button");
+        if (loweredButton) {
+          loweredButton.disabled = false;
+        }
 
-      // Enable drag and drop functionality
-      const wires = document.querySelectorAll(".wire");
-      wires.forEach(wire => {
-        wire.setAttribute("draggable", "true");
-      });
+        // Enable drag and drop functionality
+        const wires = document.querySelectorAll(".wire");
+        wires.forEach(wire => {
+          wire.setAttribute("draggable", "true");
+        });
 
-      const slots = document.querySelectorAll(".wire-slot");
-      slots.forEach(slot => {
-        slot.setAttribute("ondrop", "drop(event)");
-        slot.setAttribute("ondragover", "allowDrop(event)");
-      });
+        const slots = document.querySelectorAll(".wire-slot");
+        slots.forEach(slot => {
+          slot.setAttribute("ondrop", "drop(event)");
+          slot.setAttribute("ondragover", "allowDrop(event)");
+        });
+        
+        console.log('✅ Interactions enabled successfully');
+      } catch (error) {
+        console.warn('⚠️ Error enabling interactions:', error);
+      }
     }
 
     // Allow drop
@@ -3282,6 +3308,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Restart timer
       if (gameStats.timerInterval) {
         clearInterval(gameStats.timerInterval);
+        gameStats.timerInterval = null;
       }
       initGameTimer();
 
@@ -3346,10 +3373,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
-      // Calculate total score
-      const totalCorrect = endAScore + endBScore;
-      const totalPossible = totalSlots * 2; // 8 slots per end * 2 ends
-      const scorePercentage = Math.min(100, Math.round((totalCorrect / totalPossible) * 100));
+      // Calculate total score using progressive scoring
+      const scorePercentage = calculateProgressiveScore();
       
       // Update game stats
       gameStats.score = scorePercentage;
@@ -3472,7 +3497,62 @@ document.addEventListener('DOMContentLoaded', function() {
         gameStats.wiresPlaced = Math.max(0, gameStats.wiresPlaced - 1);
         updateWireProgressDisplay();
       }
-    }    // Validate wire placement in real-time
+    }    // Calculate progressive score based on correct wire placements
+    function calculateProgressiveScore() {
+      const wiringType = document.getElementById('wiring-select').value;
+      const pattern = wirePatterns[wiringType];
+      
+      if (!pattern) return 0;
+      
+      let correctWires = 0;
+      
+      // Count correct wires in End A
+      const endASlots = document.querySelectorAll('#endA .wire-slot');
+      for (let i = 0; i < endASlots.length; i++) {
+        const slot = endASlots[i];
+        const wire = slot.children[0];
+        
+        if (wire) {
+          const wireColor = wire.id.replace('-A', '').replace('-B', '');
+          const expectedColor = pattern.endA[i];
+          
+          if (wireColor === expectedColor) {
+            correctWires++;
+          }
+        }
+      }
+      
+      // Count correct wires in End B
+      const endBSlots = document.querySelectorAll('#endB .wire-slot');
+      for (let i = 0; i < endBSlots.length; i++) {
+        const slot = endBSlots[i];
+        const wire = slot.children[0];
+        
+        if (wire) {
+          const wireColor = wire.id.replace('-A', '').replace('-B', '');
+          const expectedColor = pattern.endB[i];
+          
+          
+          if (wireColor === expectedColor) {
+            correctWires++;
+          }
+        }
+      }
+      
+      // Calculate score: each correct wire = 6.25 points (16 wires × 6.25 = 100)
+      const score = correctWires * 6.25;
+      return Math.min(100, score); // Cap at 100
+    }
+    
+    // Update the current score display with progressive scoring
+    function updateCurrentScore() {
+      const score = calculateProgressiveScore();
+      document.getElementById('currentScore').textContent = score;
+      gameStats.score = score;
+      return score;
+    }
+
+    // Validate wire placement in real-time
     function validateWirePlacement(wireId, slotIndex, endType) {
       const wiringType = document.getElementById('wiring-select').value;
       const pattern = wirePatterns[wiringType];
@@ -3513,6 +3593,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update gamification based on correctness
         updateWireProgress();
         updateAccuracy(isCorrect);
+        
+        // Update progressive score immediately after wire placement
+        updateCurrentScore();
         
         // Visual feedback for correct/incorrect placement
         if (isCorrect) {
@@ -3811,6 +3894,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize game timer
     function initGameTimer() {
+      // Clear any existing timer first
+      if (gameStats.timerInterval) {
+        clearInterval(gameStats.timerInterval);
+        gameStats.timerInterval = null;
+      }
+      
+      // Reset start time
+      gameStats.startTime = Date.now();
+      
       const timerDuration = 5 * 60 * 1000; // 5 minutes
       const endTime = Date.now() + timerDuration;
       
@@ -3818,6 +3910,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeLeft = endTime - Date.now();
         if (timeLeft <= 0) {
           clearInterval(gameStats.timerInterval);
+          gameStats.timerInterval = null;
           document.getElementById('timer').textContent = '00:00';
           endGame();
           return;
@@ -3830,13 +3923,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 1000);
     }
 
-    // Update score display
+    // Update score display (now uses progressive scoring)
     function updateScore(points) {
-      gameStats.score += points;
-      document.getElementById('currentScore').textContent = gameStats.score;
+      // Use progressive scoring instead of adding points
+      const currentScore = calculateProgressiveScore();
+      gameStats.score = currentScore;
+      document.getElementById('currentScore').textContent = currentScore;
       
-      // Level up every 1000 points
-      const newLevel = Math.floor(gameStats.score / 1000) + 1;
+      // Level up every 25 points (every 4 correct wires)
+      const newLevel = Math.floor(currentScore / 25) + 1;
       if (newLevel > gameStats.level) {
         gameStats.level = newLevel;
         // showAchievement(`Level Up! Reached Level ${gameStats.level}`, '⭐');
@@ -4490,10 +4585,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
-      // Calculate total score
-      const totalCorrect = endAScore + endBScore;
-      const totalPossible = totalSlots * 2; // 8 slots per end * 2 ends
-      const scorePercentage = Math.min(100, Math.round((totalCorrect / totalPossible) * 100));
+      // Calculate total score using progressive scoring
+      const scorePercentage = calculateProgressiveScore();
       
       // Update game stats
       gameStats.score = scorePercentage;

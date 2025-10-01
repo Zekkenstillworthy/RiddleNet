@@ -2361,12 +2361,18 @@ def handle_show_command(args, device_state, device_id):
         return generate_running_config(device_state, device_id)
     elif subcmd in ['interfaces', 'int']:
         return generate_interfaces_output(device_state)
+    elif subcmd in ['ip interface', 'ip int', 'ip interfaces']:
+        return generate_ip_interfaces_output(device_state)
+    elif subcmd in ['ip interface brief', 'ip int brief']:
+        return generate_ip_interfaces_brief(device_state)
     elif subcmd in ['ip route', 'route']:
         return generate_routing_table(device_state)
     elif subcmd == 'version':
         return generate_version_output(device_id)
     elif subcmd == 'arp':
         return generate_arp_table(device_state)
+    elif subcmd == 'ip':
+        return "% Incomplete command. Available: ip interface, ip route, ip arp"
     else:
         return f"% Invalid show command: {subcmd}"
 
@@ -2446,15 +2452,53 @@ def handle_ping_command(args, device_states):
     if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', target):
         return f"% Invalid IP address: {target}"
     
-    # Check if target is reachable based on network topology
-    is_reachable = True  # Simplified - in real implementation, check routing
+    # Check if target device exists and is reachable
+    target_device = None
+    for device_id, device_state in device_states.items():
+        interfaces = device_state.get('interfaces', {})
+        for interface_name, interface_config in interfaces.items():
+            if interface_config.get('ip_address') == target:
+                target_device = device_id
+                break
+        if target_device:
+            break
     
-    if is_reachable:
+    if not target_device:
+        # Check if it's a known network address (gateway, DNS, etc.)
+        if target in ['8.8.8.8', '1.1.1.1', '208.67.222.222']:
+            # External address - simulate external connectivity
+            import random
+            delay = random.randint(15, 35)
+            return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = {delay-5}/{delay}/{delay+5} ms
+"""
+        else:
+            # Target not found
+            return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+"""
+    
+    # Check connectivity between devices (simplified routing check)
+    target_state = device_states.get(target_device, {})
+    target_interfaces = target_state.get('interfaces', {})
+    
+    # Check if target device is up
+    target_up = any(interface.get('status') == 'up' for interface in target_interfaces.values())
+    
+    if target_up:
+        import random
+        delay = random.randint(1, 8)
         return f"""
 Type escape sequence to abort.
 Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
 !!!!!
-Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms
+Success rate is 100 percent (5/5), round-trip min/avg/max = {delay}/{delay+1}/{delay+3} ms
 """
     else:
         return f"""
@@ -2659,6 +2703,61 @@ def generate_interfaces_output(device_state):
         status = intf_config.get('status', 'administratively down')
         protocol = 'up' if status == 'up' else 'down'
         output += f"{intf_name:<25} {ip:<15} YES manual {status:<20} {protocol}\n"
+    
+    return output
+
+def generate_ip_interfaces_output(device_state):
+    """Generate detailed IP interface configuration output"""
+    interfaces = device_state.get('interfaces', {})
+    if not interfaces:
+        return "% No interfaces configured"
+    
+    output = ""
+    for intf_name, intf_config in interfaces.items():
+        ip_addr = intf_config.get('ip_address', 'unassigned')
+        subnet_mask = intf_config.get('subnet_mask', '255.255.255.0')
+        status = intf_config.get('status', 'administratively down')
+        protocol = 'up' if status == 'up' else 'down'
+        
+        output += f"{intf_name} is {status}, line protocol is {protocol}\n"
+        if ip_addr != 'unassigned':
+            output += f"  Internet address is {ip_addr}/{subnet_mask}\n"
+            output += f"  Broadcast address is 255.255.255.255\n"
+        else:
+            output += f"  Internet protocol processing disabled\n"
+        
+        output += f"  MTU is {intf_config.get('mtu', '1500')} bytes\n"
+        output += f"  Helper address is not set\n"
+        output += f"  Directed broadcast forwarding is disabled\n"
+        output += f"  Outgoing access list is not set\n"
+        output += f"  Inbound access list is not set\n"
+        output += f"  Proxy ARP is enabled\n"
+        output += f"  Local proxy ARP is disabled\n"
+        output += f"  Security level is default\n"
+        output += f"  Split horizon is enabled\n\n"
+    
+    return output
+
+def generate_ip_interfaces_brief(device_state):
+    """Generate brief IP interface status output"""
+    output = "Interface                  IP-Address      OK? Method Status                Protocol\n"
+    
+    interfaces = device_state.get('interfaces', {})
+    if not interfaces:
+        # Default interfaces for demonstration
+        interfaces = {
+            'GigabitEthernet0/0': {'ip_address': 'unassigned', 'status': 'administratively down'},
+            'GigabitEthernet0/1': {'ip_address': 'unassigned', 'status': 'administratively down'}
+        }
+    
+    for intf_name, intf_config in interfaces.items():
+        ip = intf_config.get('ip_address', 'unassigned')
+        status = intf_config.get('status', 'administratively down')
+        protocol = 'up' if status == 'up' else 'down'
+        method = 'manual' if ip != 'unassigned' else 'unset'
+        ok_status = 'YES' if ip != 'unassigned' else 'NO'
+        
+        output += f"{intf_name:<25} {ip:<15} {ok_status:<3} {method:<6} {status:<20} {protocol}\n"
     
     return output
 

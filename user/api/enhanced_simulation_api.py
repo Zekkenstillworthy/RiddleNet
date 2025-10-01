@@ -605,21 +605,30 @@ def handle_show_command(device, args):
     sub_cmd = args[0]
     
     if sub_cmd == 'interfaces':
-        output = "Interface Status:\n"
+        output = "Interface                  IP-Address      OK? Method Status                Protocol\n"
         interfaces = device.get('interfaces', {})
         for name, config in interfaces.items():
-            status = config.get('status', 'down')
+            status = config.get('status', 'administratively down')
             ip = config.get('ipAddress', 'unassigned')
-            output += f"{name}: {status} - {ip}\n"
+            protocol = 'up' if status == 'up' else 'down'
+            output += f"{name:<25} {ip:<15} YES manual {status:<20} {protocol}\n"
         return output
     
-    elif sub_cmd == 'ip' and len(args) > 1 and args[1] == 'route':
-        output = "Routing Table:\n"
-        routes = device.get('config', {}).get('routingTable', [])
-        for route in routes:
-            output += f"{route.get('network', '0.0.0.0')}/{route.get('mask', '0.0.0.0')} "
-            output += f"via {route.get('gateway', '0.0.0.0')} [{route.get('metric', 1)}]\n"
-        return output or "No routes configured"
+    elif sub_cmd == 'ip' and len(args) > 1:
+        if args[1] == 'route':
+            output = "Routing Table:\n"
+            routes = device.get('config', {}).get('routingTable', [])
+            for route in routes:
+                output += f"{route.get('network', '0.0.0.0')}/{route.get('mask', '0.0.0.0')} "
+                output += f"via {route.get('gateway', '0.0.0.0')} [{route.get('metric', 1)}]\n"
+            return output or "No routes configured"
+        elif args[1] == 'interface':
+            if len(args) > 2 and args[2] == 'brief':
+                return generate_ip_interface_brief(device)
+            else:
+                return generate_ip_interface_detailed(device)
+        else:
+            return f"% Invalid ip command: {' '.join(args[1:])}"
     
     elif sub_cmd == 'version':
         hostname = device.get('config', {}).get('hostname', 'Device')
@@ -638,6 +647,46 @@ Uptime: 0 days, 0 hours, 0 minutes
         return f"% Invalid show command: {' '.join(args)}"
 
 
+def generate_ip_interface_brief(device):
+    """Generate brief IP interface output"""
+    output = "Interface                  IP-Address      OK? Method Status                Protocol\n"
+    interfaces = device.get('interfaces', {})
+    for name, config in interfaces.items():
+        ip = config.get('ipAddress', 'unassigned')
+        status = config.get('status', 'administratively down')
+        protocol = 'up' if status == 'up' else 'down'
+        method = 'manual' if ip != 'unassigned' else 'unset'
+        ok_status = 'YES' if ip != 'unassigned' else 'NO'
+        output += f"{name:<25} {ip:<15} {ok_status:<3} {method:<6} {status:<20} {protocol}\n"
+    return output
+
+
+def generate_ip_interface_detailed(device):
+    """Generate detailed IP interface output"""
+    interfaces = device.get('interfaces', {})
+    if not interfaces:
+        return "% No interfaces configured"
+    
+    output = ""
+    for name, config in interfaces.items():
+        ip_addr = config.get('ipAddress', 'unassigned')
+        status = config.get('status', 'administratively down')
+        protocol = 'up' if status == 'up' else 'down'
+        
+        output += f"{name} is {status}, line protocol is {protocol}\n"
+        if ip_addr != 'unassigned':
+            output += f"  Internet address is {ip_addr}\n"
+            output += f"  Broadcast address is 255.255.255.255\n"
+        else:
+            output += f"  Internet protocol processing disabled\n"
+        
+        output += f"  MTU is 1500 bytes\n"
+        output += f"  Helper address is not set\n"
+        output += f"  Directed broadcast forwarding is disabled\n\n"
+    
+    return output
+
+
 def handle_ping_command(args):
     """Handle ping command"""
     if not args:
@@ -645,14 +694,20 @@ def handle_ping_command(args):
     
     target = args[0]
     
+    # Validate IP address format
+    import re
+    if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', target):
+        return f"% Invalid IP address: {target}"
+    
+    # Simulate ping with random latency
+    import random
+    delay = random.randint(1, 8)
+    
     return f"""
-PING {target}: 56 data bytes
-64 bytes from {target}: icmp_seq=0 ttl=64 time=1.234 ms
-64 bytes from {target}: icmp_seq=1 ttl=64 time=1.156 ms
-64 bytes from {target}: icmp_seq=2 ttl=64 time=1.089 ms
-
---- {target} ping statistics ---
-3 packets transmitted, 3 packets received, 0.0% packet loss
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = {delay}/{delay+1}/{delay+3} ms
     """.strip()
 
 

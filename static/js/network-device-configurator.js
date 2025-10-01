@@ -842,8 +842,17 @@ Available Commands:
             case 'interfaces':
                 return this.showInterfaces();
             case 'ip':
-                if (args[1] === 'route') return this.showRoutes();
-                break;
+                if (args.length > 1) {
+                    if (args[1] === 'route') return this.showRoutes();
+                    if (args[1] === 'interface') {
+                        if (args.length > 2 && args[2] === 'brief') {
+                            return this.showIPInterfaceBrief();
+                        } else {
+                            return this.showIPInterface();
+                        }
+                    }
+                }
+                return '% Incomplete command. Available: ip route, ip interface [brief]';
             case 'version':
                 return this.showVersion();
             case 'running-config':
@@ -854,9 +863,50 @@ Available Commands:
     }
     
     showInterfaces() {
-        let output = 'Interface Status:\n';
+        let output = 'Interface                  IP-Address      OK? Method Status                Protocol\n';
         Object.entries(this.currentDevice.interfaces).forEach(([name, config]) => {
-            output += `${name}: ${config.status} - ${config.ipAddress || 'No IP'}\n`;
+            const ip = config.ipAddress || 'unassigned';
+            const status = config.status || 'administratively down';
+            const protocol = status === 'up' ? 'up' : 'down';
+            const method = ip !== 'unassigned' ? 'manual' : 'unset';
+            const okStatus = ip !== 'unassigned' ? 'YES' : 'NO';
+            
+            output += `${name.padEnd(25)} ${ip.padEnd(15)} ${okStatus.padEnd(3)} ${method.padEnd(6)} ${status.padEnd(20)} ${protocol}\n`;
+        });
+        return output;
+    }
+    
+    showIPInterface() {
+        let output = '';
+        Object.entries(this.currentDevice.interfaces).forEach(([name, config]) => {
+            const ip = config.ipAddress || 'unassigned';
+            const status = config.status || 'administratively down';
+            const protocol = status === 'up' ? 'up' : 'down';
+            
+            output += `${name} is ${status}, line protocol is ${protocol}\n`;
+            if (ip !== 'unassigned') {
+                output += `  Internet address is ${ip}\n`;
+                output += `  Broadcast address is 255.255.255.255\n`;
+            } else {
+                output += `  Internet protocol processing disabled\n`;
+            }
+            output += `  MTU is 1500 bytes\n`;
+            output += `  Helper address is not set\n`;
+            output += `  Directed broadcast forwarding is disabled\n\n`;
+        });
+        return output;
+    }
+    
+    showIPInterfaceBrief() {
+        let output = 'Interface                  IP-Address      OK? Method Status                Protocol\n';
+        Object.entries(this.currentDevice.interfaces).forEach(([name, config]) => {
+            const ip = config.ipAddress || 'unassigned';
+            const status = config.status || 'administratively down';
+            const protocol = status === 'up' ? 'up' : 'down';
+            const method = ip !== 'unassigned' ? 'manual' : 'unset';
+            const okStatus = ip !== 'unassigned' ? 'YES' : 'NO';
+            
+            output += `${name.padEnd(25)} ${ip.padEnd(15)} ${okStatus.padEnd(3)} ${method.padEnd(6)} ${status.padEnd(20)} ${protocol}\n`;
         });
         return output;
     }
@@ -914,16 +964,44 @@ Uptime: 0 days, 0 hours, 0 minutes
     executePing(target) {
         if (!target) return '% Usage: ping <ip-address>';
         
-        // Simulate ping
-        return `
-PING ${target}: 56 data bytes
-64 bytes from ${target}: icmp_seq=0 ttl=64 time=1.234 ms
-64 bytes from ${target}: icmp_seq=1 ttl=64 time=1.156 ms
-64 bytes from ${target}: icmp_seq=2 ttl=64 time=1.089 ms
-
---- ${target} ping statistics ---
-3 packets transmitted, 3 packets received, 0.0% packet loss
-        `;
+        // Validate IP address format
+        const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+        if (!ipRegex.test(target)) {
+            return `% Invalid IP address: ${target}`;
+        }
+        
+        // Check if target device exists
+        let targetExists = false;
+        if (window.editor && window.editor.devices) {
+            for (const device of window.editor.devices) {
+                if (window.deviceConfigurator) {
+                    const config = window.deviceConfigurator.getDeviceConfiguration(device.id);
+                    if (config && config.ipAddress === target) {
+                        targetExists = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Generate realistic ping output
+        const delay = Math.floor(Math.random() * 5) + 1;
+        
+        if (targetExists || ['8.8.8.8', '1.1.1.1', '208.67.222.222'].includes(target)) {
+            return `
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = ${delay}/${delay+1}/${delay+3} ms
+            `.trim();
+        } else {
+            return `
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+            `.trim();
+        }
     }
     
     clearCLI() {

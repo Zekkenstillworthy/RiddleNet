@@ -314,6 +314,111 @@
     #sidebar ul li a[href*="user"] i::before { content: "👥"; }
     #sidebar ul li a[href*="score"] i::before { content: "🏆"; }
     #sidebar ul li a[href*="audit"] i::before { content: "🔍"; }
+    /* Sidebar Collapsed State */
+    body.sidebar-collapsed #sidebar {
+        width: var(--sidebar-collapsed-width);
+    }
+
+    body.sidebar-collapsed .main-content {
+        margin-left: var(--sidebar-collapsed-width);
+        width: calc(100% - var(--sidebar-collapsed-width));
+    }
+
+    #sidebar.collapsed {
+        width: var(--sidebar-collapsed-width);
+    }
+
+    #sidebar.collapsed .logo-name,
+    #sidebar.collapsed ul li a span,
+    #sidebar.collapsed .dropdown-toggle::after {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+    }
+
+    #sidebar.collapsed .logo-icon {
+        margin-right: 0;
+    }
+
+    #sidebar.collapsed ul li a {
+        justify-content: center;
+        padding: 14px 8px;
+    }
+
+    #sidebar.collapsed ul li a i {
+        margin-right: 0;
+    }
+
+    /* Sidebar Toggle Button Styles */
+    .sidebar-toggle {
+        position: absolute;
+        right: -18px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        background: var(--surface);
+        border: 3px solid var(--cyber-glow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        z-index: 300;
+        box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
+        }
+        50% {
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5), 0 0 0 4px rgba(0, 212, 255, 0.2);
+        }
+    }
+
+    .sidebar-toggle:hover {
+        background: var(--cyber-glow);
+        border-color: white;
+        box-shadow: 0 0 25px rgba(0, 212, 255, 0.6), 0 0 0 6px rgba(0, 212, 255, 0.3);
+        transform: translateY(-50%) scale(1.15);
+        animation: none;
+    }
+
+    .sidebar-toggle i {
+        font-size: 14px;
+        color: var(--cyber-glow);
+        transition: all var(--transition-speed) ease;
+        font-weight: 900;
+    }
+
+    .sidebar-toggle:hover i {
+        color: white;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+
+    #sidebar.collapsed .sidebar-toggle {
+        right: -18px;
+        background: var(--primary-color);
+        border-color: var(--cyber-glow);
+    }
+
+    #sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+        color: var(--cyber-glow);
+    }
+
+    #sidebar.collapsed .sidebar-toggle:hover {
+        background: var(--cyber-glow);
+        border-color: white;
+    }
+
+    #sidebar.collapsed .sidebar-toggle:hover i {
+        color: white;
+    }
+
     .main-content {
         margin-left: var(--sidebar-width);
         padding: 32px;
@@ -349,7 +454,12 @@
         }
     }
 
+    /* Mobile Toggle Button */
     @media (max-width: 768px) {
+        .sidebar-toggle {
+            display: none;
+        }
+        
         #sidebar {
             width: var(--sidebar-collapsed-width);
             background: var(--surface);
@@ -444,6 +554,11 @@
     {% block body %}
     {% block sidebar %}
     <nav id="sidebar">
+        <!-- Sidebar Toggle Button -->
+        <div class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+        
         <div class="logo-details">
             <div class="logo-icon">
             <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
@@ -479,7 +594,7 @@
                 </a>
             </li>
             {% if all_classes %}
-            {% for cls in all_classes %}
+            {% for cls in all_classes[:4] %}
             <li class="class-content-item" {% if selected_class and cls.id == selected_class.id %}class="active"{% endif %}>
                 <a href="{{ url_for('dashboard.class_content_manager') }}?class_id={{ cls.id }}">
                     <i class='bx bx-book-content'></i>
@@ -541,8 +656,10 @@
     </nav>
     {% endblock %}
     
-    {% block content %}
-    {% endblock %}
+    <div class="main-content">
+        {% block content %}
+        {% endblock %}
+    </div>
     
     <script>        // Enhanced dropdown functionality with animations        
     const classesDropdownItems = [
@@ -615,8 +732,35 @@
         
         // Initialize dropdown state and add network-themed interactions
         document.addEventListener('DOMContentLoaded', function() {
+            const sidebarElement = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
             const classesLink = document.querySelector('#sidebar li:nth-child(2) a.dropdown-toggle');
             const classContentLink = document.querySelector('#sidebar li:nth-child(4) a.dropdown-toggle');
+            
+            // Sidebar toggle functionality
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebarElement.classList.toggle('collapsed');
+                    document.body.classList.toggle('sidebar-collapsed');
+                    
+                    // Update tooltip/aria-label
+                    const isCollapsed = sidebarElement.classList.contains('collapsed');
+                    sidebarToggle.setAttribute('title', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
+                    
+                    // Store preference in localStorage
+                    localStorage.setItem('adminSidebarCollapsed', isCollapsed);
+                });
+            }
+            
+            // Restore sidebar state from localStorage
+            const savedState = localStorage.getItem('adminSidebarCollapsed');
+            if (savedState === 'true') {
+                sidebarElement.classList.add('collapsed');
+                document.body.classList.add('sidebar-collapsed');
+                if (sidebarToggle) {
+                    sidebarToggle.setAttribute('title', 'Expand Sidebar');
+                }
+            }
             
             // Check if any submenu items are active for Classes dropdown
             const isSubmenuActive = classesDropdownItems.some(item => 
