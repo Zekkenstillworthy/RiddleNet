@@ -66,6 +66,9 @@ def create_app(config=None):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_development_only')
     
+    # Set maximum content length for uploads (100MB)
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
+    
     # Fix session cookie configuration to ensure proper admin_session cookie delivery
     app.config['SESSION_COOKIE_PATH'] = '/'
     app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
@@ -229,6 +232,14 @@ def create_app(config=None):
         print("✅ RNet file viewer blueprint registered")
     except Exception as e:
         print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
+    
+    # Register admin user controller blueprint (moved out of commented section)
+    try:
+        from admin.controllers.user_controller import user_bp
+        app.register_blueprint(user_bp, url_prefix='/users')
+        print("✅ Admin user controller blueprint registered")
+    except Exception as e:
+        print(f"⚠️ Error registering admin user controller blueprint: {e}")
     
     # Add context processors for static file server
     @app.context_processor

@@ -80,8 +80,10 @@ class UserController:
         
         # Check if the user is an admin and if they're the only admin
         if user.is_admin and AdminUser.query.filter_by(is_admin=True).count() <= 1:
-            flash('Cannot delete the only admin user in the system', 'error')
-            return redirect(url_for('user.index'))
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete the only admin user in the system'
+            }), 400
         
         try:
             # Delete related scores first
@@ -98,12 +100,17 @@ class UserController:
             # Now delete the user
             db.session.delete(user)
             db.session.commit()
-            flash('User and all related data deleted successfully', 'success')
+            
+            return jsonify({
+                'success': True,
+                'message': 'User and all related data deleted successfully'
+            }), 200
         except Exception as e:
             db.session.rollback()
-            flash(f'Error deleting user: {str(e)}', 'error')
-        
-        return redirect(url_for('user.index'))
+            return jsonify({
+                'success': False,
+                'message': f'Error deleting user: {str(e)}'
+            }), 500
 
     @staticmethod
     @user_bp.route('/admins/edit/<int:admin_id>', methods=['GET', 'POST'])
@@ -141,18 +148,25 @@ class UserController:
         
         # Prevent deleting the last admin
         if Admin.query.count() <= 1:
-            flash('Cannot delete the last admin account', 'error')
-            return redirect(url_for('user.index'))
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete the last admin account'
+            }), 400
         
         try:
             db.session.delete(admin)
             db.session.commit()
-            flash('Admin deleted successfully', 'success')
+            
+            return jsonify({
+                'success': True,
+                'message': 'Admin deleted successfully'
+            }), 200
         except Exception as e:
             db.session.rollback()
-            flash(f'Error deleting admin: {str(e)}', 'error')
-        
-        return redirect(url_for('user.index'))
+            return jsonify({
+                'success': False,
+                'message': f'Error deleting admin: {str(e)}'
+            }), 500
 
     @staticmethod
     @user_bp.route('/admins/add', methods=['GET', 'POST'])

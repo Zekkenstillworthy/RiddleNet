@@ -84,14 +84,29 @@
         --font-size-lg: 16px;
         --font-size-xl: 18px;
 
-        /* Enhanced z-index system */
-    --z-palette: 100; /* Updated per request */
-        /* Performance sidebar sits above base content and palette for reliable clicks, but below modals */
+        /* ===== ENHANCED Z-INDEX SYSTEM (CONSISTENT HIERARCHY) ===== */
+        --z-base: 1;
+        --z-canvas: 10;
+        --z-palette: 100;
+        --z-sidebar: 110;
         --z-performance-sidebar: 150;
-        --z-modal: 2000;
-    --z-tooltip: 3000;
-    /* dynamically adjusted performance sidebar width */
-    --performance-sidebar-width: 350px;
+        --z-modal-backdrop: 2000;
+        --z-modal: 2001;
+        --z-tutorial: 2002;
+        --z-notification: 3000;
+        --z-tooltip: 3001;
+        
+        /* ===== LAYOUT DIMENSIONS ===== */
+        --performance-sidebar-width: 350px;
+        --sidebar-width: 280px;
+        --palette-height: 88px;
+        --canvas-bottom-margin: calc(var(--palette-height) + 52px);
+        
+        /* ===== TRANSITIONS (RE-ENABLED FOR MODALS) ===== */
+        --transition-fast: 0.15s;
+        --transition-normal: 0.3s;
+        --transition-slow: 0.5s;
+        --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     /* ========================================
@@ -160,13 +175,12 @@
             height: 50vh;
             max-height: 80vh;
         }
-    }    /* DISABLE ALL ANIMATIONS AND TRANSITIONS */
-    *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
     }
+    
+    /* ========================================
+       CRITICAL LAYOUT RULES
+       Load immediately to prevent FOUC
+       ======================================== */
     
     /* Critical device palette positioning - Load immediately to prevent jitter */
     /* Consolidated device palette styling (duplicates removed) */
@@ -196,16 +210,95 @@
     /* #device-palette.sidebar-collapsed-adjust intentionally left without declarations.
        Removed empty block to satisfy linters; class is toggled for future extension. */
 
-    /* Body blur fix for lobby modals */
+    /* ========================================
+       MODAL SYSTEM FOUNDATION
+       ======================================== */
+    
+    /* Body state when modal is open - prevent scroll only */
     body.modal-open {
         overflow: hidden;
-        backdrop-filter: none !important;
-        filter: none !important;
+        /* Allow modals to have their own backdrop-filter */
     }
 
     /* Prevent backdrop filter conflicts and improve isolation */
     body, html {
         isolation: isolate;
+        /* Ensure proper stacking context */
+    }
+    
+    /* ===== BASE MODAL CLASS (DRY - Don't Repeat Yourself) ===== */
+    /* All modals inherit these common properties */
+    .modal-base {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
+        transform: translate(-50%, -50%) scale(0.9);
+        width: min(500px, calc(100vw - var(--current-sidebar-width) - 80px));
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius-xl);
+        padding: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
+        box-shadow: 
+            0 25px 50px rgba(0, 0, 0, 0.4),
+            0 0 40px rgba(0, 217, 255, 0.2);
+        overflow: hidden;
+        color: var(--text-primary);
+    }
+    
+    .modal-base::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+    
+    .modal-base.active {
+        display: flex;
+        flex-direction: column;
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    
+    /* Modal heading styles */
+    .modal-base h2 {
+        font-size: 28px;
+        color: var(--cyber-glow);
+        text-align: center;
+        margin-bottom: 24px;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    
+    /* Modal backdrop */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: var(--z-modal-backdrop);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-normal) var(--transition-easing);
+    }
+    
+    .modal-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     /* Enhanced visual state isolation */
@@ -2829,12 +2922,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* Ensure modals appear above sidebar */
+    /* All modals use consistent z-index from CSS variables */
     .scenario-popup,
     .easy-popup,
     .medium-popup,
     .hard-popup,
-    .problem-popup {
-        z-index: 3000;
+    .problem-popup,
+    .foundation-popup {
+        z-index: var(--z-modal);
     }
 
     /* Responsive adjustments for mobile */
@@ -3660,8 +3755,8 @@ document.addEventListener('DOMContentLoaded', () => {
         max-width: 350px;
         opacity: 0;
         transform: translateX(400px);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 3000;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-notification);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
     
@@ -4030,8 +4125,8 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 32px;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: calc(var(--z-modal) + 1);
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.5),
             0 0 40px rgba(0, 217, 255, 0.2),
@@ -4270,8 +4365,8 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 32px;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
@@ -4412,8 +4507,8 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 32px;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
@@ -4554,8 +4649,8 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 32px;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
@@ -4701,12 +4796,14 @@ document.addEventListener('DOMContentLoaded', () => {
         border: 1px solid var(--glass-border);
         border-radius: var(--border-radius-xl);
         padding: 32px;
-        z-index: 2002;
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(0, 217, 255, 0.2);
         overflow: hidden;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        pointer-events: none;
+        transition: all var(--transition-normal) var(--transition-easing);
         /* Ensure all text uses cyber theme colors */
         color: var(--text-primary);
     }
@@ -4809,8 +4906,8 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 32px;
         opacity: 0;
         pointer-events: none;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 2001;
+        transition: all var(--transition-normal) var(--transition-easing);
+        z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(74, 144, 226, 0.2);
@@ -4986,14 +5083,14 @@ document.addEventListener('DOMContentLoaded', () => {
         left: var(--current-sidebar-width);
         width: calc(100vw - var(--current-sidebar-width));
         height: 100vh;
-        background: rgba(15, 23, 42, 0.3);
-        backdrop-filter: blur(5px);
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(8px);
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 3000;
+        z-index: var(--z-tutorial);
         opacity: 0;
-        transition: all 0.3s ease;
+        transition: all var(--transition-normal) var(--transition-easing);
         pointer-events: auto;
     }
 
@@ -5005,14 +5102,13 @@ document.addEventListener('DOMContentLoaded', () => {
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
         backdrop-filter: blur(20px);
         border: 2px solid var(--cyber-glow);
-        border-radius: 20px;
-        padding: 40px;
+        border-radius: 16px;
+        padding: 24px;
         max-width: min(600px, calc(100vw - var(--current-sidebar-width) - 80px));
         width: 90%;
         text-align: center;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         transform: scale(0.9);
-        transition: all 0.3s ease;
     }
 
     .foundation-tutorial-overlay.active .foundation-tutorial-content {
@@ -5021,12 +5117,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     .foundation-tutorial-content h3 {
         color: var(--cyber-glow);
-        font-size: 1.8rem;
-        margin-bottom: 20px;
+        font-size: 1.6rem;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 8px;
     }
 
     /* Topology Learning Guide Styles - Matching learning-phases styling */
@@ -5197,21 +5293,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* Completion Preview Styles */
     .completion-preview {
-        margin: 25px 0;
-        padding: 20px;
+        margin: 15px 0;
+        padding: 12px;
         background: rgba(0, 217, 255, 0.05);
         border: 1px solid rgba(0, 217, 255, 0.2);
-        border-radius: 15px;
+        border-radius: 12px;
     }
 
     .completion-preview h4 {
         color: var(--cyber-glow);
-        font-size: 1.2rem;
-        margin-bottom: 15px;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
     }
 
     .preview-image-container {
@@ -5219,30 +5315,25 @@ document.addEventListener('DOMContentLoaded', () => {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10px;
+        gap: 6px;
     }
 
     .preview-image {
         max-width: 100%;
-        max-height: 200px;
+        max-height: 120px;
         width: auto;
         height: auto;
-        border-radius: 10px;
-        border: 2px solid rgba(0, 217, 255, 0.3);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        transition: transform 0.3s ease;
-    }
-
-    .preview-image:hover {
-        transform: scale(1.05);
-        border-color: var(--cyber-glow);
+        border-radius: 8px;
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     .preview-label {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: var(--text-secondary);
         font-style: italic;
         text-align: center;
+        margin-top: 4px;
     }
 
     /* Device Palette Highlighting */
@@ -5779,149 +5870,90 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- Interactive Network Topology Simulation -->
+                <!-- NEW: Interactive Network Topology Learning Path (MVP) -->
                 <div class="topology-learning-guide">
-                    <h3><i class='bx bx-network-chart'></i> Interactive Network Topology Simulator</h3>
+                    <h3><i class='bx bx-network-chart'></i> Network Topology Learning</h3>
                     
-                    <!-- Topology Selection Panel -->
-                    <div class="topology-selection-panel">
-                        <h4>Select a Topology to Build:</h4>
-                        <div class="topology-quick-buttons">
-                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('point-to-point')">
-                                ⟷ Point-to-Point
-                            </button>
-                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('star')">
-                                ✦ Star
-                            </button>
-                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('ring')">
-                                ○ Ring
-                            </button>
-                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('mesh')">
-                                ⬢ Mesh
-                            </button>
-                            <button class="topology-quick-btn" onclick="loadTopologyTemplate('tree')">
-                                🌳 Tree
-                            </button>
-                            <button class="topology-quick-btn" onclick="clearTopologyCanvas()">
-                                🗑️ Clear
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Interactive Canvas Container -->
-                    <div class="topology-canvas-container">
-                        <div class="topology-device-palette">
-                            <h5>Device Palette</h5>
-                            <div class="topology-device" draggable="true" data-device-type="router">
-                                🔀 Router
-                            </div>
-                            <div class="topology-device" draggable="true" data-device-type="switch">
-                                🔄 Switch
-                            </div>
-                            <div class="topology-device" draggable="true" data-device-type="pc">
-                                💻 PC
-                            </div>
-                            <div class="topology-controls">
-                                <button class="topology-control-btn" onclick="toggleTopologyConnectionMode()">
-                                    🔗 Connect
-                                </button>
-                                <button class="topology-control-btn" onclick="validateTopologyConfiguration()">
-                                    ✅ Validate
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="topologyReferenceCanvas" width="600" height="400"></canvas>
-                    </div>
-
-                    <div class="topology-sections">
-                        <div class="topology-level">
-                            <h4>Foundation & Novice Level Topologies</h4>
-                            <button class="topology-btn" onclick="showTopologyDetails('point-to-point')">
+                    <!-- Phase 1: Basic Topologies -->
+                    <div class="topology-level">
+                        <h4><i class='bx bx-star'></i> Phase 1: Basic Topologies</h4>
+                        <div class="topology-grid">
+                            <button onclick="startTopologyModule('point-to-point-topology')" class="foundation-btn" data-phase="1" id="topology-point-to-point-topology-btn">
                                 <div class="btn-content">
                                     <div class="btn-icon">⟷</div>
                                     <div class="btn-text">
                                         <div class="btn-title">Point-to-Point</div>
-                                        <div class="btn-desc">Direct connection between two devices. Used for: WAN links, device-to-device communication.</div>
+                                        <div class="btn-desc">Direct connection between two devices</div>
                                     </div>
                                 </div>
                             </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('star')">
+                            <button onclick="startTopologyModule('bus-topology')" class="foundation-btn" data-phase="1" id="topology-bus-topology-btn">
+                                <div class="btn-content">
+                                    <div class="btn-icon">▬</div>
+                                    <div class="btn-text">
+                                        <div class="btn-title">Bus Topology</div>
+                                        <div class="btn-desc">All devices share a single communication line</div>
+                                    </div>
+                                </div>
+                            </button>
+                            <button onclick="startTopologyModule('star-topology')" class="foundation-btn" data-phase="1" id="topology-star-topology-btn">
                                 <div class="btn-content">
                                     <div class="btn-icon">✦</div>
                                     <div class="btn-text">
-                                        <div class="btn-title">Star</div>
-                                        <div class="btn-desc">Central hub connecting multiple devices. Used for: Office networks, home networks, basic LANs.</div>
-                                    </div>
-                                </div>
-                            </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('tree-basic')">
-                                <div class="btn-content">
-                                    <div class="btn-icon">🌳</div>
-                                    <div class="btn-text">
-                                        <div class="btn-title">Tree (Basic)</div>
-                                        <div class="btn-desc">Hierarchical structure with branches. Used for: Departmental networks, small campus networks.</div>
+                                        <div class="btn-title">Star Topology</div>
+                                        <div class="btn-desc">Central hub connects all devices</div>
                                     </div>
                                 </div>
                             </button>
                         </div>
-                        
-                        <div class="topology-level">
-                            <h4>Intermediate Level Topologies</h4>
-                            <button class="topology-btn" onclick="showTopologyDetails('bus')">
-                                <div class="btn-content">
-                                    <div class="btn-icon">━</div>
-                                    <div class="btn-text">
-                                        <div class="btn-title">Bus</div>
-                                        <div class="btn-desc">Linear backbone with device taps. Used for: Legacy networks, industrial control systems.</div>
-                                    </div>
-                                </div>
-                            </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('ring')">
+                    </div>
+                    
+                    <!-- Phase 2: Intermediate Topologies -->
+                    <div class="topology-level">
+                        <h4><i class='bx bx-sitemap'></i> Phase 2: Intermediate Topologies</h4>
+                        <span class="phase-status locked" id="topology-phase2-status">Locked</span>
+                        <div class="topology-grid">
+                            <button onclick="startTopologyModule('ring-topology')" class="foundation-btn locked" data-phase="2" id="topology-ring-topology-btn">
                                 <div class="btn-content">
                                     <div class="btn-icon">○</div>
                                     <div class="btn-text">
-                                        <div class="btn-title">Ring</div>
-                                        <div class="btn-desc">Circular connection forming a loop. Used for: Token ring networks, SONET/SDH, redundant links.</div>
+                                        <div class="btn-title">Ring Topology</div>
+                                        <div class="btn-desc">Devices connected in a circular chain</div>
                                     </div>
                                 </div>
                             </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('partial-mesh')">
+                            <button onclick="startTopologyModule('tree-topology')" class="foundation-btn locked" data-phase="2" id="topology-tree-topology-btn">
                                 <div class="btn-content">
-                                    <div class="btn-icon">⬢</div>
+                                    <div class="btn-icon">🌳</div>
                                     <div class="btn-text">
-                                        <div class="btn-title">Partial Mesh</div>
-                                        <div class="btn-desc">Some devices interconnected for redundancy. Used for: Core networks, WAN designs.</div>
+                                        <div class="btn-title">Tree Topology</div>
+                                        <div class="btn-desc">Hierarchical structure with root and branches</div>
                                     </div>
                                 </div>
                             </button>
                         </div>
-                        
-                        <div class="topology-level">
-                            <h4>Advanced Level Topologies</h4>
-                            <button class="topology-btn" onclick="showTopologyDetails('full-mesh')">
+                    </div>
+                    
+                    <!-- Phase 3: Advanced Topologies -->
+                    <div class="topology-level">
+                        <h4><i class='bx bx-network-chart'></i> Phase 3: Advanced Topologies</h4>
+                        <span class="phase-status locked" id="topology-phase3-status">Locked</span>
+                        <div class="topology-grid">
+                            <button onclick="startTopologyModule('mesh-topology')" class="foundation-btn locked" data-phase="3" id="topology-mesh-topology-btn">
                                 <div class="btn-content">
                                     <div class="btn-icon">⬢</div>
                                     <div class="btn-text">
-                                        <div class="btn-title">Full Mesh</div>
-                                        <div class="btn-desc">Every device connected to every other. Used for: Critical infrastructure, high-availability systems.</div>
+                                        <div class="btn-title">Mesh Topology</div>
+                                        <div class="btn-desc">Every device connects to every other device</div>
                                     </div>
                                 </div>
                             </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('hybrid')">
+                            <button onclick="startTopologyModule('hybrid-topology')" class="foundation-btn locked" data-phase="3" id="topology-hybrid-topology-btn">
                                 <div class="btn-content">
-                                    <div class="btn-icon">🔗</div>
+                                    <div class="btn-icon">⚡</div>
                                     <div class="btn-text">
-                                        <div class="btn-title">Hybrid</div>
-                                        <div class="btn-desc">Combination of multiple topologies. Used for: Enterprise networks, complex environments.</div>
-                                    </div>
-                                </div>
-                            </button>
-                            <button class="topology-btn" onclick="showTopologyDetails('hierarchical')">
-                                <div class="btn-content">
-                                    <div class="btn-icon">🏢</div>
-                                    <div class="btn-text">
-                                        <div class="btn-title">Hierarchical</div>
-                                        <div class="btn-desc">Three-tier architecture (Core/Distribution/Access). Used for: Large campus, enterprise networks.</div>
+                                        <div class="btn-title">Hybrid Topology</div>
+                                        <div class="btn-desc">Combination of two or more topologies</div>
                                     </div>
                                 </div>
                             </button>
@@ -8841,9 +8873,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const scenarioModal = document.getElementById("scenarioModal");
             const modalBackdrop = document.getElementById("modalBackdrop");
             
-            // Show backdrop first
-            modalBackdrop.style.display = "block";
-            modalBackdrop.classList.add('active');
+            // Check if elements exist before accessing them
+            if (!scenarioModal) {
+                console.error('scenarioModal element not found');
+                return;
+            }
+            
+            // Show backdrop first (if it exists)
+            if (modalBackdrop) {
+                modalBackdrop.style.display = "block";
+                modalBackdrop.classList.add('active');
+            }
             
             // Then show modal
             scenarioModal.style.display = "flex";
@@ -8867,12 +8907,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const scenarioModal = document.getElementById("scenarioModal");
             const modalBackdrop = document.getElementById("modalBackdrop");
             
-            scenarioModal.classList.remove('active');
+            if (scenarioModal) {
+                scenarioModal.classList.remove('active');
+            }
             // Keep the backdrop active for the next modal layer
             
             // Hide after transition
             setTimeout(() => {
-                scenarioModal.style.display = "none";
+                if (scenarioModal) {
+                    scenarioModal.style.display = "none";
+                }
                 if (modalBackdrop) {
                     modalBackdrop.style.display = 'block';
                     modalBackdrop.classList.add('active');
@@ -8882,8 +8926,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Show and activate the selected description modal
             const descModal = document.getElementById(`${scenarioType}DescModal`);
-            descModal.style.display = "flex";
-            descModal.classList.add('active');
+            if (descModal) {
+                descModal.style.display = "flex";
+                descModal.classList.add('active');
+            } else {
+                console.error(`Description modal for ${scenarioType} not found`);
+                return;
+            }
 
             const topologySound = document.getElementById('bgSound');
             topologySound.currentTime = 0;
@@ -9530,6 +9579,605 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // ========================================
+        // TOPOLOGY LEARNING SYSTEM (MVP)
+        // ========================================
+
+        // Topology Phases Configuration
+        const topologyPhases = {
+            phase1: {
+                title: 'Basic Network Topologies',
+                modules: [
+                    {
+                        id: 'point-to-point-topology',
+                        name: 'Point-to-Point',
+                        description: 'Direct connection between two devices',
+                        requirements: { pc: 2, connections: 1 },
+                        xp: 15,
+                        icon: '⟷'
+                    },
+                    {
+                        id: 'bus-topology',
+                        name: 'Bus Topology',
+                        description: 'All devices share a single communication line',
+                        requirements: { pc: 3, hub: 1, connections: 3 },
+                        xp: 20,
+                        icon: '▬'
+                    },
+                    {
+                        id: 'star-topology',
+                        name: 'Star Topology',
+                        description: 'Central hub connects all devices',
+                        requirements: { pc: 3, switch: 1, connections: 3 },
+                        xp: 20,
+                        icon: '✦'
+                    }
+                ]
+            },
+            phase2: {
+                title: 'Intermediate Topologies',
+                unlockRequirement: 'Complete 2 Basic Topologies',
+                modules: [
+                    {
+                        id: 'ring-topology',
+                        name: 'Ring Topology',
+                        description: 'Devices connected in a circular chain',
+                        requirements: { pc: 4, connections: 4 },
+                        xp: 30,
+                        icon: '○'
+                    },
+                    {
+                        id: 'tree-topology',
+                        name: 'Tree Topology',
+                        description: 'Hierarchical structure with root and branches',
+                        requirements: { pc: 4, switch: 2, router: 1, connections: 5 },
+                        xp: 35,
+                        icon: '🌳'
+                    }
+                ]
+            },
+            phase3: {
+                title: 'Advanced Topologies',
+                unlockRequirement: 'Complete Phase 2',
+                modules: [
+                    {
+                        id: 'mesh-topology',
+                        name: 'Mesh Topology',
+                        description: 'Every device connects to every other device',
+                        requirements: { router: 4, connections: 6 },
+                        xp: 40,
+                        icon: '⬢'
+                    },
+                    {
+                        id: 'hybrid-topology',
+                        name: 'Hybrid Topology',
+                        description: 'Combination of two or more topologies',
+                        requirements: { pc: 4, switch: 2, router: 2, connections: 7 },
+                        xp: 50,
+                        icon: '⚡'
+                    }
+                ]
+            }
+        };
+
+        // Topology learning progress tracking
+        let topologyProgress = {
+            completedModules: [],
+            phase1Complete: false,
+            phase2Complete: false,
+            phase3Complete: false,
+            totalXP: 0
+        };
+
+        // Canvas mode state management
+        let canvasMode = 'idle'; // 'foundation', 'topology', 'troubleshooting', 'idle'
+        let currentTopologyModule = null;
+        let currentTopologyObjectives = null;
+        let topologyMonitoringInterval = null;
+
+        // Helper function to find topology module by ID
+        function findTopologyModule(moduleId) {
+            for (let phase of Object.values(topologyPhases)) {
+                const module = phase.modules.find(m => m.id === moduleId);
+                if (module) return module;
+            }
+            return null;
+        }
+
+        // Load topology progress from localStorage
+        function loadTopologyProgress() {
+            const saved = localStorage.getItem('topology_learning_progress');
+            if (saved) {
+                topologyProgress = { ...topologyProgress, ...JSON.parse(saved) };
+            }
+            updateTopologyUI();
+        }
+
+        // Save topology progress to localStorage
+        function saveTopologyProgress() {
+            localStorage.setItem('topology_learning_progress', JSON.stringify(topologyProgress));
+        }
+
+        // Canvas Mode Switching
+        function switchCanvasMode(mode, config = {}) {
+            console.log(`🎨 Switching canvas mode to: ${mode}`);
+            
+            // Stop any ongoing monitoring
+            if (topologyMonitoringInterval) {
+                clearInterval(topologyMonitoringInterval);
+                topologyMonitoringInterval = null;
+            }
+            
+            // Clear current canvas state
+            devices = [];
+            connections = [];
+            redrawCanvas();
+            
+            // Set new mode
+            canvasMode = mode;
+            
+            switch(mode) {
+                case 'foundation':
+                    if (config.moduleId) {
+                        setupFoundationMode(config.moduleId);
+                    }
+                    break;
+                case 'topology':
+                    if (config.moduleId) {
+                        setupTopologyMode(config.moduleId);
+                    }
+                    break;
+                case 'troubleshooting':
+                    setupTroubleshootingMode(config.difficulty, config.scenarioId);
+                    break;
+                case 'idle':
+                    resetCanvasToIdle();
+                    break;
+            }
+        }
+
+        function setupFoundationMode(moduleId) {
+            // Already handled by existing startFoundationScenario function
+            console.log(`📚 Foundation mode: ${moduleId}`);
+        }
+
+        function setupTopologyMode(moduleId) {
+            currentTopologyModule = findTopologyModule(moduleId);
+            if (!currentTopologyModule) {
+                console.error('Topology module not found:', moduleId);
+                return;
+            }
+            
+            // Ensure canvas is visible before showing tutorial
+            const canvasContainer = document.getElementById('canvas-container');
+            const canvas = document.getElementById('Canvas');
+            
+            if (canvasContainer) {
+                canvasContainer.style.display = 'block';
+                canvasContainer.style.visibility = 'visible';
+                canvasContainer.style.opacity = '1';
+                canvasContainer.style.zIndex = '1';
+            }
+            
+            if (canvas) {
+                canvas.style.display = 'block';
+                canvas.style.visibility = 'visible';
+                canvas.style.opacity = '1';
+            }
+            
+            // Initialize auto-completion objectives
+            initializeTopologyObjectives(moduleId);
+            
+            // Show topology tutorial after canvas is ready
+            setTimeout(() => {
+                showTopologyTutorial(currentTopologyModule);
+            }, 50);
+            
+            // Highlight required devices in palette
+            highlightRequiredDevices(currentTopologyModule.requirements);
+        }
+
+        function setupTroubleshootingMode(difficulty, scenarioId) {
+            console.log(`🔧 Troubleshooting mode: ${difficulty} - ${scenarioId}`);
+            // Existing troubleshooting logic
+        }
+
+        function resetCanvasToIdle() {
+            console.log('💤 Canvas reset to idle');
+            currentTopologyModule = null;
+            currentTopologyObjectives = null;
+            if (topologyMonitoringInterval) {
+                clearInterval(topologyMonitoringInterval);
+                topologyMonitoringInterval = null;
+            }
+        }
+
+        // Topology Tutorial System
+        function showTopologyTutorial(module) {
+            const tutorialOverlay = document.createElement('div');
+            tutorialOverlay.className = 'foundation-tutorial-overlay active';
+            tutorialOverlay.id = 'topology-tutorial-overlay';
+            tutorialOverlay.innerHTML = `
+                <div class="foundation-tutorial-content">
+                    <h3>${module.icon} ${module.name}</h3>
+                    <div class="tutorial-description">
+                        <p>${module.description}</p>
+                    </div>
+                    <div class="topology-requirements">
+                        <h4>Required Components:</h4>
+                        <ul>
+                            ${Object.entries(module.requirements)
+                                .filter(([key]) => key !== 'connections')
+                                .map(([device, count]) => `
+                                    <li>${count}x ${device.toUpperCase()}</li>
+                                `).join('')}
+                            <li>${module.requirements.connections}x Connections</li>
+                        </ul>
+                    </div>
+                    <div class="tutorial-buttons">
+                        <button onclick="closeTopologyTutorial()" class="tutorial-btn">
+                            Start Building
+                        </button>
+                    </div>
+                    <div class="auto-completion-info">
+                        <i class="bx bx-check-circle"></i>
+                        <span>Auto-completes when requirements are met</span>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(tutorialOverlay);
+        }
+
+        function closeTopologyTutorial() {
+            const overlay = document.getElementById('topology-tutorial-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.remove();
+                }, 300);
+            }
+            
+            // Remove any modal backdrops
+            const modalBackdrop = document.querySelector('.modal-backdrop');
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
+            
+            // Restore body scroll and visibility
+            document.body.style.overflow = 'auto';
+            document.body.style.visibility = 'visible';
+            document.body.style.opacity = '1';
+            
+            // Ensure canvas container is visible
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.style.display = 'block';
+                canvasContainer.style.visibility = 'visible';
+                canvasContainer.style.opacity = '1';
+                canvasContainer.style.zIndex = '1';
+            }
+            
+            // Ensure main canvas is visible
+            const canvas = document.getElementById('Canvas');
+            if (canvas) {
+                canvas.style.display = 'block';
+                canvas.style.visibility = 'visible';
+                canvas.style.opacity = '1';
+            }
+            
+            // Force canvas redraw
+            if (typeof redrawCanvas === 'function') {
+                setTimeout(() => redrawCanvas(), 50);
+            }
+        }
+
+        // Highlight required devices in palette
+        function highlightRequiredDevices(requirements) {
+            // Remove existing highlights
+            document.querySelectorAll('.device').forEach(d => d.classList.remove('highlighted'));
+            
+            // Add highlights for required devices
+            Object.keys(requirements).forEach(deviceType => {
+                if (deviceType !== 'connections') {
+                    const deviceElements = document.querySelectorAll(`.device[data-type="${deviceType}"]`);
+                    deviceElements.forEach(el => el.classList.add('highlighted'));
+                }
+            });
+        }
+
+        // Topology Objectives and Auto-Completion
+        function initializeTopologyObjectives(moduleId) {
+            const module = findTopologyModule(moduleId);
+            if (!module) return;
+            
+            currentTopologyObjectives = {
+                moduleId: moduleId,
+                requirements: module.requirements,
+                startTime: Date.now(),
+                completed: false
+            };
+            
+            // Start monitoring
+            startTopologyMonitoring();
+            
+            console.log(`🎯 Topology objectives initialized for: ${module.name}`);
+        }
+
+        function startTopologyMonitoring() {
+            // Check every 500ms for completion
+            topologyMonitoringInterval = setInterval(() => {
+                if (canvasMode === 'topology' && currentTopologyObjectives) {
+                    checkTopologyCompletion();
+                }
+            }, 500);
+        }
+
+        function checkTopologyCompletion() {
+            if (!currentTopologyObjectives || currentTopologyObjectives.completed) {
+                return false;
+            }
+            
+            const reqs = currentTopologyObjectives.requirements;
+            
+            // Check device counts
+            for (let [deviceType, requiredCount] of Object.entries(reqs)) {
+                if (deviceType === 'connections') continue;
+                
+                const actualCount = devices.filter(d => 
+                    d.type === deviceType || 
+                    (deviceType === 'hub' && d.type === 'switch' && d.isHub)
+                ).length;
+                
+                if (actualCount < requiredCount) {
+                    return false;
+                }
+            }
+            
+            // Check connection count
+            if (connections.length < reqs.connections) {
+                return false;
+            }
+            
+            // Topology-specific validation
+            if (!validateTopologyStructure(currentTopologyObjectives.moduleId)) {
+                return false;
+            }
+            
+            // All requirements met!
+            completeTopologyModule();
+            return true;
+        }
+
+        // Topology Structure Validators
+        function validateTopologyStructure(moduleId) {
+            switch(moduleId) {
+                case 'ring-topology':
+                    return isRingStructure();
+                case 'mesh-topology':
+                    return isFullyMeshed();
+                case 'star-topology':
+                    return hasStarStructure();
+                case 'tree-topology':
+                    return hasHierarchicalStructure();
+                case 'point-to-point-topology':
+                    return connections.length >= 1 && devices.length >= 2;
+                case 'bus-topology':
+                    return devices.length >= 3; // Simplified validation
+                case 'hybrid-topology':
+                    return devices.length >= 6; // Simplified validation
+                default:
+                    return true; // Basic validation passed
+            }
+        }
+
+        function isRingStructure() {
+            if (devices.length < 3) return false;
+            
+            // Each device should have exactly 2 connections
+            return devices.every(device => {
+                const deviceConnections = connections.filter(conn =>
+                    conn.device1 === device || conn.device2 === device
+                );
+                return deviceConnections.length === 2;
+            });
+        }
+
+        function isFullyMeshed() {
+            if (devices.length < 2) return false;
+            const n = devices.length;
+            const requiredConnections = (n * (n - 1)) / 2;
+            return connections.length >= requiredConnections;
+        }
+
+        function hasStarStructure() {
+            const switches = devices.filter(d => d.type === 'switch');
+            if (switches.length === 0) return false;
+            
+            const centralSwitch = switches[0];
+            const pcs = devices.filter(d => d.type === 'pc');
+            
+            if (pcs.length === 0) return false;
+            
+            // All PCs should connect to the central switch
+            return pcs.every(pc => {
+                return connections.some(conn =>
+                    (conn.device1 === pc && conn.device2 === centralSwitch) ||
+                    (conn.device1 === centralSwitch && conn.device2 === pc)
+                );
+            });
+        }
+
+        function hasHierarchicalStructure() {
+            const routers = devices.filter(d => d.type === 'router');
+            const switches = devices.filter(d => d.type === 'switch');
+            
+            if (routers.length === 0 || switches.length === 0) return false;
+            
+            // Router should connect to switches
+            return routers.some(router => {
+                const routerConnections = connections.filter(conn =>
+                    conn.device1 === router || conn.device2 === router
+                );
+                return routerConnections.length > 0;
+            });
+        }
+
+        // Complete Topology Module
+        function completeTopologyModule() {
+            if (!currentTopologyObjectives || currentTopologyObjectives.completed) return;
+            
+            const moduleId = currentTopologyObjectives.moduleId;
+            const module = findTopologyModule(moduleId);
+            
+            currentTopologyObjectives.completed = true;
+            
+            // Stop monitoring
+            if (topologyMonitoringInterval) {
+                clearInterval(topologyMonitoringInterval);
+                topologyMonitoringInterval = null;
+            }
+            
+            // Add to completed modules
+            if (!topologyProgress.completedModules.includes(moduleId)) {
+                topologyProgress.completedModules.push(moduleId);
+                topologyProgress.totalXP += module.xp;
+            }
+            
+            // Update phase completion
+            updateTopologyPhaseCompletion();
+            
+            // Save progress
+            saveTopologyProgress();
+            
+            // Show completion notification
+            showTopologyCompletionNotification(module);
+            
+            // Update UI
+            updateTopologyUI();
+            
+            console.log(`✅ Topology module completed: ${module.name} (+${module.xp} XP)`);
+            
+            // Return to foundation modal after delay
+            setTimeout(() => {
+                switchCanvasMode('idle');
+                openFoundationModal();
+            }, 3000);
+        }
+
+        function showTopologyCompletionNotification(module) {
+            const notification = document.createElement('div');
+            notification.className = 'auto-completion-notification show';
+            notification.innerHTML = `
+                <div class="auto-completion-content">
+                    <div class="auto-completion-icon">
+                        <i class='bx bx-check-circle'></i>
+                    </div>
+                    <div class="auto-completion-text">
+                        <h4>Topology Complete!</h4>
+                        <p>${module.name}</p>
+                        <div class="completion-time">+${module.xp} XP earned</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 500);
+            }, 2500);
+        }
+
+        // Update Topology Phase Completion
+        function updateTopologyPhaseCompletion() {
+            Object.keys(topologyPhases).forEach(phaseKey => {
+                const phase = topologyPhases[phaseKey];
+                const completedInPhase = phase.modules.filter(m =>
+                    topologyProgress.completedModules.includes(m.id)
+                ).length;
+                
+                topologyProgress[`${phaseKey}Complete`] = 
+                    completedInPhase >= phase.modules.length;
+            });
+        }
+
+        // Update Topology UI
+        function updateTopologyUI() {
+            // Update button states
+            Object.keys(topologyPhases).forEach((phaseKey, index) => {
+                const phase = topologyPhases[phaseKey];
+                const isAccessible = index === 0 || topologyProgress[`phase${index}Complete`];
+                
+                phase.modules.forEach(module => {
+                    const button = document.getElementById(`topology-${module.id}-btn`);
+                    if (!button) return;
+                    
+                    const isCompleted = topologyProgress.completedModules.includes(module.id);
+                    
+                    button.classList.toggle('locked', !isAccessible);
+                    button.classList.toggle('completed', isCompleted);
+                    
+                    if (!isAccessible) {
+                        button.onclick = null;
+                    }
+                });
+                
+                // Update phase status badges
+                const statusBadge = document.getElementById(`topology-${phaseKey}-status`);
+                if (statusBadge) {
+                    if (topologyProgress[`${phaseKey}Complete`]) {
+                        statusBadge.textContent = 'Completed';
+                        statusBadge.className = 'phase-status completed';
+                    } else if (isAccessible) {
+                        statusBadge.textContent = 'Available';
+                        statusBadge.className = 'phase-status available';
+                    }
+                }
+            });
+        }
+
+        // Entry Point Function - Start Topology Module
+        function startTopologyModule(moduleId) {
+            console.log(`🎯 Starting topology module: ${moduleId}`);
+            
+            // Check if module is accessible
+            const phaseKey = Object.keys(topologyPhases).find(key => 
+                topologyPhases[key].modules.some(m => m.id === moduleId)
+            );
+            const phaseIndex = parseInt(phaseKey.replace('phase', '')) - 1;
+            const isAccessible = phaseIndex === 0 || topologyProgress[`phase${phaseIndex}Complete`];
+            
+            if (!isAccessible) {
+                alert('Complete previous phase to unlock this topology!');
+                return;
+            }
+            
+            // Close foundation modal
+            const foundationModal = document.getElementById('foundationDescModal');
+            if (foundationModal) {
+                foundationModal.classList.remove('active');
+                foundationModal.style.display = 'none';
+            }
+            
+            // Switch canvas to topology mode
+            switchCanvasMode('topology', { moduleId: moduleId });
+        }
+
+        // Make globally accessible
+        window.startTopologyModule = startTopologyModule;
+        window.closeTopologyTutorial = closeTopologyTutorial;
+
+        // Initialize topology progress on page load
+        function initializeTopologyLearning() {
+            loadTopologyProgress();
+            console.log('🌐 Topology Learning System initialized');
+        }
+
+        // ========================================
+        // END TOPOLOGY LEARNING SYSTEM
+        // ========================================
+
         function startFoundationScenario(moduleId) {
             // Check if module is accessible
             const modulePhase = Object.keys(allPhaseModules).find(phase => 
@@ -9548,13 +10196,25 @@ document.addEventListener('DOMContentLoaded', () => {
             foundationModal.classList.remove('active');
             foundationModal.style.display = "none";
             
+            // Ensure canvas container is visible
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.style.display = 'block';
+                canvasContainer.style.visibility = 'visible';
+                canvasContainer.style.opacity = '1';
+            }
+            
             // Clear existing devices and connections
             devices = [];
             connections = [];
+            
+            // Ensure canvas renders first, then show tutorial
             redrawCanvas();
             
-            // Set current module
-            foundationProgress.currentModule = moduleId;
+            // Wait for canvas to be ready before proceeding with scenario
+            setTimeout(() => {
+                // Set current module
+                foundationProgress.currentModule = moduleId;
             
             // Start the appropriate foundation scenario
             switch (moduleId) {
@@ -9616,6 +10276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 default:
                     console.error('Unknown foundation module:', moduleId);
             }
+            }, 50); // Wait 50ms for canvas to be ready
         }
 
         function showLockedModuleMessage(moduleId) {
@@ -9944,6 +10605,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tutorial system for foundation scenarios
         function showFoundationTutorial(title, description, instruction, previewImage = null) {
+            // Ensure canvas is visible and ready
+            const canvasContainer = document.getElementById('canvas-container');
+            const canvas = document.getElementById('Canvas');
+            
+            if (canvasContainer) {
+                canvasContainer.style.display = 'block';
+                canvasContainer.style.visibility = 'visible';
+                canvasContainer.style.opacity = '1';
+                canvasContainer.style.zIndex = '1';
+            }
+            
+            if (canvas) {
+                canvas.style.display = 'block';
+                canvas.style.visibility = 'visible';
+                canvas.style.opacity = '1';
+            }
+            
             // All Foundation scenarios now have auto-completion, so always show the auto-completion message
             const buttonsHtml = `<button onclick="closeFoundationTutorial()" class="tutorial-btn">Got it!</button>
                    <div class="auto-completion-info">
@@ -9990,19 +10668,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const tutorial = document.getElementById('foundation-tutorial');
             if (tutorial) {
                 tutorial.classList.remove('active');
-                // Ensure main content is visible immediately
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    mainContent.style.display = 'block';
-                    mainContent.style.visibility = 'visible';
-                    mainContent.style.opacity = '1';
-                }
-                // Remove the tutorial overlay
+                
+                // Remove tutorial overlay after animation
                 setTimeout(() => {
                     tutorial.remove();
-                    // Force redraw of main content
-                    document.body.style.overflow = 'auto';
-                }, 100);
+                }, 300);
+            }
+            
+            // Remove any modal backdrops
+            const modalBackdrop = document.querySelector('.modal-backdrop');
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
+            
+            // Restore body scroll and visibility
+            document.body.style.overflow = 'auto';
+            document.body.style.visibility = 'visible';
+            document.body.style.opacity = '1';
+            
+            // Ensure canvas container is visible
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.style.display = 'block';
+                canvasContainer.style.visibility = 'visible';
+                canvasContainer.style.opacity = '1';
+                canvasContainer.style.zIndex = '1';
+            }
+            
+            // Ensure main canvas is visible
+            const canvas = document.getElementById('Canvas');
+            if (canvas) {
+                canvas.style.display = 'block';
+                canvas.style.visibility = 'visible';
+                canvas.style.opacity = '1';
+            }
+            
+            // Force canvas redraw
+            if (typeof redrawCanvas === 'function') {
+                setTimeout(() => redrawCanvas(), 50);
             }
         }
 
@@ -10427,7 +11130,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         function closeDescriptionModal(modalId) {
-            document.getElementById(modalId).style.display = "none";
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = "none";
+            } else {
+                console.warn(`Modal ${modalId} not found`);
+            }
         }
 
         function startScenario(difficulty, problemType) {
@@ -11486,12 +12194,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const scenarioModal = document.getElementById("scenarioModal");
             const modalBackdrop = document.getElementById("modalBackdrop");
             
-            scenarioModal.classList.remove('active');
-            modalBackdrop.classList.remove('active');
+            if (scenarioModal) {
+                scenarioModal.classList.remove('active');
+            }
+            if (modalBackdrop) {
+                modalBackdrop.classList.remove('active');
+            }
             
             setTimeout(() => {
-                scenarioModal.style.display = "none";
-                modalBackdrop.style.display = "none";
+                if (scenarioModal) {
+                    scenarioModal.style.display = "none";
+                }
+                if (modalBackdrop) {
+                    modalBackdrop.style.display = "none";
+                }
                 document.body.style.overflow = 'auto';
             }, 300);
         }
@@ -15304,6 +16020,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize topology simulator when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initTopologySimulator, 1000);
+            // Initialize Topology Learning System
+            initializeTopologyLearning();
         });
 
         // Export topology functions for global access

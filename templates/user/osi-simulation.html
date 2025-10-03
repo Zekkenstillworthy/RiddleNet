@@ -262,6 +262,246 @@ html, body {
     </div>
 </div>
 
+<style>
+/* Enhanced Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+    padding: 30px;
+    border: 2px solid rgba(0, 212, 255, 0.5);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+    animation: slideUp 0.4s ease-out;
+    color: #fff;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.close:hover {
+    color: #ff6b6b;
+    transform: rotate(90deg);
+}
+
+/* Success Indicator Animation */
+.success-indicator {
+    position: absolute;
+    top: -30px;
+    right: 10px;
+    background: rgba(74, 222, 128, 0.9);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    animation: popIn 0.5s ease-out;
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.5);
+    z-index: 10;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0) translateY(20px);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Error Indicator */
+.error-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(239, 68, 68, 0.9);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    z-index: 10;
+}
+
+/* Particle Effects */
+.particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    animation: particleFly 2s ease-out forwards;
+}
+
+.particle.success {
+    background: #4ade80;
+    box-shadow: 0 0 10px #4ade80;
+}
+
+@keyframes particleFly {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--tx, 100px), var(--ty, -100px)) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Shake Animation for Errors */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* Score Update Animation */
+.score-update {
+    animation: scoreGlow 0.5s ease-in-out;
+}
+
+@keyframes scoreGlow {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(0, 212, 255, 1), 0 0 30px rgba(0, 212, 255, 0.8);
+        transform: scale(1.1);
+    }
+}
+
+/* Confetti Animation */
+.confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    z-index: 9999;
+    animation: confettiFall 5s linear forwards;
+}
+
+@keyframes confettiFall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Completion Celebration */
+.completion-celebration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.celebration-content {
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    border: 3px solid #fbbf24;
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.5);
+    max-width: 500px;
+    animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.celebration-icon {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    animation: rotate 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(15deg); }
+}
+
+.final-score {
+    font-size: 2rem;
+    color: #fbbf24;
+    font-weight: bold;
+    margin: 20px 0;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+</style>
+
 <script>
 let score = 0;
 let currentLayer = 0;
@@ -391,8 +631,16 @@ function drop(ev) {
         unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS); // increment a unit
         updateScore();
         showSuccessAnimation(dropSlot);
-        // Only trigger completion when ALL units (including quiz) are done now
-        // (Layer placement no longer auto-completes at 7)
+        
+        // Show success modal for correct placement
+        showSuccessModal(draggedLayer);
+        
+        // Check if all layers are placed
+        if (correctPlacements === 7) {
+            setTimeout(() => {
+                showAllLayersCompletedModal();
+            }, 1500);
+        }
     } else {
         dropSlot.classList.add('incorrect-placement');
         showErrorAnimation(dropSlot);
@@ -404,18 +652,102 @@ function showSuccessAnimation(element) {
     // Create success particle effect
     createParticleEffect(element, 'success');
     
-    // Calculate percentage for this layer
-    const layerPercentage = Math.round((correctPlacements / 7) * 100 * 100) / 100;
+    // Calculate points for this layer (each layer is worth ~7.14% of the layer portion)
+    const pointsEarned = (100 / TOTAL_UNITS).toFixed(2);
     
     // Play success sound effect (visual representation)
     const successIndicator = document.createElement('div');
     successIndicator.className = 'success-indicator';
-    successIndicator.innerHTML = `<i class="fas fa-star"></i> +${(layerPercentage - ((correctPlacements - 1) / 7) * 100).toFixed(2)}%!`;
+    successIndicator.innerHTML = `<i class="fas fa-star"></i> +${pointsEarned} points!`;
     element.appendChild(successIndicator);
     
     setTimeout(() => {
         successIndicator.remove();
     }, 2000);
+}
+
+function showSuccessModal(layerNumber) {
+    const info = layerInfo[layerNumber];
+    const pointsEarned = (100 / TOTAL_UNITS).toFixed(2);
+    const modal = document.getElementById('layerModal');
+    const content = document.getElementById('modalContent');
+    
+    content.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+            <h2 style="color: #4ade80; margin-bottom: 15px;">
+                <i class="fas fa-check-circle"></i> Correct Placement!
+            </h2>
+            
+            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <h3 style="color: #00d4ff; margin-bottom: 10px;">${info.name}</h3>
+                <p style="font-size: 1.2rem; color: #fbbf24; margin: 10px 0;">
+                    <i class="fas fa-star"></i> +${pointsEarned} Points
+                </p>
+                <p style="margin: 10px 0;">
+                    <strong>Progress:</strong> ${correctPlacements}/7 Layers Placed
+                </p>
+            </div>
+            
+            <div style="text-align: left; margin-top: 20px;">
+                <h4 style="color: #a78bfa; margin-bottom: 10px;">Quick Info:</h4>
+                <p style="line-height: 1.6;">${info.description}</p>
+            </div>
+            
+            <button onclick="closeModal()" class="control-button primary" style="margin-top: 20px; padding: 12px 24px;">
+                <i class="fas fa-arrow-right"></i> Continue
+            </button>
+        </div>
+    `;
+    
+    modal.classList.add('show');
+    
+    // Auto-close after 4 seconds
+    setTimeout(() => {
+        if (modal.classList.contains('show')) {
+            closeModal();
+        }
+    }, 4000);
+}
+
+function showAllLayersCompletedModal() {
+    const modal = document.getElementById('layerModal');
+    const content = document.getElementById('modalContent');
+    
+    content.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+            <h2 style="color: #fbbf24; margin-bottom: 15px;">
+                <i class="fas fa-trophy"></i> All Layers Placed!
+            </h2>
+            
+            <div style="background: rgba(251, 191, 36, 0.2); border: 2px solid #fbbf24; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <p style="font-size: 1.3rem; margin: 10px 0;">
+                    Great job! You've correctly arranged all 7 OSI layers!
+                </p>
+                <p style="font-size: 1.1rem; color: #4ade80; margin: 10px 0;">
+                    Current Score: <strong>${score.toFixed(2)}%</strong>
+                </p>
+            </div>
+            
+            <div style="text-align: left; margin-top: 20px; background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px;">
+                <h4 style="color: #a78bfa; margin-bottom: 10px;">
+                    <i class="fas fa-lightbulb"></i> What's Next?
+                </h4>
+                <ul style="line-height: 1.8; margin-left: 20px;">
+                    <li>Click <strong>"Test Knowledge"</strong> to answer quiz questions and earn remaining points</li>
+                    <li>Click <strong>"Start Data Flow"</strong> to visualize how data flows through the layers</li>
+                    <li>Complete the quiz to reach 100% and save your score!</li>
+                </ul>
+            </div>
+            
+            <button onclick="closeModal()" class="control-button success" style="margin-top: 20px; padding: 12px 24px;">
+                <i class="fas fa-check"></i> Got it!
+            </button>
+        </div>
+    `;
+    
+    modal.classList.add('show');
 }
 
 function showErrorAnimation(element) {
@@ -439,12 +771,22 @@ function createParticleEffect(element, type) {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
         const particle = document.createElement('div');
         particle.className = `particle ${type}`;
         particle.style.left = centerX + 'px';
         particle.style.top = centerY + 'px';
-        particle.style.animationDelay = (i * 0.1) + 's';
+        
+        // Random direction for each particle
+        const angle = (Math.PI * 2 * i) / 12;
+        const distance = 80 + Math.random() * 40;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
+        particle.style.animationDelay = (i * 0.05) + 's';
+        
         document.body.appendChild(particle);
         
         setTimeout(() => {
@@ -463,14 +805,31 @@ function showCompletionCelebration() {
     celebration.innerHTML = `
         <div class="celebration-content">
             <div class="celebration-icon">🎉</div>
-            <h2>Congratulations!</h2>
-            <p>You achieved a perfect understanding score!</p>
+            <h2 style="color: #fbbf24; margin: 20px 0;">Congratulations!</h2>
+            <p style="font-size: 1.2rem; margin: 15px 0;">You achieved a perfect understanding of the OSI Model!</p>
             <div class="final-score">Final Score: ${score.toFixed(2)}%</div>
-            <button onclick="resetSimulation()" class="control-button primary"><i class="fas fa-refresh"></i> Try Again</button>
+            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #4ade80;"><i class="fas fa-check-circle"></i> Score saved successfully!</p>
+            </div>
+            <button onclick="closeCompletionCelebration()" class="control-button success" style="margin: 10px;">
+                <i class="fas fa-check"></i> Done
+            </button>
+            <button onclick="resetSimulation(); closeCompletionCelebration();" class="control-button primary" style="margin: 10px;">
+                <i class="fas fa-refresh"></i> Try Again
+            </button>
         </div>`;
     document.body.appendChild(celebration);
     createConfettiEffect();
     saveScore();
+}
+
+function closeCompletionCelebration() {
+    const celebration = document.querySelector('.completion-celebration');
+    if (celebration) {
+        celebration.style.opacity = '0';
+        celebration.style.transition = 'opacity 0.3s ease-in-out';
+        setTimeout(() => celebration.remove(), 300);
+    }
 }
 
 function createConfettiEffect() {
@@ -660,12 +1019,87 @@ function resetSimulation() {
 
 function saveScore() {
     if (unitsCompleted === TOTAL_UNITS) {
+        const finalScore = Math.round(score);
         fetch('/save_osi_score', {
-            method: 'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ score: 100, max_score: 100, category:'osi_model_drag_drop_extended' })
-        }).then(r=>r.json()).then(d=>console.log('Score save result',d)).catch(e=>console.error('Error saving score:',e));
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                score: finalScore,
+                max_score: 100,
+                category: 'osi',
+                completion_time: Date.now(),
+                layer_accuracy: {
+                    layers_placed: correctPlacements,
+                    quiz_completed: true,
+                    total_units: TOTAL_UNITS
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Score saved successfully:', data);
+            if (data.success) {
+                showNotification('Score saved successfully!', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error saving score:', error);
+            showNotification('Failed to save score. Please try again.', 'error');
+        });
     }
 }
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'rgba(74, 222, 128, 0.9)' : 'rgba(239, 68, 68, 0.9)'};
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        font-weight: bold;
+        z-index: 10002;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        animation: slideInRight 0.3s ease-out;
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add animations for notifications
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(notificationStyles);
 
 // Event listeners for drag and drop
 document.addEventListener('DOMContentLoaded', function() {

@@ -609,26 +609,32 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 0.75rem;
         max-width: 100%;
-        overflow: hidden;
+        overflow: visible;
         padding: 0.5rem;
+        grid-auto-rows: minmax(90px, auto);
     }
 
     .device-item {
         width: 60px;
-        height: 70px;
+        min-height: 85px;
+        height: auto;
         background: rgba(15, 23, 42, 0.9);
         border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        /* Use flex-start so gap + explicit spacer control vertical rhythm */
+        justify-content: flex-start;
+        /* Provide consistent vertical rhythm */
+    gap: 8px; /* increased gap between icon and label for clearer separation */
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
-        overflow: hidden;
-        margin: 0;
-        padding: 6px;
+        overflow: visible;
+        margin: 0 0 8px 0;
+        /* Extra top padding gives breathing room above icon; slightly more bottom for shadow */
+        padding: 10px 4px 12px 4px;
         box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
@@ -646,9 +652,13 @@
     }
 
     .device-icon {
-        font-size: 1.2rem;
+        font-size: 1.25rem; /* slight increase for better hierarchy */
         color: var(--text-primary);
         transition: all 0.3s ease;
+        flex-shrink: 0;
+        /* Remove manual margin; gap on parent now handles spacing */
+        margin: 0;
+        line-height: 1; /* tighten to avoid extra vertical collapse */
     }
 
     .device-item img {
@@ -693,12 +703,13 @@
     }
 
     .device-label {
-        font-size: 0.65rem;
+        font-size: 0.68rem;
         color: var(--text-secondary);
         text-align: center;
-        margin-top: 2px;
-        font-weight: 500;
-        line-height: 1;
+        /* Added top margin removed; spacing now via flex gap; keep slight offset if needed */
+        font-weight: 600;
+        line-height: 1.15; /* a bit more breathing room for descenders */
+        letter-spacing: 0.3px;
         transition: color 0.3s ease;
         white-space: nowrap;
         overflow: hidden;
@@ -2961,26 +2972,29 @@
         .palette-title { font-size: 0.8rem; }
     }
     /* Always show device labels in palette */
-    #device-palette .device-grid { grid-auto-rows: minmax(72px, auto); }
-    #device-palette .device-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+    #device-palette .device-grid { grid-auto-rows: minmax(95px, auto); }
+    #device-palette .device-item { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; }
     #device-palette .device-item .device-label { 
         display:block !important;
-        opacity:0.9 !important;
+        opacity:1 !important;
         transform:none !important;
         position:static !important;
         font-size:0.65rem;
         letter-spacing:.25px;
-        margin:2px 0 0 0;
-        padding:0;
+    /* Margin no longer needed; spacing provided by flex gap */
+    margin:0;
+        padding:2px 4px;
         background:transparent !important;
         box-shadow:none !important;
         color:var(--text-secondary, #94a3b8);
         text-align:center;
-        max-width:70px;
+        max-width:100%;
+        width:100%;
         white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
+        overflow:visible;
+        text-overflow:clip;
         pointer-events:none;
+        line-height:1.2;
     }
     #device-palette .device-item:hover .device-label { color:var(--text-primary, #f1f5f9); opacity:1; }
 
@@ -4743,39 +4757,18 @@
                 <button class="tool-btn" data-tool="delete" title="Delete Tool">
                     <i class="fas fa-trash"></i>
                 </button>
-                <button class="tool-btn" id="connection-mode-btn" title="Connection Mode">
-                    <i class="fas fa-link"></i>
-                    <span class="label">Connect</span>
-                </button>
                 <div class="tool-separator"></div>
-                <button class="tool-btn" data-tool="zoom-in" title="Zoom In">
-                    <i class="fas fa-search-plus"></i>
+                <button class="tool-btn" data-tool="wired" title="Wired Connection">
+                    <i class="fas fa-minus"></i>
+                    <span class="label">Wired</span>
                 </button>
-                <button class="tool-btn" data-tool="zoom-out" title="Zoom Out">
-                    <i class="fas fa-search-minus"></i>
-                </button>
-                <button class="tool-btn" data-tool="zoom-fit" title="Zoom to Fit">
-                    <i class="fas fa-expand-arrows-alt"></i>
-                </button>
-                <div class="tool-separator"></div>
-                <button class="tool-btn" data-tool="grid" title="Toggle Grid">
-                    <i class="fas fa-border-all"></i>
-                </button>
-                <button class="tool-btn" data-tool="labels" title="Toggle Labels">
-                    <i class="fas fa-tags"></i>
+                <button class="tool-btn" data-tool="wireless" title="Wireless Connection">
+                    <i class="fas fa-wifi"></i>
+                    <span class="label">Wireless</span>
                 </button>
             </div>
             
             <div class="bottom-actions">
-                <button id="validate-btn" class="btn btn-success">
-                    <i class="fas fa-check-circle"></i>
-                    Validate
-                </button>
-                <button id="hint-btn" class="btn btn-secondary">
-                    <i class="fas fa-lightbulb"></i>
-                    
-                    Hint
-                </button>
                 <button id="submit-btn" class="btn btn-success" style="display: none;">
                     <i class="fas fa-check"></i>
                     Submit Answer
@@ -4831,10 +4824,10 @@
                     <div class="palette-title">
                         <i class="fas fa-layer-group"></i>
                         Network Devices
+                        <button class="palette-toggle touch-enhanced" aria-expanded="true">
+                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                        </button>
                     </div>
-                    <button class="palette-toggle" aria-expanded="true">
-                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                    </button>
                 </div>
             </div>
 
@@ -4857,11 +4850,7 @@
                             <span class="device-label">Switch</span>
                             <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                         </div>
-                        <div class="device-item" data-device-type="access-point" draggable="true">
-                            <i class="fas fa-wifi device-icon"></i>
-                            <span class="device-label">Access Point</span>
-                            <div class="device-tooltip">Wireless Access Point - Provides WiFi connectivity</div>
-                        </div>
+                       
                         <div class="device-item" data-device-type="hub" draggable="true">
                             <i class="fas fa-circle-nodes device-icon"></i>
                             <span class="device-label">Hub</span>
@@ -5987,7 +5976,7 @@ window.teamSessionManager = {
             activeSessionSection: document.getElementById('active-session-section'),
             participantsList: document.getElementById('team-members-list'),
             chatContainer: document.getElementById('chat-messages'),
-            chatInput: document.getElementById('chat-input'),
+            chatInput: document.getElementById('team-chat-input'), // Changed from 'chat-input' to 'team-chat-input'
             connectionStatus: document.getElementById('connection-status-title'),
             sessionName: document.getElementById('active-session-name'),
             sessionCode: document.getElementById('active-session-code'),
@@ -5996,9 +5985,10 @@ window.teamSessionManager = {
             sessionDuration: document.getElementById('session-duration')
         };
         
-        // Check if UI elements exist
+        // Check if UI elements exist (only log critical missing elements)
         Object.entries(this.uiElements).forEach(([key, element]) => {
-            if (!element) {
+            if (!element && key !== 'chatInput') {
+                // chatInput is created dynamically, so don't warn about it initially
                 console.warn(`⚠️ [TEAM SESSION] UI element '${key}' not found`);
             }
         });
@@ -9139,9 +9129,10 @@ class DynamicSimulation {
                 ctx.drawImage(this.image, this.x - 30, this.y - 25, 60, 60);
                 // Draw device label below
                 ctx.fillStyle = "#00C3B5";
-                ctx.font = "14px Arial";
+                ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(this.label, this.x, this.y + 50);
+                ctx.textBaseline = "top";
+                ctx.fillText(this.label, this.x, this.y + 40);
             } else {
                 // Enhanced fallback rendering with proper device type support
                 const deviceInfo = window.simulation?.deviceTypes?.[this.type] || { 
@@ -9208,8 +9199,10 @@ class DynamicSimulation {
                 
                 // Device label
                 ctx.fillStyle = "#00C3B5";
-                ctx.font = "12px Arial";
-                ctx.fillText(this.label, this.x, this.y + 45);
+                ctx.font = "bold 14px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                ctx.fillText(this.label, this.x, this.y + 40);
             }
         };
 
@@ -10356,9 +10349,10 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         // Device label with improved styling
         if (this.showLabels !== false) { // Default to showing labels
             this.ctx.fillStyle = "#00C3B5";
-            this.ctx.font = "14px Arial";
+            this.ctx.font = "bold 14px Arial";
             this.ctx.textAlign = "center";
-            this.ctx.fillText(device.label, device.x, device.y + 50);
+            this.ctx.textBaseline = "top"; // Reset baseline for proper label positioning
+            this.ctx.fillText(device.label, device.x, device.y + 40);
         }
     }
     
@@ -10496,14 +10490,6 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
                 break;
             case 'save':
                 this.saveTopology();
-                break;
-            case 'zoom-in':
-                this.zoom = Math.min(3.0, this.zoom * 1.2);
-                this.renderCanvas();
-                break;
-            case 'zoom-out':
-                this.zoom = Math.max(0.2, this.zoom * 0.8);
-                this.renderCanvas();
                 break;
         }
     }
@@ -13070,7 +13056,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
     }
     
-    executeCommand(command) {
+    async executeCommand(command) {
         const output = document.getElementById('cli-output');
         if (!output || !this.currentDevice) return;
         
@@ -13082,8 +13068,49 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         commandDiv.innerHTML = `<span style="color: #00D9FF;">${this.currentDevice.label}></span> ${command}`;
         output.appendChild(commandDiv);
         
-        // Process command
-        const response = this.processCommand(command);
+        // Check if command should be sent to backend (ping, traceroute, etc.)
+        const parts = command.toLowerCase().split(' ');
+        const cmd = parts[0];
+        const requiresBackend = ['ping', 'traceroute', 'tracert'].includes(cmd);
+        
+        let response;
+        if (requiresBackend) {
+            // Send to backend for real validation
+            try {
+                const simulationId = this.simulation?.id || window.location.pathname.match(/\/simulation\/(\d+)/)?.[1];
+                const apiResponse = await fetch(`/api/simulation/${simulationId}/execute-cli`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        command: command,
+                        deviceId: this.currentDevice.id
+                    })
+                });
+                
+                if (apiResponse.ok) {
+                    const data = await apiResponse.json();
+                    response = data.response || data.error || 'Command executed';
+                    
+                    // Update CLI mode if returned from backend
+                    if (data.cliMode) {
+                        const deviceState = this.deviceStates[this.currentDevice.id];
+                        deviceState.configMode = (data.cliMode === 'config' || data.cliMode === 'interface_config');
+                        deviceState.interfaceMode = data.currentInterface || null;
+                    }
+                } else {
+                    response = '% Error: Unable to execute command on server';
+                }
+            } catch (error) {
+                console.error('CLI command error:', error);
+                response = '% Network error: Unable to reach server';
+            }
+        } else {
+            // Process command locally
+            response = this.processCommand(command);
+        }
+        
         const responseDiv = document.createElement('div');
         responseDiv.innerHTML = response;
         responseDiv.style.marginBottom = '10px';
@@ -13443,9 +13470,10 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
     }
     
     handlePingCommand(args) {
+        // This function is deprecated - ping commands are now handled by the backend server
+        // for accurate network validation. This is kept for backward compatibility only.
         if (!args.length) return 'Usage: ping [ip-address]';
-        const target = args[0];
-        return `PING ${target} (${target}) 56(84) bytes of data.\n64 bytes from ${target}: icmp_seq=1 ttl=64 time=1.23 ms\n64 bytes from ${target}: icmp_seq=2 ttl=64 time=1.15 ms\n\n--- ${target} ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss`;
+        return '% Ping command should be processed by server. Please ensure you are connected.';
     }
     
     initializeTroubleshootingMode() {
@@ -15622,27 +15650,6 @@ DynamicSimulation.prototype.showScoreChange = function(change, isPositive = true
             changeElement.parentNode.removeChild(changeElement);
         }
     }, 2000);
-};
-
-DynamicSimulation.prototype.toggleGrid = function() {
-    this.showGrid = !this.showGrid;
-    this.renderCanvas();
-};
-
-DynamicSimulation.prototype.zoomIn = function() {
-    this.zoom = Math.min(this.zoom * 1.2, 3.0);
-    this.renderCanvas();
-};
-
-DynamicSimulation.prototype.zoomOut = function() {
-    this.zoom = Math.max(this.zoom / 1.2, 0.3);
-    this.renderCanvas();
-};
-
-DynamicSimulation.prototype.resetZoom = function() {
-    this.zoom = 1.0;
-    this.panOffset = { x: 0, y: 0 };
-    this.renderCanvas();
 };
 
 // Enhanced Undo/Redo System (similar to troubleshoot.html advanced features)

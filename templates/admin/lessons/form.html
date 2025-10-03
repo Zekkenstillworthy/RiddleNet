@@ -52,11 +52,7 @@
 }
 
 /* Enhanced Main Content Layout */
-.main-content {
-    background: transparent;
-    min-height: calc(100vh - 70px);
-    padding: 32px;
-}
+/* NOTE: .main-content base styles are in admin/base.html - DO NOT override margin-left */
 
 .admin-container {
     max-width: 1200px;
@@ -429,7 +425,9 @@
         <!-- Enhanced Form Container with Admin Dashboard Styling -->
         <div class="lesson-form-container modern-card" style="background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);">
             <form method="POST" action="{{ url_for('lesson.update_lesson', lesson_id=lesson.id) if lesson else url_for('lesson.create_lesson', class_id=class_obj.id, module_id=module.id) }}">
-            
+                <!-- Hidden field to ensure module_id is always present -->
+                <input type="hidden" name="module_id" value="{{ module.id }}">
+                
             <!-- Basic Information -->
             <div class="form-section">
                 <h3 class="section-title">

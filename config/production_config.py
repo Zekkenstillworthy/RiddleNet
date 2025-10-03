@@ -45,7 +45,7 @@ class ProductionConfig:
     WTF_CSRF_TIME_LIMIT = 3600
     
     # Upload Configuration
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max upload
     UPLOAD_FOLDER = '/tmp/uploads'
     
     # Logging Configuration

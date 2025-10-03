@@ -2030,6 +2030,8 @@ def validate_simulation_topology(simulation_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@dynamic_sim_bp.route('/api/simulation/<int:simulation_id>/execute-cli', methods=['POST'])
 @user_login_required
 def execute_cli_command(simulation_id):
     """Execute CLI command and return response"""
@@ -2192,12 +2194,25 @@ def execute_cli_command(simulation_id):
                 fb.append({'type': 'cli_rule', 'device': device_id, 'command': command, 'message': rule_feedback, 'delta': rule_score_delta, 'ts': datetime.utcnow().isoformat()})
                 attempt.feedback_given = fb
         
+        # CRITICAL FIX: Mark session_data as modified so SQLAlchemy knows to save the device state changes
+        # This ensures CLI mode (interface config, etc.) persists between commands
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(attempt, 'session_data')
+        
         db.session.commit()
+        
+        # Get current device state to return CLI mode info for prompt updates
+        device_states = attempt.session_data.get('deviceStates', {})
+        current_device_state = device_states.get(device_id, {})
+        cli_mode = current_device_state.get('cli_mode', 'exec')
+        current_interface = current_device_state.get('current_interface')
         
         return jsonify({
             'success': True,
             'response': response,
-            'deviceId': device_id
+            'deviceId': device_id,
+            'cliMode': cli_mode,
+            'currentInterface': current_interface
         })
         
     except Exception as e:
@@ -2318,36 +2333,159 @@ def confirm_simulation(simulation_id):
                              token_valid=False,
                              token_data=None)
 
+def expand_interface_name(short_name):
+    """Expand abbreviated interface names to full names"""
+    short = short_name.lower()
+    
+    # Common Cisco interface abbreviations
+    if short.startswith('gi') or short.startswith('g'):
+        # GigabitEthernet: Gi0/0, G0/0 -> GigabitEthernet0/0
+        return 'gigabitethernet' + short[2:] if short.startswith('gi') else 'gigabitethernet' + short[1:]
+    elif short.startswith('fa') or short.startswith('f'):
+        # FastEthernet: Fa0/0, F0/0 -> FastEthernet0/0
+        return 'fastethernet' + short[2:] if short.startswith('fa') else 'fastethernet' + short[1:]
+    elif short.startswith('se') or short.startswith('s'):
+        # Serial: Se0/0, S0/0 -> Serial0/0
+        return 'serial' + short[2:] if short.startswith('se') else 'serial' + short[1:]
+    elif short.startswith('eth') or short.startswith('e'):
+        # Ethernet: Eth0/0, E0/0 -> Ethernet0/0
+        return 'ethernet' + short[3:] if short.startswith('eth') else 'ethernet' + short[1:]
+    elif short.startswith('te'):
+        # TenGigabitEthernet: Te0/0 -> TenGigabitEthernet0/0
+        return 'tengigabitethernet' + short[2:]
+    elif short.startswith('lo'):
+        # Loopback: Lo0 -> Loopback0
+        return 'loopback' + short[2:]
+    elif short.startswith('vlan'):
+        # VLAN: Vlan1 -> Vlan1 (keep as-is)
+        return short
+    else:
+        # If not recognized, return as-is (already lowercase)
+        return short
+
 def process_cli_command(command, device_id, session_data):
-    """Process CLI command and return appropriate response"""
+    """Process CLI command and return appropriate response with mode awareness"""
     try:
         parts = command.lower().split()
         if not parts:
             return "Invalid command"
         
         cmd = parts[0]
-        device_states = session_data.get('deviceStates', {})
-        device_state = device_states.get(device_id, {})
         
-        # Basic command processing
+        # CRITICAL FIX: Ensure deviceStates exists and get/create device_state properly
+        if 'deviceStates' not in session_data:
+            session_data['deviceStates'] = {}
+        
+        device_states = session_data['deviceStates']
+        
+        # If device doesn't exist yet, create it with default state
+        if device_id not in device_states:
+            device_states[device_id] = {}
+        
+        # Get reference to the device state (not a copy!)
+        device_state = device_states[device_id]
+        
+        # Get current CLI mode from device state
+        cli_mode = device_state.get('cli_mode', 'exec')
+        current_interface = device_state.get('current_interface', None)
+        
+        # Handle mode-specific commands
+        if cli_mode == 'interface_config' and current_interface:
+            # In interface configuration mode
+            if cmd == 'ip' and len(parts) >= 4 and parts[1] == 'address':
+                # ip address <IP> <MASK>
+                ip_addr = parts[2]
+                subnet_mask = parts[3]
+                return handle_interface_ip_config(device_state, device_id, current_interface, ip_addr, subnet_mask, session_data)
+            elif cmd == 'no' and len(parts) >= 2 and parts[1] == 'shutdown':
+                return handle_interface_no_shutdown(device_state, device_id, current_interface, session_data)
+            elif cmd == 'shutdown':
+                return handle_interface_shutdown(device_state, device_id, current_interface, session_data)
+            elif cmd == 'exit':
+                device_state['cli_mode'] = 'config'
+                device_state['current_interface'] = None
+                return "Exiting interface configuration mode"
+            elif cmd == 'end':
+                device_state['cli_mode'] = 'exec'
+                device_state['current_interface'] = None
+                return "Exiting to exec mode"
+        
+        # Global configuration mode
+        if cli_mode == 'config':
+            if (cmd == 'interface' or cmd == 'int') and len(parts) >= 2:
+                # Expand abbreviated interface names (e.g., G0/0 -> GigabitEthernet0/0)
+                interface_name = expand_interface_name(parts[1])
+                device_state['cli_mode'] = 'interface_config'
+                device_state['current_interface'] = interface_name
+                return f"Entering interface configuration mode for {interface_name}..."
+            elif cmd == 'exit':
+                device_state['cli_mode'] = 'exec'
+                return "Exiting configuration mode"
+            elif cmd == 'end':
+                device_state['cli_mode'] = 'exec'
+                return "Exiting to exec mode"
+        
+        # Exec mode commands
         if cmd == 'show':
             return handle_show_command(parts[1:], device_state, device_id)
         elif cmd == 'ping':
-            return handle_ping_command(parts[1:], device_states)
-        elif cmd == 'configure':
-            return "Entering global configuration mode"
-        elif cmd == 'interface':
+            # Extract topology data for connectivity validation
+            topology_data = session_data.get('topology') or session_data.get('networkTopology')
+            return handle_ping_command(parts[1:], device_states, topology_data)
+        elif (cmd == 'configure' or cmd == 'conf') and len(parts) >= 2 and (parts[1] == 'terminal' or parts[1] == 't'):
+            device_state['cli_mode'] = 'config'
+            return "Entering configuration mode..."
+        elif cmd == 'interface' or cmd == 'int':
             return handle_interface_command(parts[1:], device_state)
+        elif cmd == 'ip' and len(parts) >= 2 and parts[1] == 'address':
+            # Helpful error message when IP config attempted in wrong mode
+            return """% Invalid command. IP address configuration must be done in interface configuration mode.
+
+To configure an IP address, use:
+  configure terminal
+  interface <interface-name>
+  ip address <IP> <MASK>
+  no shutdown
+  exit
+  exit
+
+Example:
+  configure terminal
+  interface GigabitEthernet0/0
+  ip address 192.168.1.81 255.255.255.0
+  no shutdown"""
         elif cmd == 'ip':
             return handle_ip_command(parts[1:], device_state)
         elif cmd == 'help' or cmd == '?':
             return get_help_text()
         elif cmd == 'exit':
-            return "Exiting configuration mode"
+            return "Goodbye!"
+        elif cmd == 'enable' or cmd == 'en':
+            # User is already in privileged mode in this simulator
+            return ""  # Silent success, already privileged
+        elif cmd == 'disable':
+            return "Entering User EXEC mode"
+        elif cmd == 'write':
+            if len(parts) >= 2 and parts[1] == 'memory':
+                return "Building configuration...\nConfiguration saved to NVRAM\n[OK]"
+            else:
+                return "Building configuration...\nConfiguration saved to NVRAM\n[OK]"
+        elif cmd == 'copy' and len(parts) >= 3:
+            if parts[1] == 'running-config' and parts[2] == 'startup-config':
+                return "Building configuration...\nConfiguration saved to NVRAM\n[OK]"
+            else:
+                return f"% Invalid copy command"
+        elif cmd == 'end':
+            device_state['cli_mode'] = 'exec'
+            return "Exiting to exec mode"
+        elif cmd == 'reload':
+            return "% Reload command not available in simulation mode"
         else:
-            return f"% Invalid command: {command}"
+            return f"% Invalid command: {command}\nType 'help' for available commands."
             
     except Exception as e:
+        import logging
+        logging.error(f"CLI Command Error: {str(e)}")
         return f"Command processing error: {str(e)}"
 
 def handle_show_command(args, device_state, device_id):
@@ -2441,32 +2579,95 @@ def generate_arp_table(device_state):
     
     return output
 
-def handle_ping_command(args, device_states):
-    """Handle ping command with realistic output"""
+def check_physical_connectivity(device_states, target_device_id, topology_data):
+    """MVP: Check if target device has physical wire connections
+    Returns True if device is connected via wire, False otherwise
+    """
+    if not topology_data:
+        # If no topology data, assume connectivity for backward compatibility
+        return True
+    
+    connections = topology_data.get('connections', [])
+    
+    # Check if target device has any active connections
+    for connection in connections:
+        from_device = connection.get('from', {}).get('deviceId') or connection.get('from')
+        to_device = connection.get('to', {}).get('deviceId') or connection.get('to')
+        
+        # Check if target device is part of this connection
+        if target_device_id in [from_device, to_device]:
+            # Verify both connected devices have interfaces up
+            other_device = to_device if from_device == target_device_id else from_device
+            
+            # Check if both devices have operational interfaces
+            target_has_up_interface = any(
+                interface.get('status') == 'up' 
+                for interface in device_states.get(target_device_id, {}).get('interfaces', {}).values()
+            )
+            
+            other_has_up_interface = any(
+                interface.get('status') == 'up' 
+                for interface in device_states.get(other_device, {}).get('interfaces', {}).values()
+            )
+            
+            if target_has_up_interface and other_has_up_interface:
+                return True
+    
+    return False
+
+
+def handle_ping_command(args, device_states, topology_data=None):
+    """MVP: Handle ping command with accurate connectivity validation
+    
+    Validates:
+    1. Device existence
+    2. Interface status
+    3. Physical wire connections
+    """
     if not args:
         return "% Incomplete command."
     
     target = args[0]
     
-    # Validate IP address format
+    # Step 1: Validate IP address format
     if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', target):
         return f"% Invalid IP address: {target}"
     
-    # Check if target device exists and is reachable
-    target_device = None
+    # DEBUG: Log available devices and IPs
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🔍 MVP PING DEBUG: Looking for target IP: {target}")
+    logger.info(f"🔍 Device states available: {list(device_states.keys())}")
+    for dev_id, dev_state in device_states.items():
+        interfaces = dev_state.get('interfaces', {})
+        for int_name, int_config in interfaces.items():
+            ip = int_config.get('ip_address') or int_config.get('ipAddress')
+            logger.info(f"   - Device {dev_id}, Interface {int_name}: IP = {ip}, Status = {int_config.get('status')}")
+    
+    # Step 2: Check if target device exists
+    target_device_id = None
+    target_interface = None
+    
     for device_id, device_state in device_states.items():
         interfaces = device_state.get('interfaces', {})
         for interface_name, interface_config in interfaces.items():
-            if interface_config.get('ip_address') == target:
-                target_device = device_id
+            # Check both 'ip_address' and 'ipAddress' (camelCase)
+            ip_addr = interface_config.get('ip_address') or interface_config.get('ipAddress')
+            if ip_addr == target:
+                target_device_id = device_id
+                target_interface = interface_name
+                logger.info(f"✅ Found target device: {device_id}, interface: {interface_name}")
                 break
-        if target_device:
+        if target_device_id:
             break
     
-    if not target_device:
-        # Check if it's a known network address (gateway, DNS, etc.)
+    # Step 3: Handle non-existent device
+    if not target_device_id:
+        logger.warning(f"❌ Target device NOT FOUND for IP: {target}")
+        logger.info(f"📋 Available IPs in topology: {[int_cfg.get('ip_address') or int_cfg.get('ipAddress') for dev in device_states.values() for int_cfg in dev.get('interfaces', {}).values()]}")
+        
+        # Check for well-known external addresses
         if target in ['8.8.8.8', '1.1.1.1', '208.67.222.222']:
-            # External address - simulate external connectivity
             import random
             delay = random.randint(15, 35)
             return f"""
@@ -2475,38 +2676,132 @@ Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
 !!!!!
 Success rate is 100 percent (5/5), round-trip min/avg/max = {delay-5}/{delay}/{delay+5} ms
 """
-        else:
-            # Target not found
+        
+        # Device not found in topology - provide helpful debug info
+        available_ips = []
+        for dev in device_states.values():
+            for int_cfg in dev.get('interfaces', {}).values():
+                ip = int_cfg.get('ip_address') or int_cfg.get('ipAddress')
+                if ip:
+                    available_ips.append(ip)
+        
+        debug_msg = f"\n[DEBUG: Available IPs: {', '.join(available_ips) if available_ips else 'None configured'}]" if available_ips else ""
+        
+        return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+U.U.U
+Success rate is 0 percent (0/5)
+% Destination host unreachable{debug_msg}"""
+    
+    # Step 4: Check if target interface is up
+    target_state = device_states.get(target_device_id, {})
+    target_interfaces = target_state.get('interfaces', {})
+    target_int_config = target_interfaces.get(target_interface, {})
+    
+    if target_int_config.get('status') != 'up':
+        return f"""
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+% Destination host unreachable - interface is down"""
+    
+    # Step 5: Check physical connectivity (wire connection)
+    if topology_data:
+        has_physical_connection = check_physical_connectivity(
+            device_states, 
+            target_device_id, 
+            topology_data
+        )
+        
+        if not has_physical_connection:
             return f"""
 Type escape sequence to abort.
 Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
 .....
 Success rate is 0 percent (0/5)
-"""
+% No physical connection to destination"""
     
-    # Check connectivity between devices (simplified routing check)
-    target_state = device_states.get(target_device, {})
-    target_interfaces = target_state.get('interfaces', {})
-    
-    # Check if target device is up
-    target_up = any(interface.get('status') == 'up' for interface in target_interfaces.values())
-    
-    if target_up:
-        import random
-        delay = random.randint(1, 8)
-        return f"""
+    # Step 6: Successful ping
+    import random
+    delay = random.randint(1, 8)
+    return f"""
 Type escape sequence to abort.
 Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
 !!!!!
 Success rate is 100 percent (5/5), round-trip min/avg/max = {delay}/{delay+1}/{delay+3} ms
 """
-    else:
-        return f"""
-Type escape sequence to abort.
-Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
-.....
-Success rate is 0 percent (0/5)
-"""
+
+def handle_interface_ip_config(device_state, device_id, interface_name, ip_addr, subnet_mask, session_data):
+    """Configure IP address on interface"""
+    import re
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Validate IP address format
+    if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', ip_addr):
+        return f"% Invalid IP address: {ip_addr}"
+    
+    # Validate subnet mask format
+    if not re.match(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$', subnet_mask):
+        return f"% Invalid subnet mask: {subnet_mask}"
+    
+    # Get or create interfaces dict
+    if 'interfaces' not in device_state:
+        device_state['interfaces'] = {}
+    
+    if interface_name not in device_state['interfaces']:
+        device_state['interfaces'][interface_name] = {}
+    
+    # Configure the IP address
+    device_state['interfaces'][interface_name]['ip_address'] = ip_addr
+    device_state['interfaces'][interface_name]['ipAddress'] = ip_addr  # Also set camelCase for frontend
+    device_state['interfaces'][interface_name]['subnet_mask'] = subnet_mask
+    device_state['interfaces'][interface_name]['subnetMask'] = subnet_mask
+    
+    logger.info(f"✅ Configured {interface_name} on {device_id}: IP={ip_addr}, Mask={subnet_mask}")
+    
+    return f"IP address {ip_addr} {subnet_mask} configured on {interface_name}"
+
+
+def handle_interface_no_shutdown(device_state, device_id, interface_name, session_data):
+    """Bring interface up (no shutdown)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if 'interfaces' not in device_state:
+        device_state['interfaces'] = {}
+    
+    if interface_name not in device_state['interfaces']:
+        device_state['interfaces'][interface_name] = {}
+    
+    device_state['interfaces'][interface_name]['status'] = 'up'
+    device_state['interfaces'][interface_name]['protocol'] = 'up'
+    
+    logger.info(f"✅ Interface {interface_name} on {device_id} is now UP")
+    
+    return f"{interface_name} is now administratively up"
+
+
+def handle_interface_shutdown(device_state, device_id, interface_name, session_data):
+    """Shutdown interface"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if 'interfaces' not in device_state:
+        device_state['interfaces'] = {}
+    
+    if interface_name not in device_state['interfaces']:
+        device_state['interfaces'][interface_name] = {}
+    
+    device_state['interfaces'][interface_name]['status'] = 'down'
+    device_state['interfaces'][interface_name]['protocol'] = 'down'
+    
+    logger.info(f"⚠️ Interface {interface_name} on {device_id} is now DOWN")
+    
+    return f"{interface_name} is now administratively down"
+
 
 def handle_interface_command(args, device_state):
     """Handle interface configuration commands"""

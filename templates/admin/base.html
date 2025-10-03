@@ -41,7 +41,6 @@
         
         /* Layout */
         --sidebar-width: 280px;
-        --sidebar-collapsed-width: 80px;
         --transition-speed: 0.4s;
         --border-radius: 12px;
         --shadow-lg: 0 25px 50px -12px rgba(26, 35, 126, 0.8);
@@ -64,6 +63,8 @@
         min-height: 100vh;
         overflow-x: hidden;
         position: relative;
+        margin: 0;
+        padding: 0;
     }
 
     /* Network Grid Background Animation */
@@ -97,10 +98,6 @@
         backdrop-filter: blur(20px);
         border-right: 1px solid var(--border-color);
         color: var(--text-primary);
-        transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1), 
-                    background var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
-                    border-right var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
-                    box-shadow var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 100;
         overflow: hidden;
         box-shadow: var(--shadow-lg);
@@ -314,117 +311,13 @@
     #sidebar ul li a[href*="user"] i::before { content: "👥"; }
     #sidebar ul li a[href*="score"] i::before { content: "🏆"; }
     #sidebar ul li a[href*="audit"] i::before { content: "🔍"; }
-    /* Sidebar Collapsed State */
-    body.sidebar-collapsed #sidebar {
-        width: var(--sidebar-collapsed-width);
-    }
 
-    body.sidebar-collapsed .main-content {
-        margin-left: var(--sidebar-collapsed-width);
-        width: calc(100% - var(--sidebar-collapsed-width));
-    }
-
-    #sidebar.collapsed {
-        width: var(--sidebar-collapsed-width);
-    }
-
-    #sidebar.collapsed .logo-name,
-    #sidebar.collapsed ul li a span,
-    #sidebar.collapsed .dropdown-toggle::after {
-        opacity: 0;
-        width: 0;
-        overflow: hidden;
-    }
-
-    #sidebar.collapsed .logo-icon {
-        margin-right: 0;
-    }
-
-    #sidebar.collapsed ul li a {
-        justify-content: center;
-        padding: 14px 8px;
-    }
-
-    #sidebar.collapsed ul li a i {
-        margin-right: 0;
-    }
-
-    /* Sidebar Toggle Button Styles */
-    .sidebar-toggle {
-        position: absolute;
-        right: -18px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 36px;
-        height: 36px;
-        background: var(--surface);
-        border: 3px solid var(--cyber-glow);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all var(--transition-speed) ease;
-        z-index: 300;
-        box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
-        animation: pulseGlow 3s ease-in-out infinite;
-    }
-
-    @keyframes pulseGlow {
-        0%, 100% {
-            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
-        }
-        50% {
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5), 0 0 0 4px rgba(0, 212, 255, 0.2);
-        }
-    }
-
-    .sidebar-toggle:hover {
-        background: var(--cyber-glow);
-        border-color: white;
-        box-shadow: 0 0 25px rgba(0, 212, 255, 0.6), 0 0 0 6px rgba(0, 212, 255, 0.3);
-        transform: translateY(-50%) scale(1.15);
-        animation: none;
-    }
-
-    .sidebar-toggle i {
-        font-size: 14px;
-        color: var(--cyber-glow);
-        transition: all var(--transition-speed) ease;
-        font-weight: 900;
-    }
-
-    .sidebar-toggle:hover i {
-        color: white;
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-    }
-
-    #sidebar.collapsed .sidebar-toggle {
-        right: -18px;
-        background: var(--primary-color);
-        border-color: var(--cyber-glow);
-    }
-
-    #sidebar.collapsed .sidebar-toggle i {
-        transform: rotate(180deg);
-        color: var(--cyber-glow);
-    }
-
-    #sidebar.collapsed .sidebar-toggle:hover {
-        background: var(--cyber-glow);
-        border-color: white;
-    }
-
-    #sidebar.collapsed .sidebar-toggle:hover i {
-        color: white;
-    }
 
     .main-content {
         margin-left: var(--sidebar-width);
         padding: 32px;
         width: calc(100% - var(--sidebar-width));
         min-height: 100vh;
-        transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         background: transparent;
     }
@@ -454,54 +347,11 @@
         }
     }
 
-    /* Mobile Toggle Button */
+    /* Mobile Responsive */
     @media (max-width: 768px) {
-        .sidebar-toggle {
-            display: none;
-        }
-        
-        #sidebar {
-            width: var(--sidebar-collapsed-width);
-            background: var(--surface);
-        }
-
-        #sidebar .logo-name,
-        #sidebar ul li a span {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        #sidebar .logo-icon {
-        box-shadow: var(--shadow-glow);
-        transform: scale(1.1);        }
-        
-        #sidebar .dropdown-toggle::after {
-            opacity: 0;
-        }
-        
-        /* Mobile Dropdown */
-        #sidebar .dropdown-menu.show {
-            position: absolute;
-            left: var(--sidebar-collapsed-width);
-            top: 0;
-            width: 220px;
-            z-index: 1000;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
-            backdrop-filter: blur(20px);
-        }
-        
-        #sidebar .dropdown-menu li a span {
-            opacity: 1;
-            width: auto;
-        }
-
         .main-content {
-            margin-left: var(--sidebar-collapsed-width);
-            width: calc(100% - var(--sidebar-collapsed-width));
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
             padding: 20px;
         }
     }
@@ -550,15 +400,10 @@
 {% block head %}{% endblock %}
 </head>
 
-<body>
+<body data-page-type="admin">
     {% block body %}
     {% block sidebar %}
     <nav id="sidebar">
-        <!-- Sidebar Toggle Button -->
-        <div class="sidebar-toggle" id="sidebarToggle">
-            <i class="fas fa-chevron-left"></i>
-        </div>
-        
         <div class="logo-details">
             <div class="logo-icon">
             <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" style="width: 60px; height: 60px;">
@@ -732,35 +577,8 @@
         
         // Initialize dropdown state and add network-themed interactions
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarElement = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
             const classesLink = document.querySelector('#sidebar li:nth-child(2) a.dropdown-toggle');
             const classContentLink = document.querySelector('#sidebar li:nth-child(4) a.dropdown-toggle');
-            
-            // Sidebar toggle functionality
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebarElement.classList.toggle('collapsed');
-                    document.body.classList.toggle('sidebar-collapsed');
-                    
-                    // Update tooltip/aria-label
-                    const isCollapsed = sidebarElement.classList.contains('collapsed');
-                    sidebarToggle.setAttribute('title', isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar');
-                    
-                    // Store preference in localStorage
-                    localStorage.setItem('adminSidebarCollapsed', isCollapsed);
-                });
-            }
-            
-            // Restore sidebar state from localStorage
-            const savedState = localStorage.getItem('adminSidebarCollapsed');
-            if (savedState === 'true') {
-                sidebarElement.classList.add('collapsed');
-                document.body.classList.add('sidebar-collapsed');
-                if (sidebarToggle) {
-                    sidebarToggle.setAttribute('title', 'Expand Sidebar');
-                }
-            }
             
             // Check if any submenu items are active for Classes dropdown
             const isSubmenuActive = classesDropdownItems.some(item => 
@@ -840,17 +658,68 @@
             `;
             statusIndicator.title = 'Network Status: Connected';
             sidebar.appendChild(statusIndicator);
+            
+            // DEBUG: Comprehensive layout measurements
+            const mainContent = document.querySelector('.main-content');
+            console.log('=== ADMIN LAYOUT DEBUG ===');
+            console.log('Sidebar Width:', sidebar.offsetWidth + 'px');
+            console.log('Sidebar Computed Width:', window.getComputedStyle(sidebar).width);
+            console.log('Main Content Margin Left:', window.getComputedStyle(mainContent).marginLeft);
+            console.log('Main Content Margin Top:', window.getComputedStyle(mainContent).marginTop);
+            console.log('Main Content Padding:', window.getComputedStyle(mainContent).padding);
+            console.log('Main Content Offset Left:', mainContent.offsetLeft + 'px');
+            console.log('Main Content Offset Top:', mainContent.offsetTop + 'px');
+            console.log('Body has auto-landscape-active:', document.body.classList.contains('auto-landscape-active'));
+            console.log('Body data-page-type:', document.body.getAttribute('data-page-type'));
+            
+            // Check for empty elements before main-content
+            console.log('\n--- Checking for empty elements ---');
+            const mainContentParent = mainContent.parentElement;
+            console.log('Main Content Parent:', mainContentParent.tagName);
+            const siblings = Array.from(mainContentParent.children);
+            const mainContentIndex = siblings.indexOf(mainContent);
+            console.log('Elements before main-content:', mainContentIndex);
+            
+            siblings.slice(0, mainContentIndex).forEach((el, idx) => {
+                const hasContent = el.textContent.trim().length > 0 || el.children.length > 0;
+                const styles = window.getComputedStyle(el);
+                console.log(`  [${idx}] ${el.tagName}:`, {
+                    isEmpty: !hasContent,
+                    height: el.offsetHeight + 'px',
+                    margin: styles.margin,
+                    padding: styles.padding,
+                    display: styles.display
+                });
+                
+                // Highlight empty spacer elements
+                if (!hasContent && el.offsetHeight > 10) {
+                    el.style.border = '3px dashed orange';
+                    console.log('  ⚠️ EMPTY SPACER DETECTED - highlighted in orange!');
+                }
+            });
+            
+            console.log('\n--- Final Check ---');
+            console.log('Expected: Sidebar width should equal main-content margin-left');
+            console.log('Gap/Whitespace:', mainContent.offsetLeft - sidebar.offsetWidth + 'px');
+            
+            // VISUAL DEBUG: Add colored borders
+            if (mainContent.offsetLeft - sidebar.offsetWidth !== 0) {
+                sidebar.style.border = '3px solid red';
+                mainContent.style.border = '3px solid yellow';
+                console.log('⚠️ HORIZONTAL SPACING ISSUE - Check red/yellow borders!');
+            }
+            
+            // Check vertical alignment
+            if (mainContent.offsetTop > 10) {
+                mainContent.style.borderTop = '5px solid cyan';
+                console.log('⚠️ VERTICAL SPACING ISSUE - Main content pushed down by', mainContent.offsetTop + 'px');
+                console.log('Check for cyan border at top of main-content!');
+            }
+            
+            console.log('========================');
         });
 
-        // Add keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'b') {
-                e.preventDefault();
-                const sidebar = document.getElementById('sidebar');
-                const isCollapsed = sidebar.style.width === '80px';
-                sidebar.style.width = isCollapsed ? '280px' : '80px';
-            }
-        });
+
     </script>
     
     <!-- Admin WebSocket Enabler - Load First -->

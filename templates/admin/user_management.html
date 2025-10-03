@@ -2198,7 +2198,9 @@
             
             // TOTP functionality in the user view
             function updateTotpSection(userId) {
-                fetch(`/users/get_totp_info/${userId}`)
+                fetch(`/users/get_totp_info/${userId}`, {
+                    credentials: 'same-origin'
+                })
                     .then(response => response.json())
                     .then(data => {
                         const totpStatus = document.getElementById('totpStatus');
@@ -2284,6 +2286,7 @@
                 document.getElementById('enableTotpBtn').onclick = function() {
                     fetch(`/users/generate_totp/${userId}`, {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -2308,6 +2311,7 @@
                     if (confirm('Are you sure you want to reset this user\'s TOTP key? They will need to reconfigure their authenticator app.')) {
                         fetch(`/users/generate_totp/${userId}`, {
                             method: 'POST',
+                            credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'
@@ -2333,6 +2337,7 @@
                     if (confirm('Are you sure you want to disable two-factor authentication for this user?')) {
                         fetch(`/users/disable_totp/${userId}`, {
                             method: 'POST',
+                            credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest'
@@ -2481,6 +2486,7 @@
                 // Send the form data to the server
                 fetch(formAction, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     body: formData
                 })
                 .then(response => {
@@ -2511,28 +2517,35 @@
                 const adminId = this.dataset.adminId;
                 const isAdmin = this.dataset.isAdmin === 'true';
                 
-                // Create a form to submit the request as POST
-                const form = document.createElement('form');
-                form.method = 'POST';
+                // Use fetch API to delete user
+                const url = isAdmin ? `/users/admins/delete/${adminId}` : `/users/delete/${userId}`;
                 
-                if (isAdmin) {
-                    form.action = `/users/admins/delete/${adminId}`;
-                } else {
-                    form.action = `/users/delete/${userId}`;
-                }
-                
-                // Add CSRF token if your Flask app uses it
-                // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                // const csrfInput = document.createElement('input');
-                // csrfInput.type = 'hidden';
-                // csrfInput.name = 'csrf_token';
-                // csrfInput.value = csrfToken;
-                // form.appendChild(csrfInput);
-                
-                document.body.appendChild(form);
-                form.submit();
-                
-                modals.delete.style.display = 'none';
+                fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        alert(data.message);
+                        // Reload the page to refresh the user list
+                        window.location.reload();
+                    } else {
+                        // Show error message
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                    alert('An error occurred while deleting the user');
+                })
+                .finally(() => {
+                    modals.delete.style.display = 'none';
+                });
             });
          
             // "Edit this user" button in view modal
@@ -2627,6 +2640,7 @@
                 // Send the form data to the server
                 fetch(formAction, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     body: formData
                 })
                 .then(response => {
@@ -2724,34 +2738,7 @@
                 modals.view.style.display = 'flex';
             }
             
-            // Update the confirmDeleteUser click handler to handle both users and admins
-            document.getElementById('confirmDeleteUser').addEventListener('click', function() {
-                const userId = this.dataset.userId;
-                const adminId = this.dataset.adminId;
-                const isAdmin = this.dataset.isAdmin === 'true';
-                
-                // Create a form to submit the request as POST
-                const form = document.createElement('form');
-                form.method = 'POST';
-                
-                if (isAdmin) {
-                    form.action = `/users/admins/delete/${adminId}`;
-                } else {
-                    form.action = `/users/delete/${userId}`;
-                }
-                
-                // Add CSRF token if your Flask app uses it
-                // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                // const csrfInput = document.createElement('input');
-                // csrfInput.type = 'hidden';
-                // csrfInput.name = 'csrf_token';
-                // csrfInput.value = csrfToken;
-                // form.appendChild(csrfInput);
-                
-                document.body.appendChild(form);
-                form.submit();
-                  modals.delete.style.display = 'none';
-            });
+            // Removed duplicate event listener - already handled above
         });
     </script>
 
@@ -2815,6 +2802,7 @@
             
             fetch(form.action, {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: formData
             })
             .then(response => {

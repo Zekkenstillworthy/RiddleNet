@@ -477,6 +477,11 @@ class NetworkSimulationEngine {
             device2: device2,
             port1: availablePort1,
             port2: availablePort2,
+            // Add backward compatibility properties for ping system
+            from: device1.id,
+            to: device2.id,
+            fromInterface: availablePort1,
+            toInterface: availablePort2,
             type: 'ethernet',
             status: 'up',
             selected: false
@@ -777,9 +782,6 @@ class NetworkSimulationEngine {
         this.needsRender = true;
         
         console.log('📱 Selected device:', device.id, '(Double-click to open MVP Device Interfaces)');
-        
-        // Optional: Show a brief notification or tooltip about double-click
-        this.showDeviceSelectionHint(device);
     }
     
     selectConnection(connection) {
@@ -2630,8 +2632,20 @@ class NetworkSimulationEngine {
     }
     
     saveTopology() {
+        // Collect device configurations from userDeviceConfigurator
+        const configurator = window.userDeviceConfigurator || window.enhancedDeviceConfigurator || window.deviceConfigurator;
+        const devicesWithConfig = this.devices.map(device => {
+            const config = configurator?.getDeviceConfiguration?.(device.id) || 
+                         configurator?.networkConfigs?.get(device.id) || {};
+            
+            return {
+                ...device,
+                config: config
+            };
+        });
+        
         const topology = {
-            devices: this.devices,
+            devices: devicesWithConfig,
             connections: this.connections,
             metadata: {
                 created: new Date().toISOString(),
@@ -2640,19 +2654,138 @@ class NetworkSimulationEngine {
             }
         };
         
-        console.log('💾 Saving topology:', topology);
+        console.log('💾 Saving topology with configurations:', topology);
         
         // Save to localStorage as backup
         localStorage.setItem('network_topology_backup', JSON.stringify(topology));
         
-        // TODO: Send to backend API
+        // Send to backend API if simulation ID exists
+        const simulationId = this.getSimulationId();
+        if (simulationId) {
+            this.saveTopologyToBackend(simulationId, topology);
+        } else {
+            console.warn('⚠️ No simulation ID found - topology not saved to database');
+        }
+        
         return topology;
+    }
+    
+    /**
+     * Get simulation ID from URL or window
+     */
+    getSimulationId() {
+        // Try to get from URL path
+        const pathParts = window.location.pathname.split('/');
+        const simIndex = pathParts.indexOf('simulation');
+        if (simIndex !== -1 && pathParts[simIndex + 1]) {
+            return parseInt(pathParts[simIndex + 1]);
+        }
+        
+        // Try to get from window variable
+        if (window.simulationId) {
+            return window.simulationId;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Save topology to backend database
+     */
+    async saveTopologyToBackend(simulationId, topology) {
+        try {
+            console.log(`📤 Sending topology to backend for simulation ${simulationId}...`);
+            
+            const response = await fetch(`/dynamic/api/simulation/${simulationId}/network-state`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    topology: topology,
+                    deviceStates: this.collectDeviceStates()
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Topology saved to database successfully:', result);
+                
+                // Show success notification if available
+                if (window.showNotification) {
+                    window.showNotification('Topology saved to database', 'success');
+                }
+                
+                return result;
+            } else {
+                const error = await response.json();
+                console.error('❌ Failed to save topology to database:', error);
+                
+                // Show error notification if available
+                if (window.showNotification) {
+                    window.showNotification('Failed to save topology: ' + (error.error || 'Unknown error'), 'error');
+                }
+                
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Error saving topology to backend:', error);
+            
+            // Show error notification if available
+            if (window.showNotification) {
+                window.showNotification('Network error while saving topology', 'error');
+            }
+            
+            return null;
+        }
+    }
+    
+    /**
+     * Collect current device states for backend
+     */
+    collectDeviceStates() {
+        const configurator = window.userDeviceConfigurator || window.enhancedDeviceConfigurator || window.deviceConfigurator;
+        const deviceStates = {};
+        
+        for (const device of this.devices) {
+            const config = configurator?.getDeviceConfiguration?.(device.id) || 
+                         configurator?.networkConfigs?.get(device.id) || {};
+            
+            deviceStates[device.id] = {
+                type: device.type,
+                label: device.label || device.name,
+                position: { x: device.x, y: device.y },
+                interfaces: config.interfaces || {},
+                cliState: device.cliState || { mode: 'exec', currentInterface: null },
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        return deviceStates;
     }
     
     loadTopology(topology) {
         if (topology.devices && topology.connections) {
             this.devices = topology.devices;
             this.connections = topology.connections;
+            
+            // Ensure all connections have backward compatibility properties
+            this.connections.forEach(conn => {
+                // Add missing properties for ping system compatibility
+                if (conn.device1 && !conn.from) {
+                    conn.from = conn.device1.id || conn.device1;
+                }
+                if (conn.device2 && !conn.to) {
+                    conn.to = conn.device2.id || conn.device2;
+                }
+                if (conn.port1 && !conn.fromInterface) {
+                    conn.fromInterface = conn.port1;
+                }
+                if (conn.port2 && !conn.toInterface) {
+                    conn.toInterface = conn.port2;
+                }
+            });
+            
             this.deviceIdCounter = Math.max(...this.devices.map(d => 
                 parseInt(d.id.split('_')[1]) || 0
             )) + 1;
@@ -2988,10 +3121,20 @@ class NetworkSimulationEngine {
         const device = this.currentConfigDevice;
         const hostname = device?.label || device?.name || 'Device';
         
+        // Get current CLI mode and prompt
+        const cliState = device.cliState || { mode: 'exec', currentInterface: null };
+        let prompt = `${hostname}`;
+        if (cliState.mode === 'config') {
+            prompt += '(config)';
+        } else if (cliState.mode === 'interface_config') {
+            prompt += '(config-if)';
+        }
+        prompt += '# ';
+        
         // Add command to output
         const commandLine = document.createElement('div');
         commandLine.className = 'mvp-cli-command-line';
-        commandLine.innerHTML = `<span class="mvp-cli-prompt">${hostname}#</span> ${command}`;
+        commandLine.innerHTML = `<span class="mvp-cli-prompt">${prompt}</span>${command}`;
         outputDiv.appendChild(commandLine);
         
         // Process command and show response
@@ -3001,6 +3144,42 @@ class NetworkSimulationEngine {
             responseLine.className = 'mvp-cli-response';
             responseLine.innerHTML = response.replace(/\n/g, '<br>');
             outputDiv.appendChild(responseLine);
+        }
+        
+        // CRITICAL: Persist configuration changes to device configurator
+        // Support multiple configurator implementations
+        if (device.interfaces) {
+            // Try enhanced-device-configurator first
+            if (window.enhancedDeviceConfigurator && typeof window.enhancedDeviceConfigurator.setDeviceConfiguration === 'function') {
+                const config = window.enhancedDeviceConfigurator.getDeviceConfiguration(device.id) || {};
+                config.interfaces = device.interfaces;
+                window.enhancedDeviceConfigurator.setDeviceConfiguration(device.id, config);
+                console.log('✅ Configuration saved via enhancedDeviceConfigurator');
+            }
+            // Try user-device-configurator
+            else if (window.userDeviceConfigurator) {
+                const existing = window.userDeviceConfigurator.getDeviceConfiguration(device.id) || {};
+                existing.interfaces = device.interfaces;
+                window.userDeviceConfigurator.networkConfigs.set(device.id, existing);
+                console.log('✅ Configuration saved via userDeviceConfigurator');
+            }
+            // Try window.deviceConfigurator
+            else if (window.deviceConfigurator) {
+                const config = window.deviceConfigurator.getDeviceConfiguration?.(device.id) || {};
+                config.interfaces = device.interfaces;
+                if (typeof window.deviceConfigurator.setDeviceConfiguration === 'function') {
+                    window.deviceConfigurator.setDeviceConfiguration(device.id, config);
+                } else if (typeof window.deviceConfigurator.saveDeviceConfiguration === 'function') {
+                    window.deviceConfigurator.saveDeviceConfiguration(device.id, config);
+                }
+                console.log('✅ Configuration saved via deviceConfigurator');
+            }
+            // Fallback: store directly on device object
+            else {
+                device.config = device.config || {};
+                device.config.interfaces = device.interfaces;
+                console.log('⚠️ No configurator found - storing on device object');
+            }
         }
         
         // Scroll to bottom
@@ -3015,6 +3194,79 @@ class NetworkSimulationEngine {
         const device = this.currentConfigDevice;
         const hostname = device?.label || device?.name || 'Device';
         
+        // Initialize CLI state if not exists
+        if (!device.cliState) {
+            device.cliState = { mode: 'exec', currentInterface: null };
+        }
+        const cliState = device.cliState;
+        
+        // Handle mode-specific commands
+        if (cliState.mode === 'interface_config' && cliState.currentInterface) {
+            // In interface configuration mode
+            if (cmd.startsWith('ip address ')) {
+                const parts = command.split(' ');
+                if (parts.length >= 4) {
+                    const ipAddr = parts[2];
+                    const subnetMask = parts[3];
+                    
+                    // Initialize interfaces if not exists
+                    if (!device.interfaces) device.interfaces = {};
+                    if (!device.interfaces[cliState.currentInterface]) {
+                        device.interfaces[cliState.currentInterface] = {};
+                    }
+                    
+                    // Configure IP address
+                    device.interfaces[cliState.currentInterface].ipAddress = ipAddr;
+                    device.interfaces[cliState.currentInterface].subnetMask = subnetMask;
+                    
+                    return `IP address ${ipAddr} ${subnetMask} configured on ${cliState.currentInterface}`;
+                } else {
+                    return '% Incomplete command. Usage: ip address <IP> <MASK>';
+                }
+            } else if (cmd === 'no shutdown') {
+                if (!device.interfaces) device.interfaces = {};
+                if (!device.interfaces[cliState.currentInterface]) {
+                    device.interfaces[cliState.currentInterface] = {};
+                }
+                device.interfaces[cliState.currentInterface].status = 'up';
+                return `${cliState.currentInterface} is now administratively up`;
+            } else if (cmd === 'shutdown') {
+                if (!device.interfaces) device.interfaces = {};
+                if (!device.interfaces[cliState.currentInterface]) {
+                    device.interfaces[cliState.currentInterface] = {};
+                }
+                device.interfaces[cliState.currentInterface].status = 'down';
+                return `${cliState.currentInterface} is now administratively down`;
+            } else if (cmd === 'exit') {
+                cliState.mode = 'config';
+                cliState.currentInterface = null;
+                return 'Exiting interface configuration mode';
+            } else if (cmd === 'end') {
+                cliState.mode = 'exec';
+                cliState.currentInterface = null;
+                return 'Exiting to privileged EXEC mode';
+            }
+        }
+        
+        // Handle config mode commands
+        if (cliState.mode === 'config') {
+            if (cmd.startsWith('interface ') || cmd.startsWith('int ')) {
+                const intName = command.split(' ').slice(1).join(' ').toLowerCase();
+                // Expand abbreviated interface names
+                const expandedName = this.expandInterfaceName(intName);
+                cliState.mode = 'interface_config';
+                cliState.currentInterface = expandedName;
+                return `Entering interface configuration mode for ${expandedName}...`;
+            } else if (cmd === 'exit') {
+                cliState.mode = 'exec';
+                return 'Exiting configuration mode';
+            } else if (cmd === 'end') {
+                cliState.mode = 'exec';
+                return 'Exiting to privileged EXEC mode';
+            }
+        }
+        
+        // Standard commands (work in any mode)
         if (cmd === 'help' || cmd === '?') {
             return `Available commands:
   show interfaces       - Display interface status
@@ -3062,8 +3314,9 @@ Configuration register: 0x2102`;
             }
             return this.simulateMVPPing(target);
             
-        } else if (cmd === 'configure terminal' || cmd === 'conf t') {
-            return 'Entering configuration mode...\n' + hostname + '(config)#';
+        } else if (cmd === 'configure terminal' || cmd === 'conf t' || cmd === 'configure t') {
+            cliState.mode = 'config';
+            return 'Entering configuration mode...';
             
         } else if (cmd.startsWith('hostname ')) {
             const newHostname = command.split(' ').slice(1).join(' ');
@@ -3074,10 +3327,6 @@ Configuration register: 0x2102`;
                 setTimeout(() => this.updateMVPHostnameDisplay(newHostname), 100);
             }
             return `Hostname changed to: ${newHostname}`;
-            
-        } else if (cmd.startsWith('interface ')) {
-            const intName = command.split(' ').slice(1).join(' ');
-            return `Entering interface configuration mode for ${intName}...\n${hostname}(config-if)#`;
             
         } else if (cmd === 'write memory' || cmd === 'write' || cmd === 'wr') {
             return 'Building configuration...\nConfiguration saved to NVRAM\n[OK]';
@@ -3099,8 +3348,79 @@ Reloading device...`;
         } else if (cmd === 'exit' || cmd === 'quit') {
             return 'Goodbye!';
             
+        } else if (cmd === 'enable' || cmd === 'en') {
+            // Already in privileged mode in simulator
+            return '';  // Silent success
+            
+        } else if (cmd === 'disable') {
+            return 'Entering User EXEC mode';
+            
+        } else if (cmd === 'end') {
+            cliState.mode = 'exec';
+            cliState.currentInterface = null;
+            return 'Exiting to privileged EXEC mode';
+            
+        } else if (cmd.startsWith('copy ')) {
+            const parts = command.split(' ');
+            if (parts.length >= 3 && parts[1] === 'running-config' && parts[2] === 'startup-config') {
+                return 'Building configuration...\nConfiguration saved to NVRAM\n[OK]';
+            }
+            return '% Invalid copy command';
+            
+        } else if (cmd.startsWith('ip address ')) {
+            // Helpful error message when IP config attempted in wrong mode
+            return `% Invalid command. IP address configuration must be done in interface configuration mode.
+
+To configure an IP address, use:
+  configure terminal
+  interface <interface-name>
+  ip address <IP> <MASK>
+  no shutdown
+  exit
+  exit
+
+Example:
+  configure terminal
+  interface GigabitEthernet0/0
+  ip address 192.168.1.81 255.255.255.0
+  no shutdown`;
+            
         } else {
             return `% Invalid input detected at '^' marker.\n% Unknown command: ${command}\nType 'help' for available commands.`;
+        }
+    }
+    
+    /**
+     * Expand abbreviated interface names to full names
+     */
+    expandInterfaceName(shortName) {
+        const short = shortName.toLowerCase();
+        
+        // Common Cisco interface abbreviations
+        if (short.startsWith('gi') || short.startsWith('g')) {
+            // GigabitEthernet: Gi0/0, G0/0 -> gigabitethernet0/0
+            return 'gigabitethernet' + (short.startsWith('gi') ? short.slice(2) : short.slice(1));
+        } else if (short.startsWith('fa') || short.startsWith('f')) {
+            // FastEthernet: Fa0/0, F0/0 -> fastethernet0/0
+            return 'fastethernet' + (short.startsWith('fa') ? short.slice(2) : short.slice(1));
+        } else if (short.startsWith('se') || short.startsWith('s')) {
+            // Serial: Se0/0, S0/0 -> serial0/0
+            return 'serial' + (short.startsWith('se') ? short.slice(2) : short.slice(1));
+        } else if (short.startsWith('eth') || short.startsWith('e')) {
+            // Ethernet: Eth0/0, E0/0 -> ethernet0/0
+            return 'ethernet' + (short.startsWith('eth') ? short.slice(3) : short.slice(1));
+        } else if (short.startsWith('te')) {
+            // TenGigabitEthernet: Te0/0 -> tengigabitethernet0/0
+            return 'tengigabitethernet' + short.slice(2);
+        } else if (short.startsWith('lo')) {
+            // Loopback: Lo0 -> loopback0
+            return 'loopback' + short.slice(2);
+        } else if (short.startsWith('vlan')) {
+            // VLAN: Vlan1 -> vlan1 (keep as-is)
+            return short;
+        } else {
+            // If not recognized, return as-is (already lowercase)
+            return short;
         }
     }
     
@@ -3250,43 +3570,218 @@ L        192.168.1.1/32 is directly connected, Ethernet0/0`;
     }
     
     /**
-     * Simulate ping command
+     * MVP: Simulate ping command with accurate connectivity validation
+     * 
+     * Validates:
+     * 1. IP address format
+     * 2. Device existence
+     * 3. Interface status
+     * 4. Physical wire connections
      */
     simulateMVPPing(target) {
-        // Validate IP address format
+        console.log(`🏓 [PING DEBUG] Starting ping to ${target}`);
+        
+        // Step 1: Validate IP address format
         const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
         if (!ipRegex.test(target)) {
+            console.log(`🏓 [PING DEBUG] Invalid IP format: ${target}`);
             return `% Invalid IP address: ${target}`;
         }
         
-        // Check if target device exists
-        let targetExists = false;
-        if (window.editor && window.editor.devices) {
-            for (const device of window.editor.devices) {
-                if (window.deviceConfigurator) {
-                    const config = window.deviceConfigurator.getDeviceConfiguration(device.id);
-                    if (config && config.ipAddress === target) {
-                        targetExists = true;
+        // Step 2: Find target device by IP
+        let targetDevice = null;
+        let targetInterface = null;
+        
+        // Use correct device reference
+        const devices = this.devices || [];
+        console.log(`🏓 [PING DEBUG] Searching ${devices.length} devices`);
+        
+        // Get configurator with fallback
+        const configurator = window.userDeviceConfigurator || window.enhancedDeviceConfigurator || window.deviceConfigurator;
+        console.log(`🏓 [PING DEBUG] Using configurator:`, configurator ? 'found' : 'NOT FOUND');
+        
+        if (devices.length > 0 && configurator) {
+            for (const device of devices) {
+                const config = configurator.getDeviceConfiguration?.(device.id) || 
+                             configurator.networkConfigs?.get(device.id);
+                
+                console.log(`🏓 [PING DEBUG] Checking device ${device.label} (${device.id})`);
+                console.log(`🏓 [PING DEBUG]   Config:`, config);
+                
+                if (config && config.ipAddress === target) {
+                    targetDevice = device;
+                    console.log(`🏓 [PING DEBUG]   MATCH: device-level IP`);
+                    break;
+                }
+                
+                // Check interfaces
+                const interfaces = config?.interfaces || {};
+                console.log(`🏓 [PING DEBUG]   Interfaces:`, Object.keys(interfaces));
+                for (const [intName, intConfig] of Object.entries(interfaces)) {
+                    console.log(`🏓 [PING DEBUG]     ${intName}: IP=${intConfig.ipAddress}, status=${intConfig.status}`);
+                    if (intConfig.ipAddress === target) {
+                        targetDevice = device;
+                        targetInterface = intName;
+                        console.log(`🏓 [PING DEBUG]   MATCH: interface ${intName}`);
                         break;
                     }
+                }
+                if (targetDevice) break;
+            }
+        }
+        
+        // Step 3: Handle non-existent device
+        if (!targetDevice) {
+            console.log(`🏓 [PING DEBUG] Target device NOT FOUND`);
+            // Check for well-known external addresses
+            if (['8.8.8.8', '1.1.1.1', '208.67.222.222'].includes(target)) {
+                const delay = Math.floor(Math.random() * 20) + 15;
+                const result = `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = ${delay-5}/${delay}/${delay+5} ms`;
+                console.log(`🏓 [PING DEBUG] Result: External IP success`);
+                return result;
+            }
+            
+            const result = `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+U.U.U
+Success rate is 0 percent (0/5)
+% Destination host unreachable`;
+            console.log(`🏓 [PING DEBUG] Result: Destination unreachable (not found)`);
+            return result;
+        }
+        
+        console.log(`🏓 [PING DEBUG] Target device FOUND: ${targetDevice.label}`);
+        
+        // Step 4: Check if target interface is up
+        if (configurator) {
+            const config = configurator.getDeviceConfiguration?.(targetDevice.id) || 
+                         configurator.networkConfigs?.get(targetDevice.id);
+            const interfaces = config?.interfaces || {};
+            
+            if (targetInterface) {
+                const intConfig = interfaces[targetInterface];
+                console.log(`🏓 [PING DEBUG] Checking interface ${targetInterface} status: ${intConfig?.status}`);
+                if (intConfig && intConfig.status !== 'up') {
+                    const result = `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+% Destination host unreachable - interface is down`;
+                    console.log(`🏓 [PING DEBUG] Result: Interface down`);
+                    return result;
                 }
             }
         }
         
-        // Generate realistic ping output
-        const delay = Math.floor(Math.random() * 5) + 1;
+        // Step 5: Check physical connectivity (wire connection)
+        console.log(`🏓 [PING DEBUG] Checking physical connectivity...`);
+        const hasPhysicalConnection = this.checkMVPPhysicalConnectivity(targetDevice);
+        console.log(`🏓 [PING DEBUG] Physical connection: ${hasPhysicalConnection}`);
         
-        if (targetExists || ['8.8.8.8', '1.1.1.1', '208.67.222.222'].includes(target)) {
-            return `Type escape sequence to abort.
+        if (!hasPhysicalConnection) {
+            const result = `Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+% No physical connection to destination`;
+            console.log(`🏓 [PING DEBUG] Result: No physical connection`);
+            return result;
+        }
+        
+        // Step 6: Successful ping
+        const delay = Math.floor(Math.random() * 5) + 1;
+        const result = `Type escape sequence to abort.
 Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
 !!!!!
 Success rate is 100 percent (5/5), round-trip min/avg/max = ${delay}/${delay+1}/${delay+3} ms`;
-        } else {
-            return `Type escape sequence to abort.
-Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:
-.....
-Success rate is 0 percent (0/5)`;
+        console.log(`🏓 [PING DEBUG] Result: SUCCESS!`);
+        return result;
+    }
+    
+    /**
+     * MVP: Check if device has physical wire connections
+     */
+    checkMVPPhysicalConnectivity(targetDevice) {
+        // Use correct connection reference
+        const connections = this.connections || [];
+        const devices = this.devices || [];
+        
+        console.log(`🏓 [CONNECTIVITY DEBUG] Checking connectivity for device: ${targetDevice.label || targetDevice.id}`);
+        console.log(`🏓 [CONNECTIVITY DEBUG] Total connections: ${connections.length}`);
+        console.log(`🏓 [CONNECTIVITY DEBUG] All connections:`, connections);
+        
+        if (connections.length === 0) {
+            console.log(`🏓 [CONNECTIVITY DEBUG] No connections found`);
+            return false;
         }
+        
+        // Check if target device has any active connections
+        for (const connection of connections) {
+            console.log(`🏓 [CONNECTIVITY DEBUG] Checking connection:`, connection);
+            console.log(`🏓 [CONNECTIVITY DEBUG]   - From: ${connection.from}`);
+            console.log(`🏓 [CONNECTIVITY DEBUG]   - To: ${connection.to}`);
+            console.log(`🏓 [CONNECTIVITY DEBUG]   - Target device ID: ${targetDevice.id}`);
+            
+            // Check if connection involves target device
+            if (connection.from === targetDevice.id || connection.to === targetDevice.id) {
+                console.log(`🏓 [CONNECTIVITY DEBUG] Connection MATCHES target device!`);
+                // Get the other device in the connection
+                const otherDeviceId = connection.from === targetDevice.id ? 
+                    connection.to : connection.from;
+                
+                const otherDevice = devices.find(d => d.id === otherDeviceId);
+                
+                console.log(`🏓 [CONNECTIVITY DEBUG] Other device ID: ${otherDeviceId}`);
+                console.log(`🏓 [CONNECTIVITY DEBUG] Other device found:`, otherDevice ? otherDevice.label : 'NOT FOUND');
+                
+                if (!otherDevice) {
+                    console.log(`🏓 [CONNECTIVITY DEBUG] Other device NOT FOUND - skipping`);
+                    continue;
+                }
+                
+                // Check if both devices have operational interfaces
+                const targetHasUpInterface = this.deviceHasUpInterface(targetDevice);
+                const otherHasUpInterface = this.deviceHasUpInterface(otherDevice);
+                
+                console.log(`🏓 [CONNECTIVITY DEBUG] Target has up interface: ${targetHasUpInterface}`);
+                console.log(`🏓 [CONNECTIVITY DEBUG] Other has up interface: ${otherHasUpInterface}`);
+                
+                if (targetHasUpInterface && otherHasUpInterface) {
+                    console.log(`🏓 [CONNECTIVITY DEBUG] ✅ Physical connectivity CONFIRMED`);
+                    return true;
+                } else {
+                    console.log(`🏓 [CONNECTIVITY DEBUG] ❌ One or both devices don't have up interfaces`);
+                }
+            }
+        }
+        
+        console.log(`🏓 [CONNECTIVITY DEBUG] No valid physical connection found`);
+        return false;
+    }
+    
+    /**
+     * MVP: Check if device has at least one interface that is up
+     */
+    deviceHasUpInterface(device) {
+        // Get configurator with fallback
+        const configurator = window.userDeviceConfigurator || window.enhancedDeviceConfigurator || window.deviceConfigurator;
+        if (!configurator) return false;
+        
+        const config = configurator.getDeviceConfiguration?.(device.id) || 
+                     configurator.networkConfigs?.get(device.id);
+        if (!config) return false;
+        
+        const interfaces = config.interfaces || {};
+        for (const [intName, intConfig] of Object.entries(interfaces)) {
+            if (intConfig.status === 'up') {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -3490,92 +3985,6 @@ Success rate is 0 percent (0/5)`;
                 cliInput.setSelectionRange(cliInput.value.length, cliInput.value.length);
             }
         }, 100);
-    }
-
-    /**
-     * Show hint for device selection (MVP pattern)
-     * @param {Object} device - The selected device
-     */
-    showDeviceSelectionHint(device) {
-        // Create temporary tooltip/notification
-        const existingHint = document.getElementById('mvp-device-hint');
-        if (existingHint) {
-            existingHint.remove();
-        }
-
-        const hint = document.createElement('div');
-        hint.id = 'mvp-device-hint';
-        hint.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #1E293B, #334155);
-                border: 1px solid rgba(59, 130, 246, 0.3);
-                border-radius: 12px;
-                padding: 16px 20px;
-                color: #F8FAFC;
-                font-size: 0.9rem;
-                font-weight: 600;
-                z-index: 1000;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-                animation: mvpHintSlideIn 0.3s ease-out forwards;
-                max-width: 280px;
-                backdrop-filter: blur(10px);
-            ">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                    <i class="${this.deviceTypes[device.type]?.icon || 'fas fa-cube'}" style="color: #3B82F6; font-size: 1.2rem;"></i>
-                    <span style="color: #CBD5E1;">Device Selected</span>
-                </div>
-                <div style="color: #94A3B8; font-size: 0.8rem; line-height: 1.4;">
-                    <strong style="color: #E2E8F0;">${device.name}</strong><br>
-                    Double-click to open MVP Device Interfaces
-                </div>
-                <div style="
-                    position: absolute;
-                    top: 8px;
-                    right: 8px;
-                    cursor: pointer;
-                    color: #64748B;
-                    font-size: 0.8rem;
-                    width: 20px;
-                    height: 20px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 50%;
-                    transition: all 0.2s ease;
-                " onclick="this.parentElement.parentElement.remove()" title="Close">
-                    ×
-                </div>
-            </div>
-            <style>
-                @keyframes mvpHintSlideIn {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-            </style>
-        `;
-
-        document.body.appendChild(hint);
-
-        // Auto-remove after 4 seconds
-        setTimeout(() => {
-            if (hint && hint.parentNode) {
-                hint.style.animation = 'mvpHintSlideIn 0.3s ease-in reverse';
-                setTimeout(() => {
-                    if (hint && hint.parentNode) {
-                        hint.remove();
-                    }
-                }, 300);
-            }
-        }, 4000);
     }
 }
 

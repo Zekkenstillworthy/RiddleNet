@@ -175,6 +175,12 @@ def new_lesson(class_id, module_id):
 def create_lesson(class_id, module_id):
     """Create new lesson"""
     try:
+        # Fallback to form data if URL parameter is None
+        if module_id is None:
+            module_id = request.form.get('module_id')
+            if module_id:
+                module_id = int(module_id)
+        
         class_obj = Class.query.get_or_404(class_id)
         module = Module.query.filter_by(id=module_id, class_id=class_id).first_or_404()
         
@@ -193,6 +199,10 @@ def create_lesson(class_id, module_id):
         # Process learning objectives and key concepts
         objectives = [obj.strip() for obj in data.get('learning_objectives', '').split('\n') if obj.strip()]
         concepts = [concept.strip() for concept in data.get('key_concepts', '').split('\n') if concept.strip()]
+        
+        # Validate module_id before creating lesson
+        if module_id is None:
+            raise ValueError(f"module_id is None. class_id={class_id}, form data: {dict(request.form)}")
         
         # Create lesson
         lesson = Lesson(
@@ -219,7 +229,8 @@ def create_lesson(class_id, module_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error creating lesson: {str(e)}")
-        flash('Error creating lesson', 'error')
+        current_app.logger.error(f"class_id={class_id}, module_id={module_id}, form data: {dict(request.form)}")
+        flash(f'Error creating lesson: {str(e)}', 'error')
         return redirect(url_for('lesson.new_lesson', class_id=class_id, module_id=module_id))
 
 @lesson_bp.route('/lessons/<int:lesson_id>/edit')

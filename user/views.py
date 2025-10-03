@@ -116,6 +116,22 @@ def dashboard():
     user = UserModel.query.get(session['user_id'])
     user_score = UserScore.query.filter_by(user_id=user.id).all()
 
+    # Get user's best scores for each category
+    topology_score = db.session.query(func.max(UserScore.score)).filter(
+        UserScore.user_id == user.id,
+        UserScore.category == 'topology'
+    ).scalar() or 0
+    
+    crimping_score = db.session.query(func.max(UserScore.score)).filter(
+        UserScore.user_id == user.id,
+        UserScore.category == 'crimping'
+    ).scalar() or 0
+    
+    osi_score = db.session.query(func.max(UserScore.score)).filter(
+        UserScore.user_id == user.id,
+        UserScore.category == 'osi'
+    ).scalar() or 0
+
     try:
         # Enhanced leaderboard data with user details and profile images (migrated from leaderboard route)
         user_best_scores = []
@@ -190,6 +206,9 @@ def dashboard():
         score=user_score, 
         leaderboard=leaderboard_data,
         category_leaderboards=category_leaderboards,
+        topology_score=topology_score,
+        crimping_score=crimping_score,
+        osi_score=osi_score,
         **category_leaderboards
     )
 
@@ -407,7 +426,7 @@ def osi_simulation():
 @user_bp.route('/save_crimping_score', methods=['POST'])
 @user_login_required
 def save_crimping_score():
-    """Save crimping simulation score"""
+    """Save crimping simulation score (MVP Presenter Layer)"""
     try:
         data = request.get_json()
         user_id = session['user_id']
@@ -415,6 +434,12 @@ def save_crimping_score():
         score = data.get('score', 0)
         wiring_type = data.get('wiring_type', 'unknown')
         completion_time = data.get('completion_time', 0)
+        
+        print(f"[MVP Backend] Received score submission:")
+        print(f"  - User ID: {user_id}")
+        print(f"  - Score: {score}")
+        print(f"  - Wiring Type: {wiring_type}")
+        print(f"  - Completion Time: {completion_time}s")
         
         # Create a new score entry - only use fields that exist in the Score model
         new_score = UserScore(
@@ -425,6 +450,8 @@ def save_crimping_score():
         
         db.session.add(new_score)
         db.session.commit()
+        
+        print(f"[MVP Backend] ✅ Score saved to database (ID: {new_score.id})")
         
         # Send WebSocket notification if available
         try:
@@ -439,21 +466,25 @@ def save_crimping_score():
                     'wiring_type': wiring_type,
                     'timestamp': datetime.utcnow().isoformat()
                 }, room=f'user_{user_id}')
+                print(f"[MVP Backend] WebSocket notification sent")
         except Exception as e:
-            print(f"WebSocket notification failed: {e}")
+            print(f"[MVP Backend] WebSocket notification failed: {e}")
         
         return jsonify({
             'status': 'success',
             'message': 'Crimping score saved successfully!',
-            'score': score
+            'score': score,
+            'saved_id': new_score.id
         })
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error saving crimping score: {e}")
+        print(f"[MVP Backend] ❌ Error saving crimping score: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'status': 'error',
-            'message': 'Failed to save score'
+            'message': f'Failed to save score: {str(e)}'
         }), 500
 
 @user_bp.route('/save_osi_score', methods=['POST'])
