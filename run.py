@@ -15,6 +15,16 @@ app = create_app({
     'TEMPLATE_FOLDER': template_dir
 })
 
+# Configure session settings for production
+# This fixes the login redirect loop by properly configuring session cookies
+app.config.update(
+    SESSION_COOKIE_SECURE=True,      # Only send cookies over HTTPS
+    SESSION_COOKIE_HTTPONLY=True,    # Prevent JavaScript access to session cookie
+    SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
+    SESSION_PERMANENT=True,          # Make sessions persistent
+    PERMANENT_SESSION_LIFETIME=86400 # 24 hour session lifetime
+)
+
 ctx = app.app_context()
 ctx.push()
 

@@ -1927,13 +1927,13 @@
       transform: scale(1);
     }
   }  .wiring-selection-content {
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+    background: linear-gradient(135deg, #0a0e1a 0%, #1a1a2e 50%, #16213e 100%);
     border-radius: 20px;
     padding: 40px;
     text-align: center;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    max-width: 600px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 100px rgba(0, 212, 255, 0.1);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    max-width: 550px;
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
@@ -1970,29 +1970,30 @@
   }
   .wiring-options {
     display: flex;
-    gap: 25px;
+    flex-direction: column;
+    gap: 16px;
     justify-content: center;
-    flex-wrap: wrap;
-    margin: 20px 0;
+    margin: 30px 0;
+    width: 100%;
   }  .wiring-option {
-    background: linear-gradient(135deg, #1a5490, #0c1445);
+    background: linear-gradient(135deg, #1e3a5f, #0f1f3d);
     color: #ffffff;
-    border: 2px solid rgba(0, 212, 255, 0.3);
-    padding: 30px 40px;
-    border-radius: 18px;
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    padding: 20px 30px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
-    flex: 1;
-    max-width: 400px;
-    min-width: 250px;
-    width: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 100%;
     position: relative;
     overflow: hidden;
-    transform: perspective(1000px) rotateX(0deg);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-align: left;
+    min-height: 70px;
   }
 
   .wiring-option::before {
@@ -2010,22 +2011,27 @@
     left: 100%;
   }
   .wiring-option.locked {
-    background: linear-gradient(135deg, #4a5568, #2d3748);
-    color: #a0aec0;
+    background: linear-gradient(135deg, #2d3748, #1a202c);
+    color: #718096;
     cursor: not-allowed;
-    opacity: 0.6;
-    border-color: rgba(160, 174, 192, 0.3);
+    opacity: 0.5;
+    border-color: rgba(113, 128, 150, 0.3);
   }
 
   .wiring-option.locked:hover {
     transform: none;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(135deg, #4a5568, #2d3748);
-    border-color: rgba(160, 174, 192, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #2d3748, #1a202c);
+    border-color: rgba(113, 128, 150, 0.3);
   }
 
   .wiring-option.locked::before {
     display: none;
+  }
+
+  .wiring-option.locked .option-title,
+  .wiring-option.locked .option-icon {
+    opacity: 0.6;
   }
 
   .difficulty-info {
@@ -2055,42 +2061,64 @@
   }
 
   .wiring-option:hover {
-    transform: translateY(-8px) scale(1.05) perspective(1000px) rotateX(5deg);
+    transform: translateY(-3px);
     box-shadow: 
-      0 20px 40px rgba(0, 212, 255, 0.6),
-      0 0 30px rgba(0, 212, 255, 0.3);
+      0 8px 25px rgba(0, 212, 255, 0.5),
+      0 0 20px rgba(0, 212, 255, 0.3);
     background: linear-gradient(135deg, #2a6bb0, #1a2865);
-    border-color: rgba(0, 212, 255, 0.6);
+    border-color: rgba(0, 212, 255, 0.7);
+  }
+
+  .difficulty-hint {
+    font-size: 14px;
+    color: #8892b0;
+    margin-top: 25px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .difficulty-hint strong {
+    color: #ffffff;
+    font-weight: 600;
   }
 
   .wiring-option:active {
     transform: translateY(-2px) scale(1.02);
   }
-  .wiring-option .icon {
-    display: block;
-    font-size: 24px;
-    margin-bottom: 8px;
-    color: #ffffff;
+  .wiring-option .option-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .wiring-option .title {
-    display: block;
+  .wiring-option .option-title {
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 4px;
     color: #ffffff;
+    flex: 1;
   }
-  .wiring-option .description {
-    display: block;
-    font-size: 14px;
-    opacity: 1;
-    line-height: 1.4;
-    color: #ffffff;
+
+  .wiring-option .option-subtitle {
+    position: absolute;
+    top: 8px;
+    right: 15px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
-  .wiring-option .description small {
+
+  .wiring-option .option-description {
+    position: absolute;
+    bottom: 8px;
+    right: 15px;
     font-size: 12px;
-    opacity: 1;
-    display: block;    margin-top: 4px;
-    color: #e0e0e0;
+    color: #64b5f6;
+    font-weight: 500;
   }
 
   /* Scoring Information Section */
@@ -3160,33 +3188,32 @@
     </div>
 
     <!-- Wiring Type Selection Modal -->
-    <div class="wiring-selection-modal" id="wiringSelectionModal">      <div class="wiring-selection-content">
+    <div class="wiring-selection-modal" id="wiringSelectionModal">
+      <div class="wiring-selection-content">
         <h2>🔌 Start Crimping!</h2>
         
         <div class="wiring-options">
           <button class="wiring-option" onclick="selectWiringType('straightthrough')" id="easyOption">
-            <span class="icon">🔗</span>
-            <span class="title">Easy - Straight-Through</span>
-            <span class="description"><br><small></small></span>
+            <div class="option-icon">🔗</div>
+            <div class="option-title">Easy - Straight-Through</div>
           </button>
           <button class="wiring-option locked" onclick="selectWiringType('crossover')" id="mediumOption">
-            <span class="icon">🔄</span>
-            <span class="title">Medium - Crossover</span>
-            <span class="description"><br><small></small></span>
+            <div class="option-icon">🔄</div>
+            <div class="option-title">Medium - Crossover</div>
           </button>
           <button class="wiring-option locked" onclick="selectWiringType('rollover')" id="hardOption">
-            <span class="icon">🔁</span>
-            <span class="title">Hard - Rollover</span>
-            <span class="description"><br><small></small></span>
+            <div class="option-icon">�</div>
+            <div class="option-title">Hard - Rollover</div>
+            <div class="option-subtitle">Advanced Pattern</div>
+            <div class="option-description">Unlocked! Ready for Hard Challenge</div>
           </button>
         </div>
         
-        
-        
-        <p style="font-size: 14px; color: #888; margin-top: 20px; line-height: 1.6;">
+        <p class="difficulty-hint">
           💡 <strong>New to crimping?</strong> Start easy to build the basics—finish each level to unlock the next.
         </p>
-      </div></div>    <!-- Scoring Description Modal -->
+      </div>
+    </div>    <!-- Scoring Description Modal -->
     <div class="scoring-description-modal" id="scoringDescriptionModal">
       <div class="scoring-description-content">
         <h2><i class="fas fa-trophy"></i> Crimping Challenge</h2>
