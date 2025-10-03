@@ -2,6 +2,7 @@
 from flask import Blueprint, redirect, url_for, flash, jsonify, request, render_template, send_file, current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc, and_, extract, or_
+from decimal import Decimal
 import json
 import os
 import logging
@@ -33,6 +34,17 @@ dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/admin')
 
 # Initialize analytics service
 analytics_service = AnalyticsService()
+
+# Helper function to convert Decimal to float for JSON serialization
+def decimal_to_float(obj):
+    """Convert Decimal objects to float for JSON serialization"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {k: decimal_to_float(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [decimal_to_float(item) for item in obj]
+    return obj
 
 @dashboard_bp.route('/')
 @login_required
@@ -71,6 +83,10 @@ def index():
             func.date(Score.date_attempted) == date_obj
         ).with_entities(func.avg(Score.score)).scalar() or 0
         
+        # Convert Decimal to float if needed
+        if isinstance(daily_avg, Decimal):
+            daily_avg = float(daily_avg)
+        
         # Convert to percentage properly
         if daily_avg >= 0 and daily_avg <= 100:  # Already in percentage
             percentage_avg = round(daily_avg, 1)
@@ -81,7 +97,7 @@ def index():
         
         daily_performance.append({
             'date': date_obj.strftime('%Y-%m-%d'),
-            'avg_score': percentage_avg
+            'avg_score': float(percentage_avg)  # Ensure it's float, not Decimal
         })    # 3. User activity data - last 7 days for dashboard
     activity_dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
       # Count active users per day (users who attempted a quiz)
@@ -100,7 +116,7 @@ def index():
     for cat in categories:
         scores = Score.query.filter(Score.category == cat).all()
         if scores:
-            score_values = [s.score for s in scores]
+            score_values = [float(s.score) if isinstance(s.score, Decimal) else s.score for s in scores]
             avg_score = sum(score_values) / len(score_values)
             max_score = max(score_values)
             
@@ -116,13 +132,13 @@ def index():
                 max_percentage = 100.0
             
             category_analytics[cat] = {
-                'avg_score': avg_percentage,
+                'avg_score': float(avg_percentage),
                 'total_attempts': len(scores),
                 'unique_users': len(set(s.user_id for s in scores)),
-                'highest_score': max_percentage,
+                'highest_score': float(max_percentage),
                 'improvement_trend': 'up' if len(scores) > 5 else 'stable'  # Simplified trend
             }
-            category_avg[cat] = avg_percentage  # For template charts
+            category_avg[cat] = float(avg_percentage)  # For template charts
         else:
             category_analytics[cat] = {
                 'avg_score': 0, 'total_attempts': 0, 'unique_users': 0, 
@@ -160,7 +176,8 @@ def index():
     ).all()
     
     if this_week_scores:
-        week_avg = sum(s.score for s in this_week_scores) / len(this_week_scores)
+        score_values = [float(s.score) if isinstance(s.score, Decimal) else s.score for s in this_week_scores]
+        week_avg = sum(score_values) / len(score_values)
         # Convert to percentage properly
         if week_avg >= 0 and week_avg <= 100:  # Already in percentage
             score_insights['avg_this_week'] = round(week_avg, 1)

@@ -1321,16 +1321,16 @@ html {
             <div style="background: var(--surface-light); padding: 20px; border-radius: 12px; border: 1px solid var(--border-glow);">
                 <h3 style="color: var(--text-primary); margin: 0 0 16px 0;">Your Progress</h3>
                 <div style="background: var(--dark-bg); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
-                    <div style="background: linear-gradient(90deg, var(--cyber-glow), var(--neon-green)); height: 100%; width: {{ lesson_progress.progress_percentage if lesson_progress else 0 }}%; transition: width 0.3s ease;"></div>
+                    <div id="lesson-progress-bar" style="background: linear-gradient(90deg, var(--cyber-glow), var(--neon-green)); height: 100%; width: {{ lesson_progress.progress_percentage if lesson_progress else 0 }}%; transition: width 0.3s ease;"></div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text-secondary);">{{ lesson_progress.progress_percentage if lesson_progress else 0 }}% Complete</span>
+                    <span id="lesson-progress-text" style="color: var(--text-secondary);">{{ lesson_progress.progress_percentage if lesson_progress else 0 }}% Complete</span>
                     {% if not (lesson_progress and lesson_progress.is_completed) %}
-                    <button onclick="completeLesson()" style="background: var(--neon-green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                    <button id="complete-lesson-btn" onclick="completeLesson()" style="background: var(--neon-green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
                         <i class="fas fa-check"></i> Mark as Complete
                     </button>
                     {% else %}
-                    <span style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Completed!</span>
+                    <span id="lesson-completion-status" style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Completed!</span>
                     {% endif %}
                 </div>
             </div>
@@ -1450,6 +1450,133 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     console.log('✅ Questions functionality ready');
+    
+    {% if lesson %}
+    // Scroll-based lesson progress tracking
+    let lastScrollTime = Date.now();
+    let timeSpent = 0;
+    let lastReportedProgress = {{ lesson_progress.progress_percentage if lesson_progress else 0 }};
+    
+    function updateReadingProgress() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        
+        if (scrollHeight <= 0) {
+            return; // Avoid division by zero
+        }
+        
+        const progress = Math.min(100, Math.round((scrollTop / scrollHeight) * 100));
+        
+        // Update progress bar if it exists in the UI
+        const progressBar = document.getElementById('lesson-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+        }
+        
+        // Update progress text if it exists
+        const progressText = document.getElementById('lesson-progress-text');
+        if (progressText) {
+            progressText.textContent = progress + '% Complete';
+        }
+        
+        // Update lesson progress on server if user has scrolled significantly
+        if (progress > lastReportedProgress && progress > {{ lesson_progress.progress_percentage if lesson_progress else 0 }}) {
+            updateLessonProgress(progress);
+        }
+    }
+    
+    function updateLessonProgress(progressPercent) {
+        const currentTime = Date.now();
+        const timeDelta = (currentTime - lastScrollTime) / 1000 / 60; // Convert to minutes
+        timeSpent += timeDelta;
+        lastScrollTime = currentTime;
+        
+        // Only update if significant progress change (at least 5% difference)
+        if (progressPercent - lastReportedProgress >= 5) {
+            lastReportedProgress = progressPercent;
+            
+            fetch(`{{ url_for('user_lesson.update_progress', class_id=class_data.id, lesson_id=lesson.id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    progress_percentage: progressPercent,
+                    time_spent_minutes: timeSpent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('📊 Lesson progress updated:', progressPercent + '%');
+                    
+                    // Auto-complete lesson when reaching 100%
+                    if (progressPercent >= 100 && !{{ 'true' if lesson_progress and lesson_progress.is_completed else 'false' }}) {
+                        autoCompleteLesson();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error updating lesson progress:', error);
+            });
+        }
+    }
+    
+    function autoCompleteLesson() {
+        console.log('✅ Auto-completing lesson at 100% scroll');
+        
+        fetch(`{{ url_for('user_lesson.complete_lesson', class_id=class_data.id, lesson_id=lesson.id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('🎉 Lesson auto-completed successfully!');
+                
+                // Update UI to show completion
+                const progressText = document.getElementById('lesson-progress-text');
+                if (progressText) {
+                    progressText.innerHTML = '<span style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Completed!</span>';
+                }
+                
+                // Hide the complete button if it exists
+                const completeBtn = document.getElementById('complete-lesson-btn');
+                if (completeBtn) {
+                    completeBtn.style.display = 'none';
+                }
+                
+                // Show a subtle notification
+                if (typeof showNotification === 'function') {
+                    showNotification('Lesson completed! 🎉', 'success');
+                } else {
+                    console.log('🎊 Lesson marked as complete!');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error auto-completing lesson:', error);
+        });
+    }
+    
+    // Track reading progress on scroll
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+        // Debounce scroll updates
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(updateReadingProgress, 100);
+    });
+    
+    // Track time spent (update every 15 seconds)
+    setInterval(() => {
+        timeSpent += 0.25; // Add 15 seconds every 15 seconds
+    }, 15000);
+    
+    // Initial progress update
+    updateReadingProgress();
+    {% endif %}
 });
 
 // Question scoring variables (will be set when questions load)
@@ -1589,27 +1716,54 @@ function toggleModuleDropdown(moduleId) {
 
 function completeLesson() {
     {% if lesson %}
-    if (confirm('Mark this lesson as complete?')) {
-        fetch(`{{ url_for('user_lesson.complete_lesson', class_id=class_data.id, lesson_id=lesson.id) }}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+    // Manual completion (user clicks button before reaching 100%)
+    fetch(`{{ url_for('user_lesson.complete_lesson', class_id=class_data.id, lesson_id=lesson.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI to show completion
+            const progressBar = document.getElementById('lesson-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '100%';
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+            
+            const progressText = document.getElementById('lesson-progress-text');
+            if (progressText) {
+                progressText.innerHTML = '<span style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Completed!</span>';
+            }
+            
+            // Hide the complete button
+            const completeBtn = document.getElementById('complete-lesson-btn');
+            if (completeBtn) {
+                completeBtn.style.display = 'none';
+            }
+            
+            if (typeof showNotification === 'function') {
+                showNotification('Lesson marked as complete! 🎉', 'success');
+            } else {
                 alert('Lesson marked as complete!');
-                location.reload();
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification(data.message || 'Error completing lesson', 'error');
             } else {
                 alert('Error: ' + data.message);
             }
-        })
-        .catch(err => {
-            console.error('Error completing lesson:', err);
+        }
+    })
+    .catch(err => {
+        console.error('Error completing lesson:', err);
+        if (typeof showNotification === 'function') {
+            showNotification('Error completing lesson', 'error');
+        } else {
             alert('Error completing lesson');
-        });
-    }
+        }
+    });
     {% endif %}
 }
 
