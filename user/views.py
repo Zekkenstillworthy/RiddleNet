@@ -1,4 +1,5 @@
 from flask import render_template, session, Blueprint, request, redirect, url_for, flash, jsonify
+from flask_login import current_user, login_required
 from sqlalchemy import func
 import os
 from datetime import datetime
@@ -60,11 +61,12 @@ def overview():
     return render_template('user/overview.html', user=user)
 
 @user_bp.route('/classes')
+@login_required
 def classes():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return redirect(url_for('user.index', message='You need to log in first!'))
     
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     # No need to fetch classes here - we'll do it client-side with API
     return render_template('user/class.html', user=user)
     
@@ -109,11 +111,12 @@ def class_detail_universal(class_id):
 # All class details are handled by the dynamic universal template system in universal_class_routes.py
 
 @user_bp.route('/dashboard')
+@login_required
 def dashboard():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
 
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     user_score = UserScore.query.filter_by(user_id=user.id).all()
 
     # Get user's best scores for each category
@@ -213,19 +216,21 @@ def dashboard():
     )
 
 @user_bp.route('/profile')
+@login_required
 def profile():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
     
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     return render_template('user/profile.html', user=user)
 
 @user_bp.route('/scores')
+@login_required
 def scores():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
     
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     user_scores = UserScore.query.filter_by(user_id=user.id).order_by(UserScore.date_attempted.desc()).all()
     
     # Calculate statistics
@@ -255,19 +260,21 @@ def scores():
                          category_stats=category_stats)
 
 @user_bp.route('/about_us')
+@login_required
 def about_us():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
     
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     return render_template('user/about_us.html', user=user)
 
 @user_bp.route('/update_profile', methods=['POST'])
+@login_required
 def update_profile():
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
 
-    user = UserModel.query.get(session['user_id'])
+    user = current_user
     if not user:
         flash('User not found', 'error')
         return redirect(url_for('user.index'))
@@ -366,12 +373,13 @@ def update_profile():
     return redirect(url_for('user.profile'))
 
 @user_bp.route('/delete_score/<int:score_id>', methods=['POST'])
+@login_required
 def delete_score(score_id):
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
         
     score = UserScore.query.get(score_id)
-    if score and score.user_id == session['user_id']:
+    if score and score.user_id == current_user.id:
         db.session.delete(score)
         db.session.commit()
     return redirect(url_for('user.dashboard'))
@@ -764,7 +772,8 @@ def login():
                 print(f"WebSocket OTP validation error notification failed: {str(ws_error)}")
             
             return render_template('user/index.html', message=f'Error validating OTP: {str(e)}. Please try again.')
-      # Set user in session
+    
+    # Set user in session (FIXED INDENTATION)
     session['user_id'] = user.id
     session['auth_namespace'] = 'user'  # CRITICAL FIX: Set user namespace
     print(f"Login successful for user: {username}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")

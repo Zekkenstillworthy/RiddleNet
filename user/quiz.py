@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, session, jsonify
+from flask_login import current_user
 # Import db directly from main app
 from __init__ import db
 
@@ -43,11 +44,11 @@ class QuizController:
         self.app.route('/quiz_topics')(self.get_quiz_topics)
 
     def submit_quiz(self):
-        if 'user_id' not in session:
+        if not current_user.is_authenticated:
             return render_template('user/index.html', message='You need to log in first!')
 
         Score, Question, EssayResponse, User = get_models()
-        user_id = session['user_id']
+        user_id = current_user.id
         score = request.form['score']
 
         new_score = Score(score=score, user_id=user_id)
@@ -165,11 +166,11 @@ class QuizController:
     def delete_score(self, score_id):
         """Delete a user's score"""
         Score, Question, EssayResponse, User = get_models()
-        if 'user_id' not in session:
+        if not current_user.is_authenticated:
             return render_template('user/index.html', message='You need to log in first!')
             
         score = Score.query.get(score_id)
-        if score and score.user_id == session['user_id']:
+        if score and score.user_id == current_user.id:
             db.session.delete(score)
             db.session.commit()
         return redirect(url_for('user.dashboard'))
