@@ -14,14 +14,15 @@ warnings.filterwarnings('ignore', message='.*RLock.*')
 
 # Import and patch IMMEDIATELY
 import eventlet
+
+# Apply monkey patching with only commonly supported parameters
+# Note: 'ssl' parameter is not supported in all eventlet versions
 eventlet.monkey_patch(
     socket=True,
     select=True,
     time=True,
     thread=True,  # Required for SQLAlchemy threading.Lock compatibility
-    os=True,
-    ssl=False,
-    all=False
+    os=True
 )
 
 print("✓ Eventlet monkey patching completed successfully")
