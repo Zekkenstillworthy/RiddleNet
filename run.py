@@ -276,7 +276,7 @@ try:
     blueprints_to_register = [
         ('admin.controllers.auth_controller', 'auth_bp', '/admin', None),
         ('admin.controllers.dashboard_controller', 'dashboard_bp', '/admin', None),
-        ('admin.controllers.user_controller', 'user_bp', '/admin', 'admin_user_bp'),
+        ('admin.controllers.user_controller', 'user_bp', '/admin', None),
         ('admin.controllers.score_controller', 'score_bp', '/admin', None),
         ('admin.controllers.essay_controller', 'essay_bp', '/admin', None),
         ('admin.controllers.question_group_controller', 'question_group_bp', '/admin/groups', None),
@@ -311,7 +311,11 @@ try:
         try:
             module = importlib.import_module(module_path)
             blueprint = getattr(module, blueprint_name)
-            app.register_blueprint(blueprint, url_prefix=url_prefix)
+            # Register with custom name if alias is provided
+            if alias_name:
+                app.register_blueprint(blueprint, url_prefix=url_prefix, name=alias_name)
+            else:
+                app.register_blueprint(blueprint, url_prefix=url_prefix)
             
             # Update the blueprint's template search paths
             try:
