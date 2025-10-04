@@ -17,9 +17,9 @@ os.environ.setdefault('FLASK_DEBUG', 'false')
 # Import the configured app and socketio from run.py
 from run import app, socketio
 
-# For Gunicorn, we need to expose both the Flask app and SocketIO app
-# The SocketIO app wraps the Flask app for WebSocket support
-application = socketio
+# For Gunicorn with eventlet worker, expose the Flask app
+# The socketio middleware is already attached to the app in run.py
+application = app
 
 # Also expose the Flask app directly for compatibility
 flask_app = app
