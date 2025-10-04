@@ -10,12 +10,12 @@ import eventlet
 
 # 3. Apply monkey patching immediately, but carefully avoid threading issues
 try:
-    # Apply minimal monkey patching - avoid threading to prevent psycopg2 conflicts
+    # Apply monkey patching with thread=True for SQLAlchemy compatibility
     eventlet.monkey_patch(
         socket=True, 
         select=True, 
         time=True, 
-        thread=False,  # Critical: Don't patch threading for psycopg2 compatibility
+        thread=True,  # Required for SQLAlchemy connection pooling
         os=True,
         ssl=False,  # Avoid SSL patching issues
         all=False   # Only patch what we explicitly request
