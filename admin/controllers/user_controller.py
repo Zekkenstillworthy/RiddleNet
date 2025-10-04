@@ -14,8 +14,9 @@ from ..models.essay_response import EssayResponse
 user_bp = Blueprint('admin_user', __name__)
 
 class UserController:
+    # Changed from '/' to '/users' to prevent conflict with dashboard.index at /admin/
     @staticmethod
-    @user_bp.route('/')
+    @user_bp.route('/users')
     @login_required
     def index():
         # Get regular users with their stats
@@ -640,6 +641,20 @@ class UserController:
     @login_required
     def admin_profile():
         """Admin profile page"""
+        from flask import session
+        
+        # CRITICAL FIX: Enforce admin namespace isolation
+        auth_namespace = session.get('auth_namespace', 'unknown')
+        if auth_namespace != 'admin':
+            flash('Access denied. Admin credentials required.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # Verify current_user is actually an Admin instance
+        if not isinstance(current_user, Admin):
+            flash('Access denied. Admin credentials required.', 'error')
+            session.clear()  # Clear potentially poisoned session
+            return redirect(url_for('auth.login'))
+        
         try:
             from utils.render_utils import render_safe_template
             return render_safe_template('admin/profile.html', 
@@ -658,9 +673,18 @@ class UserController:
     def update_admin_profile():
         """Update admin profile"""
         from werkzeug.utils import secure_filename
+        from flask import session
+        
+        # CRITICAL FIX: Enforce admin namespace isolation
+        auth_namespace = session.get('auth_namespace', 'unknown')
+        if auth_namespace != 'admin':
+            flash('Access denied. Admin credentials required.', 'error')
+            session.clear()  # Clear potentially poisoned session
+            return redirect(url_for('auth.login'))
         
         if not isinstance(current_user, Admin):
             flash('Access denied', 'error')
+            session.clear()  # Clear potentially poisoned session
             return redirect(url_for('auth.login'))
         
         admin = current_user

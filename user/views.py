@@ -218,8 +218,22 @@ def dashboard():
 @user_bp.route('/profile')
 @login_required
 def profile():
+    from flask import session
+    
     if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
+    
+    # CRITICAL FIX: Enforce user namespace isolation
+    auth_namespace = session.get('auth_namespace', 'unknown')
+    if auth_namespace != 'user':
+        flash('Access denied. User credentials required.', 'error')
+        return redirect(url_for('user.login'))
+    
+    # Verify current_user is actually a User instance (not Admin)
+    if not isinstance(current_user, UserModel):
+        flash('Access denied. User credentials required.', 'error')
+        session.clear()  # Clear potentially poisoned session
+        return redirect(url_for('user.login'))
     
     user = current_user
     return render_template('user/profile.html', user=user)
@@ -271,8 +285,23 @@ def about_us():
 @user_bp.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
+    from flask import session
+    
     if not current_user.is_authenticated:
         return render_template('user/index.html', message='You need to log in first!')
+    
+    # CRITICAL FIX: Enforce user namespace isolation
+    auth_namespace = session.get('auth_namespace', 'unknown')
+    if auth_namespace != 'user':
+        flash('Access denied. User credentials required.', 'error')
+        session.clear()  # Clear potentially poisoned session
+        return redirect(url_for('user.login'))
+    
+    # Verify current_user is actually a User instance (not Admin)
+    if not isinstance(current_user, UserModel):
+        flash('Access denied. User credentials required.', 'error')
+        session.clear()  # Clear potentially poisoned session
+        return redirect(url_for('user.login'))
 
     user = current_user
     if not user:

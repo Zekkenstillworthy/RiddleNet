@@ -1777,16 +1777,22 @@ def get_class_simulations(class_id):
     try:
         from admin.models.simulation_assignment import SimulationAssignment
         
+        current_app.logger.info(f"[GET_CLASS_SIMULATIONS] Fetching simulations for class_id={class_id}")
+        
         assignments = SimulationAssignment.query.filter_by(
             class_id=class_id,
             is_active=True
         ).all()
         
+        current_app.logger.info(f"[GET_CLASS_SIMULATIONS] Found {len(assignments)} simulation assignments")
+        
         simulations_data = []
         for assignment in assignments:
             if assignment.simulation and assignment.simulation.is_active:
+                sim_id = assignment.simulation.id
+                current_app.logger.info(f"[GET_CLASS_SIMULATIONS] Adding simulation ID={sim_id}, title={assignment.simulation.title}")
                 simulations_data.append({
-                    'id': assignment.simulation.id,
+                    'id': sim_id,
                     'assignment_id': assignment.id,
                     'title': assignment.simulation.title,
                     'description': assignment.simulation.description,
@@ -1794,9 +1800,11 @@ def get_class_simulations(class_id):
                     'difficulty': assignment.simulation.difficulty,
                     'estimated_duration': assignment.simulation.estimated_duration,
                     'module_id': assignment.module_id,
-                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None
+                    'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
+                    'is_published': assignment.simulation.is_published
                 })
         
+        current_app.logger.info(f"[GET_CLASS_SIMULATIONS] Returning {len(simulations_data)} simulations")
         return jsonify({
             'success': True,
             'simulations': simulations_data

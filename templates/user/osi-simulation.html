@@ -122,6 +122,55 @@ html, body {
         font-size: 0.9rem !important;
     }
 }
+
+/* Hint Border Highlight Animation with Glow Effect */
+.hint-highlight {
+    animation: hintBorderPulse 2s ease-in-out infinite, hintGlow 1.5s ease-in-out infinite;
+    border: 3px solid #fbbf24 !important;
+    box-shadow: 
+        0 0 20px rgba(251, 191, 36, 0.8), 
+        0 0 40px rgba(251, 191, 36, 0.6),
+        0 0 60px rgba(251, 191, 36, 0.4),
+        inset 0 0 20px rgba(251, 191, 36, 0.3) !important;
+    position: relative;
+    z-index: 100;
+    transform: scale(1.02);
+}
+
+@keyframes hintBorderPulse {
+    0%, 100% {
+        border-color: #fbbf24;
+        box-shadow: 
+            0 0 20px rgba(251, 191, 36, 0.8), 
+            0 0 40px rgba(251, 191, 36, 0.6),
+            0 0 60px rgba(251, 191, 36, 0.4),
+            inset 0 0 20px rgba(251, 191, 36, 0.3);
+    }
+    50% {
+        border-color: #f59e0b;
+        box-shadow: 
+            0 0 30px rgba(251, 191, 36, 1), 
+            0 0 60px rgba(251, 191, 36, 0.8),
+            0 0 90px rgba(251, 191, 36, 0.6),
+            inset 0 0 30px rgba(251, 191, 36, 0.5);
+    }
+}
+
+@keyframes hintGlow {
+    0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 10px rgba(251, 191, 36, 0.6));
+    }
+    50% {
+        filter: brightness(1.15) drop-shadow(0 0 20px rgba(251, 191, 36, 0.9));
+    }
+}
+
+/* Update OSI diagram container for 3 columns */
+.osi-diagram-container {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 15px !important;
+}
 </style>
 {% endblock %}
 
@@ -139,43 +188,43 @@ html, body {
     <!-- Main OSI Diagram Layout -->
     <div class="osi-diagram-container">
         <!-- Left Drop Zone -->
-        <div class="drop-zone">
+        <div class="drop-zone" id="dropZone1">
             <div class="drop-zone-header">
-                <h3><i class="fas fa-bullseye"></i> Drop Zone</h3>
+                <h3><i class="fas fa-bullseye"></i> Drop Zone 1</h3>
                 <p>Arrange layers from 7 (top) to 1 (bottom)</p>
             </div>
             
-            <div class="drop-slot" data-layer="7" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="7" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">7</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="6" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="6" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">6</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="5" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="5" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">5</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="4" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="4" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">4</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="3" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="3" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">3</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="2" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">2</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
             
-            <div class="drop-slot" data-layer="1" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="drop-slot" data-layer="1" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
                 <div class="slot-number">1</div>
                 <div class="slot-placeholder">Drop here</div>
             </div>
@@ -237,20 +286,54 @@ html, body {
                 </div>
             </div>
         </div>
+
+        <!-- Right Drop Zone 2 -->
+        <div class="drop-zone" id="dropZone2">
+            <div class="drop-zone-header">
+                <h3><i class="fas fa-bullseye"></i> Drop Zone 2</h3>
+                <p>Arrange layers from 7 (top) to 1 (bottom)</p>
+            </div>
+            
+            <div class="drop-slot" data-layer="7" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">7</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="6" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">6</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="5" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">5</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="4" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">4</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="3" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">3</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="2" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">2</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+            
+            <div class="drop-slot" data-layer="1" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <div class="slot-number">1</div>
+                <div class="slot-placeholder">Drop here</div>
+            </div>
+        </div>
     </div>
 
     <div class="simulation-controls">
-        <button class="control-button primary" onclick="startDataFlow()">
-            <i class="fas fa-play"></i> Start Data Flow
-        </button>
-        <button class="control-button success" onclick="testKnowledge()">
-            <i class="fas fa-brain"></i> Test Knowledge
-        </button>
         <button class="control-button warning" onclick="resetSimulation()">
             <i class="fas fa-refresh"></i> Reset & Shuffle
-        </button>
-        <button class="control-button" onclick="showHint()">
-            <i class="fas fa-lightbulb"></i> Hint
         </button>
     </div>
 </div>
@@ -365,15 +448,31 @@ html, body {
 /* Error Indicator */
 .error-indicator {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: -30px;
+    right: 10px;
     background: rgba(239, 68, 68, 0.9);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-weight: bold;
     z-index: 10;
+    animation: errorFloat 2s ease-out forwards;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+    font-size: 0.8rem;
+}
+
+@keyframes errorFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(0.8);
+    }
+    50% {
+        transform: translateY(-15px) scale(1.1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-30px) scale(1);
+    }
 }
 
 /* Particle Effects */
@@ -390,6 +489,11 @@ html, body {
 .particle.success {
     background: #4ade80;
     box-shadow: 0 0 10px #4ade80;
+}
+
+.particle.error {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
 }
 
 @keyframes particleFly {
@@ -512,6 +616,108 @@ let correctPlacements = 0; // still tracks layer placements
 const TOTAL_UNITS = 14; // 7 layer placements + 7 quiz knowledge units
 let unitsCompleted = 0; // increments up to 14
 
+// Debug toggle (set to false for production)
+const OSI_SIM_DEBUG = true;
+
+// Helper: sanitize / normalize layer identifiers
+function normalizeLayer(val) {
+    if (val === undefined || val === null) return '';
+    return String(val).trim();
+}
+
+// Track completion for both zones
+let zone1Complete = false;
+let zone2Complete = false;
+let zone1Placements = 0;
+let zone2Placements = 0;
+
+// Quiz tracking
+let currentQuizLayer = null;
+let quizAnswered = {};
+
+// Automatic Hint System - Border Highlighting
+let idleTimer = null;
+let currentHighlightedSlot = null;
+const IDLE_TIME = 10000; // 10 seconds of inactivity
+
+function resetIdleTimer() {
+    // Clear existing timer
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+    }
+    
+    // Remove any existing highlights
+    removeHintHighlight();
+    
+    // Don't start timer if both zones are complete
+    if (zone1Complete && zone2Complete) {
+        return;
+    }
+    
+    // Start new idle timer
+    idleTimer = setTimeout(() => {
+        showHintHighlight();
+    }, IDLE_TIME);
+}
+
+function showHintHighlight() {
+    // Find the first empty slot in zone 1, then zone 2
+    const emptySlots = [];
+    
+    // Check zone 1 first
+    document.querySelectorAll('#dropZone1 .drop-slot').forEach(slot => {
+        if (!slot.classList.contains('correct-placement')) {
+            emptySlots.push(slot);
+        }
+    });
+    
+    // If zone 1 is complete, check zone 2
+    if (emptySlots.length === 0) {
+        document.querySelectorAll('#dropZone2 .drop-slot').forEach(slot => {
+            if (!slot.classList.contains('correct-placement')) {
+                emptySlots.push(slot);
+            }
+        });
+    }
+    
+    if (emptySlots.length > 0) {
+        // Highlight the first empty slot (top to bottom)
+        currentHighlightedSlot = emptySlots[0];
+        currentHighlightedSlot.classList.add('hint-highlight');
+        
+        // Also highlight the corresponding draggable layer
+        const targetLayer = currentHighlightedSlot.dataset.layer;
+        const draggableLayer = document.querySelector(`.draggable-item[data-layer="${targetLayer}"]`);
+        if (draggableLayer) {
+            draggableLayer.classList.add('hint-highlight');
+        }
+        
+        // Remove highlight after 5 seconds and restart timer
+        setTimeout(() => {
+            removeHintHighlight();
+            resetIdleTimer();
+        }, 5000);
+    }
+}
+
+function removeHintHighlight() {
+    if (currentHighlightedSlot) {
+        currentHighlightedSlot.classList.remove('hint-highlight');
+        currentHighlightedSlot = null;
+    }
+    // Remove from any slots and draggable items that have the class
+    document.querySelectorAll('.hint-highlight').forEach(element => {
+        element.classList.remove('hint-highlight');
+    });
+}
+
+function stopHintSystem() {
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+    }
+    removeHintHighlight();
+}
+
 // Layer information data
 const layerInfo = {
     7: {
@@ -600,6 +806,250 @@ const layerInfo = {
     }
 };
 
+// Quiz questions for each layer (beginner-friendly)
+const layerQuizzes = {
+    7: [
+        {
+            question: "What does the Application Layer do?",
+            options: [
+                "It connects directly with user applications like web browsers",
+                "It transmits electrical signals through cables",
+                "It handles MAC addresses",
+                "It manages routing between networks"
+            ],
+            correct: 0,
+            explanation: "The Application Layer is where users interact with network applications like web browsers, email clients, and file transfer programs."
+        },
+        {
+            question: "Which protocol is used for web browsing?",
+            options: ["TCP", "HTTP", "MAC", "IP"],
+            correct: 1,
+            explanation: "HTTP (Hypertext Transfer Protocol) is the main protocol used for web browsing at the Application Layer."
+        },
+        {
+            question: "What service does DNS provide?",
+            options: [
+                "Converts website names to IP addresses",
+                "Sends emails",
+                "Encrypts data",
+                "Manages Wi-Fi connections"
+            ],
+            correct: 0,
+            explanation: "DNS (Domain Name System) translates human-readable website names (like google.com) into IP addresses that computers can understand."
+        }
+    ],
+    6: [
+        {
+            question: "What is the main job of the Presentation Layer?",
+            options: [
+                "Routing packets",
+                "Formatting and encrypting data",
+                "Physical transmission",
+                "Error detection"
+            ],
+            correct: 1,
+            explanation: "The Presentation Layer formats, encrypts, and compresses data so it can be properly understood by the Application Layer."
+        },
+        {
+            question: "Which of these is a Presentation Layer function?",
+            options: [
+                "Data encryption",
+                "Routing",
+                "Physical connectivity",
+                "MAC addressing"
+            ],
+            correct: 0,
+            explanation: "Data encryption is a key function of the Presentation Layer, along with compression and format conversion."
+        },
+        {
+            question: "What does SSL/TLS do?",
+            options: [
+                "Routes data packets",
+                "Provides secure, encrypted communication",
+                "Manages physical cables",
+                "Assigns IP addresses"
+            ],
+            correct: 1,
+            explanation: "SSL/TLS provides encryption for secure communication over the internet, protecting your data from eavesdroppers."
+        }
+    ],
+    5: [
+        {
+            question: "What does the Session Layer manage?",
+            options: [
+                "Connections between applications",
+                "Physical cables",
+                "IP addresses",
+                "Data encryption"
+            ],
+            correct: 0,
+            explanation: "The Session Layer establishes, manages, and terminates connections (sessions) between applications."
+        },
+        {
+            question: "When you're on a video call, which layer keeps your connection alive?",
+            options: [
+                "Physical Layer",
+                "Session Layer",
+                "Data Link Layer",
+                "Application Layer"
+            ],
+            correct: 1,
+            explanation: "The Session Layer maintains the connection during your video call, handling any interruptions and recovery."
+        },
+        {
+            question: "What happens if a session is interrupted?",
+            options: [
+                "The Session Layer can help recover and resume it",
+                "All data is permanently lost",
+                "You need to restart your computer",
+                "The Physical Layer fixes it"
+            ],
+            correct: 0,
+            explanation: "The Session Layer includes checkpointing and recovery features to help resume interrupted sessions."
+        }
+    ],
+    4: [
+        {
+            question: "What are the two main protocols in the Transport Layer?",
+            options: [
+                "HTTP and FTP",
+                "TCP and UDP",
+                "IP and ICMP",
+                "DNS and DHCP"
+            ],
+            correct: 1,
+            explanation: "TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are the two main Transport Layer protocols."
+        },
+        {
+            question: "What does TCP guarantee?",
+            options: [
+                "Data arrives in the correct order",
+                "Fastest possible speed",
+                "Physical connection",
+                "Wireless connectivity"
+            ],
+            correct: 0,
+            explanation: "TCP ensures reliable, ordered delivery of data. If packets arrive out of order or are lost, TCP handles it."
+        },
+        {
+            question: "When is UDP typically used?",
+            options: [
+                "Email",
+                "File downloads",
+                "Live video streaming",
+                "Banking websites"
+            ],
+            correct: 2,
+            explanation: "UDP is used for live streaming and online gaming where speed is more important than perfect reliability."
+        }
+    ],
+    3: [
+        {
+            question: "What does the Network Layer handle?",
+            options: [
+                "Routing data between different networks",
+                "Encrypting passwords",
+                "Managing sessions",
+                "Physical cables"
+            ],
+            correct: 0,
+            explanation: "The Network Layer is responsible for routing data packets across different networks using IP addresses."
+        },
+        {
+            question: "What addressing system does the Network Layer use?",
+            options: [
+                "MAC addresses",
+                "IP addresses",
+                "Email addresses",
+                "Port numbers"
+            ],
+            correct: 1,
+            explanation: "The Network Layer uses IP addresses (like 192.168.1.1) to identify devices on a network."
+        },
+        {
+            question: "What does a router primarily work with?",
+            options: [
+                "Only physical cables",
+                "IP addresses at the Network Layer",
+                "Only Ethernet cables",
+                "Application data"
+            ],
+            correct: 1,
+            explanation: "Routers work at the Network Layer, using IP addresses to determine the best path for data packets."
+        }
+    ],
+    2: [
+        {
+            question: "What does the Data Link Layer use for addressing?",
+            options: [
+                "IP addresses",
+                "MAC addresses",
+                "Port numbers",
+                "Domain names"
+            ],
+            correct: 1,
+            explanation: "The Data Link Layer uses MAC (Media Access Control) addresses, which are unique hardware addresses for each network device."
+        },
+        {
+            question: "What is a frame in the Data Link Layer?",
+            options: [
+                "A picture on a webpage",
+                "A package of data with MAC addresses",
+                "An IP address",
+                "A physical cable"
+            ],
+            correct: 1,
+            explanation: "A frame is a Data Link Layer unit that contains data along with source and destination MAC addresses."
+        },
+        {
+            question: "Which devices work at the Data Link Layer?",
+            options: [
+                "Routers only",
+                "Switches and bridges",
+                "Hubs only",
+                "Cables"
+            ],
+            correct: 1,
+            explanation: "Switches and bridges operate at the Data Link Layer, using MAC addresses to forward frames."
+        }
+    ],
+    1: [
+        {
+            question: "What does the Physical Layer transmit?",
+            options: [
+                "Emails",
+                "Raw bits (1s and 0s)",
+                "IP addresses",
+                "Encrypted data"
+            ],
+            correct: 1,
+            explanation: "The Physical Layer converts data into raw electrical signals, light pulses, or radio waves (bits: 1s and 0s)."
+        },
+        {
+            question: "Which of these is a Physical Layer component?",
+            options: [
+                "HTTP",
+                "IP address",
+                "Ethernet cable",
+                "Firewall"
+            ],
+            correct: 2,
+            explanation: "Ethernet cables are Physical Layer components that physically transmit electrical signals."
+        },
+        {
+            question: "What type of signals does fiber optic cable use?",
+            options: [
+                "Electrical signals",
+                "Light pulses",
+                "Sound waves",
+                "Radio waves"
+            ],
+            correct: 1,
+            explanation: "Fiber optic cables transmit data using light pulses, which can travel very fast over long distances."
+        }
+    ]
+};
+
 // Drag and Drop Functions
 function allowDrop(ev) {
     ev.preventDefault();
@@ -608,16 +1058,71 @@ function allowDrop(ev) {
 
 function drag(ev) {
     draggedElement = ev.currentTarget;
-    ev.dataTransfer.setData("text", ev.target.dataset.layer);
+    // Ensure we're setting a string value
+    const layerValue = normalizeLayer(ev.currentTarget.dataset.layer);
+    try {
+        ev.dataTransfer.setData("text/plain", layerValue); // preferred MIME
+        ev.dataTransfer.setData("text", layerValue); // legacy fallback
+    } catch (e) {
+        if (OSI_SIM_DEBUG) console.warn('DataTransfer setData failed', e);
+    }
+    if (OSI_SIM_DEBUG) console.debug('[OSI] Drag start', { layerValue });
 }
 
 function drop(ev) {
     ev.preventDefault();
     ev.currentTarget.classList.remove('drag-over');
-    const draggedLayer = ev.dataTransfer.getData("text");
+    
     const dropSlot = ev.currentTarget;
-    const targetLayer = dropSlot.dataset.layer;
-    if (draggedLayer === targetLayer) {
+    const zoneId = dropSlot.dataset.zone;
+    let rawDragged = '';
+    try {
+        // Try preferred then fallback MIME types
+        rawDragged = ev.dataTransfer.getData('text/plain') || ev.dataTransfer.getData('text') || '';
+    } catch (e) {
+        if (OSI_SIM_DEBUG) console.warn('[OSI] getData failed', e);
+    }
+
+    const draggedLayer = normalizeLayer(rawDragged);
+    const targetLayer = normalizeLayer(dropSlot.dataset.layer);
+    const comparisonMatch = draggedLayer !== '' && targetLayer !== '' && draggedLayer === targetLayer;
+    
+    if (OSI_SIM_DEBUG) console.debug('[OSI] Drop event', {
+        draggedLayer,
+        targetLayer,
+        comparisonMatch,
+        zoneId,
+        slotFilled: dropSlot.classList.contains('correct-placement')
+    });
+    
+    // Check if slot is already filled
+    if (dropSlot.classList.contains('correct-placement')) {
+        // Don't show error animation for correct placements - just show a gentle message
+        const alreadyFilledIndicator = document.createElement('div');
+        alreadyFilledIndicator.className = 'success-indicator';
+        alreadyFilledIndicator.innerHTML = `<i class="fas fa-info-circle"></i> Already placed!`;
+        alreadyFilledIndicator.style.background = 'rgba(59, 130, 246, 0.9)'; // Blue instead of green
+        dropSlot.appendChild(alreadyFilledIndicator);
+        
+        setTimeout(() => {
+            if (alreadyFilledIndicator && alreadyFilledIndicator.parentNode) {
+                alreadyFilledIndicator.remove();
+            }
+        }, 1500);
+        return;
+    }
+    
+    // Guard: if either side empty, treat as incorrect (defensive against race conditions)
+    if (!draggedLayer || !targetLayer) {
+        if (OSI_SIM_DEBUG) console.debug('[OSI] Empty identifiers treated as incorrect', { draggedLayer, targetLayer });
+        dropSlot.classList.add('incorrect-placement');
+        showErrorAnimation(dropSlot);
+        setTimeout(()=>dropSlot.classList.remove('incorrect-placement'),1000);
+        resetIdleTimer();
+        return;
+    }
+
+    if (comparisonMatch) {
         dropSlot.classList.add('correct-placement');
         dropSlot.innerHTML = `
             <div class="placed-layer">
@@ -626,7 +1131,27 @@ function drop(ev) {
                     <div class="placement-status"><i class="fas fa-check-circle"></i> Correct!</div>
                 </div>
             </div>`;
-        if (draggedElement) {draggedElement.remove(); draggedElement = null;}
+        
+        // Clone the dragged element back to the draggable zone if it was removed
+        if (!document.querySelector(`.draggable-item[data-layer="${draggedLayer}"]`)) {
+            cloneDraggableItem(draggedLayer);
+        }
+        
+        // Update zone-specific counters
+        if (zoneId === "1") {
+            zone1Placements++;
+            if (zone1Placements === 7) {
+                zone1Complete = true;
+                showZoneCompleteMessage("Zone 1");
+            }
+        } else if (zoneId === "2") {
+            zone2Placements++;
+            if (zone2Placements === 7) {
+                zone2Complete = true;
+                showZoneCompleteMessage("Zone 2");
+            }
+        }
+        
         correctPlacements++; // still for layer logic
         unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS); // increment a unit
         updateScore();
@@ -635,18 +1160,166 @@ function drop(ev) {
         // Show success modal for correct placement
         showSuccessModal(draggedLayer);
         
-        // Check if all layers are placed
-        if (correctPlacements === 7) {
+        // Check if both zones are complete
+        if (zone1Complete && zone2Complete) {
+            stopHintSystem();
             setTimeout(() => {
-                showAllLayersCompletedModal();
+                automaticDataFlow();
             }, 1500);
+        } else {
+            // Reset idle timer on successful placement
+            resetIdleTimer();
         }
     } else {
+        if (OSI_SIM_DEBUG) console.debug('[OSI] Incorrect placement', { draggedLayer, targetLayer });
         dropSlot.classList.add('incorrect-placement');
         showErrorAnimation(dropSlot);
         setTimeout(()=>dropSlot.classList.remove('incorrect-placement'),1000);
+        resetIdleTimer();
     }
 }
+
+function cloneDraggableItem(layerNum) {
+    const draggableZone = document.querySelector('.draggable-zone');
+    const info = layerInfo[layerNum];
+    
+    const layerElement = document.createElement('div');
+    layerElement.className = `osi-layer-pill draggable-item layer-${layerNum}`;
+    layerElement.dataset.layer = layerNum;
+    layerElement.draggable = true;
+    layerElement.setAttribute('ondragstart', 'drag(event)');
+    layerElement.setAttribute('onclick', `showLayerInfo(${layerNum})`);
+    
+    layerElement.innerHTML = `
+        <div class="layer-content">
+            <div class="layer-name">${info.name}</div>
+            <div class="layer-protocols">${info.protocols.slice(0, 2).join(' ')}...</div>
+        </div>
+    `;
+    
+    draggableZone.appendChild(layerElement);
+}
+
+function showZoneCompleteMessage(zoneName) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(74, 222, 128, 0.95);
+        color: white;
+        padding: 30px 40px;
+        border-radius: 16px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        z-index: 10002;
+        box-shadow: 0 8px 30px rgba(74, 222, 128, 0.6);
+        animation: bounceIn 0.6s ease-out;
+        text-align: center;
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-check-circle" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
+        ${zoneName} Complete! 🎉
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.5s ease-in';
+        setTimeout(() => notification.remove(), 500);
+    }, 2500);
+}
+
+function automaticDataFlow() {
+    const modal = document.getElementById('layerModal');
+    const content = document.getElementById('modalContent');
+    
+    content.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+            <h2 style="color: #4ade80; margin-bottom: 15px;">
+                <i class="fas fa-trophy"></i> Both Zones Complete!
+            </h2>
+            
+            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <p style="font-size: 1.3rem; margin: 10px 0;">
+                    🌊 Automatic Data Flow Starting...
+                </p>
+                <p style="font-size: 1.1rem; color: #fbbf24; margin: 10px 0;">
+                    Watch as data flows through all OSI layers!
+                </p>
+            </div>
+            
+            <button onclick="closeModal(); executeDataFlow();" class="control-button primary" style="margin-top: 20px; padding: 12px 24px;">
+                <i class="fas fa-play"></i> Start Animation
+            </button>
+        </div>
+    `;
+    
+    modal.classList.add('show');
+}
+
+function executeDataFlow() {
+    // Animate both drop zones
+    const zone1Layers = document.querySelectorAll('#dropZone1 .correct-placement');
+    const zone2Layers = document.querySelectorAll('#dropZone2 .correct-placement');
+    
+    // Animate Zone 1
+    zone1Layers.forEach((layer, index) => {
+        setTimeout(() => {
+            layer.style.animation = 'flowAnimation 0.8s ease-in-out';
+            layer.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
+            
+            setTimeout(() => {
+                layer.style.animation = '';
+                layer.style.boxShadow = '';
+            }, 800);
+        }, index * 200);
+    });
+    
+    // Animate Zone 2 slightly offset
+    zone2Layers.forEach((layer, index) => {
+        setTimeout(() => {
+            layer.style.animation = 'flowAnimation 0.8s ease-in-out';
+            layer.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.8)';
+            
+            setTimeout(() => {
+                layer.style.animation = '';
+                layer.style.boxShadow = '';
+            }, 800);
+        }, index * 200 + 100);
+    });
+    
+    // Show completion message after animation
+    setTimeout(() => {
+        showCompletionCelebration();
+    }, zone1Layers.length * 200 + 1000);
+}
+
+// Add flow animation to styles
+const flowAnimationStyle = document.createElement('style');
+flowAnimationStyle.textContent = `
+    @keyframes flowAnimation {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(flowAnimationStyle);
 
 function showSuccessAnimation(element) {
     // Create success particle effect
@@ -666,48 +1339,199 @@ function showSuccessAnimation(element) {
     }, 2000);
 }
 
+function showErrorAnimation(element) {
+    // Create error shake effect
+    element.style.animation = 'shake 0.5s ease-in-out';
+    
+    // Create error indicator
+    const errorIndicator = document.createElement('div');
+    errorIndicator.className = 'error-indicator';
+    errorIndicator.innerHTML = `<i class="fas fa-times-circle"></i> Try again!`;
+    element.appendChild(errorIndicator);
+    
+    // Create error particle effect for visual feedback
+    createParticleEffect(element, 'error');
+    
+    // Remove animation and indicator after animation completes
+    setTimeout(() => {
+        element.style.animation = '';
+        if (errorIndicator && errorIndicator.parentNode) {
+            errorIndicator.remove();
+        }
+    }, 1000);
+}
+
 function showSuccessModal(layerNumber) {
     const info = layerInfo[layerNumber];
-    const pointsEarned = (100 / TOTAL_UNITS).toFixed(2);
+    
+    // Check if quiz already answered for this layer
+    if (quizAnswered[layerNumber]) {
+        // Just show confirmation without quiz
+        showQuickConfirmation(layerNumber);
+        return;
+    }
+    
+    // Get a random quiz question for this layer
+    const quizzes = layerQuizzes[layerNumber];
+    const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
+    currentQuizLayer = layerNumber;
+    
     const modal = document.getElementById('layerModal');
     const content = document.getElementById('modalContent');
     
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+            <div style="font-size: 3rem; margin-bottom: 15px;">✅</div>
             <h2 style="color: #4ade80; margin-bottom: 15px;">
                 <i class="fas fa-check-circle"></i> Correct Placement!
             </h2>
             
-            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 20px; margin: 20px 0;">
-                <h3 style="color: #00d4ff; margin-bottom: 10px;">${info.name}</h3>
-                <p style="font-size: 1.2rem; color: #fbbf24; margin: 10px 0;">
-                    <i class="fas fa-star"></i> +${pointsEarned} Points
-                </p>
-                <p style="margin: 10px 0;">
-                    <strong>Progress:</strong> ${correctPlacements}/7 Layers Placed
+            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 15px 0;">
+                <h3 style="color: #00d4ff; margin-bottom: 5px;">${info.name}</h3>
+                <p style="margin: 5px 0; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
+                    Layer ${layerNumber} placed correctly!
                 </p>
             </div>
             
-            <div style="text-align: left; margin-top: 20px;">
-                <h4 style="color: #a78bfa; margin-bottom: 10px;">Quick Info:</h4>
-                <p style="line-height: 1.6;">${info.description}</p>
+            <div style="background: rgba(139, 92, 246, 0.2); border: 2px solid #a78bfa; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left;">
+                <h3 style="color: #a78bfa; margin-bottom: 15px; text-align: center;">
+                    <i class="fas fa-brain"></i> Quick Quiz
+                </h3>
+                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: #fff;">
+                    ${randomQuiz.question}
+                </p>
+                <div id="quizOptions" style="display: flex; flex-direction: column; gap: 10px;">
+                    ${randomQuiz.options.map((option, index) => `
+                        <button onclick="checkQuizAnswer(${index}, ${randomQuiz.correct}, '${randomQuiz.explanation.replace(/'/g, "\\'")}')" 
+                                class="quiz-option-button" 
+                                style="background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); color: white; padding: 12px 15px; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: left; font-size: 0.95rem; font-weight: 500;">
+                            ${String.fromCharCode(65 + index)}. ${option}
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="quizFeedback" style="margin-top: 15px; padding: 12px; border-radius: 8px; display: none;"></div>
             </div>
-            
-            <button onclick="closeModal()" class="control-button primary" style="margin-top: 20px; padding: 12px 24px;">
-                <i class="fas fa-arrow-right"></i> Continue
-            </button>
         </div>
     `;
     
     modal.classList.add('show');
     
-    // Auto-close after 4 seconds
+    // Add hover effects to quiz buttons
     setTimeout(() => {
-        if (modal.classList.contains('show')) {
-            closeModal();
+        document.querySelectorAll('.quiz-option-button').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(0, 212, 255, 0.2)';
+                this.style.borderColor = 'rgba(0, 212, 255, 0.5)';
+                this.style.transform = 'translateX(5px)';
+            });
+            btn.addEventListener('mouseleave', function() {
+                if (!this.disabled) {
+                    this.style.background = 'rgba(255, 255, 255, 0.1)';
+                    this.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    this.style.transform = 'translateX(0)';
+                }
+            });
+        });
+    }, 100);
+}
+
+function checkQuizAnswer(selected, correct, explanation) {
+    const feedback = document.getElementById('quizFeedback');
+    const buttons = document.querySelectorAll('.quiz-option-button');
+    
+    // Disable all buttons
+    buttons.forEach((btn, index) => {
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+        
+        if (index === correct) {
+            // Highlight correct answer
+            btn.style.background = 'linear-gradient(135deg, rgba(74, 222, 128, 0.4), rgba(34, 197, 94, 0.4))';
+            btn.style.borderColor = '#4ade80';
+            btn.style.transform = 'scale(1.02)';
+        } else if (index === selected && selected !== correct) {
+            // Highlight wrong answer
+            btn.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(220, 38, 38, 0.4))';
+            btn.style.borderColor = '#ef4444';
+            btn.style.animation = 'shake 0.5s ease-in-out';
         }
-    }, 4000);
+    });
+    
+    // Show feedback
+    feedback.style.display = 'block';
+    
+    if (selected === correct) {
+        feedback.innerHTML = `
+            <div style="background: rgba(74, 222, 128, 0.3); border: 2px solid #4ade80; border-radius: 8px; padding: 12px;">
+                <p style="margin: 0; color: #4ade80; font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-check-circle"></i> Correct! Great job! 🎉
+                </p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: rgba(255,255,255,0.9);">
+                    ${explanation}
+                </p>
+                <button onclick="closeModal()" class="control-button success" style="margin-top: 12px; padding: 10px 20px; width: 100%;">
+                    <i class="fas fa-arrow-right"></i> Continue
+                </button>
+            </div>
+        `;
+        
+        // Mark quiz as answered
+        quizAnswered[currentQuizLayer] = true;
+        
+        // Add bonus points for quiz
+        unitsCompleted = Math.min(unitsCompleted + 0.5, TOTAL_UNITS);
+        updateScore();
+        
+    } else {
+        feedback.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.3); border: 2px solid #ef4444; border-radius: 8px; padding: 12px;">
+                <p style="margin: 0; color: #fbbf24; font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i> Not quite right, but that's okay!
+                </p>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: rgba(255,255,255,0.9);">
+                    ${explanation}
+                </p>
+                <button onclick="closeModal()" class="control-button primary" style="margin-top: 12px; padding: 10px 20px; width: 100%;">
+                    <i class="fas fa-arrow-right"></i> Continue
+                </button>
+            </div>
+        `;
+        
+        // Still mark as answered but no bonus
+        quizAnswered[currentQuizLayer] = true;
+    }
+}
+
+function showQuickConfirmation(layerNumber) {
+    const info = layerInfo[layerNumber];
+    
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(74, 222, 128, 0.95);
+        color: white;
+        padding: 25px 35px;
+        border-radius: 16px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        z-index: 10002;
+        box-shadow: 0 8px 30px rgba(74, 222, 128, 0.6);
+        animation: bounceIn 0.5s ease-out;
+        text-align: center;
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-check-circle" style="font-size: 2.5rem; display: block; margin-bottom: 10px;"></i>
+        ${info.name} ✓
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'fadeOut 0.5s ease-in';
+        setTimeout(() => notification.remove(), 500);
+    }, 1500);
 }
 
 function showAllLayersCompletedModal() {
@@ -750,36 +1574,24 @@ function showAllLayersCompletedModal() {
     modal.classList.add('show');
 }
 
-function showErrorAnimation(element) {
-    // Shake animation for incorrect placement
-    element.style.animation = 'shake 0.5s ease-in-out';
-    
-    // Create error indicator
-    const errorIndicator = document.createElement('div');
-    errorIndicator.className = 'error-indicator';
-    errorIndicator.innerHTML = '<i class="fas fa-times-circle"></i> Try again!';
-    element.appendChild(errorIndicator);
-    
-    setTimeout(() => {
-        element.style.animation = '';
-        errorIndicator.remove();
-    }, 1000);
-}
-
 function createParticleEffect(element, type) {
     const rect = element.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
-    for (let i = 0; i < 12; i++) {
+    const particleCount = type === 'error' ? 8 : 12;
+    const colors = type === 'error' ? ['#ef4444', '#dc2626', '#f87171'] : ['#4ade80', '#22c55e', '#16a34a'];
+    
+    for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = `particle ${type}`;
         particle.style.left = centerX + 'px';
         particle.style.top = centerY + 'px';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
         
         // Random direction for each particle
-        const angle = (Math.PI * 2 * i) / 12;
-        const distance = 80 + Math.random() * 40;
+        const angle = (Math.PI * 2 * i) / particleCount;
+        const distance = type === 'error' ? 40 + Math.random() * 20 : 80 + Math.random() * 40;
         const tx = Math.cos(angle) * distance;
         const ty = Math.sin(angle) * distance;
         
@@ -793,34 +1605,6 @@ function createParticleEffect(element, type) {
             particle.remove();
         }, 2000);
     }
-}
-
-function showCompletionCelebration() {
-    // Guard: only celebrate if fully completed
-    if (unitsCompleted < TOTAL_UNITS) return;
-    const existing = document.querySelector('.completion-celebration');
-    if (existing) existing.remove();
-    const celebration = document.createElement('div');
-    celebration.className = 'completion-celebration';
-    celebration.innerHTML = `
-        <div class="celebration-content">
-            <div class="celebration-icon">🎉</div>
-            <h2 style="color: #fbbf24; margin: 20px 0;">Congratulations!</h2>
-            <p style="font-size: 1.2rem; margin: 15px 0;">You achieved a perfect understanding of the OSI Model!</p>
-            <div class="final-score">Final Score: ${score.toFixed(2)}%</div>
-            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 20px 0;">
-                <p style="margin: 0; color: #4ade80;"><i class="fas fa-check-circle"></i> Score saved successfully!</p>
-            </div>
-            <button onclick="closeCompletionCelebration()" class="control-button success" style="margin: 10px;">
-                <i class="fas fa-check"></i> Done
-            </button>
-            <button onclick="resetSimulation(); closeCompletionCelebration();" class="control-button primary" style="margin: 10px;">
-                <i class="fas fa-refresh"></i> Try Again
-            </button>
-        </div>`;
-    document.body.appendChild(celebration);
-    createConfettiEffect();
-    saveScore();
 }
 
 function closeCompletionCelebration() {
@@ -905,78 +1689,52 @@ function updateScore() {
     setTimeout(()=>scoreElement.classList.remove('score-update'),500);
 }
 
-function startDataFlow() {
-    if (correctPlacements < 7) {
-        alert('📚 Please complete the OSI layer arrangement first!');
-        return;
-    }
-    
-    // Animate the correctly placed layers to show data flow
-    const placedLayers = document.querySelectorAll('.correct-placement');
-    
-    placedLayers.forEach((layer, index) => {
-        setTimeout(() => {
-            layer.style.animation = 'flowAnimation 0.8s ease-in-out';
-            layer.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
-            
-            setTimeout(() => {
-                layer.style.animation = '';
-                layer.style.boxShadow = '';
-            }, 800);
-        }, index * 200);
-    });
-    
-    // Show completion message
-    setTimeout(() => {
-        alert('📡 Data Flow Complete!\n\nData has been processed through all 7 OSI layers in the correct order!');
-    }, placedLayers.length * 200 + 800);
-}
-
-function testKnowledge() {
-    if (correctPlacements < 7) { alert('📚 Please complete the OSI layer arrangement first!'); return; }
-    // 7 knowledge questions -> each correct grants 1 remaining unit.
-    const questions = [
-        { q: 'Which layer handles routing and logical addressing?', options:['Transport','Network','Data Link','Session'], a:1 },
-        { q: 'Which protocols operate at the Application layer?', options:['TCP, UDP','HTTP, FTP','IP, ICMP','Ethernet, WiFi'], a:1 },
-        { q: 'Main function of the Transport layer?', options:['Physical transmission','End-to-end delivery','Data encryption','Frame delivery'], a:1 },
-        { q: 'Which layer provides encryption / translation?', options:['Presentation','Session','Network','Physical'], a:0 },
-        { q: 'Which layer is responsible for frames & MAC?', options:['Transport','Data Link','Application','Network'], a:1 },
-        { q: 'Raw bit transmission occurs at which layer?', options:['Physical','Data Link','Session','Transport'], a:0 },
-        { q: 'Segmentation & reassembly belong to?', options:['Transport','Network','Session','Application'], a:0 }
-    ];
-    let newlyEarned = 0;
-    questions.forEach((q,i)=>{
-        if (unitsCompleted >= TOTAL_UNITS) return; // already finished
-        const answer = prompt(`Question ${i+1}: ${q.q}\n\n${q.options.map((o,idx)=>`${idx+1}. ${o}`).join('\n')}\n\nEnter 1-4:`);
-        if (!answer) return; // cancel -> skip
-        if (parseInt(answer)-1 === q.a) {
-            newlyEarned++;
-            unitsCompleted = Math.min(unitsCompleted + 1, TOTAL_UNITS);
-        }
-    });
-    if (newlyEarned > 0) {
-        updateScore();
-        alert(`Knowledge bonus: +${newlyEarned} unit(s). Progress ${unitsCompleted}/${TOTAL_UNITS} (${score.toFixed(2)}%).`);
-    } else {
-        alert('No additional units earned this time.');
-    }
-    if (unitsCompleted === TOTAL_UNITS) {
-        showCompletionCelebration();
-    }
+function showCompletionCelebration() {
+    // Guard: only celebrate if both zones completed
+    if (!zone1Complete || !zone2Complete) return;
+    const existing = document.querySelector('.completion-celebration');
+    if (existing) existing.remove();
+    const celebration = document.createElement('div');
+    celebration.className = 'completion-celebration';
+    celebration.innerHTML = `
+        <div class="celebration-content">
+            <div class="celebration-icon">🎉</div>
+            <h2 style="color: #fbbf24; margin: 20px 0;">Congratulations!</h2>
+            <p style="font-size: 1.2rem; margin: 15px 0;">You achieved a perfect understanding of the OSI Model!</p>
+            <div class="final-score">Final Score: ${score.toFixed(2)}%</div>
+            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #4ade80;"><i class="fas fa-check-circle"></i> Score saved successfully!</p>
+            </div>
+            <button onclick="closeCompletionCelebration()" class="control-button success" style="margin: 10px;">
+                <i class="fas fa-check"></i> Done
+            </button>
+            <button onclick="resetSimulation(); closeCompletionCelebration();" class="control-button primary" style="margin: 10px;">
+                <i class="fas fa-refresh"></i> Try Again
+            </button>
+        </div>`;
+    document.body.appendChild(celebration);
+    createConfettiEffect();
+    saveScore();
 }
 
 function resetSimulation() {
     score = 0;
     correctPlacements = 0;
     unitsCompleted = 0;
+    zone1Complete = false;
+    zone2Complete = false;
+    zone1Placements = 0;
+    zone2Placements = 0;
+    quizAnswered = {}; // Reset quiz tracking
     updateScore();
+    
     // Remove completion celebration if it exists
     const celebration = document.querySelector('.completion-celebration');
     if (celebration) {
         celebration.remove();
     }
     
-    // Reset all drop slots
+    // Reset all drop slots in both zones
     document.querySelectorAll('.drop-slot').forEach(slot => {
         slot.classList.remove('correct-placement', 'incorrect-placement');
         const layer = slot.dataset.layer;
@@ -986,7 +1744,7 @@ function resetSimulation() {
         `;
     });
     
-    // Restore all draggable items to the right side
+    // Restore all draggable items to the center
     const draggableZone = document.querySelector('.draggable-zone');
     const layers = [5, 2, 7, 1, 4, 6, 3]; // Shuffled order
     
@@ -996,25 +1754,14 @@ function resetSimulation() {
     
     // Re-add shuffled draggable items
     layers.forEach(layerNum => {
-        const layerElement = document.createElement('div');
-        layerElement.className = `osi-layer-pill draggable-item layer-${layerNum}`;
-        layerElement.dataset.layer = layerNum;
-        layerElement.draggable = true;
-        layerElement.setAttribute('ondragstart', 'drag(event)');
-        layerElement.setAttribute('onclick', `showLayerInfo(${layerNum})`);
-        
-        const info = layerInfo[layerNum];
-        layerElement.innerHTML = `
-            <div class="layer-content">
-                <div class="layer-name">${info.name}</div>
-                <div class="layer-protocols">${info.protocols.slice(0, 2).join(' ')}...</div>
-            </div>
-        `;
-        
-        draggableZone.appendChild(layerElement);
+        cloneDraggableItem(layerNum);
     });
     
-    alert('🔄 Simulation reset! Drag the OSI layers to arrange them correctly.');
+    // Restart automatic hint system
+    stopHintSystem();
+    resetIdleTimer();
+    
+    alert('🔄 Simulation reset! Drag the OSI layers to arrange them correctly in both drop zones.');
 }
 
 function saveScore() {
@@ -1104,6 +1851,20 @@ document.head.appendChild(notificationStyles);
 // Event listeners for drag and drop
 document.addEventListener('DOMContentLoaded', function() {
     updateScore();
+    
+    // Start idle timer for hint system
+    resetIdleTimer();
+    
+    // Track user activity to reset idle timer
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+        document.addEventListener(event, () => {
+            // Only reset on meaningful activity (not just mouse hovering)
+            if (event === 'mousedown' || event === 'keypress' || event === 'touchstart' || event === 'click') {
+                resetIdleTimer();
+            }
+        });
+    });
     
     // Add event listeners to prevent default drag behaviors
     document.addEventListener('dragover', function(e) {

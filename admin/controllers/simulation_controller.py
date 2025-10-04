@@ -544,16 +544,23 @@ class SimulationController:
     def get_simulation_by_id(self, simulation_id, include_steps=True):
         """Get simulation by ID with optional step details"""
         try:
+            current_app.logger.info(f"[GET_SIMULATION_BY_ID] Looking for simulation_id={simulation_id}")
             simulation = Simulation.query.get(simulation_id)
             if not simulation:
+                current_app.logger.warning(f"[GET_SIMULATION_BY_ID] Simulation {simulation_id} not found in database")
                 return {'error': 'Simulation not found'}
             
-            return {
+            current_app.logger.info(f"[GET_SIMULATION_BY_ID] Found simulation {simulation_id}: {simulation.title}")
+            result = {
                 'simulation': simulation.to_dict(include_steps=include_steps, include_analytics=True)
             }
+            current_app.logger.info(f"[GET_SIMULATION_BY_ID] Successfully converted to dict")
+            return result
             
         except Exception as e:
             current_app.logger.error(f"Error getting simulation {simulation_id}: {str(e)}")
+            import traceback
+            current_app.logger.error(f"Traceback: {traceback.format_exc()}")
             return {'error': 'Failed to retrieve simulation'}
     
     def update_simulation(self, simulation_id, update_data):

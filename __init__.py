@@ -233,13 +233,8 @@ def create_app(config=None):
     except Exception as e:
         print(f"⚠️ Error registering RNet file viewer blueprint: {e}")
     
-    # Register admin user controller blueprint (moved out of commented section)
-    try:
-        from admin.controllers.user_controller import user_bp
-        app.register_blueprint(user_bp, url_prefix='/users')
-        print("✅ Admin user controller blueprint registered")
-    except Exception as e:
-        print(f"⚠️ Error registering admin user controller blueprint: {e}")
+    # Admin user controller blueprint is registered in run.py with other admin blueprints
+    # (Removed duplicate registration to prevent "name already registered" error)
     
     # Add context processors for static file server
     @app.context_processor

@@ -1,36 +1,98 @@
-import eventlet
-# Patch only what's needed, exclude psycopg2 from patching
-eventlet.monkey_patch(socket=True, select=True, time=True, thread=False, os=True)
+# ===== CRITICAL IMPORT ORDER =====
+# 1. Suppress warnings FIRST to prevent noise
+import warnings
+warnings.filterwarnings('ignore', message='.*monkey_patch.*')
+warnings.filterwarnings('ignore', message='.*Working outside of.*context.*')
+warnings.filterwarnings('ignore', message='.*Working outside of.*request.*')
 
-from __init__ import create_app, db, login_manager
-from socket_manager import socketio  
+# 2. Import eventlet BEFORE any other modules
+import eventlet
+
+# 3. Apply monkey patching immediately, but carefully avoid threading issues
+try:
+    # Apply minimal monkey patching - avoid threading to prevent psycopg2 conflicts
+    eventlet.monkey_patch(
+        socket=True, 
+        select=True, 
+        time=True, 
+        thread=False,  # Critical: Don't patch threading for psycopg2 compatibility
+        os=True,
+        ssl=False,  # Avoid SSL patching issues
+        all=False   # Only patch what we explicitly request
+    )
+except Exception as e:
+    print(f"Warning: Eventlet monkey patch failed: {e}")
+    print("Continuing with standard Flask operation...")
+
+# 4. Now import Flask and other modules
 import os
+import sys
+
+# Add project root to path to ensure imports work
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# 5. Import Flask components with better error handling
+try:
+    from __init__ import create_app, db, login_manager
+except ImportError as e:
+    print(f"Error importing Flask app components: {e}")
+    sys.exit(1)
+
+try:
+    from socket_manager import socketio
+except ImportError as e:
+    print(f"Error importing socketio: {e}")
+    socketio = None
+
 from user.quiz import QuizController
 from flask_login import current_user
 from flask import redirect, url_for, request, flash
 from flask_cors import CORS
 import socket_events 
 
+# ===== APPLICATION CREATION AND CONTEXT SETUP =====
 template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
-app = create_app({
-    'TEMPLATE_FOLDER': template_dir
-})
+
+# Create Flask app with better error handling
+try:
+    app = create_app({
+        'TEMPLATE_FOLDER': template_dir
+    })
+except Exception as e:
+    print(f"Fatal error creating Flask app: {e}")
+    sys.exit(1)
 
 # Configure session settings for production
-# This fixes the login redirect loop by properly configuring session cookies
 app.config.update(
-    SESSION_COOKIE_SECURE=True,      # Only send cookies over HTTPS
-    SESSION_COOKIE_HTTPONLY=True,    # Prevent JavaScript access to session cookie
-    SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
-    SESSION_PERMANENT=True,          # Make sessions persistent
-    PERMANENT_SESSION_LIFETIME=86400 # 24 hour session lifetime
+    SESSION_COOKIE_SECURE=False,      # Set to True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY=True,     # Prevent JavaScript access to session cookie
+    SESSION_COOKIE_SAMESITE='Lax',    # CSRF protection
+    SESSION_PERMANENT=True,           # Make sessions persistent
+    PERMANENT_SESSION_LIFETIME=86400  # 24 hour session lifetime
 )
 
-ctx = app.app_context()
-ctx.push()
+# Initialize application context properly
+try:
+    ctx = app.app_context()
+    ctx.push()
+    print("✅ Application context initialized successfully")
+except Exception as e:
+    print(f"Warning: Application context setup failed: {e}")
+    print("Continuing without explicit context push...")
 
-from socket_manager import init_socketio
-init_socketio(app)
+# Initialize SocketIO with better error handling
+if socketio:
+    try:
+        from socket_manager import init_socketio
+        init_socketio(app)
+        print("✅ SocketIO initialized successfully")
+    except Exception as e:
+        print(f"Warning: SocketIO initialization failed: {e}")
+        print("WebSocket functionality may be limited")
+else:
+    print("⚠️ SocketIO not available - WebSocket functionality disabled")
 
 # Configure structured logging
 import logging
@@ -41,14 +103,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Inject socketio instance into notification controller
-try:
-    from admin.controllers.notification_controller import set_socketio_instance
-    set_socketio_instance(socketio)
-    logger.info("✅ SocketIO instance injected into notification controller")
-except ImportError as e:
-    logger.warning(f"Could not inject socketio into notification controller: {e}")
-except Exception as e:
-    logger.error(f"Unexpected error injecting socketio: {e}", exc_info=True)
+if socketio:
+    try:
+        from admin.controllers.notification_controller import set_socketio_instance
+        set_socketio_instance(socketio)
+        logger.info("✅ SocketIO instance injected into notification controller")
+    except ImportError as e:
+        logger.warning(f"Could not inject socketio into notification controller: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error injecting socketio: {e}", exc_info=True)
+else:
+    logger.warning("⚠️ SocketIO not available - notification controller injection skipped")
 
 cors = CORS(app, resources={
     r"/admin/topology/*": {"origins": "*"},
@@ -624,14 +689,25 @@ if __name__ == "__main__":
     logger.info("WebSocket events loaded and ready")
     logger.info("Static files will be served by Flask's built-in handler")
     
-    # Start the Flask-SocketIO server
-    socketio.run(
-        app,
-        debug=debug_mode,  # Use environment variable
-        host=chosen_host,
-        port=chosen_port,
-        use_reloader=False,  # Disable reloader to prevent threading issues
-        allow_unsafe_werkzeug=debug_mode  # Only allow in debug mode
-    )
+    # Start the appropriate server based on SocketIO availability
+    if socketio:
+        # Start the Flask-SocketIO server
+        socketio.run(
+            app,
+            debug=debug_mode,  # Use environment variable
+            host=chosen_host,
+            port=chosen_port,
+            use_reloader=False,  # Disable reloader to prevent threading issues
+            allow_unsafe_werkzeug=debug_mode  # Only allow in debug mode
+        )
+    else:
+        # Fallback to standard Flask server if SocketIO is not available
+        logger.warning("⚠️ Starting without SocketIO - WebSocket features disabled")
+        app.run(
+            debug=debug_mode,
+            host=chosen_host,
+            port=chosen_port,
+            use_reloader=False
+        )
 
 

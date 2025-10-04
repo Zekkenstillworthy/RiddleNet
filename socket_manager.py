@@ -2,11 +2,10 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from flask import request, session
 from flask_login import current_user
 import functools
-import eventlet
 from datetime import datetime
 
-# Apply eventlet monkey patch for better performance
-eventlet.monkey_patch()
+# Note: eventlet monkey patching is now handled in run.py
+# Removed duplicate monkey patching to avoid conflicts
 
 # Initialize SocketIO without an app (we'll attach it later)
 socketio = SocketIO(

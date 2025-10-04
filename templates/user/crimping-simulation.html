@@ -1,9 +1,12 @@
 {% extends 'user/base.html' %} {% block head %}
 
 <title>UTP Cable Crimping Simulation | RiddleNet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/crimping-simulation.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}" />
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape.css') }}" />
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}" />
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -984,53 +987,204 @@
   
   /* Mobile Landscape Mode - Priority for simulation pages */
   @media screen and (max-width: 896px) and (orientation: landscape) {
-    body {
+    html, body {
       overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
     }
     
     .container {
       width: 100vw;
       height: 100vh;
       margin: 0;
-      padding: 4px;
+      padding: 8px;
       border-radius: 0;
       display: flex;
-      flex-direction: row; /* Horizontal layout in landscape */
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin: 4px 0;
+    }
+    
+    .selected-type {
+      font-size: 12px;
+      padding: 4px 10px;
+      margin-top: 2px;
+    }
+    
+    .game-header {
+      padding: 6px;
+      margin-bottom: 6px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .score-display {
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+    
+    .score-item {
+      padding: 3px 6px;
+      min-width: 40px;
+    }
+    
+    .score-value {
+      font-size: 14px;
+    }
+    
+    .score-label {
+      font-size: 10px;
+    }
+    
+    .wiring-type {
+      padding: 6px;
+      margin-bottom: 6px;
+    }
+    
+    .wiring-type label {
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+    
+    .wiring-type select {
+      padding: 4px 6px;
+      font-size: 13px;
+      min-width: 120px;
+    }
+    
+    .cable, .rj45-connector {
+      padding: 6px;
+      margin: 4px 0;
+    }
+    
+    h2 {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    
+    .wires, .wire-slots {
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    
+    .wire, .wire-slot {
+      width: 50px;
+      height: 36px;
+      font-size: 11px;
+      min-width: 36px;
+      min-height: 36px;
+    }
+    
+    button {
+      min-width: 100px;
+      height: 36px;
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+    
+    .lowered-button {
+      margin-top: 12px;
+      gap: 8px;
+    }
+    
+    .profile-exit-btn {
+      height: 36px;
+      width: 36px;
+      font-size: 20px;
+      top: 10px;
+      right: 10px;
+    }
+    
+    .progress-container {
+      padding: 4px;
+      margin: 4px 0;
+    }
+    
+    .progress-label {
+      font-size: 11px;
+    }
+    
+    .progress-percentage {
+      font-size: 14px;
     }
     
     /* Optimize simulation area for landscape */
     .simulation-area, .crimping-area {
-      flex: 2;
-      height: 100vh;
+      flex: 1;
       display: flex;
       flex-direction: column;
-    }
-    
-    /* Optimize controls/tools for landscape */
-    .tools-panel, .controls-panel {
-      flex: 1;
-      max-width: 30vw;
-      height: 100vh;
       overflow-y: auto;
-      border-left: 1px solid rgba(0, 212, 255, 0.3);
     }
     
     /* Hide non-essential elements in landscape */
-    .back-button, .header-nav {
+    .back-button {
       display: none;
     }
     
     /* Optimize modals for landscape */
     .modal {
-      width: 80vw;
-      height: 60vh;
+      width: 85vw;
+      height: 70vh;
       max-width: none;
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      padding: 12px;
     }
     
     /* Touch targets optimized for landscape */
-    .wire, .tool, .button {
-      min-height: 40px;
-      min-width: 40px;
+    .wire:active, .wire-slot:active, button:active {
+      transform: scale(0.95);
+    }
+  }
+  
+  /* Extra small landscape phones */
+  @media screen and (max-height: 450px) and (orientation: landscape) {
+    .container {
+      padding: 4px;
+    }
+    
+    h1 {
+      font-size: 16px;
+      margin: 2px 0;
+    }
+    
+    .game-header {
+      padding: 4px;
+      margin-bottom: 4px;
+    }
+    
+    .wire, .wire-slot {
+      width: 42px;
+      height: 32px;
+      font-size: 10px;
+    }
+    
+    button {
+      height: 32px;
+      font-size: 12px;
+      min-width: 80px;
+    }
+    
+    h2 {
+      font-size: 13px;
+    }
+    
+    .wiring-type {
+      padding: 4px;
+    }
+    
+    .cable, .rj45-connector {
+      padding: 4px;
+      margin: 2px 0;
     }
   }
 
@@ -3162,23 +3316,10 @@
           
           <div class="intro-text">
             <p><strong>Learn professional UTP cable termination!</strong></p>
-            <p>Master the art of creating network cables by properly arranging and crimping 8 colored wires into RJ45 connectors.</p>
-            
-            <div class="crimping-benefits">
-              <div class="benefit-item">
-                <span class="benefit-icon">🎯</span>
-                <span>Hands-on Practice</span>
-              </div>
-              <div class="benefit-item">
-                <span class="benefit-icon">⚡</span>
-                <span>Real-World Skills</span>
-              </div>
-              <div class="benefit-item">
-                <span class="benefit-icon">🏆</span>
-                <span>Progressive Challenges</span>
-              </div>
-            </div>
-            
+            <p>Cable crimping is the process of attaching connectors, such as RJ45, to network cables to ensure a secure and reliable connection. It is a fundamental skill in networking that allows proper data transmission between devices.</p>
+          </div>
+          
+          <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px;">
             <button class="proceed-btn" onclick="showDifficultySelection()">
               Let's Start! <i class="fas fa-arrow-right"></i>
             </button>
@@ -5860,6 +6001,95 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Tutorial button is now integrated into the main button interface
+
+    // Force landscape orientation on mobile devices
+    function lockLandscapeOrientation() {
+      // Check if device is mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile && window.screen && window.screen.orientation) {
+        // Try to lock to landscape orientation
+        if (screen.orientation.lock) {
+          screen.orientation.lock('landscape').catch(err => {
+            console.log('Orientation lock not supported:', err);
+          });
+        }
+      }
+      
+      // Show rotation message for portrait mode
+      checkOrientation();
+      window.addEventListener('orientationchange', checkOrientation);
+      window.addEventListener('resize', checkOrientation);
+    }
+    
+    function checkOrientation() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        const isPortrait = window.innerHeight > window.innerWidth;
+        
+        if (isPortrait) {
+          showRotationMessage();
+        } else {
+          hideRotationMessage();
+        }
+      }
+    }
+    
+    function showRotationMessage() {
+      let rotationMsg = document.getElementById('rotationMessage');
+      
+      if (!rotationMsg) {
+        rotationMsg = document.createElement('div');
+        rotationMsg.id = 'rotationMessage';
+        rotationMsg.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.95);
+          z-index: 99999;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          color: white;
+          font-size: 24px;
+          font-weight: bold;
+          text-align: center;
+          padding: 20px;
+        `;
+        rotationMsg.innerHTML = `
+          <div style="font-size: 80px; margin-bottom: 20px; animation: rotate 2s linear infinite;">📱</div>
+          <div style="font-size: 28px; margin-bottom: 10px; background: linear-gradient(135deg, #00d4ff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Please Rotate Your Device</div>
+          <div style="font-size: 18px; color: #cbd5e0; max-width: 300px;">This simulation works best in landscape mode</div>
+          <style>
+            @keyframes rotate {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(90deg); }
+            }
+          </style>
+        `;
+        document.body.appendChild(rotationMsg);
+      }
+      
+      rotationMsg.style.display = 'flex';
+    }
+    
+    function hideRotationMessage() {
+      const rotationMsg = document.getElementById('rotationMessage');
+      if (rotationMsg) {
+        rotationMsg.style.display = 'none';
+      }
+    }
+    
+    // Initialize landscape lock when page loads
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', lockLandscapeOrientation);
+    } else {
+      lockLandscapeOrientation();
+    }
 
     // ...existing code...
   </script>

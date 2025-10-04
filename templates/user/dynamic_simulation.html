@@ -8367,6 +8367,7 @@ class DynamicSimulation {
             
             // Connection mode state
             isConnectionMode: false,
+            connectionType: null, // 'wired' or 'wireless'
             firstDevice: null,
             
             connections: [], // Legacy support
@@ -9006,6 +9007,59 @@ class DynamicSimulation {
     setupCanvasTools() {
         console.log('🛠️ Setting up Canvas Tools');
         
+        // Setup all tool buttons (select, move, delete, wired, wireless)
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tool = btn.dataset.tool;
+                if (!tool) return;
+                
+                console.log(`🛠️ Tool button clicked: ${tool}`);
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                btn.classList.add('active');
+                
+                // Handle different tool types
+                if (tool === 'wired' || tool === 'wireless') {
+                    // Enable connection mode
+                    this.state.isConnectionMode = true;
+                    this.state.connectionType = tool; // Store whether it's wired or wireless
+                    this.state.firstDevice = null; // Reset selection
+                    this.currentTool = 'connect';
+                    
+                    // Visual feedback
+                    this.canvas.style.cursor = 'crosshair';
+                    console.log(`🔗 ${tool.toUpperCase()} connection mode ENABLED`);
+                    this.showToast?.(`${tool.charAt(0).toUpperCase() + tool.slice(1)} connection mode enabled - Click two devices to connect`, 'info');
+                    
+                    // Update canvas mode display
+                    const modeDisplay = document.getElementById('canvas-mode');
+                    if (modeDisplay) {
+                        modeDisplay.textContent = `Mode: ${tool.charAt(0).toUpperCase() + tool.slice(1)} Connect`;
+                    }
+                } else {
+                    // Regular tools (select, move, delete)
+                    this.state.isConnectionMode = false;
+                    this.state.connectionType = null;
+                    this.state.firstDevice = null;
+                    this.currentTool = tool;
+                    this.canvas.style.cursor = 'default';
+                    
+                    console.log(`🛠️ Tool changed to: ${tool}`);
+                    
+                    // Update canvas mode display
+                    const modeDisplay = document.getElementById('canvas-mode');
+                    if (modeDisplay) {
+                        modeDisplay.textContent = `Mode: ${tool.charAt(0).toUpperCase() + tool.slice(1)}`;
+                    }
+                }
+                
+                this.redrawCanvas();
+            });
+        });
+        
         // Setup configure mode toggle
         const configureModeBtn = document.getElementById('configure-mode-btn');
         if (configureModeBtn) {
@@ -9018,7 +9072,7 @@ class DynamicSimulation {
             });
         }
         
-        console.log('✅ Canvas tools ready (troubleshoot.html style)');
+        console.log('✅ Canvas tools ready with wired/wireless support');
     }
 
     // Get default capabilities for device types (for connection validation)
@@ -10099,11 +10153,14 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         }
 
         // Create canonical connection using from/to ids
+        // Use the connection type from the active tool (wired/wireless)
+        const connectionType = this.state.connectionType || 'wired'; // Default to wired if not set
+        
         const newConnection = {
             id: `conn_${this.connectionIdCounter++}`,
             from: idA,
             to: idB,
-            type: 'ethernet',
+            type: connectionType, // Use 'wired' or 'wireless' from the active tool
             status: 'active',
             created: Date.now()
         };
@@ -10112,7 +10169,7 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         newConnection.device1 = devA;
         newConnection.device2 = devB;
 
-        console.log('🛠️ MVP Creating connection object:', newConnection);
+        console.log(`🛠️ MVP Creating ${connectionType} connection:`, newConnection);
         this.networkConnections.push(newConnection);
 
         // Update per-device connection lists (optional UI helpers)
@@ -10143,8 +10200,8 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             total_connections: this.networkConnections.length
         });
 
-        console.log(`✅ MVP Connection success: ${devA.label} ↔ ${devB.label} (ID: ${newConnection.id})`);
-        this.showToast?.(`MVP: Connected ${devA.label} to ${devB.label}`, 'success');
+        console.log(`✅ MVP Connection success: ${devA.label} ↔ ${devB.label} (Type: ${connectionType}, ID: ${newConnection.id})`);
+        this.showToast?.(`MVP: Connected ${devA.label} to ${devB.label} (${connectionType})`, 'success');
         return true;
     }
 
@@ -10412,14 +10469,43 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
             return;
         }
 
-        this.ctx.strokeStyle = connection.color || '#00D9FF';
-        this.ctx.lineWidth = 3;
-        this.ctx.setLineDash([5, 5]);
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(fromDevice.x, fromDevice.y);
-        this.ctx.lineTo(toDevice.x, toDevice.y);
-        this.ctx.stroke();
+        // Differentiate between wired and wireless connections
+        const isWireless = connection.type === 'wireless';
+        
+        if (isWireless) {
+            // Wireless connection: curved dashed line with different color
+            this.ctx.strokeStyle = connection.color || '#8B5CF6'; // Purple for wireless
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([10, 5]); // Longer dashes for wireless
+            
+            // Draw curved line for wireless
+            const midX = (fromDevice.x + toDevice.x) / 2;
+            const midY = (fromDevice.y + toDevice.y) / 2;
+            const curveOffset = 20; // Curve offset
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromDevice.x, fromDevice.y);
+            this.ctx.quadraticCurveTo(midX, midY - curveOffset, toDevice.x, toDevice.y);
+            this.ctx.stroke();
+            
+            // Draw wireless signal icons
+            this.ctx.setLineDash([]); // Reset dash for icons
+            this.ctx.fillStyle = '#8B5CF6';
+            this.ctx.font = '12px FontAwesome';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('📡', midX, midY - curveOffset - 10); // Wireless icon
+        } else {
+            // Wired connection: solid straight line
+            this.ctx.strokeStyle = connection.color || '#00D9FF'; // Cyan for wired
+            this.ctx.lineWidth = 3;
+            this.ctx.setLineDash([]); // Solid line for wired
+            
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromDevice.x, fromDevice.y);
+            this.ctx.lineTo(toDevice.x, toDevice.y);
+            this.ctx.stroke();
+        }
 
         this.ctx.setLineDash([]); // Reset dash
     }
@@ -13044,15 +13130,108 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     initializeCLI() {
         const cliInput = document.getElementById('cli-input');
         if (cliInput) {
+            // Initialize CLI history tracking
+            if (!this.cliHistory) this.cliHistory = [];
+            if (!this.cliHistoryIndex) this.cliHistoryIndex = -1;
+            
             cliInput.addEventListener('keydown', (e) => {
+                // Enter key - Execute command
                 if (e.key === 'Enter') {
                     const command = cliInput.value.trim();
                     if (command) {
                         this.executeCommand(command);
                         cliInput.value = '';
+                        this.cliHistoryIndex = -1; // Reset history index
+                    }
+                }
+                // Up arrow - Previous command in history
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (this.cliHistory.length > 0) {
+                        if (this.cliHistoryIndex < this.cliHistory.length - 1) {
+                            this.cliHistoryIndex++;
+                            cliInput.value = this.cliHistory[this.cliHistory.length - 1 - this.cliHistoryIndex];
+                        }
+                    }
+                }
+                // Down arrow - Next command in history
+                else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (this.cliHistoryIndex > 0) {
+                        this.cliHistoryIndex--;
+                        cliInput.value = this.cliHistory[this.cliHistory.length - 1 - this.cliHistoryIndex];
+                    } else if (this.cliHistoryIndex === 0) {
+                        this.cliHistoryIndex = -1;
+                        cliInput.value = '';
+                    }
+                }
+                // Tab key - Autocomplete
+                else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    this.handleCLIAutocomplete(cliInput);
+                }
+                // Escape key - Clear current input
+                else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cliInput.value = '';
+                    this.cliHistoryIndex = -1;
+                }
+                // Ctrl+C - Cancel current command
+                else if (e.ctrlKey && e.key === 'c') {
+                    e.preventDefault();
+                    cliInput.value = '';
+                    this.cliHistoryIndex = -1;
+                    const output = document.getElementById('cli-output');
+                    if (output) {
+                        const cancelDiv = document.createElement('div');
+                        cancelDiv.innerHTML = '<span style="color: #F59E0B;">^C</span>';
+                        output.appendChild(cancelDiv);
+                    }
+                }
+                // Ctrl+L - Clear screen
+                else if (e.ctrlKey && e.key === 'l') {
+                    e.preventDefault();
+                    const output = document.getElementById('cli-output');
+                    if (output) {
+                        output.innerHTML = '';
                     }
                 }
             });
+            
+            console.log('✅ CLI initialized with enhanced keyboard shortcuts');
+        }
+    }
+    
+    handleCLIAutocomplete(inputElement) {
+        const currentValue = inputElement.value;
+        const parts = currentValue.split(' ');
+        const lastWord = parts[parts.length - 1];
+        
+        // Common CLI commands for autocomplete
+        const commands = [
+            'show', 'configure', 'interface', 'ip', 'address', 'shutdown', 'no',
+            'ping', 'traceroute', 'enable', 'disable', 'exit', 'help',
+            'show running-config', 'show ip interface', 'show version',
+            'show arp', 'show mac-address-table'
+        ];
+        
+        // Filter commands that start with the current input
+        const matches = commands.filter(cmd => cmd.startsWith(currentValue.toLowerCase()));
+        
+        if (matches.length === 1) {
+            // Single match - autocomplete
+            inputElement.value = matches[0];
+        } else if (matches.length > 1) {
+            // Multiple matches - show options in output
+            const output = document.getElementById('cli-output');
+            if (output) {
+                const optionsDiv = document.createElement('div');
+                optionsDiv.style.color = '#00D9FF';
+                optionsDiv.style.marginBottom = '5px';
+                optionsDiv.textContent = 'Options: ' + matches.join(', ');
+                output.appendChild(optionsDiv);
+                output.scrollTop = output.scrollHeight;
+            }
         }
     }
     
@@ -15820,12 +15999,42 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Enhanced keyboard shortcuts (similar to troubleshoot.html)
     document.addEventListener('keydown', function(e) {
+        // Check if user is typing in an input field (except CLI which has its own handlers)
+        const tag = e.target.tagName;
+        const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA';
+        const isCLIInput = e.target.id === 'cli-input' || e.target.classList.contains('cli-input');
+        
+        // Ctrl+` (backtick) - Toggle CLI Terminal
+        if (e.ctrlKey && e.key === '`') {
+            e.preventDefault();
+            const cliTerminal = document.getElementById('cli-terminal-container');
+            if (cliTerminal) {
+                cliTerminal.classList.toggle('active');
+                // Focus on CLI input when opening
+                if (cliTerminal.classList.contains('active')) {
+                    const cliInput = document.getElementById('cli-input');
+                    if (cliInput) {
+                        setTimeout(() => cliInput.focus(), 100);
+                    }
+                }
+                console.log('🖥️ CLI Terminal toggled:', cliTerminal.classList.contains('active') ? 'OPEN' : 'CLOSED');
+            }
+            return;
+        }
+        
+        // Skip other shortcuts if user is typing in CLI
+        if (isCLIInput) {
+            return; // CLI has its own keyboard handlers
+        }
+        
         // Escape key to cancel current tool/operation
         if (e.key === 'Escape') {
-            e.preventDefault();
-            if (window.simulation) {
-                window.simulation.setTool?.('select');
-                window.simulation.hideDeviceConfiguration?.();
+            if (!isEditable) {
+                e.preventDefault();
+                if (window.simulation) {
+                    window.simulation.setTool?.('select');
+                    window.simulation.hideDeviceConfiguration?.();
+                }
             }
         }
         
@@ -15849,7 +16058,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if ((e.key === 'Delete' || e.key === 'Backspace')) {
             const tag = e.target.tagName;
             const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA';
-            if (!isEditable) {
+            const isCLIInput = e.target.id === 'cli-input' || e.target.classList.contains('cli-input');
+            if (!isEditable && !isCLIInput) {
                 e.preventDefault();
                 if (window.simulation && window.simulation.selectedDevice) {
                     window.simulation.deleteDevice?.(window.simulation.selectedDevice);

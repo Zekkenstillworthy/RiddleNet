@@ -11,16 +11,17 @@ import os
 auth_bp = Blueprint('auth', __name__)
 
 class AuthController:
-    @staticmethod
-    @auth_bp.route('/')
-    def admin_root():
-        """Handle /admin/ root access - redirect to dashboard"""
-        # NOTE: Admin model imported at module level. Avoid re-importing inside
-        # the function; inner imports would create a function-local binding.
-        # (Keeping logic simple & consistent with login() fix below.)
-        if current_user.is_authenticated and isinstance(current_user, Admin):
-            return redirect('/admin/dashboard')
-        return redirect('/admin/login')
+    # REMOVED: @auth_bp.route('/') to prevent conflict with dashboard.index
+    # The dashboard blueprint handles /admin/ directly now
+    # This route was causing infinite redirect loop with dashboard.index
+    
+    # @staticmethod
+    # @auth_bp.route('/')
+    # def admin_root():
+    #     """Handle /admin/ root access - redirect to dashboard"""
+    #     if current_user.is_authenticated and isinstance(current_user, Admin):
+    #         return redirect(url_for('dashboard.index'))
+    #     return redirect(url_for('auth.login'))
 
     @staticmethod
     @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -74,7 +75,7 @@ class AuthController:
                     # Only redirect to admin URLs to prevent open redirects
                     return redirect(next_url)
                 # Redirect to the canonical admin dashboard
-                return redirect('/admin/dashboard')
+                return redirect(url_for('dashboard.index'))
             else:
                 flash('Invalid admin credentials', 'error')
         
@@ -156,7 +157,7 @@ class AuthController:
                     print("❌ Admin creation failed - not found in database after commit")
                 
                 flash('Admin account created successfully! You can now log in.', 'success')
-                return redirect('/admin/login')
+                return redirect(url_for('auth.login'))
                 
             except Exception as e:
                 db.session.rollback()

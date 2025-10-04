@@ -9396,7 +9396,10 @@ window.testAssignmentEdit = testAssignmentEdit;
 
 // Simulation management functions
 function editSimulation(simulationId) {
-    window.location.href = `/dynamic/simulation/${simulationId}`;
+    // SECURITY FIX: Use admin route, not user route to prevent session poisoning
+    // Admin users must use /admin/simulation/edit/<id> (admin namespace)
+    // NOT /dynamic/simulation/<id> (user namespace - causes session poisoning)
+    window.location.href = `/admin/simulation/edit/${simulationId}`;
 }
 
 function viewSimulation(simulationId) {

@@ -112,7 +112,7 @@ def simulation_editor_list():
         return render_safe_template('admin/troubleshooting/editor_list.html', simulations=simulations)
     except Exception as e:
         flash(f'Error loading simulations: {str(e)}', 'error')
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('dashboard.index'))
 
 @troubleshooting_bp.route('/editor/new')
 @login_required

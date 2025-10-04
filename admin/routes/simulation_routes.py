@@ -47,7 +47,7 @@ def new_simulation_troubleshooting_editor():
         )
     except Exception as e:
         flash(f'Error loading editor: {str(e)}', 'error')
-        return redirect('/admin/classes')
+        return redirect(url_for('class_controller.index'))
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>')
 @login_required
@@ -55,10 +55,17 @@ def new_simulation_troubleshooting_editor():
 def edit_simulation(simulation_id):
     """Edit existing simulation with enhanced troubleshooting editor"""
     try:
+        current_app.logger.info(f"[EDIT_SIMULATION_ROUTE] Accessing edit route for simulation_id={simulation_id}")
+        current_app.logger.info(f"[EDIT_SIMULATION_ROUTE] current_user={current_user}, is_authenticated={current_user.is_authenticated}")
+        
         simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
+        
+        current_app.logger.info(f"[EDIT_SIMULATION_ROUTE] simulation_data keys: {simulation_data.keys()}")
+        
         if 'error' in simulation_data:
+            current_app.logger.error(f"[EDIT_SIMULATION_ROUTE] Error returned: {simulation_data['error']}")
             flash(simulation_data['error'], 'error')
-            return redirect('/admin/classes')
+            return redirect(url_for('class_controller.index'))
         
         # Convert simulation data to troubleshooting format if needed
         simulation = simulation_data['simulation']
@@ -183,13 +190,24 @@ def edit_simulation(simulation_id):
         )
         
         # Use the enhanced troubleshooting editor template
-        return render_safe_template(
-            'admin/troubleshooting/edit_simulation.html',
-            simulation=troubleshooting_sim
-        )
+        try:
+            return render_safe_template(
+                'admin/troubleshooting/edit_simulation.html',
+                simulation=troubleshooting_sim
+            )
+        except Exception as template_error:
+            current_app.logger.error(f"Template rendering error for simulation {simulation_id}: {str(template_error)}")
+            current_app.logger.error(f"Template error type: {type(template_error).__name__}")
+            import traceback
+            current_app.logger.error(f"Template error traceback: {traceback.format_exc()}")
+            flash(f'Error rendering simulation editor: {str(template_error)}', 'error')
+            return redirect(url_for('class_controller.index'))
     except Exception as e:
+        current_app.logger.error(f"Error loading simulation {simulation_id}: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Error traceback: {traceback.format_exc()}")
         flash(f'Error loading simulation: {str(e)}', 'error')
-        return redirect('/admin/classes')
+        return redirect(url_for('class_controller.index'))
 
 @admin_simulation_bp.route('/edit/<int:simulation_id>/save', methods=['POST'])
 @login_required
@@ -442,7 +460,7 @@ def view_simulation(simulation_id):
         simulation_data = simulation_controller.get_simulation_by_id(simulation_id, include_steps=True)
         if 'error' in simulation_data:
             flash(simulation_data['error'], 'error')
-            return redirect('/admin/classes')
+            return redirect(url_for('class_controller.index'))
         
         return render_template(
             'admin/simulation_preview.html',
@@ -450,7 +468,7 @@ def view_simulation(simulation_id):
         )
     except Exception as e:
         flash(f'Error loading simulation: {str(e)}', 'error')
-        return redirect('/admin/classes')
+        return redirect(url_for('class_controller.index'))
 
 @admin_simulation_bp.route('/analytics/<int:simulation_id>')
 @login_required
@@ -461,7 +479,7 @@ def simulation_analytics(simulation_id):
         analytics_data = simulation_controller.get_simulation_analytics(simulation_id)
         if 'error' in analytics_data:
             flash(analytics_data['error'], 'error')
-            return redirect('/admin/classes')
+            return redirect(url_for('class_controller.index'))
         
         return render_template(
             'admin/simulation_analytics.html',
@@ -469,7 +487,7 @@ def simulation_analytics(simulation_id):
         )
     except Exception as e:
         flash(f'Error loading analytics: {str(e)}', 'error')
-        return redirect('/admin/classes')
+        return redirect(url_for('class_controller.index'))
 
 # API Routes for AJAX/Frontend Integration
 

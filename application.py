@@ -63,7 +63,7 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Enhanced user_loader with proper session isolation"""
+    """Enhanced user_loader with proper session isolation and poisoning prevention"""
     from admin.models.user import Admin
     from user.models import User
     from flask import session
@@ -71,17 +71,41 @@ def load_user(user_id):
     try:
         user_id_int = int(user_id)
     except (ValueError, TypeError):
+        print(f"[SECURITY] Invalid user_id format: {user_id}")
         return None
     
     auth_namespace = session.get('auth_namespace', 'unknown')
     
+    # CRITICAL FIX: Strict namespace validation with no fallback
     if auth_namespace == 'admin':
-        return db.session.get(Admin, user_id_int)
+        user = db.session.get(Admin, user_id_int)
+        if user:
+            # Verify the loaded user is actually an Admin instance
+            if not isinstance(user, Admin):
+                print(f"[SECURITY] Namespace poisoning: Expected Admin, got {type(user)}")
+                session.clear()
+                return None
+            print(f"[AUTH] Loaded admin user: {user.username} (ID: {user_id_int})")
+            return user
+        return None
+    
     elif auth_namespace == 'user':
-        return db.session.get(User, user_id_int)
+        user = db.session.get(User, user_id_int)
+        if user:
+            # Verify the loaded user is actually a User instance
+            if not isinstance(user, User):
+                print(f"[SECURITY] Namespace poisoning: Expected User, got {type(user)}")
+                session.clear()
+                return None
+            print(f"[AUTH] Loaded user: {user.username} (ID: {user_id_int})")
+            return user
+        return None
+    
     else:
-        # Fallback to user table
-        return db.session.get(User, user_id_int)
+        # NO FALLBACK - if namespace is invalid, reject the session
+        print(f"[SECURITY] Invalid or missing auth_namespace: {auth_namespace}")
+        session.clear()
+        return None
 
 # Import and register all blueprints
 def register_blueprints():
@@ -167,8 +191,85 @@ def health_check():
     return {'status': 'healthy', 'server': 'aws'}, 200
 
 # Add before_request handlers
-from flask import request, redirect, url_for, flash
+from flask import request, redirect, url_for, flash, session
 from flask_login import current_user
+
+@application.before_request
+def enforce_namespace_security():
+    """
+    CRITICAL SECURITY: Enforce namespace isolation on every request.
+    This prevents session poisoning attacks where admin/user sessions cross-contaminate.
+    """
+    from utils.namespace_validator import log_security_event
+    
+    # Skip for static files and public routes
+    if request.endpoint in ['static', None]:
+        return None
+    
+    # Skip for login/logout/signup routes
+    exempt_routes = [
+        'auth.login', 'auth.logout', 'auth.signup', 'auth.forgot_password', 'auth.reset_password',
+        'user.login', 'user.logout', 'user.index', 'user.signup', 'user.send_otp',
+        'user.overview', 'health_check'
+    ]
+    if request.endpoint in exempt_routes:
+        return None
+    
+    # Get request path and namespace
+    path = request.path
+    auth_namespace = session.get('auth_namespace', 'unknown')
+    
+    # Validate admin routes - STRICT enforcement
+    if path.startswith('/admin'):
+        if auth_namespace != 'admin':
+            if current_user.is_authenticated:
+                # Session poisoning detected
+                log_security_event('NAMESPACE_VIOLATION', {
+                    'expected': 'admin',
+                    'actual': auth_namespace,
+                    'user_type': type(current_user).__name__
+                })
+                flash('Access denied. Admin credentials required.', 'error')
+                session.clear()
+            return redirect(url_for('auth.login'))
+        
+        # Double-check user type matches namespace
+        from admin.models.user import Admin
+        if current_user.is_authenticated and not isinstance(current_user, Admin):
+            log_security_event('TYPE_MISMATCH', {
+                'namespace': 'admin',
+                'user_type': type(current_user).__name__
+            })
+            flash('Session validation failed. Please log in again.', 'error')
+            session.clear()
+            return redirect(url_for('auth.login'))
+    
+    # Validate user profile routes - STRICT enforcement
+    elif '/profile' in path or '/update_profile' in path:
+        if path.startswith('/users'):
+            # Admin profile route
+            if auth_namespace != 'admin':
+                log_security_event('NAMESPACE_VIOLATION', {
+                    'route': 'admin_profile',
+                    'expected': 'admin',
+                    'actual': auth_namespace
+                })
+                flash('Access denied. Admin credentials required.', 'error')
+                session.clear()
+                return redirect(url_for('auth.login'))
+        else:
+            # User profile route
+            if auth_namespace != 'user':
+                log_security_event('NAMESPACE_VIOLATION', {
+                    'route': 'user_profile',
+                    'expected': 'user',
+                    'actual': auth_namespace
+                })
+                flash('Access denied. User credentials required.', 'error')
+                session.clear()
+                return redirect(url_for('user.login'))
+    
+    return None
 
 @application.before_request
 def check_admin_auth():
