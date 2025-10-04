@@ -1,5 +1,6 @@
 import eventlet
-eventlet.monkey_patch()
+# Patch only what's needed, exclude psycopg2 from patching
+eventlet.monkey_patch(socket=True, select=True, time=True, thread=False, os=True)
 
 from __init__ import create_app, db, login_manager
 from socket_manager import socketio  
