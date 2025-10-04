@@ -1,30 +1,8 @@
 # ===== CRITICAL IMPORT ORDER =====
-# 1. Suppress warnings FIRST to prevent noise
-import warnings
-warnings.filterwarnings('ignore', message='.*monkey_patch.*')
-warnings.filterwarnings('ignore', message='.*Working outside of.*context.*')
-warnings.filterwarnings('ignore', message='.*Working outside of.*request.*')
+# 1. Import eventlet initialization FIRST - this must happen before ANY other imports
+import eventlet_init
 
-# 2. Import eventlet BEFORE any other modules
-import eventlet
-
-# 3. Apply monkey patching immediately, but carefully avoid threading issues
-try:
-    # Apply monkey patching with thread=True for SQLAlchemy compatibility
-    eventlet.monkey_patch(
-        socket=True, 
-        select=True, 
-        time=True, 
-        thread=True,  # Required for SQLAlchemy connection pooling
-        os=True,
-        ssl=False,  # Avoid SSL patching issues
-        all=False   # Only patch what we explicitly request
-    )
-except Exception as e:
-    print(f"Warning: Eventlet monkey patch failed: {e}")
-    print("Continuing with standard Flask operation...")
-
-# 4. Now import Flask and other modules
+# 2. Now import Flask and other modules
 import os
 import sys
 

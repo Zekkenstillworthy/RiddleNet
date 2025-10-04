@@ -2,6 +2,9 @@
 WSGI Entry Point for RiddleNet - Gunicorn Compatible
 This file provides the WSGI entry point for production deployment with Gunicorn.
 """
+# CRITICAL: Initialize eventlet BEFORE any other imports
+import eventlet_init
+
 import os
 import sys
 
