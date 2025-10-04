@@ -23,8 +23,10 @@ If you ever need to *explicitly* log out in both spaces, call the
 logout endpoint in each namespace (or clear both cookies manually).
 """
 
+import os
+import logging
 from flask.sessions import SecureCookieSessionInterface
-from itsdangerous import BadSignature
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 from flask import request
 
 
@@ -38,6 +40,27 @@ class SplitSessionInterface(SecureCookieSessionInterface):
     Open / Save logic decides which cookie to use based on the request
     path or, for WebSocket handshakes, on stored namespace.
     """
+
+    def get_signing_serializer(self, app):
+        """Override to add better error handling and fallback"""
+        secret_key = app.secret_key
+        
+        if not secret_key:
+            # Generate a temporary key for this session
+            temp_key = os.urandom(32)
+            app.logger.error("🔑 No SECRET_KEY configured! Using temporary key - sessions will not persist!")
+            secret_key = temp_key
+        
+        if isinstance(secret_key, str) and len(secret_key) < 16:
+            app.logger.warning(f"🔑 SECRET_KEY is too short ({len(secret_key)} chars). Minimum 16 chars recommended.")
+        
+        try:
+            serializer = URLSafeTimedSerializer(secret_key)
+            app.logger.debug("🔑 Session serializer created successfully")
+            return serializer
+        except Exception as e:
+            app.logger.error(f"🔑 Failed to create session serializer: {str(e)}")
+            return None
 
     def _select_cookie_for_request(self):
         path = (request.path or "").lower()
@@ -57,7 +80,7 @@ class SplitSessionInterface(SecureCookieSessionInterface):
     def open_session(self, app, request):  # type: ignore[override]
         serializer = self.get_signing_serializer(app)
         if not serializer:
-            print(f"🍪 SplitSession: No serializer available")
+            print(f"🍪 SplitSession: No serializer available for path: {request.path}")
             return self.session_class()
 
         chosen = self._select_cookie_for_request()
@@ -71,23 +94,31 @@ class SplitSessionInterface(SecureCookieSessionInterface):
                 print(f"🍪 SplitSession: No cookie found for {chosen}, returning empty session")
                 return self.session_class()
             try:
-                data = serializer.loads(raw)
+                max_age = int(app.permanent_session_lifetime.total_seconds())
+                data = serializer.loads(raw, max_age=max_age)
                 print(f"🍪 SplitSession: Successfully loaded session data, keys: {list(data.keys())}")
                 return self.session_class(data)
             except BadSignature:
                 print(f"🍪 SplitSession: Bad signature for {chosen}")
                 return self.session_class()
+            except Exception as e:
+                print(f"🍪 SplitSession: Error loading session: {str(e)}")
+                return self.session_class()
 
         # WebSocket (or ambiguous) – inspect both cookies and pick the most appropriate
         sessions = []
+        max_age = int(app.permanent_session_lifetime.total_seconds())
         for name in (ADMIN_COOKIE, USER_COOKIE):
             raw = request.cookies.get(name)
             if not raw:
                 continue
             try:
-                data = serializer.loads(raw)
+                data = serializer.loads(raw, max_age=max_age)
                 sessions.append((name, data))
             except BadSignature:
+                continue
+            except Exception as e:
+                app.logger.warning(f"🍪 Error loading {name}: {str(e)}")
                 continue
 
         # Prefer admin namespace if present

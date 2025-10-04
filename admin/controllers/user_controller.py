@@ -640,7 +640,17 @@ class UserController:
     @login_required
     def admin_profile():
         """Admin profile page"""
-        return render_template('admin/profile.html', admin=current_user, active_page='profile')
+        try:
+            from utils.render_utils import render_safe_template
+            return render_safe_template('admin/profile.html', 
+                                      admin=current_user,
+                                      title="Admin Profile",
+                                      active_page='profile')
+        except Exception as e:
+            import logging
+            logging.error(f"Error rendering admin profile: {str(e)}")
+            flash('Error loading profile page', 'error')
+            return redirect(url_for('admin_dashboard.index'))
     
     @staticmethod
     @user_bp.route('/update_profile', methods=['POST'])
