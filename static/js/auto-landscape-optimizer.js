@@ -415,36 +415,21 @@
         }
 
         optimizeCrimpingSimulation(config) {
-            // Set container to horizontal layout
+            // MVP FIX: Disabled aggressive inline style injection that forced horizontal layout
+            // The CSS-only responsive design now handles landscape layouts properly
+            // Keeping function structure for compatibility but removing forced layout changes
+            
+            console.log('[AutoLandscape] Crimping simulation - using CSS-only landscape layout');
+            
+            // Only add a lightweight class indicator for landscape mode
             const container = document.querySelector(config.selectors.wrapper);
             if (container) {
-                container.style.display = 'flex';
-                container.style.flexDirection = 'row';
-                container.style.height = '100vh';
-                container.style.padding = '4px';
+                container.classList.add('landscape-active');
+                // NO MORE inline styles that override CSS
             }
-
-            // Hide header elements
-            const headers = document.querySelectorAll('.header-nav, .back-button');
-            headers.forEach(header => {
-                header.style.display = 'none';
-            });
-
-            // Optimize simulation area
-            const simulation = document.querySelector(config.selectors.simulation);
-            if (simulation) {
-                simulation.style.flex = '2';
-                simulation.style.height = '100vh';
-            }
-
-            // Optimize controls
-            const controls = document.querySelector(config.selectors.controls);
-            if (controls) {
-                controls.style.flex = '1';
-                controls.style.maxWidth = '30vw';
-                controls.style.height = '100vh';
-                controls.style.overflowY = 'auto';
-            }
+            
+            // Note: All layout styling is now handled by media queries in the template
+            // This prevents style conflicts and cache issues on mobile devices
         }
 
         optimizeTroubleshooting(config) {

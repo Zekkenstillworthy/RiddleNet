@@ -1,0 +1,982 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>Quiz Challenge | RiddleNet</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<style>
+    .quiz-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .quiz-header {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 24px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quiz-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+    }
+
+    .quiz-title {
+        font-size: 2rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .quiz-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+    }
+
+    .quiz-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-value {
+        color: var(--cyber-glow);
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .progress-bar-container {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        height: 12px;
+        overflow: hidden;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: var(--gradient-primary);
+        transition: width 0.3s ease;
+        box-shadow: 0 0 10px var(--cyber-glow);
+    }
+
+    .question-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 32px;
+        margin-bottom: 24px;
+        position: relative;
+        animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .question-number {
+        color: var(--cyber-glow);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .question-text {
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    .options-container {
+        display: grid;
+        gap: 12px;
+    }
+
+    .option-btn {
+        background: rgba(26, 43, 71, 0.6);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .option-btn:hover:not(.disabled) {
+        background: rgba(0, 212, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: translateX(4px);
+    }
+
+    .option-btn.selected {
+        background: rgba(0, 212, 255, 0.2);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .option-btn.correct {
+        background: rgba(0, 255, 136, 0.2);
+        border-color: var(--success-color);
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .option-btn.wrong {
+        background: rgba(255, 71, 87, 0.2);
+        border-color: var(--danger-color);
+        box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+    }
+
+    .option-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .option-btn.hidden {
+        display: none;
+    }
+
+    .option-letter {
+        background: var(--gradient-primary);
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .lifelines-container {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .lifeline-btn {
+        background: var(--surface);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 12px 20px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .lifeline-btn:hover:not(.disabled) {
+        background: var(--cyber-glow);
+        color: var(--primary-color);
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+    }
+
+    .lifeline-btn.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        border-color: var(--text-muted);
+    }
+
+    .lifeline-btn i {
+        font-size: 1rem;
+    }
+
+    .feedback-container {
+        background: var(--glass-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        border-left: 4px solid;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .feedback-container.correct {
+        border-left-color: var(--success-color);
+        background: rgba(0, 255, 136, 0.1);
+    }
+
+    .feedback-container.wrong {
+        border-left-color: var(--danger-color);
+        background: rgba(255, 71, 87, 0.1);
+    }
+
+    .feedback-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    .feedback-text {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .action-btn {
+        flex: 1;
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: 12px;
+        padding: 14px 24px;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 212, 255, 0.4);
+    }
+
+    .action-btn.secondary {
+        background: var(--surface);
+        border: 2px solid var(--cyber-glow);
+    }
+
+    .results-container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius-lg);
+        padding: 40px;
+        text-align: center;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .results-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+        font-family: 'Orbitron', monospace;
+    }
+
+    .results-score {
+        font-size: 4rem;
+        font-weight: 900;
+        color: var(--cyber-glow);
+        margin: 24px 0;
+        text-shadow: 0 0 20px var(--cyber-glow);
+        font-family: 'Orbitron', monospace;
+    }
+
+    .results-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin: 32px 0;
+    }
+
+    .result-stat {
+        background: rgba(26, 43, 71, 0.6);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .result-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--cyber-glow);
+        margin-bottom: 4px;
+    }
+
+    .result-stat-label {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .hint-container {
+        background: rgba(255, 140, 66, 0.1);
+        border: 1px solid var(--warning-color);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .hint-container.show {
+        display: block;
+    }
+
+    .hint-title {
+        color: var(--warning-color);
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .hint-text {
+        color: var(--text-secondary);
+    }
+
+    @media (max-width: 768px) {
+        .quiz-container {
+            padding: 12px;
+        }
+
+        .quiz-title {
+            font-size: 1.5rem;
+        }
+
+        .question-card {
+            padding: 20px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+        }
+
+        .results-score {
+            font-size: 3rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<!-- Auto-Landscape Optimization System -->
+<script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
+<script>
+  initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.quiz-container', pageKey: 'quiz' });
+</script>
+
+<script>
+  // Initialize landscape orientation helper for quiz challenge
+  if (typeof initForceLandscape === 'function') {
+    initForceLandscape({ pageKey: 'quiz-challenge' });
+  }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Quiz Header -->
+    <div class="quiz-header">
+        <h1 class="quiz-title">🧠 Quiz Challenge</h1>
+        <p class="quiz-subtitle">Test your networking knowledge with interactive questions!</p>
+    </div>
+
+    <!-- Quiz Stats -->
+    <div class="quiz-stats">
+        <div class="stat-card">
+            <div class="stat-label">Time Remaining</div>
+            <div class="stat-value" id="timer">30</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Progress</div>
+            <div class="stat-value" id="progress">1/11</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Lifelines -->
+    <div class="lifelines-container" id="lifelinesContainer">
+        <button class="lifeline-btn" id="fiftyFiftyBtn" onclick="useFiftyFifty()">
+            <i class="fas fa-percent"></i>
+            50/50 (1)
+        </button>
+        <button class="lifeline-btn" id="skipBtn" onclick="useSkip()">
+            <i class="fas fa-forward"></i>
+            Skip (2)
+        </button>
+        <button class="lifeline-btn" id="hintBtn" onclick="useHint()">
+            <i class="fas fa-lightbulb"></i>
+            Hint (3)
+        </button>
+    </div>
+
+    <!-- Question Container -->
+    <div id="questionContainer">
+        <!-- Questions will be dynamically loaded here -->
+    </div>
+
+    <!-- Results Container (hidden initially) -->
+    <div id="resultsContainer" style="display: none;">
+        <!-- Results will be shown here after quiz completion -->
+    </div>
+</div>
+
+<script>
+// Quiz Data - The 11 questions from the prompt
+const quizQuestions = [
+    {
+        question: "It is a network that spans across countries or continents and connects multiple smaller networks.",
+        options: ["LAN", "MAN", "WAN (Wide Area Network)", "PAN"],
+        correct: 2,
+        explanation: "WAN (Wide Area Network) is a network that spans across countries or continents and connects multiple smaller networks.",
+        hint: "Think about networks that cover the largest geographic area."
+    },
+    {
+        question: "The physical arrangement of computers or nodes in a network.",
+        options: ["Protocol", "Network Topology", "Transmission Mode", "Architecture"],
+        correct: 1,
+        explanation: "Network Topology refers to the physical arrangement of computers or nodes in a network.",
+        hint: "This term describes how devices are physically connected in a network."
+    },
+    {
+        question: "___ is a network type that connects computers within a small geographic area like an office or school.",
+        options: ["LAN (Local Area Network)", "MAN", "WAN", "PAN"],
+        correct: 0,
+        explanation: "LAN (Local Area Network) connects computers within a small geographic area like an office or school.",
+        hint: "Think about the smallest type of network area."
+    },
+    {
+        question: "It is a device that converts digital data from a computer into analog signals for transmission over phone lines.",
+        options: ["Switch", "Modem", "Router", "Bridge"],
+        correct: 1,
+        explanation: "A Modem converts digital data from a computer into analog signals for transmission over phone lines.",
+        hint: "This device helps with internet connectivity through phone lines."
+    },
+    {
+        question: "A central device that splits a network connection among multiple devices but sends data to all of them.",
+        options: ["Hub", "Switch", "Router", "Bridge"],
+        correct: 0,
+        explanation: "A Hub is a central device that splits a network connection among multiple devices but sends data to all of them.",
+        hint: "This is the simplest and least intelligent networking device."
+    },
+    {
+        question: "It is a public global network that connects millions of private, public, academic, and business networks.",
+        options: ["Intranet", "Internet", "Extranet", "LAN"],
+        correct: 1,
+        explanation: "The Internet is a public global network that connects millions of private, public, academic, and business networks.",
+        hint: "This is the worldwide network you're using right now!"
+    },
+    {
+        question: "It is a networking device that connects two or more networks and directs data packets.",
+        options: ["Switch", "Router", "Hub", "Repeater"],
+        correct: 1,
+        explanation: "A Router is a networking device that connects two or more networks and directs data packets.",
+        hint: "This device is commonly used to connect your home network to the internet."
+    },
+    {
+        question: "What type of network topology is shown? (Bus Topology - All devices connected to a single cable)",
+        options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
+        correct: 0,
+        explanation: "Bus Topology is where all devices are connected to a single cable (backbone).",
+        hint: "Think of devices connected along a single line, like passengers on a bus route."
+    },
+    {
+        question: "Which topology is displayed? (Ring Topology - Devices connected in a circular fashion)",
+        options: ["Ring Topology", "Star Topology", "Bus Topology", "Tree Topology"],
+        correct: 0,
+        explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction.",
+        hint: "Devices form a closed loop, like a circle or ring."
+    },
+    {
+        question: "It is a unique numerical label assigned to each device connected to a network.",
+        options: ["IP Address", "MAC Address", "Port Number", "Subnet Mask"],
+        correct: 0,
+        explanation: "An IP Address is a unique numerical label assigned to each device connected to a network.",
+        hint: "This is like a mailing address for your device on the network."
+    },
+    {
+        question: "What is the default subnet mask of a Class C IP address?",
+        options: ["255.0.0.0", "255.255.0.0", "255.255.255.0", "255.255.255.255"],
+        correct: 2,
+        explanation: "The default subnet mask of a Class C IP address is 255.255.255.0.",
+        hint: "Class C addresses are commonly used in small networks and have three octets set to 255."
+    }
+];
+
+// Quiz State
+let currentQuestion = 0;
+let score = 0;
+let timeLeft = 30;
+let timerInterval = null;
+let answeredQuestions = [];
+let lifelinesUsed = {
+    fiftyFifty: 0,
+    skip: 0,
+    hint: 0
+};
+let skipsRemaining = 2;
+let hintsRemaining = 3;
+let fiftyFiftyUsed = false;
+let answered = false;
+
+// Initialize Quiz
+document.addEventListener('DOMContentLoaded', function() {
+    loadQuestion();
+    startTimer();
+});
+
+// Start Timer
+function startTimer() {
+    timeLeft = 30;
+    updateTimer();
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            handleTimeout();
+        }
+    }, 1000);
+}
+
+// Update Timer Display
+function updateTimer() {
+    const timerEl = document.getElementById('timer');
+    timerEl.textContent = timeLeft;
+    
+    // Change color based on time remaining
+    if (timeLeft <= 10) {
+        timerEl.style.color = 'var(--danger-color)';
+    } else if (timeLeft <= 20) {
+        timerEl.style.color = 'var(--warning-color)';
+    } else {
+        timerEl.style.color = 'var(--cyber-glow)';
+    }
+}
+
+// Load Question
+function loadQuestion() {
+    if (currentQuestion >= quizQuestions.length) {
+        showResults();
+        return;
+    }
+    
+    const question = quizQuestions[currentQuestion];
+    answered = false;
+    
+    // Update progress
+    document.getElementById('progress').textContent = `${currentQuestion + 1}/${quizQuestions.length}`;
+    const progressPercent = ((currentQuestion) / quizQuestions.length) * 100;
+    document.getElementById('progressBar').style.width = progressPercent + '%';
+    
+    // Build question HTML
+    let html = `
+        <div class="question-card">
+            <div class="question-number">Question ${currentQuestion + 1} of ${quizQuestions.length}</div>
+            <div class="question-text">${question.question}</div>
+            <div class="options-container">
+    `;
+    
+    question.options.forEach((option, index) => {
+        const letter = String.fromCharCode(65 + index); // A, B, C, D
+        html += `
+            <button class="option-btn" onclick="selectAnswer(${index})" data-index="${index}">
+                <div class="option-letter">${letter}</div>
+                <div class="option-text">${option}</div>
+            </button>
+        `;
+    });
+    
+    html += `
+            </div>
+            <div class="hint-container" id="hintContainer">
+                <div class="hint-title">
+                    <i class="fas fa-lightbulb"></i>
+                    Hint
+                </div>
+                <div class="hint-text">${question.hint}</div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('questionContainer').innerHTML = html;
+    
+    // Reset lifeline state for new question
+    fiftyFiftyUsed = false;
+    
+    // Start new timer
+    startTimer();
+}
+
+// Select Answer
+function selectAnswer(index) {
+    if (answered) return;
+    
+    answered = true;
+    clearInterval(timerInterval);
+    
+    const question = quizQuestions[currentQuestion];
+    const options = document.querySelectorAll('.option-btn');
+    const selectedOption = options[index];
+    
+    // Disable all options
+    options.forEach(opt => opt.classList.add('disabled'));
+    
+    // Show correct/wrong feedback
+    if (index === question.correct) {
+        selectedOption.classList.add('correct');
+        score++;
+        document.getElementById('score').textContent = score;
+        showFeedback(true, question.explanation);
+    } else {
+        selectedOption.classList.add('wrong');
+        options[question.correct].classList.add('correct');
+        showFeedback(false, question.explanation);
+    }
+    
+    // Record answer
+    answeredQuestions.push({
+        question: currentQuestion,
+        selected: index,
+        correct: question.correct,
+        isCorrect: index === question.correct
+    });
+    
+    // Show next button
+    setTimeout(() => {
+        showNextButton();
+    }, 1000);
+}
+
+// Show Feedback
+function showFeedback(isCorrect, explanation) {
+    const questionCard = document.querySelector('.question-card');
+    const feedbackHTML = `
+        <div class="feedback-container ${isCorrect ? 'correct' : 'wrong'}">
+            <div class="feedback-title">
+                ${isCorrect ? '✅ Great job! You nailed it!' : '❌ Oops! Not quite right.'}
+            </div>
+            <div class="feedback-text">${explanation}</div>
+        </div>
+    `;
+    questionCard.insertAdjacentHTML('beforeend', feedbackHTML);
+}
+
+// Show Next Button
+function showNextButton() {
+    const questionCard = document.querySelector('.question-card');
+    const buttonHTML = `
+        <div class="action-buttons">
+            <button class="action-btn" onclick="nextQuestion()">
+                Next Question <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    `;
+    questionCard.insertAdjacentHTML('beforeend', buttonHTML);
+}
+
+// Next Question
+function nextQuestion() {
+    currentQuestion++;
+    loadQuestion();
+}
+
+// Handle Timeout
+function handleTimeout() {
+    if (answered) return;
+    
+    answered = true;
+    const question = quizQuestions[currentQuestion];
+    const options = document.querySelectorAll('.option-btn');
+    
+    // Disable all options
+    options.forEach(opt => opt.classList.add('disabled'));
+    
+    // Show correct answer
+    options[question.correct].classList.add('correct');
+    
+    // Show timeout feedback
+    const questionCard = document.querySelector('.question-card');
+    const feedbackHTML = `
+        <div class="feedback-container wrong">
+            <div class="feedback-title">
+                ⏰ Time's up!
+            </div>
+            <div class="feedback-text">${question.explanation}</div>
+        </div>
+    `;
+    questionCard.insertAdjacentHTML('beforeend', feedbackHTML);
+    
+    // Record as incorrect
+    answeredQuestions.push({
+        question: currentQuestion,
+        selected: -1,
+        correct: question.correct,
+        isCorrect: false
+    });
+    
+    setTimeout(() => {
+        showNextButton();
+    }, 1000);
+}
+
+// Lifeline: 50/50
+function useFiftyFifty() {
+    if (fiftyFiftyUsed || answered) return;
+    
+    fiftyFiftyUsed = true;
+    lifelinesUsed.fiftyFifty++;
+    
+    const btn = document.getElementById('fiftyFiftyBtn');
+    btn.classList.add('disabled');
+    
+    const question = quizQuestions[currentQuestion];
+    const options = document.querySelectorAll('.option-btn');
+    let incorrectOptions = [];
+    
+    // Find incorrect options
+    options.forEach((opt, index) => {
+        if (index !== question.correct) {
+            incorrectOptions.push(index);
+        }
+    });
+    
+    // Randomly remove 2 incorrect options
+    for (let i = 0; i < 2 && incorrectOptions.length > 0; i++) {
+        const randomIndex = Math.floor(Math.random() * incorrectOptions.length);
+        const optionIndex = incorrectOptions[randomIndex];
+        options[optionIndex].classList.add('hidden');
+        incorrectOptions.splice(randomIndex, 1);
+    }
+}
+
+// Lifeline: Skip
+function useSkip() {
+    if (skipsRemaining <= 0 || answered) return;
+    
+    skipsRemaining--;
+    lifelinesUsed.skip++;
+    
+    const btn = document.getElementById('skipBtn');
+    btn.querySelector('span').textContent = `Skip (${skipsRemaining})`;
+    
+    if (skipsRemaining <= 0) {
+        btn.classList.add('disabled');
+    }
+    
+    // Skip to next question
+    currentQuestion++;
+    clearInterval(timerInterval);
+    loadQuestion();
+}
+
+// Lifeline: Hint
+function useHint() {
+    if (hintsRemaining <= 0 || answered) return;
+    
+    hintsRemaining--;
+    lifelinesUsed.hint++;
+    
+    const btn = document.getElementById('hintBtn');
+    const hintText = btn.textContent.trim();
+    btn.innerHTML = `<i class="fas fa-lightbulb"></i> Hint (${hintsRemaining})`;
+    
+    if (hintsRemaining <= 0) {
+        btn.classList.add('disabled');
+    }
+    
+    // Show hint
+    const hintContainer = document.getElementById('hintContainer');
+    hintContainer.classList.add('show');
+}
+
+// Show Results
+function showResults() {
+    clearInterval(timerInterval);
+    
+    const percentage = Math.round((score / quizQuestions.length) * 100);
+    const timeTaken = (quizQuestions.length * 30) - timeLeft; // Approximate
+    
+    let performanceMessage = '';
+    if (percentage >= 90) {
+        performanceMessage = '🏆 Outstanding! You\'re a networking expert!';
+    } else if (percentage >= 70) {
+        performanceMessage = '🌟 Great job! You know your stuff!';
+    } else if (percentage >= 50) {
+        performanceMessage = '👍 Good effort! Keep learning!';
+    } else {
+        performanceMessage = '📚 Keep practicing! You\'ll get there!';
+    }
+    
+    const resultsHTML = `
+        <div class="results-container">
+            <div class="results-title">Quiz Complete!</div>
+            <div class="results-score">${score}/${quizQuestions.length}</div>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 24px;">
+                ${performanceMessage}
+            </p>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value">${percentage}%</div>
+                    <div class="result-stat-label">Accuracy</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${lifelinesUsed.fiftyFifty}</div>
+                    <div class="result-stat-label">50/50 Used</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${lifelinesUsed.skip}</div>
+                    <div class="result-stat-label">Skips Used</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value">${lifelinesUsed.hint}</div>
+                    <div class="result-stat-label">Hints Used</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="retakeQuiz()">
+                    <i class="fas fa-redo"></i> Retake Quiz
+                </button>
+                <button class="action-btn secondary" onclick="window.location.href='{{ url_for('user.dashboard') }}'">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('questionContainer').style.display = 'none';
+    document.getElementById('lifelinesContainer').style.display = 'none';
+    document.querySelector('.quiz-stats').style.display = 'none';
+    document.querySelector('.progress-bar-container').style.display = 'none';
+    document.getElementById('resultsContainer').innerHTML = resultsHTML;
+    document.getElementById('resultsContainer').style.display = 'block';
+    
+    // Submit results to server
+    submitQuizResults();
+}
+
+// Submit Quiz Results
+function submitQuizResults() {
+    fetch('/quiz/api/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            score: score,
+            total_questions: quizQuestions.length,
+            time_taken: (quizQuestions.length * 30) - timeLeft,
+            lifelines_used: lifelinesUsed,
+            answers: answeredQuestions
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Quiz results saved:', data);
+    })
+    .catch(error => {
+        console.error('Error saving quiz results:', error);
+    });
+}
+
+// Retake Quiz
+function retakeQuiz() {
+    currentQuestion = 0;
+    score = 0;
+    answeredQuestions = [];
+    lifelinesUsed = { fiftyFifty: 0, skip: 0, hint: 0 };
+    skipsRemaining = 2;
+    hintsRemaining = 3;
+    fiftyFiftyUsed = false;
+    
+    document.getElementById('score').textContent = '0';
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('questionContainer').style.display = 'block';
+    document.getElementById('lifelinesContainer').style.display = 'flex';
+    document.querySelector('.quiz-stats').style.display = 'grid';
+    document.querySelector('.progress-bar-container').style.display = 'block';
+    
+    // Reset lifeline buttons
+    document.getElementById('fiftyFiftyBtn').classList.remove('disabled');
+    document.getElementById('skipBtn').classList.remove('disabled');
+    document.getElementById('skipBtn').innerHTML = '<i class="fas fa-forward"></i> Skip (2)';
+    document.getElementById('hintBtn').classList.remove('disabled');
+    document.getElementById('hintBtn').innerHTML = '<i class="fas fa-lightbulb"></i> Hint (3)';
+    
+    loadQuestion();
+}
+</script>
+{% endblock %}

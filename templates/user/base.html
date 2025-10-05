@@ -52,6 +52,9 @@
         --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
     /* Dynamic sidebar width variable (updated via body classes & media queries) */
     --current-sidebar-width: var(--sidebar-width);
+    /* MVP FIX: Updated from 280px to 300px for better spacing */
+    --sidebar-width: 300px;
+    --sidebar-collapsed-width: 88px;
 
         /* Gradients */
         --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
@@ -206,11 +209,33 @@
         width: var(--sidebar-collapsed-width);
     }
 
+    /* MVP FIX: Ensure collapsed state hides text properly */
+    #sidebar.collapsed .logo-name,
+    #sidebar.collapsed ul li a span,
+    #sidebar.collapsed .user-profile-top .profile-meta {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+    }
+
+    /* MVP FIX: Adjust collapsed state padding */
+    #sidebar.collapsed ul li a {
+        justify-content: center;
+        padding: 16px 12px;
+    }
+
+    #sidebar.collapsed ul li a i {
+        margin-right: 0;
+    }
+
     /* Sidebar inner scroll container: maintain fixed sidebar height and scroll content instead */
     .sidebar-scroll {
         height: 100%;
         overflow-y: auto;
         overflow-x: hidden;
+        /* MVP FIX: Add horizontal padding for better spacing */
+        padding: 0 8px;
+        box-sizing: border-box;
         /* Prevent layout shift from children when collapsing */
         will-change: scroll-position;
     }
@@ -398,10 +423,14 @@
         align-items: center;
         color: var(--text-secondary);
         text-decoration: none;
-        padding: 16px 20px;
+        /* MVP FIX: Increased padding for better touch targets */
+        padding: 16px 18px;
         border-radius: 12px;
         font-weight: 500;
-        font-size: 0.95rem;
+        /* MVP FIX: Increased font size for better readability */
+        font-size: 0.98rem;
+        /* MVP FIX: Add gap for icon spacing */
+        gap: 14px;
         transition: all var(--transition-speed) ease;
         position: relative;
         overflow: hidden;
@@ -457,17 +486,21 @@
     }
 
     #sidebar ul li a i {
-        min-width: 24px;
-        width: 24px;
-        height: 24px;
-        line-height: 24px;
+        /* MVP FIX: Increased icon size for better visibility */
+        min-width: 26px;
+        width: 26px;
+        height: 26px;
+        line-height: 26px;
         text-align: center;
-        margin-right: 16px;
-        font-size: 1.2rem;
+        margin-right: 0; /* Removed - using gap on parent */
+        font-size: 1.3rem;
         color: var(--text-secondary);
         transition: all var(--transition-speed) ease;
         position: relative;
         z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     #sidebar ul li a:hover i,
@@ -578,7 +611,7 @@
 
     /* Main Content Area */
     .main-content {
-        margin-left: var(--current-sidebar-width);
+        margin-left: var(--current-sidebar-width) !important; /* MVP FIX: !important to override simulation page styles */
         min-height: 100vh;
         padding: 20px;
         transition: margin-left var(--transition-speed) ease;
@@ -590,13 +623,10 @@
 
     /* Update CSS variable when sidebar is collapsed */
     body.sidebar-collapsed {
-        --current-sidebar-width: var(--sidebar-collapsed-width);
+        --current-sidebar-width: var(--sidebar-collapsed-width) !important; /* MVP FIX: Ensure variable updates */
     }
 
-    /* Responsive adjustments update the variable instead of scripting */
-    @media (max-width: 1024px) {
-        body { --current-sidebar-width: var(--sidebar-collapsed-width); }
-    }
+    /* Responsive adjustments - Mobile only */
     @media (max-width: 768px) {
         body { --current-sidebar-width: 0px; }
     }
@@ -636,30 +666,9 @@
 
     /* Responsive Design - Enhanced for Mobile */
     @media (max-width: 1024px) {
-        #sidebar {
-            width: var(--sidebar-collapsed-width);
-        }
-        
-        #sidebar .logo-name,
-        #sidebar ul li a span,
-        .user-profile-top .profile-details,
-        .user-profile-top .profile-meta {
-            opacity: 0;
-            width: 0;
-        }
-
-        #sidebar ul li a {
-            justify-content: center;
-            padding: 16px 12px;
-        }
-
-        #sidebar ul li a i {
-            margin-right: 0;
-        }
-
-        .main-content {
-            margin-left: var(--sidebar-collapsed-width);
-        }
+        /* MVP FIX: Don't force collapsed state on tablets - let user toggle */
+        /* Removed: forcing sidebar width and hiding text labels */
+        /* The toggle button now works at all screen sizes */
     }
 
     @media (max-width: 768px) {
@@ -986,7 +995,7 @@
                 </a>
             </li>
 
-            <li class="nav-item {% if request.endpoint == 'user.crimping_simulation' or request.endpoint == 'user.osi_simulation' %}active{% endif %}">
+            <li class="nav-item {% if request.endpoint == 'user.crimping_simulation' or request.endpoint == 'user.osi_simulation' or request.endpoint == 'troubleshooting.index' or request.endpoint == 'quiz.index' %}active{% endif %}">
                 <a href="javascript:void(0);" class="dropdown-toggle" onclick="toggleChallengeDropdown(this)">
                     <i class="fas fa-gamepad"></i>
                     <span>Challenges</span>
@@ -1007,10 +1016,17 @@
                 </a>
             </li>
             
-            <li class="nav-item {% if request.endpoint == 'troubleshooting.index' %}active{% endif %}">
+            <li class="nav-item challenge-item" {% if request.endpoint == 'troubleshooting.index' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
                 <a href="{{ url_for('troubleshooting.index') }}">
                     <i class="fas fa-tools"></i>
                     <span>Link Up!</span>
+                </a>
+            </li>
+            
+            <li class="nav-item challenge-item" {% if request.endpoint == 'quiz.index' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                <a href="{{ url_for('quiz.index') }}">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Quiz</span>
                 </a>
             </li>
             <li class="nav-item {% if request.endpoint == 'user.profile' %}active{% endif %}">
@@ -1338,7 +1354,7 @@
                 item.classList.contains('active')
             );
             
-            if (isChallengeActive || window.location.pathname.includes('crimping') || window.location.pathname.includes('osi')) {
+            if (isChallengeActive || window.location.pathname.includes('crimping') || window.location.pathname.includes('osi') || window.location.pathname.includes('troubleshooting') || window.location.pathname.includes('/quiz')) {
                 if (challengeLink) {
                     challengeLink.setAttribute('data-expanded', 'true');
                     challengeItems.forEach(item => {

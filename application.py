@@ -123,6 +123,9 @@ def register_blueprints():
         from user.routes.troubleshooting_routes import troubleshooting_bp
         application.register_blueprint(troubleshooting_bp)
         
+        from user.routes.quiz_routes import quiz_bp
+        application.register_blueprint(quiz_bp)
+        
         from user.routes.collaborative_troubleshooting_api import collaborative_troubleshooting_api_bp
         application.register_blueprint(collaborative_troubleshooting_api_bp)
         

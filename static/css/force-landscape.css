@@ -1,50 +1,77 @@
-/* Overlay prompting the user to rotate for landscape */
+/* MVP Landscape Prompt Overlay */
 #force-landscape-overlay { display: none; }
 #force-landscape-overlay .flo-backdrop {
   position: fixed; inset: 0; z-index: 5000;
-  background: rgba(2,6,23,0.85);
-  backdrop-filter: blur(6px);
+  background: rgba(2,6,23,0.95);
+  backdrop-filter: blur(10px);
   display: flex; align-items: center; justify-content: center;
 }
 #force-landscape-overlay .flo-card {
-  width: min(520px, 92vw);
-  background: rgba(15,23,42,0.9);
-  border: 1px solid rgba(0,217,255,0.25);
-  border-radius: 16px; padding: 20px; color: #e5f2ff;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  width: min(420px, 90vw);
+  background: rgba(15,23,42,0.95);
+  border: 2px solid rgba(0,217,255,0.4);
+  border-radius: 20px; 
+  padding: 32px 24px; 
+  color: #e5f2ff;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,217,255,0.3);
   text-align: center;
-}
-#force-landscape-overlay .flo-icon { font-size: 42px; margin-bottom: 10px; }
-#force-landscape-overlay .flo-title { margin: 6px 0 8px; font-size: 1.1rem; }
-#force-landscape-overlay .flo-text { opacity: 0.85; font-size: 0.95rem; }
-#force-landscape-overlay .flo-actions { 
-  margin-top: 14px; 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-#force-landscape-overlay .flo-btn {
-  background: linear-gradient(135deg,#39FF14,#00D9FF);
-  border: none; color: #0b1220; font-weight: 700;
-  border-radius: 10px; padding: 10px 14px; cursor: pointer;
-  box-shadow: 0 0 20px rgba(0,217,255,0.25);
-  transition: all 0.3s ease;
-}
-#force-landscape-overlay .flo-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(0,217,255,0.4);
-}
-#force-landscape-overlay .flo-btn:active {
-  transform: translateY(0);
+  animation: slideInUp 0.4s ease-out;
 }
 
-/* Optional pseudo-rotation fallback when true orientation lock is not available */
-body.pseudo-landscape-active { overflow: hidden; }
-#pseudo-landscape-wrapper {
-  position: fixed; inset: 0; transform-origin: center center;
-  width: 100vh; height: 100vw; left: 50%; top: 50%;
-  transform: translate(-50%, -50%) rotate(90deg);
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-@media (orientation: landscape) {
-  #pseudo-landscape-wrapper { display: none !important; }
+
+#force-landscape-overlay .flo-icon { 
+  font-size: 64px; 
+  margin-bottom: 16px;
+  animation: rotate-device 2s ease-in-out infinite;
+}
+
+@keyframes rotate-device {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+#force-landscape-overlay .flo-title { 
+  margin: 12px 0 16px; 
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00D9FF, #39FF14);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#force-landscape-overlay .flo-text { 
+  opacity: 0.9; 
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.85);
+}
+
+/* Responsive adjustments for overlay */
+@media (max-width: 480px) {
+  #force-landscape-overlay .flo-card {
+    padding: 24px 20px;
+  }
+  
+  #force-landscape-overlay .flo-icon {
+    font-size: 48px;
+  }
+  
+  #force-landscape-overlay .flo-title {
+    font-size: 1.25rem;
+  }
+  
+  #force-landscape-overlay .flo-text {
+    font-size: 0.9rem;
+  }
 }

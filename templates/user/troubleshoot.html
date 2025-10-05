@@ -203,6 +203,8 @@
         gap: 0;
         overflow-x: auto;
         overflow-y: hidden;
+        backface-visibility: hidden; /* Prevent sub-pixel rendering issues */
+        will-change: auto; /* Disable GPU acceleration delays */
     }
 
     /* When sidebar is collapsed (body has .sidebar-collapsed), we already update --current-sidebar-width.
@@ -2612,10 +2614,15 @@
 <script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
 <script>
-    initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.troubleshoot-container', pageKey: 'troubleshoot' });
+  initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.troubleshoot-container', pageKey: 'troubleshoot' });
 </script>
 
-
+<script>
+  // Initialize landscape orientation helper for troubleshooting
+  if (typeof initForceLandscape === 'function') {
+    initForceLandscape({ pageKey: 'troubleshooting' });
+  }
+</script>
 <script>
 // Landscape Orientation Detection and Layout Optimization for Troubleshooting
 document.addEventListener('DOMContentLoaded', function() {
@@ -3040,7 +3047,7 @@ document.addEventListener('DOMContentLoaded', () => {
         font-family: 'Orbitron', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* transition removed to prevent initial load jitter */
         position: relative;
         overflow: hidden;
         min-width: 100px; /* Reduced but still adequate */
@@ -3078,7 +3085,7 @@ document.addEventListener('DOMContentLoaded', () => {
         background: rgba(0, 217, 255, 0.15);
         border-color: var(--cyber-glow);
         color: #FFFFFF;
-        transform: translateY(-2px);
+        /* transform removed to prevent layout shift */
         box-shadow: 0 4px 16px rgba(0, 217, 255, 0.4);
     }
 
@@ -3142,7 +3149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .action-btn.mode-neutral:hover {
         border-color: var(--cyber-glow);
         background: rgba(0, 217, 255, 0.15);
-        transform: translateY(-2px);
+        /* transform removed to prevent layout shift */
         box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
     }
 
@@ -3156,7 +3163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text-align: center;
         border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* transition removed to prevent initial load jitter */
         position: relative;
         overflow: hidden;
         min-width: var(--device-size-md); /* 72px - optimal touch target */
@@ -3172,7 +3179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .device:hover {
         background: rgba(0, 217, 255, 0.15);
         border-color: var(--cyber-glow);
-        transform: translateY(-2px);
+        /* transform removed to prevent layout shift */
         box-shadow: 0 4px 16px rgba(0, 217, 255, 0.4);
     }
 
@@ -3181,12 +3188,12 @@ document.addEventListener('DOMContentLoaded', () => {
         height: 40px;
         margin-bottom: 0; /* Remove margin, use gap instead */
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-        transition: all 0.3s ease;
+        /* transition removed to prevent initial load jitter */
     }
 
     .device:hover .device-icon {
         filter: drop-shadow(0 4px 8px rgba(0, 217, 255, 0.5));
-        transform: scale(1.1);
+        /* transform removed to prevent layout shift */
     }
 
     .device span {
@@ -6225,6 +6232,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="challenge-badges">
                             <div class="mini-badge">🔄</div>
                             <div class="mini-badge">📡</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz Challenge -->
+                <div class="challenge-card" data-level="1" data-challenge="network-quiz" onclick="window.location.href='/quiz';" style="cursor: pointer; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 217, 255, 0.1));">
+                    <div class="challenge-header">
+                        <div class="challenge-level" style="background: linear-gradient(135deg, #8B5CF6, #00D9FF);">Quiz Mode</div>
+                        <div class="challenge-difficulty">
+                            <div class="difficulty-star filled"></div>
+                            <div class="difficulty-star"></div>
+                            <div class="difficulty-star"></div>
+                        </div>
+                    </div>
+                    <div class="challenge-title">
+                        <i class="fas fa-brain"></i> Network Knowledge Quiz
+                    </div>
+                    <div class="challenge-description">
+                        Test your networking knowledge with an interactive quiz! Features timer, lifelines (50/50, Skip, Hints), and instant feedback. 11 questions covering topology, devices, and IP addressing.
+                    </div>
+                    <div class="challenge-rewards">
+                        <div class="challenge-xp">
+                            <i class="bx bx-star"></i>
+                            <span>Up to 550 XP</span>
+                        </div>
+                        <div class="challenge-badges">
+                            <div class="mini-badge">🧠</div>
+                            <div class="mini-badge">⏱️</div>
+                            <div class="mini-badge">💡</div>
                         </div>
                     </div>
                 </div>

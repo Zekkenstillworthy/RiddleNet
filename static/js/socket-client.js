@@ -623,13 +623,16 @@ class SocketClient {
             clearInterval(this.healthCheckInterval);
         }
         
-        // Start periodic health check
+        // Start periodic health check with more frequent pings to prevent stale connections
         this.healthCheckInterval = setInterval(() => {
             if (this.connected && this.socket) {
                 const timestamp = Date.now();
                 this.socket.emit('ping', { client_time: timestamp });
+                console.debug('💓 Sent heartbeat ping at', new Date(timestamp).toISOString());
             }
-        }, 30000); // Check every 30 seconds
+        }, 20000); // Check every 20 seconds (more frequent to prevent 2-minute timeout)
+        
+        console.log('✅ WebSocket heartbeat started (20s interval)');
     }
 
     /**

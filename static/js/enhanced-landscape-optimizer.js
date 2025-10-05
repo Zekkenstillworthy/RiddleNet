@@ -93,9 +93,6 @@
             // Enable touch target monitoring
             this.monitorTouchTargets();
             
-            // Show tooltips for collapsed nav
-            this.showNavigationTooltips();
-            
             // Setup panel management
             this.setupPanelManagement();
             

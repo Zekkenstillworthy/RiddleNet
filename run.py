@@ -290,6 +290,7 @@ try:
     additional_blueprints = [
         ('user.api.topology_progress_api', 'topology_progress_bp', None),
         ('user.routes.troubleshooting_routes', 'troubleshooting_bp', None),
+        ('user.routes.quiz_routes', 'quiz_bp', None),
         ('user.routes.collaborative_troubleshooting_api', 'collaborative_troubleshooting_api_bp', None),
         ('user.api.feedback_api', 'feedback_api', None),
         ('user.routes.notification_routes', 'notification_bp', None),
