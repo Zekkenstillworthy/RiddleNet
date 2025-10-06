@@ -3,6 +3,7 @@
 {% block head %}
 <title>Quiz Challenge | RiddleNet</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape-orientation.css') }}">
 <style>
     /* Smooth scrolling for mobile */
     html {
@@ -1396,6 +1397,7 @@
 <!-- Auto-Landscape Optimization System -->
 <script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
+<script src="{{ url_for('static', filename='js/auto-landscape-orientation.js') }}"></script>
 <script>
   initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.quiz-container', pageKey: 'quiz' });
 </script>
@@ -1513,7 +1515,7 @@ const quizQuestions = [
         hint: "This device is commonly used to connect your home network to the internet."
     },
     {
-        question: "What type of network topology is shown? (Bus Topology - All devices connected to a single cable)",
+        question: "What type of network topology is shown? ",
         options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
         correct: 0,
         explanation: "Bus Topology is where all devices are connected to a single cable (backbone).",
@@ -1803,10 +1805,12 @@ function useSkip() {
     lifelinesUsed.skip++;
     
     const btn = document.getElementById('skipBtn');
-    btn.querySelector('span').textContent = `Skip (${skipsRemaining})`;
-    
-    if (skipsRemaining <= 0) {
-        btn.classList.add('disabled');
+    if (btn) {
+        btn.innerHTML = `<i class="fas fa-forward"></i> Skip (${skipsRemaining})`;
+        
+        if (skipsRemaining <= 0) {
+            btn.classList.add('disabled');
+        }
     }
     
     // Skip to next question
@@ -1823,16 +1827,19 @@ function useHint() {
     lifelinesUsed.hint++;
     
     const btn = document.getElementById('hintBtn');
-    const hintText = btn.textContent.trim();
-    btn.innerHTML = `<i class="fas fa-lightbulb"></i> Hint (${hintsRemaining})`;
-    
-    if (hintsRemaining <= 0) {
-        btn.classList.add('disabled');
+    if (btn) {
+        btn.innerHTML = `<i class="fas fa-lightbulb"></i> Hint (${hintsRemaining})`;
+        
+        if (hintsRemaining <= 0) {
+            btn.classList.add('disabled');
+        }
     }
     
     // Show hint
     const hintContainer = document.getElementById('hintContainer');
-    hintContainer.classList.add('show');
+    if (hintContainer) {
+        hintContainer.classList.add('show');
+    }
 }
 
 // Show Results

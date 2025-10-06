@@ -10,6 +10,7 @@ from __init__ import db  # Import db from main app
 from ..models.user import AdminUser, Admin  # Import the correct models
 from ..models.score import AdminScore  # Use renamed model
 from ..models.essay_response import EssayResponse
+from utils.password_validator import validate_password
 
 user_bp = Blueprint('admin_user', __name__)
 
@@ -189,6 +190,12 @@ class UserController:
                 flash('Passwords do not match', 'error')
                 return redirect(url_for('user.index'))
             
+            # Validate password strength
+            is_valid, errors = validate_password(password)
+            if not is_valid:
+                flash(errors[0], 'error')
+                return redirect(url_for('user.index'))
+            
             # Check if username already exists
             existing_admin = Admin.query.filter_by(username=username).first()
             if existing_admin:
@@ -241,6 +248,12 @@ class UserController:
             # Validate input
             if not username or not password:
                 flash('Username and password are required', 'error')
+                return redirect(url_for('user.index'))
+            
+            # Validate password strength
+            is_valid, errors = validate_password(password)
+            if not is_valid:
+                flash(errors[0], 'error')
                 return redirect(url_for('user.index'))
             
             # Check if username already exists
@@ -425,6 +438,12 @@ class UserController:
             # Validate password confirmation
             if password != confirm_password:
                 flash('Passwords do not match', 'error')
+                return redirect(url_for('admin_user.create_new_user_form'))
+            
+            # Validate password strength
+            is_valid, errors = validate_password(password)
+            if not is_valid:
+                flash(errors[0], 'error')
                 return redirect(url_for('admin_user.create_new_user_form'))
 
             # Check if username already exists
@@ -725,9 +744,10 @@ class UserController:
                     flash('New passwords do not match', 'error')
                     return redirect(url_for('admin_user.admin_profile'))
                 
-                # Validate password strength
-                if len(new_password) < 6:
-                    flash('Password must be at least 6 characters long', 'error')
+                # Validate password strength using the new validator
+                is_valid, errors = validate_password(new_password)
+                if not is_valid:
+                    flash(errors[0], 'error')
                     return redirect(url_for('admin_user.admin_profile'))
                 
                 admin.set_password(new_password)

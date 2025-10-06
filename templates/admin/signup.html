@@ -342,19 +342,16 @@
             </div>
             
             <div class="input-box">
-                <input type="password" name="password" placeholder="Password" required minlength="6" id="password">
+                <input type="password" name="password" placeholder="Password" required minlength="8" id="password">
                 <i class='bx bxs-lock-alt'></i>
-                <div class="password-requirements">
-                    Password must be at least 6 characters long
-                </div>
             </div>
             
             <div class="input-box">
-                <input type="password" name="confirm_password" placeholder="Confirm Password" required minlength="6" id="confirmPassword">
+                <input type="password" name="confirm_password" placeholder="Confirm Password" required minlength="8" id="confirmPassword">
                 <i class='bx bxs-lock-open'></i>
             </div>
             
-            <button type="submit">Create Admin Account</button>
+            <button type="submit" id="submitBtn">Create Admin Account</button>
         </form>
         
         <div class="login-link">
@@ -363,7 +360,7 @@
     </div>
 
     <script>
-        // Client-side password confirmation validation
+        // Simple password matching validation
         document.addEventListener('DOMContentLoaded', function() {
             const password = document.getElementById('password');
             const confirmPassword = document.getElementById('confirmPassword');
@@ -372,18 +369,20 @@
             function validatePasswords() {
                 if (password.value !== confirmPassword.value) {
                     confirmPassword.setCustomValidity('Passwords do not match');
+                    return false;
                 } else {
                     confirmPassword.setCustomValidity('');
+                    return true;
                 }
             }
 
-            password.addEventListener('input', validatePasswords);
             confirmPassword.addEventListener('input', validatePasswords);
 
             form.addEventListener('submit', function(e) {
-                validatePasswords();
-                if (!form.checkValidity()) {
+                if (!validatePasswords()) {
                     e.preventDefault();
+                    alert('Passwords do not match!');
+                    return false;
                 }
             });
         });

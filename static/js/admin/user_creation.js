@@ -204,10 +204,14 @@ function isValidEmail(email) {
 }
 
 function isStrongPassword(password) {
-    return password.length >= 8 && 
-           /[A-Z]/.test(password) && 
-           /[a-z]/.test(password) && 
-           /[0-9]/.test(password);
+    // Enhanced password validation with all security requirements
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password);
+    
+    return hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
 }
 
 // Async validation functions
@@ -346,28 +350,34 @@ function updatePasswordStrength() {
         { id: 'req-length', test: () => password.length >= 8 },
         { id: 'req-upper', test: () => /[A-Z]/.test(password) },
         { id: 'req-lower', test: () => /[a-z]/.test(password) },
-        { id: 'req-number', test: () => /[0-9]/.test(password) }
+        { id: 'req-number', test: () => /[0-9]/.test(password) },
+        { id: 'req-special', test: () => /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password) }
     ];
     
     requirements.forEach(req => {
         if (req.test()) {
             const element = document.getElementById(req.id);
-            element.classList.add('met');
-            element.querySelector('i').className = 'fas fa-check';
-            score++;
+            if (element) {
+                element.classList.add('met');
+                element.querySelector('i').className = 'fas fa-check';
+                score++;
+            }
         }
     });
     
-    // Update strength bar with animation
+    // Update strength bar with animation (now out of 5 requirements)
     strengthFill.className = 'strength-fill';
     strengthFill.style.width = '0%';
     
     setTimeout(() => {
-        if (score === 1) {
+        const percentage = (score / 5) * 100;
+        strengthFill.style.width = percentage + '%';
+        
+        if (score <= 2) {
             strengthFill.classList.add('strength-weak');
-        } else if (score === 2 || score === 3) {
+        } else if (score <= 4) {
             strengthFill.classList.add('strength-medium');
-        } else if (score === 4) {
+        } else if (score === 5) {
             strengthFill.classList.add('strength-strong');
         }
     }, 100);

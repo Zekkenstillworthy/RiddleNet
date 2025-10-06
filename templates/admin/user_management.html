@@ -665,7 +665,7 @@
             color: var(--cyber-glow);
         }
         
-        /* Modal Styles */
+        /* Enhanced Modal Styles - Dashboard Consistency */
         .modal {
             display: none;
             position: fixed;
@@ -673,46 +673,348 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(2, 6, 23, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
             z-index: 2000;
             justify-content: center;
             align-items: center;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            padding: 20px;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { 
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+            to { 
+                opacity: 1;
+                backdrop-filter: blur(20px);
+            }
         }
           .modal-content {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            background: var(--surface);
+            border: 1px solid var(--cyber-glow);
+            border-radius: 20px;
             width: 100%;
             max-width: 800px;
             max-height: 90vh;
             position: relative;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+            padding: 32px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 217, 255, 0.25),
+                0 0 0 1px rgba(0, 217, 255, 0.1),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
             overflow-y: auto;
-            margin: 20px;
-            backdrop-filter: blur(20px);
-            animation: slideIn 0.3s ease;
+            backdrop-filter: blur(30px);
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
         }
         
         @keyframes slideIn {
             from { 
                 opacity: 0; 
-                transform: translateY(-20px) scale(0.95); 
+                transform: translateY(-30px) scale(0.9); 
+                filter: blur(10px);
             }
             to { 
                 opacity: 1; 
                 transform: translateY(0) scale(1); 
+                filter: blur(0);
             }
         }
         
+        /* Cyber border effect */
         .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        }
+        
+        /* Animated grid overlay */
+        .modal-content::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(0deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 217, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            border-radius: 20px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+          .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 24px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+        
+        .close-modal:hover {
+            color: #fff;
+            background: var(--gradient-danger);
+            border-color: #ef4444;
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 
+                0 8px 25px rgba(239, 68, 68, 0.4),
+                0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        
+        .close-modal:active {
+            transform: rotate(90deg) scale(0.95);
+        }
+          .modal h3 {
+            margin-bottom: 24px;
+            margin-top: 0;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--cyber-glow);
+            padding-bottom: 16px;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .modal h3::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--gradient-secondary);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+        
+        .modal h3 i {
+            color: var(--cyber-glow);
+            font-size: 28px;
+            filter: drop-shadow(0 0 8px var(--cyber-glow));
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+          /* Enhanced Form Styles - Dashboard Consistency */
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--cyber-glow);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .form-group label::before {
+            content: '▸';
+            color: var(--neon-green);
+            font-size: 12px;
+        }
+        
+        .form-group input, 
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-group input:focus, 
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--cyber-glow);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 
+                0 0 20px rgba(0, 217, 255, 0.2),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                0 0 0 3px rgba(0, 217, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-style: italic;
+        }
+        
+        /* Select dropdown styling */
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300D9FF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+        
+        .form-group select:hover {
+            border-color: var(--cyber-glow);
+        }
+        
+        /* Input with icons */
+        .form-group.with-icon {
+            position: relative;
+        }
+        
+        .form-group.with-icon i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--cyber-glow);
+            pointer-events: none;
+        }
+        
+        .form-group.with-icon input {
+            padding-left: 40px;
+        }
+          .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 2px solid var(--glass-border);
+            position: relative;
+        }
+        
+        .form-actions::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--gradient-primary);
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+        
+        .form-actions .btn {
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-actions .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+        
+        .form-actions .btn:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .form-actions .btn-primary {
+            background: var(--gradient-primary);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+        
+        .form-actions .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+        }
+        
+        .form-actions .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .form-actions .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .form-actions .btn-secondary:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: var(--cyber-glow);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        
+        .form-actions .btn-danger {
+            background: var(--gradient-danger);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .form-actions .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+        /* Enhanced User Details Styles - Dashboard Consistency */
+        .user-details {
+            margin-top: 20px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .user-details::before {
             content: '';
             position: absolute;
             top: 0;
@@ -721,228 +1023,244 @@
             height: 2px;
             background: var(--gradient-primary);
             border-radius: 16px 16px 0 0;
-        }
-          .close-modal {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            font-size: 20px;
-            cursor: pointer;
-            color: rgba(255, 255, 255, 0.6);
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            transition: all var(--transition-speed) ease;
+            opacity: 0.5;
         }
         
-        .close-modal:hover {
-            color: #fff;
-            background: #ef4444;
-            border-color: #ef4444;
-            transform: rotate(90deg);
-        }
-          .modal h3 {
-            margin-bottom: 16px;
-            color: #fff;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 12px;
+        .user-details h4 {
+            margin-bottom: 20px;
+            color: var(--cyber-glow);
             font-size: 18px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        
-        .modal h3 i {
-            color: var(--cyber-glow);
-        }
-          /* Form Styles */
-        .form-group {
-            margin-bottom: 14px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 600;
-            font-size: 12px;
+            gap: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
         }
         
-        .form-group input, 
-        .form-group select {
-            width: 100%;
-            padding: 8px 12px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: #fff;
-            border-radius: var(--border-radius);
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            transition: all var(--transition-speed) ease;
-            backdrop-filter: blur(20px);
+        .user-details h4 i {
+            color: var(--neon-green);
+            filter: drop-shadow(0 0 6px var(--neon-green));
         }
         
-        .form-group input:focus, 
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--cyber-glow);
-            box-shadow: 0 0 12px rgba(0, 217, 255, 0.3);
-        }
-        
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-            font-style: italic;
-        }
-        
-          .form-actions {
+        .detail-row {
             display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 20px;
-            padding-top: 12px;
-            border-top: 1px solid var(--glass-border);
-        }
-        /* User Details Styles */
-          /* User Details Styles */
-        .user-details {
-            margin-top: 16px;
-            background: var(--surface-hover);
-            border-radius: var(--border-radius);
-            padding: 16px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .user-details h4 {
-            margin-bottom: 14px;
-            color: var(--accent-color);
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
             align-items: center;
-            gap: 6px;
-        }detail-row {
-            display: flex;
-          .detail-row {
-            display: flex;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-            align-items: center;
-        }   border-bottom: none;
+            transition: all 0.3s ease;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
             padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        
+        .detail-row:hover {
+            padding-left: 8px;
+            background: rgba(0, 217, 255, 0.03);
+            border-radius: 8px;
         }
         
         .detail-label {
             font-weight: 600;
-            width: 160px;
-          .detail-label {
-            font-weight: 600;
-            width: 140px;
-            color: var(--text-muted);
-            font-size: 12px;
+            width: 180px;
+            color: var(--text-secondary);
+            font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .detail-label::before {
+            content: '◆';
+            color: var(--cyber-glow);
+            font-size: 10px;
         }
         
         .detail-value {
             flex-grow: 1;
             color: var(--text-primary);
-            font-size: 13px;
-        }   display: flex;
-            border-bottom: 1px solid var(--border-color);
-          /* Tab Styles */
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Enhanced Tab Styles - Dashboard Consistency */
         .detail-tabs {
             display: flex;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 16px;
-            gap: 3px;
+            border-bottom: 2px solid var(--glass-border);
+            margin-bottom: 24px;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .detail-tabs::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--gradient-primary);
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+            transition: all 0.3s ease;
         }
         
         .detail-tab {
-            padding: 8px 16px;
+            padding: 12px 24px;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-right: 6px;
-            border-radius: 6px 6px 0 0;
-            transition: all var(--transition-speed) ease;
-            font-weight: 500;
-            font-size: 12px;
+            border-bottom: 3px solid transparent;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             color: var(--text-muted);
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .detail-tab::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 217, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .detail-tab:hover::before {
+            opacity: 1;
+        }
+        
+        .detail-tab:hover {
+            color: var(--cyber-glow);
+            background: rgba(0, 217, 255, 0.05);
+            transform: translateY(-2px);
         }
         
         .detail-tab.active {
-            border-bottom: 2px solid var(--accent-color);
-            color: var(--accent-color);
-            background: var(--surface);
+            border-bottom: 3px solid var(--cyber-glow);
+            color: var(--cyber-glow);
+            background: rgba(0, 217, 255, 0.1);
+            box-shadow: 0 -4px 12px rgba(0, 217, 255, 0.2);
+        }
+        
+        .detail-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.6);
         }
         
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
+            animation: tabFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
         }
         
         .tab-content.active {
             display: block;
         }
         
-        /* Stats Cards */
+        @keyframes tabFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+        
+        /* Enhanced Stats Cards - Dashboard Consistency */
         .stats-cards {
             display: grid;
-          /* Stats Cards */
-        .stats-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 14px;
-            margin-bottom: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
         }
         
         .stat-card {
-            background: linear-gradient(135deg, var(--surface), var(--surface-hover));
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: 14px;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+            border: 1px solid var(--cyber-glow);
+            border-radius: 16px;
+            padding: 20px;
             text-align: center;
-            transition: all var(--transition-speed) ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-        }   position: absolute;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, var(--accent-color), var(--network-purple));
+            background: var(--gradient-primary);
+            opacity: 0.8;
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(0, 217, 255, 0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-glow);
+            transform: translateY(-8px);
+            border-color: var(--neon-green);
+            box-shadow: 
+                0 12px 40px rgba(0, 217, 255, 0.3),
+                0 0 20px rgba(0, 217, 255, 0.2);
+        }
+        
+        .stat-card:hover::after {
+            opacity: 1;
         }
         
         .stat-card h5 {
-          .stat-card h5 {
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            margin: 0 0 8px 0;
+            color: var(--text-secondary);
+            font-size: 12px;
             font-weight: 600;
-        }
-          .stat-card p {
-            font-size: 22px;
-            color: var(--text-primary);
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
         
-        /* Alert Styles */
+        .stat-card p {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0.3));
+        }
+        
+        /* Alert Styles - Dashboard Consistency */
         .alert {
             padding: 12px 16px;
             margin-bottom: 16px;
@@ -1329,8 +1647,8 @@
                 transform: translateY(0) scale(1);
             }
         }
-            }
-        }        /* Enhanced responsive design */
+        
+        /* Enhanced responsive design */
         @media (max-width: 768px) {
             .admin-container {
                 padding: 12px;
@@ -2174,9 +2492,20 @@
             // Function to handle editing an admin user
             function fetchAdminAndPopulateEditForm(adminId) {
                 // Get data from the admins table row
-                const row = document.querySelector(`#adminsTable tr [data-id="${adminId}"]`).closest('tr');
-                  document.getElementById('editUserId').value = adminId;
-                document.getElementById('editUsername').value = row.cells[0].textContent;
+                const element = document.querySelector(`#adminsTable tr [data-id="${adminId}"]`);
+                if (!element) {
+                    console.error('Admin element not found for ID:', adminId);
+                    return;
+                }
+                const row = element.closest('tr');
+                if (!row) {
+                    console.error('Parent row not found for admin ID:', adminId);
+                    return;
+                }
+                
+                // Admin table structure: Username(0), Created(1), Last Active(2), Status(3), Actions(4)
+                document.getElementById('editUserId').value = adminId;
+                document.getElementById('editUsername').value = row.cells[0].textContent.trim();
                 document.getElementById('editPassword').value = '';
                 
                 // Admin specific settings
@@ -2199,7 +2528,12 @@
                 fetch(`/users/get_totp_info/${userId}`, {
                     credentials: 'same-origin'
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         const totpStatus = document.getElementById('totpStatus');
                         const totpKeyElement = document.getElementById('totpKey');
@@ -2244,7 +2578,23 @@
                             totpQrContainer.style.display = 'none';
                         }
                     })
-                    .catch(error => console.error('Error fetching TOTP info:', error));
+                    .catch(error => {
+                        console.error('Error fetching TOTP info:', error);
+                        // Set default values on error
+                        const totpStatus = document.getElementById('totpStatus');
+                        const totpKeyElement = document.getElementById('totpKey');
+                        const totpQrContainer = document.getElementById('totpQrContainer');
+                        const enableTotpBtn = document.getElementById('enableTotpBtn');
+                        const resetTotpBtn = document.getElementById('resetTotpBtn');
+                        const disableTotpBtn = document.getElementById('disableTotpBtn');
+                        
+                        if (totpStatus) totpStatus.textContent = 'Error loading';
+                        if (totpKeyElement) totpKeyElement.textContent = '-';
+                        if (totpQrContainer) totpQrContainer.style.display = 'none';
+                        if (enableTotpBtn) enableTotpBtn.style.display = 'none';
+                        if (resetTotpBtn) resetTotpBtn.style.display = 'none';
+                        if (disableTotpBtn) disableTotpBtn.style.display = 'none';
+                    });
             }
             
             // Modify fetchUserAndShowDetails to include TOTP info
@@ -2583,23 +2933,31 @@
             // Function to open and populate the edit admin modal
             function openEditAdminModal(adminId) {
                 // Find the admin in the table
-                const row = document.querySelector(`#adminsTable tr td input[data-id="${adminId}"]`).closest('tr');
+                const element = document.querySelector(`#adminsTable tr td input[data-id="${adminId}"]`);
+                if (!element) {
+                    console.error('Admin element not found for ID:', adminId);
+                    return;
+                }
+                const row = element.closest('tr');
+                if (!row) {
+                    console.error('Parent row not found for admin ID:', adminId);
+                    return;
+                }
                 
                 // Populate the form
+                // Admin table structure: Username(0), Created(1), Last Active(2), Status(3), Actions(4)
                 document.getElementById('editAdminId').value = adminId;
-                document.getElementById('adminUsername').value = row.cells[2].textContent.trim();
-                document.getElementById('adminEmail').value = row.cells[3].textContent.trim();
+                document.getElementById('adminUsername').value = row.cells[0].textContent.trim();
+                
+                // Email is not visible in table - will need to fetch from server
+                // For now, leave it empty or fetch via AJAX
+                document.getElementById('adminEmail').value = ''; // Not available in table
                 document.getElementById('adminPassword').value = ''; // Reset password field
                 
-                // Set the admin role
-                const role = row.cells[6].textContent.trim().toLowerCase();
+                // Set the admin role - all admins are administrators
                 const roleSelect = document.getElementById('adminRole');
-                
-                for (let i = 0; i < roleSelect.options.length; i++) {
-                    if (roleSelect.options[i].value.toLowerCase() === role) {
-                        roleSelect.selectedIndex = i;
-                        break;
-                    }
+                if (roleSelect) {
+                    roleSelect.value = 'admin'; // Default to admin role
                 }
                 
                 // Set form action
@@ -2688,24 +3046,39 @@
             function fetchAdminAndShowDetails(adminId) {
                 // In a real application, fetch admin data from the server
                 // For this example, we'll get it from the table row
-                const row = document.querySelector(`#adminsTable tr [data-id="${adminId}"]`).closest('tr');
-                  document.getElementById('userId').textContent = adminId + ' (Admin)';
-                document.getElementById('username').textContent = row.cells[0].textContent;
-                document.getElementById('userCreated').textContent = row.cells[1].textContent;
-                document.getElementById('userLastActive').textContent = row.cells[2].textContent;
-                document.getElementById('userStatus').textContent = 'Active';
-                document.getElementById('userRole').textContent = row.cells[6].textContent;
+                const row = document.querySelector(`#adminsTable tr [data-id="${adminId}"]`);
+                if (!row) {
+                    console.error('Admin row not found for ID:', adminId);
+                    return;
+                }
+                const parentRow = row.closest('tr');
+                if (!parentRow) {
+                    console.error('Parent row not found for admin ID:', adminId);
+                    return;
+                }
+                
+                document.getElementById('userId').textContent = adminId + ' (Admin)';
+                document.getElementById('username').textContent = parentRow.cells[0].textContent.trim();
+                document.getElementById('userCreated').textContent = parentRow.cells[1].textContent.trim();
+                document.getElementById('userLastActive').textContent = parentRow.cells[2].textContent.trim();
+                document.getElementById('userStatus').textContent = parentRow.cells[3].textContent.trim();
+                document.getElementById('userRole').textContent = 'Administrator'; // Fixed: admins table doesn't have column 6
                 
                 // Admin-specific info (shouldn't have quizzes)
                 document.getElementById('userTotalQuizzes').textContent = "N/A";
                 document.getElementById('userAvgScore').textContent = "N/A";
                 
-                // Calculate account age
-                const createdDate = new Date(row.cells[4].textContent);
-                const today = new Date();
-                const diffTime = Math.abs(today - createdDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                document.getElementById('userAccountAge').textContent = `${diffDays} days`;
+                // Calculate account age - use parentRow not row
+                const createdTimestamp = parentRow.cells[1].querySelector('.created-date')?.dataset.timestamp;
+                if (createdTimestamp) {
+                    const createdDate = new Date(createdTimestamp * 1000);
+                    const today = new Date();
+                    const diffTime = Math.abs(today - createdDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    document.getElementById('userAccountAge').textContent = `${diffDays} days`;
+                } else {
+                    document.getElementById('userAccountAge').textContent = 'N/A';
+                }
                 
                 // For admins, show login activity instead of scores
                 document.getElementById('scoresTab').innerHTML = '<p>Score history not applicable for admin users.</p>';

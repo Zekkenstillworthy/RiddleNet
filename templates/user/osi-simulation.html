@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/osi-model-simulation.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape-orientation.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
 /* ========================================
@@ -167,14 +168,9 @@ html, body {
 @media (min-width: 480px) and (max-width: 667px) and (max-height: 375px) and (orientation: landscape) {
     /* Ultra-compact: 2-column layout for small screens */
     .osi-diagram-container {
-        grid-template-columns: 0.85fr 1fr !important;
+        grid-template-columns: 1fr 0.85fr !important;
         gap: 8px !important;
         padding: 4px !important;
-    }
-    
-    /* Hide Drop Zone 2 on smallest devices */
-    #dropZone2 {
-        display: none !important;
     }
     
     .drop-zone, .draggable-zone {
@@ -247,7 +243,7 @@ html, body {
 /* 2. Medium Phone Landscape (668px - 812px width, 376px - 414px height) - Exclude iPhone SE range */
 @media (min-width: 668px) and (max-width: 812px) and (min-height: 376px) and (max-height: 414px) and (orientation: landscape) {
     .osi-diagram-container {
-        grid-template-columns: 0.85fr 1.1fr 0.85fr !important;
+        grid-template-columns: 1fr 0.85fr !important;
         gap: 10px !important;
         padding: 6px !important;
     }
@@ -316,7 +312,7 @@ html, body {
 /* 3. Modern Smartphone Landscape (668px - 896px width, 376px - 414px height) - Exclude devices ≤375px */
 @media (min-width: 668px) and (max-width: 896px) and (min-height: 376px) and (max-height: 414px) and (orientation: landscape) {
     .osi-diagram-container {
-        grid-template-columns: 0.85fr 1fr 0.85fr !important;
+        grid-template-columns: 1fr 0.85fr !important;
         gap: 12px !important;
         padding: 8px !important;
     }
@@ -380,7 +376,7 @@ html, body {
 /* 4. Large Phone/Phablet Landscape (896px - 932px width, ≤480px height) */
 @media (min-width: 896px) and (max-width: 932px) and (max-height: 480px) and (orientation: landscape) {
     .osi-diagram-container {
-        grid-template-columns: 0.85fr 1fr 0.85fr !important;
+        grid-template-columns: 1fr 0.85fr !important;
         gap: 15px !important;
         padding: 10px !important;
     }
@@ -550,10 +546,10 @@ html, body {
     }
 }
 
-/* Update OSI diagram container for 3 columns */
+/* Update OSI diagram container for 2 columns (draggable + dropzone) */
 .osi-diagram-container {
     display: grid !important;
-    grid-template-columns: 0.85fr 1fr 0.85fr !important;
+    grid-template-columns: 1fr 0.85fr !important;
     gap: 15px !important;
 }
 </style>
@@ -585,49 +581,7 @@ html, body {
 
     <!-- Main OSI Diagram Layout -->
     <div class="osi-diagram-container">
-        <!-- Left Drop Zone -->
-        <div class="drop-zone" id="dropZone1">
-            <div class="drop-zone-header">
-                <h3><i class="fas fa-bullseye"></i> Drop Zone 1</h3>
-            </div>
-            
-            <div class="drop-slot" data-layer="7" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">7</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="6" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">6</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="5" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">5</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="4" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">4</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="3" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">3</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="2" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">2</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-            
-            <div class="drop-slot" data-layer="1" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
-                <div class="slot-number">1</div>
-                <div class="slot-placeholder">Drop here</div>
-            </div>
-        </div>
-
-        <!-- Right Draggable Items -->
+        <!-- Center Draggable Items -->
         <div class="draggable-zone">
             <div class="draggable-zone-header">
                 <h3><i class="fas fa-hand-pointer"></i> Draggable Layers</h3>
@@ -676,10 +630,10 @@ html, body {
             </div>
         </div>
 
-        <!-- Right Drop Zone 2 -->
+        <!-- Right Drop Zone -->
         <div class="drop-zone" id="dropZone2">
             <div class="drop-zone-header">
-                <h3><i class="fas fa-bullseye"></i> Drop Zone 2</h3>
+                <h3><i class="fas fa-bullseye"></i> Drop Zone</h3>
             </div>
             
             <div class="drop-slot" data-layer="7" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -1021,10 +975,8 @@ function normalizeLayer(val) {
     return String(val).trim();
 }
 
-// Track completion for both zones
-let zone1Complete = false;
+// Track completion for the zone
 let zone2Complete = false;
-let zone1Placements = 0;
 let zone2Placements = 0;
 
 // Quiz tracking
@@ -1045,8 +997,8 @@ function resetIdleTimer() {
     // Remove any existing highlights
     removeHintHighlight();
     
-    // Don't start timer if both zones are complete
-    if (zone1Complete && zone2Complete) {
+    // Don't start timer if zone is complete
+    if (zone2Complete) {
         return;
     }
     
@@ -1057,24 +1009,15 @@ function resetIdleTimer() {
 }
 
 function showHintHighlight() {
-    // Find the first empty slot in zone 1, then zone 2
+    // Find the first empty slot in zone 2
     const emptySlots = [];
     
-    // Check zone 1 first
-    document.querySelectorAll('#dropZone1 .drop-slot').forEach(slot => {
+    // Check zone 2
+    document.querySelectorAll('#dropZone2 .drop-slot').forEach(slot => {
         if (!slot.classList.contains('correct-placement')) {
             emptySlots.push(slot);
         }
     });
-    
-    // If zone 1 is complete, check zone 2
-    if (emptySlots.length === 0) {
-        document.querySelectorAll('#dropZone2 .drop-slot').forEach(slot => {
-            if (!slot.classList.contains('correct-placement')) {
-                emptySlots.push(slot);
-            }
-        });
-    }
     
     if (emptySlots.length > 0) {
         // Highlight the first empty slot (top to bottom)
@@ -1196,11 +1139,11 @@ const layerInfo = {
     }
 };
 
-// Quiz questions for each layer (beginner-friendly)
+// Quiz questions for each layer (RIDDLE FORMAT)
 const layerQuizzes = {
     7: [
         {
-            question: "What does the Application Layer do?",
+            question: "I am the gateway where humans and networks meet, the friend of browsers and apps so neat. Without me, you'd have no place to start, which layer am I at the heart?",
             options: [
                 "It connects directly with user applications like web browsers",
                 "It transmits electrical signals through cables",
@@ -1211,13 +1154,13 @@ const layerQuizzes = {
             explanation: "The Application Layer is where users interact with network applications like web browsers, email clients, and file transfer programs."
         },
         {
-            question: "Which protocol is used for web browsing?",
+            question: "I speak the language of the web, four letters is my name. When you surf the internet, I'm the protocol to claim. What am I?",
             options: ["TCP", "HTTP", "MAC", "IP"],
             correct: 1,
             explanation: "HTTP (Hypertext Transfer Protocol) is the main protocol used for web browsing at the Application Layer."
         },
         {
-            question: "What service does DNS provide?",
+            question: "I'm a translator, not for speech but for names. I turn 'google.com' into numbers—that's my game. What magical service do I provide?",
             options: [
                 "Converts website names to IP addresses",
                 "Sends emails",
@@ -1230,7 +1173,7 @@ const layerQuizzes = {
     ],
     6: [
         {
-            question: "What is the main job of the Presentation Layer?",
+            question: "I dress up data, make it pretty or hide it away. I compress and encrypt before sending it on its way. What am I known to do?",
             options: [
                 "Routing packets",
                 "Formatting and encrypting data",
@@ -1241,7 +1184,7 @@ const layerQuizzes = {
             explanation: "The Presentation Layer formats, encrypts, and compresses data so it can be properly understood by the Application Layer."
         },
         {
-            question: "Which of these is a Presentation Layer function?",
+            question: "I'm the guardian of secrets, scrambling messages with care. Without me, your passwords would float through the air. What's my special power?",
             options: [
                 "Data encryption",
                 "Routing",
@@ -1252,7 +1195,7 @@ const layerQuizzes = {
             explanation: "Data encryption is a key function of the Presentation Layer, along with compression and format conversion."
         },
         {
-            question: "What does SSL/TLS do?",
+            question: "When shopping online, I keep thieves at bay. I'm the padlock you see that saves the day. What technology am I?",
             options: [
                 "Routes data packets",
                 "Provides secure, encrypted communication",
@@ -1265,7 +1208,7 @@ const layerQuizzes = {
     ],
     5: [
         {
-            question: "What does the Session Layer manage?",
+            question: "I'm the host of conversations, keeping talks alive. When apps want to chat, I help them thrive. I open doors and close them too—what layer describes what I do?",
             options: [
                 "Connections between applications",
                 "Physical cables",
@@ -1276,7 +1219,7 @@ const layerQuizzes = {
             explanation: "The Session Layer establishes, manages, and terminates connections (sessions) between applications."
         },
         {
-            question: "When you're on a video call, which layer keeps your connection alive?",
+            question: "During your video call that lasts an hour long, I'm the silent partner keeping your connection strong. Who am I that won't let you fall?",
             options: [
                 "Physical Layer",
                 "Session Layer",
@@ -1287,7 +1230,7 @@ const layerQuizzes = {
             explanation: "The Session Layer maintains the connection during your video call, handling any interruptions and recovery."
         },
         {
-            question: "What happens if a session is interrupted?",
+            question: "If your connection stumbles and takes a fall, I have checkpoints to recover it all. What's my backup plan called?",
             options: [
                 "The Session Layer can help recover and resume it",
                 "All data is permanently lost",
@@ -1300,7 +1243,7 @@ const layerQuizzes = {
     ],
     4: [
         {
-            question: "What are the two main protocols in the Transport Layer?",
+            question: "We're a famous duo in the transport game—one reliable, one fast, but different in fame. Name this dynamic pair we proclaim!",
             options: [
                 "HTTP and FTP",
                 "TCP and UDP",
@@ -1311,7 +1254,7 @@ const layerQuizzes = {
             explanation: "TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are the two main Transport Layer protocols."
         },
         {
-            question: "What does TCP guarantee?",
+            question: "I'm like a puzzle master ensuring every piece arrives in place. I guarantee order and won't lose the race. What's my special grace?",
             options: [
                 "Data arrives in the correct order",
                 "Fastest possible speed",
@@ -1322,7 +1265,7 @@ const layerQuizzes = {
             explanation: "TCP ensures reliable, ordered delivery of data. If packets arrive out of order or are lost, TCP handles it."
         },
         {
-            question: "When is UDP typically used?",
+            question: "Speed is my motto, perfection can wait. For livestreams and gaming, I'm truly first-rate. When am I the hero of your fate?",
             options: [
                 "Email",
                 "File downloads",
@@ -1335,7 +1278,7 @@ const layerQuizzes = {
     ],
     3: [
         {
-            question: "What does the Network Layer handle?",
+            question: "I'm the GPS of data, finding the best route to take. Through networks and pathways, no wrong turns I make. What's my navigation stake?",
             options: [
                 "Routing data between different networks",
                 "Encrypting passwords",
@@ -1346,7 +1289,7 @@ const layerQuizzes = {
             explanation: "The Network Layer is responsible for routing data packets across different networks using IP addresses."
         },
         {
-            question: "What addressing system does the Network Layer use?",
+            question: "I'm written with dots and numbers galore, like 192.168.1.4. Each device gets one—what system do I explore?",
             options: [
                 "MAC addresses",
                 "IP addresses",
@@ -1357,7 +1300,7 @@ const layerQuizzes = {
             explanation: "The Network Layer uses IP addresses (like 192.168.1.1) to identify devices on a network."
         },
         {
-            question: "What does a router primarily work with?",
+            question: "I'm a device that reads these numeric addresses with pride, deciding which pathway your data should ride. What am I, your network guide?",
             options: [
                 "Only physical cables",
                 "IP addresses at the Network Layer",
@@ -1370,7 +1313,7 @@ const layerQuizzes = {
     ],
     2: [
         {
-            question: "What does the Data Link Layer use for addressing?",
+            question: "I'm burned into hardware, unique as can be. Six pairs of hex digits identify me. What addressing system sets each device free?",
             options: [
                 "IP addresses",
                 "MAC addresses",
@@ -1381,7 +1324,7 @@ const layerQuizzes = {
             explanation: "The Data Link Layer uses MAC (Media Access Control) addresses, which are unique hardware addresses for each network device."
         },
         {
-            question: "What is a frame in the Data Link Layer?",
+            question: "I'm not for pictures, though 'frame' is my name. I wrap up your data in a delivery game. What package am I in this data frame?",
             options: [
                 "A picture on a webpage",
                 "A package of data with MAC addresses",
@@ -1392,7 +1335,7 @@ const layerQuizzes = {
             explanation: "A frame is a Data Link Layer unit that contains data along with source and destination MAC addresses."
         },
         {
-            question: "Which devices work at the Data Link Layer?",
+            question: "We're smarter than hubs but not quite like routers. We live at this layer as networking troubleshooters. What devices are we, the local path doubters?",
             options: [
                 "Routers only",
                 "Switches and bridges",
@@ -1405,7 +1348,7 @@ const layerQuizzes = {
     ],
     1: [
         {
-            question: "What does the Physical Layer transmit?",
+            question: "I'm the foundation, the base of it all. I send ones and zeros, both big and small. No logic, no thinking—what signals do I call?",
             options: [
                 "Emails",
                 "Raw bits (1s and 0s)",
@@ -1416,7 +1359,7 @@ const layerQuizzes = {
             explanation: "The Physical Layer converts data into raw electrical signals, light pulses, or radio waves (bits: 1s and 0s)."
         },
         {
-            question: "Which of these is a Physical Layer component?",
+            question: "I'm tangible, touchable, something you can hold. I carry your signals, copper or gold. What physical thing makes networks bold?",
             options: [
                 "HTTP",
                 "IP address",
@@ -1427,7 +1370,7 @@ const layerQuizzes = {
             explanation: "Ethernet cables are Physical Layer components that physically transmit electrical signals."
         },
         {
-            question: "What type of signals does fiber optic cable use?",
+            question: "I'm made of glass but won't break when you tap. I carry information as light through my gap. What speedy cable uses this luminous map?",
             options: [
                 "Electrical signals",
                 "Light pulses",
@@ -1528,17 +1471,11 @@ function drop(ev) {
         }
         
         // Update zone-specific counters
-        if (zoneId === "1") {
-            zone1Placements++;
-            if (zone1Placements === 7) {
-                zone1Complete = true;
-                showZoneCompleteMessage("Zone 1");
-            }
-        } else if (zoneId === "2") {
+        if (zoneId === "2") {
             zone2Placements++;
             if (zone2Placements === 7) {
                 zone2Complete = true;
-                showZoneCompleteMessage("Zone 2");
+                showZoneCompleteMessage("Drop Zone");
             }
         }
         
@@ -1550,8 +1487,8 @@ function drop(ev) {
         // Show success modal for correct placement
         showSuccessModal(draggedLayer);
         
-        // Check if both zones are complete
-        if (zone1Complete && zone2Complete) {
+        // Check if zone is complete
+        if (zone2Complete) {
             stopHintSystem();
             setTimeout(() => {
                 automaticDataFlow();
@@ -1627,7 +1564,7 @@ function automaticDataFlow() {
         <div style="text-align: center; padding: 20px;">
             <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
             <h2 style="color: #4ade80; margin-bottom: 15px;">
-                <i class="fas fa-trophy"></i> Both Zones Complete!
+                <i class="fas fa-trophy"></i> Zone Complete!
             </h2>
             
             <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 20px; margin: 20px 0;">
@@ -1649,12 +1586,11 @@ function automaticDataFlow() {
 }
 
 function executeDataFlow() {
-    // Animate both drop zones
-    const zone1Layers = document.querySelectorAll('#dropZone1 .correct-placement');
+    // Animate the drop zone
     const zone2Layers = document.querySelectorAll('#dropZone2 .correct-placement');
     
-    // Animate Zone 1
-    zone1Layers.forEach((layer, index) => {
+    // Animate Zone 2
+    zone2Layers.forEach((layer, index) => {
         setTimeout(() => {
             layer.style.animation = 'flowAnimation 0.8s ease-in-out';
             layer.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.8)';
@@ -1666,23 +1602,10 @@ function executeDataFlow() {
         }, index * 200);
     });
     
-    // Animate Zone 2 slightly offset
-    zone2Layers.forEach((layer, index) => {
-        setTimeout(() => {
-            layer.style.animation = 'flowAnimation 0.8s ease-in-out';
-            layer.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.8)';
-            
-            setTimeout(() => {
-                layer.style.animation = '';
-                layer.style.boxShadow = '';
-            }, 800);
-        }, index * 200 + 100);
-    });
-    
     // Show completion message after animation
     setTimeout(() => {
         showCompletionCelebration();
-    }, zone1Layers.length * 200 + 1000);
+    }, zone2Layers.length * 200 + 1000);
 }
 
 // Add flow animation to styles
@@ -1760,6 +1683,88 @@ function showSuccessModal(layerNumber) {
         return;
     }
     
+    // Show layer explanation popup first
+    showLayerExplanationPopup(layerNumber);
+}
+
+function showLayerExplanationPopup(layerNumber) {
+    const info = layerInfo[layerNumber];
+    
+    const modal = document.getElementById('layerModal');
+    const content = document.getElementById('modalContent');
+    
+    content.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 3rem; margin-bottom: 15px;">✅</div>
+            <h2 style="color: #4ade80; margin-bottom: 15px;">
+                <i class="fas fa-check-circle"></i> Correct Placement!
+            </h2>
+            
+            
+            
+            <!-- Layer Explanation Section -->
+            <div style="background: rgba(0, 212, 255, 0.15); border: 2px solid #00d4ff; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left;">
+                <h3 style="color: #00d4ff; margin-bottom: 15px; text-align: center;">
+                    <i class="fas fa-info-circle"></i> Layer Explanation
+                </h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #39FF14; font-size: 1rem; margin-bottom: 8px;">
+                        <i class="fas fa-book"></i> Description
+                    </h4>
+                    <p style="color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 15px;">
+                        ${info.description}
+                    </p>
+                </div>
+                
+                ${info.protocols ? `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #39FF14; font-size: 1rem; margin-bottom: 8px;">
+                        <i class="fas fa-network-wired"></i> Protocols
+                    </h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${info.protocols.map(protocol => `
+                            <span style="background: rgba(0, 212, 255, 0.2); border: 1px solid #00d4ff; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; color: #00d4ff;">
+                                ${protocol}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #39FF14; font-size: 1rem; margin-bottom: 8px;">
+                        <i class="fas fa-cogs"></i> Key Functions
+                    </h4>
+                    <ul style="color: rgba(255,255,255,0.9); line-height: 1.8; margin: 0; padding-left: 20px;">
+                        ${info.functions.map(func => `<li>${func}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8B5CF6; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                    <h4 style="color: #a78bfa; font-size: 0.95rem; margin-bottom: 5px;">
+                        <i class="fas fa-lightbulb"></i> Real-World Examples
+                    </h4>
+                    <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 0.9rem;">
+                        ${info.examples}
+                    </p>
+                </div>
+                
+                <button onclick="showQuizAfterExplanation(${layerNumber})" 
+                        class="control-button primary" 
+                        style="margin-top: 20px; padding: 12px 24px; width: 100%; background: linear-gradient(135deg, #a78bfa, #8B5CF6); border: none; color: white; font-size: 1rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-brain"></i> Ready for Quick Quiz
+                </button>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('show');
+}
+
+function showQuizAfterExplanation(layerNumber) {
+    const info = layerInfo[layerNumber];
+    
     // Get a random quiz question for this layer
     const quizzes = layerQuizzes[layerNumber];
     const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
@@ -1775,12 +1780,7 @@ function showSuccessModal(layerNumber) {
                 <i class="fas fa-check-circle"></i> Correct Placement!
             </h2>
             
-            <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 15px 0;">
-                <h3 style="color: #00d4ff; margin-bottom: 5px;">${info.name}</h3>
-                <p style="margin: 5px 0; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
-                    Layer ${layerNumber} placed correctly!
-                </p>
-            </div>
+           
             
             <div style="background: rgba(139, 92, 246, 0.2); border: 2px solid #a78bfa; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left;">
                 <h3 style="color: #a78bfa; margin-bottom: 15px; text-align: center;">
@@ -1875,7 +1875,7 @@ function checkQuizAnswer(selected, correct, explanation) {
         feedback.innerHTML = `
             <div style="background: rgba(239, 68, 68, 0.3); border: 2px solid #ef4444; border-radius: 8px; padding: 12px;">
                 <p style="margin: 0; color: #fbbf24; font-weight: 600; margin-bottom: 8px;">
-                    <i class="fas fa-info-circle"></i> Not quite right, but that's okay!
+                    <i class="fas fa-info-circle"></i> Oops! Wrong Answer!
                 </p>
                 <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: rgba(255,255,255,0.9);">
                     ${explanation}
@@ -2289,4 +2289,8 @@ window.onclick = function(event) {
     }
 }
 </script>
+
+<!-- Auto Landscape Orientation Module -->
+<script src="{{ url_for('static', filename='js/auto-landscape-orientation.js') }}"></script>
+
 {% endblock %}

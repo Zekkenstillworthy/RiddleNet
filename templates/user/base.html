@@ -7,7 +7,6 @@
     <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     {% block head %}{% endblock %}
 </head>
 
@@ -126,7 +125,8 @@
         background-size: 50px 50px;
         pointer-events: none;
         z-index: -1;
-        animation: gridMove 20s linear infinite;
+        /* Disable moving grid animation */
+        animation: none;
     }
 
     @keyframes gridMove {
@@ -192,7 +192,8 @@
         right: 0;
         height: 3px;
         background: var(--gradient-primary);
-        animation: pulse 2s ease-in-out infinite alternate;
+        /* Disable sidebar top bar pulse */
+        animation: none;
     }
 
     @keyframes pulse {
@@ -325,7 +326,8 @@
         /* raise above scroll wrapper */
         z-index: 300;
         box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3), 0 0 0 0 rgba(0, 212, 255, 0.4);
-        animation: pulseGlow 3s ease-in-out infinite;
+        /* Disable toggle pulse */
+        animation: none;
     }
 
     @keyframes pulseGlow {
@@ -552,8 +554,9 @@
         max-height: 8px;
         border-radius: 50%;
         background: var(--success-color);
-        box-shadow: 0 0 6px var(--success-color);
-        animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 6px var(--success-color);
+    /* Disable pulsing online dot */
+    animation: none;
         flex: 0 0 auto;
         display: inline-block;
         aspect-ratio: 1;
@@ -614,7 +617,7 @@
         margin-left: var(--current-sidebar-width) !important; /* MVP FIX: !important to override simulation page styles */
         min-height: 100vh;
         padding: 20px;
-        transition: margin-left var(--transition-speed) ease;
+        transition: none !important; /* MVP FIX: Remove animation distortion */
         position: relative;
         background: transparent;
         overflow-y: auto;
@@ -1223,22 +1226,7 @@
                 }
             });
 
-            // Add fade-in animation to page content
-            const content = document.querySelector('.main-content');
-            if (content) {
-                content.classList.add('fade-in');
-            }
-
-            // Network animation for sidebar icons
-            const navIcons = document.querySelectorAll('.nav-links i');
-            navIcons.forEach((icon, index) => {
-                setTimeout(() => {
-                    icon.classList.add('network-active');
-                    setTimeout(() => {
-                        icon.classList.remove('network-active');
-                    }, 2000);
-                }, index * 200);
-            });
+            // Animations disabled: no fade-in or pulsing nav icons
 
             // Auto-scroll to top when navigating
             const links = document.querySelectorAll('a[href^="/"]');
@@ -1540,7 +1528,6 @@
     </script>
     
     <!-- Enhanced Landscape Optimizations -->
-    <script src="{{ url_for('static', filename='js/enhanced-landscape-optimizer.js') }}"></script>
     {% endblock %}
 </body>
 

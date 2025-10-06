@@ -4,6 +4,7 @@ from sqlalchemy import func
 import os
 from datetime import datetime
 import sys
+from utils.password_validator import validate_password
 import traceback
 import random
 from werkzeug.utils import secure_filename
@@ -884,6 +885,11 @@ def signup():
         password = request.form.get('password')
         email = request.form.get('email')  # Add email field
         
+        # Validate password strength
+        is_valid, errors = validate_password(password)
+        if not is_valid:
+            return jsonify({'status': 'error', 'message': errors[0]}), 400
+        
         # Check if username exists
         existing_user = UserModel.query.filter_by(username=username).first()
         if existing_user:
@@ -907,7 +913,13 @@ def signup():
         username = request.form.get('username')
         password = request.form.get('password')
         email = request.form.get('email')  # Add email field
-          # Check if username exists
+        
+        # Validate password strength
+        is_valid, errors = validate_password(password)
+        if not is_valid:
+            return render_template('user/index.html', message=errors[0])
+        
+        # Check if username exists
         existing_user = UserModel.query.filter_by(username=username).first()
         if existing_user:
             return render_template('user/index.html', message='Username already exists. Please choose another one.')

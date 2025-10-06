@@ -6,6 +6,7 @@ from flask_mail import Message
 from __init__ import db, mail  # Use the main app's db instance and mail
 from admin.models.user import Admin, AdminPasswordReset
 from utils.render_utils import render_safe_template
+from utils.password_validator import validate_password
 import os
 
 auth_bp = Blueprint('auth', __name__)
@@ -114,9 +115,12 @@ class AuthController:
                 print("❌ Validation failed: Passwords do not match")
                 return render_safe_template('admin/signup.html')
             
-            if len(password) < 6:
-                flash('Password must be at least 6 characters long', 'error')
-                print("❌ Validation failed: Password too short")
+            # Validate password strength using the new validator
+            is_valid, errors = validate_password(password)
+            if not is_valid:
+                # Show the first error message
+                flash(errors[0], 'error')
+                print(f"❌ Password validation failed: {errors[0]}")
                 return render_safe_template('admin/signup.html')
             
             # Check if username already exists
@@ -264,8 +268,10 @@ RiddleNet Team'''
                 flash('Password is required', 'error')
                 return render_safe_template('admin/reset_password.html', token=token)
             
-            if len(password) < 6:
-                flash('Password must be at least 6 characters long', 'error')
+            # Validate password strength using the new validator
+            is_valid, errors = validate_password(password)
+            if not is_valid:
+                flash(errors[0], 'error')
                 return render_safe_template('admin/reset_password.html', token=token)
             
             if password != confirm_password:

@@ -1,0 +1,442 @@
+/**
+ * ============================================
+ * AUTO LANDSCAPE ORIENTATION & FULLSCREEN - MVP MODULE
+ * ============================================
+ * 
+ * Purpose: Automatically handle landscape orientation and fullscreen for Challenge pages
+ * Target Pages: /osi-simulation, /crimping-simulation, /troubleshooting, /quiz
+ * 
+ * Features:
+ * - Mobile & tablet device detection
+ * - Landscape orientation preference
+ * - Auto fullscreen activation
+ * - Portrait mode overlay notification
+ * - Fullscreen exit button
+ * - Responsive layout optimization
+ * - iOS, Android, and tablet browser compatibility
+ * 
+ * Usage: Import this CSS in challenge page templates
+ */
+
+/* ============================================
+   PORTRAIT MODE OVERLAY
+   ============================================ */
+
+/* Portrait mode warning overlay - hidden by default */
+.portrait-mode-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 0.98));
+    backdrop-filter: blur(20px);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.portrait-mode-overlay.active {
+    display: flex;
+}
+
+/* ============================================
+   FULLSCREEN MODE CONTROLS
+   ============================================ */
+
+/* Fullscreen exit button - visible in fullscreen mode */
+.fullscreen-exit-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    background: rgba(239, 68, 68, 0.9);
+    backdrop-filter: blur(10px);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}
+
+.fullscreen-exit-btn:hover {
+    background: rgba(220, 38, 38, 0.95);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.fullscreen-exit-btn:active {
+    transform: scale(0.98);
+}
+
+.fullscreen-exit-btn.visible {
+    display: flex;
+}
+
+.fullscreen-exit-btn i {
+    font-size: 16px;
+}
+
+/* Fullscreen mode body state */
+body.in-fullscreen {
+    overflow: hidden;
+}
+
+/* Hide sidebar in fullscreen mode */
+body.in-fullscreen .sidebar,
+body.in-fullscreen .user-sidebar,
+body.in-fullscreen .admin-sidebar {
+    display: none !important;
+}
+
+/* Expand main content in fullscreen */
+body.in-fullscreen .main-content {
+    margin-left: 0 !important;
+    width: 100vw !important;
+    padding: 0 !important;
+}
+
+/* Fullscreen permission denied message */
+.fullscreen-denied-msg {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(251, 191, 36, 0.95);
+    backdrop-filter: blur(10px);
+    color: #1F2937;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 9998;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    display: none;
+    align-items: center;
+    gap: 8px;
+    animation: slideDown 0.3s ease;
+}
+
+.fullscreen-denied-msg.visible {
+    display: flex;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Rotate device icon animation */
+.rotate-icon {
+    font-size: 80px;
+    color: #00D9FF;
+    margin-bottom: 24px;
+    animation: rotateDevice 2s ease-in-out infinite;
+    text-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
+}
+
+@keyframes rotateDevice {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(90deg);
+    }
+}
+
+/* Message styling */
+.portrait-message {
+    text-align: center;
+    max-width: 400px;
+}
+
+.portrait-message h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 16px;
+    font-family: 'Orbitron', 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #00D9FF, #8B5CF6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.portrait-message p {
+    font-size: 16px;
+    color: #CBD5E1;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+/* Device icon visual */
+.device-icon {
+    font-size: 100px;
+    margin-bottom: 20px;
+    color: #00D9FF;
+    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.4));
+}
+
+/* ============================================
+   LANDSCAPE OPTIMIZATION STYLES
+   ============================================ */
+
+/* Landscape mode: Optimize layout for horizontal space */
+@media screen and (orientation: landscape) and (max-height: 900px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Compress header height */
+    .header,
+    .game-header,
+    .quiz-header {
+        padding: 8px 16px !important;
+        min-height: auto !important;
+    }
+
+    .header h1,
+    .game-header h1,
+    .quiz-title {
+        font-size: 1.5rem !important;
+        margin: 4px 0 !important;
+    }
+
+    /* Optimize button sizes for landscape */
+    .btn,
+    .action-button,
+    .quiz-option-button,
+    button {
+        padding: 8px 16px !important;
+        font-size: 14px !important;
+        min-height: 40px !important;
+    }
+
+    /* Compact spacing */
+    .container,
+    .quiz-container,
+    .game-content {
+        padding: 12px !important;
+    }
+
+    /* Reduce gaps between elements */
+    .stat-card,
+    .score-display,
+    .progress-container {
+        padding: 10px !important;
+        margin: 8px 0 !important;
+    }
+}
+
+/* ============================================
+   MOBILE & TABLET DETECTION
+   ============================================ */
+
+/* Target mobile devices in portrait mode */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+    /* Show portrait overlay */
+    body.mobile-device .portrait-mode-overlay {
+        display: flex !important;
+    }
+
+    /* Hide main content in portrait on mobile */
+    body.mobile-device .main-content,
+    body.mobile-device .container,
+    body.mobile-device .game-content {
+        overflow: hidden;
+    }
+}
+
+/* Target tablets in portrait mode (iPad, Android tablets) */
+@media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+    body.tablet-device .portrait-mode-overlay {
+        display: flex !important;
+    }
+
+    .portrait-message h2 {
+        font-size: 32px;
+    }
+
+    .portrait-message p {
+        font-size: 18px;
+    }
+
+    .rotate-icon {
+        font-size: 100px;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MODE ENHANCEMENTS
+   ============================================ */
+
+/* Mobile landscape: Full utilization of screen space */
+@media screen and (max-width: 900px) and (orientation: landscape) {
+    .portrait-mode-overlay {
+        display: none !important;
+    }
+
+    /* Maximize viewport usage */
+    html, body {
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Full-width containers */
+    .main-content {
+        padding: 8px !important;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    /* Optimize canvas/game areas */
+    canvas,
+    .game-canvas,
+    .simulation-area {
+        max-height: calc(100vh - 120px) !important;
+    }
+
+    /* Compact UI elements */
+    .sidebar {
+        width: 200px !important;
+    }
+
+    .nav-item {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    /* Hide non-essential elements if needed */
+    .decorative-element {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY & SAFETY
+   ============================================ */
+
+/* Ensure minimum touch targets */
+button,
+.btn,
+a.nav-item {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Prevent zoom on inputs (iOS) */
+input,
+select,
+textarea {
+    font-size: 16px;
+    max-width: 100%;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+    .main-content,
+    .container {
+        padding-top: max(8px, env(safe-area-inset-top)) !important;
+        padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+        padding-left: max(8px, env(safe-area-inset-left)) !important;
+        padding-right: max(8px, env(safe-area-inset-right)) !important;
+    }
+}
+
+/* ============================================
+   BROWSER-SPECIFIC ADJUSTMENTS
+   ============================================ */
+
+/* iOS Safari specific */
+@supports (-webkit-touch-callout: none) {
+    /* Prevent rubber-band scrolling */
+    body {
+        overscroll-behavior: none;
+    }
+
+    /* Fix iOS viewport height issue */
+    .portrait-mode-overlay {
+        height: -webkit-fill-available;
+    }
+}
+
+/* Android Chrome specific */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (orientation: landscape) {
+    /* Hide address bar in landscape */
+    body {
+        min-height: 100vh;
+    }
+}
+
+/* ============================================
+   SMALL SCREEN OPTIMIZATIONS
+   ============================================ */
+
+/* Very small phones in landscape (e.g., iPhone SE) */
+@media screen and (max-width: 667px) and (orientation: landscape) {
+    .header h1,
+    .quiz-title {
+        font-size: 1.2rem !important;
+    }
+
+    .btn,
+    button {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .stat-value {
+        font-size: 1.2rem !important;
+    }
+}
+
+/* ============================================
+   LOADING & TRANSITION STATES
+   ============================================ */
+
+/* Smooth transition when switching orientations */
+.portrait-mode-overlay {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.portrait-mode-overlay.active {
+    opacity: 1;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   PRINT MEDIA (DISABLE OVERLAY)
+   ============================================ */
+
+@media print {
+    .portrait-mode-overlay {
+        display: none !important;
+    }
+}
