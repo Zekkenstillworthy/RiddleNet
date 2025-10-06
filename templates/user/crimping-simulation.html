@@ -6,7 +6,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/crimping-simulation.css') }}" />
-<link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}" />
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}" />
 <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -897,18 +896,21 @@
     }
 
     .game-header {
-      flex-direction: column;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      justify-content: space-between !important;
       gap: 12px;
-      padding: 12px;
+      padding: 6px 10px;
       margin-bottom: 16px;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 10px;
     }
 
     .score-display {
-      gap: 8px;
-      justify-content: center;
-      flex-wrap: wrap;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 6px;
+      justify-content: flex-start;
     }
 
     .wire, .wire-slot {
@@ -954,9 +956,11 @@
 
     /* Enhanced mobile timer */
     .timer-display {
-      padding: 8px 12px;
-      font-size: 1rem;
+      padding: 5px 8px;
+      font-size: 15px;
       border-radius: 8px;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
     }
 
     /* Mobile-friendly controls */
@@ -1035,15 +1039,17 @@
     }
 
     .score-display {
-      flex-direction: column;
-      gap: 6px;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 4px;
       align-items: center;
     }
 
     .score-item {
-      padding: 6px 10px;
-      min-width: 60px;
+      padding: 4px 6px;
+      min-width: 45px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     /* Mobile modal adjustments */
@@ -1123,15 +1129,17 @@
     border-radius: 8px;
     border: 1px solid rgba(0, 212, 255, 0.2);
     flex-shrink: 0;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    gap: 12px;
   }
 
   .score-display {
     display: flex;
     gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-direction: row;
   }
 
   .score-item {
@@ -2189,6 +2197,8 @@
     color: #ff6b6b;
     font-weight: 700;
     font-size: 17px;
+    white-space: nowrap;
+    flex-shrink: 0;
     position: relative;
     z-index: 5000; /* Ensure timer stays on top */
   }
@@ -2949,9 +2959,7 @@
   }
 </style>
 
-<!-- Auto-Landscape Optimization System -->
-<script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
-<script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
+
 <script>
   initForceLandscape({ allowRotateFallback: true, rotateTargetSelector: '.container', pageKey: 'crimping' });
 </script>
@@ -3330,92 +3338,6 @@
     </div>
 
   <script>
-// Landscape Orientation Detection and Layout Optimization
-document.addEventListener('DOMContentLoaded', function() {
-    // Create landscape detection system
-    function handleOrientationChange() {
-        const isLandscape = window.innerWidth > window.innerHeight;
-        const isMobile = window.innerWidth <= 896;
-        const body = document.body;
-        
-        // Add landscape-mobile class for enhanced CSS targeting
-        if (isMobile && isLandscape) {
-            body.classList.add('landscape-mobile');
-            body.classList.remove('portrait-mobile');
-            
-            // Optimize for landscape simulation experience
-            optimizeLandscapeLayout();
-        } else if (isMobile) {
-            body.classList.add('portrait-mobile');
-            body.classList.remove('landscape-mobile');
-            
-            // Optimize for portrait mobile experience
-            optimizePortraitLayout();
-        } else {
-            body.classList.remove('landscape-mobile', 'portrait-mobile');
-        }
-    }
-    
-    function optimizeLandscapeLayout() {
-        // Hide unnecessary elements for full simulation focus
-        const elementsToHide = document.querySelectorAll('.header-nav, .breadcrumb, .back-button');
-        elementsToHide.forEach(el => {
-            if (el) el.style.display = 'none';
-        });
-        
-        // Optimize container layout
-        const container = document.querySelector('.container');
-        if (container) {
-            container.style.flexDirection = 'row';
-            container.style.height = '100vh';
-            container.style.width = '100vw';
-        }
-        
-        // Adjust modal sizes for landscape
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            modal.style.width = '80vw';
-            modal.style.height = '60vh';
-        });
-    }
-    
-    function optimizePortraitLayout() {
-        // Restore hidden elements
-        const elementsToShow = document.querySelectorAll('.header-nav, .breadcrumb, .back-button');
-        elementsToShow.forEach(el => {
-            if (el) el.style.display = '';
-        });
-        
-        // Reset container layout
-        const container = document.querySelector('.container');
-        if (container) {
-            container.style.flexDirection = '';
-            container.style.height = '';
-            container.style.width = '';
-        }
-    }
-    
-    // Listen for orientation changes
-    handleOrientationChange();
-    window.addEventListener('resize', handleOrientationChange);
-    window.addEventListener('orientationchange', function() {
-        setTimeout(handleOrientationChange, 100); // Delay for accurate measurements
-    });
-    
-    // Screen orientation API support (modern browsers)
-    if (screen.orientation) {
-        screen.orientation.addEventListener('change', handleOrientationChange);
-    }
-    
-    // Add change event listener to wiring type dropdown
-    const wiringSelect = document.getElementById('wiring-select');
-    if (wiringSelect) {
-        wiringSelect.addEventListener('change', function() {
-            // Reset simulation when wiring type changes
-            resetSimulation();
-        });
-    }
-});
     // Correct wire patterns
     const wirePatterns = {
       straightthrough: {

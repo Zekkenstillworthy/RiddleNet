@@ -6,12 +6,49 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/osi-model-simulation.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
+/* ========================================
+   GAMIFIED OSI SIMULATION - ADMIN THEME
+   ======================================== */
+
+:root {
+    /* Admin Color Palette */
+    --cyber-glow: #00D9FF;
+    --neon-green: #39FF14;
+    --network-purple: #8B5CF6;
+    --accent-color: #3B82F6;
+    --success-color: #10B981;
+    --warning-color: #F59E0B;
+    --danger-color: #EF4444;
+    
+    /* Backgrounds */
+    --background: #020617;
+    --surface: #0F172A;
+    --surface-hover: #1E293B;
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(0, 217, 255, 0.15);
+    --border-color: rgba(0, 212, 255, 0.2);
+    
+    /* Text */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #64748B;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    --gradient-secondary: linear-gradient(135deg, var(--neon-green), var(--cyber-glow));
+    
+    /* Effects */
+    --shadow-glow: 0 0 30px rgba(0, 217, 255, 0.6);
+    --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
 /* Additional non-scrollable optimizations */
 html, body {
     overflow: hidden !important;
     height: 100vh !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: var(--background);
 }
 
 /* Center header title */
@@ -122,15 +159,364 @@ html, body {
     }
 }
 
-/* Hint Border Highlight Animation with Glow Effect */
+/* ========================================
+   MVP: MOBILE LANDSCAPE RESPONSIVE FIXES
+   ======================================== */
+
+/* 1. Small Phone Landscape (480px - 667px width, ≤375px height) - HIGHEST PRIORITY */
+@media (min-width: 480px) and (max-width: 667px) and (max-height: 375px) and (orientation: landscape) {
+    /* Ultra-compact: 2-column layout for small screens */
+    .osi-diagram-container {
+        grid-template-columns: 0.85fr 1fr !important;
+        gap: 8px !important;
+        padding: 4px !important;
+    }
+    
+    /* Hide Drop Zone 2 on smallest devices */
+    #dropZone2 {
+        display: none !important;
+    }
+    
+    .drop-zone, .draggable-zone {
+        max-height: 280px !important;
+        min-height: 240px !important;
+        padding: 6px !important;
+        overflow-y: auto !important;
+    }
+    
+    .drop-slot, .osi-layer-pill {
+        min-height: 34px !important;
+        height: 34px !important;
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+        margin-bottom: 3px !important;
+    }
+    
+    .header {
+        padding: 3px 6px !important;
+    }
+    
+    .header h1 {
+        font-size: 0.95rem !important;
+        margin: 2px 0 !important;
+    }
+    
+    .header p {
+        font-size: 0.65rem !important;
+        margin: 0 !important;
+    }
+    
+    .score-display {
+        padding: 4px 8px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .layer-circle, .slot-number {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .drop-zone-header {
+        font-size: 0.85rem !important;
+        padding: 4px !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .drop-zone-header h3, .draggable-zone-header h3 {
+        font-size: 0.85rem !important;
+        margin: 0 !important;
+    }
+    
+    .draggable-zone-header {
+        padding: 4px !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .simulation-controls {
+        padding: 4px !important;
+        margin-top: 4px !important;
+    }
+    
+    .control-button {
+        padding: 5px 10px !important;
+        font-size: 0.7rem !important;
+    }
+}
+
+/* 2. Medium Phone Landscape (668px - 812px width, 376px - 414px height) - Exclude iPhone SE range */
+@media (min-width: 668px) and (max-width: 812px) and (min-height: 376px) and (max-height: 414px) and (orientation: landscape) {
+    .osi-diagram-container {
+        grid-template-columns: 0.85fr 1.1fr 0.85fr !important;
+        gap: 10px !important;
+        padding: 6px !important;
+    }
+    
+    .drop-zone, .draggable-zone {
+        max-height: 340px !important;
+        min-height: 300px !important;
+        padding: 8px !important;
+        overflow-y: auto !important;
+    }
+    
+    .drop-slot, .osi-layer-pill {
+        min-height: 38px !important;
+        height: 38px !important;
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+        margin-bottom: 4px !important;
+    }
+    
+    .header {
+        padding: 6px 10px !important;
+    }
+    
+    .header h1 {
+        font-size: 1.1rem !important;
+        margin: 3px 0 !important;
+    }
+    
+    .header p {
+        font-size: 0.7rem !important;
+    }
+    
+    .score-display {
+        padding: 5px 10px !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .layer-circle, .slot-number {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .drop-zone-header {
+        font-size: 0.9rem !important;
+        padding: 6px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .drop-zone-header h3, .draggable-zone-header h3 {
+        font-size: 0.9rem !important;
+        margin: 0 !important;
+    }
+    
+    .draggable-zone-header {
+        padding: 6px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .control-button {
+        padding: 6px 12px !important;
+        font-size: 0.75rem !important;
+    }
+}
+
+/* 3. Modern Smartphone Landscape (668px - 896px width, 376px - 414px height) - Exclude devices ≤375px */
+@media (min-width: 668px) and (max-width: 896px) and (min-height: 376px) and (max-height: 414px) and (orientation: landscape) {
+    .osi-diagram-container {
+        grid-template-columns: 0.85fr 1fr 0.85fr !important;
+        gap: 12px !important;
+        padding: 8px !important;
+    }
+    
+    .drop-zone, .draggable-zone {
+        max-height: 360px !important;
+        min-height: 320px !important;
+        padding: 10px !important;
+        overflow-y: auto !important;
+    }
+    
+    .drop-slot, .osi-layer-pill {
+        min-height: 42px !important;
+        height: 42px !important;
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .header {
+        padding: 6px 12px !important;
+    }
+    
+    .header h1 {
+        font-size: 1.2rem !important;
+        margin: 4px 0 !important;
+    }
+    
+    .header p {
+        font-size: 0.75rem !important;
+    }
+    
+    .score-display {
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .layer-circle, .slot-number {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .drop-zone-header {
+        font-size: 0.95rem !important;
+        padding: 8px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .drop-zone-header h3, .draggable-zone-header h3 {
+        font-size: 0.95rem !important;
+        margin: 0 !important;
+    }
+    
+    .draggable-zone-header {
+        padding: 8px !important;
+        margin-bottom: 10px !important;
+    }
+}
+
+/* 4. Large Phone/Phablet Landscape (896px - 932px width, ≤480px height) */
+@media (min-width: 896px) and (max-width: 932px) and (max-height: 480px) and (orientation: landscape) {
+    .osi-diagram-container {
+        grid-template-columns: 0.85fr 1fr 0.85fr !important;
+        gap: 15px !important;
+        padding: 10px !important;
+    }
+    
+    .drop-zone, .draggable-zone {
+        max-height: 420px !important;
+        min-height: 380px !important;
+        padding: 12px !important;
+        overflow-y: auto !important;
+    }
+    
+    .drop-slot, .osi-layer-pill {
+        min-height: 44px !important;
+        height: 44px !important;
+        font-size: 13px !important;
+        padding: 7px 12px !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .header {
+        padding: 8px 14px !important;
+    }
+    
+    .header h1 {
+        font-size: 1.3rem !important;
+        margin: 5px 0 !important;
+    }
+    
+    .score-display {
+        padding: 7px 14px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .layer-circle, .slot-number {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .drop-zone-header, .draggable-zone-header {
+        padding: 8px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .drop-zone-header h3, .draggable-zone-header h3 {
+        font-size: 1rem !important;
+        margin: 0 !important;
+    }
+}
+
+/* 5. General Landscape Optimizations (All Mobile Landscape) */
+@media (orientation: landscape) and (max-height: 500px) {
+    /* Enable custom scrollbars for better UX */
+    .drop-zone, .draggable-zone {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 212, 255, 0.5) rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Webkit scrollbar styling */
+    .drop-zone::-webkit-scrollbar,
+    .draggable-zone::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .drop-zone::-webkit-scrollbar-track,
+    .draggable-zone::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+    }
+    
+    .drop-zone::-webkit-scrollbar-thumb,
+    .draggable-zone::-webkit-scrollbar-thumb {
+        background: rgba(0, 212, 255, 0.5);
+        border-radius: 2px;
+    }
+    
+    .drop-zone::-webkit-scrollbar-thumb:hover,
+    .draggable-zone::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 212, 255, 0.7);
+    }
+    
+    /* Ensure container flexibility */
+    .osi-simulation-container {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .osi-diagram-container {
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    /* Optimize modal for landscape */
+    .modal-content {
+        max-width: 80vw !important;
+        max-height: 85vh !important;
+        padding: 20px !important;
+    }
+    
+    /* Optimize quiz buttons for landscape */
+    .quiz-option-button {
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        margin: 4px 0 !important;
+    }
+    
+    /* Compact celebration overlay */
+    .celebration-content {
+        padding: 25px !important;
+        max-width: 70vw !important;
+    }
+    
+    .celebration-icon {
+        font-size: 3rem !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .final-score {
+        font-size: 1.5rem !important;
+        margin: 10px 0 !important;
+    }
+}
+
+/* Hint Border Highlight Animation with Cyan Glow Effect */
 .hint-highlight {
     animation: hintBorderPulse 2s ease-in-out infinite, hintGlow 1.5s ease-in-out infinite;
-    border: 3px solid #fbbf24 !important;
+    border: 3px solid var(--cyber-glow) !important;
     box-shadow: 
-        0 0 20px rgba(251, 191, 36, 0.8), 
-        0 0 40px rgba(251, 191, 36, 0.6),
-        0 0 60px rgba(251, 191, 36, 0.4),
-        inset 0 0 20px rgba(251, 191, 36, 0.3) !important;
+        0 0 20px rgba(0, 217, 255, 0.8), 
+        0 0 40px rgba(0, 217, 255, 0.6),
+        0 0 60px rgba(0, 217, 255, 0.4),
+        inset 0 0 20px rgba(0, 217, 255, 0.3) !important;
     position: relative;
     z-index: 100;
     transform: scale(1.02);
@@ -138,36 +524,36 @@ html, body {
 
 @keyframes hintBorderPulse {
     0%, 100% {
-        border-color: #fbbf24;
+        border-color: var(--cyber-glow);
         box-shadow: 
-            0 0 20px rgba(251, 191, 36, 0.8), 
-            0 0 40px rgba(251, 191, 36, 0.6),
-            0 0 60px rgba(251, 191, 36, 0.4),
-            inset 0 0 20px rgba(251, 191, 36, 0.3);
+            0 0 20px rgba(0, 217, 255, 0.8), 
+            0 0 40px rgba(0, 217, 255, 0.6),
+            0 0 60px rgba(0, 217, 255, 0.4),
+            inset 0 0 20px rgba(0, 217, 255, 0.3);
     }
     50% {
-        border-color: #f59e0b;
+        border-color: var(--neon-green);
         box-shadow: 
-            0 0 30px rgba(251, 191, 36, 1), 
-            0 0 60px rgba(251, 191, 36, 0.8),
-            0 0 90px rgba(251, 191, 36, 0.6),
-            inset 0 0 30px rgba(251, 191, 36, 0.5);
+            0 0 30px rgba(0, 217, 255, 1), 
+            0 0 60px rgba(0, 217, 255, 0.8),
+            0 0 90px rgba(0, 217, 255, 0.6),
+            inset 0 0 30px rgba(57, 255, 20, 0.5);
     }
 }
 
 @keyframes hintGlow {
     0%, 100% {
-        filter: brightness(1) drop-shadow(0 0 10px rgba(251, 191, 36, 0.6));
+        filter: brightness(1) drop-shadow(0 0 10px rgba(0, 217, 255, 0.6));
     }
     50% {
-        filter: brightness(1.15) drop-shadow(0 0 20px rgba(251, 191, 36, 0.9));
+        filter: brightness(1.15) drop-shadow(0 0 20px rgba(0, 217, 255, 0.9));
     }
 }
 
 /* Update OSI diagram container for 3 columns */
 .osi-diagram-container {
     display: grid !important;
-    grid-template-columns: 1fr 1fr 1fr !important;
+    grid-template-columns: 0.85fr 1fr 0.85fr !important;
     gap: 15px !important;
 }
 </style>
@@ -195,7 +581,6 @@ html, body {
 
     <div class="header">
         <h1><i class="fas fa-network-wired"></i> 7 Layers of the OSI Model</h1>
-        <p></p>
     </div>
 
     <!-- Main OSI Diagram Layout -->
@@ -204,7 +589,6 @@ html, body {
         <div class="drop-zone" id="dropZone1">
             <div class="drop-zone-header">
                 <h3><i class="fas fa-bullseye"></i> Drop Zone 1</h3>
-                <p>Arrange layers from 7 (top) to 1 (bottom)</p>
             </div>
             
             <div class="drop-slot" data-layer="7" data-zone="1" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -247,55 +631,47 @@ html, body {
         <div class="draggable-zone">
             <div class="draggable-zone-header">
                 <h3><i class="fas fa-hand-pointer"></i> Draggable Layers</h3>
-                <p>Drag these to the correct positions</p>
             </div>
             
             <div class="osi-layer-pill draggable-item layer-5" data-layer="5" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(5)">
                 <div class="layer-content">
                     <div class="layer-name">Session Layer</div>
-                    <div class="layer-protocols">NetBIOS RPC...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-2" data-layer="2" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(2)">
                 <div class="layer-content">
                     <div class="layer-name">Data Link Layer</div>
-                    <div class="layer-protocols">Ethernet MAC...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-7" data-layer="7" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(7)">
                 <div class="layer-content">
                     <div class="layer-name">Application Layer</div>
-                    <div class="layer-protocols">HTTP FTP SMTP...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-1" data-layer="1" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(1)">
                 <div class="layer-content">
                     <div class="layer-name">Physical Layer</div>
-                    <div class="layer-protocols">Cables Fiber...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-4" data-layer="4" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(4)">
                 <div class="layer-content">
                     <div class="layer-name">Transport Layer</div>
-                    <div class="layer-protocols">TCP UDP...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-6" data-layer="6" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(6)">
                 <div class="layer-content">
                     <div class="layer-name">Presentation Layer</div>
-                    <div class="layer-protocols">SSL/TLS JPEG...</div>
                 </div>
             </div>
 
             <div class="osi-layer-pill draggable-item layer-3" data-layer="3" draggable="true" ondragstart="drag(event)" onclick="showLayerInfo(3)">
                 <div class="layer-content">
                     <div class="layer-name">Network Layer</div>
-                    <div class="layer-protocols">IP ICMP...</div>
                 </div>
             </div>
         </div>
@@ -304,7 +680,6 @@ html, body {
         <div class="drop-zone" id="dropZone2">
             <div class="drop-zone-header">
                 <h3><i class="fas fa-bullseye"></i> Drop Zone 2</h3>
-                <p>Arrange layers from 7 (top) to 1 (bottom)</p>
             </div>
             
             <div class="drop-slot" data-layer="7" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -429,18 +804,19 @@ html, body {
     transform: rotate(90deg);
 }
 
-/* Success Indicator Animation */
+/* Success Indicator Animation - Cyan Glow */
 .success-indicator {
     position: absolute;
     top: -30px;
     right: 10px;
-    background: rgba(74, 222, 128, 0.9);
+    background: var(--gradient-primary);
     color: #fff;
     padding: 8px 16px;
     border-radius: 20px;
     font-weight: bold;
     animation: popIn 0.5s ease-out;
-    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 217, 255, 0.5), var(--glow-cyan);
+    border: 1px solid var(--cyber-glow);
     z-index: 10;
 }
 
@@ -458,7 +834,7 @@ html, body {
     }
 }
 
-/* Error Indicator */
+/* Error Indicator - Danger Color */
 .error-indicator {
     position: absolute;
     top: -30px;
@@ -470,7 +846,8 @@ html, body {
     font-weight: bold;
     z-index: 10;
     animation: errorFloat 2s ease-out forwards;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5), 0 0 15px rgba(239, 68, 68, 0.3);
+    border: 1px solid var(--danger-color);
     font-size: 0.8rem;
 }
 
@@ -488,7 +865,7 @@ html, body {
     }
 }
 
-/* Particle Effects */
+/* Particle Effects - Gamified Colors */
 .particle {
     position: fixed;
     width: 8px;
@@ -500,13 +877,13 @@ html, body {
 }
 
 .particle.success {
-    background: #4ade80;
-    box-shadow: 0 0 10px #4ade80;
+    background: var(--cyber-glow);
+    box-shadow: 0 0 15px var(--cyber-glow), 0 0 25px rgba(0, 217, 255, 0.5);
 }
 
 .particle.error {
-    background: #ef4444;
-    box-shadow: 0 0 10px #ef4444;
+    background: var(--danger-color);
+    box-shadow: 0 0 15px var(--danger-color), 0 0 25px rgba(239, 68, 68, 0.5);
 }
 
 @keyframes particleFly {
@@ -534,10 +911,10 @@ html, body {
 
 @keyframes scoreGlow {
     0%, 100% {
-        text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+        text-shadow: var(--glow-cyan);
     }
     50% {
-        text-shadow: 0 0 20px rgba(0, 212, 255, 1), 0 0 30px rgba(0, 212, 255, 0.8);
+        text-shadow: var(--shadow-glow), 0 0 40px var(--cyber-glow);
         transform: scale(1.1);
     }
 }
@@ -559,14 +936,15 @@ html, body {
     }
 }
 
-/* Completion Celebration */
+/* Completion Celebration - Gamified */
 .completion-celebration {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(2, 6, 23, 0.95);
+    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -575,12 +953,13 @@ html, body {
 }
 
 .celebration-content {
-    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
     padding: 40px;
     border-radius: 20px;
     text-align: center;
-    border: 3px solid #fbbf24;
-    box-shadow: 0 0 40px rgba(251, 191, 36, 0.5);
+    border: 3px solid var(--cyber-glow);
+    box-shadow: var(--shadow-glow), 0 0 60px rgba(0, 217, 255, 0.3);
     max-width: 500px;
     animation: bounceIn 0.6s ease-out;
 }
@@ -612,10 +991,14 @@ html, body {
 
 .final-score {
     font-size: 2rem;
-    color: #fbbf24;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     font-weight: bold;
     margin: 20px 0;
-    text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    text-shadow: var(--shadow-glow);
+    filter: drop-shadow(0 0 20px rgba(0, 217, 255, 0.5));
 }
 </style>
 
@@ -748,7 +1131,6 @@ const layerInfo = {
     6: {
         name: "Presentation Layer",
         description: "The Presentation Layer handles data formatting, encryption, compression, and translation. It ensures that data is in a usable format for the application layer.",
-        protocols: ["SSL/TLS", "JPEG", "GIF", "PNG", "MPEG", "ASCII", "EBCDIC"],
         functions: [
             "Data encryption and decryption",
             "Data compression and decompression",
@@ -760,7 +1142,6 @@ const layerInfo = {
     5: {
         name: "Session Layer",
         description: "The Session Layer manages sessions between applications, controlling connections and managing dialogue between applications.",
-        protocols: ["NetBIOS", "RPC", "PPTP", "L2TP", "SQL", "NFS"],
         functions: [
             "Session establishment and termination",
             "Session management and recovery",
@@ -772,7 +1153,6 @@ const layerInfo = {
     4: {
         name: "Transport Layer",
         description: "The Transport Layer provides reliable end-to-end communication, error recovery, and flow control between applications on different hosts.",
-        protocols: ["TCP", "UDP", "SCTP", "SPX"],
         functions: [
             "End-to-end error recovery and flow control",
             "Segmentation and reassembly",
@@ -784,7 +1164,6 @@ const layerInfo = {
     3: {
         name: "Network Layer",
         description: "The Network Layer handles routing of data packets between different networks and provides logical addressing.",
-        protocols: ["IP", "ICMP", "ARP", "OSPF", "BGP", "RIP"],
         functions: [
             "Logical addressing (IP addresses)",
             "Routing and path determination",
@@ -796,7 +1175,6 @@ const layerInfo = {
     2: {
         name: "Data Link Layer",
         description: "The Data Link Layer provides node-to-node delivery and error detection/correction for data frames.",
-        protocols: ["Ethernet", "Wi-Fi", "PPP", "ARP", "VLAN", "STP", "MAC"],
         functions: [
             "Frame synchronization",
             "Error detection and correction",
@@ -808,7 +1186,6 @@ const layerInfo = {
     1: {
         name: "Physical Layer",
         description: "The Physical Layer handles the transmission of raw bits over a physical medium and defines electrical and physical specifications.",
-        protocols: ["Cables", "Fiber Optic", "Hubs", "Repeaters", "Radio Waves", "Bluetooth"],
         functions: [
             "Bit transmission",
             "Physical medium specifications",
@@ -1206,7 +1583,6 @@ function cloneDraggableItem(layerNum) {
     layerElement.innerHTML = `
         <div class="layer-content">
             <div class="layer-name">${info.name}</div>
-            <div class="layer-protocols">${info.protocols.slice(0, 2).join(' ')}...</div>
         </div>
     `;
     
@@ -1655,34 +2031,25 @@ function showLayerInfo(layer) {
     const content = document.getElementById('modalContent');
     
     content.innerHTML = `
-        <h2 style="color: #00d4ff; margin-bottom: 15px;">
-            <i class="fas fa-layer-group"></i> ${info.name}
+        <h2 style="color: var(--cyber-glow); margin-bottom: 15px; text-shadow: var(--glow-cyan);">
+            <i class="fas fa-layer-group" style="color: var(--neon-green);"></i> ${info.name}
         </h2>
         
         <div style="margin-bottom: 20px;">
-            <h4 style="color: #a78bfa; margin-bottom: 10px;">Description:</h4>
-            <p style="line-height: 1.6; margin-bottom: 15px;">${info.description}</p>
+            <h4 style="color: var(--cyber-glow); margin-bottom: 10px; text-shadow: var(--glow-cyan);"><i class="fas fa-info-circle"></i> Description:</h4>
+            <p style="line-height: 1.6; margin-bottom: 15px; color: var(--text-secondary);">${info.description}</p>
         </div>
         
         <div style="margin-bottom: 20px;">
-            <h4 style="color: #4ade80; margin-bottom: 10px;">Key Functions:</h4>
-            <ul style="line-height: 1.6; margin-left: 20px;">
-                ${info.functions.map(func => `<li>${func}</li>`).join('')}
+            <h4 style="color: var(--neon-green); margin-bottom: 10px;"><i class="fas fa-cogs"></i> Key Functions:</h4>
+            <ul style="line-height: 1.8; margin-left: 20px; color: var(--text-secondary); list-style: none;">
+                ${info.functions.map(func => `<li style="margin-bottom: 8px;"><i class="fas fa-chevron-right" style="color: var(--cyber-glow); margin-right: 8px; font-size: 0.8rem;"></i>${func}</li>`).join('')}
             </ul>
         </div>
         
-        <div style="margin-bottom: 20px;">
-            <h4 style="color: #fbbf24; margin-bottom: 10px;">Common Protocols:</h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${info.protocols.map(protocol => 
-                    `<span style="background: rgba(0, 212, 255, 0.2); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">${protocol}</span>`
-                ).join('')}
-            </div>
-        </div>
-        
         <div>
-            <h4 style="color: #fb7185; margin-bottom: 10px;">Examples:</h4>
-            <p style="line-height: 1.6; font-style: italic;">${info.examples}</p>
+            <h4 style="color: var(--warning-color); margin-bottom: 10px;"><i class="fas fa-lightbulb"></i> Real-World Examples:</h4>
+            <p style="line-height: 1.6; font-style: italic; color: var(--text-secondary); background: rgba(0, 217, 255, 0.05); padding: 12px; border-radius: 8px; border-left: 3px solid var(--cyber-glow);">${info.examples}</p>
         </div>
     `;
     
@@ -1711,9 +2078,9 @@ function showCompletionCelebration() {
     celebration.className = 'completion-celebration';
     celebration.innerHTML = `
         <div class="celebration-content">
-            <div class="celebration-icon">🎉</div>
-            <h2 style="color: #fbbf24; margin: 20px 0;">Congratulations!</h2>
-            <p style="font-size: 1.2rem; margin: 15px 0;">You achieved a perfect understanding of the OSI Model!</p>
+            <div class="celebration-icon" style="color: var(--cyber-glow); filter: drop-shadow(0 0 20px var(--cyber-glow));">🎉</div>
+            <h2 style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 20px 0; filter: drop-shadow(0 0 15px rgba(0, 217, 255, 0.5));">Congratulations!</h2>
+            <p style="font-size: 1.2rem; margin: 15px 0; color: var(--text-secondary);">You achieved a perfect understanding of the OSI Model!</p>
             <div class="final-score">Final Score: ${score.toFixed(2)}%</div>
             <div style="background: rgba(74, 222, 128, 0.2); border: 2px solid #4ade80; border-radius: 12px; padding: 15px; margin: 20px 0;">
                 <p style="margin: 0; color: #4ade80;"><i class="fas fa-check-circle"></i> Score saved successfully!</p>
