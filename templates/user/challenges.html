@@ -1,0 +1,423 @@
+{% extends "user/base.html" %}
+
+{% block head %}
+<title>Challenges - RiddleNet</title>
+<style>
+    /* Ensure sizing does not cause unexpected overflow */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* Lock page to viewport height and disable scrolling */
+    html, body { height: 100%; overflow: hidden; }
+    body { margin: 0; }
+
+    .challenges-container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100svh; /* use small viewport to avoid mobile URL-bar jump */
+        overflow: hidden;
+    }
+
+    .challenges-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 20px;
+        width: 100%;
+        max-width: 1000px;
+        height: 100%;
+        margin: 0 auto;
+    }
+
+    .challenge-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius-lg);
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0; /* allow flex child to shrink */
+    }
+
+    .challenge-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+    }
+
+    .challenge-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.6s ease, transform 0.6s ease;
+        pointer-events: none;
+    }
+
+    .challenge-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+    }
+
+    .challenge-card:hover::before {
+        opacity: 1;
+        box-shadow: 0 0 20px var(--cyber-glow);
+    }
+
+    .challenge-card:hover::after {
+        opacity: 1;
+        transform: translate(-25%, -25%) scale(1.2);
+    }
+
+    .challenge-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 12px;
+        box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .challenge-card:hover .challenge-icon {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 12px 40px rgba(0, 212, 255, 0.6);
+    }
+
+    .challenge-icon i {
+        color: white;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .challenge-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 1;
+        min-height: 0; /* prevent overflow in grid tracks */
+    }
+
+    .challenge-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+        font-family: 'Orbitron', monospace;
+        letter-spacing: -0.02em;
+    }
+
+    .challenge-description {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin-bottom: 0;
+        flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    line-clamp: 4;
+    }
+
+    .challenge-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--gradient-secondary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        z-index: 2;
+    }
+
+    .challenge-badge.new {
+        background: linear-gradient(135deg, var(--warning-color), #E67E22);
+        box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+    }
+
+    .challenge-badge.coming-soon {
+        background: linear-gradient(135deg, var(--network-purple), #6B46C1);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    /* Unique color themes for each challenge */
+    .challenge-card.crimping {
+        --card-glow: var(--cyber-glow);
+    }
+
+    .challenge-card.crimping:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 20px 60px rgba(0, 212, 255, 0.3);
+    }
+
+    .challenge-card.osi {
+        --card-glow: var(--network-purple);
+    }
+
+    .challenge-card.osi:hover {
+        border-color: var(--network-purple);
+        box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+    }
+
+    .challenge-card.linkup {
+        --card-glow: var(--neon-green);
+    }
+
+    .challenge-card.linkup:hover {
+        border-color: var(--neon-green);
+        box-shadow: 0 20px 60px rgba(57, 255, 20, 0.3);
+    }
+
+    .challenge-card.quiz {
+        --card-glow: var(--warning-color);
+    }
+
+    .challenge-card.quiz:hover {
+        border-color: var(--warning-color);
+        box-shadow: 0 20px 60px rgba(255, 140, 66, 0.3);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .challenges-container {
+            padding: 16px;
+        }
+
+        .challenges-grid {
+            max-width: 800px;
+            gap: 16px;
+            height: 100%;
+        }
+
+        .challenge-card {
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .challenges-container {
+            padding: 12px;
+            height: 100svh;
+            /* prevent page scroll on mobile */
+            overflow: hidden;
+        }
+
+        .challenges-grid {
+            /* Keep a 2x2 layout to fit without scrolling */
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+            height: 100%;
+        }
+
+        .challenge-card {
+            padding: 14px;
+        }
+
+        .challenge-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 1.5rem;
+        }
+
+        .challenge-title { font-size: 1.1rem; }
+    .challenge-description { -webkit-line-clamp: 3; line-clamp: 3; }
+    }
+
+    @media (max-width: 480px) {
+        .challenge-card {
+            padding: 12px;
+        }
+
+        .challenge-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+
+        .challenge-title {
+            font-size: 1rem;
+        }
+
+    .challenge-description { font-size: 0.8rem; -webkit-line-clamp: 3; line-clamp: 3; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="challenges-container fade-in">
+    <!-- Challenges Grid -->
+    <div class="challenges-grid">
+        <!-- Crimping Challenge -->
+        <a href="{{ url_for('user.crimping_simulation') }}" class="challenge-card crimping">
+            <span class="challenge-badge">Popular</span>
+            <div class="challenge-icon">
+                <i class="fas fa-ethernet"></i>
+            </div>
+            <div class="challenge-content">
+                <h2 class="challenge-title">Crimping Simulation</h2>
+                <p class="challenge-description">
+                    Master the art of cable crimping! Learn proper wire arrangement, understand color codes, and practice creating perfect network cables. Essential for any network technician.
+                </p>
+            </div>
+        </a>
+
+        <!-- OSI Model Challenge -->
+        <a href="{{ url_for('user.osi_simulation') }}" class="challenge-card osi">
+            <span class="challenge-badge">Educational</span>
+            <div class="challenge-icon">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="challenge-content">
+                <h2 class="challenge-title">OSI Model</h2>
+                <p class="challenge-description">
+                    Dive deep into the 7 layers of the OSI model. Interactive drag-and-drop exercises help you understand how data flows through network protocols and layers.
+                </p>
+            </div>
+        </a>
+
+        <!-- Link Up Challenge -->
+        <a href="{{ url_for('troubleshooting.index') }}" class="challenge-card linkup">
+            <span class="challenge-badge new">New</span>
+            <div class="challenge-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="challenge-content">
+                <h2 class="challenge-title">Link Up!</h2>
+                <p class="challenge-description">
+                    Put your troubleshooting skills to the test! Diagnose network issues, identify faulty connections, and restore connectivity in realistic network scenarios.
+                </p>
+            </div>
+        </a>
+
+        <!-- Quiz Challenge -->
+        <a href="{{ url_for('quiz.index') }}" class="challenge-card quiz">
+            <span class="challenge-badge">Test Yourself</span>
+            <div class="challenge-icon">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <div class="challenge-content">
+                <h2 class="challenge-title">Quiz Challenge</h2>
+                <p class="challenge-description">
+                    Challenge your networking knowledge with comprehensive quizzes. Cover topics from basic concepts to advanced networking protocols and best practices.
+                </p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<script>
+    // Add entrance animation to cards
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.challenge-card');
+        
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100 * index);
+        });
+
+        // Add ripple effect on card click
+        cards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height) * 2;
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    border-radius: 50%;
+                    background: rgba(0, 212, 255, 0.3);
+                    transform: scale(0);
+                    animation: ripple-effect 0.8s ease-out;
+                    pointer-events: none;
+                    z-index: 0;
+                `;
+
+                this.appendChild(ripple);
+
+                setTimeout(() => ripple.remove(), 800);
+            });
+        });
+
+        // Add parallax effect to card glows
+        document.addEventListener('mousemove', function(e) {
+            const cards = document.querySelectorAll('.challenge-card');
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardX = (rect.left + rect.width / 2) / window.innerWidth;
+                const cardY = (rect.top + rect.height / 2) / window.innerHeight;
+                
+                const deltaX = (mouseX - cardX) * 20;
+                const deltaY = (mouseY - cardY) * 20;
+
+                const icon = card.querySelector('.challenge-icon');
+                if (icon && card.matches(':hover')) {
+                    icon.style.transform = `scale(1.1) rotate(5deg) translate(${deltaX}px, ${deltaY}px)`;
+                }
+            });
+        });
+    });
+
+    // Add ripple animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple-effect {
+            to {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    console.log('RiddleNet Challenges Hub - Loaded Successfully');
+</script>
+{% endblock %}

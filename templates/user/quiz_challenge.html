@@ -1418,6 +1418,41 @@
         }
     }
 
+  /* Quiz Back Button */
+  .quiz-back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+
+  .quiz-back-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: #00d4ff;
+    transform: translateX(-5px);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+  }
+
+  .quiz-back-btn i {
+    transition: transform 0.3s ease;
+  }
+
+  .quiz-back-btn:hover i {
+    transform: translateX(-3px);
+  }
+
 </style>
 
 <!-- Auto-Landscape Optimization System -->
@@ -1438,6 +1473,10 @@
 
 {% block content %}
 <div class="quiz-container">
+    <!-- Back to Challenges Button -->
+    <button class="quiz-back-btn" onclick="goBackToChallenges()">
+      <i class="fas fa-arrow-left"></i> Back to Challenges
+    </button>
     
 
     <!-- Quiz Stats -->
@@ -1489,6 +1528,13 @@
 </div>
 
 <script>
+// Back to challenges function
+function goBackToChallenges() {
+  if (confirm('Are you sure you want to leave the quiz? Your progress will not be saved.')) {
+    window.location.href = "{{ url_for('user.challenges') }}";
+  }
+}
+
 // Quiz Data - The 11 questions from the prompt
 let quizQuestions = [
     {

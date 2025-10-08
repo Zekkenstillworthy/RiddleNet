@@ -61,11 +61,7 @@
     overflow-x: hidden;
   }
   
-  /* Ensure images and media respect container bounds */
-  img, video, canvas, svg {
-    max-width: 100%;
-    height: auto;
-  }
+ 
 
   body::before {
     content: '';
@@ -2383,6 +2379,7 @@
     max-height: 85vh;
     overflow-y: auto;
     animation: slideInUp 0.5s ease-out;
+    position: relative;
   }
 
   @keyframes slideInUp {
@@ -3511,6 +3508,52 @@
       justify-content: center;
     }
   }
+
+  /* Close Crimping Button */
+  .close-crimping-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    color: #EF4444;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    padding: 0;
+    min-width: unset;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  }
+
+  .close-crimping-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+    border-color: #EF4444;
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+  }
+
+  .close-crimping-btn:active {
+    transform: scale(1.05) rotate(90deg);
+  }
+
+  .close-crimping-btn i {
+    font-size: 1.3rem;
+  }
+
+  /* Fix for intro visual icon - prevent stretching */
+  .intro-visual {
+    line-height: 1 !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+  }
 </style>
 
 
@@ -3661,6 +3704,9 @@
     <!-- Crimping Introduction Modal (Shows First) -->
     <div class="crimping-intro-modal" id="crimpingIntroModal">
       <div class="crimping-intro-content">
+        <button class="close-crimping-btn" onclick="closeCrimpingSimulation()">
+          <i class="fas fa-times"></i>
+        </button>
         <h2>🔌 Welcome to Cable Crimping!</h2>
         
         <div class="intro-body">
@@ -3683,6 +3729,9 @@
     <!-- Wiring Type Selection Modal -->
     <div class="wiring-selection-modal" id="wiringSelectionModal">
       <div class="wiring-selection-content">
+        <button class="close-crimping-btn" onclick="closeWiringSelection()">
+          <i class="fas fa-times"></i>
+        </button>
         <h2>🔌 Start Crimping!</h2>
         
         <div class="wiring-options">
@@ -3881,6 +3930,28 @@
     </div>
 
   <script>
+    // Close crimping simulation function
+    function closeCrimpingSimulation() {
+      if (confirm('Are you sure you want to exit the crimping simulation?')) {
+        window.location.href = "{{ url_for('user.challenges') }}";
+      }
+    }
+
+    // Close wiring selection modal function
+    function closeWiringSelection() {
+      const wiringModal = document.getElementById('wiringSelectionModal');
+      if (wiringModal) {
+        wiringModal.style.display = 'none';
+      }
+      // Optionally, you can also redirect to challenges page
+      if (confirm('Are you sure you want to exit?')) {
+        window.location.href = "{{ url_for('user.challenges') }}";
+      } else {
+        // Show the modal again if they cancel
+        wiringModal.style.display = 'flex';
+      }
+    }
+
     // Correct wire patterns
     const wirePatterns = {
       straightthrough: {
@@ -4051,7 +4122,6 @@
         First Simulation - UTP Cable Crimping
         <div class="selected-type">
           <span class="type-icon">${icon}</span>
-          <span>Difficulty: </span>
           <span class="type-name" style="color: ${difficultyColor}">${difficultyLabel}</span>
           <span> - ${typeName}</span>
         </div>

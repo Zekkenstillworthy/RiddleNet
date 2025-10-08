@@ -879,6 +879,76 @@
         font-size: 16px;
     }
 
+    /* Active Challenge Styles */
+    .active-challenge-container {
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .challenge-header-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .challenge-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .challenge-difficulty-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: rgba(0, 217, 255, 0.1);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+        border-radius: 6px;
+        font-size: 11px;
+        color: var(--cyber-glow);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .challenge-progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .challenge-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--cyber-glow), var(--primary-color));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .challenge-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .challenge-stats .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .challenge-stats .stat-item i {
+        color: var(--cyber-glow);
+        font-size: 14px;
+    }
+
     /* Score Display */
     .score-display {
         display: flex;
@@ -2872,6 +2942,30 @@ document.addEventListener('DOMContentLoaded', () => {
 {% endblock %}
 
 {% block content %}
+<!-- Link Up Welcome Modal -->
+<div class="linkup-welcome-modal" id="linkupWelcomeModal" style="display: flex;">
+  <div class="linkup-welcome-content">
+    <button class="close-linkup-btn" onclick="closeLinkUp()">
+      <i class="fas fa-times"></i>
+    </button>
+    <h2>🛠️ Welcome to Link Up!</h2>
+    
+    <div class="welcome-icon-large">⚡</div>
+    
+    <div class="welcome-subtitle">
+      <strong>Test Your Network Troubleshooting Skills!</strong>
+    </div>
+    
+    <div class="welcome-description">
+      Diagnose network issues, identify faulty connections, and restore connectivity in realistic network scenarios. Put your troubleshooting expertise to the ultimate test!
+    </div>
+    
+    <button class="start-linkup-btn" onclick="startLinkUp()">
+      <i class="fas fa-play"></i> Start Challenge
+    </button>
+  </div>
+</div>
+
 <style>
     * {
         margin: 0;
@@ -5888,6 +5982,265 @@ document.addEventListener('DOMContentLoaded', () => {
         border: 2px solid rgba(255, 255, 255, 0.15);
     }
 
+/* Link Up Welcome Modal */
+.linkup-welcome-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.linkup-welcome-content {
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  border-radius: 24px;
+  padding: 50px 40px;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(57, 255, 20, 0.3),
+    0 0 100px rgba(57, 255, 20, 0.1);
+  border: 2px solid rgba(57, 255, 20, 0.2);
+  position: relative;
+  animation: slideInUp 0.5s ease-out;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.close-linkup-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  color: #EF4444;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1001;
+  padding: 0;
+  min-width: unset;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.close-linkup-btn:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+  border-color: #EF4444;
+  transform: scale(1.15) rotate(90deg);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.close-linkup-btn:active {
+  transform: scale(1.05) rotate(90deg);
+}
+
+.linkup-welcome-content h2 {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 30px 0;
+  padding: 0 60px 0 0;
+  width: 100%;
+}
+
+.welcome-icon-large {
+  font-size: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 15px rgba(57, 255, 20, 0.6));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.welcome-subtitle {
+  font-size: 22px;
+  color: #e2e8f0;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.welcome-description {
+  font-size: 16px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 35px;
+  max-width: 600px;
+}
+
+.linkup-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 650px;
+  padding: 20px;
+  background: rgba(57, 255, 20, 0.02);
+  border-radius: 20px;
+  border: 1px solid rgba(57, 255, 20, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(57, 255, 20, 0.1),
+    0 4px 20px rgba(57, 255, 20, 0.05);
+  margin-bottom: 30px;
+}
+
+.linkup-option {
+  background: rgba(57, 255, 20, 0.05);
+  border: 2px solid rgba(57, 255, 20, 0.3);
+  border-radius: 16px;
+  padding: 30px 24px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  outline: none;
+  min-height: 130px;
+}
+
+.linkup-option:hover {
+  transform: translateY(-5px);
+  border-color: #39ff14;
+  background: rgba(57, 255, 20, 0.12);
+  box-shadow: 
+    0 10px 35px rgba(57, 255, 20, 0.3),
+    0 0 0 1px rgba(57, 255, 20, 0.4);
+}
+
+.linkup-option:active {
+  transform: translateY(-2px);
+}
+
+.linkup-options:hover .linkup-option:not(:hover) {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+.linkup-option .option-icon {
+  font-size: 48px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 10px rgba(57, 255, 20, 0.5));
+  transition: all 0.3s ease;
+}
+
+.linkup-option:hover .option-icon {
+  filter: drop-shadow(0 0 18px rgba(57, 255, 20, 0.8));
+  transform: scale(1.1);
+}
+
+.linkup-option .option-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.start-linkup-btn {
+  background: linear-gradient(135deg, #39ff14 0%, #00d4ff 100%);
+  color: #0f0f23;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 20px rgba(57, 255, 20, 0.3);
+}
+
+.start-linkup-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(57, 255, 20, 0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@media (max-width: 768px) {
+  .linkup-welcome-content {
+    padding: 40px 24px;
+  }
+  
+  .linkup-welcome-content h2 {
+    font-size: 28px;
+    margin-bottom: 25px;
+  }
+  
+  .welcome-icon-large {
+    font-size: 64px;
+  }
+  
+  .welcome-subtitle {
+    font-size: 18px;
+  }
+  
+  .welcome-description {
+    font-size: 14px;
+  }
+  
+  .linkup-options {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .linkup-option {
+    padding: 24px 20px;
+    min-height: 110px;
+  }
+  
+  .linkup-option .option-icon {
+    font-size: 40px;
+  }
+  
+  .linkup-option .option-title {
+    font-size: 15px;
+  }
+  
+  .close-linkup-btn {
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
 </style>
 
 <div id="app">
@@ -6727,12 +7080,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="palette-separator"></div>
             <div class="palette-section center-section">
                 <div class="device" draggable="true" data-type="router">
-                    <i class="fas fa-project-diagram device-icon"></i>
+                    <i class="fas fa-network-wired device-icon"></i>
                     <span class="device-label">Router</span>
                     <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                 </div>
                 <div class="device" draggable="true" data-type="switch">
-                    <i class="fas fa-ethernet device-icon"></i>
+                    <i class="fas fa-layer-group device-icon"></i>
                     <span class="device-label">Switch</span>
                     <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                 </div>
@@ -6808,147 +7161,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- Current Scenario Status -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-target-lock"></i> Active Learning Arena</h4>
-                    <div class="current-scenario-container">
-                        <div class="scenario-status" id="scenario-status">
-                            <div class="scenario-info">
-                                <div class="scenario-badge" id="scenario-badge">
-                                    <i class="bx bx-play-circle"></i>
-                                    <span id="scenario-name">No Scenario Selected</span>
-                                </div>
-                                <div class="scenario-details" id="scenario-details">
-                                    <div class="scenario-difficulty" id="scenario-difficulty">Select from Link Up!</div>
-                                    <div class="scenario-xp" id="scenario-xp">XP Reward: --</div>
-                                </div>
-                            </div>
-                            <div class="scenario-progress" id="scenario-progress">
-                                <div class="progress-indicators">
-                                    <div class="progress-item">
-                                        <i class="bx bx-time-five"></i>
-                                        <span id="scenario-timer">--:--</span>
-                                    </div>
-                                    <div class="progress-item">
-                                        <i class="bx bx-help-circle"></i>
-                                        <span id="hints-used">0 Hints</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Network Skill Trees -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-git-branch"></i> Network Skills</h4>
-                    <div class="skill-trees-container">
-                        <!-- Routing Skills -->
-                        <div class="skill-tree">
-                            <div class="skill-tree-header">
-                                <div class="skill-tree-icon">
-                                    <i class="bx bx-git-merge"></i>
-                                </div>
-                                <div class="skill-tree-title">Routing Protocols</div>
-                            </div>
-                            <div class="skills-grid">
-                                <div class="skill-node unlocked" data-skill="basic-routing">
-                                    <i class="bx bx-sitemap skill-icon"></i>
-                                    <div class="skill-name">Basic Routing</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 100%"></div>
-                                    </div>
-                                </div>
-                                <div class="skill-node locked" data-skill="rip-protocol">
-                                    <i class="bx bx-refresh skill-icon"></i>
-                                    <div class="skill-name">RIP Protocol</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                                <div class="skill-node locked" data-skill="ospf-protocol">
-                                    <i class="bx bx-network-chart skill-icon"></i>
-                                    <div class="skill-name">OSPF</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Switching Skills -->
-                        <div class="skill-tree">
-                            <div class="skill-tree-header">
-                                <div class="skill-tree-icon">
-                                    <i class="bx bx-shuffle"></i>
-                                </div>
-                                <div class="skill-tree-title">Switching & VLANs</div>
-                            </div>
-                            <div class="skills-grid">
-                                <div class="skill-node unlocked" data-skill="basic-switching">
-                                    <i class="bx bx-category skill-icon"></i>
-                                    <div class="skill-name">Layer 2 Switching</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 80%"></div>
-                                    </div>
-                                </div>
-                                <div class="skill-node locked" data-skill="vlan-config">
-                                    <i class="bx bx-layer-group skill-icon"></i>
-                                    <div class="skill-name">VLAN Config</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Troubleshooting Skills -->
-                        <div class="skill-tree">
-                            <div class="skill-tree-header">
-                                <div class="skill-tree-icon">
-                                    <i class="bx bx-wrench"></i>
-                                </div>
-                                <div class="skill-tree-title">Troubleshooting</div>
-                            </div>
-                            <div class="skills-grid">
-                                <div class="skill-node unlocked" data-skill="connectivity-troubleshooting">
-                                    <i class="bx bx-wifi skill-icon"></i>
-                                    <div class="skill-name">Connectivity</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 60%"></div>
-                                    </div>
-                                </div>
-                                <div class="skill-node locked" data-skill="protocol-analysis">
-                                    <i class="bx bx-search-alt skill-icon"></i>
-                                    <div class="skill-name">Protocol Analysis</div>
-                                    <div class="skill-progress">
-                                        <div class="skill-progress-fill" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 
-                <!-- Real-time Progress -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-trophy"></i> Current Score</h4>
-                    <div class="score-display">
-                        <span class="score-value" id="current-score">0</span>
-                        <span class="score-unit">pts</span>
-                    </div>
-                    <div class="score-breakdown">
-                        <div class="score-item">
-                            <span>Devices Placed:</span>
-                            <span id="devices-score">0/5</span>
+
+               
+                
+               
+
+                <!-- Active Challenge Progress -->
+                <div class="feedback-section" id="active-challenge-section" style="display: none;">
+                    <h4><i class="bx bx-target-lock"></i> Active Challenge</h4>
+                    <div class="active-challenge-container">
+                        <div class="challenge-header-info">
+                            <div class="challenge-name" id="active-challenge-name">No Active Challenge</div>
+                            <div class="challenge-difficulty-badge" id="active-challenge-difficulty"></div>
                         </div>
-                        <div class="score-item">
-                            <span>Connections Made:</span>
-                            <span id="connections-score">0/3</span>
+                        <div class="challenge-progress-bar">
+                            <div class="challenge-progress-fill" id="active-challenge-progress-fill" style="width: 0%"></div>
                         </div>
-                        <div class="score-item">
-                            <span>Configurations:</span>
-                            <span id="config-score">0/2</span>
+                        <div class="challenge-stats">
+                            <div class="stat-item">
+                                <i class="bx bx-check-circle"></i>
+                                <span id="challenge-steps-completed">0</span> / <span id="challenge-steps-total">0</span> Steps
+                            </div>
+                            <div class="stat-item">
+                                <i class="bx bx-star"></i>
+                                <span id="challenge-xp-reward">0</span> XP
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -7004,166 +7242,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- Live Hints -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-bulb"></i> Smart Hints</h4>
-                    <div class="hints-container" id="hints-container">
-                        <div class="hint-item">
-                            <i class="bx bx-info-circle hint-icon"></i>
-                            <div class="hint-text">
-                                Start by placing network devices on the canvas
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Metrics -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-trending-up"></i> Metrics</h4>
-                    <div class="metrics-grid">
-                        <div class="metric-card primary-timer">
-                            <i class="bx bx-timer metric-icon"></i>
-                            <div class="metric-content">
-                                <span class="metric-value" id="time-spent">0:00</span>
-                                <span class="metric-label">Time</span>
-                            </div>
-                            <div class="timer-controls">
-                                <button class="timer-btn pause-btn" id="pause-timer-btn" title="Pause Timer">
-                                    <i class="fas fa-pause"></i>
-                                </button>
-                                <button class="timer-btn resume-btn" id="resume-timer-btn" title="Resume Timer" style="display: none;">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="metric-card">
-                            <i class="bx bx-mouse metric-icon"></i>
-                            <div class="metric-content">
-                                <span class="metric-value" id="actions-count">0</span>
-                                <span class="metric-label">Actions</span>
-                            </div>
-                        </div>
-                        <div class="metric-card">
-                            <i class="bx bx-error metric-icon"></i>
-                            <div class="metric-content">
-                                <span class="metric-value" id="mistakes-count">0</span>
-                                <span class="metric-label">Errors</span>
-                            </div>
-                        </div>
-                        <div class="metric-card">
-                            <i class="bx bx-help-circle metric-icon"></i>
-                            <div class="metric-content">
-                                <span class="metric-value" id="hints-used">0</span>
-                                <span class="metric-label">Hints</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Achievement Badges -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-medal"></i> Achievements</h4>
-                    <div class="achievements-container" id="achievements-container">
-                        <div class="achievement-badge locked" data-achievement="first-device">
-                            <i class="bx bx-desktop achievement-icon"></i>
-                            <span class="achievement-text">First Device</span>
-                        </div>
-                        <div class="achievement-badge locked" data-achievement="network-builder">
-                            <i class="bx bx-network-chart achievement-icon"></i>
-                            <span class="achievement-text">Network Builder</span>
-                        </div>
-                        <div class="achievement-badge locked" data-achievement="speed-demon">
-                            <i class="bx bx-rocket achievement-icon"></i>
-                            <span class="achievement-text">Speed Demon</span>
-                        </div>
-                        <div class="achievement-badge locked" data-achievement="perfectionist">
-                            <i class="bx bx-check-shield achievement-icon"></i>
-                            <span class="achievement-text">Perfectionist</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Leaderboard Section -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-trophy"></i> Leaderboard</h4>
-                    <div class="leaderboard-info" id="leaderboard-info">
-                        <div class="leaderboard-rank">Rank: #--</div>
-                        <div class="leaderboard-score">Score: 0</div>
-                        <div class="leaderboard-trend">
-                            🔄 Calculating...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-bolt"></i> Quick Actions</h4>
-                    <div class="quick-actions">
-                        <button class="quick-action-btn" id="get-hint-btn">
-                            <i class="bx bx-bulb"></i>
-                            Get Hint
-                        </button>
-                        <button class="quick-action-btn" id="check-solution-btn">
-                            <i class="bx bx-check-circle"></i>
-                            Check Solution
-                        </button>
-                        <button class="quick-action-btn" id="reset-progress-btn">
-                            <i class="bx bx-refresh"></i>
-                            Reset
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Unlock Progress -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-lock-open"></i> Arena Unlock Progress</h4>
-                    <div class="unlock-progress-container">
-                        <div class="difficulty-unlock easy-unlock" id="easy-unlock">
-                            <div class="unlock-header">
-                                <div class="unlock-icon">
-                                    <i class="bx bx-leaf"></i>
-                                </div>
-                                <div class="unlock-name">Easy Difficulty</div>
-                                <div class="unlock-status" id="easy-status">
-                                    <i class="bx bx-check-circle"></i>
-                                </div>
-                            </div>
-                            <div class="unlock-requirement" id="easy-requirement">
-                                Complete Foundation Learning
-                            </div>
-                        </div>
-
-                        <div class="difficulty-unlock medium-unlock" id="medium-unlock">
-                            <div class="unlock-header">
-                                <div class="unlock-icon">
-                                    <i class="bx bx-shield-quarter"></i>
-                                </div>
-                                <div class="unlock-name">Medium Difficulty</div>
-                                <div class="unlock-status" id="medium-status">
-                                    <i class="bx bx-lock-alt"></i>
-                                </div>
-                            </div>
-                            <div class="unlock-requirement" id="medium-requirement">
-                                Complete 3 Easy scenarios
-                            </div>
-                        </div>
-
-                        <div class="difficulty-unlock hard-unlock" id="hard-unlock">
-                            <div class="unlock-header">
-                                <div class="unlock-icon">
-                                    <i class="bx bx-shield-alt-2"></i>
-                                </div>
-                                <div class="unlock-name">Hard Difficulty</div>
-                                <div class="unlock-status" id="hard-status">
-                                    <i class="bx bx-lock-alt"></i>
-                                </div>
-                            </div>
-                            <div class="unlock-requirement" id="hard-requirement">
-                                Complete 5 Medium scenarios
-                            </div>
-                        </div>
-                    </div>
-                </div>
+             
+                
             </div>
         </div>
         
@@ -7173,6 +7253,35 @@ document.addEventListener('DOMContentLoaded', () => {
         
 
     <script>
+        // Link Up welcome modal functions
+        let selectedLinkUpMode = null;
+        
+        function selectLinkUpMode(mode) {
+          selectedLinkUpMode = mode;
+          console.log('Selected mode:', mode);
+          // Visual feedback could be added here
+        }
+        
+        function startLinkUp() {
+          document.getElementById('linkupWelcomeModal').style.display = 'none';
+          // Show scenario selection modal
+          const scenarioModal = document.getElementById('scenarioModal');
+          if (scenarioModal) {
+              scenarioModal.classList.add('active');
+          }
+        }
+
+        function closeLinkUp() {
+          if (confirm('Are you sure you want to exit Link Up?')) {
+            window.location.href = "{{ url_for('user.challenges') }}";
+          }
+        }
+
+        // Show welcome modal on page load
+        window.addEventListener('DOMContentLoaded', function() {
+          document.getElementById('linkupWelcomeModal').style.display = 'flex';
+        });
+
         // ===== PERFORMANCE FEEDBACK SIDEBAR SYSTEM =====
         
         class PerformanceFeedbackSystem {
@@ -8600,20 +8709,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.ipv6 = '';
                 this.subnet = '';
                 this.protocol = 'none';
-                this.image = new Image();
-                this.image.onload = () => {
-                    this.isImageLoaded = true;
-                    redrawCanvas();
-                };
+                // Store device icon information instead of images
+                this.iconType = null;
+                this.iconUnicode = null;
+                
                 switch (type) {
                     case 'pc':
-                        this.image.src = "{{ url_for('static', filename='img/PC.png') }}";
+                        this.iconType = 'desktop';
+                        this.iconUnicode = '\uf108'; // fa-desktop
                         break;
                     case 'router':
-                        this.image.src = "{{ url_for('static', filename='img/Router.png') }}";
+                        this.iconType = 'network-wired';
+                        this.iconUnicode = '\uf6ff'; // fa-network-wired
                         break;
                     case 'switch':
-                        this.image.src = "{{ url_for('static', filename='img/Switch.png') }}";
+                        this.iconType = 'layer-group';
+                        this.iconUnicode = '\uf5fd'; // fa-layer-group
                         break;
                 }
                 this.speed = 'auto';
@@ -8622,14 +8733,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             draw(ctx) {
-                if (this.isImageLoaded) {
-                    ctx.drawImage(this.image, this.x - 30, this.y - 25, 60, 60); // Increased size
-                    // Draw device label below
-                    ctx.fillStyle = "#00C3B5";
-                    ctx.font = "14px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText(this.label, this.x, this.y + 50); // Adjusted label position
-                }
+                // Draw Font Awesome icon instead of image
+                ctx.save();
+                
+                // Set up icon styling
+                ctx.font = '48px "Font Awesome 5 Free"';
+                ctx.fontWeight = '900';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Draw icon background circle
+                ctx.fillStyle = 'rgba(0, 217, 255, 0.1)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 35, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw icon border
+                ctx.strokeStyle = '#00D9FF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw the icon
+                ctx.fillStyle = '#00D9FF';
+                ctx.fillText(this.iconUnicode, this.x, this.y);
+                
+                ctx.restore();
+                
+                // Draw device label below
+                ctx.fillStyle = "#00C3B5";
+                ctx.font = "14px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(this.label, this.x, this.y + 50); // Adjusted label position
             }
         }
 
@@ -14133,11 +14267,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.socketClient.on('troubleshooting_progress', function (data) {
                     console.log('Troubleshooting progress update:', data);
 
-                    // Update progress indicators[
+                    // Update progress indicators
                     if (data.progress_percentage !== undefined) {
                         const progressElement = document.querySelector('#progress-indicator');
                         if (progressElement) {
                             progressElement.textContent = `Progress: ${data.progress_percentage}%`;
+                        }
+                        
+                        // Update active challenge progress in sidebar
+                        if (window.networkLevelSystem && data.challenge_id) {
+                            const stepsCompleted = data.current_step || 0;
+                            const stepsTotal = data.total_steps || 5;
+                            const progressPercentage = data.progress_percentage || 0;
+                            
+                            window.networkLevelSystem.updateChallengeProgress(
+                                stepsCompleted,
+                                stepsTotal,
+                                progressPercentage
+                            );
                         }
                     }
 
@@ -14147,6 +14294,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Step Completed!',
                             `You completed step ${data.step_number}: ${data.step_name}`
                         );
+                    }
+                    
+                    // Handle challenge completion event
+                    if (data.event === 'challenge_completed' && window.networkLevelSystem) {
+                        window.networkLevelSystem.completeActiveChallenge();
                     }
                 });
 
@@ -15603,6 +15755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         level: 1,
                         difficulty: 1,
                         xp: 50,
+                        steps: 4,
                         description: "Create a simple network with 2 PCs and 1 switch. Configure IP addresses and test connectivity.",
                         requirements: ["Place 2 PCs", "Place 1 Switch", "Connect devices", "Configure IPs"],
                         unlocked: true,
@@ -15613,6 +15766,63 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: "First Router Configuration",
                         level: 1,
                         difficulty: 2,
+                        xp: 75,
+                        steps: 5,
+                        description: "Set up a router with basic configuration. Configure interfaces and establish routing between subnets.",
+                        requirements: ["Place Router", "Configure interfaces", "Set routing", "Test connectivity"],
+                        unlocked: true,
+                        badge: "🔄"
+                    },
+                    {
+                        id: "rip-protocol",
+                        title: "RIP Protocol Configuration",
+                        level: 2,
+                        difficulty: 2,
+                        xp: 100,
+                        steps: 6,
+                        description: "Configure RIP v1 and v2 on multiple routers. Troubleshoot routing table issues and network convergence.",
+                        requirements: ["Setup topology", "Configure RIP", "Verify routing tables", "Test network"],
+                        unlocked: false,
+                        badge: "🔁"
+                    },
+                    {
+                        id: "vlan-basics",
+                        title: "VLAN Segmentation",
+                        level: 2,
+                        difficulty: 2,
+                        xp: 120,
+                        steps: 7,
+                        description: "Create and configure VLANs on switches. Set up trunk ports and test inter-VLAN communication.",
+                        requirements: ["Create VLANs", "Configure ports", "Setup trunks", "Test segmentation"],
+                        unlocked: false,
+                        badge: "🔀"
+                    },
+                    {
+                        id: "ospf-config",
+                        title: "OSPF Implementation",
+                        level: 3,
+                        difficulty: 3,
+                        xp: 200,
+                        steps: 8,
+                        description: "Configure OSPF areas, analyze LSA databases, and optimize network convergence for enterprise networks.",
+                        requirements: ["Configure OSPF", "Setup areas", "Verify LSA", "Optimize convergence"],
+                        unlocked: false,
+                        badge: "🏗️"
+                    },
+                    {
+                        id: "network-troubleshooting",
+                        title: "Advanced Troubleshooting",
+                        level: 3,
+                        difficulty: 3,
+                        xp: 250,
+                        steps: 10,
+                        description: "Diagnose complex network issues including routing loops, spanning tree problems, and protocol misconfigurations.",
+                        requirements: ["Identify issues", "Analyze protocols", "Implement fixes", "Verify solution"],
+                        unlocked: false,
+                        badge: "🔧"
+                    }
+                ];
+            }
                         xp: 75,
                         description: "Set up a router with basic configuration. Configure interfaces and establish routing.",
                         requirements: ["Place router", "Configure interfaces", "Set up routing table"],
@@ -16142,6 +16352,175 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 console.log(`🎯 Starting challenge: ${challenge.title}`);
                 
+                // Update the performance sidebar with active challenge info
+                this.updateActiveChallengeInSidebar(challenge);
+                
+                // Close challenges modal
+                closeChallengesModal();
+                
+                // Show in performance feedback
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.addHint(`🎯 Challenge Started: ${challenge.title}`, 'info');
+                }
+                
+                // Track the active challenge
+                this.activeChallenge = {
+                    id: challengeId,
+                    challenge: challenge,
+                    startTime: Date.now(),
+                    stepsCompleted: 0,
+                    stepsTotal: challenge.steps || 5 // Default to 5 steps if not specified
+                };
+                
+                // Save active challenge state
+                this.saveProgress();
+                
+                // If WebSocket is available, send challenge start event
+                if (window.socketClient) {
+                    window.socketClient.sendTroubleshootingProgress({
+                        challenge_id: challengeId,
+                        challenge_name: challenge.title,
+                        current_step: 0,
+                        total_steps: this.activeChallenge.stepsTotal,
+                        progress_percentage: 0,
+                        event: 'challenge_started'
+                    });
+                }
+            }
+
+            updateActiveChallengeInSidebar(challenge) {
+                // Show the active challenge section
+                const challengeSection = document.getElementById('active-challenge-section');
+                if (challengeSection) {
+                    challengeSection.style.display = 'block';
+                }
+                
+                // Update challenge name
+                const challengeName = document.getElementById('active-challenge-name');
+                if (challengeName) {
+                    challengeName.textContent = challenge.title;
+                }
+                
+                // Update difficulty badge
+                const difficultyBadge = document.getElementById('active-challenge-difficulty');
+                if (difficultyBadge) {
+                    const level = challenge.level || 1;
+                    const stars = '⭐'.repeat(level);
+                    difficultyBadge.textContent = `Level ${level} ${stars}`;
+                }
+                
+                // Reset progress
+                const progressFill = document.getElementById('active-challenge-progress-fill');
+                if (progressFill) {
+                    progressFill.style.width = '0%';
+                }
+                
+                // Update steps
+                const stepsCompleted = document.getElementById('challenge-steps-completed');
+                const stepsTotal = document.getElementById('challenge-steps-total');
+                if (stepsCompleted) stepsCompleted.textContent = '0';
+                if (stepsTotal) stepsTotal.textContent = challenge.steps || '5';
+                
+                // Update XP reward
+                const xpReward = document.getElementById('challenge-xp-reward');
+                if (xpReward) {
+                    xpReward.textContent = challenge.xp || '50';
+                }
+            }
+
+            updateChallengeProgress(stepsCompleted, stepsTotal, progressPercentage) {
+                if (!this.activeChallenge) return;
+                
+                // Update active challenge tracking
+                this.activeChallenge.stepsCompleted = stepsCompleted;
+                this.activeChallenge.stepsTotal = stepsTotal;
+                
+                // Update sidebar UI
+                const stepsCompletedEl = document.getElementById('challenge-steps-completed');
+                const stepsTotalEl = document.getElementById('challenge-steps-total');
+                const progressFill = document.getElementById('active-challenge-progress-fill');
+                
+                if (stepsCompletedEl) stepsCompletedEl.textContent = stepsCompleted;
+                if (stepsTotalEl) stepsTotalEl.textContent = stepsTotal;
+                if (progressFill) {
+                    progressFill.style.width = `${progressPercentage}%`;
+                }
+                
+                // Save progress
+                this.saveProgress();
+                
+                // Show notification for milestones
+                if (stepsCompleted > 0 && stepsCompleted % 2 === 0) {
+                    if (window.performanceFeedback) {
+                        window.performanceFeedback.addHint(
+                            `✅ Progress: ${stepsCompleted}/${stepsTotal} steps completed!`,
+                            'success'
+                        );
+                    }
+                }
+            }
+
+            completeActiveChallenge() {
+                if (!this.activeChallenge) return;
+                
+                const challengeId = this.activeChallenge.id;
+                const challenge = this.activeChallenge.challenge;
+                
+                // Complete the challenge
+                const completed = this.completeChallenge(challengeId);
+                
+                if (completed) {
+                    // Update sidebar to show completion
+                    const progressFill = document.getElementById('active-challenge-progress-fill');
+                    if (progressFill) {
+                        progressFill.style.width = '100%';
+                    }
+                    
+                    // Calculate time taken
+                    const timeTaken = Date.now() - this.activeChallenge.startTime;
+                    const secondsTaken = Math.floor(timeTaken / 1000);
+                    
+                    // Check for speed bonus
+                    if (secondsTaken < 300) { // Under 5 minutes
+                        this.trackAction('speed_bonus');
+                    }
+                    
+                    // Hide active challenge section after a delay
+                    setTimeout(() => {
+                        const challengeSection = document.getElementById('active-challenge-section');
+                        if (challengeSection) {
+                            challengeSection.style.display = 'none';
+                        }
+                    }, 5000);
+                    
+                    // Clear active challenge
+                    this.activeChallenge = null;
+                    this.saveProgress();
+                    
+                    // Send completion event via WebSocket
+                    if (window.socketClient) {
+                        window.socketClient.sendTroubleshootingProgress({
+                            challenge_id: challengeId,
+                            challenge_name: challenge.title,
+                            progress_percentage: 100,
+                            time_taken: secondsTaken,
+                            event: 'challenge_completed'
+                        });
+                    }
+                }
+            }
+
+            startChallenge(challengeId) {
+                const challenge = this.challenges.find(c => c.id === challengeId);
+                if (!challenge || !challenge.unlocked || this.completedChallenges.has(challengeId)) {
+                    return;
+                }
+                
+                console.log(`🎯 Starting challenge: ${challenge.title}`);
+                
+                // Update the performance sidebar with active challenge info
+                this.updateActiveChallengeInSidebar(challenge);
+                
                 // Close challenges modal
                 closeChallengesModal();
                 
@@ -16300,6 +16679,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('🎮 Network Level System fully integrated!');
             }, 1000);
         });
+        
+        // Helper function to manually update challenge progress (for integration with Link Up challenges)
+        window.updateChallengeProgress = function(challengeId, currentStep, totalSteps, stepName) {
+            if (!window.networkLevelSystem) {
+                console.warn('Network Level System not initialized');
+                return;
+            }
+            
+            const progressPercentage = Math.round((currentStep / totalSteps) * 100);
+            
+            // Update sidebar
+            window.networkLevelSystem.updateChallengeProgress(currentStep, totalSteps, progressPercentage);
+            
+            // Send WebSocket event if connected
+            if (window.socketClient) {
+                window.socketClient.sendTroubleshootingProgress({
+                    challenge_id: challengeId,
+                    current_step: currentStep,
+                    total_steps: totalSteps,
+                    progress_percentage: progressPercentage,
+                    step_completed: true,
+                    step_number: currentStep,
+                    step_name: stepName || `Step ${currentStep}`,
+                    event: 'progress_update'
+                });
+            }
+            
+            console.log(`📊 Challenge progress updated: ${currentStep}/${totalSteps} (${progressPercentage}%)`);
+        };
+        
+        // Helper function to mark challenge as complete
+        window.completeLinkUpChallenge = function(challengeId, challengeName) {
+            if (!window.networkLevelSystem) {
+                console.warn('Network Level System not initialized');
+                return;
+            }
+            
+            // Mark as complete
+            window.networkLevelSystem.completeActiveChallenge();
+            
+            console.log(`✅ Challenge completed: ${challengeName}`);
+        };
 
         // Export for global access
         window.openChallengesModal = openChallengesModal;
@@ -16333,10 +16754,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             topologyCtx = topologyCanvas.getContext('2d');
             
-            // Load device images
-            topologyImages.router.src = '{{ url_for("static", filename="img/Router.png") }}';
-            topologyImages.switch.src = '{{ url_for("static", filename="img/Switch.png") }}';
-            topologyImages.pc.src = '{{ url_for("static", filename="img/PC.png") }}';
+            // No need to load device images - using Font Awesome icons instead
+            // Icons are rendered directly on canvas using Unicode characters
 
             // Set up canvas event listeners
             setupTopologyCanvasEvents();

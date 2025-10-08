@@ -448,37 +448,58 @@
 </style>
 {% endblock %}
 
-{% block extra_js %}
+{% block body %}
+{{ super() }}
 <script>
 let currentFileData = null;
 let loadingModal = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 RNet Viewer initialized');
+    
     // Initialize modal functionality without Bootstrap
     const loadingModalElement = document.getElementById('loadingModal');
+    console.log('📋 Loading modal element:', loadingModalElement ? 'Found' : 'NOT FOUND');
+    
     loadingModal = {
         show: function() {
+            console.log('⏳ Showing loading modal');
             loadingModalElement.style.display = 'flex';
         },
         hide: function() {
+            console.log('✅ Hiding loading modal');
             loadingModalElement.style.display = 'none';
         }
     };
     
     // Attach file input event listener
     const fileInput = document.getElementById('rnet-file-input');
+    console.log('📁 File input element:', fileInput ? 'Found' : 'NOT FOUND');
+    
     if (fileInput) {
         fileInput.addEventListener('change', handleFileSelect);
+        console.log('✅ File input change listener attached');
+    } else {
+        console.error('❌ File input element not found!');
     }
+    
+    console.log('🎯 Current page URL:', window.location.href);
+    console.log('🔗 API endpoint will be:', '/rnet/api/parse');
 });
 
 function handleFileDrop(event) {
+    console.log('📥 File drop event triggered');
     event.preventDefault();
     event.stopPropagation();
     
     const files = event.dataTransfer.files;
+    console.log('📁 Files dropped:', files.length);
+    
     if (files.length > 0) {
+        console.log('📄 Processing file:', files[0].name, 'Size:', files[0].size, 'bytes');
         handleFile(files[0]);
+    } else {
+        console.warn('⚠️ No files in drop event');
     }
     
     // Remove drag styling
@@ -486,6 +507,7 @@ function handleFileDrop(event) {
 }
 
 function handleDragOver(event) {
+    console.log('🎯 Drag over event');
     event.preventDefault();
     event.stopPropagation();
     event.target.classList.add('drag-over');
@@ -498,66 +520,137 @@ function handleDragLeave(event) {
 }
 
 function handleFileSelect(event) {
+    console.log('📂 File select event triggered');
+    console.log('📋 Event target:', event.target);
+    console.log('📁 Files in input:', event.target.files.length);
+    
     const file = event.target.files[0];
     if (file) {
+        console.log('✅ File selected:', {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: new Date(file.lastModified).toISOString()
+        });
         handleFile(file);
+    } else {
+        console.error('❌ No file selected');
     }
 }
 
 function handleFile(file) {
+    console.log('🔍 handleFile called with:', file);
+    
     if (!file.name.toLowerCase().endsWith('.rnet')) {
+        console.error('❌ Invalid file extension:', file.name);
         showAlert('Please select a valid .rnet file', 'danger');
         return;
     }
     
+    console.log('✅ File validation passed');
+    
     const formData = new FormData();
     formData.append('file', file);
+    console.log('📦 FormData created with file:', file.name);
     
     // Show loading
+    console.log('⏳ Showing loading modal');
     loadingModal.show();
     
-    fetch('/rnet/api/parse', {
+    const apiUrl = '/rnet/api/parse';
+    console.log('🌐 Sending POST request to:', apiUrl);
+    console.log('📤 Request details:', {
+        method: 'POST',
+        contentType: 'multipart/form-data',
+        fileSize: file.size,
+        fileName: file.name
+    });
+    
+    fetch(apiUrl, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📨 Response received:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+        });
+        
+        if (!response.ok) {
+            console.error('❌ Response not OK:', response.status, response.statusText);
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        console.log('📦 Response data received:', data);
         loadingModal.hide();
         
         if (data.success) {
+            console.log('✅ File parsed successfully');
+            console.log('📋 File data:', JSON.stringify(data, null, 2));
             currentFileData = data;
             displayFileData(data);
         } else {
+            console.error('❌ Parse failed:', data.error);
             showAlert(data.error || 'Failed to parse file', 'danger');
         }
     })
     .catch(error => {
+        console.error('❌ Fetch error occurred:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         loadingModal.hide();
         showAlert('Error processing file: ' + error.message, 'danger');
     });
 }
 
 function displayFileData(data) {
+    console.log('🎨 displayFileData called with:', data);
+    
+    const uploadSection = document.getElementById('upload-section');
+    const displaySection = document.getElementById('display-section');
+    
+    console.log('📋 Upload section:', uploadSection ? 'Found' : 'NOT FOUND');
+    console.log('📋 Display section:', displaySection ? 'Found' : 'NOT FOUND');
+    
     // Hide upload section, show display section
-    document.getElementById('upload-section').classList.add('hidden');
-    document.getElementById('display-section').classList.remove('hidden');
+    uploadSection.classList.add('hidden');
+    displaySection.classList.remove('hidden');
+    console.log('✅ Sections toggled - upload hidden, display shown');
     
     // Populate file information
+    console.log('📝 Displaying file info...');
     displayFileInfo(data.file_info);
+    
+    console.log('📝 Displaying simulation info...');
     displaySimulationInfo(data.simulation_info);
+    
+    console.log('📝 Displaying export metadata...');
     displayExportMetadata(data.export_metadata);
     
     // Handle QR code
     if (data.verification_info && data.verification_info.qr_code_included) {
+        console.log('🔲 QR code found, displaying...');
         displayQRCode(data.verification_info);
     } else {
+        console.log('⚠️ No QR code found, hiding QR section');
         document.getElementById('qr-section').classList.add('hidden');
     }
+    
+    console.log('✅ displayFileData completed');
 }
 
 function displayFileInfo(fileInfo) {
+    console.log('📝 displayFileInfo called with:', fileInfo);
     const content = document.getElementById('file-info-content');
-    content.innerHTML = `
+    console.log('📋 file-info-content element:', content ? 'Found' : 'NOT FOUND');
+    
+    const html = `
         <div class="detail-item">
             <div class="label">Filename</div>
             <div class="value">${fileInfo.filename || 'Unknown'}</div>
@@ -574,11 +667,17 @@ function displayFileInfo(fileInfo) {
             </div>
         </div>
     `;
+    
+    content.innerHTML = html;
+    console.log('✅ File info HTML set');
 }
 
 function displaySimulationInfo(simInfo) {
+    console.log('📝 displaySimulationInfo called with:', simInfo);
     const content = document.getElementById('simulation-info-content');
-    content.innerHTML = `
+    console.log('📋 simulation-info-content element:', content ? 'Found' : 'NOT FOUND');
+    
+    const html = `
         <div class="detail-item">
             <div class="label">Simulation Title</div>
             <div class="value">${simInfo.title || 'Untitled Simulation'}</div>
@@ -598,30 +697,48 @@ function displaySimulationInfo(simInfo) {
             <div class="value">${simInfo.estimated_duration || 30} minutes</div>
         </div>
     `;
+    
+    content.innerHTML = html;
+    console.log('✅ Simulation info HTML set');
 }
 
 function displayQRCode(verificationInfo) {
+    console.log('🔲 displayQRCode called with:', verificationInfo);
     const qrImage = document.getElementById('qr-code-image');
     const instructions = document.getElementById('qr-instructions');
     
+    console.log('📋 qr-code-image element:', qrImage ? 'Found' : 'NOT FOUND');
+    console.log('📋 qr-instructions element:', instructions ? 'Found' : 'NOT FOUND');
+    console.log('📋 QR code base64 length:', verificationInfo.qr_code_base64 ? verificationInfo.qr_code_base64.length : 0);
+    
     // Set QR code image
-    qrImage.src = `data:image/png;base64,${verificationInfo.qr_code_base64}`;
+    const qrDataUrl = `data:image/png;base64,${verificationInfo.qr_code_base64}`;
+    qrImage.src = qrDataUrl;
+    console.log('✅ QR code image src set, length:', qrDataUrl.length);
     
     // Update instructions
     if (verificationInfo.instructions) {
         instructions.textContent = verificationInfo.instructions;
+        console.log('✅ Instructions updated:', verificationInfo.instructions);
     }
     
     // Store confirmation URL for later use
     window.currentConfirmationUrl = verificationInfo.confirmation_url;
+    console.log('✅ Confirmation URL stored:', window.currentConfirmationUrl);
 }
 
 function displayExportMetadata(metadata) {
+    console.log('📝 displayExportMetadata called with:', metadata);
     const content = document.getElementById('export-metadata-content');
+    console.log('📋 export-metadata-content element:', content ? 'Found' : 'NOT FOUND');
+    
     if (!metadata || Object.keys(metadata).length === 0) {
+        console.log('⚠️ No metadata to display');
         content.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 24px;">No additional metadata available</p>';
         return;
     }
+    
+    console.log('📋 Metadata keys:', Object.keys(metadata));
     
     let metadataHtml = '';
     Object.entries(metadata).forEach(([key, value]) => {
@@ -636,6 +753,7 @@ function displayExportMetadata(metadata) {
     });
     
     content.innerHTML = metadataHtml;
+    console.log('✅ Export metadata HTML set, items count:', Object.keys(metadata).length);
 }
 
 function getDifficultyGradient(difficulty) {

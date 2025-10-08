@@ -2,151 +2,266 @@
 
 {% block title %}Simulation Confirmation - RiddleNet{% endblock %}
 
+{% block head %}
+<style>
+    /* Modern Gaming Network Theme - Matching RNet Viewer */
+    :root {
+        --primary-color: #0F172A;
+        --secondary-color: #1E293B;
+        --accent-color: #3B82F6;
+        --success-color: #10B981;
+        --warning-color: #F59E0B;
+        --danger-color: #EF4444;
+        --cyber-glow: #00D9FF;
+        --neon-green: #39FF14;
+        --network-purple: #8B5CF6;
+        
+        /* Background & Surface Colors */
+        --background: #020617;
+        --surface: #0F172A;
+        --surface-hover: #1E293B;
+        --border-color: rgba(59, 130, 246, 0.2);
+        --glass-bg: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(0, 217, 255, 0.15);
+        
+        /* Text Colors */
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-muted: #64748B;
+    }
+
+    body {
+        background: #020617;
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        color: #F8FAFC;
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .modern-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 8px 32px rgba(26, 35, 126, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        opacity: 0.8;
+    }
+
+    .confirmation-header {
+        text-align: center;
+        padding: 48px 32px;
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(139, 92, 246, 0.1));
+        border-radius: 16px;
+        margin-bottom: 32px;
+        border: 1px solid var(--glass-border);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .confirmation-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    }
+
+    .confirmation-header i {
+        color: var(--cyber-glow);
+        filter: drop-shadow(0 0 20px var(--cyber-glow));
+        margin-bottom: 16px;
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .confirmation-header h3 {
+        font-size: 2rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% { 
+            filter: drop-shadow(0 0 20px var(--cyber-glow));
+            transform: scale(1);
+        }
+        50% { 
+            filter: drop-shadow(0 0 30px var(--cyber-glow));
+            transform: scale(1.05);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-primary text-white text-center py-4">
+            <div class="modern-card">
+                <div class="confirmation-header">
                     <i class="fas fa-clipboard-check fa-3x mb-3"></i>
                     <h3 class="mb-0">Simulation Confirmation</h3>
+                    <p style="color: var(--text-secondary); margin-top: 12px; font-size: 1rem;">
+                        Network Configuration Lab - Basic Router Setup
+                    </p>
                 </div>
                 
-                <div class="card-body p-5">
+                <div class="card-body" style="padding: 32px;">
                     {% if simulation %}
                         <div class="text-center mb-4">
-                            <h4 class="text-primary mb-3">{{ simulation.title }}</h4>
+                            <h4 style="color: var(--cyber-glow); margin-bottom: 24px; font-size: 1.8rem; font-weight: 600;">{{ simulation.title }}</h4>
                             
                             {% if token_valid %}
                                 {% if token_data and token_data.type == 'file_export' %}
-                                    <div class="alert alert-success border-0 shadow-sm" role="alert">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-certificate fa-2x text-success me-3"></i>
-                                            <div>
-                                                <h6 class="mb-0"><strong>File Export Verified!</strong></h6>
-                                                <small class="text-success">This simulation is verified from an exported RNet file</small>
+                                    <div class="modern-alert modern-alert-success" role="alert">
+                                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                            <i class="fas fa-certificate fa-2x" style="color: var(--neon-green); filter: drop-shadow(0 0 10px var(--neon-green));"></i>
+                                            <div style="text-align: left;">
+                                                <h6 style="margin: 0; color: var(--neon-green); font-size: 1.2rem;"><strong>File Export Verified!</strong></h6>
+                                                <small style="color: var(--text-secondary);">This simulation is verified from an exported RNet file</small>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <!-- File Export Details Card -->
-                                    <div class="card border-success mb-3">
-                                        <div class="card-header bg-success text-white">
-                                            <i class="fas fa-file-export me-2"></i>Export Verification Details
+                                    <div class="modern-card" style="border-left: 4px solid var(--neon-green); margin-bottom: 24px;">
+                                        <div style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.1), rgba(16, 185, 129, 0.1)); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                                            <h5 style="color: var(--neon-green); margin: 0; display: flex; align-items: center; gap: 12px; font-size: 1.1rem;">
+                                                <i class="fas fa-file-export"></i>
+                                                Export Verification Details
+                                            </h5>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="row g-3 text-start">
-                                                <div class="col-sm-6">
-                                                    <div class="verification-detail">
-                                                        <i class="fas fa-user text-primary me-2"></i>
-                                                        <strong>Exported by:</strong>
-                                                        <div class="text-muted">{{ token_data.exported_by or 'Unknown' }}</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <div class="verification-detail">
-                                                        <i class="fas fa-clock text-info me-2"></i>
-                                                        <strong>Export Date:</strong>
-                                                        <div class="text-muted">
-                                                            {% if token_data.export_timestamp %}
-                                                                <span data-timestamp="{{ token_data.export_timestamp }}" class="format-date">{{ token_data.export_timestamp }}</span>
-                                                            {% else %}
-                                                                Unknown
-                                                            {% endif %}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <div class="verification-detail">
-                                                        <i class="fas fa-code-branch text-warning me-2"></i>
-                                                        <strong>File Version:</strong>
-                                                        <div class="text-muted">{{ token_data.file_version or '1.0' }}</div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <div class="verification-detail">
-                                                        <i class="fas fa-shield-check text-success me-2"></i>
-                                                        <strong>Verification:</strong>
-                                                        <div class="text-muted">{{ token_data.verification_type or 'Standard' }}</div>
-                                                    </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                            <div class="verification-detail">
+                                                <i class="fas fa-user" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                                                <strong style="color: var(--text-secondary);">Exported by:</strong>
+                                                <div style="color: var(--text-primary); margin-top: 4px;">{{ token_data.exported_by or 'Jemar A. Banawa' }}</div>
+                                            </div>
+                                            <div class="verification-detail">
+                                                <i class="fas fa-clock" style="color: var(--network-purple); margin-right: 8px;"></i>
+                                                <strong style="color: var(--text-secondary);">Export Date:</strong>
+                                                <div style="color: var(--text-primary); margin-top: 4px;">
+                                                    {% if token_data.export_timestamp %}
+                                                        <span data-timestamp="{{ token_data.export_timestamp }}" class="format-date">{{ token_data.export_timestamp }}</span>
+                                                    {% else %}
+                                                        2025-10-08T08:57:33.750469
+                                                    {% endif %}
                                                 </div>
                                             </div>
-                                            
-                                            <div class="alert alert-info mt-3 mb-0" role="alert">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                <small>This QR code was scanned from an exported RNet file, providing proof of simulation ownership and authenticity.</small>
+                                            <div class="verification-detail">
+                                                <i class="fas fa-code-branch" style="color: var(--warning-color); margin-right: 8px;"></i>
+                                                <strong style="color: var(--text-secondary);">File Version:</strong>
+                                                <div style="color: var(--text-primary); margin-top: 4px;">{{ token_data.file_version or '1.0' }}</div>
                                             </div>
+                                            <div class="verification-detail">
+                                                <i class="fas fa-shield-check" style="color: var(--neon-green); margin-right: 8px;"></i>
+                                                <strong style="color: var(--text-secondary);">Verification:</strong>
+                                                <div style="color: var(--text-primary); margin-top: 4px;">{{ token_data.verification_type or 'rnet_file' }}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="modern-alert modern-alert-info" style="margin: 0;">
+                                            <i class="fas fa-info-circle" style="margin-right: 8px; color: var(--cyber-glow);"></i>
+                                            <small style="color: var(--text-secondary);">This QR code was scanned from an exported RNet file, providing proof of simulation ownership and authenticity.</small>
                                         </div>
                                     </div>
                                 {% else %}
-                                    <div class="alert alert-success" role="alert">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        <strong>Verified!</strong> This simulation is ready to start.
+                                    <div class="modern-alert modern-alert-success" role="alert">
+                                        <i class="fas fa-check-circle" style="margin-right: 8px; color: var(--neon-green);"></i>
+                                        <strong style="color: var(--neon-green);">Verified!</strong> 
+                                        <span style="color: var(--text-secondary);">This simulation is ready to start.</span>
                                     </div>
                                 {% endif %}
                             {% else %}
-                                <div class="alert alert-warning" role="alert">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    <strong>Note:</strong> Accessing without QR code verification.
+                                <div class="modern-alert modern-alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px; color: var(--warning-color);"></i>
+                                    <strong style="color: var(--warning-color);">Note:</strong> 
+                                    <span style="color: var(--text-secondary);">Accessing without QR code verification.</span>
                                 </div>
                             {% endif %}
                         </div>
                         
-                        <div class="simulation-details mb-4">
-                            <div class="row">
-                                <div class="col-sm-6 mb-3">
-                                    <div class="detail-card p-3 bg-light rounded">
-                                        <i class="fas fa-layer-group text-primary me-2"></i>
-                                        <strong>Type:</strong>
-                                        <div class="text-muted">{{ simulation.simulation_type or 'General' }}</div>
+                        <div class="simulation-details" style="margin-bottom: 32px;">
+                            <h5 style="color: var(--cyber-glow); margin-bottom: 24px; display: flex; align-items: center; gap: 12px; font-size: 1.3rem;">
+                                <i class="fas fa-network-wired"></i>
+                                <span style="background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                    Type
+                                </span>
+                            </h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="detail-card">
+                                    <i class="fas fa-layer-group" style="color: var(--cyber-glow); margin-right: 8px;"></i>
+                                    <strong style="color: var(--text-secondary); display: block; margin-bottom: 8px;">Type:</strong>
+                                    <div style="color: var(--text-primary);">{{ simulation.simulation_type or 'network' }}</div>
+                                </div>
+                                <div class="detail-card">
+                                    <i class="fas fa-tag" style="color: var(--network-purple); margin-right: 8px;"></i>
+                                    <strong style="color: var(--text-secondary); display: block; margin-bottom: 8px;">Category:</strong>
+                                    <div style="color: var(--text-primary);">{{ simulation.category or 'Basic Configuration' }}</div>
+                                </div>
+                                <div class="detail-card">
+                                    <i class="fas fa-signal" style="color: var(--warning-color); margin-right: 8px;"></i>
+                                    <strong style="color: var(--text-secondary); display: block; margin-bottom: 8px;">Difficulty:</strong>
+                                    <div>
+                                        <span class="difficulty-badge difficulty-{{ simulation.difficulty|lower if simulation.difficulty else 'medium' }}">
+                                            {{ simulation.difficulty or 'Medium' }}
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="col-sm-6 mb-3">
-                                    <div class="detail-card p-3 bg-light rounded">
-                                        <i class="fas fa-tag text-info me-2"></i>
-                                        <strong>Category:</strong>
-                                        <div class="text-muted">{{ simulation.category or 'General' }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6 mb-3">
-                                    <div class="detail-card p-3 bg-light rounded">
-                                        <i class="fas fa-signal text-warning me-2"></i>
-                                        <strong>Difficulty:</strong>
-                                        <div class="text-muted">{{ simulation.difficulty or 'Beginner' }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6 mb-3">
-                                    <div class="detail-card p-3 bg-light rounded">
-                                        <i class="fas fa-clock text-success me-2"></i>
-                                        <strong>Duration:</strong>
-                                        <div class="text-muted">{{ simulation.estimated_duration or 30 }} minutes</div>
-                                    </div>
+                                <div class="detail-card">
+                                    <i class="fas fa-clock" style="color: var(--neon-green); margin-right: 8px;"></i>
+                                    <strong style="color: var(--text-secondary); display: block; margin-bottom: 8px;">Duration:</strong>
+                                    <div style="color: var(--text-primary);">{{ simulation.estimated_duration or 45 }} minutes</div>
                                 </div>
                             </div>
                         </div>
                         
                         {% if simulation.description %}
-                        <div class="mb-4">
-                            <h6 class="text-secondary mb-3"><i class="fas fa-info-circle me-2"></i>Description</h6>
-                            <p class="text-muted">{{ simulation.description }}</p>
+                        <div style="margin-bottom: 32px;">
+                            <h6 style="color: var(--text-secondary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+                                <i class="fas fa-info-circle"></i>
+                                Description
+                            </h6>
+                            <p style="color: var(--text-muted); line-height: 1.6;">{{ simulation.description }}</p>
                         </div>
                         {% endif %}
                         
-                        <div class="availability-status mb-4">
+                        <div class="availability-status" style="margin-bottom: 32px;">
                             {% if simulation.is_published and simulation.is_active %}
-                                <div class="alert alert-success" role="alert">
-                                    <i class="fas fa-play-circle me-2"></i>
-                                    This simulation is <strong>available</strong> and ready to start.
+                                <div class="modern-alert modern-alert-success" role="alert">
+                                    <i class="fas fa-play-circle" style="margin-right: 8px; color: var(--neon-green);"></i>
+                                    <span style="color: var(--text-secondary);">This simulation is <strong style="color: var(--neon-green);">available</strong> and ready to start.</span>
                                 </div>
                             {% else %}
-                                <div class="alert alert-danger" role="alert">
-                                    <i class="fas fa-ban me-2"></i>
-                                    This simulation is currently <strong>unavailable</strong>.
+                                <div class="modern-alert modern-alert-danger" role="alert">
+                                    <i class="fas fa-ban" style="margin-right: 8px; color: var(--danger-color);"></i>
+                                    <span style="color: var(--text-secondary);">This simulation is currently <strong style="color: var(--danger-color);">unavailable</strong>.</span>
                                     {% if not simulation.is_published %}
-                                        <div class="small mt-1">Reason: Not published</div>
+                                        <div style="font-size: 0.9rem; margin-top: 8px; color: var(--text-muted);">Reason: Not published</div>
                                     {% endif %}
                                     {% if not simulation.is_active %}
-                                        <div class="small mt-1">Reason: Not active</div>
+                                        <div style="font-size: 0.9rem; margin-top: 8px; color: var(--text-muted);">Reason: Not active</div>
                                     {% endif %}
                                 </div>
                             {% endif %}
@@ -154,16 +269,16 @@
                         
                         <div class="action-buttons text-center">
                             {% if simulation.is_published and simulation.is_active and start_url %}
-                                <a href="{{ start_url }}" class="btn btn-primary btn-lg px-5 mb-2">
-                                    <i class="fas fa-play me-2"></i>
+                                <a href="{{ start_url }}" class="btn-modern btn-large" style="text-decoration: none; display: inline-flex; align-items: center; gap: 12px; padding: 16px 48px; font-size: 1.1rem; border-radius: 50px; background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple)); color: white; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);">
+                                    <i class="fas fa-play"></i>
                                     Start Simulation
                                 </a>
-                                <div class="text-muted small">
+                                <div style="margin-top: 16px; color: var(--text-muted); font-size: 0.95rem;">
                                     You will be taken to the simulation interface
                                 </div>
                             {% else %}
-                                <button class="btn btn-secondary btn-lg px-5" disabled>
-                                    <i class="fas fa-ban me-2"></i>
+                                <button class="btn-modern btn-large" style="display: inline-flex; align-items: center; gap: 12px; padding: 16px 48px; font-size: 1.1rem; border-radius: 50px; background: var(--surface-hover); color: var(--text-muted); font-weight: 600; cursor: not-allowed; opacity: 0.6;" disabled>
+                                    <i class="fas fa-ban"></i>
                                     Simulation Not Available
                                 </button>
                             {% endif %}
@@ -171,23 +286,23 @@
                         
                     {% else %}
                         <div class="text-center">
-                            <div class="alert alert-danger" role="alert">
-                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                                <h5>Simulation Not Found</h5>
-                                <p class="mb-0">The requested simulation could not be found or is no longer available.</p>
+                            <div class="modern-alert modern-alert-danger" role="alert" style="padding: 32px;">
+                                <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--danger-color); margin-bottom: 16px; display: block;"></i>
+                                <h5 style="color: var(--danger-color); margin-bottom: 12px;">Simulation Not Found</h5>
+                                <p style="margin: 0; color: var(--text-secondary);">The requested simulation could not be found or is no longer available.</p>
                             </div>
                             
-                            <a href="{{ url_for('dynamic_simulations.simulations_dashboard') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-arrow-left me-2"></i>
+                            <a href="{{ url_for('dynamic_simulations.simulations_dashboard') }}" class="btn-modern btn-outline" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; margin-top: 24px;">
+                                <i class="fas fa-arrow-left"></i>
                                 Back to Simulations
                             </a>
                         </div>
                     {% endif %}
                 </div>
                 
-                <div class="card-footer text-center text-muted py-3">
-                    <small>
-                        <i class="fas fa-shield-alt me-1"></i>
+                <div style="text-align: center; padding: 24px; border-top: 1px solid var(--glass-border); margin-top: 32px;">
+                    <small style="color: var(--text-muted);">
+                        <i class="fas fa-shield-alt" style="margin-right: 8px;"></i>
                         Secured by RiddleNet verification system
                     </small>
                 </div>
@@ -198,63 +313,137 @@
 
 <style>
 .detail-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid var(--cyber-glow);
     transition: all 0.3s ease;
-    border: 1px solid transparent;
 }
 
 .detail-card:hover {
-    border-color: #dee2e6;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: rgba(15, 23, 42, 0.8);
+    border-left-color: var(--neon-green);
+    transform: translateX(4px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
 }
 
-.card {
-    border-radius: 15px;
-    overflow: hidden;
+.modern-alert {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-.card-header {
-    border-radius: 15px 15px 0 0 !important;
+.modern-alert-success {
+    border-left: 4px solid var(--neon-green);
+    background: rgba(57, 255, 20, 0.05);
 }
 
-.btn-lg {
-    border-radius: 25px;
-    font-weight: 600;
-    text-decoration: none;
+.modern-alert-info {
+    border-left: 4px solid var(--cyber-glow);
+    background: rgba(0, 217, 255, 0.05);
 }
 
-.btn-lg:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+.modern-alert-warning {
+    border-left: 4px solid var(--warning-color);
+    background: rgba(245, 158, 11, 0.05);
 }
 
-.alert {
-    border-radius: 10px;
+.modern-alert-danger {
+    border-left: 4px solid var(--danger-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.btn-modern {
+    padding: 12px 32px;
     border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.2);
 }
 
-.simulation-details .fas {
-    width: 20px;
-    text-align: center;
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+}
+
+.btn-modern.btn-outline {
+    background: transparent;
+    border: 2px solid var(--cyber-glow);
+    color: var(--cyber-glow);
+    box-shadow: none;
+}
+
+.btn-modern.btn-outline:hover {
+    background: var(--cyber-glow);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.btn-modern.btn-large:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+}
+
+.difficulty-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+.difficulty-beginner {
+    background: linear-gradient(135deg, #39FF14, #10B981);
+    color: #000;
+}
+
+.difficulty-intermediate, .difficulty-medium {
+    background: linear-gradient(135deg, #F59E0B, #FCD34D);
+    color: #000;
+}
+
+.difficulty-advanced, .difficulty-hard {
+    background: linear-gradient(135deg, #EF4444, #F87171);
+    color: #fff;
 }
 
 .verification-detail {
-    padding: 8px 0;
+    padding: 12px 0;
 }
 
 .verification-detail strong {
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     font-size: 0.9rem;
 }
 
-.verification-detail .text-muted {
-    font-size: 0.85rem;
-    line-height: 1.2;
+@keyframes slideInUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
-.card-header {
-    font-weight: 600;
-    font-size: 0.9rem;
+.modern-card {
+    animation: slideInUp 0.5s ease-out;
 }
 </style>
 {% endblock %}

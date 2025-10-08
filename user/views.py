@@ -452,6 +452,15 @@ def crimping_simulation():
                          title="UTP Cable Crimping Simulation", 
                          user=user)
 
+@user_bp.route('/challenges')
+@user_login_required
+def challenges():
+    """Challenges Hub - Central page for all challenges"""
+    user = UserModel.query.get(session['user_id'])
+    return render_template('user/challenges.html', 
+                         title="Challenges Hub", 
+                         user=user)
+
 @user_bp.route('/osi-simulation')
 @user_login_required
 def osi_simulation():

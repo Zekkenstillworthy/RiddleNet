@@ -565,53 +565,6 @@
     }
     #sidebar.collapsed .user-profile-top .profile-meta {opacity:0;width:0;}
 
-    /* Dropdown Styles */
-    #sidebar .dropdown-toggle::after {
-        content: '◇';
-        margin-left: auto;
-        font-size: 12px;
-        transition: all var(--transition-speed) ease;
-        color: var(--accent-color);
-        font-weight: bold;
-    }
-
-    #sidebar .dropdown-toggle[data-expanded="true"]::after {
-        content: '◆';
-        transform: rotate(180deg);
-        color: var(--cyber-glow);
-    }
-
-    /* Challenge dropdown items styling */
-    .challenge-item {
-        margin-left: 20px;
-        position: relative;
-    }
-
-    .challenge-item::before {
-        content: '';
-        position: absolute;
-        left: -10px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 2px;
-        height: 20px;
-        background: linear-gradient(180deg, var(--cyber-glow), var(--accent-color));
-        border-radius: 0 2px 2px 0;
-        opacity: 0.6;
-    }
-
-    .challenge-item a {
-        padding-left: 16px;
-        font-size: 0.9rem;
-        border-left: 2px solid rgba(0, 212, 255, 0.2);
-        margin-left: 8px;
-    }
-
-    .challenge-item.active::before {
-        box-shadow: 0 0 10px var(--cyber-glow);
-        opacity: 1;
-    }
-
     /* Main Content Area */
     .main-content {
         margin-left: var(--current-sidebar-width) !important; /* MVP FIX: !important to override simulation page styles */
@@ -998,40 +951,13 @@
                 </a>
             </li>
 
-            <li class="nav-item {% if request.endpoint == 'user.crimping_simulation' or request.endpoint == 'user.osi_simulation' or request.endpoint == 'troubleshooting.index' or request.endpoint == 'quiz.index' %}active{% endif %}">
-                <a href="javascript:void(0);" class="dropdown-toggle" onclick="toggleChallengeDropdown(this)">
+            <li class="nav-item {% if request.endpoint == 'user.challenges' or request.endpoint == 'user.crimping_simulation' or request.endpoint == 'user.osi_simulation' or request.endpoint == 'troubleshooting.index' or request.endpoint == 'quiz.index' %}active{% endif %}">
+                <a href="{{ url_for('user.challenges') }}">
                     <i class="fas fa-gamepad"></i>
                     <span>Challenges</span>
                 </a>
             </li>
-            
-            <li class="nav-item challenge-item" {% if request.endpoint == 'user.crimping_simulation' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                <a href="{{ url_for('user.crimping_simulation') }}">
-                    <i class="fas fa-ethernet"></i>
-                    <span>Crimping</span>
-                </a>
-            </li>
-            
-            <li class="nav-item challenge-item" {% if request.endpoint == 'user.osi_simulation' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                <a href="{{ url_for('user.osi_simulation') }}">
-                    <i class="fas fa-network-wired"></i>
-                    <span>OSI Model</span>
-                </a>
-            </li>
-            
-            <li class="nav-item challenge-item" {% if request.endpoint == 'troubleshooting.index' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                <a href="{{ url_for('troubleshooting.index') }}">
-                    <i class="fas fa-tools"></i>
-                    <span>Link Up!</span>
-                </a>
-            </li>
-            
-            <li class="nav-item challenge-item" {% if request.endpoint == 'quiz.index' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                <a href="{{ url_for('quiz.index') }}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Quiz</span>
-                </a>
-            </li>
+
             <li class="nav-item {% if request.endpoint == 'user.profile' %}active{% endif %}">
                 <a href="{{ url_for('user.profile') }}">
                     <i class="fas fa-user-circle"></i>
@@ -1298,73 +1224,6 @@
                 addRippleEffect(this, e);
             });
         });
-
-        // Challenge dropdown functionality
-        function toggleChallengeDropdown(element) {
-            const isExpanded = element.getAttribute('data-expanded') === 'true';
-            element.setAttribute('data-expanded', !isExpanded);
-            
-            const challengeItems = document.querySelectorAll('.challenge-item');
-            
-            // Smooth animation for dropdown items
-            challengeItems.forEach((item, index) => {
-                if (isExpanded) {
-                    setTimeout(() => {
-                        item.style.display = 'none';
-                    }, index * 50);
-                } else {
-                    item.style.display = 'block';
-                    item.style.opacity = '0';
-                    item.style.transform = 'translateX(-10px)';
-                    
-                    setTimeout(() => {
-                        item.style.transition = 'all 0.3s ease';
-                        item.style.opacity = '1';
-                        item.style.transform = 'translateX(0)';
-                    }, index * 50);
-                }
-            });
-            
-            // Add visual feedback to the dropdown toggle
-            element.style.transform = isExpanded ? 'scale(1)' : 'scale(1.05)';
-            setTimeout(() => {
-                element.style.transform = 'scale(1)';
-            }, 150);
-        }
-
-        // Initialize challenge dropdown state on page load
-        window.initializeChallengeDropdown = function() {
-            const challengeLink = document.querySelector('.nav-item a.dropdown-toggle');
-            const challengeItems = document.querySelectorAll('.challenge-item');
-            
-            // Check if any challenge items are active
-            const isChallengeActive = Array.from(challengeItems).some(item => 
-                item.classList.contains('active')
-            );
-            
-            if (isChallengeActive || window.location.pathname.includes('crimping') || window.location.pathname.includes('osi') || window.location.pathname.includes('troubleshooting') || window.location.pathname.includes('/quiz')) {
-                if (challengeLink) {
-                    challengeLink.setAttribute('data-expanded', 'true');
-                    challengeItems.forEach(item => {
-                        item.style.display = 'block';
-                    });
-                }
-            } else {
-                if (challengeLink) {
-                    challengeLink.setAttribute('data-expanded', 'false');
-                    challengeItems.forEach(item => {
-                        item.style.display = 'none';
-                    });
-                }
-            }
-        };
-
-        // Call initialization when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', window.initializeChallengeDropdown);
-        } else {
-            window.initializeChallengeDropdown();
-        }
 
         console.log('RiddleNet User Portal - Sidebar Navigation Loaded Successfully');
     </script>

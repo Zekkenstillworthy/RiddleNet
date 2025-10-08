@@ -151,12 +151,21 @@ document.addEventListener('DOMContentLoaded', function() {
             deviceItem.className = 'palette-item';
             deviceItem.dataset.type = deviceType;
             
-            // Create an image element for the device icon
-            const icon = document.createElement('img');
-            icon.src = `/static/img/network/${deviceType}.png`;
-            icon.alt = deviceType;
+            // Create an icon element using Font Awesome
+            const icon = document.createElement('i');
+            icon.className = getDeviceFontAwesomeIcon(deviceType);
+            icon.style.fontSize = '24px';
+            icon.style.color = getDeviceColor(deviceType);
+            
+            // Add device label
+            const label = document.createElement('span');
+            label.textContent = deviceType.charAt(0).toUpperCase() + deviceType.slice(1);
+            label.style.display = 'block';
+            label.style.fontSize = '10px';
+            label.style.marginTop = '4px';
             
             deviceItem.appendChild(icon);
+            deviceItem.appendChild(label);
             devicePalette.appendChild(deviceItem);
             
             // Add event listener
@@ -170,12 +179,21 @@ document.addEventListener('DOMContentLoaded', function() {
             connItem.className = 'palette-item';
             connItem.dataset.type = connType;
             
-            // Create an image element for the connection icon
-            const icon = document.createElement('img');
-            icon.src = `/static/img/network/${connType}-cable.png`;
-            icon.alt = connType;
+            // Create an icon element using Font Awesome
+            const icon = document.createElement('i');
+            icon.className = getConnectionFontAwesomeIcon(connType);
+            icon.style.fontSize = '24px';
+            icon.style.color = getConnectionColor(connType);
+            
+            // Add connection label
+            const label = document.createElement('span');
+            label.textContent = connType.charAt(0).toUpperCase() + connType.slice(1);
+            label.style.display = 'block';
+            label.style.fontSize = '10px';
+            label.style.marginTop = '4px';
             
             connItem.appendChild(icon);
+            connItem.appendChild(label);
             connectionPalette.appendChild(connItem);
             
             // Add event listener
@@ -267,15 +285,21 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.lineWidth = isSelected ? 3 : (isHovered ? 3 : 2);
         ctx.strokeRect(device.x - size/2, device.y - size/2, size, size);
         
-        // Draw device icon/type indicator
+        // Draw device icon/type indicator with clear text representation
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // Type-based emoji icons for better recognition
-        const iconChar = getDeviceIcon(device.type);
-        ctx.fillText(iconChar, device.x, device.y - 5);
+        // Use clear abbreviated text for device type
+        const deviceLabel = getDeviceShortLabel(device.type);
+        
+        // Draw device type abbreviation
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText(deviceLabel, device.x, device.y - 8);
+        
+        // Draw device icon symbol below
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText(getDeviceSymbol(device.type), device.x, device.y + 6);
         
         // Draw device label with background for readability
         ctx.font = '12px Arial';
@@ -332,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getDeviceIcon(type) {
-        // Return emoji icons for better visual distinction
+        // Return emoji icons for better visual distinction (kept for backward compatibility)
         const iconMap = {
             router: '🔀',
             switch: '🔌',
@@ -349,6 +373,66 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         return iconMap[type.toLowerCase()] || '📦';
+    }
+    
+    function getDeviceCanvasIcon(type) {
+        // Return Font Awesome Unicode characters for canvas rendering
+        const iconMap = {
+            router: '\uf6ff',      // fa-network-wired
+            switch: '\uf233',      // fa-server
+            hub: '\uf542',         // fa-project-diagram
+            pc: '\uf108',          // fa-desktop
+            computer: '\uf108',    // fa-desktop
+            laptop: '\uf109',      // fa-laptop
+            server: '\uf233',      // fa-server
+            printer: '\uf02f',     // fa-print
+            'access-point': '\uf1eb', // fa-wifi
+            firewall: '\uf3ed',    // fa-shield-alt
+            cloud: '\uf0c2',       // fa-cloud
+            internet: '\uf57d'     // fa-globe-americas
+        };
+        
+        return iconMap[type.toLowerCase()] || '\uf2db'; // fa-microchip as default
+    }
+    
+    function getDeviceShortLabel(type) {
+        // Return short text labels for devices
+        const labelMap = {
+            router: 'RTR',
+            switch: 'SW',
+            hub: 'HUB',
+            pc: 'PC',
+            computer: 'PC',
+            laptop: 'LPT',
+            server: 'SRV',
+            printer: 'PRN',
+            'access-point': 'AP',
+            firewall: 'FW',
+            cloud: 'CLD',
+            internet: 'NET'
+        };
+        
+        return labelMap[type.toLowerCase()] || type.substring(0, 3).toUpperCase();
+    }
+    
+    function getDeviceSymbol(type) {
+        // Return simple ASCII symbols for devices
+        const symbolMap = {
+            router: '⟷',
+            switch: '╬',
+            hub: '✦',
+            pc: '▣',
+            computer: '▣',
+            laptop: '▢',
+            server: '▦',
+            printer: '⎙',
+            'access-point': '⚡',
+            firewall: '◈',
+            cloud: '☁',
+            internet: '◯'
+        };
+        
+        return symbolMap[type.toLowerCase()] || '■';
     }
     
     function getDeviceColor(type) {
@@ -494,6 +578,38 @@ document.addEventListener('DOMContentLoaded', function() {
             default:
                 return '#3B82F6'; // Blue
         }
+    }
+    
+    function getDeviceFontAwesomeIcon(type) {
+        // Return Font Awesome icon classes for device types
+        const iconMap = {
+            'router': 'fas fa-network-wired',
+            'switch': 'fas fa-server',
+            'hub': 'fas fa-project-diagram',
+            'pc': 'fas fa-desktop',
+            'computer': 'fas fa-desktop',
+            'laptop': 'fas fa-laptop',
+            'server': 'fas fa-server',
+            'printer': 'fas fa-print',
+            'access-point': 'fas fa-wifi',
+            'firewall': 'fas fa-shield-alt',
+            'cloud': 'fas fa-cloud',
+            'internet': 'fas fa-globe'
+        };
+        
+        return iconMap[type.toLowerCase()] || 'fas fa-microchip';
+    }
+    
+    function getConnectionFontAwesomeIcon(type) {
+        // Return Font Awesome icon classes for connection types
+        const iconMap = {
+            'ethernet': 'fas fa-ethernet',
+            'fiber': 'fas fa-charging-station',
+            'serial': 'fas fa-plug',
+            'wireless': 'fas fa-wifi'
+        };
+        
+        return iconMap[type.toLowerCase()] || 'fas fa-link';
     }
     
     function selectDeviceType(deviceType) {
