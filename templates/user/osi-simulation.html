@@ -1320,6 +1320,7 @@ html, body {
 function selectModel(modelType) {
   document.getElementById('modelSelectionModal').style.display = 'none';
   currentModel = modelType;
+  TOTAL_UNITS = modelType === 'osi' ? TOTAL_UNITS_OSI : TOTAL_UNITS_TCPIP;
   // Switch to the selected model
   switchModel(modelType);
   console.log('Selected model:', modelType);
@@ -1345,6 +1346,7 @@ let correctPlacements = 0; // still tracks layer placements
 let currentModel = 'osi'; // 'osi' or 'tcpip'
 const TOTAL_UNITS_OSI = 14; // 7 layer placements + 7 quiz knowledge units
 const TOTAL_UNITS_TCPIP = 8; // 4 layer placements + 4 quiz knowledge units
+let TOTAL_UNITS = TOTAL_UNITS_OSI; // Default to OSI model
 let unitsCompleted = 0; // increments based on current model
 
 // Debug toggle (set to false for production)
@@ -1871,6 +1873,7 @@ const tcpipLayerQuizzes = {
 // Model switching function (make globally accessible)
 window.switchModel = function(model) {
     currentModel = model;
+    TOTAL_UNITS = model === 'osi' ? TOTAL_UNITS_OSI : TOTAL_UNITS_TCPIP;
     
     // Update button states
     document.querySelectorAll('.model-btn').forEach(btn => {
