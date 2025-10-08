@@ -691,18 +691,17 @@
         }
         
         .device {
-            min-width: var(--device-size-sm); /* 64px */
-            min-height: var(--device-size-sm);
-            margin: 0 var(--space-xs); /* 4px margin */
+            width: 60px;
+            min-height: 85px;
+            margin: 0 4px 8px 0;
         }
         
         .device-icon {
-            width: 36px;
-            height: 36px;
+            font-size: 1.1rem;
         }
         
-        .device span {
-            font-size: var(--font-size-xs); /* 10px */
+        .device-label, .device span {
+            font-size: 0.6rem;
         }
     }
 
@@ -2725,21 +2724,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Remove any inline styles from body and html elements
     function cleanInlineStyles() {
-        // Clean body inline styles
-        if (document.body.hasAttribute('style')) {
+        // Clean body inline styles (with null check)
+        if (document.body && document.body.hasAttribute('style')) {
             console.warn('🧹 Removing inline styles from body:', document.body.getAttribute('style'));
             document.body.removeAttribute('style');
         }
         
-        // Clean html inline styles  
-        if (document.documentElement.hasAttribute('style')) {
+        // Clean html inline styles (with null check)
+        if (document.documentElement && document.documentElement.hasAttribute('style')) {
             console.warn('🧹 Removing inline styles from html:', document.documentElement.getAttribute('style'));
             document.documentElement.removeAttribute('style');
         }
     }
     
-    // Initial cleanup
-    cleanInlineStyles();
+    // Initial cleanup (wait for DOM to be ready)
+    if (document.body) {
+        cleanInlineStyles();
+    } else {
+        document.addEventListener('DOMContentLoaded', cleanInlineStyles);
+    }
     
     // Monitor for any attempts to add inline styles and remove them immediately
     const bodyStyleObserver = new MutationObserver(mutations => {
@@ -2754,11 +2757,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Observe both body and html for style attribute changes
-    bodyStyleObserver.observe(document.body, { attributes: true, attributeFilter: ['style'] });
-    bodyStyleObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    // Observe both body and html for style attribute changes (with null checks)
+    if (document.body) {
+        bodyStyleObserver.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+    }
+    if (document.documentElement) {
+        bodyStyleObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    }
     
-    console.log('✅ Inline style protection active for body & html elements');
+    if (document.body && document.documentElement) {
+        console.log('✅ Inline style protection active for body & html elements');
+    }
 })();
 
 // --- Device Palette Dynamic Adjustment (FIXED - NO INLINE STYLES) ---
@@ -3329,50 +3338,105 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Element visibility utility - only solo mode supported now */
 
     .device {
-        padding: var(--space-sm) var(--space-sm); /* Consistent padding */
-        background: rgba(255, 255, 255, 0.08);
-        margin: 0 var(--space-sm); /* Consistent margin between devices */
-        cursor: pointer;
-        text-align: center;
+        width: 60px;
+        min-height: 85px;
+        height: auto;
+        background: rgba(15, 23, 42, 0.9);
         border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
-        /* transition removed to prevent initial load jitter */
-        position: relative;
-        overflow: hidden;
-        min-width: var(--device-size-md); /* 72px - optimal touch target */
-        min-height: var(--device-size-md); /* 72px - optimal touch target */
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        gap: var(--space-xs); /* 4px gap between icon and text */
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        justify-content: flex-start;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: visible;
+        margin: 0 8px 8px 0;
+        padding: 10px 4px 12px 4px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     .device:hover {
-        background: rgba(0, 217, 255, 0.15);
+        background: rgba(59, 130, 246, 0.2);
         border-color: var(--cyber-glow);
-        /* transform removed to prevent layout shift */
-        box-shadow: 0 4px 16px rgba(0, 217, 255, 0.4);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .device:active {
+        transform: translateY(0);
+        box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
     }
 
     .device-icon {
-        width: 40px; /* Slightly larger for better visibility */
-        height: 40px;
-        margin-bottom: 0; /* Remove margin, use gap instead */
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-        /* transition removed to prevent initial load jitter */
+        font-size: 1.25rem;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        margin: 0;
+        line-height: 1;
+        pointer-events: none; /* Prevent icon from blocking drag events */
     }
 
     .device:hover .device-icon {
-        filter: drop-shadow(0 4px 8px rgba(0, 217, 255, 0.5));
-        /* transform removed to prevent layout shift */
+        color: var(--cyber-glow);
+        transform: scale(1.1);
     }
 
-    .device span {
-        color: var(--contrast-high); /* Enhanced contrast */
-        font-size: var(--font-size-xs); /* 10px - consistent typography */
-        font-weight: 600;
+    .device-label {
+        color: var(--text-secondary, rgba(241, 245, 249, 0.7));
+        font-size: 0.65rem;
+        font-weight: 500;
+        font-family: 'Orbitron', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 100%;
+        text-align: center;
+        transition: all 0.3s ease;
+        pointer-events: none; /* Prevent label from blocking drag events */
+    }
+
+    .device:hover .device-label {
+        color: var(--text-primary, #f1f5f9);
+        opacity: 1;
+    }
+
+    .device-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: var(--text-primary);
+        padding: 0.4rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 1003;
+        margin-bottom: 8px;
+        max-width: 200px;
+        text-align: center;
+    }
+
+    .device:hover .device-tooltip {
+        opacity: 1;
+    }
+
+    /* Legacy span support - map to device-label */
+    .device span:not(.device-label) {
+        color: var(--text-secondary, rgba(241, 245, 249, 0.7));
+        font-size: 0.65rem;
+        font-weight: 500;
         font-family: 'Orbitron', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -3383,9 +3447,9 @@ document.addEventListener('DOMContentLoaded', () => {
         max-width: 100%;
     }
 
-    .device:hover span {
-        color: var(--cyber-glow);
-        text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+    .device:hover span:not(.device-label) {
+        color: var(--text-primary, #f1f5f9);
+        opacity: 1;
     }
 
     /* Enhanced accessibility support */
@@ -6654,44 +6718,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <!-- Device Palette as Bottom Bar (Cisco Packet Tracer Style) -->
     <div id="device-palette">
-            <div class="palette-section left-section">
+            <div class="palette-sectionleft-section">
                 <div class="action-btn" id="challenges-btn">
                     <i class='bx bx-target-lock'></i>
                     <span class="label">Link Up!</span>
-                </div>
-                <div class="action-btn" id="troubleshoot-btn">
-                    <i class='bx bx-check-shield'></i>
-                    <span class="label">Check</span>
                 </div>
             </div>
             <div class="palette-separator"></div>
             <div class="palette-section center-section">
                 <div class="device" draggable="true" data-type="router">
-                    <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon">
-                    <span>Router</span>
+                    <i class="fas fa-project-diagram device-icon"></i>
+                    <span class="device-label">Router</span>
+                    <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                 </div>
                 <div class="device" draggable="true" data-type="switch">
-                    <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon">
-                    <span>Switch</span>
+                    <i class="fas fa-ethernet device-icon"></i>
+                    <span class="device-label">Switch</span>
+                    <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                 </div>
                 <div class="device" draggable="true" data-type="pc">
-                    <img src="{{ url_for('static', filename='img/PC.png') }}" alt="End Device" class="device-icon">
-                    <span>PC</span>
+                    <i class="fas fa-desktop device-icon"></i>
+                    <span class="device-label">PC</span>
+                    <div class="device-tooltip">Desktop Computer - End user device</div>
                 </div>
             </div>
             <div class="palette-separator"></div>
             <div class="palette-section right-section">
-                <div id="connection-mode-btn" class="action-btn">
-                    <i class='bx bx-link'></i>
-                    <span class="label">Connect</span>
+                <div id="wired-connection-btn" class="action-btn" title="Create wired connection (Ethernet)">
+                    <i class='bx bx-network-chart'></i>
+                    <span class="label">Wired</span>
                 </div>
-                <div id="delete-connection-btn" class="action-btn">
-                    <i class='bx bx-unlink'></i>
-                    <span class="label">Remove Link</span>
+                <div id="wireless-connection-btn" class="action-btn" title="Create wireless connection">
+                    <i class='bx bx-wifi'></i>
+                    <span class="label">Wireless</span>
                 </div>
-                <div id="delete-device-btn" class="action-btn">
+                <div id="delete-btn" class="action-btn" title="Remove devices or connections">
                     <i class='bx bx-trash'></i>
-                    <span class="label">Remove Device</span>
+                    <span class="label">Remove</span>
                 </div>
             </div>
         </div>
@@ -7627,7 +7690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Provide contextual hints
                 if (this.metrics.devicesPlaced === 2) {
-                    this.addHint('You can connect devices by clicking the "Connect" button, then clicking two devices.', 'tip');
+                    this.addHint('You can connect devices by clicking the "Wired" or "Wireless" button, then clicking two devices.', 'tip');
                 } else if (this.metrics.devicesPlaced === 3) {
                     this.addHint('Don\'t forget to configure IP addresses for your devices!', 'config');
                 }
@@ -7860,7 +7923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progress < 20) {
                     hint = 'Try dragging devices from the bottom palette onto the canvas to start building your network.';
                 } else if (progress < 40) {
-                    hint = 'Use the "Connect" button to link your devices together. Click two devices to create a connection.';
+                    hint = 'Use the "Wired" or "Wireless" button to link your devices together. Click two devices to create a connection. Wired connections are solid cyan lines, wireless connections are dashed purple lines.';
                 } else if (progress < 60) {
                     hint = 'Double-click on devices to configure their IP addresses and network settings.';
                 } else if (progress < 80) {
@@ -8184,7 +8247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             checkForSmartHints() {
                 // Smart hint logic based on current state
                 if (this.metrics.devicesPlaced === 2 && this.metrics.connectionsMade === 0) {
-                    this.addHint('You can connect devices by clicking the "Connect" button, then clicking two devices.', 'tip');
+                    this.addHint('You can connect devices by clicking the "Wired" or "Wireless" button, then clicking two devices.', 'tip');
                 } else if (this.metrics.devicesPlaced === 3 && this.metrics.configurationsComplete === 0) {
                     this.addHint('Don\'t forget to configure IP addresses for your devices!', 'config');
                 }
@@ -8495,7 +8558,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const palette = document.getElementById("device-palette");
         const canvas = document.getElementById("Canvas");
         const ctx = canvas.getContext("2d");
-        const troubleShoot = document.getElementById("troubleshoot-btn");
 
         let selectedDevice = null;
         let devices = [];
@@ -8589,31 +8651,216 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // DIAGNOSTIC: Log before setup
+        console.log('🔍 DIAGNOSTIC: About to setup drag and drop. ReadyState:', document.readyState);
 
+        // Setup drag and drop - run immediately or wait for DOM ready
+        function setupDragAndDrop() {
+            console.log('🔍 DIAGNOSTIC: setupDragAndDrop() function called');
+            
+            // Check device palette
+            const devicePalette = document.getElementById('device-palette');
+            console.log('🎨 Device Palette Element:', devicePalette);
+            console.log('🎨 Device Palette Display:', devicePalette ? window.getComputedStyle(devicePalette).display : 'N/A');
+            console.log('🎨 Device Palette Visibility:', devicePalette ? window.getComputedStyle(devicePalette).visibility : 'N/A');
+            
+            // Add event listeners for draggable devices
+            const deviceElements = document.querySelectorAll(".device");
+            console.log('🔧 Setting up drag and drop for devices:', deviceElements.length, 'devices found');
+            console.log('🔍 Device elements details:', Array.from(deviceElements).map(el => ({
+                type: el.getAttribute('data-type'),
+                draggable: el.draggable,
+                className: el.className,
+                visible: el.offsetParent !== null
+            })));
+            
+            if (deviceElements.length === 0) {
+                console.error('❌ No .device elements found in DOM!');
+                console.log('🔍 Checking device palette container...');
+                const palette = document.getElementById('device-palette');
+                console.log('Device palette exists:', !!palette);
+                if (palette) {
+                    console.log('Device palette children:', palette.children.length);
+                    console.log('Device palette HTML (first 500 chars):', palette.innerHTML.substring(0, 500));
+                    console.log('Device palette computed styles:', {
+                        display: window.getComputedStyle(palette).display,
+                        visibility: window.getComputedStyle(palette).visibility,
+                        opacity: window.getComputedStyle(palette).opacity,
+                        position: window.getComputedStyle(palette).position,
+                        bottom: window.getComputedStyle(palette).bottom,
+                        zIndex: window.getComputedStyle(palette).zIndex
+                    });
+                }
+            }
+            
+            deviceElements.forEach((el, index) => {
+                console.log(`  📦 Device ${index + 1}:`, {
+                    element: el,
+                    dataType: el.getAttribute('data-type'),
+                    draggable: el.draggable,
+                    children: el.children.length,
+                    offsetParent: el.offsetParent,
+                    visible: el.offsetParent !== null
+                });
+                
+                // Add drag event listeners
+                el.addEventListener("dragstart", handleDragStart);
+                el.addEventListener("dragend", handleDragEnd);
+                
+                // Add additional debug listeners
+                el.addEventListener("mousedown", (e) => {
+                    console.log('🖱️ MOUSEDOWN on device:', {
+                        type: el.getAttribute('data-type'),
+                        target: e.target,
+                        button: e.button
+                    });
+                });
+                
+                el.addEventListener("drag", (e) => {
+                    console.log('🔄 DRAG event:', {
+                        type: el.getAttribute('data-type'),
+                        clientX: e.clientX,
+                        clientY: e.clientY
+                    });
+                }, { once: true }); // Only log once per drag to avoid spam
+            });
+            
+            console.log('✅ setupDragAndDrop() completed');
+        }
 
-        // Add event listeners for draggable devices
-        const deviceElements = document.querySelectorAll(".device");
-        deviceElements.forEach(el => {
-            el.addEventListener("dragstart", handleDragStart);
-        });
+        // Run setup when DOM is ready (handles both states)
+        console.log('🔍 DIAGNOSTIC: Checking readyState...');
+        if (document.readyState === 'loading') {
+            // DOM is still loading, wait for it
+            console.log('🔍 DIAGNOSTIC: DOM loading, adding DOMContentLoaded listener');
+            document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+        } else {
+            // DOM already loaded, run immediately
+            console.log('🔍 DIAGNOSTIC: DOM ready, running setupDragAndDrop immediately');
+            setupDragAndDrop();
+        }
 
-
+        // Add comprehensive device palette debug function
+        window.debugDeviceDragDrop = function() {
+            console.log('🔍 === DEVICE DRAG & DROP DEBUG REPORT ===');
+            
+            const devicePalette = document.getElementById('device-palette');
+            console.log('📦 Device Palette:', {
+                exists: !!devicePalette,
+                display: devicePalette ? window.getComputedStyle(devicePalette).display : 'N/A',
+                visibility: devicePalette ? window.getComputedStyle(devicePalette).visibility : 'N/A',
+                opacity: devicePalette ? window.getComputedStyle(devicePalette).opacity : 'N/A',
+                position: devicePalette ? window.getComputedStyle(devicePalette).position : 'N/A',
+                bottom: devicePalette ? window.getComputedStyle(devicePalette).bottom : 'N/A',
+                zIndex: devicePalette ? window.getComputedStyle(devicePalette).zIndex : 'N/A',
+                width: devicePalette ? window.getComputedStyle(devicePalette).width : 'N/A',
+                height: devicePalette ? window.getComputedStyle(devicePalette).height : 'N/A'
+            });
+            
+            const devices = document.querySelectorAll('.device');
+            console.log('🎮 Device Elements Found:', devices.length);
+            
+            devices.forEach((device, idx) => {
+                const rect = device.getBoundingClientRect();
+                console.log(`  Device ${idx + 1}:`, {
+                    type: device.getAttribute('data-type'),
+                    draggable: device.draggable,
+                    className: device.className,
+                    offsetParent: !!device.offsetParent,
+                    visible: device.offsetParent !== null,
+                    rect: {
+                        top: rect.top,
+                        left: rect.left,
+                        width: rect.width,
+                        height: rect.height,
+                        inViewport: rect.top >= 0 && rect.bottom <= window.innerHeight
+                    },
+                    computed: {
+                        display: window.getComputedStyle(device).display,
+                        visibility: window.getComputedStyle(device).visibility,
+                        pointerEvents: window.getComputedStyle(device).pointerEvents
+                    }
+                });
+            });
+            
+            const canvas = document.getElementById('canvas');
+            console.log('🎨 Canvas:', {
+                exists: !!canvas,
+                width: canvas ? canvas.width : 'N/A',
+                height: canvas ? canvas.height : 'N/A',
+                display: canvas ? window.getComputedStyle(canvas).display : 'N/A'
+            });
+            
+            console.log('🔍 === END DEBUG REPORT ===');
+            return { devicePalette, devices, canvas };
+        };
+        
+        console.log('🛠️ Device debug function added: window.debugDeviceDragDrop()');
 
         function handleDragStart(e) {
-            e.dataTransfer.setData("type", e.target.getAttribute("data-type"));
+            console.log('🚀 Drag Start Event:', {
+                target: e.target,
+                currentTarget: e.currentTarget,
+                targetTagName: e.target.tagName,
+                currentTargetTagName: e.currentTarget.tagName
+            });
+            
+            // Use currentTarget to get the .device element, not child elements
+            const deviceElement = e.currentTarget;
+            const deviceType = deviceElement.getAttribute("data-type");
+            
+            console.log('📋 Device Info:', {
+                deviceType: deviceType,
+                hasDataType: !!deviceType,
+                element: deviceElement
+            });
+            
+            e.dataTransfer.setData("type", deviceType);
+            console.log('✅ DataTransfer set with type:', deviceType);
+            
+            // Add visual feedback during drag
+            deviceElement.style.opacity = "0.5";
+            deviceElement.style.transform = "scale(0.95)";
+            console.log('🎨 Visual feedback applied');
+        }
+
+        function handleDragEnd(e) {
+            console.log('🏁 Drag End Event');
+            // Reset visual feedback after drag
+            const deviceElement = e.currentTarget;
+            deviceElement.style.opacity = "";
+            deviceElement.style.transform = "";
+            console.log('🔄 Visual feedback reset');
         }
 
         // Handle drag over the canvas
-        canvas.addEventListener("dragover", (e) => e.preventDefault());
+        canvas.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            console.log('↔️ Drag Over Canvas at:', { x: e.offsetX, y: e.offsetY });
+        });
 
         // Handle drop on canvas
         canvas.addEventListener("drop", (e) => {
+            console.log('💧 Drop Event on Canvas:', {
+                offsetX: e.offsetX,
+                offsetY: e.offsetY
+            });
+            
             const type = e.dataTransfer.getData("type");
+            console.log('📦 Retrieved device type from dataTransfer:', type);
+            
             const x = e.offsetX;
             const y = e.offsetY;
 
+            if (!type) {
+                console.error('❌ No device type received! Drop failed.');
+                return;
+            }
+
+            console.log('✅ Creating device:', { type, x, y });
             addDevice(type, x, y);
             redrawCanvas();
+            console.log('🎨 Canvas redrawn after device addition');
         });
 
         // Add device to the canvas
@@ -8666,21 +8913,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        // Toggle connection mode
-        document.getElementById("connection-mode-btn").addEventListener("click", () => {
-            isConnectionMode = !isConnectionMode;
-            document.getElementById("connection-mode-btn").classList.toggle("active", isConnectionMode);
+        // Connection type tracking
+        let currentConnectionType = null; // 'wired', 'wireless', or null
+        
+        // Toggle wired connection mode
+        document.getElementById("wired-connection-btn").addEventListener("click", () => {
+            if (currentConnectionType === 'wired') {
+                // Toggle off if already active
+                currentConnectionType = null;
+                isConnectionMode = false;
+                document.getElementById("wired-connection-btn").classList.remove("active");
+                document.getElementById("wireless-connection-btn").classList.remove("active");
+            } else {
+                // Activate wired mode
+                currentConnectionType = 'wired';
+                isConnectionMode = true;
+                document.getElementById("wired-connection-btn").classList.add("active");
+                document.getElementById("wireless-connection-btn").classList.remove("active");
+                firstDevice = null; // Reset selection
+            }
+            redrawCanvas();
+        });
+        
+        // Toggle wireless connection mode
+        document.getElementById("wireless-connection-btn").addEventListener("click", () => {
+            if (currentConnectionType === 'wireless') {
+                // Toggle off if already active
+                currentConnectionType = null;
+                isConnectionMode = false;
+                document.getElementById("wired-connection-btn").classList.remove("active");
+                document.getElementById("wireless-connection-btn").classList.remove("active");
+            } else {
+                // Activate wireless mode
+                currentConnectionType = 'wireless';
+                isConnectionMode = true;
+                document.getElementById("wireless-connection-btn").classList.add("active");
+                document.getElementById("wired-connection-btn").classList.remove("active");
+                firstDevice = null; // Reset selection
+            }
+            redrawCanvas();
         });
 
         // Handle canvas click for device selection and connection mode
         canvas.addEventListener("click", (e) => {
             const clickedDevice = findDeviceByPosition(e.offsetX, e.offsetY);
-            if (isConnectionMode) {
+            if (isConnectionMode && currentConnectionType) {
                 if (clickedDevice) {
                     if (!firstDevice) {
                         firstDevice = clickedDevice;  // Select the first device
                     } else {
-                        addConnection(firstDevice, clickedDevice);  // Connect first and second device
+                        addConnection(firstDevice, clickedDevice, currentConnectionType);  // Connect with type
                         firstDevice = null;  // Reset after connecting
                     }
                 }
@@ -8705,50 +8987,120 @@ document.addEventListener('DOMContentLoaded', () => {
         function redrawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Draw connections with enhanced visuals
             connections.forEach(connection => drawConnection(connection));
+            
+            // Draw connection preview if in connection mode and first device selected
+            if (isConnectionMode && firstDevice && currentConnectionType) {
+                drawConnectionPreview();
+            }
+            
             devices.forEach(device => drawDevice(device));
         }
+        
+        // Draw connection preview from first device to mouse position
+        function drawConnectionPreview() {
+            if (!mouseX || !mouseY) return;
+            
+            const isWireless = currentConnectionType === 'wireless';
+            const previewColor = isWireless ? 'rgba(139, 92, 246, 0.6)' : 'rgba(0, 217, 255, 0.6)';
+            
+            ctx.strokeStyle = previewColor;
+            ctx.lineWidth = isWireless ? 2 : 3;
+            ctx.setLineDash([5, 5]); // Dashed preview line
+            
+            ctx.beginPath();
+            ctx.moveTo(firstDevice.x, firstDevice.y);
+            ctx.lineTo(mouseX, mouseY);
+            ctx.stroke();
+            
+            ctx.setLineDash([]); // Reset line dash
+        }
 
-        // Draw connection line between devices
+        // Draw connection line between devices with type-based styling
         function drawConnection(connection) {
+            const isWireless = connection.type === 'wireless';
+            const baseColor = isWireless ? '#8B5CF6' : '#00D9FF'; // Purple for wireless, cyan for wired
+            
+            ctx.strokeStyle = baseColor;
+            ctx.lineWidth = isWireless ? 2 : 3;
+            
+            // Set line style based on connection type
+            if (isWireless) {
+                ctx.setLineDash([8, 4]); // Dashed line for wireless
+            } else {
+                ctx.setLineDash([]); // Solid line for wired
+            }
+            
             ctx.beginPath();
             ctx.moveTo(connection.device1.x, connection.device1.y);
             ctx.lineTo(connection.device2.x, connection.device2.y);
-            ctx.strokeStyle = "#00C3B5";
-            ctx.lineWidth = 4;
             ctx.stroke();
+            
+            // Reset line dash for other drawings
+            ctx.setLineDash([]);
+            
+            // Draw midpoint indicator
+            const midX = (connection.device1.x + connection.device2.x) / 2;
+            const midY = (connection.device1.y + connection.device2.y) / 2;
+            
+            ctx.fillStyle = baseColor;
+            ctx.beginPath();
+            ctx.arc(midX, midY, 5, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // Draw device on the canvas
         function drawDevice(device) {
             device.draw(ctx);
-            if (device === selectedDevice) {
+            
+            // Highlight first selected device during connection mode
+            if (device === firstDevice && isConnectionMode) {
                 ctx.beginPath();
-                ctx.arc(device.x, device.y, 30, 0, 2 * Math.PI); // Adjusted radius
+                ctx.arc(device.x, device.y, 30, 0, 2 * Math.PI);
+                ctx.strokeStyle = currentConnectionType === 'wireless' ? "#8B5CF6" : "#00D9FF";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            } else if (device === selectedDevice) {
+                ctx.beginPath();
+                ctx.arc(device.x, device.y, 30, 0, 2 * Math.PI);
                 ctx.strokeStyle = "#FFD700";
                 ctx.lineWidth = 9;
                 ctx.stroke();
-                ctx.shadowColor = "transparent"; // Ensure no glow effect
+                ctx.shadowColor = "transparent";
                 ctx.shadowBlur = 0;
             }
         }
 
-        // Add connection between devices
-        function addConnection(device1, device2) {
+        // Track mouse position for connection preview
+        let mouseX = null;
+        let mouseY = null;
+        
+        canvas.addEventListener("mousemove", (e) => {
+            mouseX = e.offsetX;
+            mouseY = e.offsetY;
+            if (isConnectionMode && firstDevice) {
+                redrawCanvas(); // Redraw to show preview line
+            }
+        });
+
+        // Add connection between devices with type
+        function addConnection(device1, device2, type = 'wired') {
             const existingConnection = connections.find(conn =>
                 (conn.device1 === device1 && conn.device2 === device2) ||
                 (conn.device1 === device2 && conn.device2 === device1)
             );
 
             if (!existingConnection) {
-                connections.push({ device1, device2 });
+                connections.push({ device1, device2, type }); // Include connection type
                 redrawCanvas();
                 
                 // Track connection creation for performance feedback
                 if (window.performanceFeedback) {
                     window.performanceFeedback.trackAction('connection_made', {
                         device1_type: device1.type,
-                        device2_type: device2.type
+                        device2_type: device2.type,
+                        connection_type: type
                     });
                 }
 
@@ -8798,20 +9150,41 @@ document.addEventListener('DOMContentLoaded', () => {
             return Math.sqrt(dx * dx + dy * dy);
         }
 
-        // Handle delete connection button
-        document.getElementById("delete-connection-btn").addEventListener("click", () => {
-            canvas.addEventListener("click", function deleteConnection(e) {
-                const clickedConnection = findConnectionByPosition(e.offsetX, e.offsetY);
-                if (clickedConnection) {
-                    // Remove the clicked connection from the connections array
-                    connections = connections.filter(conn => conn !== clickedConnection);
-                    redrawCanvas();  // Redraw canvas after deleting the connection
-                    alert("Connection deleted!");
-                } else {
-                    alert("No connection clicked to delete.");
-                }
-                canvas.removeEventListener("click", deleteConnection);
-            });
+        // Handle unified delete button (removes both devices and connections)
+        document.getElementById("delete-btn").addEventListener("click", () => {
+            let removalMade = false;
+            
+            // First, try to remove selected device if any
+            if (selectedDevice) {
+                // Remove the selected device from the devices array
+                devices = devices.filter(device => device !== selectedDevice);
+
+                // Also remove any associated connections
+                connections = connections.filter(connection =>
+                    connection.device1 !== selectedDevice && connection.device2 !== selectedDevice
+                );
+
+                selectedDevice = null;  // Clear selection
+                redrawCanvas();  // Redraw canvas after deletion
+                removalMade = true;
+                alert("Device and its connections removed!");
+            }
+            
+            // If no device was selected, enable connection removal mode
+            if (!removalMade) {
+                canvas.addEventListener("click", function deleteConnection(e) {
+                    const clickedConnection = findConnectionByPosition(e.offsetX, e.offsetY);
+                    if (clickedConnection) {
+                        // Remove the clicked connection from the connections array
+                        connections = connections.filter(conn => conn !== clickedConnection);
+                        redrawCanvas();  // Redraw canvas after deleting the connection
+                        alert("Connection removed!");
+                    } else {
+                        alert("No connection clicked. Select a device first or click on a connection to remove it.");
+                    }
+                    canvas.removeEventListener("click", deleteConnection);
+                });
+            }
         });
 
         canvas.addEventListener("mousemove", (e) => {
@@ -8832,24 +9205,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             isDragging = false;
             draggedDevice = null;
-        });
-
-        // Handle delete device button
-        document.getElementById("delete-device-btn").addEventListener("click", () => {
-            if (selectedDevice) {
-                // Remove the selected device from the devices array
-                devices = devices.filter(device => device !== selectedDevice);
-
-                // Also remove any associated connections
-                connections = connections.filter(connection =>
-                    connection.device1 !== selectedDevice && connection.device2 !== selectedDevice
-                );
-
-                selectedDevice = null;  // Clear selection
-                redrawCanvas();  // Redraw canvas after deletion
-            } else {
-                alert("No device selected to delete.");
-            }
         });
 
         // --- Mode Functions ---
@@ -12571,11 +12926,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.style.overflow = 'auto';
         }
 
-        // Add event listener for the "Check Solution" button
-        troubleShoot.onclick = () => {
-            checkSolution(currentScenario);
-        };
-
         let currentScenario = null;
 
         // Define scenarios array based on startScenario calls in the HTML
@@ -14793,6 +15143,21 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Scenario Completed!', 
                 `Final Score: ${data.performance_summary.total_score}`, 
                 'success');
+            
+            // Award XP through Network Level System
+            if (window.networkLevelSystem) {
+                console.log('🎮 Integrating scenario completion with Network Level System...');
+                const difficulty = data.difficulty || 'easy';
+                const score = data.performance_summary?.total_score || 0;
+                const timeBonus = data.performance_summary?.time_bonus || 0;
+                const problemType = data.problem_type || 'general';
+                
+                console.log('📊 Scenario stats:', { difficulty, score, timeBonus, problemType });
+                window.networkLevelSystem.onScenarioCompleted(difficulty, problemType, score, timeBonus);
+                console.log('✅ XP awarded through Network Level System');
+            } else {
+                console.warn('⚠️ Network Level System not available');
+            }
         }
 
         function handleCollaborativeTimerStarted(data) {
@@ -15023,9 +15388,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Initialize collaboration sidebar system
-            if (!window.collaborationSidebar) {
-                window.collaborationSidebar = new CollaborationSidebar();
-            }
+            // DISABLED: CollaborationSidebar class not available in this module
+            // if (!window.collaborationSidebar) {
+            //     window.collaborationSidebar = new CollaborationSidebar();
+            // }
             
             // Backend integration status check
             console.log('🎯 Performance Feedback System Integration Status:');
@@ -15170,19 +15536,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <!-- ===== NETWORK GAMIFICATION LEVEL SYSTEM ===== -->
     <script>
-        class NetworkLevelSystem {
-            constructor() {
-                this.currentLevel = 1;
-                this.currentXP = 0;
-                this.levelData = this.initializeLevelData();
-                this.skills = this.initializeSkills();
-                this.challenges = this.initializeChallenges();
-                this.achievements = new Set();
-                this.completedChallenges = new Set();
-                this.sessionStart = Date.now();
-                
-                this.init();
-            }
+        (function() {
+            'use strict';
+            
+            class NetworkLevelSystem {
+                constructor() {
+                    this.currentLevel = 1;
+                    this.currentXP = 0;
+                    this.levelData = this.initializeLevelData();
+                    this.skills = this.initializeSkills();
+                    this.challenges = this.initializeChallenges();
+                    this.achievements = new Set();
+                    this.completedChallenges = new Set();
+                    this.sessionStart = Date.now();
+                    
+                    this.init();
+                }
 
             initializeLevelData() {
                 return {
@@ -15869,7 +16238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     location.reload();
                 }
             }
-        }
+        } // End of NetworkLevelSystem class
 
         // Global functions for modals
         function openChallengesModal() {
@@ -15935,6 +16304,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Export for global access
         window.openChallengesModal = openChallengesModal;
         window.closeChallengesModal = closeChallengesModal;
+        
+        })(); // End of Network Level System IIFE
 
         // ===== INTERACTIVE TOPOLOGY SIMULATOR FUNCTIONALITY =====
         
@@ -16318,7 +16689,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initTopologySimulator, 1000);
             // Initialize Topology Learning System
-            initializeTopologyLearning();
+            // DISABLED: initializeTopologyLearning function not available in this context
+            // initializeTopologyLearning();
         });
 
         // Export topology functions for global access

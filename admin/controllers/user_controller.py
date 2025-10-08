@@ -15,17 +15,57 @@ from utils.password_validator import validate_password
 user_bp = Blueprint('admin_user', __name__)
 
 class UserController:
+    @staticmethod
+    @user_bp.route('/session-check')
+    @login_required
+    def session_check():
+        """Debug endpoint to check session status"""
+        from flask import session
+        return jsonify({
+            'authenticated': current_user.is_authenticated,
+            'user_id': current_user.id if current_user.is_authenticated else None,
+            'username': current_user.username if current_user.is_authenticated else None,
+            'auth_namespace': session.get('auth_namespace'),
+            'session_user_id': session.get('_user_id'),
+            'is_admin_instance': str(type(current_user))
+        })
+    
+    @staticmethod
+    @user_bp.route('/routes', methods=['GET'])
+    @login_required
+    def list_admin_routes():
+        """Diagnostic endpoint: list admin routes to verify delete endpoint is registered"""
+        from flask import current_app
+        routes = []
+        for rule in current_app.url_map.iter_rules():
+            rule_str = str(rule)
+            if rule_str.startswith('/admin'):
+                routes.append({
+                    'rule': rule_str,
+                    'endpoint': rule.endpoint,
+                    'methods': sorted(list(rule.methods)) if rule.methods else []
+                })
+        # Sort for readability
+        routes = sorted(routes, key=lambda r: r['rule'])
+        return jsonify({ 'routes': routes })
+
     # Changed from '/' to '/users' to prevent conflict with dashboard.index at /admin/
     @staticmethod
     @user_bp.route('/users')
     @login_required
     def index():
         # Get regular users with their stats
-        users = AdminUser.query.all()
+        users = AdminUser.query.order_by(AdminUser.created_at.desc()).all()
         user_stats = []
         for user in users:
             scores_count = AdminScore.query.filter_by(user_id=user.id).count()
             highest_score = db.session.query(func.max(AdminScore.score)).filter_by(user_id=user.id).scalar() or 0
+            
+            # Ensure user has required fields - set defaults if missing
+            if not user.created_at:
+                user.created_at = datetime.utcnow()
+            if not hasattr(user, 'status') or not user.status:
+                user.status = 'active'
             
             user_stats.append({
                 'user': user,
@@ -34,7 +74,12 @@ class UserController:
             })
         
         # Get admin users
-        admins = Admin.query.all()
+        admins = Admin.query.order_by(Admin.created_at.desc()).all()
+        
+        # Ensure admins have required fields
+        for admin in admins:
+            if not admin.created_at:
+                admin.created_at = datetime.utcnow()
         
         return render_template('admin/user_management.html', 
                             user_stats=user_stats, 
@@ -74,41 +119,127 @@ class UserController:
         
         return render_template('admin/edit_user.html', user=user, active_page='users')
 
-    @staticmethod
     @user_bp.route('/delete/<int:user_id>', methods=['POST'])
     @login_required
     def delete_user(user_id):
-        user = AdminUser.query.get_or_404(user_id)
+        """Delete a regular user - FIXED with proper session debugging"""
+        from flask import session
+        import logging
+        from user.models.user import User
         
-        # Check if the user is an admin and if they're the only admin
-        if user.is_admin and AdminUser.query.filter_by(is_admin=True).count() <= 1:
+        # Debug session information
+        logging.info(f"🗑️ DELETE REQUEST - User ID: {user_id}")
+        logging.info(f"🔐 Session data: auth_namespace={session.get('auth_namespace')}, user_id={session.get('_user_id')}")
+        logging.info(f"👤 Current user: {current_user.username if current_user.is_authenticated else 'Not authenticated'}")
+        
+        # Check authentication explicitly
+        if not current_user.is_authenticated:
+            logging.error("❌ User not authenticated for delete operation")
             return jsonify({
                 'success': False,
-                'message': 'Cannot delete the only admin user in the system'
-            }), 400
+                'message': 'Authentication required. Please log in again.'
+            }), 401
+        
+        user = User.query.get_or_404(user_id)
+        
+        # Regular users don't have the is_admin check (that's for AdminUser)
+        # User model doesn't have is_admin attribute
         
         try:
-            # Delete related scores first
-            AdminScore.query.filter_by(user_id=user.id).delete()
+            # Delete related records from various tables
+            # Import necessary models with error handling
+            from user.models.score import Score
+            
+            # Delete related scores
+            Score.query.filter_by(user_id=user.id).delete()
+            
+            # For tables with potential schema issues, use direct SQL deletion
+            # This avoids SQLAlchemy trying to load model definitions that may not match the DB
+            tables_to_clean = [
+                'topology_progress',
+                'networking_progress',
+                'networking2_progress',
+                'user_notification',
+                'notification_preferences',
+                'performance_feedback',
+                'feedback_session',
+                'points_balance',
+                'quiz_attempt',
+                'lesson_progress',
+                'module_progress',
+                'simulation_progress'
+            ]
+            
+            for table in tables_to_clean:
+                try:
+                    # Use raw SQL to avoid model schema issues
+                    result = db.session.execute(
+                        db.text(f"DELETE FROM {table} WHERE user_id = :user_id"),
+                        {"user_id": user.id}
+                    )
+                    # Commit immediately to avoid transaction failures affecting other tables
+                    db.session.commit()
+                    if result.rowcount > 0:
+                        logging.info(f"✅ Deleted {result.rowcount} record(s) from {table} for user {user.id}")
+                except Exception as e:
+                    # Rollback this transaction and continue with next table
+                    db.session.rollback()
+                    # Log warning but continue - table might not exist or have different schema
+                    logging.warning(f"⚠️ Could not clean {table}: {str(e)[:100]}")
             
             # Handle essay responses - either delete them or handle differently
-            essay_responses = EssayResponse.query.filter_by(user_id=user.id).all()
-            for essay in essay_responses:
-                db.session.delete(essay)
+            try:
+                essay_responses = EssayResponse.query.filter_by(user_id=user.id).all()
+                for essay in essay_responses:
+                    db.session.delete(essay)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logging.warning(f"⚠️ Could not delete essay responses: {str(e)[:100]}")
             
             # Option 2 (alternative): Set essay user_id to null if NOT NULL constraint is removed
             # EssayResponse.query.filter_by(user_id=user.id).update({EssayResponse.user_id: None})
             
-            # Now delete the user
-            db.session.delete(user)
+            # Delete any remaining foreign key references in other tables
+            additional_tables = [
+                'class_students',  # Many-to-many relationship table
+                'user_classes',    # Alternative name for class enrollment
+                'assignment_submission',
+                'quiz_score',
+                'simulation_attempt'
+            ]
+            
+            for table in additional_tables:
+                try:
+                    result = db.session.execute(
+                        db.text(f"DELETE FROM {table} WHERE user_id = :user_id"),
+                        {"user_id": user.id}
+                    )
+                    db.session.commit()
+                    if result.rowcount > 0:
+                        logging.info(f"✅ Deleted {result.rowcount} record(s) from {table}")
+                except Exception as e:
+                    db.session.rollback()
+                    logging.debug(f"Table {table} may not exist or have user_id column: {str(e)[:50]}")
+            
+            # Store username for logging before deletion
+            username = user.username
+            
+            # Now delete the user using raw SQL to bypass SQLAlchemy cascade issues
+            db.session.execute(
+                db.text("DELETE FROM \"user\" WHERE id = :user_id"),
+                {"user_id": user.id}
+            )
             db.session.commit()
             
+            logging.info(f"✅ Successfully deleted user {username} (ID: {user_id})")
             return jsonify({
                 'success': True,
-                'message': 'User and all related data deleted successfully'
+                'message': ''
             }), 200
         except Exception as e:
             db.session.rollback()
+            logging.error(f"❌ Error deleting user: {str(e)}")
             return jsonify({
                 'success': False,
                 'message': f'Error deleting user: {str(e)}'
@@ -142,7 +273,6 @@ class UserController:
         
         return render_template('admin/edit_admin.html', admin=admin, active_page='users')
 
-    @staticmethod
     @user_bp.route('/admins/delete/<int:admin_id>', methods=['POST'])
     @login_required
     def delete_admin(admin_id):

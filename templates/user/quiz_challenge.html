@@ -142,6 +142,26 @@
         line-height: 1.6;
     }
 
+    .question-image {
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+        margin: 20px auto;
+        display: block;
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+    }
+
+    .question-image:hover {
+        border-color: var(--cyber-glow);
+        box-shadow: 0 6px 30px rgba(0, 212, 255, 0.4);
+        transform: scale(1.02);
+        transition: all 0.3s ease;
+    }
+
     .options-container {
         display: grid;
         gap: 12px;
@@ -1346,6 +1366,12 @@
             line-height: 1.3 !important;
         }
 
+        .question-image {
+            max-width: 100% !important;
+            margin: 10px auto !important;
+            padding: 10px !important;
+        }
+
         .options-container {
             gap: 5px !important;
         }
@@ -1515,17 +1541,19 @@ const quizQuestions = [
         hint: "This device is commonly used to connect your home network to the internet."
     },
     {
-        question: "What type of network topology is shown? ",
+        question: "What type of network topology is shown in the image below?",
+        image: "{{ url_for('static', filename='imag/Bus.jpg') }}",
         options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
         correct: 0,
-        explanation: "Bus Topology is where all devices are connected to a single cable (backbone).",
+        explanation: "Bus Topology is where all devices are connected to a single cable (backbone). All nodes share the same communication line.",
         hint: "Think of devices connected along a single line, like passengers on a bus route."
     },
     {
-        question: "Which topology is displayed? (Ring Topology - Devices connected in a circular fashion)",
+        question: "Which topology is displayed in the image? (Devices connected in a circular fashion)",
+        image: "{{ url_for('static', filename='imag/Ring.jpg') }}",
         options: ["Ring Topology", "Star Topology", "Bus Topology", "Tree Topology"],
         correct: 0,
-        explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction.",
+        explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction around the ring.",
         hint: "Devices form a closed loop, like a circle or ring."
     },
     {
@@ -1621,6 +1649,7 @@ function loadQuestion() {
         <div class="question-card">
             <div class="question-number">Question ${currentQuestion + 1} of ${quizQuestions.length}</div>
             <div class="question-text">${question.question}</div>
+            ${question.image ? `<img src="${question.image}" alt="Question Image" class="question-image" />` : ''}
             <div class="options-container">
     `;
     

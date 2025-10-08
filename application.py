@@ -298,6 +298,49 @@ def check_admin_auth():
                 flash('Access denied. Admin credentials required.', 'error')
                 next_url = (request.full_path if request.query_string else request.path).rstrip('?')
                 return redirect(url_for('auth.login', next=next_url))
+            
+            # Update last_login for admin users
+            try:
+                if hasattr(current_user, 'last_login'):
+                    from datetime import datetime
+                    # Only update every 5 minutes to reduce DB writes
+                    should_update = (
+                        current_user.last_login is None or
+                        (datetime.utcnow() - current_user.last_login).total_seconds() > 300
+                    )
+                    if should_update:
+                        current_user.last_login = datetime.utcnow()
+                        db.session.commit()
+            except Exception as e:
+                # Don't break the request if last_login update fails
+                print(f"Failed to update admin last_login: {e}")
+
+@application.before_request
+def update_user_last_active():
+    """Update last_active for regular users"""
+    # Skip for admin routes and unauthenticated requests
+    if request.path.startswith('/admin') or not current_user.is_authenticated:
+        return None
+    
+    # Only update for regular user routes
+    try:
+        from admin.models.user import AdminUser
+        from user.models.user import User
+        
+        # Check if it's a regular user (not admin)
+        if isinstance(current_user, (AdminUser, User)) and hasattr(current_user, 'last_active'):
+            from datetime import datetime
+            # Only update every 5 minutes to reduce DB writes
+            should_update = (
+                current_user.last_active is None or
+                (datetime.utcnow() - current_user.last_active).total_seconds() > 300
+            )
+            if should_update:
+                current_user.last_active = datetime.utcnow()
+                db.session.commit()
+    except Exception as e:
+        # Don't break the request if last_active update fails
+        print(f"Failed to update user last_active: {e}")
 
 # Initialize database setup
 try:

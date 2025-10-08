@@ -1769,11 +1769,7 @@
                     </div>
                     
                     <div class="filters-row">
-                        <div class="user-type-tabs">
-                            <button class="btn btn-primary active" id="regular-users-tab">Regular Users</button>
-                            <button class="btn" id="admin-users-tab">Admin Users</button>
-                        </div>
-                          <div class="filter-group">
+                        <div class="filter-group">
                             <label for="statusFilter">Status:</label>
                             <select id="statusFilter" class="filter-select">
                                 <option value="all">All Statuses</option>
@@ -1811,24 +1807,28 @@
                             {% for user_stat in user_stats %}                            <tr>
                                 <td>{{ user_stat.user.username }}</td>
                                 <td>
-                                    <span class="created-date" data-timestamp="{{ user_stat.user.created_at.timestamp() if user_stat.user.created_at else 0 }}">
-                                        {{ user_stat.user.created_at.strftime('%b %d, %Y') if user_stat.user.created_at else 'N/A' }}
+                                    {% if user_stat.user.created_at %}
+                                    <span class="created-date" data-timestamp="{{ user_stat.user.created_at.timestamp() }}">
+                                        {{ user_stat.user.created_at.strftime('%b %d, %Y') }}
+                                        <small style="display: block; color: var(--text-muted); font-size: 10px;">
+                                            {{ user_stat.user.created_at.strftime('%I:%M %p') }}
+                                        </small>
                                     </span>
-                                    <small style="display: block; color: var(--text-muted); font-size: 10px;">
-                                        {{ user_stat.user.created_at.strftime('%I:%M %p') if user_stat.user.created_at else '' }}
-                                    </small>
+                                    {% else %}
+                                    <span style="color: var(--text-muted);">N/A</span>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    <span class="last-active" data-timestamp="{{ user_stat.user.last_active.timestamp() if user_stat.user.last_active else 0 }}">
-                                        {% if user_stat.user.last_active %}
-                                            {{ user_stat.user.last_active.strftime('%b %d, %Y at %I:%M %p') }}
-                                        {% else %}
-                                            <span style="color: var(--text-muted);">Never</span>
-                                        {% endif %}
+                                    {% if user_stat.user.last_active %}
+                                    <span class="last-active" data-timestamp="{{ user_stat.user.last_active.timestamp() }}">
+                                        {{ user_stat.user.last_active.strftime('%b %d, %Y at %I:%M %p') }}
                                     </span>
+                                    {% else %}
+                                    <span class="last-active" data-timestamp="0" style="color: var(--text-muted);">Never</span>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    {% set user_status = user_stat.user.status|default('inactive')|lower %}
+                                    {% set user_status = user_stat.user.status|default('active')|lower %}
                                     <span class="status status-{{ user_status }}" data-status="{{ user_status }}">
                                         {% if user_status == 'active' %}
                                             <i class='bx bx-check-circle'></i> Active
@@ -1838,6 +1838,8 @@
                                             <i class='bx bx-x-circle'></i> Banned
                                         {% elif user_status == 'suspended' %}
                                             <i class='bx bx-pause-circle'></i> Suspended
+                                        {% elif user_status == 'pending' %}
+                                            <i class='bx bx-time-circle'></i> Pending
                                         {% else %}
                                             <i class='bx bx-help-circle'></i> {{ user_status|title }}
                                         {% endif %}
@@ -1848,73 +1850,6 @@
                                         <a href="#" class="btn-text view-user" data-id="{{ user_stat.user.id }}">View</a> |
                                         <a href="#" class="btn-text edit-user" data-id="{{ user_stat.user.id }}">Edit</a> |
                                         <a href="#" class="btn-text delete-user" data-id="{{ user_stat.user.id }}">Delete</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    
-                    <!-- Admin Users Table -->
-                    <table id="adminsTable" style="display:none;">                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Created</th>
-                                <th>Last Active</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for admin in admins %}                            <tr>
-                                <td style="display: flex; align-items: center; gap: 12px;">
-                                    {% if admin.profile_img %}
-                                        <img src="{{ url_for('static', filename='img/profiles/' + admin.profile_img) }}" 
-                                             alt="{{ admin.username }}" 
-                                             class="profile-pic"
-                                             style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--cyber-glow); box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div style="display: none; width: 36px; height: 36px; border-radius: 50%; background: var(--gradient-primary); align-items: center; justify-content: center; font-weight: 600; font-size: 1rem; color: #ffffff; border: 2px solid var(--cyber-glow);">
-                                            {{ admin.username[0].upper() }}
-                                        </div>
-                                    {% else %}
-                                        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1rem; color: #ffffff; border: 2px solid var(--cyber-glow);">
-                                            {{ admin.username[0].upper() }}
-                                        </div>
-                                    {% endif %}
-                                    <span>{{ admin.username }}</span>
-                                </td>
-                                <td>
-                                    <span class="created-date" data-timestamp="{{ admin.created_at.timestamp() if admin.created_at else 0 }}">
-                                        {{ admin.created_at.strftime('%b %d, %Y') if admin.created_at else 'N/A' }}
-                                    </span>
-                                    <small style="display: block; color: var(--text-muted); font-size: 10px;">
-                                        {{ admin.created_at.strftime('%I:%M %p') if admin.created_at else '' }}
-                                    </small>
-                                </td>
-                                <td>
-                                    <span class="last-active" data-timestamp="{{ admin.last_login.timestamp() if admin.last_login else 0 }}">
-                                        {% if admin.last_login %}
-                                            {{ admin.last_login.strftime('%b %d, %Y at %I:%M %p') }}
-                                        {% else %}
-                                            <span style="color: var(--text-muted);">Never</span>
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="status status-active" data-status="active">
-                                        <i class='bx bx-check-circle'></i> Active
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="user-actions">
-                                        <a href="#" class="btn-text view-admin" data-id="{{ admin.id }}">View</a> |
-                                        <a href="{{ url_for('admin_user.edit_admin', admin_id=admin.id) }}" class="btn-text edit-user">Edit</a> |
-                                        {% if admins|length > 1 %}
-                                        <a href="#" class="btn-text delete-admin" data-id="{{ admin.id }}">Delete</a>
-                                        {% else %}
-                                        <span class="btn-text disabled" title="Cannot delete the only admin">Delete</span>
-                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
@@ -2163,64 +2098,15 @@
                 </div>
             </div>
         </div>
-        
-        
-        
-        <!-- Edit Admin Modal -->
-        <div id="editAdminModal" class="modal">
-            <div class="modal-content">
-                <span class="close-modal" id="closeEditAdmin">&times;</span>
-                <h3>Edit Admin User</h3>
-                <form id="editAdminForm" method="POST">
-                    <input type="hidden" id="editAdminId" name="admin_id">
-                    <div class="form-group">
-                        <label for="adminUsername">Username:</label>
-                        <input type="text" id="adminUsername" name="username" required autocomplete="off">
-                    </div>
-                    <div class="form-group">
-                        <label for="adminEmail">Email:</label>
-                        <input type="email" id="adminEmail" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="adminPassword">New Password (leave blank to keep current):</label>
-                        <input type="password" id="adminPassword" name="password">
-                    </div>
-                    <div class="form-group">
-                        <label for="adminRole">Role:</label>
-                        <select id="adminRole" name="role">
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-danger" id="cancelEditAdmin">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Admin</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     
     <script>
+        // Server-generated endpoint templates to avoid hardcoded paths
+        const ENDPOINTS = {
+            deleteUser: "{{ url_for('admin_user.delete_user', user_id=0) }}", // e.g., /admin/delete/0
+            deleteAdmin: "{{ url_for('admin_user.delete_admin', admin_id=0) }}" // e.g., /admin/admins/delete/0
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
-            // Toggle between Regular Users and Admin Users tabs
-            const regularUsersTab = document.getElementById('regular-users-tab');
-            const adminUsersTab = document.getElementById('admin-users-tab');
-            const usersTable = document.getElementById('usersTable');
-            const adminsTable = document.getElementById('adminsTable');
-            
-            regularUsersTab.addEventListener('click', function() {
-                regularUsersTab.classList.add('active');
-                adminUsersTab.classList.remove('active');
-                usersTable.style.display = '';
-                adminsTable.style.display = 'none';
-            });
-            
-            adminUsersTab.addEventListener('click', function() {
-                adminUsersTab.classList.add('active');
-                regularUsersTab.classList.remove('active');
-                adminsTable.style.display = '';
-                usersTable.style.display = 'none';
-            });
-            
             // Modal functionality
             const modals = {
                 add: document.getElementById('addUserModal'),
@@ -2470,7 +2356,7 @@
                     document.querySelector('.user-role-field').style.display = 'none';
                     
                     // Set form action for admin user
-                    document.getElementById('editUserForm').setAttribute('action', `/users/edit_admin/${userId}`);
+                    document.getElementById('editUserForm').setAttribute('action', `/admin/edit_admin/${userId}`);
                 } else {
                     document.getElementById('editRole').value = 'false';
                     document.getElementById('editModalTitle').textContent = 'Edit User';
@@ -2478,7 +2364,7 @@
                     document.querySelector('.user-role-field').style.display = '';
                     
                     // Set form action for regular user
-                    document.getElementById('editUserForm').setAttribute('action', `/users/edit/${userId}`);
+                    document.getElementById('editUserForm').setAttribute('action', `/admin/edit/${userId}`);
                 }
                 
                 // Get status from the table
@@ -2518,14 +2404,14 @@
                 document.getElementById('editAdminRole').value = 'admin';
                 
                 // Set form action for admin user
-                document.getElementById('editUserForm').setAttribute('action', `/users/edit_admin/${adminId}`);
+                document.getElementById('editUserForm').setAttribute('action', `/admin/edit_admin/${adminId}`);
                 
                 modals.edit.style.display = 'flex';
             }
             
             // TOTP functionality in the user view
             function updateTotpSection(userId) {
-                fetch(`/users/get_totp_info/${userId}`, {
+                fetch(`/admin/get_totp_info/${userId}`, {
                     credentials: 'same-origin'
                 })
                     .then(response => {
@@ -2632,7 +2518,7 @@
                 
                 // Set up TOTP action buttons
                 document.getElementById('enableTotpBtn').onclick = function() {
-                    fetch(`/users/generate_totp/${userId}`, {
+                    fetch(`/admin/generate_totp/${userId}`, {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -2657,7 +2543,7 @@
                 
                 document.getElementById('resetTotpBtn').onclick = function() {
                     if (confirm('Are you sure you want to reset this user\'s TOTP key? They will need to reconfigure their authenticator app.')) {
-                        fetch(`/users/generate_totp/${userId}`, {
+                        fetch(`/admin/generate_totp/${userId}`, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
@@ -2683,7 +2569,7 @@
                 
                 document.getElementById('disableTotpBtn').onclick = function() {
                     if (confirm('Are you sure you want to disable two-factor authentication for this user?')) {
-                        fetch(`/users/disable_totp/${userId}`, {
+                        fetch(`/admin/disable_totp/${userId}`, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
@@ -2823,9 +2709,9 @@
                 let formAction;
                 
                 if (isAdmin) {
-                    formAction = `/users/edit_admin/${userId}`;
+                    formAction = `/admin/edit_admin/${userId}`;
                 } else {
-                    formAction = `/users/edit/${userId}`;
+                    formAction = `/admin/edit/${userId}`;
                 }
                 
                 // Get form data
@@ -2865,31 +2751,54 @@
                 const adminId = this.dataset.adminId;
                 const isAdmin = this.dataset.isAdmin === 'true';
                 
-                // Use fetch API to delete user
-                const url = isAdmin ? `/users/admins/delete/${adminId}` : `/users/delete/${userId}`;
+                // Build URL from server-generated templates to prevent prefix mismatches
+                const url = isAdmin
+                    ? (ENDPOINTS.deleteAdmin || '').replace(/0$/, adminId)
+                    : (ENDPOINTS.deleteUser || '').replace(/0$/, userId);
+                
+                console.log('🗑️ Delete request:', { url, userId, adminId, isAdmin, ENDPOINTS });
                 
                 fetch(url, {
                     method: 'POST',
-                    credentials: 'same-origin',
+                    credentials: 'include',  // Ensure session cookies are sent
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'  // Mark as AJAX request
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Delete response status:', response.status, response.statusText);
+                    
+                    // Check if response is JSON before parsing
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        // Not JSON - likely HTML error page (404, 401, etc.)
+                        console.error('❌ Server returned non-JSON response:', response.status);
+                        if (response.status === 404) {
+                            throw new Error('Delete endpoint not found. Please check route configuration.');
+                        } else if (response.status === 401 || response.status === 403) {
+                            throw new Error('Authentication failed. Please log in again.');
+                        } else {
+                            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                    
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        // Show success message
-                        alert(data.message);
                         // Reload the page to refresh the user list
                         window.location.reload();
                     } else {
-                        // Show error message
-                        alert(data.message);
+                        // Show error message only if there's an actual error
+                        if (data.message) {
+                            alert(data.message);
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Error deleting user:', error);
-                    alert('An error occurred while deleting the user');
+                    console.error('❌ Error deleting user:', error);
+                    alert('Error: ' + error.message);
                 })
                 .finally(() => {
                     modals.delete.style.display = 'none';
@@ -2902,212 +2811,6 @@
                 modals.view.style.display = 'none';
                 fetchUserAndPopulateEditForm(userId);
             });
-
-            // View admin buttons
-            document.querySelectorAll('.view-admin').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const adminId = btn.dataset.id;
-                    fetchAdminAndShowDetails(adminId);
-                });
-            });
-            
-            // Edit admin buttons
-            document.querySelectorAll('a[href^="{{ url_for("admin_user.edit_admin", admin_id=0) }}'.replace('/0', '/')).forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const adminId = btn.href.split('/').pop();
-                    openEditAdminModal(adminId);
-                });
-            });
-
-            // Close and cancel for edit admin modal
-            document.getElementById('closeEditAdmin').addEventListener('click', () => {
-                document.getElementById('editAdminModal').style.display = 'none';
-            });
-            
-            document.getElementById('cancelEditAdmin').addEventListener('click', () => {
-                document.getElementById('editAdminModal').style.display = 'none';
-            });
-
-            // Function to open and populate the edit admin modal
-            function openEditAdminModal(adminId) {
-                // Find the admin in the table
-                const element = document.querySelector(`#adminsTable tr td input[data-id="${adminId}"]`);
-                if (!element) {
-                    console.error('Admin element not found for ID:', adminId);
-                    return;
-                }
-                const row = element.closest('tr');
-                if (!row) {
-                    console.error('Parent row not found for admin ID:', adminId);
-                    return;
-                }
-                
-                // Populate the form
-                // Admin table structure: Username(0), Created(1), Last Active(2), Status(3), Actions(4)
-                document.getElementById('editAdminId').value = adminId;
-                document.getElementById('adminUsername').value = row.cells[0].textContent.trim();
-                
-                // Email is not visible in table - will need to fetch from server
-                // For now, leave it empty or fetch via AJAX
-                document.getElementById('adminEmail').value = ''; // Not available in table
-                document.getElementById('adminPassword').value = ''; // Reset password field
-                
-                // Set the admin role - all admins are administrators
-                const roleSelect = document.getElementById('adminRole');
-                if (roleSelect) {
-                    roleSelect.value = 'admin'; // Default to admin role
-                }
-                
-                // Set form action
-                document.getElementById('editAdminForm').setAttribute('action', `{{ url_for('admin_user.edit_admin', admin_id=0) }}`.replace('0', adminId));
-                
-                // Show the modal
-                document.getElementById('editAdminModal').style.display = 'flex';
-            }
-
-            // Function to play click sound
-            function playClickSound() {
-                const audio = new Audio('click-sound.mp3');
-                audio.play();
-            }
-
-            // Handle edit user form cancel button
-            document.getElementById('cancelEditUser').addEventListener('click', function(e) {
-                e.preventDefault();
-                modals.edit.style.display = 'none';
-                playClickSound();
-            });
-
-            // Add sound to edit modal buttons
-            document.querySelectorAll('#editUserModal button, #editUserModal .close-modal').forEach(element => {
-                element.addEventListener('click', playClickSound);
-            });
-
-            // Handle edit admin form submission
-            document.getElementById('editAdminForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const adminId = document.getElementById('editAdminId').value;
-                const formAction = this.getAttribute('action');
-                const formData = new FormData(this);
-                
-                // Send the form data to the server
-                fetch(formAction, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                        return;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && data.status === 'success') {
-                        alert('Admin user updated successfully');
-                        window.location.reload(); // Reload the page to see changes
-                    } else if (data) {
-                        alert('Error updating admin user: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating admin user:', error);
-                    // If we got a redirect, it's probably successful
-                    if (error instanceof TypeError && error.message.includes("JSON")) {
-                        window.location.reload();
-                    } else {
-                        alert('An error occurred while updating the admin user');
-                    }
-                })
-                .finally(() => {
-                    document.getElementById('editAdminModal').style.display = 'none';
-                });
-            });
-            
-            // Delete admin buttons
-            document.querySelectorAll('.delete-admin').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const adminId = btn.dataset.id;
-                    const row = btn.closest('tr');
-                    const username = row.cells[2].textContent;
-                    
-                    document.getElementById('deleteUserName').textContent = username + ' (Admin)';
-                    document.getElementById('confirmDeleteUser').dataset.adminId = adminId;
-                    document.getElementById('confirmDeleteUser').dataset.isAdmin = 'true';
-                    modals.delete.style.display = 'flex';
-                });            });
-            
-            // Function to fetch admin data for viewing
-            function fetchAdminAndShowDetails(adminId) {
-                // In a real application, fetch admin data from the server
-                // For this example, we'll get it from the table row
-                const row = document.querySelector(`#adminsTable tr [data-id="${adminId}"]`);
-                if (!row) {
-                    console.error('Admin row not found for ID:', adminId);
-                    return;
-                }
-                const parentRow = row.closest('tr');
-                if (!parentRow) {
-                    console.error('Parent row not found for admin ID:', adminId);
-                    return;
-                }
-                
-                document.getElementById('userId').textContent = adminId + ' (Admin)';
-                document.getElementById('username').textContent = parentRow.cells[0].textContent.trim();
-                document.getElementById('userCreated').textContent = parentRow.cells[1].textContent.trim();
-                document.getElementById('userLastActive').textContent = parentRow.cells[2].textContent.trim();
-                document.getElementById('userStatus').textContent = parentRow.cells[3].textContent.trim();
-                document.getElementById('userRole').textContent = 'Administrator'; // Fixed: admins table doesn't have column 6
-                
-                // Admin-specific info (shouldn't have quizzes)
-                document.getElementById('userTotalQuizzes').textContent = "N/A";
-                document.getElementById('userAvgScore').textContent = "N/A";
-                
-                // Calculate account age - use parentRow not row
-                const createdTimestamp = parentRow.cells[1].querySelector('.created-date')?.dataset.timestamp;
-                if (createdTimestamp) {
-                    const createdDate = new Date(createdTimestamp * 1000);
-                    const today = new Date();
-                    const diffTime = Math.abs(today - createdDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    document.getElementById('userAccountAge').textContent = `${diffDays} days`;
-                } else {
-                    document.getElementById('userAccountAge').textContent = 'N/A';
-                }
-                
-                // For admins, show login activity instead of scores
-                document.getElementById('scoresTab').innerHTML = '<p>Score history not applicable for admin users.</p>';
-                
-                // Show admin activity log
-                let activityHTML = '';
-                const activities = ['Logged in', 'Updated user', 'Added question', 'Graded essay'];
-                
-                for (let i = 0; i < 5; i++) {
-                    const activity = activities[Math.floor(Math.random() * activities.length)];
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    
-                    activityHTML += `
-                        <div class="log-entry">
-                            <div class="log-icon">
-                                <i class='bx bx-shield'></i>
-                            </div>
-                            <div class="log-content">
-                                <div>${activity}</div>
-                                <div class="log-time">${date.toISOString().substring(0, 10)} ${date.toTimeString().substring(0, 8)}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-                document.getElementById('userActivityLog').innerHTML = activityHTML;
-                
-                modals.view.style.display = 'flex';
-            }
             
             // Removed duplicate event listener - already handled above
         });

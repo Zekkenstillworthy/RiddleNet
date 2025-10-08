@@ -37,6 +37,11 @@ def index():
     print(f"Quiz route - User: {user.username if user else 'None'}")
     return render_template('user/quiz_challenge.html', user=user)
 
+@quiz_bp.route('/test-images')
+def test_images():
+    """Test page to verify topology images are loaded correctly"""
+    return render_template('test_images.html')
+
 @quiz_bp.route('/api/submit', methods=['POST'])
 @login_required
 def submit_quiz():

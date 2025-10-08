@@ -257,10 +257,16 @@ class NetworkSimulationEngine {
     
     // ===== TOOL MANAGEMENT =====
     
+    // Helper method to check if tool is a connection tool
+    isConnectionTool(tool = null) {
+        const checkTool = tool || this.currentTool;
+        return checkTool === 'connect' || checkTool === 'wired' || checkTool === 'wireless';
+    }
+    
     setTool(tool) {
         // Update tool state
         // If leaving connect mode, cancel any in-progress connection
-        if (this.currentTool === 'connect' && tool !== 'connect') {
+        if (this.isConnectionTool(this.currentTool) && !this.isConnectionTool(tool)) {
             this.cancelConnection?.();
         }
         this.currentTool = tool;
@@ -294,6 +300,8 @@ class NetworkSimulationEngine {
                 this.canvas.style.cursor = 'move';
                 break;
             case 'connect':
+            case 'wired':
+            case 'wireless':
                 this.canvas.style.cursor = 'crosshair';
                 break;
             case 'delete':
@@ -482,7 +490,7 @@ class NetworkSimulationEngine {
             to: device2.id,
             fromInterface: availablePort1,
             toInterface: availablePort2,
-            type: 'ethernet',
+            type: this.currentTool === 'wireless' ? 'wireless' : 'ethernet', // Use current tool to determine connection type
             status: 'up',
             selected: false
         };
@@ -563,7 +571,7 @@ class NetworkSimulationEngine {
             } else {
                 this.clearSelection();
             }
-        } else if (this.currentTool === 'connect') {
+        } else if (this.isConnectionTool()) {
             if (clickedDevice && !this.isConnecting) {
                 this.startConnection(clickedDevice, mouseX, mouseY);
             } else if (clickedDevice && this.isConnecting && this.connectionStart && clickedDevice !== this.connectionStart.device) {
@@ -594,7 +602,7 @@ class NetworkSimulationEngine {
             this.needsRender = true;
         }
         
-        if (this.currentTool === 'connect' && this.isConnecting && this.connectionStart) {
+        if (this.isConnectionTool() && this.isConnecting && this.connectionStart) {
             this.connectionPreview = { x: mouseX, y: mouseY };
             this.needsRender = true;
         }
@@ -918,16 +926,29 @@ class NetworkSimulationEngine {
         this.ctx.lineWidth = 3 / this.zoom;
         
         this.connections.forEach(connection => {
-            const color = connection.selected ? '#39FF14' : '#00D9FF';
+            const isWireless = connection.type === 'wireless';
+            const color = connection.selected ? '#39FF14' : (isWireless ? '#8B5CF6' : '#00D9FF'); // Purple for wireless, cyan for wired
             const alpha = connection.status === 'up' ? 1.0 : 0.5;
             
             this.ctx.strokeStyle = color;
             this.ctx.globalAlpha = alpha;
             
+            // Set line style based on connection type
+            if (isWireless) {
+                this.ctx.setLineDash([8 / this.zoom, 4 / this.zoom]); // Dashed line for wireless
+                this.ctx.lineWidth = 2 / this.zoom; // Thinner for wireless
+            } else {
+                this.ctx.setLineDash([]); // Solid line for wired
+                this.ctx.lineWidth = 3 / this.zoom;
+            }
+            
             this.ctx.beginPath();
             this.ctx.moveTo(connection.device1.x, connection.device1.y);
             this.ctx.lineTo(connection.device2.x, connection.device2.y);
             this.ctx.stroke();
+            
+            // Reset line dash
+            this.ctx.setLineDash([]);
             
             // Connection status indicator
             if (connection.selected) {
@@ -947,8 +968,12 @@ class NetworkSimulationEngine {
     renderConnectionPreview() {
         if (!this.connectionStart || !this.connectionPreview) return;
         
-        this.ctx.strokeStyle = 'rgba(0, 217, 255, 0.6)';
-        this.ctx.lineWidth = 3 / this.zoom;
+        // Set preview style based on current tool
+        const isWireless = this.currentTool === 'wireless';
+        const previewColor = isWireless ? 'rgba(139, 92, 246, 0.6)' : 'rgba(0, 217, 255, 0.6)'; // Purple for wireless, cyan for wired
+        
+        this.ctx.strokeStyle = previewColor;
+        this.ctx.lineWidth = isWireless ? 2 / this.zoom : 3 / this.zoom;
         this.ctx.setLineDash([5 / this.zoom, 5 / this.zoom]);
         
         this.ctx.beginPath();
