@@ -2137,23 +2137,28 @@ window.drop = function(ev) {
 
     if (comparisonMatch) {
         dropSlot.classList.add('correct-placement');
+        
+        // Select the appropriate layer info based on current model
+        const info = currentModel === 'osi' ? layerInfo[draggedLayer] : tcpipLayerInfo[draggedLayer];
+        
         dropSlot.innerHTML = `
             <div class="placed-layer">
                 <div class="layer-content">
-                    <div class="layer-name">${layerInfo[draggedLayer].name}</div>
+                    <div class="layer-name">${info.name}</div>
                     <div class="placement-status"><i class="fas fa-check-circle"></i> Correct!</div>
                 </div>
             </div>`;
         
-        // Clone the dragged element back to the draggable zone if it was removed
-        if (!document.querySelector(`.draggable-item[data-layer="${draggedLayer}"]`)) {
-            cloneDraggableItem(draggedLayer);
+        // Remove the dragged element from the draggable zone
+        if (draggedElement && draggedElement.parentNode) {
+            draggedElement.remove();
         }
         
-        // Update zone-specific counters
+        // Update zone-specific counters based on current model
+        const totalLayersNeeded = currentModel === 'osi' ? 7 : 4;
         if (zoneId === "2") {
             zone2Placements++;
-            if (zone2Placements === 7) {
+            if (zone2Placements === totalLayersNeeded) {
                 zone2Complete = true;
                 // Don't show zone complete message yet - wait for quiz to be answered
             }
@@ -2186,10 +2191,14 @@ window.drop = function(ev) {
 
 function cloneDraggableItem(layerNum) {
     const draggableZone = document.querySelector('.draggable-zone');
-    const info = layerInfo[layerNum];
+    // Select the appropriate layer info based on current model
+    const info = currentModel === 'osi' ? layerInfo[layerNum] : tcpipLayerInfo[layerNum];
+    
+    // Set the appropriate class based on current model
+    const layerClass = currentModel === 'osi' ? `layer-${layerNum}` : `layer-tcpip-${layerNum}`;
     
     const layerElement = document.createElement('div');
-    layerElement.className = `osi-layer-pill draggable-item layer-${layerNum}`;
+    layerElement.className = `osi-layer-pill draggable-item ${layerClass}`;
     layerElement.dataset.layer = layerNum;
     layerElement.draggable = true;
     layerElement.setAttribute('ondragstart', 'drag(event)');

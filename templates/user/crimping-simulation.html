@@ -3328,7 +3328,7 @@
     background: linear-gradient(90deg, #00d4ff, #ffd700);
     border-radius: 3px;
     transition: width 0.3s ease;
-    width: 16.67%; /* Default to step 1 of 6 */
+    width: 20%; /* Default to step 1 of 5 */
   }
 
   .close-tutorial-btn {
@@ -3873,9 +3873,7 @@
           <button class="action-btn retry-btn" onclick="retrySimulation()">
             <i class="fas fa-redo"></i> Try Again
           </button>
-          <button class="action-btn tutorial-btn" onclick="openTutorialFromResult()">
-            <i class="fas fa-graduation-cap"></i> Tutorial
-          </button>
+          
           <button class="action-btn next-btn" onclick="goToNextLevel()" id="nextLevelBtn" style="display: none;">
             <i class="fas fa-arrow-right"></i> Next Level
           </button>
@@ -3892,7 +3890,7 @@
         <div class="tutorial-header">
           <h2><i class="fas fa-graduation-cap"></i> Crimping Tutorial</h2>
           <div class="tutorial-progress">
-            <span class="progress-text">Step <span id="currentStepNumber">1</span> of <span id="totalSteps">6</span></span>
+            <!-- Step counter removed per user request -->
             <div class="tutorial-progress-bar">
               <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
             </div>
@@ -4047,22 +4045,39 @@
         document.getElementById('wiringSelectionModal').style.display = 'flex';
       }, 300);
     }    // Handle wiring type selection from popup
-    function selectWiringType(type) {
-      const selectedButton = event.target.closest('.wiring-option');
+    function selectWiringType(type, programmatic = false) {
+      console.log(`[SelectWiringType] Called with type: ${type}, programmatic: ${programmatic}`);
       
-      // Check if the difficulty is locked
-      if (selectedButton.classList.contains('locked')) {
-        // // showAchievement('Complete the previous level first!', '🔒');
-        return;
+      let selectedButton = null;
+      
+      // Only try to get button from event if NOT programmatic
+      if (!programmatic && typeof event !== 'undefined' && event && event.target) {
+        selectedButton = event.target.closest('.wiring-option');
+        
+        // Add null check for selectedButton when called from event
+        if (!selectedButton) {
+          console.error('[SelectWiringType] No wiring-option button found in event');
+          return;
+        }
+        
+        // Check if the difficulty is locked
+        if (selectedButton.classList.contains('locked')) {
+          console.log('[SelectWiringType] Difficulty is locked');
+          return;
+        }
       }
       
       const modal = document.getElementById("wiringSelectionModal");
       
-      // Add a selection animation before closing
-      selectedButton.style.transform = 'scale(1.1)';
-      selectedButton.style.background = 'linear-gradient(135deg, #00ff88, #0066cc)';
+      // Add a selection animation before closing (only if called from event)
+      if (selectedButton) {
+        selectedButton.style.transform = 'scale(1.1)';
+        selectedButton.style.background = 'linear-gradient(135deg, #00ff88, #0066cc)';
+      }
       
       setTimeout(() => {
+        console.log(`[SelectWiringType] Setting wiring type to: ${type}`);
+        
         // Set the hidden dropdown value
         document.getElementById('wiring-select').value = type;
         
@@ -4072,16 +4087,21 @@
         // Update and show the wiring type indicator in h1
         updateMainTitle(type);
         
-        // Hide the wiring selection modal with fade out
-        modal.style.opacity = '0';
-        setTimeout(() => {
-          modal.style.display = "none";
-          modal.style.opacity = '1'; // Reset for future use
-          
-          // Show the scoring description modal
-          showScoringModal();
-        }, 300);
-          // Show success message
+        // Hide the wiring selection modal with fade out (only if modal is visible)
+        if (modal && modal.style.display !== 'none') {
+          modal.style.opacity = '0';
+          setTimeout(() => {
+            modal.style.display = "none";
+            modal.style.opacity = '1'; // Reset for future use
+            
+            // Show the scoring description modal only if not programmatic
+            if (!programmatic) {
+              showScoringModal();
+            }
+          }, 300);
+        }
+        
+        // Show success message
         let typeName;
         if (type === 'straightthrough') {
           typeName = 'Easy - Straight-Through (T568B)';
@@ -4090,8 +4110,9 @@
         } else {
           typeName = 'Hard - Rollover (Advanced)';
         }
+        console.log(`[SelectWiringType] Successfully changed to: ${typeName}`);
         // // showAchievement(`Selected: ${typeName}`, '🎯');
-      }, 500);
+      }, selectedButton ? 500 : 0);
     }
 
     // Update the main title with selected wiring type using if-else
@@ -4468,6 +4489,12 @@
 
     // Handle drag
     function drag(ev) {
+      // Add null check for ev.target
+      if (!ev || !ev.target || !ev.dataTransfer) {
+        console.error('[Drag] Invalid event or target:', ev);
+        return;
+      }
+      
       ev.dataTransfer.setData("text", ev.target.id);
       ev.target.classList.add("dragging");
       
@@ -4476,7 +4503,7 @@
       
       // If wire is being moved from a slot, clear the slot's visual feedback
       const currentSlot = ev.target.parentElement;
-      if (currentSlot.classList.contains("wire-slot")) {
+      if (currentSlot && currentSlot.classList && currentSlot.classList.contains("wire-slot")) {
         currentSlot.style.border = '';
         currentSlot.style.boxShadow = '';
         // Decrease wire count since we're removing a placed wire
@@ -4716,12 +4743,21 @@
 
     // Handle the end of drag (to reset the wire if not placed in a valid slot)
     function dragEnd(ev) {
+      // Add null checks for ev and ev.target
+      if (!ev || !ev.target) {
+        console.error('[DragEnd] Invalid event or target:', ev);
+        return;
+      }
+      
       const wire = ev.target;
 
       // If the wire is not in a valid slot, move it back to its original area
-      if (!wire.parentElement.classList.contains("wire-slot")) {
+      if (wire.parentElement && wire.parentElement.classList && !wire.parentElement.classList.contains("wire-slot")) {
         const wireId = wire.id.includes("-A") ? "endA-wires" : "endB-wires";
-        document.getElementById(wireId).appendChild(wire);
+        const container = document.getElementById(wireId);
+        if (container) {
+          container.appendChild(wire);
+        }
       }
     }
 
@@ -5789,12 +5825,19 @@
     }
 
     function goToNextLevel() {
+      console.log('[GoToNextLevel] Attempting to advance to next difficulty level');
       closeResultModal();
       const currentWiring = document.getElementById('wiring-select').value;
+      console.log(`[GoToNextLevel] Current wiring type: ${currentWiring}`);
+      
       if (currentWiring === 'straightthrough') {
-        selectWiringType('crossover');
+        console.log('[GoToNextLevel] Moving to crossover');
+        selectWiringType('crossover', true);  // Pass true for programmatic call
       } else if (currentWiring === 'crossover') {
-        selectWiringType('rollover');
+        console.log('[GoToNextLevel] Moving to rollover');
+        selectWiringType('rollover', true);  // Pass true for programmatic call
+      } else {
+        console.log('[GoToNextLevel] Already at highest level');
       }
     }
 
@@ -5804,7 +5847,7 @@
 
     // Tutorial Modal Functions
     let currentTutorialStep = 1;
-    const totalTutorialSteps = 6;
+    const totalTutorialSteps = 5;
 
     // Difficulty-specific tutorial content
     const tutorialsByDifficulty = {
@@ -5888,28 +5931,6 @@
                 <li>🔥 +10 bonus for combos</li>
                 <li>🏆 75%+ unlocks Medium!</li>
                 <li>⏱️ 5 minute timer</li>
-              </ul>
-            </div>
-          `
-        },
-        {
-          title: "🚀 Let's Go!",
-          content: `
-            <h3><i class="fas fa-rocket"></i> Ready to Play!</h3>
-            
-            <div class="tutorial-highlight-box" style="background: rgba(16, 185, 129, 0.1); border-color: #10b981;">
-              <strong>🎯 Quick Cheat Sheet:</strong>
-              <p style="font-size: 16px; font-weight: bold; color: #10b981;">
-                W-O → O → W-G → B → W-B → G → W-Br → Br
-              </p>
-            </div>
-            
-            <div class="tutorial-highlight-box">
-              <strong>💡 Pro Tips:</strong>
-              <ul>
-                <li>🎯 Complete End A, then End B</li>
-                <li>✅ Watch for green/red feedback</li>
-                <li>🔄 Reset anytime to retry</li>
               </ul>
             </div>
           `
@@ -6011,27 +6032,6 @@
             
             <div class="tutorial-highlight-box" style="background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
               <strong>⚠️ Harder to combo!</strong>
-            </div>
-          `
-        },
-        {
-          title: "🔥 Let's Go!",
-          content: `
-            <h3><i class="fas fa-fire"></i> Ready to Crossover!</h3>
-            
-            <div class="tutorial-highlight-box" style="background: rgba(245, 158, 11, 0.1); border-color: #f59e0b;">
-              <strong>🎯 Cheat Sheet:</strong>
-              <p><strong>A:</strong> <span style="font-size: 14px; font-weight: bold; color: #22c55e;">W-G → G → W-O → B → W-B → O → W-Br → Br</span></p>
-              <p><strong>B:</strong> <span style="font-size: 14px; font-weight: bold; color: #fb923c;">W-O → O → W-G → B → W-B → G → W-Br → Br</span></p>
-            </div>
-            
-            <div class="tutorial-highlight-box">
-              <strong>💡 Pro Tips:</strong>
-              <ul>
-                <li>🧠 Memorize before starting</li>
-                <li>✅ One end at a time</li>
-                <li>🔍 Double-check patterns!</li>
-              </ul>
             </div>
           `
         }
@@ -6145,33 +6145,6 @@
                 <li>🧠 Mental fatigue is real</li>
                 <li>👑 75% = True Elite!</li>
               </ul>
-            </div>
-          `
-        },
-        {
-          title: "👑 Master Challenge!",
-          content: `
-            <h3><i class="fas fa-crown"></i> Ultimate Test!</h3>
-            
-            <div class="tutorial-highlight-box" style="background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
-              <strong>🔥 Cheat Sheet:</strong>
-              <p><strong>A:</strong> <span style="font-size: 14px; font-weight: bold; color: #ef4444;">Br → W-Br → G → W-B → B → W-G → O → W-O</span></p>
-              <p><strong>B:</strong> <span style="font-size: 14px; font-weight: bold; color: #10b981;">W-O → O → W-G → B → W-B → G → W-Br → Br</span></p>
-            </div>
-            
-            <div class="tutorial-highlight-box">
-              <strong>💪 Survival Tips:</strong>
-              <ul>
-                <li>🧘 Stay calm, breathe</li>
-                <li>🎯 One end at a time</li>
-                <li>🔍 Triple-check each wire</li>
-                <li>🏆 75% = Elite status!</li>
-              </ul>
-            </div>
-            
-            <div class="tutorial-highlight-box" style="background: rgba(255, 215, 0, 0.1); border-color: #ffd700;">
-              <strong>🎖️ Mantra:</strong>
-              <p style="font-style: italic; color: #ffd700; font-size: 15px;">"First becomes last, Brown leads the way!"</p>
             </div>
           `
         }
