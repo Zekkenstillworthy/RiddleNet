@@ -1490,7 +1490,7 @@
 
 <script>
 // Quiz Data - The 11 questions from the prompt
-const quizQuestions = [
+let quizQuestions = [
     {
         question: "It is a network that spans across countries or continents and connects multiple smaller networks.",
         options: ["LAN", "MAN", "WAN (Wide Area Network)", "PAN"],
@@ -1542,7 +1542,7 @@ const quizQuestions = [
     },
     {
         question: "What type of network topology is shown in the image below?",
-        image: "{{ url_for('static', filename='imag/Bus.jpg') }}",
+        image: "{{ url_for('static', filename='img/Bus.jpg') }}",
         options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
         correct: 0,
         explanation: "Bus Topology is where all devices are connected to a single cable (backbone). All nodes share the same communication line.",
@@ -1550,7 +1550,7 @@ const quizQuestions = [
     },
     {
         question: "Which topology is displayed in the image? (Devices connected in a circular fashion)",
-        image: "{{ url_for('static', filename='imag/Ring.jpg') }}",
+        image: "{{ url_for('static', filename='img/Ring.jpg') }}",
         options: ["Ring Topology", "Star Topology", "Bus Topology", "Tree Topology"],
         correct: 0,
         explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction around the ring.",
@@ -1588,8 +1588,20 @@ let hintsRemaining = 3;
 let fiftyFiftyUsed = false;
 let answered = false;
 
+// Shuffle array function (Fisher-Yates algorithm)
+function shuffleArray(array) {
+    const shuffled = [...array]; // Create a copy to avoid mutating original
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 // Initialize Quiz
 document.addEventListener('DOMContentLoaded', function() {
+    // Shuffle questions on page load
+    quizQuestions = shuffleArray(quizQuestions);
     loadQuestion();
     startTimer();
 });
