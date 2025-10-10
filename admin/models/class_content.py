@@ -65,7 +65,6 @@ class ClassAssignment(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     points = db.Column(db.Integer, default=100)
     assignment_type = db.Column(db.String(50), default='assignment')  # assignment, quiz, project
-    priority = db.Column(db.String(20), default='medium')  # low, medium, high
     category = db.Column(db.String(50), default='general')  # general, networking1, networking2, security, etc.
     is_published = db.Column(db.Boolean, default=False)
     
@@ -108,7 +107,6 @@ class ClassAssignment(db.Model):
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'points': self.points,
             'assignment_type': self.assignment_type,
-            'priority': self.priority,
             'category': self.category,
             'is_published': self.is_published,
             'allow_file_uploads': getattr(self, 'allow_file_uploads', True),

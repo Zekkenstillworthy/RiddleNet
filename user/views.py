@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 from .models import db
 from .models import User as UserModel  # Rename to avoid conflicts
 from .models import Score as UserScore  # Rename to avoid conflicts
+from user.models.challenge_score import ChallengeScore
 from admin.models.topology import Topology
 from user.models.topology_progress import TopologyProgress
 from admin.models.class_model import Class
@@ -120,39 +121,53 @@ def dashboard():
     user = current_user
     user_score = UserScore.query.filter_by(user_id=user.id).all()
 
-    # Get user's best scores for each category
-    topology_score = db.session.query(func.max(UserScore.score)).filter(
-        UserScore.user_id == user.id,
-        UserScore.category == 'topology'
-    ).scalar() or 0
+    # Get user's best scores from new ChallengeScore model (MVP)
+    from user.models.challenge_score import ChallengeScore
+    from user.models.user_badge import UserBadge
     
-    crimping_score = db.session.query(func.max(UserScore.score)).filter(
-        UserScore.user_id == user.id,
-        UserScore.category == 'crimping'
-    ).scalar() or 0
+    # Get challenge stats
+    crimping_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='crimping').first()
+    osi_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='osi').first()
+    troubleshooting_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='troubleshooting').first()
+    quiz_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='quiz').first()
     
-    osi_score = db.session.query(func.max(UserScore.score)).filter(
-        UserScore.user_id == user.id,
-        UserScore.category == 'osi'
-    ).scalar() or 0
+    # Extract best scores (for backward compatibility and template)
+    crimping_score = crimping_challenge.best_score if crimping_challenge else 0
+    osi_score = osi_challenge.best_score if osi_challenge else 0
+    topology_score = troubleshooting_challenge.best_score if troubleshooting_challenge else 0  # Keep legacy name
+    quiz_score = quiz_challenge.best_score if quiz_challenge else 0
+    
+    # Calculate dashboard stats (MVP)
+    challenge_stats = ChallengeScore.get_user_stats(user.id)
+    
+    # Get user badges (MVP)
+    user_badges = UserBadge.get_user_badges(user.id)
+    user_badges_list = [badge.to_dict() for badge in user_badges]
+    
+    # Get challenge data for display
+    challenge_data = []
+    for challenge in [crimping_challenge, osi_challenge, troubleshooting_challenge, quiz_challenge]:
+        if challenge:
+            challenge_data.append(challenge.to_dict())
 
     try:
-        # Enhanced leaderboard data with user details and profile images (migrated from leaderboard route)
+        # MVP: Enhanced leaderboard data from ChallengeScore table for accurate challenge tracking
         user_best_scores = []
-        # Get all users with scores including profile image
+        
+        # Get all users with challenge scores including profile image
         users_with_scores = (
             db.session.query(UserModel.id, UserModel.username, UserModel.profile_img)
-            .join(UserScore)
+            .join(ChallengeScore)
             .distinct()
             .all()
         )
         
-        # For each user, get their highest score entry
+        # For each user, get their highest challenge score entry
         for user_id, username, profile_img in users_with_scores:
             highest_score_entry = (
-                db.session.query(UserScore)
-                .filter(UserScore.user_id == user_id)
-                .order_by(UserScore.score.desc(), UserScore.date_attempted.desc())
+                db.session.query(ChallengeScore)
+                .filter(ChallengeScore.user_id == user_id)
+                .order_by(ChallengeScore.best_score.desc(), ChallengeScore.updated_at.desc())
                 .first()
             )
             
@@ -170,9 +185,9 @@ def dashboard():
                 entry = LeaderboardEntry(
                     user_id=user_id,
                     username=username,
-                    score=highest_score_entry.score,
-                    category=highest_score_entry.category,
-                    date_attempted=highest_score_entry.date_attempted,
+                    score=highest_score_entry.best_score,
+                    category=highest_score_entry.challenge_type,
+                    date_attempted=highest_score_entry.updated_at,
                     profile_img=profile_img
                 )
                 user_best_scores.append(entry)
@@ -180,21 +195,31 @@ def dashboard():
         # Sort by score (highest first)
         leaderboard_data = sorted(user_best_scores, key=lambda x: x.score, reverse=True)
         
-        # Category-specific leaderboards with enhanced data
-        categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
+        # MVP: Category-specific leaderboards from ChallengeScore table
+        # Map legacy category names to challenge_type names
+        challenge_type_map = {
+            'topology': 'troubleshooting',  # Legacy topology = troubleshooting challenge
+            'crimping': 'crimping',
+            'troubleshoot': 'troubleshooting',
+            'riddle': 'quiz',  # Legacy riddle = quiz challenge
+            'osi': 'osi'
+        }
+        
+        categories = ['topology', 'crimping', 'osi', 'troubleshoot', 'riddle']
         category_leaderboards = {}
         for category in categories:
+            challenge_type = challenge_type_map.get(category, category)
             category_leaderboards[f"{category}_leaderboard"] = (
                 db.session.query(
                     UserModel.username, 
                     UserModel.profile_img,
-                    func.max(UserScore.score).label('highest_score'), 
-                    func.max(UserScore.date_attempted).label('latest_attempt')
+                    ChallengeScore.best_score.label('highest_score'), 
+                    ChallengeScore.updated_at.label('latest_attempt')
                 )
-                .join(UserScore)
-                .filter(UserScore.category == category)
-                .group_by(UserModel.id, UserModel.username, UserModel.profile_img)
-                .order_by(func.max(UserScore.score).desc())
+                .join(ChallengeScore)
+                .filter(ChallengeScore.challenge_type == challenge_type)
+                .group_by(UserModel.id, UserModel.username, UserModel.profile_img, ChallengeScore.best_score, ChallengeScore.updated_at)
+                .order_by(ChallengeScore.best_score.desc())
                 .all()
             )
     except Exception as e:
@@ -213,6 +238,15 @@ def dashboard():
         topology_score=topology_score,
         crimping_score=crimping_score,
         osi_score=osi_score,
+        quiz_score=quiz_score,
+        # MVP: New challenge-based stats
+        completed_challenges=challenge_stats['total_challenges_completed'],
+        total_challenges=challenge_stats['total_challenges'],
+        avg_score=round(challenge_stats['average_score'], 1),
+        total_attempts=challenge_stats['total_attempts'],
+        user_badges=user_badges_list,
+        badge_count=len(user_badges_list),
+        challenge_data=challenge_data,
         **category_leaderboards
     )
 
@@ -246,24 +280,71 @@ def scores():
         return render_template('user/index.html', message='You need to log in first!')
     
     user = current_user
-    user_scores = UserScore.query.filter_by(user_id=user.id).order_by(UserScore.date_attempted.desc()).all()
     
-    # Calculate statistics
-    total_attempts = len(user_scores)
-    total_score = sum(score.score for score in user_scores)
-    average_score = total_score / total_attempts if total_attempts > 0 else 0
-    highest_score = max(score.score for score in user_scores) if user_scores else 0
+    # MVP: Get challenge scores from ChallengeScore table for accurate tracking
+    challenge_scores = ChallengeScore.query.filter_by(user_id=user.id).all()
     
-    # Category statistics
+    # Convert to list format for template compatibility (with legacy Score table structure)
+    user_scores = []
+    for cs in challenge_scores:
+        # Create a score object that mimics the old Score structure
+        class ScoreDisplay:
+            def __init__(self, challenge_score):
+                self.id = challenge_score.id
+                self.user_id = challenge_score.user_id
+                self.score = challenge_score.best_score
+                self.category = challenge_score.challenge_type
+                self.date_attempted = challenge_score.updated_at
+                self.attempts = challenge_score.total_attempts
+                self.average_score = challenge_score.average_score
+                self.latest_score = challenge_score.latest_score
+                self.is_completed = challenge_score.is_completed
+        
+        user_scores.append(ScoreDisplay(cs))
+    
+    # Sort by date (most recent first)
+    user_scores.sort(key=lambda x: x.date_attempted, reverse=True)
+    
+    # Calculate statistics from ChallengeScore data
+    total_attempts = sum(cs.total_attempts or 0 for cs in challenge_scores)
+    total_score = sum(cs.best_score or 0 for cs in challenge_scores)
+    average_score = total_score / len(challenge_scores) if challenge_scores else 0
+    highest_score = max((cs.best_score or 0 for cs in challenge_scores), default=0)
+    
+    # Category statistics from ChallengeScore table
+    # Map challenge types to display categories
+    challenge_type_to_category = {
+        'crimping': 'crimping',
+        'osi': 'osi',
+        'troubleshooting': 'troubleshoot',
+        'quiz': 'riddle'
+    }
+    
     categories = ['topology', 'crimping', 'troubleshoot', 'riddle']
     category_stats = {}
     for category in categories:
-        category_scores = [score for score in user_scores if score.category == category]
-        category_stats[category] = {
-            'attempts': len(category_scores),
-            'best_score': max(score.score for score in category_scores) if category_scores else 0,
-            'average': sum(score.score for score in category_scores) / len(category_scores) if category_scores else 0
-        }
+        # Map category to challenge_type
+        if category == 'topology':
+            challenge_type = 'troubleshooting'
+        elif category == 'riddle':
+            challenge_type = 'quiz'
+        else:
+            challenge_type = category
+        
+        category_challenge = next((cs for cs in challenge_scores if cs.challenge_type == challenge_type), None)
+        
+        if category_challenge:
+            category_stats[category] = {
+                'attempts': category_challenge.total_attempts or 0,
+                'best_score': category_challenge.best_score or 0,
+                'average': category_challenge.average_score or 0
+            }
+        else:
+            category_stats[category] = {
+                'attempts': 0,
+                'best_score': 0,
+                'average': 0
+            }
     
     return render_template('user/scores.html', 
                          user=user, 
@@ -455,25 +536,99 @@ def crimping_simulation():
 @user_bp.route('/challenges')
 @user_login_required
 def challenges():
-    """Challenges Hub - Central page for all challenges"""
+    """Challenges Hub - MVP with Dynamic Badge Progress"""
+    from user.models.challenge_score import ChallengeScore
+    
     user = UserModel.query.get(session['user_id'])
+    
+    # Calculate progress for each challenge type
+    challenge_progress = {}
+    
+    # Crimping Challenge Progress
+    crimping_score = ChallengeScore.query.filter_by(
+        user_id=user.id, 
+        challenge_type='crimping'
+    ).first()
+    challenge_progress['crimping'] = {
+        'completed': crimping_score.is_completed if crimping_score else False,
+        'progress': min((crimping_score.best_score or 0) / 100, 1.0) if crimping_score else 0.0,
+        'badge_image': 'Cable_Badge.png'
+    }
+    
+    # OSI Model Challenge Progress
+    osi_score = ChallengeScore.query.filter_by(
+        user_id=user.id,
+        challenge_type='osi'
+    ).first()
+    challenge_progress['osi'] = {
+        'completed': osi_score.is_completed if osi_score else False,
+        'progress': min((osi_score.best_score or 0) / 100, 1.0) if osi_score else 0.0,
+        'badge_image': 'OSI_Badge.png'
+    }
+    
+    # Troubleshooting Challenge Progress
+    troubleshoot_score = ChallengeScore.query.filter_by(
+        user_id=user.id,
+        challenge_type='troubleshooting'
+    ).first()
+    challenge_progress['troubleshooting'] = {
+        'completed': troubleshoot_score.is_completed if troubleshoot_score else False,
+        'progress': min((troubleshoot_score.best_score or 0) / 100, 1.0) if troubleshoot_score else 0.0,
+        'badge_image': 'Troubleshoot_Badge.png'
+    }
+    
+    # Quiz Challenge Progress
+    quiz_score = ChallengeScore.query.filter_by(
+        user_id=user.id,
+        challenge_type='quiz'
+    ).first()
+    challenge_progress['quiz'] = {
+        'completed': quiz_score.is_completed if quiz_score else False,
+        'progress': min((quiz_score.best_score or 0) / 100, 1.0) if quiz_score else 0.0,
+        'badge_image': 'Quiz_Badge.png'
+    }
+    
     return render_template('user/challenges.html', 
                          title="Challenges Hub", 
-                         user=user)
+                         user=user,
+                         challenge_progress=challenge_progress)
 
 @user_bp.route('/osi-simulation')
 @user_login_required
 def osi_simulation():
     """OSI Model Simulation - Interactive learning tool for understanding the 7-layer OSI model"""
     user = UserModel.query.get(session['user_id'])
+    
+    # Check if user has already completed levels
+    osi_challenge = ChallengeScore.query.filter_by(user_id=user.id, challenge_type='osi').first()
+    
+    level_completion_data = {
+        'level1_complete': False,
+        'level2_complete': False,
+        'level1_score': 0,
+        'level2_score': 0,
+        'combined_score': 0
+    }
+    
+    if osi_challenge and osi_challenge.challenge_metadata:
+        challenge_data = osi_challenge.challenge_metadata.get('challenge_data', {})
+        level_completion_data = {
+            'level1_complete': challenge_data.get('level1_score', 0) > 0,  # Any score means completed
+            'level2_complete': challenge_data.get('level2_score', 0) > 0,
+            'level1_score': challenge_data.get('level1_score', 0),
+            'level2_score': challenge_data.get('level2_score', 0),
+            'combined_score': osi_challenge.best_score
+        }
+    
     return render_template('user/osi-simulation.html', 
                          title="OSI Model Simulation", 
-                         user=user)
+                         user=user,
+                         level_completion=level_completion_data)
 
 @user_bp.route('/save_crimping_score', methods=['POST'])
 @user_login_required
 def save_crimping_score():
-    """Save crimping simulation score (MVP Presenter Layer)"""
+    """Save crimping simulation score (MVP with Badge System)"""
     try:
         data = request.get_json()
         user_id = session['user_id']
@@ -488,17 +643,36 @@ def save_crimping_score():
         print(f"  - Wiring Type: {wiring_type}")
         print(f"  - Completion Time: {completion_time}s")
         
-        # Create a new score entry - only use fields that exist in the Score model
+        # Save to legacy Score table for backward compatibility
         new_score = UserScore(
             user_id=user_id,
             score=score,
-            category='crimping'  # Simple category name that matches the database
+            category='crimping'
+        )
+        db.session.add(new_score)
+        
+        # Save to new ChallengeScore table with detailed tracking
+        from user.models.challenge_score import ChallengeScore
+        challenge_score = ChallengeScore.save_score(
+            user_id=user_id,
+            challenge_type='crimping',
+            score=score,
+            metadata={'wiring_type': wiring_type},
+            completion_time=completion_time
         )
         
-        db.session.add(new_score)
+        # Check and award badges
+        from user.services.badge_service import BadgeService
+        newly_earned_badges = BadgeService.check_and_award_badges(
+            user_id=user_id,
+            challenge_type='crimping',
+            score=score,
+            metadata={'wiring_type': wiring_type}
+        )
+        
         db.session.commit()
         
-        print(f"[MVP Backend] ✅ Score saved to database (ID: {new_score.id})")
+        print(f"[MVP Backend] ✅ Score saved (ID: {new_score.id}, Badges: {len(newly_earned_badges)})")
         
         # Send WebSocket notification if available
         try:
@@ -511,6 +685,7 @@ def save_crimping_score():
                     'username': user.username if user else 'Unknown',
                     'score': score,
                     'wiring_type': wiring_type,
+                    'badges_earned': newly_earned_badges,
                     'timestamp': datetime.utcnow().isoformat()
                 }, room=f'user_{user_id}')
                 print(f"[MVP Backend] WebSocket notification sent")
@@ -521,7 +696,9 @@ def save_crimping_score():
             'status': 'success',
             'message': 'Crimping score saved successfully!',
             'score': score,
-            'saved_id': new_score.id
+            'saved_id': new_score.id,
+            'badges_earned': newly_earned_badges,
+            'challenge_completed': challenge_score.is_completed
         })
         
     except Exception as e:
@@ -537,7 +714,7 @@ def save_crimping_score():
 @user_bp.route('/save_osi_score', methods=['POST'])
 @user_login_required
 def save_osi_score():
-    """Save OSI simulation score"""
+    """Save OSI simulation score (MVP with Badge System)"""
     try:
         data = request.get_json()
         user_id = session['user_id']
@@ -545,24 +722,50 @@ def save_osi_score():
         score = data.get('score', 0)
         layer_accuracy = data.get('layer_accuracy', {})
         completion_time = data.get('completion_time', 0)
+        challenge_data = data.get('challenge_data', {})  # Get two-level challenge data
         
-        # Create a new score entry for OSI simulation
+        # Save to legacy Score table
         new_score = UserScore(
             user_id=user_id,
             score=score,
-            category='osi'  # New category for OSI simulation
+            category='osi'
+        )
+        db.session.add(new_score)
+        
+        # Prepare metadata for ChallengeScore
+        metadata = {'layer_accuracy': layer_accuracy}
+        if challenge_data:
+            metadata['challenge_data'] = challenge_data
+        
+        # Save to new ChallengeScore table
+        from user.models.challenge_score import ChallengeScore
+        challenge_score = ChallengeScore.save_score(
+            user_id=user_id,
+            challenge_type='osi',
+            score=score,
+            metadata=metadata,
+            completion_time=completion_time
         )
         
-        db.session.add(new_score)
+        # Check and award badges - pass complete metadata with challenge_data
+        from user.services.badge_service import BadgeService
+        newly_earned_badges = BadgeService.check_and_award_badges(
+            user_id=user_id,
+            challenge_type='osi',
+            score=score,
+            metadata=metadata
+        )
+        
         db.session.commit()
         
-        # WebSocket notification for real-time updates (optional)
+        # WebSocket notification
         try:
             from socket_events import socketio
             socketio.emit('score_updated', {
                 'user_id': user_id,
                 'category': 'osi',
                 'new_score': score,
+                'badges_earned': newly_earned_badges,
                 'timestamp': datetime.utcnow().isoformat()
             }, room=f'user_{user_id}')
         except Exception as e:
@@ -571,15 +774,18 @@ def save_osi_score():
         return jsonify({
             'status': 'success',
             'message': 'OSI simulation score saved successfully!',
-            'score': score
+            'score': score,
+            'badges_earned': newly_earned_badges,
+            'challenge_completed': challenge_score.is_completed
         })
         
     except Exception as e:
         db.session.rollback()
         print(f"Error saving OSI score: {e}")
+        traceback.print_exc()  # Print full traceback for debugging
         return jsonify({
             'status': 'error',
-            'message': 'Failed to save score'
+            'message': f'Failed to save score: {str(e)}'
         }), 500
 
 @user_bp.route('/logout')

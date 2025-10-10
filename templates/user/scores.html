@@ -227,7 +227,19 @@
     border: 1px solid var(--network-purple);
   }
 
+  .category-troubleshooting {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--network-purple);
+    border: 1px solid var(--network-purple);
+  }
+
   .category-riddle {
+    background: rgba(0, 217, 255, 0.2);
+    color: var(--cyber-glow);
+    border: 1px solid var(--cyber-glow);
+  }
+
+  .category-quiz {
     background: rgba(0, 217, 255, 0.2);
     color: var(--cyber-glow);
     border: 1px solid var(--cyber-glow);
@@ -243,6 +255,12 @@
     background: rgba(0, 123, 255, 0.2);
     color: #007bff;
     border: 1px solid #007bff;
+  }
+
+  .category-osi {
+    background: rgba(255, 184, 0, 0.2);
+    color: #ffb800;
+    border: 1px solid #ffb800;
   }
 
   .delete-button {
@@ -619,8 +637,16 @@
                 </td>
                 <td data-label="Category">
                   <span class="category-tag category-{{ score_item.category }}">
-                    <i class="fas fa-{% if score_item.category == 'topology' %}project-diagram{% elif score_item.category == 'riddle' %}question-circle{% elif score_item.category == 'troubleshoot' %}wrench{% elif score_item.category == 'crimping' %}plug{% else %}chart-bar{% endif %}"></i>
-                    {{ score_item.category|title }}
+                    <i class="fas fa-{% if score_item.category == 'troubleshooting' or score_item.category == 'topology' %}project-diagram{% elif score_item.category == 'quiz' or score_item.category == 'riddle' %}question-circle{% elif score_item.category == 'crimping' %}plug{% elif score_item.category == 'osi' %}layer-group{% else %}chart-bar{% endif %}"></i>
+                    {% if score_item.category == 'troubleshooting' %}
+                      Troubleshooting
+                    {% elif score_item.category == 'quiz' %}
+                      Quiz
+                    {% elif score_item.category == 'osi' %}
+                      OSI Model
+                    {% else %}
+                      {{ score_item.category|title }}
+                    {% endif %}
                   </span>
                 </td>
                 <td class="date-cell" data-label="Date">{{ score_item.date_attempted.strftime('%Y-%m-%d %H:%M:%S') }}</td>

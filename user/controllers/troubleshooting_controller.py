@@ -94,6 +94,30 @@ class TroubleshootingController:
         
         # Save to database
         db.session.add(progress)
+        
+        # Save to new ChallengeScore table (MVP)
+        from user.models.challenge_score import ChallengeScore
+        challenge_score = ChallengeScore.save_score(
+            user_id=user_id,
+            challenge_type='troubleshooting',
+            score=match_percentage,  # Use match percentage as score
+            metadata={
+                'scenario_id': scenario.id,
+                'time_taken': time_taken,
+                'attempts': progress.attempts
+            },
+            completion_time=time_taken
+        )
+        
+        # Check and award badges (MVP)
+        from user.services.badge_service import BadgeService
+        newly_earned_badges = BadgeService.check_and_award_badges(
+            user_id=user_id,
+            challenge_type='troubleshooting',
+            score=match_percentage,
+            metadata={'scenario_id': scenario.id}
+        )
+        
         db.session.commit()
         
         # Generate feedback based on match percentage
@@ -107,7 +131,9 @@ class TroubleshootingController:
             "match_score": match_score,
             "topology_match_percentage": match_percentage,
             "feedback": feedback,
-            "expected_topology": scenario.expected_topology  # Now share the expected topology
+            "expected_topology": scenario.expected_topology,  # Now share the expected topology
+            "badges_earned": newly_earned_badges,
+            "challenge_completed": challenge_score.is_completed
         }
         
         return response

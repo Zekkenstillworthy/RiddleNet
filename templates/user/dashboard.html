@@ -145,12 +145,28 @@
 
   .leaderboard-entry {
     transition: all 0.3s ease;
+    padding: 12px 16px !important;
+    margin: 6px 0 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(0, 217, 255, 0.3) !important;
   }
 
   .leaderboard-entry:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.25);
     border-color: var(--cyber-glow);
+  }
+
+  /* MVP Leaderboard Component Styles */
+  .rank-badge {
+    width: 36px !important;
+    height: 36px !important;
+    margin-right: 16px !important;
+  }
+
+  .score-display {
+    padding: 10px 14px !important;
+    min-width: 90px !important;
   }
 
   .leaderboard-content {
@@ -561,10 +577,10 @@
       display: none; /* Hide icons on mobile to save space */
     }
     
-    /* Mobile leaderboard entries */
+    /* Mobile leaderboard entries - MVP Enhanced */
     .leaderboard-entry {
-      padding: 12px !important;
-      margin: 6px 0 !important;
+      padding: 10px 12px !important;
+      margin: 4px 0 !important;
       flex-direction: column;
       align-items: stretch !important;
       gap: 12px;
@@ -731,6 +747,77 @@
       background: rgba(0, 212, 255, 0.2) !important;
     }
   }
+
+  /* Welcome Information Card Styles */
+  .welcome-info-card {
+    animation: slideInFromTop 0.6s ease-out;
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .guide-card {
+    cursor: pointer;
+    position: relative;
+  }
+
+  .guide-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 217, 255, 0.2);
+    border-color: var(--cyber-glow) !important;
+  }
+
+  .guide-card:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(123, 47, 247, 0.05));
+    border-radius: 12px;
+    pointer-events: none;
+  }
+
+  /* Quick action buttons hover effects */
+  .welcome-info-card button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 217, 255, 0.4);
+  }
+
+  .welcome-info-card button:active {
+    transform: translateY(0);
+  }
+
+  /* Badge Grid Responsive Styles */
+  @media (max-width: 1200px) {
+    #badgesContainer {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      gap: 20px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    #badgesContainer {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+      gap: 16px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #badgesContainer {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+  }
 </style>
 
 <link
@@ -741,42 +828,220 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Welcome Modal Pop-up -->
+{% include 'components/welcome_modal.html' %}
+
 <div class="page-container">
   <div class="dashboard-container">
     <script>
       // Disable generic top-right toasts on the dashboard
       window.DISABLE_DASHBOARD_TOASTS = true;
+      
+      // Dashboard Score Debugging - Log the scores received from backend
+      console.log('%c🎯 Dashboard Scores Loaded', 'font-size:16px;color:#00D9FF;font-weight:bold');
+      console.log('Topology Score (Link Up):', {{ topology_score|default(0) }});
+      console.log('Crimping Score:', {{ crimping_score|default(0) }});
+      console.log('OSI Score:', {{ osi_score|default(0) }});
+      console.log('%c💡 If you see 0s, complete a challenge to save a score!', 'font-size:12px;color:#FFD700');
     </script>
-    <!-- Enhanced Stats Grid - Compact -->
+    <!-- Enhanced Stats Grid - Challenge Completion Overview -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
       <div class="stat-card-modern">
         <div class="stat-icon">
-          <i class="fas fa-network-wired"></i>
+          <i class="fas fa-check-circle"></i>
         </div>
-        <div class="stat-value data-flow">{{ topology_score|default(0) }}</div>
-        <div class="stat-label">Link Up</div>
+        <div class="stat-value data-flow">{{ completed_challenges }}/{{ total_challenges }}</div>
+        <div class="stat-label">Challenges Complete</div>
         <div style="margin-top: 8px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.5);">
-          <i class="fas fa-project-diagram" style="color: var(--neon-green);"></i> Network Topology
+          <i class="fas fa-tasks" style="color: var(--neon-green);"></i> Total Progress
         </div>
       </div>
       <div class="stat-card-modern">
         <div class="stat-icon">
-          <i class="fas fa-plug"></i>
+          <i class="fas fa-chart-line"></i>
         </div>
-        <div class="stat-value data-flow">{{ crimping_score|default(0) }}</div>
-        <div class="stat-label">Crimping</div>
+        <div class="stat-value data-flow">{{ avg_score|round(1) }}%</div>
+        <div class="stat-label">Average Score</div>
         <div style="margin-top: 8px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.5);">
-          <i class="fas fa-ethernet" style="color: var(--neon-green);"></i> Cable Crimping
+          <i class="fas fa-trophy" style="color: var(--neon-green);"></i> Performance
         </div>
       </div>
       <div class="stat-card-modern">
         <div class="stat-icon">
-          <i class="fas fa-layer-group"></i>
+          <i class="fas fa-medal"></i>
         </div>
-        <div class="stat-value data-flow">{{ osi_score|default(0) }}</div>
-        <div class="stat-label">OSI Model</div>
+        <div class="stat-value data-flow">{{ badge_count }}</div>
+        <div class="stat-label">Badges Earned</div>
         <div style="margin-top: 8px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.5);">
-          <i class="fas fa-stream" style="color: var(--neon-green);"></i> 7-Layer Model
+          <i class="fas fa-star" style="color: var(--neon-green);"></i> Achievements
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievements & Badges Section -->
+    <div class="modern-card" style="margin-bottom: 24px;">
+      <div class="section-header" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #00d9ff, #3b82f6); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);">
+            <i class="fas fa-trophy" style="font-size: 1.5rem; color: #ffffff;"></i>
+          </div>
+          <div>
+            <h2 style="margin: 0; font-size: 1.5rem; background: linear-gradient(135deg, #00d9ff, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+              Your Achievements
+            </h2>
+            <p style="margin: 4px 0 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">
+              Badges earned from completing challenges
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Badges Display Grid -->
+      <div id="badgesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; justify-items: center;">
+        <!-- Badges will be dynamically added here -->
+      </div>
+
+      <!-- No Badges Message (hidden when badges exist) -->
+      <div id="noBadgesMessage" style="text-align: center; padding: 40px 20px; background: var(--dark-bg); border-radius: 12px; border: 2px dashed rgba(255, 255, 255, 0.2);">
+        <i class="fas fa-medal" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 16px;"></i>
+        <h3 style="margin: 0 0 8px; color: rgba(255, 255, 255, 0.6); font-size: 1.1rem;">No Badges Yet</h3>
+        <p style="margin: 0; color: rgba(255, 255, 255, 0.4); font-size: 0.9rem;">
+          Complete challenges with high scores to earn your first badge!
+        </p>
+        <div style="margin-top: 16px;">
+          <a href="{{ url_for('user.crimping_simulation') }}" style="display: inline-block; background: var(--gradient-primary); border: none; border-radius: 8px; padding: 10px 20px; color: white; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
+            <i class="fas fa-plug"></i> Try Cable Crimping
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome Information Section - NEW -->
+    <div id="welcomeCard" class="modern-card welcome-info-card" style="margin-bottom: 24px; position: relative; overflow: hidden;">
+      <!-- Animated background effect -->
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(123, 47, 247, 0.05) 100%); pointer-events: none;"></div>
+      
+      <div style="position: relative; z-index: 1;">
+        <!-- Welcome Header -->
+        <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; background: var(--gradient-primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);">
+              <i class="fas fa-rocket" style="font-size: 1.5rem; color: white;"></i>
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.5rem; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                Welcome, {{ user.first_name or user.username }}! 🎓
+              </h2>
+              <p style="margin: 4px 0 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">
+                Let's explore what you can do in RiddleNet
+              </p>
+            </div>
+          </div>
+          <button onclick="dismissWelcome()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 8px 12px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;" title="Dismiss this guide">
+            <i class="fas fa-times"></i>
+            <span style="font-size: 0.85rem;">Dismiss</span>
+          </button>
+        </div>
+
+        <!-- Quick Guide Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          
+          <!-- Card 1: Challenges -->
+          <div class="guide-card" style="background: rgba(0, 217, 255, 0.05); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 12px; padding: 16px; transition: all 0.3s ease;">
+            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 40px; height: 40px; background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 217, 255, 0.1)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-puzzle-piece" style="font-size: 1.2rem; color: var(--cyber-glow);"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--cyber-glow);">Interactive Challenges</h3>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); line-height: 1.4;">
+                  Test your networking skills with hands-on simulations
+                </p>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); line-height: 1.8;">
+              <li>🔌 Cable Crimping Simulation</li>
+              <li>🌐 OSI Model Challenge</li>
+              <li>🔗 Network Topology (LinkUp)</li>
+            </ul>
+          </div>
+
+          <!-- Card 2: Learning Modules -->
+          <div class="guide-card" style="background: rgba(123, 47, 247, 0.05); border: 1px solid rgba(123, 47, 247, 0.2); border-radius: 12px; padding: 16px; transition: all 0.3s ease;">
+            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 40px; height: 40px; background: linear-gradient(135deg, rgba(123, 47, 247, 0.2), rgba(123, 47, 247, 0.1)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-book-open" style="font-size: 1.2rem; color: #7b2ff7;"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: #7b2ff7;">Learning Modules</h3>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); line-height: 1.4;">
+                  Access structured courses and lessons
+                </p>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); line-height: 1.8;">
+              <li>📚 Networking Fundamentals</li>
+              <li>🎥 Video Tutorials & Guides</li>
+              <li>📝 Interactive Quizzes</li>
+            </ul>
+          </div>
+
+          <!-- Card 3: Track Progress -->
+          <div class="guide-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 16px; transition: all 0.3s ease;">
+            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 40px; height: 40px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas fa-chart-line" style="font-size: 1.2rem; color: #10b981;"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: #10b981;">Track Your Progress</h3>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); line-height: 1.4;">
+                  Monitor your achievements and scores
+                </p>
+              </div>
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); line-height: 1.8;">
+              <li>🏆 View Leaderboards Below</li>
+              <li>📊 Check Your Scores Tab</li>
+              <li>🎯 Earn Badges & Achievements</li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <a href="{{ url_for('user.challenges') }}" style="text-decoration: none; flex: 1; min-width: 200px;">
+            <button style="width: 100%; background: var(--gradient-primary); border: none; border-radius: 10px; padding: 12px 20px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);">
+              <i class="fas fa-gamepad"></i>
+              Start Challenges
+            </button>
+          </a>
+          <a href="{{ url_for('user.classes') }}" style="text-decoration: none; flex: 1; min-width: 200px;">
+            <button style="width: 100%; background: rgba(123, 47, 247, 0.2); border: 1px solid rgba(123, 47, 247, 0.4); border-radius: 10px; padding: 12px 20px; color: var(--text-primary); font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fas fa-graduation-cap"></i>
+              Browse Courses
+            </button>
+          </a>
+          <a href="{{ url_for('user.scores') }}" style="text-decoration: none; flex: 1; min-width: 200px;">
+            <button style="width: 100%; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px 20px; color: var(--text-primary); font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <i class="fas fa-trophy"></i>
+              View Scores
+            </button>
+          </a>
+        </div>
+
+        <!-- Pro Tip -->
+        <div style="margin-top: 16px; background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107; border-radius: 8px; padding: 12px 16px;">
+          <div style="display: flex; align-items: start; gap: 10px;">
+            <i class="fas fa-lightbulb" style="color: #ffc107; font-size: 1.2rem; margin-top: 2px;"></i>
+            <div>
+              <strong style="color: #ffc107; font-size: 0.9rem;">Pro Tip:</strong>
+              <p style="margin: 4px 0 0; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); line-height: 1.5;">
+                Complete challenges to earn points and climb the leaderboard. Your progress is automatically saved, so you can continue anytime!
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -813,31 +1078,27 @@
         </div>
       </div>
 
-      <!-- Category Filter Tabs -->
+      <!-- Category Filter Tabs - Challenge Types Only -->
       <div class="category-filters" style="display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
         <button class="filter-btn active" data-category="all" onclick="showCategory('all')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-globe"></i>
-          Overall
-        </button>
-        <button class="filter-btn" data-category="topology" onclick="showCategory('topology')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-project-diagram"></i>
-          Topology
+          <i class="fas fa-trophy"></i>
+          All Challenges
         </button>
         <button class="filter-btn" data-category="crimping" onclick="showCategory('crimping')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
           <i class="fas fa-plug"></i>
           Crimping
         </button>
         <button class="filter-btn" data-category="osi" onclick="showCategory('osi')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-network-wired"></i>
+          <i class="fas fa-layer-group"></i>
           OSI Model
         </button>
         <button class="filter-btn" data-category="troubleshoot" onclick="showCategory('troubleshoot')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-tools"></i>
-          Troubleshoot
+          <i class="fas fa-wrench"></i>
+          Troubleshooting
         </button>
         <button class="filter-btn" data-category="riddle" onclick="showCategory('riddle')" style="padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-question-circle"></i>
-          Riddles
+          <i class="fas fa-brain"></i>
+          Quiz
         </button>
       </div>
       
@@ -1970,6 +2231,152 @@
       
       requestAnimationFrame(updateNumber);
     }
+    
+    // Dismiss welcome card function (globally accessible)
+    window.dismissWelcome = function() {
+      const welcomeCard = document.getElementById('welcomeCard');
+      if (welcomeCard) {
+        // Add fade out animation
+        welcomeCard.style.transition = 'all 0.4s ease-out';
+        welcomeCard.style.opacity = '0';
+        welcomeCard.style.transform = 'translateY(-20px)';
+        
+        // Remove from DOM after animation
+        setTimeout(() => {
+          welcomeCard.remove();
+        }, 400);
+        
+        // Save dismissed state to localStorage
+        localStorage.setItem('welcomeDismissed', 'true');
+      }
+    };
+    
+    // Initialize Badges Display (MVP - Using Backend Data)
+    function initializeBadges() {
+      const badgesContainer = document.getElementById('badgesContainer');
+      const noBadgesMessage = document.getElementById('noBadgesMessage');
+      
+      // Get badges from backend (passed via template)
+      const userBadges = {{ user_badges|tojson }};
+      const badgeCount = {{ badge_count|default(0) }};
+      
+      console.log('%c🏆 Loading User Badges from Database', 'font-size:14px;color:#FFD700;font-weight:bold');
+      console.log(`Found ${badgeCount} badges:`, userBadges);
+      
+      // Badge image mapping
+      const badgeImages = {
+        'cable_master': "{{ url_for('static', filename='img/Cable_Badge.png') }}",
+        'crimping_expert': "{{ url_for('static', filename='img/Cable_Badge.png') }}",
+        'osi_tcp_master': "{{ url_for('static', filename='img/OSI_Badge.png') }}",
+        'layer_master': "{{ url_for('static', filename='img/OSI_Badge.png') }}",
+        'troubleshooting_pro': "{{ url_for('static', filename='img/Device_Badge.png') }}",
+        'network_detective': "{{ url_for('static', filename='img/Device_Badge.png') }}",
+        'quiz_champion': "{{ url_for('static', filename='img/Quiz_Badge.png') }}",
+        'quiz_master': "{{ url_for('static', filename='img/Quiz_Badge.png') }}"
+      };
+      
+      // Rarity colors
+      const rarityColors = {
+        'legendary': '#ffd700',
+        'rare': '#9333ea',
+        'common': '#10b981'
+      };
+      
+      // Display badges
+      if (userBadges && userBadges.length > 0) {
+        noBadgesMessage.style.display = 'none';
+        badgesContainer.innerHTML = '';
+        
+        userBadges.forEach((badge, index) => {
+          // Use blue color theme for all badges
+          const blueColor = '#00d9ff';
+          const badgeImage = badgeImages[badge.badge_id] || "{{ url_for('static', filename='img/Badge_Placeholder.png') }}";
+          
+          const badgeCard = document.createElement('div');
+          badgeCard.className = 'badge-card';
+          badgeCard.style.cssText = `
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid ${blueColor}40;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            width: 100%;
+            max-width: 350px;
+            box-sizing: border-box;
+          `;
+          
+          // Badge display - Image and Name only
+          badgeCard.innerHTML = `
+            <div style="position: relative; z-index: 1;">
+              <img src="${badgeImage}" alt="${badge.badge_name}" style="width: 250px; height: 250px; object-fit: contain; margin-bottom: 20px; filter: drop-shadow(0 0 20px ${blueColor}80);">
+              <h3 style="margin: 0; font-size: 1.4rem; color: var(--text-primary); font-weight: 700;">${badge.badge_name}</h3>
+            </div>
+          `;
+          
+          // Hover effects
+          badgeCard.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+            this.style.boxShadow = `0 12px 40px ${blueColor}40`;
+            this.style.borderColor = blueColor;
+          });
+          
+          badgeCard.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.boxShadow = 'none';
+            this.style.borderColor = `${blueColor}40`;
+          });
+          
+          badgesContainer.appendChild(badgeCard);
+          
+          // Staggered animation
+          setTimeout(() => {
+            badgeCard.style.transition = 'all 0.6s ease-out';
+            badgeCard.style.opacity = '1';
+            badgeCard.style.transform = 'translateY(0)';
+          }, 100 + (index * 100));
+        });
+        
+        // Update badge count display
+        const badgeCountElement = document.getElementById('badgeCount');
+        if (badgeCountElement) {
+          badgeCountElement.textContent = badgeCount;
+        }
+      } else {
+        noBadgesMessage.style.display = 'block';
+        badgesContainer.innerHTML = '';
+      }
+    }
+    
+    // Check if welcome card should be shown on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      // Initialize badges
+      initializeBadges();
+      
+      const welcomeCard = document.getElementById('welcomeCard');
+      const isDismissed = localStorage.getItem('welcomeDismissed');
+      
+      if (isDismissed === 'true' && welcomeCard) {
+        // Hide immediately if already dismissed
+        welcomeCard.style.display = 'none';
+      } else if (welcomeCard) {
+        // Animate entrance for first-time users
+        welcomeCard.style.opacity = '0';
+        welcomeCard.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          welcomeCard.style.transition = 'all 0.6s ease-out';
+          welcomeCard.style.opacity = '1';
+          welcomeCard.style.transform = 'translateY(0)';
+        }, 300);
+      }
+    });
   });
 </script>
 

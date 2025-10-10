@@ -1362,6 +1362,15 @@
     /* achievementUnlock keyframes removed */\n    .achievement-icon {
         font-size: 20px;
         color: var(--success-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .achievement-icon img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
     }
 
     .achievement-text {
@@ -3013,6 +3022,12 @@ document.addEventListener('DOMContentLoaded', () => {
         transition: none !important;
     }
 
+    /* Black background overlay when modal is active */
+    #canvas-container.modal-active {
+        background: rgba(0, 0, 0, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
     /* Ensure modals appear above sidebar */
     /* All modals use consistent z-index from CSS variables */
     .scenario-popup,
@@ -4575,7 +4590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: 50%;
+        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
         transform: translate(-50%, -50%) scale(0.9);
         width: min(900px, 90vw);
         max-width: 95vw;
@@ -5986,8 +6001,8 @@ document.addEventListener('DOMContentLoaded', () => {
 .linkup-welcome-modal {
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: var(--current-sidebar-width, 280px);
+  width: calc(100% - var(--current-sidebar-width, 280px));
   height: 100%;
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(10px);
@@ -7272,9 +7287,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function closeLinkUp() {
-          if (confirm('Are you sure you want to exit Link Up?')) {
             window.location.href = "{{ url_for('user.challenges') }}";
-          }
         }
 
         // Show welcome modal on page load
@@ -8146,18 +8159,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Show achievement notification
                 let achievementText = '';
+                let achievementIcon = '';
                 switch (achievementId) {
                     case 'first-device':
                         achievementText = '🎉 Achievement: First Device placed!';
+                        achievementIcon = '🎉';
                         break;
                     case 'network-builder':
                         achievementText = '🏗️ Achievement: Network Builder - 5 devices placed!';
+                        achievementIcon = '🏗️';
                         break;
                     case 'speed-demon':
                         achievementText = '⚡ Achievement: Speed Demon - Completed in under 5 minutes!';
+                        achievementIcon = '⚡';
                         break;
                     case 'perfectionist':
-                        achievementText = '✨ Achievement: Perfectionist - No mistakes made!';
+                        const troubleshootBadgeUrl = "{{ url_for('static', filename='img/Troubleshoot_Badge.png') }}";
+                        achievementText = '<img src="' + troubleshootBadgeUrl + '" style="width:24px;height:24px;vertical-align:middle;"> Achievement: Troubleshooting Pro - No mistakes made!';
+                        achievementIcon = '<img src="' + troubleshootBadgeUrl + '" style="width:24px;height:24px;">';
                         break;
                 }
                 
@@ -9669,6 +9688,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modalBackdrop) {
                 modalBackdrop.style.display = "block";
                 modalBackdrop.classList.add('active');
+            }
+            
+            // Add black background to canvas container
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.classList.add('modal-active');
             }
             
             // Then show modal
@@ -12971,12 +12996,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             modalBackdrop.style.display = "block";
             modalBackdrop.classList.add('active');
+            
+            // Add black background to canvas container
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.classList.add('modal-active');
+            }
+            
             scenarioModal.style.display = "flex";
             scenarioModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeScenarioModal() {
+            // Remove black background from canvas container
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.classList.remove('modal-active');
+            }
+            
             // Redirect to challenges page
             window.location.href = "{{ url_for('user.challenges') }}";
         }
@@ -13040,6 +13078,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalBackdrop.classList.remove('active');
                 modalBackdrop.style.display = 'none';
             }
+            
+            // Remove black background from canvas container
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                canvasContainer.classList.remove('modal-active');
+            }
+            
             document.body.style.overflow = 'auto';
         }
 
@@ -17116,6 +17161,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof initForceLandscape === 'function') {
             initForceLandscape({ pageKey: 'troubleshooting', autoFullscreen: true });
         }
+    </script>
+
+    <!-- Navigation Confirmation Modal -->
+    {% include 'components/navigation_confirmation_modal.html' %}
+    
+    <!-- Activate Navigation Guard for Troubleshooting Challenge -->
+    <script>
+      // Activate navigation guard when challenge starts
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          if (typeof window.challengeNavigationGuard !== 'undefined') {
+            window.challengeNavigationGuard.activate();
+            window.challengeNavigationGuard.setProgress('Network Troubleshooting: In progress');
+            console.log('[TroubleshootChallenge] Navigation guard activated');
+          }
+        }, 1000);
+      });
+      
+      // Deactivate guard when user successfully completes challenge
+      function deactivateNavigationGuard() {
+        if (typeof window.challengeNavigationGuard !== 'undefined') {
+          window.challengeNavigationGuard.deactivate();
+          console.log('[TroubleshootChallenge] Navigation guard deactivated - challenge completed');
+        }
+      }
     </script>
 
 {% endblock %}

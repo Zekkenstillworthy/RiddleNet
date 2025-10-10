@@ -573,3 +573,130 @@ def track_networking2_progress():
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ============================================================================
+# CHALLENGE PROGRESS API ROUTES - MVP
+# Save/Load/Clear game state for resumable challenges
+# ============================================================================
+
+@api_blueprint.route('/challenge/save-progress', methods=['POST'])
+def save_challenge_progress():
+    """
+    Save challenge progress to database
+    Request body: {challenge_type: str, state_data: dict, is_completed: bool}
+    """
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 401
+    
+    try:
+        from user.models.challenge_progress import ChallengeProgress
+        
+        data = request.get_json()
+        user_id = session['user_id']
+        challenge_type = data.get('challenge_type')
+        state_data = data.get('state_data')
+        is_completed = data.get('is_completed', False)
+        
+        # Validation
+        if not challenge_type:
+            return jsonify({'success': False, 'error': 'Missing challenge_type'}), 400
+        
+        if not state_data or not isinstance(state_data, dict):
+            return jsonify({'success': False, 'error': 'Missing or invalid state_data'}), 400
+        
+        # Save progress using model method
+        progress = ChallengeProgress.save_progress(
+            user_id=user_id,
+            challenge_type=challenge_type,
+            state_data=state_data,
+            is_completed=is_completed
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Progress saved successfully',
+            'progress': progress.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving challenge progress: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@api_blueprint.route('/challenge/load-progress/<challenge_type>', methods=['GET'])
+def load_challenge_progress(challenge_type):
+    """
+    Load saved challenge progress for the current user
+    Returns: {success: bool, has_progress: bool, state_data: dict, last_updated: str, is_completed: bool}
+    """
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 401
+    
+    try:
+        from user.models.challenge_progress import ChallengeProgress
+        
+        user_id = session['user_id']
+        
+        # Load progress using model method
+        progress = ChallengeProgress.load_progress(
+            user_id=user_id,
+            challenge_type=challenge_type
+        )
+        
+        if progress:
+            return jsonify({
+                'success': True,
+                'has_progress': True,
+                'state_data': progress.state_data,
+                'last_updated': progress.last_updated.isoformat(),
+                'is_completed': progress.is_completed,
+                'created_at': progress.created_at.isoformat() if progress.created_at else None
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'has_progress': False
+            })
+            
+    except Exception as e:
+        print(f"Error loading challenge progress: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@api_blueprint.route('/challenge/clear-progress/<challenge_type>', methods=['DELETE'])
+def clear_challenge_progress(challenge_type):
+    """
+    Clear saved challenge progress for the current user
+    Returns: {success: bool, message: str}
+    """
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 401
+    
+    try:
+        from user.models.challenge_progress import ChallengeProgress
+        
+        user_id = session['user_id']
+        
+        # Clear progress using model method
+        cleared = ChallengeProgress.clear_progress(
+            user_id=user_id,
+            challenge_type=challenge_type
+        )
+        
+        if cleared:
+            return jsonify({
+                'success': True,
+                'message': f'Progress cleared for {challenge_type}'
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': 'No progress found to clear'
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error clearing challenge progress: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

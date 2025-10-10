@@ -45,7 +45,7 @@ def test_images():
 @quiz_bp.route('/api/submit', methods=['POST'])
 @login_required
 def submit_quiz():
-    """Submit quiz results"""
+    """Submit quiz results (MVP with Badge System)"""
     try:
         data = request.json
         score = data.get('score', 0)
@@ -53,14 +53,42 @@ def submit_quiz():
         time_taken = data.get('time_taken', 0)
         lifelines_used = data.get('lifelines_used', {})
         
-        # Save score to database
+        # Calculate percentage score
+        score_percentage = (score / total_questions * 100) if total_questions > 0 else 0
+        
+        # Save to legacy Score table
         from user.models.score import Score
         new_score = Score(
-            score=score,
+            score=score_percentage,  # Store as percentage
             user_id=current_user.id,
             category='quiz_challenge'
         )
         db.session.add(new_score)
+        
+        # Save to new ChallengeScore table
+        from user.models.challenge_score import ChallengeScore
+        challenge_score = ChallengeScore.save_score(
+            user_id=current_user.id,
+            challenge_type='quiz',
+            score=score_percentage,
+            metadata={
+                'total_questions': total_questions,
+                'correct_answers': score,
+                'time_taken': time_taken,
+                'lifelines_used': lifelines_used
+            },
+            completion_time=time_taken
+        )
+        
+        # Check and award badges
+        from user.services.badge_service import BadgeService
+        newly_earned_badges = BadgeService.check_and_award_badges(
+            user_id=current_user.id,
+            challenge_type='quiz',
+            score=score_percentage,
+            metadata={'total_questions': total_questions, 'lifelines_used': lifelines_used}
+        )
+        
         db.session.commit()
         
         return jsonify({
@@ -68,8 +96,11 @@ def submit_quiz():
             'message': 'Quiz results saved successfully!',
             'score': score,
             'total': total_questions,
-            'percentage': (score / total_questions * 100) if total_questions > 0 else 0
+            'percentage': score_percentage,
+            'badges_earned': newly_earned_badges,
+            'challenge_completed': challenge_score.is_completed
         })
     except Exception as e:
+        db.session.rollback()
         print(f"Error submitting quiz: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

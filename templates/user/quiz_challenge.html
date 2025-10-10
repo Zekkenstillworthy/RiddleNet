@@ -2042,4 +2042,37 @@ function retakeQuiz() {
     loadQuestion();
 }
 </script>
+
+<!-- Navigation Confirmation Modal -->
+{% include 'components/navigation_confirmation_modal.html' %}
+
+<!-- Activate Navigation Guard for Quiz Challenge -->
+<script>
+  // Activate navigation guard when challenge starts
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (typeof window.challengeNavigationGuard !== 'undefined') {
+        window.challengeNavigationGuard.activate();
+        window.challengeNavigationGuard.setProgress('Quiz Challenge: In progress');
+        console.log('[QuizChallenge] Navigation guard activated');
+      }
+    }, 1000);
+  });
+  
+  // Update progress as user answers questions
+  function updateQuizProgress(current, total) {
+    if (typeof window.challengeNavigationGuard !== 'undefined') {
+      window.challengeNavigationGuard.setProgress(`Quiz: Question ${current}/${total}`);
+    }
+  }
+  
+  // Deactivate guard when user successfully completes challenge
+  function deactivateNavigationGuard() {
+    if (typeof window.challengeNavigationGuard !== 'undefined') {
+      window.challengeNavigationGuard.deactivate();
+      console.log('[QuizChallenge] Navigation guard deactivated - challenge completed');
+    }
+  }
+</script>
+
 {% endblock %}

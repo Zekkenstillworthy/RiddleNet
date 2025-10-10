@@ -1,0 +1,375 @@
+<!-- Navigation Confirmation Modal Component -->
+<!-- Appears when user tries to navigate away from an active challenge -->
+
+<div class="navigation-confirmation-modal" id="navigationConfirmationModal" style="display: none;">
+  <div class="navigation-confirmation-content">
+    <div class="navigation-confirmation-header">
+      <div class="warning-icon-container">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <h2>⚠️ Leave Challenge?</h2>
+    </div>
+    
+    <div class="navigation-confirmation-body">
+      <p class="warning-message">You're currently in an active challenge!</p>
+      <p class="warning-details">Your current progress will be saved, but you'll need to restart this challenge from the beginning if you leave now.</p>
+      
+      <div class="progress-info">
+        <div class="info-item">
+          <i class="fas fa-clock"></i>
+          <span id="navConfirmTime">Time spent: 0:00</span>
+        </div>
+        <div class="info-item">
+          <i class="fas fa-chart-line"></i>
+          <span id="navConfirmProgress">Progress: Not started</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="navigation-confirmation-actions">
+      <button class="nav-confirm-btn stay-btn" onclick="stayInChallenge()">
+        <i class="fas fa-undo"></i> Stay in Challenge
+      </button>
+      <button class="nav-confirm-btn quit-btn" onclick="confirmQuitChallenge()">
+        <i class="fas fa-sign-out-alt"></i> Quit Challenge
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Navigation Confirmation Modal Styles */
+  .navigation-confirmation-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(25px);
+    z-index: 50000; /* Higher than other modals */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .navigation-confirmation-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    border-radius: 24px;
+    padding: 0;
+    max-width: 550px;
+    width: 90%;
+    overflow: hidden;
+    position: relative;
+    animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.8),
+      0 0 0 2px rgba(255, 87, 87, 0.4),
+      0 0 100px rgba(255, 87, 87, 0.2);
+    border: 2px solid rgba(255, 87, 87, 0.3);
+  }
+
+  @keyframes modalSlideIn {
+    0% {
+      transform: scale(0.8) translateY(-50px);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .navigation-confirmation-header {
+    background: linear-gradient(135deg, #ff4757 0%, #dc2626 100%);
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .warning-icon-container {
+    font-size: 48px;
+    color: #fff;
+    margin-bottom: 15px;
+    animation: warningPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes warningPulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.8;
+    }
+  }
+
+  .navigation-confirmation-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .navigation-confirmation-body {
+    padding: 35px 30px;
+  }
+
+  .warning-message {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff4757;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .warning-details {
+    font-size: 16px;
+    color: #e2e8f0;
+    line-height: 1.6;
+    text-align: center;
+    margin-bottom: 25px;
+  }
+
+  .progress-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #cbd5e0;
+    font-size: 15px;
+  }
+
+  .info-item i {
+    color: #00d4ff;
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+  }
+
+  .navigation-confirmation-actions {
+    padding: 25px 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .nav-confirm-btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stay-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  }
+
+  .stay-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  }
+
+  .quit-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+  }
+
+  .quit-btn:hover {
+    background: linear-gradient(135deg, #4b5563, #374151);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(107, 114, 128, 0.5);
+  }
+
+  .nav-confirm-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navigation-confirmation-content {
+      width: 95%;
+      max-width: none;
+    }
+
+    .navigation-confirmation-header h2 {
+      font-size: 24px;
+    }
+
+    .warning-icon-container {
+      font-size: 40px;
+    }
+
+    .warning-message {
+      font-size: 18px;
+    }
+
+    .warning-details {
+      font-size: 14px;
+    }
+
+    .navigation-confirmation-actions {
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .nav-confirm-btn {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .navigation-confirmation-header {
+      padding: 25px 20px;
+    }
+
+    .navigation-confirmation-body {
+      padding: 25px 20px;
+    }
+
+    .navigation-confirmation-header h2 {
+      font-size: 20px;
+    }
+
+    .warning-icon-container {
+      font-size: 36px;
+    }
+
+    .nav-confirm-btn {
+      padding: 12px 20px;
+      font-size: 14px;
+    }
+  }
+</style>
+
+<script>
+  // Global Navigation Confirmation System
+  (function() {
+    'use strict';
+    
+    // Track if user is in an active challenge
+    window.challengeNavigationGuard = {
+      isActive: false,
+      startTime: null,
+      progressInfo: '',
+      pendingNavigation: null,
+      
+      // Initialize the guard
+      activate: function() {
+        this.isActive = true;
+        this.startTime = Date.now();
+        console.log('[NavigationGuard] Challenge navigation guard activated');
+      },
+      
+      // Deactivate the guard
+      deactivate: function() {
+        this.isActive = false;
+        this.startTime = null;
+        this.progressInfo = '';
+        this.pendingNavigation = null;
+        console.log('[NavigationGuard] Challenge navigation guard deactivated');
+      },
+      
+      // Update progress info
+      setProgress: function(info) {
+        this.progressInfo = info;
+      },
+      
+      // Get elapsed time
+      getElapsedTime: function() {
+        if (!this.startTime) return '0:00';
+        const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      },
+      
+      // Show confirmation modal
+      showConfirmation: function(targetUrl) {
+        if (!this.isActive) {
+          // Not in a challenge, allow navigation
+          window.location.href = targetUrl;
+          return;
+        }
+        
+        this.pendingNavigation = targetUrl;
+        const modal = document.getElementById('navigationConfirmationModal');
+        const timeElement = document.getElementById('navConfirmTime');
+        const progressElement = document.getElementById('navConfirmProgress');
+        
+        if (modal) {
+          if (timeElement) {
+            timeElement.textContent = `Time spent: ${this.getElapsedTime()}`;
+          }
+          if (progressElement) {
+            progressElement.textContent = this.progressInfo || 'Progress: In progress';
+          }
+          modal.style.display = 'flex';
+        }
+      }
+    };
+    
+    // Stay in challenge
+    window.stayInChallenge = function() {
+      const modal = document.getElementById('navigationConfirmationModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+      window.challengeNavigationGuard.pendingNavigation = null;
+      console.log('[NavigationGuard] User chose to stay in challenge');
+    };
+    
+    // Confirm quit challenge
+    window.confirmQuitChallenge = function() {
+      const targetUrl = window.challengeNavigationGuard.pendingNavigation;
+      if (targetUrl) {
+        window.challengeNavigationGuard.deactivate();
+        window.location.href = targetUrl;
+      }
+      console.log('[NavigationGuard] User confirmed quit challenge');
+    };
+    
+    // Intercept navigation links
+    window.interceptNavigation = function(event, targetUrl) {
+      if (window.challengeNavigationGuard.isActive) {
+        event.preventDefault();
+        window.challengeNavigationGuard.showConfirmation(targetUrl);
+        return false;
+      }
+      return true;
+    };
+    
+    console.log('[NavigationGuard] Navigation confirmation system loaded');
+  })();
+</script>

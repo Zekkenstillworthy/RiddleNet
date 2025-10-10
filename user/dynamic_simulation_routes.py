@@ -5,6 +5,7 @@ Automatically creates routes for admin-created simulations - Learning Paths feat
 
 from flask import Blueprint, render_template, session, request, jsonify, redirect, url_for, flash, current_app
 from user.models.user import User as UserModel
+from user.models.score import Score
 from admin.models.simulation import Simulation, SimulationAttempt
 from admin.models.class_model import Class
 # Learning Path models removed - import stubs to prevent errors
@@ -3271,6 +3272,20 @@ def complete_simulation(simulation_id):
                 'score': attempt.total_score,
                 'duration': attempt.time_spent_seconds
             })
+
+        # Save score to Score table for dashboard display (topology category)
+        # This ensures Link Up scores appear on the dashboard
+        try:
+            new_score = Score(
+                user_id=user.id,
+                score=final_score,
+                category='topology'  # Link Up challenges use topology category
+            )
+            db.session.add(new_score)
+            print(f"✅ Topology score {final_score} saved for user {user.id}")
+        except Exception as score_error:
+            print(f"⚠️ Error saving topology score to Score table: {score_error}")
+            # Don't fail the entire request if score save fails
 
         db.session.commit()
 
