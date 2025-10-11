@@ -1532,88 +1532,130 @@ function goBackToChallenges() {
   }
 }
 
-// Quiz Data - The 11 questions from the prompt
-let quizQuestions = [
-    {
-        question: "It is a network that spans across countries or continents and connects multiple smaller networks.",
-        options: ["LAN", "MAN", "WAN (Wide Area Network)", "PAN"],
-        correct: 2,
-        explanation: "WAN (Wide Area Network) is a network that spans across countries or continents and connects multiple smaller networks.",
-        hint: "Think about networks that cover the largest geographic area."
-    },
-    {
-        question: "The physical arrangement of computers or nodes in a network.",
-        options: ["Protocol", "Network Topology", "Transmission Mode", "Architecture"],
-        correct: 1,
-        explanation: "Network Topology refers to the physical arrangement of computers or nodes in a network.",
-        hint: "This term describes how devices are physically connected in a network."
-    },
-    {
-        question: "___ is a network type that connects computers within a small geographic area like an office or school.",
-        options: ["LAN (Local Area Network)", "MAN", "WAN", "PAN"],
-        correct: 0,
-        explanation: "LAN (Local Area Network) connects computers within a small geographic area like an office or school.",
-        hint: "Think about the smallest type of network area."
-    },
-    {
-        question: "It is a device that converts digital data from a computer into analog signals for transmission over phone lines.",
-        options: ["Switch", "Modem", "Router", "Bridge"],
-        correct: 1,
-        explanation: "A Modem converts digital data from a computer into analog signals for transmission over phone lines.",
-        hint: "This device helps with internet connectivity through phone lines."
-    },
-    {
-        question: "A central device that splits a network connection among multiple devices but sends data to all of them.",
-        options: ["Hub", "Switch", "Router", "Bridge"],
-        correct: 0,
-        explanation: "A Hub is a central device that splits a network connection among multiple devices but sends data to all of them.",
-        hint: "This is the simplest and least intelligent networking device."
-    },
-    {
-        question: "It is a public global network that connects millions of private, public, academic, and business networks.",
-        options: ["Intranet", "Internet", "Extranet", "LAN"],
-        correct: 1,
-        explanation: "The Internet is a public global network that connects millions of private, public, academic, and business networks.",
-        hint: "This is the worldwide network you're using right now!"
-    },
-    {
-        question: "It is a networking device that connects two or more networks and directs data packets.",
-        options: ["Switch", "Router", "Hub", "Repeater"],
-        correct: 1,
-        explanation: "A Router is a networking device that connects two or more networks and directs data packets.",
-        hint: "This device is commonly used to connect your home network to the internet."
-    },
-    {
-        question: "What type of network topology is shown in the image below?",
-        image: "{{ url_for('static', filename='img/Bus.jpg') }}",
-        options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
-        correct: 0,
-        explanation: "Bus Topology is where all devices are connected to a single cable (backbone). All nodes share the same communication line.",
-        hint: "Think of devices connected along a single line, like passengers on a bus route."
-    },
-    {
-        question: "Which topology is displayed in the image? (Devices connected in a circular fashion)",
-        image: "{{ url_for('static', filename='img/Ring.jpg') }}",
-        options: ["Ring Topology", "Star Topology", "Bus Topology", "Tree Topology"],
-        correct: 0,
-        explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction around the ring.",
-        hint: "Devices form a closed loop, like a circle or ring."
-    },
-    {
-        question: "It is a unique numerical label assigned to each device connected to a network.",
-        options: ["IP Address", "MAC Address", "Port Number", "Subnet Mask"],
-        correct: 0,
-        explanation: "An IP Address is a unique numerical label assigned to each device connected to a network.",
-        hint: "This is like a mailing address for your device on the network."
-    },
-    {
-        question: "What is the default subnet mask of a Class C IP address?",
-        options: ["255.0.0.0", "255.255.0.0", "255.255.255.0", "255.255.255.255"],
-        correct: 2,
-        explanation: "The default subnet mask of a Class C IP address is 255.255.255.0.",
-        hint: "Class C addresses are commonly used in small networks and have three octets set to 255."
-    }
+// Quiz Data - 3 sets of 5 questions each that can be shuffled
+const questionSets = [
+    // SET 1: Network Types & Basics
+    [
+        {
+            question: "It is a network that spans across countries or continents and connects multiple smaller networks.",
+            options: ["LAN", "MAN", "WAN (Wide Area Network)", "PAN"],
+            correct: 2,
+            explanation: "WAN (Wide Area Network) is a network that spans across countries or continents and connects multiple smaller networks.",
+            hint: "Think about networks that cover the largest geographic area."
+        },
+        {
+            question: "The physical arrangement of computers or nodes in a network.",
+            options: ["Protocol", "Network Topology", "Transmission Mode", "Architecture"],
+            correct: 1,
+            explanation: "Network Topology refers to the physical arrangement of computers or nodes in a network.",
+            hint: "This term describes how devices are physically connected in a network."
+        },
+        {
+            question: "___ is a network type that connects computers within a small geographic area like an office or school.",
+            options: ["LAN (Local Area Network)", "MAN", "WAN", "PAN"],
+            correct: 0,
+            explanation: "LAN (Local Area Network) connects computers within a small geographic area like an office or school.",
+            hint: "Think about the smallest type of network area."
+        },
+        {
+            question: "It is a public global network that connects millions of private, public, academic, and business networks.",
+            options: ["Intranet", "Internet", "Extranet", "LAN"],
+            correct: 1,
+            explanation: "The Internet is a public global network that connects millions of private, public, academic, and business networks.",
+            hint: "This is the worldwide network you're using right now!"
+        },
+        {
+            question: "It is a unique numerical label assigned to each device connected to a network.",
+            options: ["IP Address", "MAC Address", "Port Number", "Subnet Mask"],
+            correct: 0,
+            explanation: "An IP Address is a unique numerical label assigned to each device connected to a network.",
+            hint: "This is like a mailing address for your device on the network."
+        }
+    ],
+    
+    // SET 2: Network Devices
+    [
+        {
+            question: "It is a device that converts digital data from a computer into analog signals for transmission over phone lines.",
+            options: ["Switch", "Modem", "Router", "Bridge"],
+            correct: 1,
+            explanation: "A Modem converts digital data from a computer into analog signals for transmission over phone lines.",
+            hint: "This device helps with internet connectivity through phone lines."
+        },
+        {
+            question: "A central device that splits a network connection among multiple devices but sends data to all of them.",
+            options: ["Hub", "Switch", "Router", "Bridge"],
+            correct: 0,
+            explanation: "A Hub is a central device that splits a network connection among multiple devices but sends data to all of them.",
+            hint: "This is the simplest and least intelligent networking device."
+        },
+        {
+            question: "It is a networking device that connects two or more networks and directs data packets.",
+            options: ["Switch", "Router", "Hub", "Repeater"],
+            correct: 1,
+            explanation: "A Router is a networking device that connects two or more networks and directs data packets.",
+            hint: "This device is commonly used to connect your home network to the internet."
+        },
+        {
+            question: "What type of network topology is shown in the image below?",
+            image: "{{ url_for('static', filename='img/Bus.jpg') }}",
+            options: ["Bus Topology", "Star Topology", "Ring Topology", "Mesh Topology"],
+            correct: 0,
+            explanation: "Bus Topology is where all devices are connected to a single cable (backbone). All nodes share the same communication line.",
+            hint: "Think of devices connected along a single line, like passengers on a bus route."
+        },
+        {
+            question: "Which topology is displayed in the image? (Devices connected in a circular fashion)",
+            image: "{{ url_for('static', filename='img/Ring.jpg') }}",
+            options: ["Ring Topology", "Star Topology", "Bus Topology", "Tree Topology"],
+            correct: 0,
+            explanation: "Ring Topology is where devices are connected in a circular fashion, with data traveling in one direction around the ring.",
+            hint: "Devices form a closed loop, like a circle or ring."
+        }
+    ],
+    
+    // SET 3: OSI Model & Commands
+    [
+        {
+            question: "What is the default subnet mask of a Class C IP address?",
+            options: ["255.0.0.0", "255.255.0.0", "255.255.255.0", "255.255.255.255"],
+            correct: 2,
+            explanation: "The default subnet mask of a Class C IP address is 255.255.255.0.",
+            hint: "Class C addresses are commonly used in small networks and have three octets set to 255."
+        },
+        {
+            question: "How many layers does the OSI Model have?",
+            options: ["5", "6", "7", "8"],
+            correct: 2,
+            explanation: "The OSI (Open Systems Interconnection) Model has 7 layers: Physical, Data Link, Network, Transport, Session, Presentation, and Application.",
+            hint: "Think of the number of days in a week - it's the same as the OSI layers!"
+        },
+        {
+            question: "Which layer of the OSI model is responsible for logical addressing (IP addresses)?",
+            options: ["Physical Layer", "Data Link Layer", "Network Layer", "Transport Layer"],
+            correct: 2,
+            explanation: "The Network Layer (Layer 3) is responsible for logical addressing using IP addresses and routing packets across networks.",
+            hint: "This layer's name directly relates to the concept of networks and routing."
+        },
+        {
+            question: "After assigning an IP address to a PC, you want to verify the configuration in Windows. Which command should you use?",
+            options: ["ping", "ipconfig", "tracert", "arp"],
+            correct: 1,
+            explanation: "The 'ipconfig' command displays the current TCP/IP network configuration of a Windows computer, including IP address, subnet mask, and default gateway.",
+            hint: "This command's name combines 'IP' with 'configuration'."
+        },
+        {
+            question: "Two PCs are assigned IP addresses 192.168.5.10 and 192.168.5.20. You want to test if they can communicate. Which command should you run?",
+            options: ["ipconfig 192.168.5.20", "ping 192.168.5.20", "tracert 192.168.5.20", "show ip route"],
+            correct: 1,
+            explanation: "The 'ping' command tests network connectivity by sending ICMP echo request packets to a target IP address and waiting for a reply.",
+            hint: "This command name sounds like the sonar 'ping' used by submarines to detect objects."
+        }
+    ]
 ];
+
+// Combine and shuffle questions from all sets
+let quizQuestions = [];
 
 // Quiz State
 let currentQuestion = 0;
@@ -1643,8 +1685,15 @@ function shuffleArray(array) {
 
 // Initialize Quiz
 document.addEventListener('DOMContentLoaded', function() {
-    // Shuffle questions on page load
+    // Shuffle each set independently and combine them
+    questionSets.forEach(set => {
+        const shuffledSet = shuffleArray(set);
+        quizQuestions = quizQuestions.concat(shuffledSet);
+    });
+    
+    // Optionally shuffle the order of the combined sets
     quizQuestions = shuffleArray(quizQuestions);
+    
     loadQuestion();
     startTimer();
 });

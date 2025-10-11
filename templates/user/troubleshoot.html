@@ -796,6 +796,35 @@
         letter-spacing: 1px;
         text-transform: uppercase;
     }
+    
+    .results-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: var(--danger-color);
+        color: white;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        animation: pulse-badge 2s ease-in-out infinite;
+        box-shadow: 0 0 8px rgba(255, 59, 59, 0.6);
+    }
+    
+    @keyframes pulse-badge {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 8px rgba(255, 59, 59, 0.6);
+        }
+        50% {
+            transform: scale(1.1);
+            box-shadow: 0 0 16px rgba(255, 59, 59, 0.9);
+        }
+    }
 
     .sidebar-content {
         height: 100%;
@@ -1015,14 +1044,11 @@
     }
 
     .progress-text {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
         font-size: 14px;
         font-weight: 700;
         color: var(--cyber-glow);
         font-family: 'Orbitron', monospace;
+        text-align: center;
     }
 
     .progress-details {
@@ -1275,38 +1301,7 @@
         font-weight: 600;
     }
 
-    /* Achievements */
-    .achievements-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .achievement-badge {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        padding: 12px 8px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.03);
-        /* transition removed */
-        flex: 1;
-        min-width: 70px;
-        cursor: default;
-    }
-
-    .achievement-badge.locked {
-        opacity: 0.4;
-        filter: grayscale(1);
-    }
-
-    .achievement-badge.unlocked {
-        border-color: var(--success-color);
-        background: rgba(16, 185, 129, 0.1);
-        /* animation removed */
-    }
+    /* Achievements - DISABLED */
 
     /* Completion Badge System */
     .completion-badge {
@@ -1533,81 +1528,6 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-    }
-
-    /* Level Up Animation */
-    .level-up-notification {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        background: linear-gradient(135deg, rgba(0, 217, 255, 0.95), rgba(139, 92, 246, 0.95));
-        border: 2px solid var(--neon-green);
-        border-radius: var(--border-radius-xl);
-        padding: 32px;
-        text-align: center;
-        z-index: 10001;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 20px 60px rgba(0, 217, 255, 0.5), 0 0 100px rgba(57, 255, 20, 0.3);
-        color: white;
-        min-width: 400px;
-        opacity: 0;
-        /* transition removed */
-    }
-
-    .level-up-notification.show {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    .level-up-title {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 28px;
-        font-weight: 700;
-        margin-bottom: 16px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-        /* animation removed */
-    }
-
-    /* levelUpGlow keyframes removed */
-
-    .level-up-details {
-        font-size: 16px;
-        margin-bottom: 20px;
-        opacity: 0.9;
-    }
-
-    .level-up-rewards {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 16px;
-        margin-top: 16px;
-    }
-
-    .level-up-rewards h4 {
-        margin: 0 0 12px 0;
-        color: var(--neon-green);
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .rewards-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: center;
-    }
-
-    .reward-item {
-        background: rgba(57, 255, 20, 0.2);
-        border: 1px solid var(--neon-green);
-        border-radius: 6px;
-        padding: 4px 8px;
-        font-size: 12px;
-        font-weight: 600;
     }
 
     /* Current Scenario Status */
@@ -2291,17 +2211,17 @@
         backdrop-filter: blur(20px);
         border: 2px solid var(--glass-border);
         border-radius: var(--border-radius-lg);
-        padding: 0; /* remove internal spacing */
+        padding: 24px; /* Add proper padding for content */
         text-align: center;
         cursor: pointer;
-        /* transition removed */
+        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
-        min-height: 0; /* allow content to define height */
+        min-height: 320px; /* Set minimum height for consistency */
         display: flex;
         flex-direction: column;
-        justify-content: flex-start; /* avoid space between creating gaps */
-        aspect-ratio: auto; /* avoid forced whitespace due to ratio */
+        justify-content: space-between; /* Distribute content evenly */
+        align-items: center;
     }
 
     .difficulty-card::before {
@@ -2312,7 +2232,7 @@
         right: 0;
         height: 4px;
         opacity: 0;
-        /* transition removed */
+        transition: opacity 0.3s ease;
     }
 
     .difficulty-card:hover {
@@ -2612,6 +2532,102 @@
     }
 
     /* slideInRight and fadeOut animations removed */
+
+    /* ===== CHALLENGE RESULTS DISPLAY STYLES (MVP) ===== */
+    .results-content {
+        padding: 8px 0;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .no-results p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .result-section {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .result-section h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .result-section h4 i {
+        color: var(--cyber-glow);
+        font-size: 18px;
+    }
+
+    .result-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .result-item:hover {
+        background: rgba(0, 217, 255, 0.1);
+        border-color: var(--cyber-glow);
+        transform: translateX(4px);
+    }
+
+    .result-info {
+        flex: 1;
+    }
+
+    .result-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+    }
+
+    .result-details {
+        display: flex;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--text-secondary);
+        flex-wrap: wrap;
+    }
+
+    .result-details span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .result-score {
+        color: var(--success-color);
+        font-weight: 600;
+    }
+
+    .result-badge {
+        font-size: 24px;
+    }
 
     /* Responsive adjustments for difficulty cards */
 
@@ -3437,6 +3453,272 @@ document.addEventListener('DOMContentLoaded', () => {
         background: rgba(255, 255, 255, 0.08);
     }
 
+    /* Submit Solution Button Styles */
+    .submit-solution-btn {
+        background: linear-gradient(135deg, var(--success-color), var(--neon-green)) !important;
+        border: 2px solid var(--neon-green) !important;
+        animation: pulse-submit 2s ease-in-out infinite;
+    }
+
+    .submit-solution-btn:hover {
+        background: linear-gradient(135deg, var(--neon-green), #4ade80) !important;
+        box-shadow: 0 0 30px rgba(57, 255, 20, 0.8), 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+        transform: translateY(-2px);
+    }
+
+    .submit-solution-btn i {
+        color: #FFFFFF !important;
+        font-size: 20px;
+    }
+
+    .submit-solution-btn .label {
+        color: #FFFFFF !important;
+        font-weight: 700;
+    }
+
+    @keyframes pulse-submit {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 35px rgba(57, 255, 20, 0.8), 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+    }
+
+    /* Results Content Styling */
+    .results-content {
+        padding: 8px 0;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .no-results p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .result-section {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .result-section h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .result-section h4 i {
+        color: var(--cyber-glow);
+        font-size: 18px;
+    }
+
+    .result-score-card {
+        background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(138, 43, 226, 0.1));
+        border: 2px solid var(--cyber-glow);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 16px;
+    }
+
+    .result-score-value {
+        font-size: 48px;
+        font-weight: 700;
+        font-family: 'Orbitron', monospace;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .result-score-value.success {
+        color: var(--success-color);
+    }
+
+    .result-score-value.warning {
+        color: var(--warning-color);
+    }
+
+    .result-score-value.danger {
+        color: var(--danger-color);
+    }
+
+    .result-score-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+    
+    .result-score-sublabel {
+        font-size: 11px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+    }
+    
+    .result-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-item .label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .info-item .value {
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .info-item .value.difficulty-easy {
+        color: var(--success-color);
+    }
+    
+    .info-item .value.difficulty-medium {
+        color: var(--warning-color);
+    }
+    
+    .info-item .value.difficulty-hard {
+        color: var(--danger-color);
+    }
+    
+    .result-breakdown-item .value.highlight {
+        color: var(--cyber-glow);
+        font-size: 16px;
+    }
+    
+    .result-breakdown-item .value.bonus {
+        color: var(--success-color);
+    }
+
+    .result-breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .result-breakdown-item:last-child {
+        border-bottom: none;
+    }
+
+    .result-breakdown-item .label {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .result-breakdown-item .value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .result-feedback {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .result-feedback p {
+        margin: 8px 0;
+    }
+
+    .result-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .result-badge-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px;
+        background: rgba(57, 255, 20, 0.1);
+        border: 1px solid var(--neon-green);
+        border-radius: 8px;
+        flex: 1;
+        min-width: 80px;
+    }
+
+    .result-badge-icon {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+    }
+
+    .result-badge-name {
+        font-size: 11px;
+        color: var(--text-primary);
+        text-align: center;
+    }
+
+    .result-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .result-btn {
+        flex: 1;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .result-btn:hover {
+        background: rgba(0, 217, 255, 0.2);
+        border-color: var(--cyber-glow);
+        box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+    }
+
+    .result-btn.primary {
+        background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+        border-color: var(--cyber-glow);
+        color: #FFFFFF;
+    }
+
+    .result-btn.primary:hover {
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.5);
+    }
+
     .action-btn.mode-neutral:hover {
         border-color: var(--cyber-glow);
         background: rgba(0, 217, 255, 0.15);
@@ -3490,8 +3772,21 @@ document.addEventListener('DOMContentLoaded', () => {
         pointer-events: none; /* Prevent icon from blocking drag events */
     }
 
+    /* Device image styling */
+    .device-icon.device-image {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        filter: brightness(0.9);
+    }
+
     .device:hover .device-icon {
         color: var(--cyber-glow);
+        transform: scale(1.1);
+    }
+
+    .device:hover .device-icon.device-image {
+        filter: brightness(1.1) drop-shadow(0 0 8px rgba(0, 217, 255, 0.5));
         transform: scale(1.1);
     }
 
@@ -5330,6 +5625,151 @@ document.addEventListener('DOMContentLoaded', () => {
         color: var(--text-secondary);
         font-size: 14px;
     }
+    
+    /* Results Popup Styling */
+    .score-summary {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .score-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+    
+    .score-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    
+    .score-value {
+        font-size: 32px;
+        font-weight: 700;
+        font-family: 'Orbitron', monospace;
+        color: var(--text-primary);
+    }
+    
+    .score-value.success {
+        color: var(--success-color);
+    }
+    
+    .score-value.warning {
+        color: var(--warning-color);
+    }
+    
+    .score-breakdown {
+        background: rgba(0, 217, 255, 0.05);
+        border: 1px solid rgba(0, 217, 255, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+    }
+    
+    .breakdown-item:last-child {
+        border-bottom: none;
+    }
+    
+    .breakdown-item span:last-child {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .feedback-section {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    
+    .feedback-section p.success {
+        color: var(--success-color);
+        font-weight: 600;
+    }
+    
+    .feedback-section p.good {
+        color: var(--neon-green);
+        font-weight: 600;
+    }
+    
+    .feedback-section p.warning {
+        color: var(--warning-color);
+        font-weight: 600;
+    }
+    
+    .feedback-section p.danger {
+        color: var(--danger-color);
+        font-weight: 600;
+    }
+    
+    .solution-steps {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        border-left: 3px solid var(--cyber-glow);
+    }
+    
+    .badges-earned {
+        background: linear-gradient(135deg, rgba(57, 255, 20, 0.1), rgba(0, 217, 255, 0.1));
+        border: 1px solid var(--neon-green);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .badges-earned h4 {
+        color: var(--neon-green);
+        margin-bottom: 12px;
+        text-align: center;
+    }
+    
+    .badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+    }
+    
+    .badge-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        min-width: 80px;
+    }
+    
+    .badge-icon {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+    
+    .badge-item span {
+        font-size: 11px;
+        color: var(--text-primary);
+        text-align: center;
+    }
 
     .selected-device {
         border: 3px solid var(--neon-green);
@@ -5362,27 +5802,41 @@ document.addEventListener('DOMContentLoaded', () => {
         display: none;
         position: fixed;
         top: 50%;
-        left: calc(var(--current-sidebar-width) + (100vw - var(--current-sidebar-width)) / 2);
+        left: 50%;
+        right: auto;
         transform: translate(-50%, -50%) scale(0.9);
-        width: min(800px, calc(100vw - var(--current-sidebar-width) - 80px));
-        max-width: calc(100vw - var(--current-sidebar-width) - 40px);
+        width: min(900px, 90vw);
+        max-width: 95vw;
+        margin-left: calc(var(--current-sidebar-width) / 2);
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
         border: 1px solid rgba(74, 144, 226, 0.3);
         border-radius: var(--border-radius-xl);
-        padding: 32px;
+        padding: 24px;
         opacity: 0;
         pointer-events: none;
-        /* transition removed */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: var(--z-modal);
         box-shadow:
             0 25px 50px rgba(0, 0, 0, 0.4),
             0 0 40px rgba(74, 144, 226, 0.2);
         overflow: hidden;
-        max-height: 80vh;
+        max-height: 90vh;
         overflow-y: auto;
         /* Ensure all text uses cyber theme colors */
         color: var(--text-primary);
+    }
+    
+    /* Mobile responsive for Foundation popup */
+    @media (max-width: 768px) {
+        .foundation-popup {
+            left: 50%;
+            margin-left: 0;
+            width: calc(100vw - 32px);
+            max-width: 100%;
+            padding: 20px 16px;
+            max-height: 92vh;
+        }
     }
 
     .foundation-popup::before {
@@ -5422,9 +5876,17 @@ document.addEventListener('DOMContentLoaded', () => {
         padding: 24px 0;
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 28px;
         border-top: 1px solid rgba(74, 144, 226, 0.3);
-        margin: 16px 0;
+        margin: 20px 0 0 0;
+    }
+    
+    /* Mobile responsive for foundation modal content */
+    @media (max-width: 768px) {
+        .foundationdescmodal-content {
+            padding: 20px 0;
+            gap: 24px;
+        }
     }
 
     .learning-phases {
@@ -5436,18 +5898,32 @@ document.addEventListener('DOMContentLoaded', () => {
     .phase-section {
         background: rgba(74, 144, 226, 0.05);
         border-radius: 15px;
-        padding: 25px;
+        padding: 28px;
         border: 1px solid rgba(74, 144, 226, 0.2);
+        transition: all 0.3s ease;
     }
 
     .phase-section h3 {
         color: #357ABD;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         font-size: 1.3rem;
         display: flex;
         align-items: center;
         gap: 10px;
         font-weight: 600;
+    }
+    
+    /* Mobile responsive for phase sections */
+    @media (max-width: 768px) {
+        .phase-section {
+            padding: 20px 16px;
+            border-radius: 12px;
+        }
+        
+        .phase-section h3 {
+            font-size: 1.15rem;
+            margin-bottom: 18px;
+        }
     }
 
     .foundation-btn {
@@ -5455,23 +5931,34 @@ document.addEventListener('DOMContentLoaded', () => {
         background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
         border: 2px solid var(--cyber-glow);
         border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 15px;
+        padding: 24px;
+        margin-bottom: 18px;
         cursor: pointer;
-        /* transition removed */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 4px 15px rgba(0, 217, 255, 0.1);
         position: relative;
         backdrop-filter: blur(10px);
     }
 
     .foundation-btn:hover {
-        /* transform removed */
+        transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 217, 255, 0.3);
         border-color: var(--cyber-glow-bright);
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.9) 100%);
     }
 
-    /* foundation-btn:active transform removed */
+    .foundation-btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Mobile responsive for foundation buttons */
+    @media (max-width: 768px) {
+        .foundation-btn {
+            padding: 18px 16px;
+            margin-bottom: 14px;
+            border-radius: 10px;
+        }
+    }
 
     .btn-content {
         display: flex;
@@ -5484,6 +5971,7 @@ document.addEventListener('DOMContentLoaded', () => {
         font-size: 2rem;
         min-width: 60px;
         text-align: center;
+        flex-shrink: 0;
     }
 
     .btn-text {
@@ -5494,13 +5982,35 @@ document.addEventListener('DOMContentLoaded', () => {
         font-size: 1.2rem;
         font-weight: bold;
         color: var(--text-primary);
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
 
     .btn-desc {
         font-size: 0.95rem;
         color: var(--text-secondary);
-        line-height: 1.4;
+        line-height: 1.5;
+    }
+    
+    /* Mobile responsive for button content */
+    @media (max-width: 768px) {
+        .btn-content {
+            gap: 16px;
+        }
+        
+        .btn-icon {
+            font-size: 1.75rem;
+            min-width: 50px;
+        }
+        
+        .btn-title {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        
+        .btn-desc {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
     }
 
     .foundation-btn.completed {
@@ -5875,9 +6385,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Foundation Learning Phases Styling */
     .progress-overview {
         background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(53, 122, 189, 0.1) 100%);
-        padding: 20px;
+        padding: 24px;
         border-radius: 15px;
-        margin-bottom: 25px;
+        margin-bottom: 28px;
         text-align: center;
     }
 
@@ -5893,13 +6403,26 @@ document.addEventListener('DOMContentLoaded', () => {
         background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
         height: 100%;
         border-radius: 10px;
-        /* transition removed */
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .progress-text {
         font-size: 0.9rem;
         color: #4A90E2;
         font-weight: 600;
+    }
+    
+    /* Mobile responsive for progress overview */
+    @media (max-width: 768px) {
+        .progress-overview {
+            padding: 18px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-text {
+            font-size: 0.85rem;
+        }
     }
 
     .phase-section {
@@ -6011,6 +6534,16 @@ document.addEventListener('DOMContentLoaded', () => {
   justify-content: center;
   z-index: 10000;
   padding: 20px;
+  transition: left 0.3s ease, width 0.3s ease;
+}
+
+/* Mobile responsive for Link Up modal */
+@media (max-width: 768px) {
+  .linkup-welcome-modal {
+    left: 0;
+    width: 100%;
+    padding: 16px;
+  }
 }
 
 .linkup-welcome-content {
@@ -6030,6 +6563,7 @@ document.addEventListener('DOMContentLoaded', () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: padding 0.3s ease;
 }
 
 @keyframes slideInUp {
@@ -6124,6 +6658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inset 0 1px 0 rgba(57, 255, 20, 0.1),
     0 4px 20px rgba(57, 255, 20, 0.05);
   margin-bottom: 30px;
+  transition: gap 0.3s ease, padding 0.3s ease;
 }
 
 .linkup-option {
@@ -6209,30 +6744,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 @media (max-width: 768px) {
   .linkup-welcome-content {
-    padding: 40px 24px;
+    padding: 32px 20px;
+    border-radius: 20px;
+    max-width: 100%;
   }
   
   .linkup-welcome-content h2 {
-    font-size: 28px;
-    margin-bottom: 25px;
+    font-size: 26px;
+    margin-bottom: 20px;
+    padding-right: 50px;
   }
   
   .welcome-icon-large {
-    font-size: 64px;
+    font-size: 60px;
+    margin-bottom: 15px;
   }
   
   .welcome-subtitle {
     font-size: 18px;
+    margin-bottom: 12px;
   }
   
   .welcome-description {
     font-size: 14px;
+    margin-bottom: 25px;
   }
   
   .linkup-options {
     grid-template-columns: 1fr;
     gap: 12px;
     padding: 16px;
+    max-width: 100%;
   }
   
   .linkup-option {
@@ -6249,10 +6791,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   .close-linkup-btn {
-    top: 18px;
-    right: 18px;
-    width: 44px;
-    height: 44px;
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+  }
+  
+  .start-linkup-btn {
+    padding: 14px 36px;
+    font-size: 16px;
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -6857,23 +7407,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-        <!-- Level Up Notification -->
-        <div id="levelUpNotification" class="level-up-notification">
-            <div class="level-up-title">Level Up!</div>
-            <div class="level-up-details">
-                <div>Congratulations! You've reached <strong id="new-level-text">Level 2</strong></div>
-                <div id="level-title-text">Junior Network Technician</div>
-            </div>
-            <div class="level-up-rewards">
-                <h4>New Unlocks:</h4>
-                <div class="rewards-list" id="rewards-list">
-                    <div class="reward-item">🔧 Advanced Tools</div>
-                    <div class="reward-item">📊 Protocol Analyzer</div>
-                    <div class="reward-item">🏆 New Challenges</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Network Challenges Modal -->
         <div id="challengesModal" class="scenario-popup" style="width: 800px; max-height: 90vh; overflow-y: auto;">
             <h2>Network Configuration Challenges</h2>
@@ -7095,17 +7628,17 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="palette-separator"></div>
             <div class="palette-section center-section">
                 <div class="device" draggable="true" data-type="router">
-                    <i class="fas fa-network-wired device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image">
                     <span class="device-label">Router</span>
                     <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                 </div>
                 <div class="device" draggable="true" data-type="switch">
-                    <i class="fas fa-layer-group device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image">
                     <span class="device-label">Switch</span>
                     <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                 </div>
                 <div class="device" draggable="true" data-type="pc">
-                    <i class="fas fa-desktop device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/PC.png') }}" alt="PC" class="device-icon device-image">
                     <span class="device-label">PC</span>
                     <div class="device-tooltip">Desktop Computer - End user device</div>
                 </div>
@@ -7124,6 +7657,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class='bx bx-trash'></i>
                     <span class="label">Remove</span>
                 </div>
+                <div id="submit-solution-btn" class="action-btn submit-solution-btn" title="Submit your solution for grading" style="display: none;">
+                    <i class='bx bx-check-circle'></i>
+                    <span class="label">Submit</span>
+                </div>
             </div>
         </div>
 
@@ -7139,125 +7676,26 @@ document.addEventListener('DOMContentLoaded', () => {
             <!-- Hamburger Toggle Button -->
             <div id="performance-toggle" class="performance-toggle">
                 <i class="bx bx-bar-chart-alt-2"></i>
-                <span class="toggle-text">Performance</span>
+                <span class="toggle-text">Results</span>
+                <span class="results-badge" id="results-badge" style="display: none;">!</span>
             </div>
             
             <!-- Sidebar Content -->
             <div class="sidebar-content">
                 <div class="sidebar-header">
-                    <h3><i class="bx bx-bar-chart-alt-2"></i> Live Performance</h3>
+                    <h3><i class="bx bx-trophy"></i> Challenge Results</h3>
                     <button class="close-sidebar" id="close-performance-sidebar">
                         <i class="bx bx-x"></i>
                     </button>
                 </div>
 
-                <!-- Network Engineer Level Progress -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-trophy"></i> Network Engineer Level</h4>
-                    <div class="level-progress-container">
-                        <div class="level-header">
-                            <div class="level-badge">
-                                <i class="bx bx-shield-alt-2"></i>
-                                <span id="current-level">Level 1</span>
-                            </div>
-                            <div class="xp-display">
-                                <span id="current-xp">0</span> / <span id="next-level-xp">100</span> XP
-                            </div>
-                        </div>
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level-progress-fill" style="width: 0%"></div>
-                        </div>
-                        <div class="level-info">
-                            <span id="level-title">Networking Novice</span>
-                            <div class="next-level-preview" id="next-level-preview">
-                                Next: Junior Technician
-                            </div>
-                        </div>
+                <!-- Results will be populated here dynamically -->
+                <div id="results-container" class="results-content">
+                    <div class="no-results">
+                        <i class="bx bx-info-circle" style="font-size: 48px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
+                        <p>Complete a Link Up challenge to see your results here!</p>
                     </div>
                 </div>
-
-                
-
-               
-                
-               
-
-                <!-- Active Challenge Progress -->
-                <div class="feedback-section" id="active-challenge-section" style="display: none;">
-                    <h4><i class="bx bx-target-lock"></i> Active Challenge</h4>
-                    <div class="active-challenge-container">
-                        <div class="challenge-header-info">
-                            <div class="challenge-name" id="active-challenge-name">No Active Challenge</div>
-                            <div class="challenge-difficulty-badge" id="active-challenge-difficulty"></div>
-                        </div>
-                        <div class="challenge-progress-bar">
-                            <div class="challenge-progress-fill" id="active-challenge-progress-fill" style="width: 0%"></div>
-                        </div>
-                        <div class="challenge-stats">
-                            <div class="stat-item">
-                                <i class="bx bx-check-circle"></i>
-                                <span id="challenge-steps-completed">0</span> / <span id="challenge-steps-total">0</span> Steps
-                            </div>
-                            <div class="stat-item">
-                                <i class="bx bx-star"></i>
-                                <span id="challenge-xp-reward">0</span> XP
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Progress Meter -->
-                <div class="feedback-section">
-                    <h4><i class="bx bx-time"></i> Progress</h4>
-                    <div class="progress-meter">
-                        <div class="progress-circle">
-                            <svg class="progress-ring" width="80" height="80">
-                                <circle class="progress-ring-background" 
-                                        cx="40" cy="40" r="30" 
-                                        stroke="rgba(255,255,255,0.1)" 
-                                        stroke-width="6" 
-                                        fill="transparent"/>
-                                <circle class="progress-ring-fill" 
-                                        cx="40" cy="40" r="30" 
-                                        stroke="var(--cyber-glow)" 
-                                        stroke-width="6" 
-                                        fill="transparent"
-                                        stroke-dasharray="188.5"
-                                        stroke-dashoffset="188.5"
-                                        id="progress-ring"/>
-                            </svg>
-                            <div class="progress-text">
-                                <span id="progress-percentage">0%</span>
-                            </div>
-                        </div>
-                        <div class="progress-details">
-                            <div class="progress-status" id="progress-status">Getting Started</div>
-                            <div class="estimated-time">
-                                <i class="bx bx-clock"></i>
-                                <span id="estimated-completion">Est. 15 min</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Timer Status -->
-                <div class="feedback-section" id="timer-status-section" style="display: none;">
-                    <h4><i class="bx bx-stopwatch"></i> Session Timer</h4>
-                    <div class="timer-status-display">
-                        <div class="timer-main-display" id="timer-display">
-                            <span class="minutes">00</span>:<span class="seconds">00</span>
-                        </div>
-                        <div class="timer-label" id="timer-label">Time Remaining</div>
-                        <div class="timer-progress-bar">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="timer-progress"></div>
-                            </div>
-                        </div>
-                        <div class="timer-status" id="timer-status">Ready</div>
-                    </div>
-                </div>
-
-             
                 
             </div>
         </div>
@@ -7279,11 +7717,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function startLinkUp() {
           document.getElementById('linkupWelcomeModal').style.display = 'none';
+          
+          // Show backdrop
+          const modalBackdrop = document.getElementById('modalBackdrop');
+          if (modalBackdrop) {
+              modalBackdrop.style.display = 'block';
+              modalBackdrop.classList.add('active');
+          }
+          
           // Show scenario selection modal
           const scenarioModal = document.getElementById('scenarioModal');
           if (scenarioModal) {
               scenarioModal.classList.add('active');
           }
+          
+          // Prevent body scroll
+          document.body.style.overflow = 'hidden';
         }
 
         function closeLinkUp() {
@@ -7356,10 +7805,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     mobileToggle.addEventListener('click', () => this.toggleSidebar());
                 }
                 
-                // Quick action buttons
-                document.getElementById('get-hint-btn').addEventListener('click', () => this.getSmartHint());
-                document.getElementById('check-solution-btn').addEventListener('click', () => this.checkCurrentSolution());
-                document.getElementById('reset-progress-btn').addEventListener('click', () => this.resetProgress());
+                // Quick action buttons (with null checks)
+                const getHintBtn = document.getElementById('get-hint-btn');
+                if (getHintBtn) {
+                    getHintBtn.addEventListener('click', () => this.getSmartHint());
+                }
+                
+                const checkSolutionBtn = document.getElementById('check-solution-btn');
+                if (checkSolutionBtn) {
+                    checkSolutionBtn.addEventListener('click', () => this.checkCurrentSolution());
+                }
+                
+                const resetProgressBtn = document.getElementById('reset-progress-btn');
+                if (resetProgressBtn) {
+                    resetProgressBtn.addEventListener('click', () => this.resetProgress());
+                }
                 
                 // Start monitoring
                 this.startProgressMonitoring();
@@ -7710,6 +8170,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showSidebar() {
                 this.sidebar.classList.add('active');
                 this.isVisible = true;
+                
+                // Hide the notification badge when sidebar is opened
+                const resultsBadge = document.getElementById('results-badge');
+                if (resultsBadge) {
+                    resultsBadge.style.display = 'none';
+                }
+                
                 // Device palette now adjusts purely via body.performance-sidebar-open + CSS variables
                 
                 // Start session if not already started
@@ -7799,6 +8266,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.updateScoreMetric();
                 this.updateActionsMetric();
                 
+                // Achievement system disabled
+                /*
                 // Check for first device achievement
                 if (this.metrics.devicesPlaced === 1) {
                     this.unlockAchievement('first-device');
@@ -7809,6 +8278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.metrics.devicesPlaced >= 5) {
                     this.unlockAchievement('network-builder');
                 }
+                */
                 
                 // Provide contextual hints
                 if (this.metrics.devicesPlaced === 2) {
@@ -8148,6 +8618,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             unlockAchievement(achievementId) {
+                // Achievement system disabled
+                /*
                 if (this.achievements[achievementId]) return; // Already unlocked
                 
                 this.achievements[achievementId] = true;
@@ -8185,6 +8657,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 console.log(`🏆 Achievement unlocked: ${achievementId}`);
+                */
             }
 
             checkForTimeBasedHints() {
@@ -8199,6 +8672,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.addHint('You\'re doing great! Remember to connect devices after placing them.', 'tip');
                 }
                 
+                // Achievement system disabled
+                /*
                 // Check for speed achievement
                 if (this.calculateOverallProgress() >= 100 && timeSpent <= 300) {
                     this.unlockAchievement('speed-demon');
@@ -8208,6 +8683,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.calculateOverallProgress() >= 100 && this.metrics.mistakesCount === 0) {
                     this.unlockAchievement('perfectionist');
                 }
+                */
             }
 
             // Public API for external integration
@@ -8354,6 +8830,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             checkForAchievements() {
+                // Achievement system disabled
+                /*
                 // Check for all achievements
                 if (this.metrics.devicesPlaced === 1) {
                     this.unlockAchievement('first-device');
@@ -8370,6 +8848,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.calculateOverallProgress() >= 100 && this.metrics.mistakesCount === 0) {
                     this.unlockAchievement('perfectionist');
                 }
+                */
             }
             
             checkForSmartHints() {
@@ -8620,11 +9099,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 ];
 
+                // Achievement system disabled
+                /*
                 achievementChecks.forEach(achievement => {
                     if (!this.achievements[achievement.id] && achievement.condition()) {
                         this.unlockAchievement(achievement);
                     }
                 });
+                */
             }
 
             unlockAchievement(achievement) {
@@ -8680,7 +9162,151 @@ document.addEventListener('DOMContentLoaded', () => {
         // Performance Feedback System initialization is handled later in a consolidated block
     </script>
     
-   
+    <!-- ===== CHALLENGE RESULTS TRACKING SYSTEM (MVP) ===== -->
+    <script>
+        // Challenge Results Tracker Class
+        class ChallengeResultsTracker {
+            constructor() {
+                this.results = this.loadResults();
+                this.resultsContainer = null;
+            }
+
+            loadResults() {
+                const saved = localStorage.getItem('linkup_challenge_results');
+                return saved ? JSON.parse(saved) : {
+                    foundation: [],
+                    easy: [],
+                    intermediate: [],
+                    hard: []
+                };
+            }
+
+            saveResults() {
+                localStorage.setItem('linkup_challenge_results', JSON.stringify(this.results));
+            }
+
+            addResult(difficulty, challengeData) {
+                const result = {
+                    id: challengeData.id || challengeData.moduleId,
+                    name: challengeData.name || challengeData.title,
+                    score: challengeData.score || 100,
+                    timeSpent: challengeData.timeSpent || '0:00',
+                    completedAt: new Date().toISOString(),
+                    accuracy: challengeData.accuracy || 100,
+                    hintsUsed: challengeData.hintsUsed || 0
+                };
+
+                // Remove any existing result with the same ID (keep only most recent)
+                this.results[difficulty] = this.results[difficulty].filter(r => r.id !== result.id);
+                
+                // Add the new result
+                this.results[difficulty].push(result);
+                this.saveResults();
+                
+                // Update display
+                this.updateResultsDisplay();
+                
+                console.log(`✅ Challenge result recorded: ${difficulty} - ${result.name}`);
+            }
+
+            updateResultsDisplay() {
+                // Find the results container in the performance sidebar
+                const resultsSection = document.getElementById('results-container');
+                if (!resultsSection) return;
+
+                // Count total completions
+                const totalCompleted = Object.values(this.results).reduce((sum, arr) => sum + arr.length, 0);
+
+                if (totalCompleted === 0) {
+                    resultsSection.innerHTML = `
+                        <div class="no-results">
+                            <i class='bx bx-info-circle' style="font-size: 48px; color: var(--cyber-glow); margin-bottom: 16px;"></i>
+                            <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; text-align: center;">
+                                Complete a Link Up challenge to see your results here!<br><br>
+                                <strong style="color: var(--cyber-glow);">Available Challenges:</strong><br>
+                                📚 Foundation Learning<br>
+                                ⚡ Novice Scenarios<br>
+                                🔧 Intermediate Scenarios<br>
+                                🚀 Advanced Scenarios
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Display results by difficulty
+                let html = `<div class="results-content">`;
+                
+                ['foundation', 'easy', 'intermediate', 'hard'].forEach(difficulty => {
+                    const difficultyResults = this.results[difficulty];
+                    if (difficultyResults.length === 0) return;
+
+                    const difficultyLabels = {
+                        foundation: 'Foundation Learning',
+                        easy: 'Novice',
+                        intermediate: 'Intermediate',
+                        hard: 'Advanced'
+                    };
+
+                    const difficultyIcons = {
+                        foundation: 'bx-book',
+                        easy: 'bx-star',
+                        intermediate: 'bx-medal',
+                        hard: 'bx-trophy'
+                    };
+
+                    html += `
+                        <div class="result-section">
+                            <h4><i class='bx ${difficultyIcons[difficulty]}'></i> ${difficultyLabels[difficulty]}</h4>
+                            <div class="result-list">
+                    `;
+
+                    // Show only the most recent result for each difficulty (changed from slice(-3) to slice(-1))
+                    difficultyResults.slice(-1).reverse().forEach(result => {
+                        const completedDate = new Date(result.completedAt).toLocaleDateString();
+                        html += `
+                            <div class="result-item">
+                                <div class="result-info">
+                                    <div class="result-name">${result.name}</div>
+                                    <div class="result-details">
+                                        <span class="result-score">Score: ${result.score}%</span>
+                                        <span class="result-time">⏱️ ${result.timeSpent}</span>
+                                        <span class="result-date">📅 ${completedDate}</span>
+                                    </div>
+                                </div>
+                                <div class="result-badge">
+                                    <i class='bx bx-check-circle' style="color: var(--success-color);"></i>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                resultsSection.innerHTML = html;
+            }
+
+            clearResults() {
+                this.results = {
+                    foundation: [],
+                    easy: [],
+                    intermediate: [],
+                    hard: []
+                };
+                this.saveResults();
+                this.updateResultsDisplay();
+            }
+        }
+
+        // Initialize Challenge Results Tracker
+        window.challengeResultsTracker = new ChallengeResultsTracker();
+        console.log('🎯 Challenge Results Tracker initialized (MVP)');
+    </script>
     
     <script>
         const palette = document.getElementById("device-palette");
@@ -8728,53 +9354,89 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.ipv6 = '';
                 this.subnet = '';
                 this.protocol = 'none';
-                // Store device icon information instead of images
-                this.iconType = null;
-                this.iconUnicode = null;
+                // Store device image path
+                this.imagePath = null;
+                this.image = null;
                 
                 switch (type) {
                     case 'pc':
-                        this.iconType = 'desktop';
-                        this.iconUnicode = '\uf108'; // fa-desktop
+                        this.imagePath = "{{ url_for('static', filename='img/PC.png') }}";
                         break;
                     case 'router':
-                        this.iconType = 'network-wired';
-                        this.iconUnicode = '\uf6ff'; // fa-network-wired
+                        this.imagePath = "{{ url_for('static', filename='img/Router.png') }}";
                         break;
                     case 'switch':
-                        this.iconType = 'layer-group';
-                        this.iconUnicode = '\uf5fd'; // fa-layer-group
+                        this.imagePath = "{{ url_for('static', filename='img/Switch.png') }}";
                         break;
                 }
+                
+                // Preload the image
+                if (this.imagePath) {
+                    this.image = new Image();
+                    this.image.src = this.imagePath;
+                }
+                
                 this.speed = 'auto';
                 this.duplex = 'auto';
                 this.configured = false;
             }
 
             draw(ctx) {
-                // Draw Font Awesome icon instead of image
                 ctx.save();
                 
-                // Set up icon styling
-                ctx.font = '48px "Font Awesome 5 Free"';
-                ctx.fontWeight = '900';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                // Draw icon background circle
-                ctx.fillStyle = 'rgba(0, 217, 255, 0.1)';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, 35, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw icon border
-                ctx.strokeStyle = '#00D9FF';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                // Draw the icon
-                ctx.fillStyle = '#00D9FF';
-                ctx.fillText(this.iconUnicode, this.x, this.y);
+                // Draw device image if loaded
+                if (this.image && this.image.complete) {
+                    const imageSize = 60; // Size of the device image
+                    const radius = 35; // Circle radius
+                    
+                    // Draw background circle
+                    ctx.fillStyle = 'rgba(0, 217, 255, 0.1)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Create circular clipping path for the image
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, radius - 2, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    // Draw the device image centered (clipped to circle)
+                    ctx.drawImage(
+                        this.image,
+                        this.x - imageSize / 2,
+                        this.y - imageSize / 2,
+                        imageSize,
+                        imageSize
+                    );
+                    
+                    // Restore context to draw border outside clip
+                    ctx.restore();
+                    ctx.save();
+                    
+                    // Draw border circle on top
+                    ctx.strokeStyle = '#00D9FF';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    // Fallback: Draw a circle if image not loaded
+                    ctx.fillStyle = 'rgba(0, 217, 255, 0.1)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 35, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#00D9FF';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw device type text as fallback
+                    ctx.fillStyle = '#00D9FF';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.type.toUpperCase(), this.x, this.y);
+                }
                 
                 ctx.restore();
                 
@@ -8782,7 +9444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.fillStyle = "#00C3B5";
                 ctx.font = "14px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(this.label, this.x, this.y + 50); // Adjusted label position
+                ctx.fillText(this.label, this.x, this.y + 50);
             }
         }
 
@@ -9109,6 +9771,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle canvas click for device selection and connection mode
         canvas.addEventListener("click", (e) => {
+            // Don't process click if we just finished dragging
+            if (isDragging) {
+                return;
+            }
+            
             const clickedDevice = findDeviceByPosition(e.offsetX, e.offsetY);
             if (isConnectionMode && currentConnectionType) {
                 if (clickedDevice) {
@@ -9125,6 +9792,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedDevice = null;
             }
             redrawCanvas();
+        });
+
+        // Handle mousedown for device dragging
+        canvas.addEventListener("mousedown", (e) => {
+            // Don't start dragging if in connection mode
+            if (isConnectionMode) {
+                return;
+            }
+            
+            const clickedDevice = findDeviceByPosition(e.offsetX, e.offsetY);
+            if (clickedDevice) {
+                isDragging = true;
+                draggedDevice = clickedDevice;
+                selectedDevice = clickedDevice;
+                
+                // Store offset from device center to mouse position
+                draggedDevice.dragOffsetX = e.offsetX - draggedDevice.x;
+                draggedDevice.dragOffsetY = e.offsetY - draggedDevice.y;
+                
+                // Change cursor to grabbing
+                canvas.style.cursor = 'grabbing';
+                
+                console.log('🖱️ Started dragging device:', draggedDevice.label);
+            }
+        });
+
+        // Handle mousemove for device dragging and connection preview
+        canvas.addEventListener("mousemove", (e) => {
+            mouseX = e.offsetX;
+            mouseY = e.offsetY;
+            
+            // Handle device dragging
+            if (isDragging && draggedDevice) {
+                // Update device position accounting for drag offset
+                draggedDevice.x = e.offsetX - draggedDevice.dragOffsetX;
+                draggedDevice.y = e.offsetY - draggedDevice.dragOffsetY;
+                
+                // Keep device within canvas bounds
+                const margin = 40; // Margin from canvas edge
+                draggedDevice.x = Math.max(margin, Math.min(canvas.width - margin, draggedDevice.x));
+                draggedDevice.y = Math.max(margin, Math.min(canvas.height - margin, draggedDevice.y));
+                
+                redrawCanvas();
+            } 
+            // Handle connection preview
+            else if (isConnectionMode && firstDevice) {
+                redrawCanvas(); // Redraw to show preview line
+            }
+            // Handle cursor change on hover
+            else {
+                const hoveredDevice = findDeviceByPosition(e.offsetX, e.offsetY);
+                canvas.style.cursor = hoveredDevice ? 'grab' : 'default';
+            }
+        });
+
+        // Handle mouseup to end device dragging
+        canvas.addEventListener("mouseup", (e) => {
+            if (isDragging && draggedDevice) {
+                console.log('🖱️ Stopped dragging device:', draggedDevice.label, 'at position:', { x: draggedDevice.x, y: draggedDevice.y });
+                
+                // Track device repositioning for performance feedback
+                if (window.performanceFeedback) {
+                    window.performanceFeedback.trackAction('device_repositioned', {
+                        device_type: draggedDevice.type,
+                        device_label: draggedDevice.label
+                    });
+                }
+                
+                isDragging = false;
+                draggedDevice = null;
+                canvas.style.cursor = 'default';
+                
+                // Small delay before allowing clicks to prevent click event from firing
+                setTimeout(() => {
+                    redrawCanvas();
+                }, 10);
+            }
+        });
+
+        // Handle mouse leaving canvas while dragging
+        canvas.addEventListener("mouseleave", (e) => {
+            if (isDragging && draggedDevice) {
+                console.log('🖱️ Mouse left canvas while dragging');
+                isDragging = false;
+                draggedDevice = null;
+                canvas.style.cursor = 'default';
+                redrawCanvas();
+            }
         });
 
         // Find device by position
@@ -9207,21 +9962,32 @@ document.addEventListener('DOMContentLoaded', () => {
         function drawDevice(device) {
             device.draw(ctx);
             
+            // Highlight device being dragged
+            if (device === draggedDevice && isDragging) {
+                ctx.beginPath();
+                ctx.arc(device.x, device.y, 40, 0, 2 * Math.PI);
+                ctx.strokeStyle = "#00FF88"; // Bright green for dragging
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Add glow effect
+                ctx.shadowColor = "#00FF88";
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(device.x, device.y, 38, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.shadowColor = "transparent";
+                ctx.shadowBlur = 0;
+            }
             // Highlight first selected device during connection mode
-            if (device === firstDevice && isConnectionMode) {
+            else if (device === firstDevice && isConnectionMode) {
                 ctx.beginPath();
                 ctx.arc(device.x, device.y, 30, 0, 2 * Math.PI);
                 ctx.strokeStyle = currentConnectionType === 'wireless' ? "#8B5CF6" : "#00D9FF";
                 ctx.lineWidth = 3;
                 ctx.stroke();
-            } else if (device === selectedDevice) {
-                ctx.beginPath();
-                ctx.arc(device.x, device.y, 30, 0, 2 * Math.PI);
-                ctx.strokeStyle = "#FFD700";
-                ctx.lineWidth = 9;
-                ctx.stroke();
-                ctx.shadowColor = "transparent";
-                ctx.shadowBlur = 0;
             }
         }
 
@@ -9320,7 +10086,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedDevice = null;  // Clear selection
                 redrawCanvas();  // Redraw canvas after deletion
                 removalMade = true;
-                alert("Device and its connections removed!");
             }
             
             // If no device was selected, enable connection removal mode
@@ -9517,6 +10282,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
             }
             
+            // XP system disabled
+            /*
             if (xpGained > 0) {
                 userProgress.totalXP += xpGained;
                 saveProgress();
@@ -9525,6 +10292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show XP notification
                 showXPNotification(xpGained, scenario);
             }
+            */
         }
 
         function saveProgress() {
@@ -9551,6 +10319,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function showXPNotification(xp, scenario) {
+            // XP notification disabled
+            /*
             const notification = document.createElement('div');
             notification.className = 'xp-notification';
             notification.innerHTML = `
@@ -9566,6 +10336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+            */
         }
 
         // Make functions globally accessible
@@ -9584,12 +10355,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert('Score saved successfully');
+                        console.log('✅ Score saved successfully:', score);
+                        // Removed redundant alert - completion message shown via showProblemPopup
                     } else {
-                        alert('Error saving score:', data.message);
+                        console.error('❌ Error saving score:', data.message);
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('❌ Error saving score:', error));
         }
 
         // Add new functions for scenario management
@@ -9775,6 +10547,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Make selectScenario globally accessible for inline onclick handlers
+        window.selectScenario = selectScenario;
+
         // Update Live Performance sidebar with current scenario information
         function updateLivePerformanceScenario(scenarioType) {
             const scenarioName = document.getElementById('scenario-name');
@@ -9938,16 +10713,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const easyStatus = document.getElementById('easy-status');
             const easyRequirement = document.getElementById('easy-requirement');
 
-            if (hasCompletedFoundation) {
-                easyUnlock.classList.add('unlocked');
-                easyUnlock.classList.remove('locked');
-                easyStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
-                easyRequirement.textContent = 'Unlocked!';
-            } else {
-                easyUnlock.classList.add('locked');
-                easyUnlock.classList.remove('unlocked');
-                easyStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
-                easyRequirement.textContent = 'Complete Foundation Learning';
+            if (easyUnlock && easyStatus && easyRequirement) {
+                if (hasCompletedFoundation) {
+                    easyUnlock.classList.add('unlocked');
+                    easyUnlock.classList.remove('locked');
+                    easyStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                    easyRequirement.textContent = 'Unlocked!';
+                } else {
+                    easyUnlock.classList.add('locked');
+                    easyUnlock.classList.remove('unlocked');
+                    easyStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                    easyRequirement.textContent = 'Complete Foundation Learning';
+                }
             }
 
             // Update Medium difficulty
@@ -9955,19 +10732,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const mediumStatus = document.getElementById('medium-status');
             const mediumRequirement = document.getElementById('medium-requirement');
 
-            if (hasCompletedFoundation && completedEasy >= 3) {
-                mediumUnlock.classList.add('unlocked');
-                mediumUnlock.classList.remove('locked');
-                mediumStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
-                mediumRequirement.textContent = 'Unlocked!';
-            } else {
-                mediumUnlock.classList.add('locked');
-                mediumUnlock.classList.remove('unlocked');
-                mediumStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
-                if (!hasCompletedFoundation) {
-                    mediumRequirement.textContent = 'Complete Foundation Learning first';
+            if (mediumUnlock && mediumStatus && mediumRequirement) {
+                if (hasCompletedFoundation && completedEasy >= 3) {
+                    mediumUnlock.classList.add('unlocked');
+                    mediumUnlock.classList.remove('locked');
+                    mediumStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                    mediumRequirement.textContent = 'Unlocked!';
                 } else {
-                    mediumRequirement.textContent = `Complete ${3 - completedEasy} more Easy scenarios (${completedEasy}/3)`;
+                    mediumUnlock.classList.add('locked');
+                    mediumUnlock.classList.remove('unlocked');
+                    mediumStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                    if (!hasCompletedFoundation) {
+                        mediumRequirement.textContent = 'Complete Foundation Learning first';
+                    } else {
+                        mediumRequirement.textContent = `Complete ${3 - completedEasy} more Easy scenarios (${completedEasy}/3)`;
+                    }
                 }
             }
 
@@ -9976,21 +10755,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const hardStatus = document.getElementById('hard-status');
             const hardRequirement = document.getElementById('hard-requirement');
 
-            if (hasCompletedFoundation && completedEasy >= 3 && completedMedium >= 5) {
-                hardUnlock.classList.add('unlocked');
-                hardUnlock.classList.remove('locked');
-                hardStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
-                hardRequirement.textContent = 'Unlocked!';
-            } else {
-                hardUnlock.classList.add('locked');
-                hardUnlock.classList.remove('unlocked');
-                hardStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
-                if (!hasCompletedFoundation) {
-                    hardRequirement.textContent = 'Complete Foundation Learning first';
-                } else if (completedEasy < 3) {
-                    hardRequirement.textContent = 'Complete Easy scenarios first';
+            if (hardUnlock && hardStatus && hardRequirement) {
+                if (hasCompletedFoundation && completedEasy >= 3 && completedMedium >= 5) {
+                    hardUnlock.classList.add('unlocked');
+                    hardUnlock.classList.remove('locked');
+                    hardStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
+                    hardRequirement.textContent = 'Unlocked!';
                 } else {
-                    hardRequirement.textContent = `Complete ${5 - completedMedium} more Medium scenarios (${completedMedium}/5)`;
+                    hardUnlock.classList.add('locked');
+                    hardUnlock.classList.remove('unlocked');
+                    hardStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
+                    if (!hasCompletedFoundation) {
+                        hardRequirement.textContent = 'Complete Foundation Learning first';
+                    } else if (completedEasy < 3) {
+                        hardRequirement.textContent = 'Complete Easy scenarios first';
+                    } else {
+                        hardRequirement.textContent = `Complete ${5 - completedMedium} more Medium scenarios (${completedMedium}/5)`;
+                    }
                 }
             }
         }
@@ -10002,18 +10783,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Get foundation progress
             const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
-            const completedModules = foundationProgress.completedModules || [];
-            const hasEnoughFoundationModules = completedModules.length >= 4;
-            const hasCompletedBasicPhases = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
-            const canUnlockEasy = hasEnoughFoundationModules || hasCompletedBasicPhases;
+            
+            // Easy requires ALL Foundation phases completed (5 phases)
+            const hasCompletedFoundation = foundationProgress.phase1Complete && 
+                                         foundationProgress.phase2Complete && 
+                                         foundationProgress.phase3Complete && 
+                                         foundationProgress.phase4Complete && 
+                                         foundationProgress.phase5Complete;
 
-            // Easy requires 4 Foundation modules completion
+            // Easy requires ALL Foundation phases completion
             if (difficulty === 'easy') {
-                return canUnlockEasy;
+                return hasCompletedFoundation;
             }
 
-            // Higher difficulties require Easy unlock + previous level completion
-            if (!canUnlockEasy) return false;
+            // Higher difficulties require Foundation completion + ALL previous level scenarios
+            if (!hasCompletedFoundation) return false;
 
             // Check if scenarios variable exists
             if (typeof scenarios === 'undefined') {
@@ -10027,14 +10811,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const hardScenarios = scenarios.filter(s => s.difficulty === 'hard');
 
             if (difficulty === 'medium') {
+                // Medium/Intermediate requires ALL Easy scenarios completed
                 return userProgress >= easyScenarios.length;
             }
 
             if (difficulty === 'hard') {
+                // Hard/Advanced requires ALL Easy + ALL Medium scenarios completed
                 return userProgress >= (easyScenarios.length + mediumScenarios.length);
             }
 
             if (difficulty === 'expert') {
+                // Expert requires ALL Easy + ALL Medium + ALL Hard scenarios completed
                 return userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
             }
 
@@ -10225,21 +11012,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update difficulty card accessibility
         function updateDifficultyAccess() {
+            console.log('🔓 ========== UPDATING DIFFICULTY ACCESS ==========');
             const foundationProgress = JSON.parse(localStorage.getItem('foundation_progress') || '{}');
-            // For Easy unlock, we need 4 Foundation modules completed (phases 1&2 complete, or equivalent)
-            const completedModules = foundationProgress.completedModules || [];
-            const hasEnoughFoundationModules = completedModules.length >= 4;
-            // Alternative check: Phase 1 and Phase 2 complete
-            const hasCompletedBasicPhases = foundationProgress.phase1Complete && foundationProgress.phase2Complete;
-            // Easy unlocks when either condition is met
-            const canUnlockEasy = hasEnoughFoundationModules || hasCompletedBasicPhases;
             
-            // Full foundation completion (for higher difficulties)
+            // Full foundation completion (ALL 5 phases) - required to unlock Easy
             const hasCompletedFoundation = foundationProgress.phase1Complete && 
                                          foundationProgress.phase2Complete && 
                                          foundationProgress.phase3Complete && 
                                          foundationProgress.phase4Complete && 
                                          foundationProgress.phase5Complete;
+            
+            console.log('📊 Foundation Progress:', {
+                phase1: foundationProgress.phase1Complete,
+                phase2: foundationProgress.phase2Complete,
+                phase3: foundationProgress.phase3Complete,
+                phase4: foundationProgress.phase4Complete,
+                phase5: foundationProgress.phase5Complete,
+                allComplete: hasCompletedFoundation
+            });
+            
             const userProgress = parseInt(localStorage.getItem('topologyProgress') || '0');
 
             // Foundation is always unlocked
@@ -10247,21 +11038,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (foundationCard) {
                 foundationCard.classList.add('unlocked');
                 foundationCard.classList.remove('locked');
+                console.log('✅ Foundation Card: Always Unlocked');
             }
 
-            // Easy card - requires 4 Foundation modules completion
+            // Easy card - requires ALL Foundation phases completed
             const easyCard = document.querySelector('.easy-card');
             if (easyCard) {
-                if (canUnlockEasy) {
+                if (hasCompletedFoundation) {
                     easyCard.classList.add('unlocked');
                     easyCard.classList.remove('locked');
                     // Update the onclick handler to allow access
                     easyCard.setAttribute('onclick', "selectScenario('easy')");
                     
                     // Remove lock overlay
-                    const lockOverlay = easyCard.querySelector('.lock-overlay');
+                    let lockOverlay = easyCard.querySelector('.lock-overlay');
                     if (lockOverlay) {
                         lockOverlay.style.display = 'none';
+                        lockOverlay.remove();
                     }
                     
                     // Update unlock status
@@ -10274,45 +11067,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         unlockStatus.innerHTML = '<i class="bx bx-check-circle"></i>';
                     }
                     
-                    // Reset title if it was showing locked state
-                    const title = easyCard.querySelector('.difficulty-title');
-                    const subtitle = easyCard.querySelector('.difficulty-subtitle');
-                    if (title) title.textContent = 'EASY';
-                    if (subtitle) subtitle.textContent = 'Basic Troubleshooting';
+                    console.log('✅ Easy Card: UNLOCKED (Foundation Complete)');
                 } else {
                     easyCard.classList.add('locked');
                     easyCard.classList.remove('unlocked');
                     // Keep the locked handler
                     easyCard.setAttribute('onclick', "handleLockedLevel('easy')");
                     
-                    // Show lock overlay
-                    const lockOverlay = easyCard.querySelector('.lock-overlay');
-                    if (lockOverlay) {
-                        lockOverlay.style.display = 'block';
+                    // Add lock overlay if not exists
+                    let lockOverlay = easyCard.querySelector('.lock-overlay');
+                    if (!lockOverlay) {
+                        lockOverlay = document.createElement('div');
+                        lockOverlay.className = 'lock-overlay';
+                        lockOverlay.innerHTML = '<i class="bx bx-lock-alt" style="font-size: 64px;"></i>';
+                        easyCard.appendChild(lockOverlay);
                     }
+                    lockOverlay.style.display = 'flex';
                     
                     // Update unlock requirement
                     const unlockRequirement = easyCard.querySelector('.unlock-requirement');
                     const unlockStatus = easyCard.querySelector('.unlock-status');
                     if (unlockRequirement) {
-                        unlockRequirement.innerHTML = '<i class="bx bx-trophy"></i> Complete 4 Foundation modules to unlock';
+                        unlockRequirement.innerHTML = '<i class="bx bx-trophy"></i> Complete ALL Foundation phases to unlock';
                     }
                     if (unlockStatus) {
                         unlockStatus.innerHTML = '<i class="bx bx-lock-alt"></i>';
                     }
                     
-                    // Show locked state
-                    const title = easyCard.querySelector('.difficulty-title');
-                    const subtitle = easyCard.querySelector('.difficulty-subtitle');
-                    if (title) title.textContent = 'EASY';
-                    if (subtitle) subtitle.textContent = 'Basic Troubleshooting';
+                    console.log('🔒 Easy Card: LOCKED (Foundation Incomplete)');
                 }
             }
 
-            // Medium, Hard, Expert cards - require previous completion
+            // Medium/Intermediate, Hard/Advanced, Expert cards - require ALL scenarios from previous level
             // Check if scenarios variable exists (it might not be loaded yet)
             if (typeof scenarios === 'undefined') {
-                console.log('Scenarios not yet loaded, skipping advanced difficulty updates');
+                console.log('⚠️ Scenarios not yet loaded, skipping advanced difficulty updates');
                 return;
             }
 
@@ -10322,43 +11111,105 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const mediumCard = document.querySelector('.medium-card');
             if (mediumCard) {
-                const canAccessMedium = canUnlockEasy && userProgress >= easyScenarios.length;
+                // Medium/Intermediate requires ALL Easy scenarios completed
+                const completedLinkup = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                const completedEasy = easyScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const canAccessMedium = hasCompletedFoundation && completedEasy >= easyScenarios.length;
+                
                 if (canAccessMedium) {
                     mediumCard.classList.add('unlocked');
                     mediumCard.classList.remove('locked');
                     mediumCard.setAttribute('onclick', "selectScenario('medium')");
+                    
+                    // Remove lock overlay
+                    let lockOverlay = mediumCard.querySelector('.lock-overlay');
+                    if (lockOverlay) {
+                        lockOverlay.style.display = 'none';
+                        lockOverlay.remove();
+                    }
+                    console.log(`✅ Medium Card: UNLOCKED (Completed ${completedEasy}/${easyScenarios.length} Easy)`);
                 } else {
                     mediumCard.classList.add('locked');
                     mediumCard.classList.remove('unlocked');
                     mediumCard.setAttribute('onclick', "handleLockedLevel('medium')");
+                    
+                    // Add lock overlay if not exists
+                    let lockOverlay = mediumCard.querySelector('.lock-overlay');
+                    if (!lockOverlay) {
+                        lockOverlay = document.createElement('div');
+                        lockOverlay.className = 'lock-overlay';
+                        lockOverlay.innerHTML = '<i class="bx bx-lock-alt" style="font-size: 64px;"></i>';
+                        mediumCard.appendChild(lockOverlay);
+                    }
+                    lockOverlay.style.display = 'flex';
+                    console.log(`🔒 Medium Card: LOCKED (Completed ${completedEasy}/${easyScenarios.length} Easy)`);
                 }
             }
 
             const hardCard = document.querySelector('.hard-card');
             if (hardCard) {
-                const canAccessHard = canUnlockEasy && userProgress >= (easyScenarios.length + mediumScenarios.length);
+                // Hard/Advanced requires ALL Easy + ALL Medium scenarios completed
+                const completedLinkup = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                const completedEasy = easyScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const completedMedium = mediumScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const canAccessHard = hasCompletedFoundation && 
+                                     completedEasy >= easyScenarios.length && 
+                                     completedMedium >= mediumScenarios.length;
+                
                 if (canAccessHard) {
                     hardCard.classList.add('unlocked');
                     hardCard.classList.remove('locked');
                     hardCard.setAttribute('onclick', "selectScenario('hard')");
+                    
+                    // Remove lock overlay
+                    let lockOverlay = hardCard.querySelector('.lock-overlay');
+                    if (lockOverlay) {
+                        lockOverlay.style.display = 'none';
+                        lockOverlay.remove();
+                    }
+                    console.log(`✅ Hard Card: UNLOCKED`);
                 } else {
                     hardCard.classList.add('locked');
                     hardCard.classList.remove('unlocked');
                     hardCard.setAttribute('onclick', "handleLockedLevel('hard')");
+                    
+                    // Add lock overlay if not exists
+                    let lockOverlay = hardCard.querySelector('.lock-overlay');
+                    if (!lockOverlay) {
+                        lockOverlay = document.createElement('div');
+                        lockOverlay.className = 'lock-overlay';
+                        lockOverlay.innerHTML = '<i class="bx bx-lock-alt" style="font-size: 64px;"></i>';
+                        hardCard.appendChild(lockOverlay);
+                    }
+                    lockOverlay.style.display = 'flex';
+                    console.log(`🔒 Hard Card: LOCKED (E: ${completedEasy}/${easyScenarios.length}, M: ${completedMedium}/${mediumScenarios.length})`);
                 }
             }
 
             const expertCard = document.querySelector('.expert-card');
             if (expertCard) {
-                const canAccessExpert = canUnlockEasy && userProgress >= (easyScenarios.length + mediumScenarios.length + hardScenarios.length);
+                // Expert requires ALL Easy + ALL Medium + ALL Hard scenarios completed
+                const completedLinkup = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                const completedEasy = easyScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const completedMedium = mediumScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const completedHard = hardScenarios.filter(s => completedLinkup.includes(s.id)).length;
+                const canAccessExpert = hasCompletedFoundation && 
+                                       completedEasy >= easyScenarios.length && 
+                                       completedMedium >= mediumScenarios.length && 
+                                       completedHard >= hardScenarios.length;
+                
                 if (canAccessExpert) {
                     expertCard.classList.add('unlocked');
                     expertCard.classList.remove('locked');
+                    console.log(`✅ Expert Card: UNLOCKED`);
                 } else {
                     expertCard.classList.add('locked');
                     expertCard.classList.remove('unlocked');
+                    console.log(`🔒 Expert Card: LOCKED`);
                 }
             }
+            
+            console.log('🔓 ========== DIFFICULTY ACCESS UPDATE COMPLETE ==========');
         }
 
         function initializeFoundationProgress() {
@@ -10840,6 +11691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const moduleId = currentTopologyObjectives.moduleId;
             const module = findTopologyModule(moduleId);
+            const completionTime = Date.now() - (currentTopologyObjectives.startTime || Date.now());
             
             currentTopologyObjectives.completed = true;
             
@@ -10861,43 +11713,103 @@ document.addEventListener('DOMContentLoaded', () => {
             // Save progress
             saveTopologyProgress();
             
-            // Show completion notification
-            showTopologyCompletionNotification(module);
+            // Save score to backend for badge integration
+            saveTopologyScoreToBackend(100, moduleId);
+            
+            // **MVP: Record result in Challenge Results Tracker**
+            if (window.challengeResultsTracker) {
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+                
+                window.challengeResultsTracker.addResult('foundation', {
+                    moduleId: moduleId,
+                    name: module.name,
+                    score: 100,
+                    timeSpent: formatTime(Math.floor(completionTime / 1000)),
+                    accuracy: 100,
+                    hintsUsed: 0
+                });
+            }
+            
+            // Completion popup suppressed (results are shown in sidebar instead)
+            // showProblemPopup(true, []);
+            
+            // Completion notification suppressed (results are shown in sidebar instead)
+            // showTopologyCompletionNotification(module);
             
             // Update UI
             updateTopologyUI();
             
             console.log(`✅ Topology module completed: ${module.name} (+${module.xp} XP)`);
             
-            // Return to foundation modal after delay
-            setTimeout(() => {
-                switchCanvasMode('idle');
-                openFoundationModal();
-            }, 3000);
+            // Auto-redirect to foundation modal suppressed (user stays on canvas)
+            // setTimeout(() => {
+            //     switchCanvasMode('idle');
+            //     openFoundationModal();
+            // }, 3000);
+        }
+        
+        function saveTopologyScoreToBackend(score, category) {
+            console.log(`💾 Saving Link Up challenge to backend: ${category} - Score: ${score}`);
+            
+            fetch('/save_topology_score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    score: score, 
+                    category: category,
+                    difficulty: 'medium',
+                    challenge_type: 'troubleshooting' // Link Up challenges are troubleshooting type
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log(`✅ Topology score saved to backend: ${score} for "${category}"`);
+                    
+                    // Check if badges were earned
+                    if (data.badges_earned && data.badges_earned.length > 0) {
+                        console.log('🏆 Badges earned:', data.badges_earned);
+                        // Badge notification will be shown by the badge system
+                    }
+                    
+                    // Save challenge progress for Link Up challenges
+                    return fetch('/api/challenge/save-progress', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            challenge_type: 'linkup',
+                            state_data: {
+                                category: category,
+                                score: score,
+                                completed_at: new Date().toISOString()
+                            },
+                            is_completed: true
+                        })
+                    });
+                } else {
+                    console.error('❌ Error saving topology score:', data.message);
+                }
+            })
+            .then(response => response ? response.json() : null)
+            .then(progressData => {
+                if (progressData && progressData.success) {
+                    console.log('✅ Challenge progress saved for Link Up');
+                }
+            })
+            .catch(error => console.error('❌ Error saving Link Up challenge:', error));
         }
 
         function showTopologyCompletionNotification(module) {
-            const notification = document.createElement('div');
-            notification.className = 'auto-completion-notification show';
-            notification.innerHTML = `
-                <div class="auto-completion-content">
-                    <div class="auto-completion-icon">
-                        <i class='bx bx-check-circle'></i>
-                    </div>
-                    <div class="auto-completion-text">
-                        <h4>Topology Complete!</h4>
-                        <p>${module.name}</p>
-                        <div class="completion-time">+${module.xp} XP earned</div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 500);
-            }, 2500);
+            // Notification disabled - silent completion
+            return;
         }
 
         // Update Topology Phase Completion
@@ -11228,6 +12140,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Phase 3: Network Topology Scenarios
         function startSmallOfficeScenario() {
+            console.log('🏢 ========== STARTING SMALL OFFICE NETWORK SCENARIO ==========');
+            console.log('📋 Objective: 3 PCs + 1 Switch + 1 Router');
+            console.log('🔗 Connections: All PCs → Switch, Switch → Router');
+            
             showFoundationTutorial(
                 "Small Office Network",
                 "A typical small office network includes multiple computers connected through a switch, which connects to a router for internet access. This is a common business topology.",
@@ -11244,9 +12160,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             devices.push(pc1, pc2, pc3, switch1, router1);
             redrawCanvas();
+            
+            console.log('✅ Devices placed on canvas:', devices.map(d => ({ type: d.type, label: d.label })));
+            console.log('💡 TIP: Make connections and watch console for auto-completion checks\n');
+            
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('small-office');
         }
 
         function startHomeNetworkScenario() {
+            console.log('🏠 ========== STARTING HOME NETWORK SCENARIO ==========');
+            console.log('📋 Objective: 2 PCs + 1 Router');
+            console.log('🔗 Connections: Both PCs → Router');
+            console.log('⚠️ NOTE: Scenario places 4 PCs but only requires 2 to be connected!');
+            
             showFoundationTutorial(
                 "Home Network Setup",
                 "Home networks often use wireless routers that combine switching and routing functions. Devices can connect via WiFi or Ethernet to access the internet.",
@@ -11262,46 +12189,106 @@ document.addEventListener('DOMContentLoaded', () => {
             
             devices.push(laptop, desktop, tablet, phone, router1);
             redrawCanvas();
+            
+            console.log('✅ Devices placed on canvas:', devices.map(d => ({ type: d.type, label: d.label })));
+            console.log('💡 TIP: Connect ANY 2 devices to the router to complete');
+            console.log('📊 Current device count - PCs: 4, Routers: 1');
+            console.log('🎯 Requirement - PCs: 2, Routers: 1, PC-Router connections: 2\n');
+            
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('home-network');
         }
 
         function startNetworkExpansionScenario() {
+            console.log('🌐 ========== STARTING NETWORK EXPANSION SCENARIO ==========');
+            console.log('📋 Objective: 4 PCs + 1 Switch + 1 Router');
+            console.log('🔗 Required Connections:');
+            console.log('   - 4 PC-to-Switch connections (all 4 PCs to the switch)');
+            console.log('   - 1 Switch-to-Router connection');
+            console.log('💡 Simpler design: One central switch connects all PCs, then routes to internet\n');
+            
             showFoundationTutorial(
                 "Network Expansion",
-                "As networks grow, we add more switches and create hierarchical designs to efficiently manage traffic. This allows networks to scale while maintaining performance.",
-                "Start with a small network and expand it by adding additional switches and network segments."
+                "As networks grow, we connect multiple devices through a central switch. This switch then connects to a router for internet access, creating an efficient star topology.",
+                "Connect all 4 PCs to the central switch, then connect the switch to the router for internet connectivity."
             );
             
-            // Place devices for network expansion
+            // Place devices for network expansion - simplified to one switch
             let pc1 = new PC(50, 100, 'PC 1');
-            let pc2 = new PC(50, 200, 'PC 2');
-            let switch1 = new Switch(200, 150, 'Switch 1');
-            let pc3 = new PC(350, 100, 'PC 3');
-            let pc4 = new PC(350, 200, 'PC 4');
-            let switch2 = new Switch(500, 150, 'Switch 2');
-            let router1 = new Router(350, 300, 'Main Router');
+            let pc2 = new PC(50, 250, 'PC 2');
+            let pc3 = new PC(50, 400, 'PC 3');
+            let pc4 = new PC(350, 400, 'PC 4');
+            let switch1 = new Switch(350, 200, 'Central Switch');
+            let router1 = new Router(650, 200, 'Main Router');
             
-            devices.push(pc1, pc2, switch1, pc3, pc4, switch2, router1);
+            devices.push(pc1, pc2, pc3, pc4, switch1, router1);
             redrawCanvas();
+            
+            console.log('✅ Devices placed on canvas:', devices.map(d => ({ type: d.type, label: d.label })));
+            console.log('💡 TIP: Connect all 4 PCs to the Central Switch, then connect switch to Main Router');
+            console.log('📊 Device count - PCs: 4, Switches: 1, Routers: 1');
+            console.log('🎯 Requirements:');
+            console.log('   ✓ Devices: 4 PCs, 1 Switch, 1 Router');
+            console.log('   ✓ Connections: 4 PC-Switch + 1 Switch-Router\n');
+            
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('network-expansion');
         }
 
         // Phase 4: Basic Configuration Scenarios
         function startDeviceNamingScenario() {
-            // Initialize automatic completion detection
-            initializeScenarioObjectives('device-naming');
+            console.log('🏷️ ========== STARTING DEVICE NAMING SCENARIO ==========');
+            console.log('📋 Objective: Rename 2 PCs + 1 Switch, then connect them');
+            console.log('💡 Focus: Practice naming devices AND building connections\n');
+            console.log('⚠️ ========== HOW TO COMPLETE THIS SCENARIO ==========');
+            console.log('✅ PART 1: RENAME ALL DEVICES using CLI');
+            console.log('   1️⃣ Double-click first PC → CLI opens');
+            console.log('   2️⃣ Type: hostname Workstation-01');
+            console.log('   3️⃣ Press ENTER, then close CLI');
+            console.log('   4️⃣ Double-click second PC → Type: hostname Workstation-02');
+            console.log('   5️⃣ Press ENTER, then close CLI');
+            console.log('   6️⃣ Double-click Switch → Type: hostname Core-Switch');
+            console.log('   7️⃣ Press ENTER, then close CLI');
+            console.log('');
+            console.log('✅ PART 2: CONNECT ALL DEVICES using WIRED button');
+            console.log('   8️⃣ Click WIRED button at bottom');
+            console.log('   9️⃣ Click Workstation-01 → Click Core-Switch');
+            console.log('   🔟 Click Workstation-02 → Click Core-Switch');
+            console.log('');
+            console.log('🎉 AUTO-COMPLETION will trigger when BOTH parts are done!\n');
             
             showFoundationTutorial(
-                "Device Naming and Identification",
-                "Proper device naming helps network administrators identify and manage devices efficiently. Use descriptive, consistent names that indicate location, function, or department.",
-                "Practice naming devices with meaningful identifiers. Click on devices to see their properties and naming options."
+                "Device Naming and Network Building",
+                "This scenario teaches TWO essential skills:<br><br>1️⃣ <strong>Device Naming:</strong> Use the CLI <code>hostname</code> command to give devices meaningful names<br>2️⃣ <strong>Network Connectivity:</strong> Use the WIRED button to connect devices<br><br><strong style='color: #FFD700;'>⚡ PART 1: Rename all devices using CLI</strong><br><strong style='color: #4CAF50;'>⚡ PART 2: Connect both PCs to the Switch</strong>",
+                "Double-click each device to open CLI, use 'hostname NewName' to rename, then close CLI. After renaming all devices, click WIRED and connect them!"
             );
             
-            // Place devices to demonstrate naming
-            let pc1 = new PC(100, 150, 'PC');
-            let switch1 = new Switch(300, 200, 'Switch');
-            let router1 = new Router(500, 150, 'Router');
+            // Place devices with GENERIC names that need to be renamed
+            let pc1 = new PC(100, 150, 'PC-1');
+            let pc2 = new PC(100, 300, 'PC-2');
+            let switch1 = new Switch(350, 225, 'Switch-1');
             
-            devices.push(pc1, switch1, router1);
+            devices.push(pc1, pc2, switch1);
             redrawCanvas();
+            
+            console.log('✅ Devices placed on canvas with GENERIC names:', devices.map(d => ({ type: d.type, label: d.label })));
+            console.log('🎯 Requirements:');
+            console.log('   ✓ Rename Devices:');
+            console.log('      • PC-1 → Workstation-01');
+            console.log('      • PC-2 → Workstation-02');
+            console.log('      • Switch-1 → Core-Switch');
+            console.log('   ✓ Create Connections:');
+            console.log('      • Workstation-01 → Core-Switch');
+            console.log('      • Workstation-02 → Core-Switch');
+            console.log('');
+            console.log('📝 Current Status:');
+            console.log('   ❌ Device names: GENERIC (need renaming!)');
+            console.log('   ❌ Connections: 0 (need wiring!)');
+            console.log('');
+            console.log('💡 START WITH PART 1: Double-click a device to open CLI!\n');
+            
+            // Initialize automatic completion detection
+            initializeScenarioObjectives('device-naming');
         }
 
         function startCableManagementScenario() {
@@ -11561,6 +12548,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('foundation_progress', JSON.stringify(foundationProgress));
                 console.log(`💾 Progress saved to localStorage`);
                 
+                // **MVP FIX: Save to backend database immediately**
+                console.log(`💾 Saving Foundation module completion to backend: ${currentModule}`);
+                saveTopologyScoreToBackend(100, currentModule);
+                
                 // Update difficulty access when foundation is completed
                 updateDifficultyAccess();
                 console.log(`🔓 Updated difficulty access`);
@@ -11574,10 +12565,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Close tutorial
                 closeFoundationTutorial();
                 
-                // Return to foundation menu
-                setTimeout(() => {
-                    openFoundationModal();
-                }, 1500);
+                // Auto-redirect to foundation menu suppressed (user stays on canvas)
+                // setTimeout(() => {
+                //     openFoundationModal();
+                // }, 1500);
             } else {
                 console.log(`⚠️ Module ${currentModule} already completed or invalid`);
             }
@@ -11637,24 +12628,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 description: "Build a small office network with 3 PCs, 1 Switch, and 1 Router"
             },
             'home-network': {
-                requiredDevices: [{ type: 'pc', count: 2 }, { type: 'router', count: 1 }],
+                requiredDevices: [{ type: 'pc', count: 4 }, { type: 'router', count: 1 }],
                 requiredConnections: [{ from: 'pc', to: 'router', count: 2 }],
-                description: "Build a home network with PCs connected to a Router"
+                description: "Build a home network with at least 2 devices connected to Router"
             },
             'network-expansion': {
-                requiredDevices: [{ type: 'pc', count: 4 }, { type: 'switch', count: 2 }, { type: 'router', count: 1 }],
+                requiredDevices: [{ type: 'pc', count: 4 }, { type: 'switch', count: 1 }, { type: 'router', count: 1 }],
                 requiredConnections: [
                     { from: 'pc', to: 'switch', count: 4 },
                     { from: 'switch', to: 'router', count: 1 }
                 ],
-                description: "Expand network with multiple switches and devices"
+                description: "Expand network with central switch connecting multiple devices"
             },
             
             // Phase 4: Basic Configuration - Device management
             'device-naming': {
                 requiredDevices: [{ type: 'pc', count: 2 }, { type: 'switch', count: 1 }],
                 requiredConnections: [{ from: 'pc', to: 'switch', count: 2 }],
-                description: "Place and configure network devices with proper naming"
+                requiredDeviceNames: [
+                    { type: 'pc', label: 'Workstation-01' },
+                    { type: 'pc', label: 'Workstation-02' },
+                    { type: 'switch', label: 'Core-Switch' }
+                ],
+                description: "Rename devices using CLI and connect them to build a properly named network"
             },
             'cable-management': {
                 requiredDevices: [{ type: 'pc', count: 3 }, { type: 'switch', count: 1 }],
@@ -11701,7 +12697,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     completed: false
                 };
                 
-                console.log(`📋 Scenario objectives initialized for: ${moduleId}`, currentScenarioObjectives);
+                console.log('🎯 ========== SCENARIO OBJECTIVES INITIALIZED ==========');
+                console.log('� Module ID:', moduleId);
+                console.log('�📋 Required Devices:', currentScenarioObjectives.objectives.requiredDevices);
+                console.log('🔗 Required Connections:', currentScenarioObjectives.objectives.requiredConnections);
+                console.log('📖 Description:', currentScenarioObjectives.objectives.description);
+                console.log('⏱️ Start Time:', new Date(currentScenarioObjectives.startTime).toLocaleTimeString());
+                console.log('👀 Auto-completion monitoring will check every 500ms');
+                console.log('========================================================\n');
                 
                 // Start monitoring for completion
                 startScenarioMonitoring();
@@ -11733,39 +12736,100 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
 
+            console.log('🎯 ========== SCENARIO COMPLETION CHECK ==========');
+            console.log('📝 Current Scenario:', currentScenarioObjectives.moduleId);
+            console.log('⏱️ Time Elapsed:', Math.floor((Date.now() - currentScenarioObjectives.startTime) / 1000), 'seconds');
+
             const objectives = currentScenarioObjectives.objectives;
             
             // Check device requirements
+            console.log('\n🖥️ STEP 1: Checking Device Requirements...');
             const devicesSatisfied = checkDeviceRequirements(objectives.requiredDevices);
             if (!devicesSatisfied) {
+                console.log('⏸️ Waiting for correct devices...\n');
                 return false;
             }
             
             // Check connection requirements
+            console.log('\n🔗 STEP 2: Checking Connection Requirements...');
             const connectionsSatisfied = checkConnectionRequirements(objectives.requiredConnections);
             if (!connectionsSatisfied) {
+                console.log('⏸️ Waiting for correct connections...\n');
                 return false;
             }
             
+            // Check device naming requirements (if specified)
+            if (objectives.requiredDeviceNames) {
+                console.log('\n🏷️ STEP 3: Checking Device Naming Requirements...');
+                const namesSatisfied = checkDeviceNamesRequirements(objectives.requiredDeviceNames);
+                if (!namesSatisfied) {
+                    console.log('⏸️ Waiting for devices to be renamed...\n');
+                    return false;
+                }
+            }
+            
             // All objectives met - complete the scenario!
+            console.log('\n🎉 ========== ALL OBJECTIVES MET! COMPLETING SCENARIO... ==========\n');
             completeScenarioAutomatically();
             return true;
         }
 
         // Check if device requirements are satisfied
         function checkDeviceRequirements(requiredDevices) {
+            console.log('  🔍 Required Devices:', requiredDevices);
+            console.log('  🖥️ Current Devices on Canvas:', devices.map(d => ({ type: d.type, label: d.label || 'unlabeled' })));
+            
+            // ENHANCED DEBUG: Show detailed device info
+            console.log('\n  📊 DETAILED DEVICE BREAKDOWN:');
+            console.log('  Total devices array length:', devices.length);
+            devices.forEach((device, index) => {
+                console.log(`    Device ${index + 1}:`, {
+                    type: device.type,
+                    label: device.label,
+                    x: device.x,
+                    y: device.y,
+                    constructor: device.constructor.name
+                });
+            });
+            
+            // Count devices by type manually
+            const deviceCounts = {};
+            devices.forEach(device => {
+                deviceCounts[device.type] = (deviceCounts[device.type] || 0) + 1;
+            });
+            console.log('  📈 Device counts by type:', deviceCounts);
+            console.log('');
+            
             for (const requirement of requiredDevices) {
                 const devicesOfType = devices.filter(device => device.type === requirement.type);
+                console.log(`  ✓ ${requirement.type}: Found ${devicesOfType.length}, Need ${requirement.count}`, 
+                    devicesOfType.length >= requirement.count ? '✅' : '❌');
+                
+                // Show which specific devices match
+                if (devicesOfType.length > 0) {
+                    console.log(`    Matching devices:`, devicesOfType.map(d => d.label || 'unlabeled'));
+                }
                 
                 if (devicesOfType.length < requirement.count) {
+                    console.log(`  ❌ FAILED: Missing ${requirement.count - devicesOfType.length} more ${requirement.type}(s)`);
                     return false;
                 }
             }
+            console.log('  ✅ All devices present!');
             return true;
         }
 
         // Check if connection requirements are satisfied
         function checkConnectionRequirements(requiredConnections) {
+            console.log('\n🔗 STEP 2: Checking Connection Requirements...');
+            console.log('  🔍 Required Connections:', requiredConnections);
+            console.log('  🔌 Current Connections:', connections.map(c => ({
+                from: c.device1.type,
+                to: c.device2.type,
+                fromLabel: c.device1.label || 'unlabeled',
+                toLabel: c.device2.label || 'unlabeled'
+            })));
+            
             for (const requirement of requiredConnections) {
                 const matchingConnections = connections.filter(conn => {
                     const device1Type = conn.device1.type;
@@ -11775,10 +12839,52 @@ document.addEventListener('DOMContentLoaded', () => {
                            (device1Type === requirement.to && device2Type === requirement.from);
                 });
                 
+                console.log(`  ✓ ${requirement.from} ↔ ${requirement.to}: Found ${matchingConnections.length}, Need ${requirement.count}`,
+                    matchingConnections.length >= requirement.count ? '✅' : '❌');
+                
                 if (matchingConnections.length < requirement.count) {
+                    console.log(`  ❌ FAILED: Missing ${requirement.count - matchingConnections.length} more ${requirement.from}-${requirement.to} connection(s)`);
                     return false;
                 }
             }
+            console.log('  ✅ All connections present!');
+            return true;
+        }
+
+        // Check if device naming requirements are satisfied
+        function checkDeviceNamesRequirements(requiredDeviceNames) {
+            if (!requiredDeviceNames || requiredDeviceNames.length === 0) {
+                // No naming requirements, skip this check
+                return true;
+            }
+            
+            console.log('\n🏷️ STEP 3: Checking Device Naming Requirements...');
+            console.log('  🔍 Required Device Names:', requiredDeviceNames);
+            console.log('  📝 Current Device Labels:', devices.map(d => ({ type: d.type, label: d.label || 'unlabeled' })));
+            
+            for (const requirement of requiredDeviceNames) {
+                // Find a device of the required type with the required label
+                const matchingDevice = devices.find(device => 
+                    device.type === requirement.type && device.label === requirement.label
+                );
+                
+                if (matchingDevice) {
+                    console.log(`  ✅ ${requirement.type} named "${requirement.label}" - FOUND ✅`);
+                } else {
+                    // Check if device of this type exists but with wrong name
+                    const deviceOfType = devices.filter(d => d.type === requirement.type);
+                    if (deviceOfType.length > 0) {
+                        const currentNames = deviceOfType.map(d => d.label || 'unlabeled').join(', ');
+                        console.log(`  ❌ ${requirement.type} named "${requirement.label}" - NOT FOUND ❌`);
+                        console.log(`     Current ${requirement.type} names: [${currentNames}]`);
+                        console.log(`     💡 TIP: Double-click the device and use CLI command: hostname ${requirement.label}`);
+                    } else {
+                        console.log(`  ❌ ${requirement.type} named "${requirement.label}" - Device type not found!`);
+                    }
+                    return false;
+                }
+            }
+            console.log('  ✅ All devices have correct names!');
             return true;
         }
 
@@ -11800,55 +12906,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 scenarioCompletionTimer = null;
             }
             
-            // Show auto-completion notification
-            showAutoCompletionNotification(moduleId, completionTime);
+            // **MVP: Record result in Challenge Results Tracker**
+            if (window.challengeResultsTracker) {
+                const moduleNames = {
+                    'meet-pc': 'Meet the PC',
+                    'meet-switch': 'Meet the Switch', 
+                    'meet-router': 'Meet the Router',
+                    'pc-to-pc': 'PC-to-PC Connection',
+                    'pc-to-switch': 'PCs through Switch',
+                    'switch-to-router': 'Switch to Router',
+                    'small-office': 'Small Office Network',
+                    'home-network': 'Home Network',
+                    'network-expansion': 'Network Expansion'
+                };
+                
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+                
+                window.challengeResultsTracker.addResult('foundation', {
+                    moduleId: moduleId,
+                    name: moduleNames[moduleId] || moduleId,
+                    score: 100,
+                    timeSpent: formatTime(Math.floor(completionTime / 1000)),
+                    accuracy: 100,
+                    hintsUsed: 0
+                });
+            }
+            
+            // Auto-completion notification suppressed (results shown in sidebar instead)
+            // showAutoCompletionNotification(moduleId, completionTime);
             
             // Complete the module using existing function
             setTimeout(() => {
                 console.log(`🔧 Calling completeFoundationModule for: ${moduleId}`);
                 completeFoundationModule();
-            }, 2000); // Give time for the notification to be seen
+            }, 1000); // Reduced delay since no notification to show
         }
 
-        // Show a special notification for automatic completion
+        // Auto-completion notification suppressed (results shown in sidebar instead)
         function showAutoCompletionNotification(moduleId, completionTime) {
-            const moduleNames = {
-                'meet-pc': 'Meet the PC',
-                'meet-switch': 'Meet the Switch', 
-                'meet-router': 'Meet the Router',
-                'pc-to-pc': 'PC-to-PC Connection',
-                'pc-to-switch': 'PCs through Switch',
-                'switch-to-router': 'Switch to Router',
-                'small-office': 'Small Office Network',
-                'home-network': 'Home Network',
-                'network-expansion': 'Network Expansion'
-            };
-            
-            const notification = document.createElement('div');
-            notification.className = 'auto-completion-notification';
-            notification.innerHTML = `
-                <div class="auto-completion-content">
-                    <div class="auto-completion-icon">
-                        <i class="bx bx-check-circle"></i>
-                    </div>
-                    <div class="auto-completion-text">
-                        <h4>Scenario Completed!</h4>
-                        <p>${moduleNames[moduleId] || moduleId}</p>
-                        <span class="completion-time">Completed in ${Math.round(completionTime / 1000)}s</span>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Trigger animation
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Remove after 4 seconds
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 500);
-            }, 4000);
+            // Notification disabled - silent completion
+            return;
         }
 
         // Stop scenario monitoring (called when scenario ends)
@@ -11865,56 +12966,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // =================================================================
 
         function showCompletionNotification(moduleId) {
-            const moduleNames = {
-                // Phase 1: Device Discovery
-                'meet-pc': 'Meet the PC',
-                'meet-switch': 'Meet the Switch', 
-                'meet-router': 'Meet the Router',
-                
-                // Phase 2: Basic Connections
-                'pc-to-pc': 'PC-to-PC Connection',
-                'pc-to-switch': 'PC through Switch',
-                'switch-to-router': 'Switch to Router',
-                
-                // Phase 3: Network Topologies
-                'small-office': 'Small Office Network',
-                'home-network': 'Home Network Setup',
-                'network-expansion': 'Network Expansion',
-                
-                // Phase 4: Basic Configuration
-                'device-naming': 'Device Naming',
-                'cable-management': 'Cable Management',
-                'basic-security': 'Basic Security',
-                
-                // Phase 5: Network Addressing
-                'device-addresses': 'Device Addresses',
-                'connectivity-testing': 'Connectivity Testing',
-                'troubleshooting-basics': 'Troubleshooting Basics'
-            };
-            
-            const notification = document.createElement('div');
-            notification.className = 'foundation-completion-notification';
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <i class='bx bx-check-circle'></i>
-                    <h4>Module Complete!</h4>
-                    <p>${moduleNames[moduleId]}</p>
-                    <div class="xp-gained">+15 XP</div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 2000);
+            // Notification disabled - silent completion
+            return;
         }
 
         function openFoundationModal() {
@@ -11964,6 +13017,12 @@ document.addEventListener('DOMContentLoaded', () => {
             connections = [];
             // Redraw the canvas
             redrawCanvas();
+            
+            // Show Submit Solution button
+            const submitBtn = document.getElementById('submit-solution-btn');
+            if (submitBtn) {
+                submitBtn.style.display = 'flex';
+            }
             
             // Start feedback session for this scenario
             const scenarioId = `${difficulty}_${problemType}`;
@@ -13122,33 +14181,93 @@ document.addEventListener('DOMContentLoaded', () => {
             { difficulty: 'hard', problemType: 'flapping', id: 'multi-protocol-mesh' }
         ];
 
-        function checkSolution(scenario) {
-            let result = false;
-            let issues = [];
+        function checkSolution(scenario, isAutoSubmit = false) {
+            // Prepare user solution data
+            const userSolution = {
+                devices: devices.map(d => ({
+                    id: d.id || d.label,
+                    type: d.type,
+                    label: d.label,
+                    x: d.x,
+                    y: d.y,
+                    ipv4: d.ipv4 || '',
+                    subnet: d.subnet || ''
+                })),
+                connections: connections.map(c => ({
+                    device1: c.device1.id || c.device1.label,
+                    device2: c.device2.id || c.device2.label,
+                    type: c.type || 'ethernet'
+                }))
+            };
 
-            switch (scenario.difficulty) {
-                case 'easy':
-                    result = checkEasySolution(scenario.problemType);
-                    issues = getScenarioIssues(scenario);
-                    break;
-                case 'medium':
-                    result = checkMediumSolution(scenario.problemType);
-                    issues = getScenarioIssues(scenario);
-                    break;
-                case 'hard':
-                    result = checkHardSolution(scenario.problemType);
-                    issues = getScenarioIssues(scenario);
-                    break;
-            }
+            // Calculate time taken (in seconds)
+            const timeTaken = scenarioTimer && scenarioTimer.startTime 
+                ? Math.floor((Date.now() - scenarioTimer.startTime) / 1000)
+                : 0;
 
-            showProblemPopup(result, issues);
+            // Submit to backend for proper evaluation
+            fetch('/troubleshooting/api/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    scenario_id: scenario.id,
+                    user_solution: userSolution,
+                    time_taken: timeTaken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Solution submitted successfully:', data);
+                
+                // Display results with feedback
+                showResultsPopup(data, scenario);
+                
+                // Update score if solved
+                if (data.topology_match_percentage >= 70) {
+                    updateScore(data.score || 0);
+                    savetroubleshootScore(data.score || 0, 'troubleshoot');
+                    markScenarioAsCompleted(scenario.difficulty, scenario.problemType || scenario.id);
+                    markDifficultyAsCompleted(scenario.difficulty);
+                }
+                
+                // Handle badges if earned
+                if (data.badges_earned && data.badges_earned.length > 0) {
+                    console.log('🏆 Badges earned:', data.badges_earned);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error submitting solution:', error);
+                
+                // Fallback to client-side checking
+                let result = false;
+                let issues = [];
 
-            if (result) {
-                updateScore(1);
-                savetroubleshootScore(totalScore, 'troubleshoot');
-                markScenarioAsCompleted(scenario.difficulty, scenario.problemType);
-                markDifficultyAsCompleted(scenario.difficulty);
-            }
+                switch (scenario.difficulty) {
+                    case 'easy':
+                        result = checkEasySolution(scenario.problemType);
+                        issues = getScenarioIssues(scenario);
+                        break;
+                    case 'medium':
+                        result = checkMediumSolution(scenario.problemType);
+                        issues = getScenarioIssues(scenario);
+                        break;
+                    case 'hard':
+                        result = checkHardSolution(scenario.problemType);
+                        issues = getScenarioIssues(scenario);
+                        break;
+                }
+
+                showProblemPopup(result, issues);
+
+                if (result) {
+                    updateScore(1);
+                    savetroubleshootScore(totalScore, 'troubleshoot');
+                    markScenarioAsCompleted(scenario.difficulty, scenario.problemType);
+                    markDifficultyAsCompleted(scenario.difficulty);
+                }
+            });
         }
 
         function markDifficultyAsCompleted(difficulty) {
@@ -13216,16 +14335,466 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function showResultsPopup(data, scenario) {
+            console.log('🎯 ========== CHALLENGE COMPLETION FLOW START ==========');
+            console.log('📊 Challenge Data:', data);
+            console.log('🎮 Scenario Info:', scenario);
+            
+            const resultsContainer = document.getElementById('results-container');
+            const sidebar = document.getElementById('performance-sidebar');
+            
+            if (!resultsContainer || !sidebar) {
+                console.error('❌ Results container or sidebar not found');
+                return;
+            }
+            
+            console.log('📊 Displaying challenge results:', data);
+            
+            const matchPercentage = data.topology_match_percentage || 0;
+            const isPassed = matchPercentage >= 70;
+            
+            console.log(`✅ Pass Status: ${isPassed ? 'PASSED' : 'FAILED'} (${matchPercentage}% >= 70%)`);
+            console.log(`🎯 Scenario ID: ${scenario.id}`);
+            console.log(`📝 Scenario Title: ${scenario.title}`);
+            
+            // Store results in session storage for persistence
+            const resultData = {
+                scenario: scenario,
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+            sessionStorage.setItem('lastLinkUpResult', JSON.stringify(resultData));
+            
+            // ✅ SAVE TO DATABASE: Save Link Up challenge results to backend
+            const finalScore = data.score || matchPercentage;
+            const category = scenario.difficulty || 'linkup';
+            
+            console.log('💾 ========== DATABASE SAVE OPERATIONS ==========');
+            console.log(`💾 Final Score: ${finalScore}`);
+            console.log(`💾 Category: ${category}`);
+            console.log(`💾 Saving Link Up challenge results to database: ${scenario.title} (${category}) - Score: ${finalScore}`);
+            
+            // Helper function to format time
+            const formatTime = (seconds) => {
+                if (!seconds) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            
+            // **MVP: Record result in Challenge Results Tracker** 
+            if (window.challengeResultsTracker && isPassed) {
+                console.log('📊 Adding to Challenge Results Tracker...');
+                const difficultyMap = {
+                    'easy': 'easy',
+                    'medium': 'intermediate',
+                    'hard': 'hard'
+                };
+                
+                const trackerDifficulty = difficultyMap[scenario.difficulty] || 'easy';
+                console.log(`📊 Tracker Difficulty Mapped: ${scenario.difficulty} -> ${trackerDifficulty}`);
+                
+                window.challengeResultsTracker.addResult(trackerDifficulty, {
+                    id: scenario.id,
+                    name: scenario.title || 'Link Up Challenge',
+                    score: Math.round(finalScore),
+                    timeSpent: formatTime(data.time_taken),
+                    accuracy: Math.round(matchPercentage),
+                    hintsUsed: data.hints_used || 0
+                });
+                
+                console.log('✅ Added to Challenge Results Tracker');
+                
+                // Force update the results display after adding
+                setTimeout(() => {
+                    window.challengeResultsTracker.updateResultsDisplay();
+                    console.log('🔄 Challenge results display forcefully updated');
+                }, 100);
+            } else {
+                if (!window.challengeResultsTracker) {
+                    console.warn('⚠️ Challenge Results Tracker not available');
+                }
+                if (!isPassed) {
+                    console.log('ℹ️ Not adding to tracker - challenge not passed');
+                }
+            }
+            
+            // Save to backend database
+            console.log('💾 Calling saveTopologyScoreToBackend...');
+            saveTopologyScoreToBackend(finalScore, category);
+            
+            // Mark challenge as completed in localStorage for UI updates
+            console.log('📝 ========== LOCAL STORAGE UPDATE ==========');
+            if (isPassed && scenario.id) {
+                let completedChallenges = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                console.log(`📂 Current completed challenges in localStorage:`, completedChallenges);
+                
+                if (!completedChallenges.includes(scenario.id)) {
+                    completedChallenges.push(scenario.id);
+                    localStorage.setItem('completed_linkup_challenges', JSON.stringify(completedChallenges));
+                    console.log(`✅ Added "${scenario.id}" to localStorage`);
+                    console.log(`📂 Updated completed challenges:`, completedChallenges);
+                } else {
+                    console.log(`ℹ️ Challenge "${scenario.id}" already in localStorage`);
+                }
+                
+                // Update the challenge button UI to show completed state
+                console.log(`🎨 Updating challenge button UI for "${scenario.id}"...`);
+                updateChallengeButtonState(scenario.id, true);
+            } else {
+                if (!isPassed) {
+                    console.log('ℹ️ Not updating localStorage - challenge not passed');
+                }
+                if (!scenario.id) {
+                    console.warn('⚠️ No scenario.id - cannot update localStorage');
+                }
+            }
+            
+            // Also save detailed challenge progress
+            console.log('💾 ========== CHALLENGE PROGRESS API CALL ==========');
+            const progressPayload = {
+                challenge_type: 'linkup',
+                state_data: {
+                    scenario_id: scenario.id,
+                    scenario_title: scenario.title,
+                    difficulty: scenario.difficulty,
+                    score: finalScore,
+                    match_percentage: matchPercentage,
+                    time_taken: data.time_taken,
+                    badges_earned: data.badges_earned || [],
+                    completed_at: new Date().toISOString(),
+                    // Store array of all completed scenarios
+                    completed_scenarios: (() => {
+                        let completed = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                        if (!completed.includes(scenario.id)) {
+                            completed.push(scenario.id);
+                        }
+                        return completed;
+                    })()
+                },
+                is_completed: isPassed
+            };
+            
+            console.log('📤 Progress API Payload:', progressPayload);
+            
+            fetch('/api/challenge/save-progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(progressPayload)
+            })
+            .then(response => {
+                console.log('📥 Progress API Response Status:', response.status);
+                return response.json();
+            })
+            .then(progressData => {
+                console.log('📥 Progress API Response Data:', progressData);
+                if (progressData.success) {
+                    console.log('✅ Link Up challenge results saved to database successfully');
+                } else {
+                    console.warn('⚠️ Failed to save challenge progress:', progressData.error);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error saving challenge progress:', error);
+            })
+            .finally(() => {
+                console.log('🏁 ========== CHALLENGE COMPLETION FLOW END ==========');
+            });
+            
+            // Build results HTML for sidebar
+            resultsContainer.innerHTML = `
+                <div class="results-content">
+                    <!-- Challenge Info -->
+                    <div class="result-section">
+                        <h4><i class="bx bx-trophy"></i> Challenge Completed</h4>
+                        <div class="result-info">
+                            <div class="info-item">
+                                <span class="label">Challenge:</span>
+                                <span class="value">${scenario.title || 'Link Up Challenge'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Difficulty:</span>
+                                <span class="value difficulty-${scenario.difficulty}">${scenario.difficulty ? scenario.difficulty.charAt(0).toUpperCase() + scenario.difficulty.slice(1) : 'Unknown'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Time Taken:</span>
+                                <span class="value">${data.time_taken ? formatTime(data.time_taken) : 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Score Card -->
+                    <div class="result-score-card">
+                        <div class="result-score-value ${isPassed ? 'success' : matchPercentage >= 50 ? 'warning' : 'danger'}">
+                            ${matchPercentage}%
+                        </div>
+                        <div class="result-score-label">${isPassed ? '✅ Passed!' : matchPercentage >= 50 ? '⚠️ Almost There!' : '❌ Keep Trying!'}</div>
+                        <div class="result-score-sublabel">Match Percentage</div>
+                    </div>
+                    
+                    <!-- Score Breakdown Section -->
+                    <div class="result-section">
+                        <h4><i class="bx bx-chart"></i> Score Breakdown</h4>
+                        <div class="result-breakdown-item">
+                            <span class="label">Total Score</span>
+                            <span class="value highlight">${data.score || 0} pts</span>
+                        </div>
+                        <div class="result-breakdown-item">
+                            <span class="label">Base Score</span>
+                            <span class="value">${data.base_score || 0} pts</span>
+                        </div>
+                        <div class="result-breakdown-item">
+                            <span class="label">Time Bonus</span>
+                            <span class="value bonus">+${data.time_bonus || 0} pts</span>
+                        </div>
+                        <div class="result-breakdown-item">
+                            <span class="label">Match Bonus</span>
+                            <span class="value bonus">+${data.match_score || 0} pts</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Section -->
+                    <div class="result-section">
+                        <h4><i class="bx bx-message-rounded-dots"></i> Feedback</h4>
+                        <div class="result-feedback">
+                            ${data.feedback || '<p>Great effort! Keep practicing to improve your skills.</p>'}
+                        </div>
+                    </div>
+                    
+                    <!-- Badges Section (if earned) -->
+                    ${data.badges_earned && data.badges_earned.length > 0 ? `
+                        <div class="result-section">
+                            <h4><i class="bx bx-trophy"></i> Badges Earned</h4>
+                            <div class="result-badges">
+                                ${data.badges_earned.map(badge => `
+                                    <div class="result-badge-item">
+                                        <img src="/static/img/badges/${badge.image_url}" alt="${badge.name}" class="result-badge-icon">
+                                        <div class="result-badge-name">${badge.name}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Action Buttons -->
+                    <div class="result-actions">
+                        ${!isPassed ? '<button onclick="retryScenario()" class="result-btn">🔄 Try Again</button>' : ''}
+                        <button onclick="backToScenarios()" class="result-btn primary">🎮 Next Challenge</button>
+                    </div>
+                </div>
+            `;
+            
+            // Force show the performance sidebar
+            sidebar.classList.add('active');
+            sidebar.style.display = 'block';
+            
+            // Show notification badge on toggle button
+            const resultsBadge = document.getElementById('results-badge');
+            if (resultsBadge) {
+                resultsBadge.style.display = 'flex';
+            }
+            
+            // Scroll to top of results
+            if (resultsContainer.scrollTo) {
+                resultsContainer.scrollTo(0, 0);
+            }
+            
+            console.log('✅ Results displayed in sidebar and stored in session');
+        }
+        
+        // Helper function to format time
+        function formatTime(seconds) {
+            if (!seconds || seconds === 0) return '0s';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            if (mins > 0) {
+                return `${mins}m ${secs}s`;
+            }
+            return `${secs}s`;
+        }
+        
+        // Load previous results on page load
+        function loadPreviousResults() {
+            try {
+                const storedResults = sessionStorage.getItem('lastLinkUpResult');
+                if (storedResults) {
+                    const resultData = JSON.parse(storedResults);
+                    console.log('📂 Loading previous results from session:', resultData);
+                    showResultsPopup(resultData.data, resultData.scenario);
+                    
+                    // Show badge to indicate results are available
+                    const resultsBadge = document.getElementById('results-badge');
+                    if (resultsBadge) {
+                        resultsBadge.style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not load previous results:', error);
+            }
+        }
+        
+        // Check for stored results when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for the page to fully load
+            setTimeout(loadPreviousResults, 500);
+        });
+        
+        /**
+         * Update challenge button state to show completion
+         * @param {string} challengeId - The ID of the completed challenge
+         * @param {boolean} isCompleted - Whether the challenge is completed
+         */
+        function updateChallengeButtonState(challengeId, isCompleted) {
+            console.log(`🎨 ========== UPDATE BUTTON STATE ==========`);
+            console.log(`🎨 Challenge ID: ${challengeId}`);
+            console.log(`🎨 Is Completed: ${isCompleted}`);
+            
+            // Try multiple button selector patterns
+            const buttonSelectors = [
+                `#${challengeId}-btn`,
+                `[data-scenario-id="${challengeId}"]`,
+                `.scenario-btn[onclick*="${challengeId}"]`,
+                `button[onclick*="${challengeId}"]`
+            ];
+            
+            console.log(`🔍 Trying ${buttonSelectors.length} button selectors...`);
+            
+            let button = null;
+            for (const selector of buttonSelectors) {
+                console.log(`🔍 Trying selector: ${selector}`);
+                button = document.querySelector(selector);
+                if (button) {
+                    console.log(`✅ Found button using selector: ${selector}`);
+                    console.log(`📋 Button classes:`, button.className);
+                    break;
+                }
+            }
+            
+            if (button) {
+                if (isCompleted) {
+                    button.classList.add('completed');
+                    button.classList.remove('locked');
+                    console.log(`✅ Marked button as completed: ${challengeId}`);
+                    console.log(`📋 Updated button classes:`, button.className);
+                } else {
+                    button.classList.remove('completed');
+                    console.log(`ℹ️ Removed completed class from: ${challengeId}`);
+                }
+            } else {
+                console.warn(`⚠️ Could not find button for challenge: ${challengeId}`);
+                console.warn(`⚠️ Available buttons on page:`, 
+                    Array.from(document.querySelectorAll('button')).map(b => ({
+                        id: b.id,
+                        classes: b.className,
+                        onclick: b.getAttribute('onclick')
+                    }))
+                );
+            }
+        }
+        
+        /**
+         * Load completed challenges from localStorage and update UI
+         */
+        function loadCompletedChallenges() {
+            try {
+                const completedChallenges = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                console.log(`📂 Loading ${completedChallenges.length} completed Link Up challenges`);
+                
+                completedChallenges.forEach(challengeId => {
+                    updateChallengeButtonState(challengeId, true);
+                });
+                
+                if (completedChallenges.length > 0) {
+                    console.log(`✅ Updated UI for completed challenges:`, completedChallenges);
+                }
+            } catch (error) {
+                console.error('❌ Error loading completed challenges:', error);
+            }
+        }
+        
+        /**
+         * Initialize challenge completion tracking on page load
+         */
+        function initializeChallengeTracking() {
+            console.log('🎯 Initializing challenge completion tracking');
+            
+            // First, fetch completed challenges from backend
+            fetchCompletedChallengesFromBackend();
+            
+            // Load completed challenges from localStorage
+            loadCompletedChallenges();
+            
+            // Also load results display
+            if (window.challengeResultsTracker) {
+                window.challengeResultsTracker.updateResultsDisplay();
+            }
+        }
+        
+        /**
+         * Fetch completed challenges from backend and sync with localStorage
+         */
+        function fetchCompletedChallengesFromBackend() {
+            // Fetch all completed Link Up challenges
+            fetch('/api/challenge/completed-list/linkup')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.completed_challenges) {
+                        console.log(`📥 Retrieved ${data.total_completed} completed Link Up challenges from backend`);
+                        
+                        // Get current localStorage data
+                        let completedChallenges = JSON.parse(localStorage.getItem('completed_linkup_challenges') || '[]');
+                        let updated = false;
+                        
+                        // Sync each completed challenge
+                        data.completed_challenges.forEach(challenge => {
+                            const scenarioId = challenge.scenario_id;
+                            
+                            // Add to localStorage if not already there
+                            if (!completedChallenges.includes(scenarioId)) {
+                                completedChallenges.push(scenarioId);
+                                updated = true;
+                                console.log(`✅ Synced challenge "${scenarioId}" from backend`);
+                            }
+                            
+                            // Update UI button state
+                            updateChallengeButtonState(scenarioId, true);
+                        });
+                        
+                        // Save updated list to localStorage
+                        if (updated) {
+                            localStorage.setItem('completed_linkup_challenges', JSON.stringify(completedChallenges));
+                            console.log('💾 Updated localStorage with backend data');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.warn('⚠️ Could not fetch completed challenges from backend:', error);
+                });
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                initializeChallengeTracking();
+            }, 1000); // Delay to ensure all UI elements are loaded
+        });
+
         function showProblemPopup(solved, issues) {
+            // If solved, do not show the completion popup (suppressed per request)
+            if (solved) {
+                return;
+            }
+
+            // Only show popup for errors/issues
             const popup = document.getElementById('problemPopup');
             const status = document.getElementById('problemStatus');
             const remaining = document.getElementById('remainingIssues');
 
-            status.textContent = solved ?
-                'Congratulations! You have successfully solved the problem.' :
-                'The solution is not correct yet. Please address the following issues:';
+            status.textContent = 'The solution is not correct yet. Please address the following issues:';
 
-            if (!solved && issues.length > 0) {
+            if (issues && issues.length > 0) {
                 remaining.innerHTML = issues.map(issue => `• ${issue}`).join('<br>');
             } else {
                 remaining.innerHTML = '';
@@ -13235,6 +14804,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Update the score display
 
+        }
+        
+        function retryScenario() {
+            closeProblemPopup();
+            // Clear the canvas but keep the scenario active
+            if (typeof resetSimulation === 'function') {
+                resetSimulation();
+            }
+        }
+        
+        function backToScenarios() {
+            closeProblemPopup();
+            // Auto-redirect suppressed - user can manually select next challenge
+            // openScenarioModal();
         }
 
         function getScenarioIssues(scenario) {
@@ -13887,7 +15470,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset Live Performance scenario tracking
             resetScenarioPerformance();
             
-            openScenarioSelectionModal();
+            // Auto-redirect suppressed in resetScenarios (called manually by user)
+            // openScenarioSelectionModal();
 
             // Reset the "Select Scenario" button text and style
             const selectScenarioBtn = document.getElementById("select-scenario-btn") || document.getElementById("solo-scenario-btn");
@@ -14248,6 +15832,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('✅ Challenges button listener attached');
             }
 
+            // Submit Solution button click handler
+            const submitSolutionBtn = document.getElementById('submit-solution-btn');
+            if (submitSolutionBtn) {
+                submitSolutionBtn.addEventListener('click', function() {
+                    if (currentScenario) {
+                        console.log('📤 Submitting solution for scenario:', currentScenario);
+                        checkSolution(currentScenario, false);
+                    } else {
+                        console.warn('⚠️ No active scenario to submit');
+                        alert('Please select a scenario first!');
+                    }
+                });
+                console.log('✅ Submit solution button listener attached');
+            }
+
 
             
             // --- WebSocket Event Listeners for Troubleshooting ---
@@ -14316,13 +15915,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Show step completion notifications
-                    if (data.step_completed) {
-                        window.socketClient.showNotification(
-                            'Step Completed!',
-                            `You completed step ${data.step_number}: ${data.step_name}`
-                        );
-                    }
+                    // Step completion notifications suppressed
+                    // if (data.step_completed) {
+                    //     window.socketClient.showNotification(
+                    //         'Step Completed!',
+                    //         `You completed step ${data.step_number}: ${data.step_name}`
+                    //     );
+                    // }
                     
                     // Handle challenge completion event
                     if (data.event === 'challenge_completed' && window.networkLevelSystem) {
@@ -14333,10 +15932,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Listen for troubleshooting completion events
                 window.socketClient.on('troubleshooting_completed', function (data) {
                     console.log('Troubleshooting completed via WebSocket:', data);
-                    window.socketClient.showNotification(
-                        'Troubleshooting Completed!',
-                        `Excellent work! You completed the ${data.scenario_name} troubleshooting scenario with a score of ${data.score || 'N/A'}!`
-                    );
+                    // Completion notification suppressed (results are shown in sidebar instead)
+                    // window.socketClient.showNotification(
+                    //     'Troubleshooting Completed!',
+                    //     `Excellent work! You completed the ${data.scenario_name} troubleshooting scenario with a score of ${data.score || 'N/A'}!`
+                    // );
                 });
 
                 // Listen for real-time scenario updates
@@ -15319,10 +16919,10 @@ document.addEventListener('DOMContentLoaded', () => {
         function handleScenarioCompleted(data) {
             console.log('🎉 Scenario completed:', data);
             
-            // Show success notification
-            showNotification('Scenario Completed!', 
-                `Final Score: ${data.performance_summary.total_score}`, 
-                'success');
+            // Completion notification suppressed (results are shown in sidebar instead)
+            // showNotification('Scenario Completed!', 
+            //     `Final Score: ${data.performance_summary.total_score}`, 
+            //     'success');
             
             // Award XP through Network Level System
             if (window.networkLevelSystem) {
@@ -15711,6 +17311,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // **MVP: Initialize Challenge Results Display on Page Load**
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.challengeResultsTracker) {
+                window.challengeResultsTracker.updateResultsDisplay();
+                console.log('🎯 Challenge Results display initialized');
+            }
+        });
+        
         console.log('🎯 Performance feedback system ready with full backend integration');
     </script>
 
@@ -15851,58 +17459,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 ];
             }
-                        xp: 75,
-                        description: "Set up a router with basic configuration. Configure interfaces and establish routing.",
-                        requirements: ["Place router", "Configure interfaces", "Set up routing table"],
-                        unlocked: true,
-                        badge: "🔄"
-                    },
-                    {
-                        id: "rip-protocol",
-                        title: "RIP Protocol Configuration",
-                        level: 2,
-                        difficulty: 2,
-                        xp: 100,
-                        description: "Configure RIP v1 and v2 on multiple routers. Troubleshoot routing issues.",
-                        requirements: ["Multiple routers", "RIP configuration", "Network convergence"],
-                        unlocked: false,
-                        badge: "🔁"
-                    },
-                    {
-                        id: "vlan-basics",
-                        title: "VLAN Segmentation",
-                        level: 2,
-                        difficulty: 2,
-                        xp: 120,
-                        description: "Create and configure VLANs on switches. Set up trunk ports.",
-                        requirements: ["VLAN creation", "Trunk configuration", "Inter-VLAN routing"],
-                        unlocked: false,
-                        badge: "🔀"
-                    },
-                    {
-                        id: "ospf-config",
-                        title: "OSPF Implementation",
-                        level: 3,
-                        difficulty: 3,
-                        xp: 200,
-                        description: "Configure OSPF areas and analyze LSA databases for enterprise networks.",
-                        requirements: ["OSPF areas", "LSA analysis", "Network optimization"],
-                        unlocked: false,
-                        badge: "🏗️"
-                    },
-                    {
-                        id: "network-troubleshooting",
-                        title: "Advanced Troubleshooting",
-                        level: 3,
-                        difficulty: 3,
-                        xp: 250,
-                        description: "Diagnose complex network issues including routing loops and protocol misconfigurations.",
-                        requirements: ["Problem diagnosis", "Root cause analysis", "Solution implementation"],
-                        unlocked: false,
-                        badge: "🔧"
-                    }
-                ];
-            }
 
             init() {
                 this.loadProgress();
@@ -15948,13 +17504,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             awardXP(amount, reason = '') {
+                // XP system disabled - no XP awarded or tracked
+                /*
                 const oldLevel = this.currentLevel;
                 this.currentXP += amount;
                 
-                // Check for level up
-                while (this.shouldLevelUp()) {
-                    this.levelUp();
-                }
+                // Level up check disabled - XP awarded but no level progression
                 
                 this.updateUI();
                 this.saveProgress();
@@ -15963,6 +17518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.showXPNotification(amount, reason);
                 
                 console.log(`🌟 Awarded ${amount} XP: ${reason}`);
+                */
             }
 
             shouldLevelUp() {
@@ -15972,6 +17528,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             levelUp() {
+                // Level up functionality disabled
+                /*
                 this.currentLevel++;
                 const levelInfo = this.levelData[this.currentLevel];
                 
@@ -15985,6 +17543,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.unlockAchievement(`level_${this.currentLevel}`);
                 
                 console.log(`🎉 Level up! Now level ${this.currentLevel}: ${levelInfo.title}`);
+                */
             }
 
             unlockContentForLevel(level) {
@@ -16017,8 +17576,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update related skills
                 this.updateSkillsFromChallenge(challenge);
                 
-                // Show completion notification
-                this.showChallengeCompletionNotification(challenge);
+                // Completion notification suppressed (results are shown in sidebar instead)
+                // this.showChallengeCompletionNotification(challenge);
                 
                 return true;
             }
@@ -16057,11 +17616,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (targetSkill && targetSkill.unlocked) {
                     targetSkill.progress = Math.min(100, targetSkill.progress + progress);
                     
+                    // Achievement system disabled
+                    /*
                     // If skill mastered, award bonus XP
                     if (targetSkill.progress >= 100 && targetSkill.progress - progress < 100) {
                         this.awardXP(25, `Mastered: ${targetSkill.name}`);
                         this.unlockAchievement(`skill_${skillId}_mastered`);
                     }
+                    */
                 }
             }
 
@@ -16110,6 +17672,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             checkActionAchievements(actionType, data) {
+                // Achievement system disabled
+                /*
                 // Achievement logic based on actions
                 if (actionType === 'device_placed' && !this.achievements.has('first_device')) {
                     this.unlockAchievement('first_device');
@@ -16122,6 +17686,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (actionType === 'perfect_score' && !this.achievements.has('perfectionist')) {
                     this.unlockAchievement('perfectionist');
                 }
+                */
             }
 
             updateUI() {
@@ -16204,6 +17769,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             showXPNotification(amount, reason) {
+                // XP notification disabled
+                /*
                 // Create floating XP notification
                 const notification = document.createElement('div');
                 notification.className = 'xp-notification';
@@ -16223,7 +17790,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     z-index: 10000;
                     transform: translateY(-20px);
                     opacity: 0;
-                    /* transition removed */
+                    // transition removed
                     box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
                 `;
                 
@@ -16241,9 +17808,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 300);
                 }, 3000);
+                */
             }
 
             showLevelUpNotification(levelInfo) {
+                // Level up notification disabled
+                /*
                 const notification = document.getElementById('levelUpNotification');
                 if (!notification) return;
                 
@@ -16273,18 +17843,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Add click to dismiss
                 notification.onclick = () => notification.classList.remove('show');
+                */
             }
 
             showChallengeCompletionNotification(challenge) {
-                if (window.performanceFeedback) {
-                    window.performanceFeedback.addHint(
-                        `🎉 Challenge Completed: ${challenge.title} (+${challenge.xp} XP)`,
-                        'success'
-                    );
-                }
+                // Completion notification suppressed (results are shown in sidebar instead)
+                // if (window.performanceFeedback) {
+                //     window.performanceFeedback.addHint(
+                //         `🎉 Challenge Completed: ${challenge.title} (+${challenge.xp} XP)`,
+                //         'success'
+                //     );
+                // }
             }
 
             showAchievementNotification(achievementId) {
+                // Achievement notifications disabled
+                /*
                 const achievements = {
                     'first_device': { name: 'First Steps', icon: '🌟', description: 'Placed your first device' },
                     'speed_demon': { name: 'Speed Demon', icon: '⚡', description: 'Completed scenario in under 5 minutes' },
@@ -16332,7 +17906,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     z-index: 10000;
                     transform: translateX(100%);
                     opacity: 0;
-                    /* transition removed */
+                    // transition removed
                     color: white;
                 `;
                 
@@ -16350,6 +17924,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 300);
                 }, 5000);
+                */
             }
 
             bindEvents() {
@@ -16513,6 +18088,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         this.trackAction('speed_bonus');
                     }
                     
+                    // Save challenge results to backend (Link Up challenges)
+                    // Map difficulty level to category for backend
+                    const difficultyMap = {
+                        1: 'foundation',
+                        2: 'easy',
+                        3: 'intermediate',
+                        4: 'hard'
+                    };
+                    const category = difficultyMap[challenge.level] || challenge.category || 'linkup';
+                    const score = 100; // Completed challenges get 100%
+                    
+                    console.log(`💾 Saving Link Up challenge to backend: ${challengeId} (${category}) - Score: ${score}`);
+                    saveTopologyScoreToBackend(score, category);
+                    
                     // Hide active challenge section after a delay
                     setTimeout(() => {
                         const challengeSection = document.getElementById('active-challenge-section');
@@ -16617,6 +18206,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.currentChallenge = null;
                 }
                 
+                // Achievement system disabled
+                /*
                 // Award achievements based on performance
                 if (score >= 100) {
                     this.unlockAchievement('perfectionist');
@@ -16625,6 +18216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (timeBonus > 50) {
                     this.unlockAchievement('speed_demon');
                 }
+                */
             }
 
             // Public API

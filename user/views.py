@@ -1418,27 +1418,69 @@ def get_completed_topologies():
 @user_bp.route('/save_topology_score', methods=['POST'])
 @user_login_required
 def save_topology_score():
-    """Save a topology score for the current user"""
+    """Save a topology/Link Up score with badge integration (MVP)"""
     data = request.json
     user_id = current_user.id
     
     if not data or 'score' not in data or 'category' not in data:
         return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
     
-    # Create a new score record
-    new_score = UserScore(
-        user_id=user_id,
-        score=data['score'],
-        category=data['category']
-        # topic_id field removed as it doesn't exist in the database
-    )
-    
-    db.session.add(new_score)
-    db.session.commit()
-    
-    # Score logging removed
-    
-    return jsonify({'status': 'success', 'message': 'Score saved successfully'}), 200
+    try:
+        score_value = float(data['score'])
+        category = data['category']
+        
+        # Save to legacy UserScore table for backward compatibility
+        new_score = UserScore(
+            user_id=user_id,
+            score=score_value,
+            category=category
+        )
+        db.session.add(new_score)
+        
+        # Save to new ChallengeScore table with detailed tracking
+        from user.models.challenge_score import ChallengeScore
+        challenge_score = ChallengeScore.save_score(
+            user_id=user_id,
+            challenge_type='troubleshooting',  # Link Up = troubleshooting challenges
+            score=score_value,
+            metadata={
+                'category': category,
+                'difficulty': data.get('difficulty', 'unknown'),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
+        
+        # Check and award badges automatically
+        from user.services.badge_service import BadgeService
+        newly_earned_badges = BadgeService.check_and_award_badges(
+            user_id=user_id,
+            challenge_type='troubleshooting',
+            score=score_value,
+            metadata={
+                'category': category,
+                'difficulty': data.get('difficulty', 'unknown')
+            }
+        )
+        
+        db.session.commit()
+        
+        print(f"[Link Up MVP] ✅ Score saved (Category: {category}, Badges: {len(newly_earned_badges)})")
+        
+        return jsonify({
+            'status': 'success', 
+            'message': 'Score saved successfully',
+            'saved_id': new_score.id,
+            'challenge_score_id': challenge_score.id if challenge_score else None,
+            'badges_earned': newly_earned_badges
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[Link Up Error] ❌ Failed to save score: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to save score: {str(e)}'
+        }), 500
 
 @user_bp.route('/topology/progress', methods=['POST'])
 @user_login_required

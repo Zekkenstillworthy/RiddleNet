@@ -14,15 +14,12 @@ class ChallengeProgress(db.Model):
     __tablename__ = 'challenge_progress'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     challenge_type = db.Column(db.String(50), nullable=False, index=True)  # 'crimping', 'osi', 'linkup', 'quiz'
     state_data = db.Column(db.JSON, nullable=False)  # JSON blob for challenge state
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     is_completed = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    
-    # Relationships
-    user = db.relationship('User', backref='challenge_progress')
     
     # Composite unique constraint - one progress per user per challenge type
     __table_args__ = (
