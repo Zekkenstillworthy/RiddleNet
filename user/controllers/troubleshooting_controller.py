@@ -60,22 +60,23 @@ class TroubleshootingController:
         print("="*80 + "\n")
         
         # Check if this is a hardcoded Link Up challenge (not from database)
-        # These challenges use string IDs, not integer database IDs
-        hardcoded_challenges = [
-            'vlan-basics', 
-            'default-gateway-setup', 
-            'dhcp-client-config',
-            'extended-ring-redundancy',
-            'hybrid-star-ring',
-            'partial-mesh-ospf'
-        ]
-        if isinstance(scenario_id, str) and scenario_id in hardcoded_challenges:
-            print(f"🎯 Detected hardcoded challenge: {scenario_id}")
+        # Convention: All hardcoded challenges use STRING IDs; DB scenarios use INTEGER IDs.
+        # To avoid DB type mismatches and 500s, short-circuit all string IDs to hardcoded handler.
+        if isinstance(scenario_id, str):
+            print(f"🎯 Detected string-based scenario id -> treating as hardcoded: {scenario_id}")
             return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
-        
-        # Get the scenario from database (for non-database challenges)
-        print(f"🔍 Looking up database scenario with ID: {scenario_id}")
-        scenario = Troubleshooting.query.get(scenario_id)
+
+        # Get the scenario from database (for integer IDs only)
+        try:
+            print(f"🔍 Looking up database scenario with ID: {scenario_id}")
+            scenario = Troubleshooting.query.get(scenario_id)
+        except Exception as e:
+            # If any error occurs during DB lookup, fall back to hardcoded submission path
+            print(f"⚠️ DB lookup error for scenario_id={scenario_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
+
         if not scenario:
             # If not found in database, try as hardcoded challenge
             return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
@@ -278,6 +279,24 @@ class TroubleshootingController:
                     'difficulty': 'medium',
                     'base_score': 200,
                     'description': 'Configure a partial mesh topology with OSPF multi-area routing'
+                },
+                'mpls-vpn-complex': {
+                    'name': 'MPLS VPN Route Leaking',
+                    'difficulty': 'hard',
+                    'base_score': 300,
+                    'description': 'Configure MPLS VPN with route leaking between customer VRFs'
+                },
+                'datacenter-fabric': {
+                    'name': 'Data Center Spine-Leaf VXLAN',
+                    'difficulty': 'hard',
+                    'base_score': 300,
+                    'description': 'Implement a data center fabric with spine-leaf architecture and VXLAN overlay'
+                },
+                'sd-wan-overlay': {
+                    'name': 'SD-WAN Overlay Issues',
+                    'difficulty': 'hard',
+                    'base_score': 300,
+                    'description': 'Troubleshoot SD-WAN overlay connectivity and routing issues'
                 }
             }
             
@@ -383,6 +402,12 @@ class TroubleshootingController:
                 return self._validate_hybrid_star_ring(devices, connections)
             elif scenario_id == 'partial-mesh-ospf':
                 return self._validate_partial_mesh_ospf(devices, connections)
+            elif scenario_id == 'mpls-vpn-complex':
+                return self._validate_mpls_vpn_complex(devices, connections)
+            elif scenario_id == 'datacenter-fabric':
+                return self._validate_datacenter_fabric(devices, connections)
+            elif scenario_id == 'sd-wan-overlay':
+                return self._validate_sd_wan_overlay(devices, connections)
             else:
                 print(f"⚠️ Unknown scenario: {scenario_id}, returning 0%")
                 return 0
@@ -871,6 +896,234 @@ class TroubleshootingController:
                 score += 10
             else:
                 print(f"❌ ABR not properly connecting areas (Area0: {connects_area0}, Area1: {connects_area1})")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_mpls_vpn_complex(self, devices, connections):
+        """Validate MPLS VPN Route Leaking scenario"""
+        print("🌐 Validating MPLS VPN Route Leaking scenario...")
+        score = 0
+        
+        try:
+            routers = [d for d in devices if d.get('type') == 'router']
+            
+            if len(routers) < 6:
+                print(f"❌ Insufficient routers: {len(routers)}/6+ required")
+                return 0
+            
+            print(f"✅ Found {len(routers)} routers (+20 points)")
+            score += 20
+            
+            # Identify router types by label (with safe string handling)
+            p_routers = [r for r in routers if r.get('label', '').startswith('P')]
+            pe_routers = [r for r in routers if r.get('label', '').startswith('PE')]
+            ce_routers = [r for r in routers if r.get('label', '').startswith('CE')]
+            
+            if len(p_routers) >= 2:
+                print(f"✅ Found {len(p_routers)} P routers (core) (+15 points)")
+                score += 15
+            
+            if len(pe_routers) >= 2:
+                print(f"✅ Found {len(pe_routers)} PE routers (edge) (+15 points)")
+                score += 15
+            
+            if len(ce_routers) >= 2:
+                print(f"✅ Found {len(ce_routers)} CE routers (customer) (+15 points)")
+                score += 15
+            
+            # Build device ID to label mapping for safe connection validation
+            id_to_label = {(r.get('id') or r.get('label')): r.get('label', '') for r in routers}
+            
+            # Validate MPLS core connections (P-to-P and P-to-PE)
+            mpls_core_connections = 0
+            for conn in connections:
+                dev1_id = conn.get('device1', '')
+                dev2_id = conn.get('device2', '')
+                dev1_label = id_to_label.get(dev1_id, '')
+                dev2_label = id_to_label.get(dev2_id, '')
+                
+                if ((dev1_label.startswith('P') and dev2_label.startswith('P')) or
+                    (dev1_label.startswith('P') and dev2_label.startswith('PE')) or
+                    (dev1_label.startswith('PE') and dev2_label.startswith('P'))):
+                    mpls_core_connections += 1
+            
+            if mpls_core_connections >= 3:
+                print(f"✅ MPLS core properly connected ({mpls_core_connections} links) (+20 points)")
+                score += 20
+            elif mpls_core_connections > 0:
+                print(f"⚠️ Partial MPLS core connectivity (+10 points)")
+                score += 10
+            
+            # Validate CE-to-PE connections (customer access)
+            ce_connections = 0
+            for conn in connections:
+                dev1_id = conn.get('device1', '')
+                dev2_id = conn.get('device2', '')
+                dev1_label = id_to_label.get(dev1_id, '')
+                dev2_label = id_to_label.get(dev2_id, '')
+                
+                if ((dev1_label.startswith('CE') and dev2_label.startswith('PE')) or
+                    (dev1_label.startswith('PE') and dev2_label.startswith('CE'))):
+                    ce_connections += 1
+            
+            if ce_connections >= len(ce_routers):
+                print(f"✅ All CE routers connected to PE (+15 points)")
+                score += 15
+            elif ce_connections > 0:
+                print(f"⚠️ Some CE connections present (+5 points)")
+                score += 5
+            
+            print(f"📊 Final score: {score}/100")
+            return score
+            
+        except Exception as e:
+            print(f"❌ Error in MPLS VPN validation: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
+    
+    def _validate_datacenter_fabric(self, devices, connections):
+        """Validate Data Center Spine-Leaf VXLAN scenario"""
+        print("🏢 Validating Data Center Spine-Leaf VXLAN scenario...")
+        score = 0
+        
+        switches = [d for d in devices if d.get('type') == 'switch']
+        servers = [d for d in devices if d.get('type') == 'pc' or 'server' in d.get('label', '').lower()]
+        
+        # Identify spine and leaf switches
+        spine_switches = [s for s in switches if 'spine' in s.get('label', '').lower()]
+        leaf_switches = [s for s in switches if 'leaf' in s.get('label', '').lower()]
+        
+        if len(spine_switches) >= 2:
+            print(f"✅ Found {len(spine_switches)} spine switches (+20 points)")
+            score += 20
+        elif len(spine_switches) > 0:
+            print(f"⚠️ At least 1 spine switch present (+10 points)")
+            score += 10
+        
+        if len(leaf_switches) >= 2:
+            print(f"✅ Found {len(leaf_switches)} leaf switches (+20 points)")
+            score += 20
+        elif len(leaf_switches) > 0:
+            print(f"⚠️ At least 1 leaf switch present (+10 points)")
+            score += 10
+        
+        # Validate spine-leaf connections (every leaf should connect to every spine)
+        expected_spine_leaf_connections = len(spine_switches) * len(leaf_switches)
+        spine_leaf_connections = 0
+        
+        spine_ids = [s.get('id') or s.get('label') for s in spine_switches]
+        leaf_ids = [l.get('id') or l.get('label') for l in leaf_switches]
+        
+        for conn in connections:
+            dev1 = conn.get('device1')
+            dev2 = conn.get('device2')
+            if (dev1 in spine_ids and dev2 in leaf_ids) or \
+               (dev1 in leaf_ids and dev2 in spine_ids):
+                spine_leaf_connections += 1
+        
+        if spine_leaf_connections >= expected_spine_leaf_connections:
+            print(f"✅ Full mesh spine-leaf connectivity ({spine_leaf_connections} links) (+30 points)")
+            score += 30
+        elif spine_leaf_connections >= expected_spine_leaf_connections * 0.5:
+            print(f"⚠️ Partial spine-leaf connectivity ({spine_leaf_connections}/{expected_spine_leaf_connections} links) (+15 points)")
+            score += 15
+        
+        # Validate server connections to leaf switches
+        if len(servers) >= 2:
+            print(f"✅ Found {len(servers)} servers (+10 points)")
+            score += 10
+            
+            server_connections = 0
+            server_ids = [s.get('id') or s.get('label') for s in servers]
+            
+            for conn in connections:
+                dev1 = conn.get('device1')
+                dev2 = conn.get('device2')
+                if (dev1 in server_ids and dev2 in leaf_ids) or \
+                   (dev1 in leaf_ids and dev2 in server_ids):
+                    server_connections += 1
+            
+            if server_connections >= len(servers):
+                print(f"✅ All servers connected to leaf switches (+20 points)")
+                score += 20
+            elif server_connections > 0:
+                print(f"⚠️ Some server connections present (+10 points)")
+                score += 10
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_sd_wan_overlay(self, devices, connections):
+        """Validate SD-WAN Overlay Issues scenario"""
+        print("☁️ Validating SD-WAN Overlay Issues scenario...")
+        score = 0
+        
+        routers = [d for d in devices if d.get('type') == 'router']
+        pcs = [d for d in devices if d.get('type') == 'pc']
+        
+        # Identify SD-WAN components
+        controllers = [r for r in routers if 'controller' in r.get('label', '').lower() or 'vmanage' in r.get('label', '').lower()]
+        edge_routers = [r for r in routers if 'edge' in r.get('label', '').lower() or 'vedge' in r.get('label', '').lower()]
+        hub_routers = [r for r in routers if 'hub' in r.get('label', '').lower()]
+        
+        if len(controllers) >= 1:
+            print(f"✅ Found SD-WAN controller (+25 points)")
+            score += 25
+        else:
+            print(f"❌ No SD-WAN controller found")
+        
+        if len(edge_routers) >= 2:
+            print(f"✅ Found {len(edge_routers)} edge routers (+20 points)")
+            score += 20
+        elif len(edge_routers) > 0:
+            print(f"⚠️ Found {len(edge_routers)} edge router (+10 points)")
+            score += 10
+        
+        if len(hub_routers) >= 1:
+            print(f"✅ Found {len(hub_routers)} hub router(s) (+15 points)")
+            score += 15
+        
+        # Validate controller connections to edge/hub routers
+        if controllers:
+            controller_id = controllers[0].get('id') or controllers[0].get('label')
+            controller_connections = 0
+            
+            for conn in connections:
+                dev1 = conn.get('device1')
+                dev2 = conn.get('device2')
+                if controller_id in [dev1, dev2]:
+                    controller_connections += 1
+            
+            if controller_connections >= 2:
+                print(f"✅ Controller connected to multiple devices (+15 points)")
+                score += 15
+            elif controller_connections > 0:
+                print(f"⚠️ Controller has at least one connection (+5 points)")
+                score += 5
+        
+        # Validate overlay topology (edge-to-hub or edge-to-edge connections)
+        overlay_connections = 0
+        edge_hub_ids = [r.get('id') or r.get('label') for r in edge_routers + hub_routers]
+        
+        for conn in connections:
+            dev1 = conn.get('device1')
+            dev2 = conn.get('device2')
+            if dev1 in edge_hub_ids and dev2 in edge_hub_ids:
+                overlay_connections += 1
+        
+        if overlay_connections >= 3:
+            print(f"✅ Good SD-WAN overlay connectivity ({overlay_connections} links) (+15 points)")
+            score += 15
+        elif overlay_connections > 0:
+            print(f"⚠️ Some overlay connectivity present (+5 points)")
+            score += 5
+        
+        # Validate client connections
+        if len(pcs) >= 2:
+            print(f"✅ Found {len(pcs)} client devices (+10 points)")
+            score += 10
         
         print(f"📊 Final score: {score}/100")
         return score

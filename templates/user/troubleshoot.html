@@ -7786,36 +7786,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="scenario-topology">☁️ SD-WAN Multi-Transport</span>
                     </div>
                 </button>
-                <button onclick="startScenario('hard', 'full-mesh-convergence')" class="select-btn">
-                    <div class="scenario-details">
-                        <span class="scenario-title">Full Mesh Convergence Issues</span>
-                        <span class="scenario-topology">⬢ Full Mesh Network</span>
-                    </div>
-                </button>
-                <button onclick="startScenario('hard', 'hybrid-topology-failure')" class="select-btn">
-                    <div class="scenario-details">
-                        <span class="scenario-title">Hybrid Network Failure Analysis</span>
-                        <span class="scenario-topology">🔗 Hybrid Topology</span>
-                    </div>
-                </button>
-                <button onclick="startScenario('hard', 'hierarchical-routing')" class="select-btn">
-                    <div class="scenario-details">
-                        <span class="scenario-title">Three-Tier Architecture Issues</span>
-                        <span class="scenario-topology">🏢 Core/Distribution/Access</span>
-                    </div>
-                </button>
-                <button onclick="startScenario('hard', 'multi-protocol-mesh')" class="select-btn">
-                    <div class="scenario-details">
-                        <span class="scenario-title">Multi-Protocol Mesh Conflicts</span>
-                        <span class="scenario-topology">⬢ OSPF/BGP Mesh</span>
-                    </div>
-                </button>
-                <button onclick="startScenario('hard', 'enterprise-redundancy')" class="select-btn">
-                    <div class="scenario-details">
-                        <span class="scenario-title">Enterprise Redundancy Failure</span>
-                        <span class="scenario-topology">🏢 Multi-Site Enterprise</span>
-                    </div>
-                </button>
             </div>
         </div>
 
@@ -11358,13 +11328,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log(`📊 Intermediate Progress: ${completedMedium}/${totalMedium}`);
             
-            // Check if all intermediate scenarios are completed
-            const shouldUnlock = totalMedium > 0 && completedMedium >= totalMedium;
+            // MVP FIX: Advanced unlocks with 3 Medium completions OR all Medium completed
+            const shouldUnlock = totalMedium > 0 && (completedMedium >= 3 || completedMedium >= totalMedium);
             
             const snapshot = {
                 count: completedMedium,
                 total: totalMedium,
                 shouldUnlock: shouldUnlock,
+                unlockReason: completedMedium >= 3 ? '3+ Medium completed' : completedMedium >= totalMedium ? 'All Medium completed' : 'Not unlocked',
                 ids: completedMedium > 0 ? completedLinkup.filter(id => mediumScenarios.some(s => s.id === id)) : []
             };
             
@@ -11384,10 +11355,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (prev !== next) {
                     unlocks.hard = next;
                     localStorage.setItem('difficulty_unlocks', JSON.stringify(unlocks));
-                    console.log('✅ Advanced unlock state UPDATED:', { prev, next, count: completedMedium, total: totalMedium });
+                    console.log(`✅ Advanced unlock state UPDATED: ${prev} → ${next} (Reason: ${snapshot.unlockReason})`);
                     console.log('💾 Saved to localStorage:', JSON.stringify(unlocks));
                 } else {
-                    console.log('ℹ️ No unlock state change needed (already:', prev, ')');
+                    console.log(`ℹ️ No unlock state change needed (already: ${prev}) - ${snapshot.unlockReason}`);
                 }
             } else {
                 console.warn('⚠️ Cannot sync - scenarios not loaded (total=0)');
@@ -12039,8 +12010,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (difficulty === 'hard') {
-                // Hard/Advanced requires ALL Easy + ALL Medium scenarios completed
-                return completedEasy >= easyScenarios.length && completedMedium >= mediumScenarios.length;
+                // MVP FIX: Hard/Advanced unlock logic with multiple unlock paths
+                const unlocks = JSON.parse(localStorage.getItem('difficulty_unlocks') || '{}');
+                
+                // Priority 1: Check manual unlock flag
+                if (unlocks.hard) {
+                    console.log('🔓 Hard/Advanced unlocked via difficulty_unlocks flag');
+                    return true;
+                }
+                
+                // Priority 2: Check if 3 or more Medium scenarios completed (MVP minimum)
+                if (completedMedium >= 3) {
+                    console.log(`🔓 Hard/Advanced unlocked via Medium completion (${completedMedium}/3 scenarios)`);
+                    return true;
+                }
+                
+                // Priority 3: Fallback to complete ALL Easy + ALL Medium requirement
+                const allCompleted = completedEasy >= easyScenarios.length && completedMedium >= mediumScenarios.length;
+                if (!allCompleted) {
+                    console.log(`🔒 Hard/Advanced locked - Need 3+ Medium (have ${completedMedium}) OR ALL Easy+Medium`);
+                }
+                return allCompleted;
             }
 
             if (difficulty === 'expert') {
