@@ -723,6 +723,7 @@ def save_osi_score():
         layer_accuracy = data.get('layer_accuracy', {})
         completion_time = data.get('completion_time', 0)
         challenge_data = data.get('challenge_data', {})  # Get two-level challenge data
+        skip_badge_check = data.get('skip_badge_check', False)  # MVP: New flag
         
         # Save to legacy Score table
         new_score = UserScore(
@@ -747,18 +748,31 @@ def save_osi_score():
             completion_time=completion_time
         )
         
-        # Check and award badges - pass complete metadata with challenge_data
-        from user.services.badge_service import BadgeService
-        newly_earned_badges = BadgeService.check_and_award_badges(
-            user_id=user_id,
-            challenge_type='osi',
-            score=score,
-            metadata=metadata
-        )
+        # MVP FIX: Only check badges if both levels complete AND not skipping
+        newly_earned_badges = []
+        if not skip_badge_check:
+            # Check and award badges - pass complete metadata with challenge_data
+            from user.services.badge_service import BadgeService
+            newly_earned_badges = BadgeService.check_and_award_badges(
+                user_id=user_id,
+                challenge_type='osi',
+                score=score,
+                metadata=metadata
+            )
         
         db.session.commit()
         
-        # WebSocket notification
+        # MVP FIX: Return early for Level 1 completion (skip badge check)
+        if skip_badge_check:
+            return jsonify({
+                'status': 'success',
+                'message': 'Level 1 progress saved',
+                'score': score,
+                'badges_earned': [],
+                'challenge_completed': False
+            })
+        
+        # WebSocket notification (only for Level 2 completion)
         try:
             from socket_events import socketio
             socketio.emit('score_updated', {
@@ -771,12 +785,15 @@ def save_osi_score():
         except Exception as e:
             print(f"WebSocket notification failed: {e}")
         
+        # Check if both levels are complete for badge awarding
+        both_levels_complete = challenge_data.get('both_levels_complete', False)
+        
         return jsonify({
             'status': 'success',
-            'message': 'OSI simulation score saved successfully!',
+            'message': 'Challenge complete!' if both_levels_complete else 'OSI simulation score saved successfully!',
             'score': score,
             'badges_earned': newly_earned_badges,
-            'challenge_completed': challenge_score.is_completed
+            'challenge_completed': both_levels_complete
         })
         
     except Exception as e:

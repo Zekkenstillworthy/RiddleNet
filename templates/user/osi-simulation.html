@@ -3401,11 +3401,11 @@ function showFinalCompletionCelebration(combinedScore) {
 
 // Save level score to backend
 function saveLevelScore(level, levelScore) {
-  // For individual level saves, send partial challenge data
+  // MVP FIX: For Level 1, send partial data WITHOUT badge check
   const challengeData = {
     level: level,
     [`level${level}_score`]: levelScore,
-    both_levels_complete: false
+    both_levels_complete: false // MVP: Prevents badge award on Level 1
   };
   
   fetch('/save_osi_score', {
@@ -3415,12 +3415,17 @@ function saveLevelScore(level, levelScore) {
       score: levelScore,
       layer_accuracy: {}, // Empty for now, could track individual layer performance
       completion_time: Math.floor((Date.now() - startTime) / 1000), // Time in seconds
-      challenge_data: challengeData
+      challenge_data: challengeData,
+      skip_badge_check: level === 1 // MVP: Explicitly skip badge check for Level 1
     })
   })
   .then(response => response.json())
   .then(data => {
     console.log(`✅ Level ${level} score saved:`, data);
+    // MVP: Don't show badge notification for Level 1
+    if (level === 1) {
+      console.log('🔓 Level 2 unlocked - no badge yet');
+    }
   })
   .catch(error => {
     console.error(`❌ Error saving Level ${level} score:`, error);
@@ -3429,6 +3434,7 @@ function saveLevelScore(level, levelScore) {
 
 // Save final combined challenge score
 function saveFinalChallengeScore(combinedScore) {
+  // MVP FIX: Only trigger badge check when BOTH levels complete
   fetch('/save_osi_score', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -3440,15 +3446,16 @@ function saveFinalChallengeScore(combinedScore) {
         level1_score: level1Score,
         level2_score: level2Score,
         combined_score: combinedScore,
-        both_levels_complete: true
-      }
+        both_levels_complete: true // MVP: Triggers badge check ONLY here
+      },
+      skip_badge_check: false // MVP: Allow badge check for final score
     })
   })
   .then(response => response.json())
   .then(data => {
     console.log('✅ Final challenge score saved:', data);
     
-    // Show success notification
+    // MVP: Show badge notification ONLY after both levels complete
     if (data.status === 'success') {
       const badgeCount = data.badges_earned ? data.badges_earned.length : 0;
       if (badgeCount > 0) {
