@@ -920,7 +920,7 @@ html, body {
       
       <!-- Level Progress Indicator -->
       <div style="display: flex; gap: 16px; justify-content: center; margin: 24px 0;">
-        <div id="level1Card" style="flex: 1; max-width: 200px; background: rgba(57, 255, 20, 0.2); border: 2px solid var(--neon-green); border-radius: 12px; padding: 16px;">
+        <div id="level1Card" onclick="startOSIChallenge()" style="flex: 1; max-width: 200px; background: rgba(57, 255, 20, 0.2); border: 2px solid var(--neon-green); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(57, 255, 20, 0.3)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
           <div style="font-size: 2rem; margin-bottom: 8px;">🔷</div>
           <div style="color: var(--neon-green); font-weight: 600;">Level 1</div>
           <div style="font-size: 0.9rem; color: var(--text-muted);">OSI Model (7 Layers)</div>
@@ -929,7 +929,7 @@ html, body {
           </div>
         </div>
         
-        <div id="level2Card" style="flex: 1; max-width: 200px; background: rgba(100, 116, 139, 0.2); border: 2px solid var(--text-muted); border-radius: 12px; padding: 16px; opacity: 0.5;">
+        <div id="level2Card" onclick="handleLevel2Click()" style="flex: 1; max-width: 200px; background: rgba(100, 116, 139, 0.2); border: 2px solid var(--text-muted); border-radius: 12px; padding: 16px; opacity: 0.5; cursor: pointer; transition: all 0.3s ease;">
           <div style="font-size: 2rem; margin-bottom: 8px;">🔶</div>
           <div style="color: var(--text-muted); font-weight: 600;">Level 2</div>
           <div style="font-size: 0.9rem; color: var(--text-muted);">TCP/IP Model (4 Layers)</div>
@@ -939,10 +939,7 @@ html, body {
         </div>
       </div>
       
-      <button class="model-option" onclick="startOSIChallenge()" style="width: 100%; max-width: 400px; margin: 20px auto; background: var(--gradient-primary); border: 2px solid var(--cyber-glow);">
-        <div style="font-size: 2.5rem; margin-bottom: 8px;">�</div>
-        <div style="font-size: 1.3rem; font-weight: 700;">Start Level 1: OSI Model</div>
-      </button>
+      
     </div>
   </div>
 </div>
@@ -1554,6 +1551,15 @@ function startOSIChallenge() {
   resetIdleTimer();
 }
 
+// Handle Level 2 card click
+function handleLevel2Click() {
+  if (!level1Complete) {
+    showNotification('🔒 Complete Level 1 (OSI Model) first to unlock Level 2!', 'error');
+    return;
+  }
+  startTCPIPLevel();
+}
+
 // Start TCP/IP Level (Level 2) - Only after OSI complete
 function startTCPIPLevel() {
   if (!level1Complete) {
@@ -1562,6 +1568,7 @@ function startTCPIPLevel() {
   }
   
   document.getElementById('levelTransitionModal').style.display = 'none';
+  document.getElementById('osiChallengeStartModal').style.display = 'none';
   currentChallengeLevel = 2;
   currentModel = 'tcpip';
   TOTAL_UNITS = TOTAL_UNITS_TCPIP;
@@ -2319,22 +2326,22 @@ function renderModel(model) {
                 
                 <div class="drop-slot" data-layer="4" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="slot-number">4</div>
-                    <div class="slot-placeholder">Application Layer</div>
+                    <div class="slot-placeholder"></div>
                 </div>
                 
                 <div class="drop-slot" data-layer="3" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="slot-number">3</div>
-                    <div class="slot-placeholder">Transport Layer</div>
+                    <div class="slot-placeholder"></div>
                 </div>
                 
                 <div class="drop-slot" data-layer="2" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="slot-number">2</div>
-                    <div class="slot-placeholder">Internet Layer</div>
+                    <div class="slot-placeholder"></div>
                 </div>
                 
                 <div class="drop-slot" data-layer="1" data-zone="2" ondrop="drop(event)" ondragover="allowDrop(event)">
                     <div class="slot-number">1</div>
-                    <div class="slot-placeholder">Network Access</div>
+                    <div class="slot-placeholder"></div>
                 </div>
             </div>
         `;
@@ -3633,6 +3640,16 @@ function initializeChallengeUI() {
             level2Card.style.opacity = '1';
             level2Card.style.background = 'rgba(245, 158, 11, 0.2)';
             level2Card.style.borderColor = 'var(--warning-color)';
+            
+            // Add hover effects for unlocked Level 2
+            level2Card.onmouseover = function() {
+                this.style.transform = 'translateY(-4px)';
+                this.style.boxShadow = '0 8px 24px rgba(245, 158, 11, 0.3)';
+            };
+            level2Card.onmouseout = function() {
+                this.style.transform = '';
+                this.style.boxShadow = '';
+            };
         }
         
         if (level2Status) {

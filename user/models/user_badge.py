@@ -133,14 +133,14 @@ BADGE_DEFINITIONS = {
         'name': 'Troubleshooting Pro',
         'description': 'Zero Mistakes Achievement!',
         'rarity': 'legendary',
-        'image': 'img/Device_Badge.png',
+        'image': 'img/Troubleshoot_Badge.png',
         'requirements': 'Complete Link Up with perfect score'
     },
     'network_detective': {
         'name': 'Network Detective',
         'description': 'Strong Troubleshooting Skills!',
         'rarity': 'rare',
-        'image': 'img/Device_Badge.png',
+        'image': 'img/Troubleshoot_Badge.png',
         'requirements': 'Score 75%+ in Link Up'
     },
     'quiz_champion': {

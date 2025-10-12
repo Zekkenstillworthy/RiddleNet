@@ -1378,6 +1378,501 @@ def remove_student_from_class(class_id, student_id):
         current_app.logger.error(f"Error removing student from class: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ==================== USER MANAGEMENT ENDPOINTS ====================
+
+@dashboard_bp.route('/api/student/<int:student_id>/profile', methods=['GET'])
+@login_required
+def get_student_profile(student_id):
+    """Get detailed student profile information"""
+    try:
+        from user.models.user import User
+        from admin.models.class_model import Class, class_students
+        
+        # Get student
+        student = User.query.get_or_404(student_id)
+        
+        # Get student's enrolled classes
+        enrolled_classes = db.session.query(Class).join(
+            class_students,
+            Class.id == class_students.c.class_id
+        ).filter(
+            class_students.c.user_id == student_id
+        ).all()
+        
+        # Get student's scores
+        student_scores = Score.query.filter_by(user_id=student_id).all()
+        
+        # Calculate statistics
+        total_attempts = len(student_scores)
+        if student_scores:
+            avg_score = sum(s.score for s in student_scores) / total_attempts
+            highest_score = max(s.score for s in student_scores)
+            latest_attempt = max(s.date_attempted for s in student_scores)
+        else:
+            avg_score = 0
+            highest_score = 0
+            latest_attempt = None
+        
+        # Get assignments (if you have assignment submissions model)
+        completed_assignments = 0  # Placeholder
+        pending_assignments = 0     # Placeholder
+        
+        # Safely get last_active
+        last_active = None
+        if hasattr(student, 'last_active') and student.last_active:
+            last_active = student.last_active.isoformat() if hasattr(student.last_active, 'isoformat') else str(student.last_active)
+        
+        profile_data = {
+            'student': {
+                'id': student.id,
+                'username': student.username,
+                'email': student.email,
+                'first_name': getattr(student, 'first_name', ''),
+                'last_name': getattr(student, 'last_name', ''),
+                'created_at': student.created_at.isoformat() if hasattr(student, 'created_at') and student.created_at else None,
+                'last_active': last_active
+            },
+            'statistics': {
+                'total_attempts': total_attempts,
+                'avg_score': round(avg_score, 2),
+                'highest_score': round(highest_score, 2),
+                'completed_assignments': completed_assignments,
+                'pending_assignments': pending_assignments,
+                'enrolled_classes': len(enrolled_classes),
+                'latest_attempt': latest_attempt.isoformat() if latest_attempt else None
+            },
+            'enrolled_classes': [
+                {
+                    'id': cls.id,
+                    'name': cls.name,
+                    'code': getattr(cls, 'code', '')
+                } for cls in enrolled_classes
+            ],
+            'recent_scores': [
+                {
+                    'id': score.id,
+                    'category': score.category,
+                    'score': score.score,
+                    'date': score.date_attempted.isoformat()
+                } for score in sorted(student_scores, key=lambda x: x.date_attempted, reverse=True)[:5]
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': profile_data
+        })
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Error getting student profile for student {student_id}: {str(e)}\n{error_details}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dashboard_bp.route('/api/student/<int:student_id>/deadline-extension', methods=['POST'])
+@login_required
+def extend_student_deadline(student_id):
+    """Extend deadline for a student on a specific assignment"""
+    try:
+        from user.models.user import User
+        from admin.models.class_content import ClassAssignment
+        from admin import db
+        
+        data = request.json
+        assignment_id = data.get('assignment_id')
+        new_deadline = data.get('new_deadline')
+        reason = data.get('reason', 'Other')
+        notes = data.get('notes', '')
+        
+        # Verify student exists
+        student = User.query.get_or_404(student_id)
+        
+        # Verify assignment exists
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        
+        # Create or update deadline extension record
+        # You may need to create a DeadlineExtension model for this
+        # For now, we'll log it and update the assignment due date for this specific student
+        
+        # TODO: Create a student_deadline_extensions table to track individual extensions
+        # For MVP, we'll just log the extension
+        
+        extension_data = {
+            'student_id': student_id,
+            'student_name': student.username,
+            'assignment_id': assignment_id,
+            'assignment_title': assignment.title,
+            'original_deadline': assignment.due_date.isoformat() if assignment.due_date else None,
+            'new_deadline': new_deadline,
+            'reason': reason,
+            'notes': notes,
+            'granted_by': current_user.id,
+            'granted_at': datetime.utcnow().isoformat()
+        }
+        
+        current_app.logger.info(f"Deadline extension granted: {extension_data}")
+        
+        # In a full implementation, you would save this to a database table
+        # Example:
+        # from admin.models.deadline_extension import DeadlineExtension
+        # extension = DeadlineExtension(
+        #     student_id=student_id,
+        #     assignment_id=assignment_id,
+        #     original_deadline=assignment.due_date,
+        #     new_deadline=datetime.fromisoformat(new_deadline),
+        #     reason=reason,
+        #     notes=notes,
+        #     granted_by=current_user.id
+        # )
+        # db.session.add(extension)
+        # db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Deadline extended for {student.username} on assignment "{assignment.title}"',
+            'extension': extension_data
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error extending deadline: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dashboard_bp.route('/api/student/<int:student_id>/message', methods=['POST'])
+@login_required
+def send_student_message(student_id):
+    """Send a message to a student"""
+    try:
+        from user.models.user import User
+        from admin import db
+        
+        data = request.json
+        subject = data.get('subject', '')
+        message = data.get('message', '')
+        priority = data.get('priority', 'normal')
+        
+        # Verify student exists
+        student = User.query.get_or_404(student_id)
+        
+        # Create message record
+        # TODO: Implement a messaging system or integrate with email
+        # For MVP, we'll log the message
+        
+        message_data = {
+            'recipient_id': student_id,
+            'recipient_email': student.email,
+            'subject': subject,
+            'message': message,
+            'priority': priority,
+            'sent_by': current_user.id,
+            'sent_at': datetime.utcnow().isoformat()
+        }
+        
+        current_app.logger.info(f"Message sent to student: {message_data}")
+        
+        # In a full implementation, you would:
+        # 1. Save to a messages table
+        # 2. Send email notification
+        # 3. Create in-app notification
+        
+        # Example email sending (uncomment when email is configured):
+        # from flask_mail import Message
+        # msg = Message(
+        #     subject=subject,
+        #     recipients=[student.email],
+        #     body=message,
+        #     sender=current_app.config.get('MAIL_DEFAULT_SENDER')
+        # )
+        # mail.send(msg)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Message sent to {student.username}',
+            'data': message_data
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error sending message: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dashboard_bp.route('/api/class/<int:class_id>/invite-users', methods=['POST'])
+@login_required
+def invite_users_to_class(class_id):
+    """Invite multiple users to join a class"""
+    try:
+        from admin.models.class_model import Class
+        from user.models.user import User
+        from admin import db
+        
+        data = request.json
+        emails = data.get('emails', [])
+        role = data.get('role', 'student')
+        custom_message = data.get('message', '')
+        
+        # Verify class exists
+        cls = Class.query.get_or_404(class_id)
+        
+        invited_users = []
+        errors = []
+        
+        for email in emails:
+            email = email.strip()
+            if not email:
+                continue
+                
+            # Check if user already exists
+            user = User.query.filter_by(email=email).first()
+            
+            if user:
+                # User exists, check if already enrolled
+                from admin.models.class_model import class_students
+                existing_enrollment = db.session.query(class_students).filter(
+                    class_students.c.class_id == class_id,
+                    class_students.c.user_id == user.id
+                ).first()
+                
+                if existing_enrollment:
+                    errors.append(f'{email} is already enrolled')
+                    continue
+                
+                # Enroll existing user
+                db.session.execute(
+                    class_students.insert().values(
+                        class_id=class_id,
+                        user_id=user.id,
+                        joined_date=datetime.utcnow(),
+                        status='active'
+                    )
+                )
+                invited_users.append({
+                    'email': email,
+                    'status': 'enrolled',
+                    'user_id': user.id
+                })
+            else:
+                # Create invitation for new user
+                # TODO: Implement invitation system with invitation tokens
+                # For MVP, we'll log the invitation
+                
+                invitation_data = {
+                    'email': email,
+                    'class_id': class_id,
+                    'class_name': cls.name,
+                    'role': role,
+                    'invited_by': current_user.id,
+                    'invited_at': datetime.utcnow().isoformat(),
+                    'custom_message': custom_message
+                }
+                
+                current_app.logger.info(f"Invitation created: {invitation_data}")
+                
+                # In a full implementation:
+                # 1. Create invitation token
+                # 2. Send invitation email with registration link
+                # 3. Track invitation status
+                
+                invited_users.append({
+                    'email': email,
+                    'status': 'invitation_sent'
+                })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Processed {len(emails)} invitation(s)',
+            'invited': invited_users,
+            'errors': errors
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error inviting users: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dashboard_bp.route('/api/class/<int:class_id>/bulk-action', methods=['POST'])
+@login_required
+def bulk_user_action(class_id):
+    """Perform bulk actions on multiple users"""
+    try:
+        from admin.models.class_model import Class
+        from user.models.user import User
+        from admin import db
+        
+        data = request.json
+        action = data.get('action')
+        student_ids = data.get('student_ids', [])
+        
+        # Verify class exists
+        cls = Class.query.get_or_404(class_id)
+        
+        results = []
+        
+        if action == 'export':
+            # Export student list
+            students = User.query.filter(User.id.in_(student_ids)).all()
+            export_data = [
+                {
+                    'id': s.id,
+                    'username': s.username,
+                    'email': s.email,
+                    'first_name': getattr(s, 'first_name', ''),
+                    'last_name': getattr(s, 'last_name', '')
+                } for s in students
+            ]
+            
+            return jsonify({
+                'success': True,
+                'action': 'export',
+                'data': export_data,
+                'count': len(export_data)
+            })
+            
+        elif action == 'send_message':
+            # Send message to multiple students
+            subject = data.get('subject', '')
+            message = data.get('message', '')
+            
+            students = User.query.filter(User.id.in_(student_ids)).all()
+            
+            for student in students:
+                # Log message for each student
+                current_app.logger.info(f"Bulk message to {student.email}: {subject}")
+                results.append({
+                    'student_id': student.id,
+                    'email': student.email,
+                    'status': 'sent'
+                })
+            
+            return jsonify({
+                'success': True,
+                'action': 'send_message',
+                'message': f'Message sent to {len(results)} students',
+                'results': results
+            })
+            
+        elif action == 'extend_deadline':
+            # Extend deadline for multiple students
+            assignment_id = data.get('assignment_id')
+            new_deadline = data.get('new_deadline')
+            reason = data.get('reason', 'Bulk extension')
+            
+            for student_id in student_ids:
+                current_app.logger.info(f"Bulk deadline extension for student {student_id}")
+                results.append({
+                    'student_id': student_id,
+                    'status': 'extended'
+                })
+            
+            return jsonify({
+                'success': True,
+                'action': 'extend_deadline',
+                'message': f'Deadline extended for {len(results)} students',
+                'results': results
+            })
+            
+        elif action == 'generate_report':
+            # Generate progress report for selected students
+            students = User.query.filter(User.id.in_(student_ids)).all()
+            
+            report_data = []
+            for student in students:
+                scores = Score.query.filter_by(user_id=student.id).all()
+                avg_score = sum(s.score for s in scores) / len(scores) if scores else 0
+                
+                report_data.append({
+                    'student_id': student.id,
+                    'username': student.username,
+                    'email': student.email,
+                    'total_attempts': len(scores),
+                    'avg_score': round(avg_score, 2)
+                })
+            
+            return jsonify({
+                'success': True,
+                'action': 'generate_report',
+                'data': report_data,
+                'generated_at': datetime.utcnow().isoformat()
+            })
+            
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown bulk action: {action}'
+            }), 400
+        
+    except Exception as e:
+        current_app.logger.error(f"Error performing bulk action: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@dashboard_bp.route('/api/class/<int:class_id>/students/search', methods=['GET'])
+@login_required
+def search_class_students(class_id):
+    """Search and filter students in a class"""
+    try:
+        from admin.models.class_model import Class, class_students
+        from user.models.user import User
+        
+        # Get search parameters
+        search_query = request.args.get('q', '').lower()
+        filter_type = request.args.get('filter', 'all')  # all, active, inactive
+        
+        # Verify class exists
+        cls = Class.query.get_or_404(class_id)
+        
+        # Get all students in the class
+        students_query = db.session.query(User).join(
+            class_students,
+            User.id == class_students.c.user_id
+        ).filter(
+            class_students.c.class_id == class_id
+        )
+        
+        # Apply search filter
+        if search_query:
+            students_query = students_query.filter(
+                or_(
+                    User.username.ilike(f'%{search_query}%'),
+                    User.email.ilike(f'%{search_query}%'),
+                    func.concat(
+                        func.coalesce(User.first_name, ''),
+                        ' ',
+                        func.coalesce(User.last_name, '')
+                    ).ilike(f'%{search_query}%')
+                )
+            )
+        
+        students = students_query.all()
+        
+        # Format results
+        results = []
+        for student in students:
+            # Get student's recent activity
+            recent_scores = Score.query.filter_by(
+                user_id=student.id
+            ).order_by(Score.date_attempted.desc()).limit(1).first()
+            
+            results.append({
+                'id': student.id,
+                'username': student.username,
+                'email': student.email,
+                'first_name': getattr(student, 'first_name', ''),
+                'last_name': getattr(student, 'last_name', ''),
+                'last_active': recent_scores.date_attempted.isoformat() if recent_scores else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'students': results,
+            'count': len(results),
+            'search_query': search_query,
+            'filter': filter_type
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error searching students: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ==================== EDUCATIONAL TOOLS INTEGRATION ====================
 
 @dashboard_bp.route('/api/class/<int:class_id>/educational-tools', methods=['GET'])

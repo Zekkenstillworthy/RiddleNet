@@ -38,15 +38,47 @@ class TroubleshootingController:
         
     def submit_solution(self, user_id, data):
         """Submit a solution for scoring"""
+        print("\n" + "="*80)
+        print("🚀 BACKEND: SOLUTION SUBMISSION RECEIVED")
+        print("="*80)
+        print(f"👤 User ID: {user_id}")
+        print(f"📦 Data keys: {list(data.keys()) if data else 'None'}")
+        
         if not data or 'scenario_id' not in data or 'user_solution' not in data:
+            print("❌ ERROR: Missing required fields!")
+            print(f"   - Has scenario_id: {'scenario_id' in data if data else False}")
+            print(f"   - Has user_solution: {'user_solution' in data if data else False}")
             return {"error": "Missing required fields"}, 400
         
         scenario_id = data['scenario_id']
         user_solution = data['user_solution']
         time_taken = data.get('time_taken', 0)
         
-        # Get the scenario
-        scenario = Troubleshooting.query.get_or_404(scenario_id)
+        print(f"🔑 Scenario ID: '{scenario_id}'")
+        print(f"⏱️  Time Taken: {time_taken} seconds")
+        print(f"📊 Solution has {len(user_solution.get('devices', []))} devices")
+        print("="*80 + "\n")
+        
+        # Check if this is a hardcoded Link Up challenge (not from database)
+        # These challenges use string IDs, not integer database IDs
+        hardcoded_challenges = [
+            'vlan-basics', 
+            'default-gateway-setup', 
+            'dhcp-client-config',
+            'extended-ring-redundancy',
+            'hybrid-star-ring',
+            'partial-mesh-ospf'
+        ]
+        if isinstance(scenario_id, str) and scenario_id in hardcoded_challenges:
+            print(f"🎯 Detected hardcoded challenge: {scenario_id}")
+            return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
+        
+        # Get the scenario from database (for non-database challenges)
+        print(f"🔍 Looking up database scenario with ID: {scenario_id}")
+        scenario = Troubleshooting.query.get(scenario_id)
+        if not scenario:
+            # If not found in database, try as hardcoded challenge
+            return self._submit_hardcoded_challenge(user_id, scenario_id, user_solution, time_taken)
         
         # Calculate match percentage
         match_percentage = self.calculate_match_percentage(user_solution, scenario.expected_topology)
@@ -193,3 +225,652 @@ class TroubleshootingController:
         """Get user's progress on troubleshooting scenarios"""
         progress = TroubleshootingProgress.query.filter_by(user_id=user_id).all()
         return progress
+    
+    def _submit_hardcoded_challenge(self, user_id, scenario_id, user_solution, time_taken):
+        """Handle hardcoded Link Up challenges (vlan-basics, default-gateway, etc.)"""
+        try:
+            # Define hardcoded challenge metadata
+            challenge_metadata = {
+                'vlan-basics': {
+                    'name': 'VLAN Setup Basics',
+                    'difficulty': 'easy',
+                    'base_score': 100,
+                    'description': 'Configure VLANs 10 (Sales) and 20 (Engineering) on the switch'
+                },
+                'default-gateway': {
+                    'name': 'Default Gateway Configuration',
+                    'difficulty': 'easy',
+                    'base_score': 100,
+                    'description': 'Configure default gateways for network devices'
+                },
+                'default-gateway-setup': {  # Alternative name for same challenge
+                    'name': 'Default Gateway Configuration',
+                    'difficulty': 'easy',
+                    'base_score': 100,
+                    'description': 'Configure default gateways for network devices'
+                },
+                'dhcp-client': {
+                    'name': 'DHCP Client Configuration',
+                    'difficulty': 'easy',
+                    'base_score': 100,
+                    'description': 'Configure DHCP clients to obtain IP addresses automatically'
+                },
+                'dhcp-client-config': {  # Alternative name for same challenge
+                    'name': 'DHCP Client Configuration',
+                    'difficulty': 'easy',
+                    'base_score': 100,
+                    'description': 'Configure DHCP clients to obtain IP addresses automatically'
+                },
+                'extended-ring-redundancy': {
+                    'name': 'Extended Ring with Redundancy',
+                    'difficulty': 'medium',
+                    'base_score': 200,
+                    'description': 'Create two ring networks connected by a bridge switch with redundant paths'
+                },
+                'hybrid-star-ring': {
+                    'name': 'Hybrid Star-Ring Topology',
+                    'difficulty': 'medium',
+                    'base_score': 200,
+                    'description': 'Combine star and ring topologies with a central switch connecting to a ring network'
+                },
+                'partial-mesh-ospf': {
+                    'name': 'Partial Mesh OSPF Network',
+                    'difficulty': 'medium',
+                    'base_score': 200,
+                    'description': 'Configure a partial mesh topology with OSPF multi-area routing'
+                }
+            }
+            
+            challenge_info = challenge_metadata.get(scenario_id, {
+                'name': scenario_id,
+                'difficulty': 'easy',
+                'base_score': 100,
+                'description': 'Link Up Challenge'
+            })
+            
+            # Validate the user solution against expected topology
+            match_percentage = self._validate_linkup_solution(scenario_id, user_solution)
+            base_score = challenge_info['base_score']
+            
+            # Calculate time bonus (max 20 points for completing quickly)
+            time_bonus = 0
+            if time_taken > 0 and time_taken < 300:  # Under 5 minutes
+                time_bonus = min(20, int(20 * (300 - time_taken) / 300))
+            
+            total_score = base_score + time_bonus
+            
+            # Determine challenge type based on difficulty
+            difficulty = challenge_info['difficulty']
+            if difficulty == 'easy':
+                challenge_type = 'linkup_easy'
+            elif difficulty == 'medium':
+                challenge_type = 'troubleshooting_medium'
+            elif difficulty == 'hard':
+                challenge_type = 'troubleshooting_hard'
+            else:
+                challenge_type = 'linkup_easy'
+            
+            # Save to ChallengeScore table (MVP system)
+            from user.models.challenge_score import ChallengeScore
+            challenge_score = ChallengeScore.save_score(
+                user_id=user_id,
+                challenge_type=challenge_type,
+                score=total_score,
+                metadata={
+                    'scenario_id': scenario_id,
+                    'scenario_name': challenge_info['name'],
+                    'time_taken': time_taken,
+                    'difficulty': challenge_info['difficulty']
+                },
+                completion_time=time_taken
+            )
+            
+            # Check and award badges
+            from user.services.badge_service import BadgeService
+            newly_earned_badges = BadgeService.check_and_award_badges(
+                user_id=user_id,
+                challenge_type=challenge_type,
+                score=total_score,
+                metadata={'scenario_id': scenario_id, 'difficulty': difficulty}
+            )
+            
+            db.session.commit()
+            
+            # Return success response
+            response = {
+                "success": True,
+                "score": total_score,
+                "base_score": base_score,
+                "time_bonus": time_bonus,
+                "topology_match_percentage": match_percentage,
+                "feedback": f"""
+                    <p class="success">🎉 Excellent work! Challenge completed successfully!</p>
+                    <p>You've successfully configured <strong>{challenge_info['name']}</strong>.</p>
+                    <p><strong>Score:</strong> {total_score}/100 ({base_score} base + {time_bonus} time bonus)</p>
+                """,
+                "scenario_name": challenge_info['name'],
+                "scenario_id": scenario_id,
+                "badges_earned": newly_earned_badges,
+                "challenge_completed": True
+            }
+            
+            return response
+            
+        except Exception as e:
+            print(f"❌ Error submitting hardcoded challenge: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Error processing challenge: {str(e)}"}, 500
+    
+    def _validate_linkup_solution(self, scenario_id, user_solution):
+        """Validate Link Up challenge solutions"""
+        try:
+            print(f"🔍 Validating {scenario_id} solution...")
+            print(f"📦 User solution: {json.dumps(user_solution, indent=2)}")
+            
+            devices = user_solution.get('devices', [])
+            connections = user_solution.get('connections', [])
+            
+            if scenario_id in ['default-gateway', 'default-gateway-setup']:
+                return self._validate_default_gateway(devices)
+            elif scenario_id in ['dhcp-client', 'dhcp-client-config']:
+                return self._validate_dhcp_client(devices)
+            elif scenario_id == 'vlan-basics':
+                return self._validate_vlan_basics(devices)
+            elif scenario_id == 'extended-ring-redundancy':
+                return self._validate_extended_ring_redundancy(devices, connections)
+            elif scenario_id == 'hybrid-star-ring':
+                return self._validate_hybrid_star_ring(devices, connections)
+            elif scenario_id == 'partial-mesh-ospf':
+                return self._validate_partial_mesh_ospf(devices, connections)
+            else:
+                print(f"⚠️ Unknown scenario: {scenario_id}, returning 0%")
+                return 0
+                
+        except Exception as e:
+            print(f"❌ Validation error: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
+    
+    def _validate_default_gateway(self, devices):
+        """Validate Default Gateway Configuration"""
+        print("🌐 Validating Default Gateway Configuration...")
+        score = 0
+        
+        # Find Gateway Router
+        router = next((d for d in devices if d.get('type') == 'router' and d.get('label') == 'Gateway Router'), None)
+        if not router:
+            print("❌ Gateway Router not found")
+            return 0
+        
+        print(f"✅ Found Gateway Router: {router.get('label')}")
+        
+        # Check router interface configuration
+        interfaces = router.get('interfaces', {})
+        gi00 = interfaces.get('GigabitEthernet0/0', {})
+        
+        if gi00.get('ip') == '192.168.1.1' and gi00.get('subnet') == '255.255.255.0':
+            score += 30
+            print("✅ Router IP configured: 192.168.1.1/24 (+30 points)")
+        else:
+            print(f"❌ Router IP incorrect: {gi00.get('ip')}/{gi00.get('subnet')}")
+            return score
+        
+        if gi00.get('status') == 'up':
+            score += 20
+            print("✅ Router interface is up (+20 points)")
+        else:
+            print(f"❌ Router interface status: {gi00.get('status')}")
+        
+        # Check PCs
+        pcs = [d for d in devices if d.get('type') == 'pc']
+        print(f"📍 Found {len(pcs)} PCs")
+        
+        correctly_configured_pcs = 0
+        for pc in pcs:
+            pc_name = pc.get('label', 'Unknown')
+            ip = pc.get('ipv4', '')
+            subnet = pc.get('subnet', '')
+            gateway = pc.get('defaultGateway', '')
+            
+            print(f"   Checking {pc_name}: {ip}/{subnet} GW:{gateway}")
+            
+            if (ip.startswith('192.168.1.') and 
+                subnet == '255.255.255.0' and 
+                gateway == '192.168.1.1'):
+                correctly_configured_pcs += 1
+                print(f"   ✅ {pc_name} correctly configured")
+            else:
+                print(f"   ❌ {pc_name} incorrect configuration")
+        
+        # Award points for each correctly configured PC (50 points total / 3 PCs ≈ 16.67 each)
+        pc_score = int((correctly_configured_pcs / len(pcs)) * 50) if pcs else 0
+        score += pc_score
+        print(f"✅ {correctly_configured_pcs}/{len(pcs)} PCs configured (+{pc_score} points)")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_dhcp_client(self, devices):
+        """Validate DHCP Client Configuration"""
+        print("📡 Validating DHCP Client Configuration...")
+        score = 0
+        
+        # Find DHCP Server router
+        router = next((d for d in devices if d.get('type') == 'router' and d.get('label') == 'DHCP Server'), None)
+        if not router:
+            print("❌ DHCP Server router not found")
+            return 0
+        
+        print(f"✅ Found DHCP Server: {router.get('label')}")
+        
+        # Check DHCP pool configuration
+        dhcp_pools = router.get('dhcpPools', {})
+        if not dhcp_pools:
+            print("❌ No DHCP pools configured")
+            return 0
+        
+        score += 20
+        print(f"✅ DHCP pool exists (+20 points)")
+        
+        # Check pool configuration
+        pool_name = list(dhcp_pools.keys())[0]
+        pool = dhcp_pools[pool_name]
+        
+        if pool.get('network', '').startswith('192.168.1.'):
+            score += 15
+            print(f"✅ Network configured: {pool.get('network')} (+15 points)")
+        else:
+            print(f"❌ Network incorrect: {pool.get('network')}")
+        
+        if pool.get('defaultRouter') == '192.168.1.1':
+            score += 15
+            print(f"✅ Default router configured: 192.168.1.1 (+15 points)")
+        else:
+            print(f"❌ Default router incorrect: {pool.get('defaultRouter')}")
+        
+        # Check excluded addresses
+        excluded = router.get('dhcpExcluded', [])
+        if excluded:
+            score += 10
+            print(f"✅ Excluded addresses configured (+10 points)")
+        else:
+            print("❌ No excluded addresses")
+        
+        # Check PCs have DHCP addresses
+        pcs = [d for d in devices if d.get('type') == 'pc']
+        print(f"📍 Found {len(pcs)} PCs")
+        
+        correctly_configured_pcs = 0
+        for pc in pcs:
+            pc_name = pc.get('label', 'Unknown')
+            ip = pc.get('ipv4', '')
+            gateway = pc.get('defaultGateway', '')
+            
+            print(f"   Checking {pc_name}: {ip} GW:{gateway}")
+            
+            # Check if PC has DHCP IP (not APIPA 169.254.x.x)
+            if (ip.startswith('192.168.1.') and 
+                not ip.startswith('169.254.') and 
+                gateway == '192.168.1.1'):
+                correctly_configured_pcs += 1
+                print(f"   ✅ {pc_name} has DHCP address")
+            else:
+                print(f"   ❌ {pc_name} does not have DHCP address")
+        
+        # Award points for PCs with DHCP addresses (40 points total)
+        pc_score = int((correctly_configured_pcs / len(pcs)) * 40) if pcs else 0
+        score += pc_score
+        print(f"✅ {correctly_configured_pcs}/{len(pcs)} PCs with DHCP (+{pc_score} points)")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_vlan_basics(self, devices):
+        """Validate VLAN Basics configuration"""
+        print("🔌 Validating VLAN Basics...")
+        score = 0
+        
+        # Find switch
+        switch = next((d for d in devices if d.get('type') == 'switch'), None)
+        if not switch:
+            print("❌ Switch not found")
+            return 0
+        
+        # Check VLANs exist
+        vlans = switch.get('vlans', {})
+        if '10' in vlans and '20' in vlans:
+            score += 40
+            print("✅ VLANs 10 and 20 created (+40 points)")
+        else:
+            print(f"❌ VLANs missing: {list(vlans.keys())}")
+            return score
+        
+        # Check port assignments
+        port_assignments = switch.get('portVlanAssignments', {})
+        interface_modes = switch.get('interfaceMode', {})
+        
+        correct_ports = 0
+        if port_assignments.get('Fa0/1') == '10' and interface_modes.get('Fa0/1') == 'access':
+            correct_ports += 1
+        if port_assignments.get('Fa0/2') == '10' and interface_modes.get('Fa0/2') == 'access':
+            correct_ports += 1
+        if port_assignments.get('Fa0/3') == '20' and interface_modes.get('Fa0/3') == 'access':
+            correct_ports += 1
+        if port_assignments.get('Fa0/4') == '20' and interface_modes.get('Fa0/4') == 'access':
+            correct_ports += 1
+        
+        port_score = int((correct_ports / 4) * 60)
+        score += port_score
+        print(f"✅ {correct_ports}/4 ports correctly configured (+{port_score} points)")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_extended_ring_redundancy(self, devices, connections):
+        """Validate Extended Ring with Redundancy (2 rings + bridge switch)"""
+        print("🔄 Validating Extended Ring with Redundancy...")
+        score = 0
+        
+        # Count switches (should be 8: 4 in Ring1, 3 in Ring2, 1 Bridge)
+        switches = [d for d in devices if d.get('type') == 'switch']
+        if len(switches) != 8:
+            print(f"❌ Expected 8 switches, found {len(switches)}")
+            return 0
+        
+        print(f"✅ Found 8 switches (+20 points)")
+        score += 20
+        
+        # Identify Ring 1 switches (4 switches)
+        ring1_switches = [s for s in switches if 'Ring1' in s.get('label', '')]
+        # Identify Ring 2 switches (3 switches)
+        ring2_switches = [s for s in switches if 'Ring2' in s.get('label', '')]
+        # Identify Bridge switch
+        bridge_switch = next((s for s in switches if 'Bridge' in s.get('label', '')), None)
+        
+        if len(ring1_switches) == 4:
+            print(f"✅ Found 4 Ring1 switches (+10 points)")
+            score += 10
+        else:
+            print(f"❌ Expected 4 Ring1 switches, found {len(ring1_switches)}")
+        
+        if len(ring2_switches) == 3:
+            print(f"✅ Found 3 Ring2 switches (+10 points)")
+            score += 10
+        else:
+            print(f"❌ Expected 3 Ring2 switches, found {len(ring2_switches)}")
+        
+        if bridge_switch:
+            print(f"✅ Found Bridge switch (+10 points)")
+            score += 10
+        else:
+            print(f"❌ Bridge switch not found")
+        
+        # Check Ring 1 forms a complete ring
+        if len(ring1_switches) == 4:
+            ring1_names = {s.get('id') or s.get('label') for s in ring1_switches}
+            ring1_connections = {name: [] for name in ring1_names}
+            
+            for conn in connections:
+                dev1 = conn.get('device1')
+                dev2 = conn.get('device2')
+                if dev1 in ring1_names and dev2 in ring1_names:
+                    ring1_connections[dev1].append(dev2)
+                    ring1_connections[dev2].append(dev1)
+            
+            # Each switch in Ring1 should have exactly 2 connections within the ring
+            correct_ring1 = sum(1 for name in ring1_names if len(ring1_connections[name]) == 2)
+            if correct_ring1 == 4:
+                print("✅ Ring1 forms complete ring topology (+20 points)")
+                score += 20
+            else:
+                print(f"⚠️ Ring1 incomplete: {correct_ring1}/4 switches correctly connected")
+        
+        # Check Ring 2 forms a complete ring
+        if len(ring2_switches) == 3:
+            ring2_names = {s.get('id') or s.get('label') for s in ring2_switches}
+            ring2_connections = {name: [] for name in ring2_names}
+            
+            for conn in connections:
+                dev1 = conn.get('device1')
+                dev2 = conn.get('device2')
+                if dev1 in ring2_names and dev2 in ring2_names:
+                    ring2_connections[dev1].append(dev2)
+                    ring2_connections[dev2].append(dev1)
+            
+            # Each switch in Ring2 should have exactly 2 connections within the ring
+            correct_ring2 = sum(1 for name in ring2_names if len(ring2_connections[name]) == 2)
+            if correct_ring2 == 3:
+                print("✅ Ring2 forms complete ring topology (+15 points)")
+                score += 15
+            else:
+                print(f"⚠️ Ring2 incomplete: {correct_ring2}/3 switches correctly connected")
+        
+        # Check bridge connections (Bridge should connect to both rings)
+        if bridge_switch:
+            bridge_name = bridge_switch.get('id') or bridge_switch.get('label')
+            bridge_connections = []
+            
+            for conn in connections:
+                if conn.get('device1') == bridge_name:
+                    bridge_connections.append(conn.get('device2'))
+                elif conn.get('device2') == bridge_name:
+                    bridge_connections.append(conn.get('device1'))
+            
+            # Check if bridge connects to at least one switch from each ring
+            connects_ring1 = any(conn in [s.get('id') or s.get('label') for s in ring1_switches] for conn in bridge_connections)
+            connects_ring2 = any(conn in [s.get('id') or s.get('label') for s in ring2_switches] for conn in bridge_connections)
+            
+            if connects_ring1 and connects_ring2:
+                print("✅ Bridge connects both rings (+15 points)")
+                score += 15
+            else:
+                print(f"❌ Bridge missing connections (Ring1: {connects_ring1}, Ring2: {connects_ring2})")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_hybrid_star_ring(self, devices, connections):
+        """Validate Hybrid Star-Ring Topology (star section + ring section connected)"""
+        print("🔄 Validating Hybrid Star-Ring Topology...")
+        score = 0
+        
+        # Count devices by type
+        switches = [d for d in devices if d.get('type') == 'switch']
+        pcs = [d for d in devices if d.get('type') == 'pc']
+        
+        if len(switches) != 4:
+            print(f"❌ Expected 4 switches, found {len(switches)}")
+            return 0
+        
+        if len(pcs) != 4:
+            print(f"❌ Expected 4 PCs, found {len(pcs)}")
+            return 0
+        
+        print(f"✅ Found correct device count: 4 switches, 4 PCs (+20 points)")
+        score += 20
+        
+        # Identify star topology devices
+        core_star = next((s for s in switches if 'Core' in s.get('label', '') or 'Star SW' in s.get('label', '')), None)
+        star_pcs = [p for p in pcs if 'Star' in p.get('label', '')]
+        
+        # Identify ring topology devices  
+        ring_switches = [s for s in switches if 'Ring' in s.get('label', '') and s != core_star]
+        ring_pcs = [p for p in pcs if 'Ring' in p.get('label', '')]
+        
+        # Validate star section
+        if core_star:
+            print(f"✅ Found central star switch (+10 points)")
+            score += 10
+            
+            # Check star connections (central switch to star PCs)
+            core_name = core_star.get('id') or core_star.get('label')
+            star_pc_names = [p.get('id') or p.get('label') for p in star_pcs]
+            
+            connected_star_pcs = 0
+            for conn in connections:
+                if (conn.get('device1') == core_name and conn.get('device2') in star_pc_names) or \
+                   (conn.get('device2') == core_name and conn.get('device1') in star_pc_names):
+                    connected_star_pcs += 1
+            
+            if connected_star_pcs == 2:
+                print(f"✅ Star topology correct: 2 PCs connected to central switch (+20 points)")
+                score += 20
+            else:
+                print(f"⚠️ Star connections incomplete: {connected_star_pcs}/2 PCs connected")
+        
+        # Validate ring section (3 switches forming a ring)
+        if len(ring_switches) == 3:
+            print(f"✅ Found 3 ring switches (+10 points)")
+            score += 10
+            
+            ring_names = {s.get('id') or s.get('label') for s in ring_switches}
+            ring_connections = {name: [] for name in ring_names}
+            
+            for conn in connections:
+                dev1 = conn.get('device1')
+                dev2 = conn.get('device2')
+                if dev1 in ring_names and dev2 in ring_names:
+                    ring_connections[dev1].append(dev2)
+                    ring_connections[dev2].append(dev1)
+            
+            # Each switch in ring should have exactly 2 connections within the ring
+            correct_ring = sum(1 for name in ring_names if len(ring_connections[name]) == 2)
+            if correct_ring == 3:
+                print("✅ Ring topology correct: all 3 switches properly connected (+20 points)")
+                score += 20
+            else:
+                print(f"⚠️ Ring incomplete: {correct_ring}/3 switches correctly connected")
+        
+        # Validate ring PCs are connected to ring switches
+        ring_pc_names = [p.get('id') or p.get('label') for p in ring_pcs]
+        ring_switch_names = [s.get('id') or s.get('label') for s in ring_switches]
+        
+        connected_ring_pcs = 0
+        for conn in connections:
+            if (conn.get('device1') in ring_pc_names and conn.get('device2') in ring_switch_names) or \
+               (conn.get('device2') in ring_pc_names and conn.get('device1') in ring_switch_names):
+                connected_ring_pcs += 1
+        
+        if connected_ring_pcs >= 2:
+            print(f"✅ Ring PCs properly connected (+10 points)")
+            score += 10
+        
+        # Validate hybrid connection (star center to ring network)
+        if core_star:
+            core_name = core_star.get('id') or core_star.get('label')
+            ring_switch_names = [s.get('id') or s.get('label') for s in ring_switches]
+            
+            hybrid_connections = 0
+            for conn in connections:
+                if (conn.get('device1') == core_name and conn.get('device2') in ring_switch_names) or \
+                   (conn.get('device2') == core_name and conn.get('device1') in ring_switch_names):
+                    hybrid_connections += 1
+            
+            if hybrid_connections >= 1:
+                print(f"✅ Hybrid connection present: star connected to ring (+10 points)")
+                score += 10
+            else:
+                print(f"❌ Missing hybrid connection between star and ring")
+        
+        print(f"📊 Final score: {score}/100")
+        return score
+    
+    def _validate_partial_mesh_ospf(self, devices, connections):
+        """Validate Partial Mesh OSPF Network with multi-area topology"""
+        print("🔄 Validating Partial Mesh OSPF Network...")
+        score = 0
+        
+        # Count routers (should be 5)
+        routers = [d for d in devices if d.get('type') == 'router']
+        
+        if len(routers) != 5:
+            print(f"❌ Expected 5 routers, found {len(routers)}")
+            return 0
+        
+        print(f"✅ Found 5 routers (+20 points)")
+        score += 20
+        
+        # Identify Area 0 routers (backbone)
+        area0_routers = [r for r in routers if 'Area0' in r.get('label', '') or 'R1' in r.get('label', '') or 'R2' in r.get('label', '')]
+        # Identify Area 1 routers
+        area1_routers = [r for r in routers if 'Area1' in r.get('label', '') or 'R3' in r.get('label', '') or 'R4' in r.get('label', '')]
+        # Identify ABR (Area Border Router)
+        abr = next((r for r in routers if 'ABR' in r.get('label', '') or 'R5' in r.get('label', '')), None)
+        
+        # Validate router distribution
+        if len(area0_routers) >= 2:
+            print(f"✅ Found Area 0 routers (+10 points)")
+            score += 10
+        
+        if len(area1_routers) >= 2:
+            print(f"✅ Found Area 1 routers (+10 points)")
+            score += 10
+        
+        if abr:
+            print(f"✅ Found ABR (Area Border Router) (+15 points)")
+            score += 15
+        
+        # Validate connections (partial mesh = not all routers directly connected)
+        total_connections = len(connections)
+        
+        if total_connections >= 6 and total_connections <= 8:
+            print(f"✅ Good partial mesh connectivity: {total_connections} connections (+15 points)")
+            score += 15
+        elif total_connections > 0:
+            print(f"⚠️ Suboptimal connectivity: {total_connections} connections (+5 points)")
+            score += 5
+        
+        # Validate Area 0 internal connections
+        if len(area0_routers) >= 2:
+            area0_names = [r.get('id') or r.get('label') for r in area0_routers]
+            area0_connections = 0
+            
+            for conn in connections:
+                if conn.get('device1') in area0_names and conn.get('device2') in area0_names:
+                    area0_connections += 1
+            
+            if area0_connections >= 1:
+                print(f"✅ Area 0 routers interconnected (+10 points)")
+                score += 10
+        
+        # Validate Area 1 internal connections
+        if len(area1_routers) >= 2:
+            area1_names = [r.get('id') or r.get('label') for r in area1_routers]
+            area1_connections = 0
+            
+            for conn in connections:
+                if conn.get('device1') in area1_names and conn.get('device2') in area1_names:
+                    area1_connections += 1
+            
+            if area1_connections >= 1:
+                print(f"✅ Area 1 routers interconnected (+10 points)")
+                score += 10
+        
+        # Validate ABR connections to both areas
+        if abr:
+            abr_name = abr.get('id') or abr.get('label')
+            area0_names = [r.get('id') or r.get('label') for r in area0_routers]
+            area1_names = [r.get('id') or r.get('label') for r in area1_routers]
+            
+            connects_area0 = any(
+                (conn.get('device1') == abr_name and conn.get('device2') in area0_names) or
+                (conn.get('device2') == abr_name and conn.get('device1') in area0_names)
+                for conn in connections
+            )
+            
+            connects_area1 = any(
+                (conn.get('device1') == abr_name and conn.get('device2') in area1_names) or
+                (conn.get('device2') == abr_name and conn.get('device1') in area1_names)
+                for conn in connections
+            )
+            
+            if connects_area0 and connects_area1:
+                print(f"✅ ABR connects both areas (+10 points)")
+                score += 10
+            else:
+                print(f"❌ ABR not properly connecting areas (Area0: {connects_area0}, Area1: {connects_area1})")
+        
+        print(f"📊 Final score: {score}/100")
+        return score

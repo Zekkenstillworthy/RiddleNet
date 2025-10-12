@@ -1429,38 +1429,64 @@ def save_topology_score():
         score_value = float(data['score'])
         category = data['category']
         
+        print(f"💾 Saving score: user_id={user_id}, score={score_value}, category={category}")
+        
         # Save to legacy UserScore table for backward compatibility
-        new_score = UserScore(
-            user_id=user_id,
-            score=score_value,
-            category=category
-        )
-        db.session.add(new_score)
+        try:
+            new_score = UserScore(
+                user_id=user_id,
+                score=int(score_value),  # Ensure it's an integer
+                category=category
+            )
+            db.session.add(new_score)
+            db.session.flush()  # Get the ID without committing
+            print(f"✅ UserScore saved with ID: {new_score.id}")
+        except Exception as score_error:
+            print(f"❌ Error saving UserScore: {score_error}")
+            import traceback
+            traceback.print_exc()
+            # Continue even if legacy save fails
+            new_score = None
         
         # Save to new ChallengeScore table with detailed tracking
-        from user.models.challenge_score import ChallengeScore
-        challenge_score = ChallengeScore.save_score(
-            user_id=user_id,
-            challenge_type='troubleshooting',  # Link Up = troubleshooting challenges
-            score=score_value,
-            metadata={
-                'category': category,
-                'difficulty': data.get('difficulty', 'unknown'),
-                'timestamp': datetime.utcnow().isoformat()
-            }
-        )
+        challenge_score = None
+        newly_earned_badges = []
+        
+        try:
+            from user.models.challenge_score import ChallengeScore
+            challenge_score = ChallengeScore.save_score(
+                user_id=user_id,
+                challenge_type='troubleshooting',  # Link Up = troubleshooting challenges
+                score=score_value,
+                metadata={
+                    'category': category,
+                    'difficulty': data.get('difficulty', 'unknown'),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
+            print(f"✅ ChallengeScore saved with ID: {challenge_score.id if challenge_score else 'None'}")
+        except Exception as cs_error:
+            print(f"❌ Error saving ChallengeScore: {cs_error}")
+            import traceback
+            traceback.print_exc()
         
         # Check and award badges automatically
-        from user.services.badge_service import BadgeService
-        newly_earned_badges = BadgeService.check_and_award_badges(
-            user_id=user_id,
-            challenge_type='troubleshooting',
-            score=score_value,
-            metadata={
-                'category': category,
-                'difficulty': data.get('difficulty', 'unknown')
-            }
-        )
+        try:
+            from user.services.badge_service import BadgeService
+            newly_earned_badges = BadgeService.check_and_award_badges(
+                user_id=user_id,
+                challenge_type='troubleshooting',
+                score=score_value,
+                metadata={
+                    'category': category,
+                    'difficulty': data.get('difficulty', 'unknown')
+                }
+            )
+            print(f"✅ Badges checked, earned: {len(newly_earned_badges)}")
+        except Exception as badge_error:
+            print(f"❌ Error checking badges: {badge_error}")
+            import traceback
+            traceback.print_exc()
         
         db.session.commit()
         
@@ -1469,7 +1495,7 @@ def save_topology_score():
         return jsonify({
             'status': 'success', 
             'message': 'Score saved successfully',
-            'saved_id': new_score.id,
+            'saved_id': new_score.id if new_score else None,
             'challenge_score_id': challenge_score.id if challenge_score else None,
             'badges_earned': newly_earned_badges
         }), 200

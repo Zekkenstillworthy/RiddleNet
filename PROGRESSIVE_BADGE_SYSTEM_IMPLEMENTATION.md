@@ -29,7 +29,7 @@ Implemented a visual gamification system that displays challenge completion prog
 **Challenge Mappings:**
 - `crimping` → Cable_Badge.png
 - `osi` → OSI_Badge.png
-- `troubleshooting` → Device_Badge.png
+- `troubleshooting` → Troubleshoot_Badge.png
 - `quiz` → Quiz_Badge.png
 
 ### 2. Frontend - Badge HTML Structure (`templates/user/challenges.html`)
@@ -223,7 +223,7 @@ progress = min((score.best_score or 0) / 100, 1.0) if score else 0.0
 - Badge images already exist in `static/img/`:
   - Cable_Badge.png
   - OSI_Badge.png
-  - Device_Badge.png
+  - Troubleshoot_Badge.png
   - Quiz_Badge.png
 
 **Browser Compatibility:**

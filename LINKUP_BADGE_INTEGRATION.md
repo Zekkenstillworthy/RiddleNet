@@ -209,7 +209,7 @@ Returns more data to frontend:
 - **Name:** "Troubleshooting Pro"
 - **Description:** "Zero Mistakes Achievement!"
 - **Rarity:** Legendary (Gold glow #ffd700)
-- **Image:** `Device_Badge.png`
+- **Image:** `Troubleshoot_Badge.png`
 
 ### Network Detective (Rare)
 **Requirements:**
@@ -222,7 +222,7 @@ Returns more data to frontend:
 - **Name:** "Network Detective"
 - **Description:** "Strong Troubleshooting Skills!"
 - **Rarity:** Rare (Blue glow #3b82f6)
-- **Image:** `Device_Badge.png`
+- **Image:** `Troubleshoot_Badge.png`
 
 ---
 

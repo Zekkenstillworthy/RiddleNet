@@ -801,3 +801,90 @@ def api_get_first_lesson(class_id):
     except Exception as e:
         print(f"Error getting first lesson for class {class_id}: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@universal_class_bp.route('/api/assignments/<int:assignment_id>')
+@flexible_login_required
+def api_get_assignment(assignment_id):
+    """Get assignment data for dynamic loading"""
+    try:
+        # Get user context
+        user_context = get_current_user_context()
+        user_id = user_context['user_id'] if user_context['is_authenticated'] else None
+        
+        if not user_id:
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        # Get the assignment
+        assignment = ClassAssignment.query.get_or_404(assignment_id)
+        
+        # Check if user is enrolled in the class
+        # TODO: Add enrollment check if needed
+        
+        # Get user's submission if exists
+        submission = AssignmentSubmission.query.filter_by(
+            assignment_id=assignment_id,
+            student_id=user_id
+        ).first()
+        
+        # Determine submission status
+        status = 'not_submitted'
+        now = datetime.now()
+        
+        if submission:
+            if submission.grade is not None:
+                status = 'graded'
+            elif submission.status == 'resubmitted':
+                status = 'resubmitted'
+            else:
+                status = 'submitted'
+        elif assignment.due_date and assignment.due_date < now:
+            status = 'overdue'
+        
+        # Prepare assignment data
+        assignment_data = {
+            'id': assignment.id,
+            'title': assignment.title,
+            'description': assignment.description,
+            'instructions': assignment.instructions,
+            'due_date': assignment.due_date.strftime('%B %d, %Y at %I:%M %p') if assignment.due_date else None,
+            'due_date_iso': assignment.due_date.isoformat() if assignment.due_date else None,
+            'points': assignment.points,
+            'assignment_type': assignment.assignment_type,
+            'category': assignment.category,
+            'allow_file_uploads': assignment.allow_file_uploads,
+            'allowed_file_types': assignment.allowed_file_types,
+            'max_file_size_mb': assignment.max_file_size_mb,
+            'max_files': assignment.max_files,
+            'allow_text_submission': assignment.allow_text_submission,
+            'allow_late_submissions': assignment.allow_late_submissions,
+            'late_penalty_per_day': assignment.late_penalty_per_day,
+            'allow_resubmission': assignment.allow_resubmission,
+            'status': status,
+            'submission': None
+        }
+        
+        # Add submission data if exists
+        if submission:
+            # Safely include attachments if relationship is present
+            try:
+                attachments = [att.to_dict() for att in getattr(submission, 'attachments', [])]
+            except Exception:
+                attachments = []
+
+            assignment_data['submission'] = {
+                'id': submission.id,
+                'submitted_at': submission.submitted_at.strftime('%B %d, %Y at %I:%M %p') if submission.submitted_at else None,
+                'grade': submission.grade,
+                'feedback': submission.feedback,
+                'status': submission.status,
+                'submission_text': getattr(submission, 'submission_text', None),
+                'attachments': attachments
+            }
+        
+        return jsonify(assignment_data)
+        
+    except Exception as e:
+        print(f"Error getting assignment {assignment_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500

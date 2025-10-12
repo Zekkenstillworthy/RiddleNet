@@ -638,7 +638,7 @@ def get_completed_challenges(challenge_type):
         from user.models.challenge_progress import ChallengeProgress
         
         user_id = session['user_id']
-        print(f"[DEBUG] Fetching completed challenges for user {user_id}, type: {challenge_type}")
+        print(f"[API] ✅ Fetching completed challenges for user {user_id}, type: {challenge_type}")
         
         # Get progress record for this challenge type
         progress = ChallengeProgress.query.filter_by(
@@ -646,48 +646,67 @@ def get_completed_challenges(challenge_type):
             challenge_type=challenge_type
         ).first()
         
-        print(f"[DEBUG] Progress record found: {progress is not None}")
-        
         completed_scenarios = []
         
-        if progress and progress.state_data:
-            print(f"[DEBUG] State data: {progress.state_data}")
-            # Check if we have an array of completed scenarios
-            if 'completed_scenarios' in progress.state_data:
-                completed_scenarios_ids = progress.state_data['completed_scenarios']
-                print(f"[DEBUG] Found completed_scenarios array: {completed_scenarios_ids}")
-                for scenario_id in completed_scenarios_ids:
+        if progress:
+            print(f"[API] 📊 Progress record found with state_data: {bool(progress.state_data)}")
+            
+            if progress.state_data:
+                print(f"[API] 📦 State data keys: {list(progress.state_data.keys())}")
+                
+                # Check if we have an array of completed scenarios (NEW format)
+                if 'completed_scenarios' in progress.state_data:
+                    completed_scenarios_ids = progress.state_data['completed_scenarios']
+                    print(f"[API] ✅ Found completed_scenarios array with {len(completed_scenarios_ids)} items")
+                    
+                    for scenario_id in completed_scenarios_ids:
+                        completed_scenarios.append({
+                            'scenario_id': scenario_id,
+                            'scenario_title': scenario_id.replace('-', ' ').title(),
+                            'completed_at': progress.last_updated.isoformat() if progress.last_updated else None
+                        })
+                
+                # Legacy: single scenario_id (OLD format)
+                elif 'scenario_id' in progress.state_data:
+                    scenario_id = progress.state_data['scenario_id']
+                    print(f"[API] 🔄 Found legacy single scenario_id: {scenario_id}")
+                    
                     completed_scenarios.append({
                         'scenario_id': scenario_id,
-                        'scenario_title': scenario_id.replace('-', ' ').title(),
-                        'completed_at': progress.last_updated.isoformat()
+                        'scenario_title': progress.state_data.get('scenario_title', scenario_id.replace('-', ' ').title()),
+                        'score': progress.state_data.get('score', 0),
+                        'completed_at': progress.last_updated.isoformat() if progress.last_updated else None
                     })
-            # Legacy: single scenario_id
-            elif 'scenario_id' in progress.state_data:
-                print(f"[DEBUG] Found legacy single scenario_id: {progress.state_data['scenario_id']}")
-                completed_scenarios.append({
-                    'scenario_id': progress.state_data['scenario_id'],
-                    'scenario_title': progress.state_data.get('scenario_title', 'Unknown'),
-                    'score': progress.state_data.get('score', 0),
-                    'completed_at': progress.last_updated.isoformat()
-                })
+            else:
+                print(f"[API] ⚠️ Progress record exists but state_data is empty")
         else:
-            print(f"[DEBUG] No progress record or empty state_data")
+            print(f"[API] ℹ️ No progress record found for challenge_type: {challenge_type}")
         
-        print(f"[DEBUG] Returning {len(completed_scenarios)} completed scenarios")
+        print(f"[API] 📤 Returning {len(completed_scenarios)} completed scenarios")
         
         return jsonify({
             'success': True,
             'completed_challenges': completed_scenarios,
             'total_completed': len(completed_scenarios)
-        })
+        }), 200
         
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
-        print(f"[ERROR] Error fetching completed challenges: {str(e)}")
-        print(f"[ERROR] Traceback: {error_trace}")
-        return jsonify({'success': False, 'error': str(e), 'trace': error_trace}), 500
+        print(f"[API] ❌ ERROR in get_completed_challenges:")
+        print(f"[API] Error type: {type(e).__name__}")
+        print(f"[API] Error message: {str(e)}")
+        print(f"[API] Full traceback:")
+        print(error_trace)
+        
+        # Return a safe error response
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'error_type': type(e).__name__,
+            'completed_challenges': [],
+            'total_completed': 0
+        }), 500
 
 
 @api_blueprint.route('/challenge/load-progress/<challenge_type>', methods=['GET'])

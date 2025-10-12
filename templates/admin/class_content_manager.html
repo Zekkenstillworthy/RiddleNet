@@ -4984,6 +4984,187 @@ select::-webkit-scrollbar-thumb {
 }
 
 /* End Loading Indicator Styles */
+
+/* User Management Modal Styles */
+.student-profile-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(0, 217, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+}
+
+.profile-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.profile-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.profile-stats .stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.profile-stats .stat-card i {
+    font-size: 2rem;
+    color: var(--cyber-glow);
+    margin-bottom: 12px;
+}
+
+.profile-stats .stat-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.profile-stats .stat-card .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.deadline-editor-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    color: var(--accent-color);
+}
+
+.info-banner i {
+    font-size: 1.2rem;
+}
+
+.info-banner p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.detail-group {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.detail-group h6 {
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.detail-group p {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.bulk-actions-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Enhanced student card styles */
+.student-card {
+    position: relative;
+}
+
+.student-card[data-student-name] {
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments for user management */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-actions {
+        flex-direction: column;
+    }
+    
+    .profile-actions .action-btn {
+        width: 100%;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .header-actions .form-control,
+    .header-actions .form-select {
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+}
 </style>
 {% endblock %}
 
@@ -5190,9 +5371,67 @@ select::-webkit-scrollbar-thumb {
             <div id="people-content" class="tab-content">
                 {% if selected_class %}
                 
+                <!-- User Management Header -->
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-users-cog"></i>
+                        User Management
+                    </h2>
+                    <div class="header-actions">
+                        <button class="action-btn secondary" onclick="bulkUserActions()">
+                            <i class="fas fa-tasks"></i>
+                            Bulk Actions
+                        </button>
+                        <button class="action-btn primary" onclick="showInviteUserModal()">
+                            <i class="fas fa-user-plus"></i>
+                            Invite Users
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Management Statistics -->
+                <div class="deadline-stats-grid">
+                    <div class="deadline-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalStudents">{{ class_content.students|length if class_content.students else 0 }}</h3>
+                            <p>Total Students</p>
+                        </div>
+                    </div>
+                    <div class="deadline-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="activeStudents">0</h3>
+                            <p>Active This Week</p>
+                        </div>
+                    </div>
+                    <div class="deadline-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalInstructors">1</h3>
+                            <p>Instructors</p>
+                        </div>
+                    </div>
+                    <div class="deadline-stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="pendingInvites">0</h3>
+                            <p>Pending Invites</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="divider"></div>
                 
+                <!-- Student List with Enhanced Management -->
                 <div class="content-section">
                     <div class="section-header">
                         <h2 class="section-title">
@@ -5200,12 +5439,20 @@ select::-webkit-scrollbar-thumb {
                             Students
                             <span class="item-counter">({{ class_content.students|length if class_content.students else 0 }})</span>
                         </h2>
+                        <div class="header-actions">
+                            <input type="text" class="form-control" id="searchStudents" placeholder="Search students..." style="width: 250px; margin-right: 12px;" onkeyup="filterStudentList()">
+                            <select class="form-select" id="studentFilterStatus" onchange="filterStudentList()" style="width: 180px;">
+                                <option value="all">All Students</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="content-grid" id="studentsList">
                         {% if class_content.students %}
                             {% for student in class_content.students %}
-                            <div class="unified-card" data-student-id="{{ student.id }}">
+                            <div class="unified-card student-card" data-student-id="{{ student.id }}" data-student-name="{{ student.first_name }} {{ student.last_name }}" data-student-email="{{ student.email }}">
                                 <div class="module-header">
                                     <div class="module-info">
                                         <h4 class="lesson-title">
@@ -5215,17 +5462,29 @@ select::-webkit-scrollbar-thumb {
                                                 {{ student.username }}
                                             {% endif %}
                                         </h4>
-                                        <p class="lesson-description">{{ student.email if student.email else student.username }}</p>
+                                        <p class="lesson-description">
+                                            <i class="fas fa-envelope"></i> {{ student.email if student.email else student.username }}
+                                        </p>
                                         <div class="lesson-meta">
                                             <span class="status-badge status-active">
                                                 <i class="fas fa-check-circle"></i>
                                                 Enrolled
                                             </span>
+                                            <span class="lesson-meta-item">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                Joined {{ student.created_at.strftime('%b %d, %Y') if student.created_at else 'N/A' }}
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="module-actions">
-                                        <button class="action-btn icon-only" onclick="viewStudentProgress({{ student.id }})" title="View Progress">
-                                            <i class="fas fa-chart-line"></i>
+                                        <button class="action-btn icon-only" onclick="viewStudentProfile({{ student.id }})" title="View Profile">
+                                            <i class="fas fa-user"></i>
+                                        </button>
+                                        <button class="action-btn icon-only" onclick="editStudentDeadlines({{ student.id }})" title="Edit Deadlines">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                        <button class="action-btn icon-only" onclick="sendMessageToStudent({{ student.id }})" title="Send Message">
+                                            <i class="fas fa-envelope"></i>
                                         </button>
                                         <button class="action-btn icon-only danger" onclick="removeStudent({{ student.id }})" title="Remove Student">
                                             <i class="fas fa-user-minus"></i>
@@ -5238,7 +5497,7 @@ select::-webkit-scrollbar-thumb {
                             <div class="empty-state">
                                 <i class="fas fa-user-plus"></i>
                                 <h3>No Students Enrolled</h3>
-                                <p>Use the "Invite Students" button to add students to this class.</p>
+                                <p>Use the "Invite Users" button to add students to this class.</p>
                             </div>
                         {% endif %}
                     </div>
@@ -7325,269 +7584,552 @@ function inviteStudents() {
     }
 }
 
-function viewStudentProgress(studentId) {
-    // Show the modal
-    const modal = document.getElementById('studentProgressModal');
-    modal.classList.add('show');
-    
-    // Show loading state
-    document.getElementById('progressLoadingState').style.display = 'block';
-    document.getElementById('progressContent').style.display = 'none';
-    document.getElementById('progressErrorState').style.display = 'none';
-    
-    // Store student ID for retry function
-    window.currentProgressStudentId = studentId;
-    
-    // Fetch student progress data
-    fetchStudentProgress(studentId);
-}
 
-function fetchStudentProgress(studentId) {
-    // Resolve classId robustly: prefer moduleBuilder.currentClass, then query param, then URL path
-    let classId = null;
-    if (typeof moduleBuilder !== 'undefined' && moduleBuilder && moduleBuilder.currentClass && moduleBuilder.currentClass.id) {
-        classId = moduleBuilder.currentClass.id;
-    } else {
-        const urlParams = new URLSearchParams(window.location.search);
-        classId = urlParams.get('class_id');
-        if (!classId) {
-            const pathMatch = window.location.pathname.match(/\/classes\/(\d+)/);
-            if (pathMatch) {
-                classId = pathMatch[1];
-            }
-        }
-    }
-    
-    if (!classId) {
-        showProgressError('Class context not available');
-        return;
-    }
-    
-    adminFetch(`/admin/api/classes/${classId}/students/${studentId}/progress`)
-        .then(data => {
-            if (data.success) {
-                populateProgressModal(data);
-            } else {
-                showProgressError(data.error || 'Failed to load progress data');
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching student progress:', error);
-            showProgressError(error.message || 'Failed to load student progress');
-        });
-}
-
-function populateProgressModal(data) {
-    const { student, progress } = data;
-    
-    // Update modal title
-    document.getElementById('progressStudentName').textContent = `${student.name} - Progress Report`;
-    
-    // Populate overview stats
-    document.getElementById('overallProgress').textContent = `${progress.overview.overall_progress}%`;
-    document.getElementById('modulesCompleted').textContent = progress.overview.modules_completed;
-    document.getElementById('assignmentsSubmitted').textContent = progress.overview.assignments_submitted;
-    document.getElementById('averageScore').textContent = `${progress.overview.average_score}%`;
-    
-    // Populate modules progress
-    const modulesContainer = document.getElementById('modulesProgressContainer');
-    modulesContainer.innerHTML = '';
-    
-    if (progress.modules && progress.modules.length > 0) {
-        progress.modules.forEach(module => {
-            const moduleElement = createModuleProgressElement(module);
-            modulesContainer.appendChild(moduleElement);
-        });
-    } else {
-        modulesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-book"></i><h4>No Modules</h4><p>No modules available for this class.</p></div>';
-    }
-    
-    // Populate recent lessons
-    const lessonsContainer = document.getElementById('lessonsProgressContainer');
-    lessonsContainer.innerHTML = '';
-    
-    const recentLessons = [];
-    progress.modules.forEach(module => {
-        if (module.lessons) {
-            module.lessons.forEach(lesson => {
-                if (lesson.last_accessed) {
-                    recentLessons.push({
-                        ...lesson,
-                        module_title: module.title
-                    });
-                }
-            });
-        }
-    });
-    
-    // Sort by last accessed
-    recentLessons.sort((a, b) => new Date(b.last_accessed) - new Date(a.last_accessed));
-    
-    if (recentLessons.length > 0) {
-        recentLessons.slice(0, 5).forEach(lesson => {
-            const lessonElement = createLessonProgressElement(lesson);
-            lessonsContainer.appendChild(lessonElement);
-        });
-    } else {
-        lessonsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-graduation-cap"></i><h4>No Activity</h4><p>No recent lesson activity found.</p></div>';
-    }
-    
-    // Populate assignments
-    const assignmentsContainer = document.getElementById('assignmentsProgressContainer');
-    assignmentsContainer.innerHTML = '';
-    
-    if (progress.assignments && progress.assignments.length > 0) {
-        progress.assignments.forEach(assignment => {
-            const assignmentElement = createAssignmentProgressElement(assignment);
-            assignmentsContainer.appendChild(assignmentElement);
-        });
-    } else {
-        assignmentsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list"></i><h4>No Assignments</h4><p>No assignments available for this class.</p></div>';
-    }
-    
-    // Populate recent activity
-    const activityContainer = document.getElementById('recentActivityContainer');
-    activityContainer.innerHTML = '';
-    
-    if (progress.recent_activity && progress.recent_activity.length > 0) {
-        progress.recent_activity.forEach(activity => {
-            const activityElement = createActivityElement(activity);
-            activityContainer.appendChild(activityElement);
-        });
-    } else {
-        activityContainer.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i><h4>No Recent Activity</h4><p>No recent activity found for this student.</p></div>';
-    }
-    
-    // Show content and hide loading
-    document.getElementById('progressLoadingState').style.display = 'none';
-    document.getElementById('progressErrorState').style.display = 'none';
-    document.getElementById('progressContent').style.display = 'block';
-    document.getElementById('exportProgressBtn').style.display = 'inline-block';
-}
-
-function createModuleProgressElement(module) {
-    const element = document.createElement('div');
-    element.className = 'progress-item';
-    
-    const statusClass = module.is_completed ? 'status-completed' : 
-                       module.progress_percentage > 0 ? 'status-in-progress' : 'status-not-started';
-    const statusText = module.is_completed ? 'Completed' : 
-                      module.progress_percentage > 0 ? 'In Progress' : 'Not Started';
-    
-    element.innerHTML = `
-        <div class="progress-item-header">
-            <h5 class="progress-item-title">${module.title}</h5>
-            <span class="progress-status ${statusClass}">${statusText}</span>
-        </div>
-        <div class="progress-item-bar">
-            <div class="progress-item-fill" style="width: ${module.progress_percentage}%"></div>
-        </div>
-        <div class="progress-item-details">
-            <span>${module.completed_lessons}/${module.total_lessons} lessons completed</span>
-            <span>${module.time_spent_minutes} min spent</span>
-        </div>
-    `;
-    
-    return element;
-}
-
-function createLessonProgressElement(lesson) {
-    const element = document.createElement('div');
-    element.className = 'progress-item';
-    
-    const statusClass = lesson.is_completed ? 'status-completed' : 
-                       lesson.progress_percentage > 0 ? 'status-in-progress' : 'status-not-started';
-    const statusText = lesson.is_completed ? 'Completed' : 
-                      lesson.progress_percentage > 0 ? 'In Progress' : 'Not Started';
-    
-    const lastAccessed = lesson.last_accessed ? 
-        new Date(lesson.last_accessed).toLocaleDateString() : 'Never';
-    
-    element.innerHTML = `
-        <div class="progress-item-header">
-            <h5 class="progress-item-title">${lesson.title}</h5>
-            <span class="progress-status ${statusClass}">${statusText}</span>
-        </div>
-        <div class="progress-item-bar">
-            <div class="progress-item-fill" style="width: ${lesson.progress_percentage}%"></div>
-        </div>
-        <div class="progress-item-details">
-            <span>Module: ${lesson.module_title}</span>
-            <span>Last accessed: ${lastAccessed}</span>
-        </div>
-    `;
-    
-    return element;
-}
-
-function createAssignmentProgressElement(assignment) {
-    const element = document.createElement('div');
-    element.className = 'progress-item';
-    
-    const statusClass = assignment.is_submitted ? 'status-completed' : 'status-not-started';
-    const statusText = assignment.is_submitted ? 'Submitted' : 'Not Submitted';
-    
-    const dueDate = assignment.due_date ? 
-        new Date(assignment.due_date).toLocaleDateString() : 'No due date';
-    
-    const score = assignment.score !== null ? `${assignment.score}%` : 'Not graded';
-    
-    element.innerHTML = `
-        <div class="progress-item-header">
-            <h5 class="progress-item-title">${assignment.title}</h5>
-            <span class="progress-status ${statusClass}">${statusText}</span>
-        </div>
-        <div class="progress-item-details">
-            <span>Due: ${dueDate}</span>
-            <span>Score: ${score}</span>
-        </div>
-    `;
-    
-    return element;
-}
-
-function createActivityElement(activity) {
-    const element = document.createElement('div');
-    element.className = 'activity-item';
-    
-    const timestamp = new Date(activity.timestamp).toLocaleString();
-    
-    element.innerHTML = `
-        <div class="activity-icon">
-            <i class="${activity.icon}"></i>
-        </div>
-        <div class="activity-content">
-            <p class="activity-text">${activity.title}</p>
-            <p class="activity-time">${timestamp}</p>
-        </div>
-    `;
-    
-    return element;
-}
-
-function showProgressError(message) {
-    document.getElementById('progressLoadingState').style.display = 'none';
-    document.getElementById('progressContent').style.display = 'none';
-    document.getElementById('progressErrorState').style.display = 'block';
-    document.getElementById('progressErrorMessage').textContent = message;
-    document.getElementById('exportProgressBtn').style.display = 'none';
-}
-
-function retryLoadProgress() {
-    if (window.currentProgressStudentId) {
-        fetchStudentProgress(window.currentProgressStudentId);
-    }
-}
-
-function exportProgressReport() {
-    // TODO: Implement progress report export functionality
-    moduleBuilder.showToast('Export functionality coming soon!', 'info');
-}
 
 function removeStudent(studentId) {
     if (confirm('Remove this student from the class?')) {
         moduleBuilder.showToast('Student removal functionality coming soon!', 'info');
     }
+}
+
+// User Management Functions
+function viewStudentProfile(studentId) {
+    // Fetch student profile from backend
+    fetch(`/admin/api/student/${studentId}/profile`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const data = result.data;
+                const student = data.student;
+                const stats = data.statistics;
+                
+                const modalHtml = `
+                    <div class="modal-overlay" id="studentProfileModal" onclick="closeStudentProfileModal()">
+                        <div class="modal-content large-modal" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <h3><i class="fas fa-user-circle"></i> Student Profile</h3>
+                                <button class="modal-close" onclick="closeStudentProfileModal()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="student-profile-container">
+                                    <div class="profile-header">
+                                        <div class="profile-avatar">
+                                            ${student.first_name ? student.first_name.charAt(0).toUpperCase() : student.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div class="profile-info">
+                                            <h2>${student.first_name || ''} ${student.last_name || ''}</h2>
+                                            <p>${student.email}</p>
+                                            <p><i class="fas fa-user"></i> ${student.username}</p>
+                                        </div>
+                                    </div>
+                                    <div class="profile-stats">
+                                        <div class="stat-card">
+                                            <i class="fas fa-check-circle"></i>
+                                            <h4>Total Attempts</h4>
+                                            <p class="stat-value">${stats.total_attempts}</p>
+                                        </div>
+                                        <div class="stat-card">
+                                            <i class="fas fa-star"></i>
+                                            <h4>Average Score</h4>
+                                            <p class="stat-value">${stats.avg_score}%</p>
+                                        </div>
+                                        <div class="stat-card">
+                                            <i class="fas fa-trophy"></i>
+                                            <h4>Highest Score</h4>
+                                            <p class="stat-value">${stats.highest_score}%</p>
+                                        </div>
+                                        <div class="stat-card">
+                                            <i class="fas fa-clock"></i>
+                                            <h4>Last Active</h4>
+                                            <p class="stat-value">${stats.latest_attempt ? new Date(stats.latest_attempt).toLocaleDateString() : 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    ${data.recent_scores.length > 0 ? `
+                                    <div class="detail-group">
+                                        <h6>Recent Activity</h6>
+                                        <ul style="list-style: none; padding: 0;">
+                                            ${data.recent_scores.map(score => `
+                                                <li style="padding: 8px 0; border-bottom: 1px solid var(--glass-border);">
+                                                    <strong>${score.category}</strong>: ${score.score}% 
+                                                    <span style="color: var(--text-secondary); float: right;">
+                                                        ${new Date(score.date).toLocaleDateString()}
+                                                    </span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                    ` : ''}
+                                    <div class="profile-actions">
+                                        <button class="action-btn secondary" onclick="closeStudentProfileModal(); editStudentDeadlines(${studentId})">
+                                            <i class="fas fa-clock"></i> Edit Deadlines
+                                        </button>
+                                        <button class="action-btn primary" onclick="closeStudentProfileModal(); sendMessageToStudent(${studentId})">
+                                            <i class="fas fa-envelope"></i> Send Message
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="action-btn secondary" onclick="closeStudentProfileModal()">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                setTimeout(() => {
+                    document.getElementById('studentProfileModal').classList.add('show');
+                }, 10);
+            } else {
+                moduleBuilder.showToast('Error loading student profile', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching student profile:', error);
+            moduleBuilder.showToast('Error loading student profile', 'error');
+        });
+}
+
+function closeStudentProfileModal() {
+    const modal = document.getElementById('studentProfileModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function editStudentDeadlines(studentId) {
+    // Show edit deadline popup modal
+    const studentCard = document.querySelector(`[data-student-id="${studentId}"]`);
+    const studentName = studentCard ? studentCard.getAttribute('data-student-name') : 'Student';
+    
+    const modalHtml = `
+        <div class="modal-overlay" id="editDeadlineModal" onclick="closeEditDeadlineModal()">
+            <div class="modal-content large-modal" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3><i class="fas fa-clock"></i> Edit Deadlines for ${studentName}</h3>
+                    <button class="modal-close" onclick="closeEditDeadlineModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="deadline-editor-container">
+                        <div class="info-banner">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Modify assignment deadlines and grant extensions for this student.</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Select Assignment</label>
+                            <select class="form-select" id="deadlineAssignmentSelect" onchange="loadAssignmentDeadlineInfo()">
+                                <option value="">Choose an assignment...</option>
+                                <option value="1">Assignment 1: Network Fundamentals</option>
+                                <option value="2">Assignment 2: Routing Protocols</option>
+                                <option value="3">Quiz 1: Chapter 1-3</option>
+                            </select>
+                        </div>
+                        
+                        <div id="deadlineEditForm" style="display: none;">
+                            <div class="detail-group">
+                                <h6>Current Deadline</h6>
+                                <p id="currentDeadline">-</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">New Deadline</label>
+                                <input type="datetime-local" class="form-control" id="newDeadlineInput">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Extension Reason</label>
+                                <select class="form-select" id="extensionReason">
+                                    <option value="">Select a reason...</option>
+                                    <option value="illness">Illness</option>
+                                    <option value="technical">Technical Difficulties</option>
+                                    <option value="family">Family Emergency</option>
+                                    <option value="academic">Academic Accommodation</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control" id="extensionNotes" rows="3" placeholder="Add any additional notes about this extension..."></textarea>
+                            </div>
+                            
+                            <div class="form-check" style="margin-top: 16px;">
+                                <input type="checkbox" id="notifyStudent" checked>
+                                <label for="notifyStudent">
+                                    <strong>Notify student via email</strong>
+                                    <small>Student will receive an email notification about the deadline change</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeEditDeadlineModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="saveDeadlineExtension(${studentId})" id="saveDeadlineBtn" disabled>
+                        <i class="fas fa-save"></i> Save Extension
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    setTimeout(() => {
+        document.getElementById('editDeadlineModal').classList.add('show');
+    }, 10);
+}
+
+function closeEditDeadlineModal() {
+    const modal = document.getElementById('editDeadlineModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function loadAssignmentDeadlineInfo() {
+    const select = document.getElementById('deadlineAssignmentSelect');
+    const form = document.getElementById('deadlineEditForm');
+    const saveBtn = document.getElementById('saveDeadlineBtn');
+    
+    if (select.value) {
+        form.style.display = 'block';
+        saveBtn.disabled = false;
+        
+        // Simulate loading deadline info
+        const currentDeadline = document.getElementById('currentDeadline');
+        currentDeadline.textContent = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleString();
+        
+        // Set default new deadline to 7 days from now
+        const newDeadlineInput = document.getElementById('newDeadlineInput');
+        const futureDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        newDeadlineInput.value = futureDate.toISOString().slice(0, 16);
+    } else {
+        form.style.display = 'none';
+        saveBtn.disabled = true;
+    }
+}
+
+function saveDeadlineExtension(studentId) {
+    const assignmentId = document.getElementById('deadlineAssignmentSelect').value;
+    const newDeadline = document.getElementById('newDeadlineInput').value;
+    const reason = document.getElementById('extensionReason').value;
+    const notes = document.getElementById('extensionNotes').value;
+    const notifyStudent = document.getElementById('notifyStudent').checked;
+    
+    if (!assignmentId) {
+        moduleBuilder.showToast('Please select an assignment', 'error');
+        return;
+    }
+    
+    if (!newDeadline) {
+        moduleBuilder.showToast('Please set a new deadline', 'error');
+        return;
+    }
+    
+    if (!reason) {
+        moduleBuilder.showToast('Please select a reason for the extension', 'error');
+        return;
+    }
+    
+    // Prepare extension data
+    const extensionData = {
+        assignment_id: assignmentId,
+        new_deadline: newDeadline,
+        reason: reason,
+        notes: notes,
+        notify_student: notifyStudent
+    };
+    
+    // Send to backend API
+    fetch(`/admin/api/student/${studentId}/deadline-extension`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(extensionData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            moduleBuilder.showToast('Deadline extension granted successfully!', 'success');
+            closeEditDeadlineModal();
+        } else {
+            moduleBuilder.showToast(result.error || 'Error extending deadline', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving deadline extension:', error);
+        moduleBuilder.showToast('Error saving deadline extension', 'error');
+    });
+}
+
+function sendMessageToStudent(studentId) {
+    const studentCard = document.querySelector(`[data-student-id="${studentId}"]`);
+    const studentName = studentCard ? studentCard.getAttribute('data-student-name') : 'Student';
+    
+    const modalHtml = `
+        <div class="modal-overlay" id="messageStudentModal" onclick="closeMessageStudentModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3><i class="fas fa-envelope"></i> Send Message to ${studentName}</h3>
+                    <button class="modal-close" onclick="closeMessageStudentModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="messageSubject" placeholder="Enter message subject...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" id="messageContent" rows="6" placeholder="Type your message here..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="sendCopy" checked>
+                        <label for="sendCopy">
+                            <strong>Send me a copy</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeMessageStudentModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="sendStudentMessage(${studentId})">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    setTimeout(() => {
+        document.getElementById('messageStudentModal').classList.add('show');
+    }, 10);
+}
+
+function closeMessageStudentModal() {
+    const modal = document.getElementById('messageStudentModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function sendStudentMessage(studentId) {
+    const subject = document.getElementById('messageSubject').value;
+    const content = document.getElementById('messageContent').value;
+    const sendCopy = document.getElementById('sendCopy').checked;
+    
+    if (!subject.trim()) {
+        moduleBuilder.showToast('Please enter a subject', 'error');
+        return;
+    }
+    
+    if (!content.trim()) {
+        moduleBuilder.showToast('Please enter a message', 'error');
+        return;
+    }
+    
+    // Send to backend API
+    fetch(`/admin/api/student/${studentId}/message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subject: subject,
+            message: content,
+            send_copy: sendCopy
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            moduleBuilder.showToast('Message sent successfully!', 'success');
+            closeMessageStudentModal();
+        } else {
+            moduleBuilder.showToast(result.error || 'Error sending message', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+        moduleBuilder.showToast('Error sending message', 'error');
+    });
+}
+
+function showInviteUserModal() {
+    const modalHtml = `
+        <div class="modal-overlay" id="inviteUserModal" onclick="closeInviteUserModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-plus"></i> Invite Users to Class</h3>
+                    <button class="modal-close" onclick="closeInviteUserModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">User Type</label>
+                        <select class="form-select" id="inviteUserType">
+                            <option value="student">Student</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="ta">Teaching Assistant</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Addresses</label>
+                        <textarea class="form-control" id="inviteEmails" rows="4" placeholder="Enter email addresses (one per line or comma-separated)..."></textarea>
+                        <small style="color: var(--text-muted); margin-top: 8px; display: block;">
+                            Enter one or more email addresses. Users will receive an invitation link.
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Personal Message (Optional)</label>
+                        <textarea class="form-control" id="inviteMessage" rows="3" placeholder="Add a personal message to the invitation..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeInviteUserModal()">Cancel</button>
+                    <button class="action-btn primary" onclick="sendInvitations()">
+                        <i class="fas fa-paper-plane"></i> Send Invitations
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    setTimeout(() => {
+        document.getElementById('inviteUserModal').classList.add('show');
+    }, 10);
+}
+
+function closeInviteUserModal() {
+    const modal = document.getElementById('inviteUserModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function sendInvitations() {
+    const userType = document.getElementById('inviteUserType').value;
+    const emails = document.getElementById('inviteEmails').value;
+    const message = document.getElementById('inviteMessage').value;
+    
+    if (!emails.trim()) {
+        moduleBuilder.showToast('Please enter at least one email address', 'error');
+        return;
+    }
+    
+    // Parse emails (split by newline or comma)
+    const emailList = emails.split(/[\n,]+/).map(e => e.trim()).filter(e => e);
+    
+    if (emailList.length === 0) {
+        moduleBuilder.showToast('No valid email addresses found', 'error');
+        return;
+    }
+    
+    // TODO: Send to backend API
+    console.log('Sending invitations:', { userType, emailList, message });
+    
+    moduleBuilder.showToast(`${emailList.length} invitation(s) sent successfully!`, 'success');
+    closeInviteUserModal();
+}
+
+function bulkUserActions() {
+    const modalHtml = `
+        <div class="modal-overlay" id="bulkActionsModal" onclick="closeBulkActionsModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3><i class="fas fa-tasks"></i> Bulk User Actions</h3>
+                    <button class="modal-close" onclick="closeBulkActionsModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="bulk-actions-list">
+                        <button class="action-btn secondary" style="width: 100%; margin-bottom: 12px;" onclick="exportStudentList()">
+                            <i class="fas fa-download"></i> Export Student List
+                        </button>
+                        <button class="action-btn secondary" style="width: 100%; margin-bottom: 12px;" onclick="sendBulkMessage()">
+                            <i class="fas fa-envelope"></i> Send Message to All Students
+                        </button>
+                        <button class="action-btn secondary" style="width: 100%; margin-bottom: 12px;" onclick="bulkGradeExtension()">
+                            <i class="fas fa-clock"></i> Grant Bulk Deadline Extensions
+                        </button>
+                        <button class="action-btn secondary" style="width: 100%; margin-bottom: 12px;" onclick="generateProgressReport()">
+                            <i class="fas fa-chart-bar"></i> Generate Progress Report
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeBulkActionsModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    setTimeout(() => {
+        document.getElementById('bulkActionsModal').classList.add('show');
+    }, 10);
+}
+
+function closeBulkActionsModal() {
+    const modal = document.getElementById('bulkActionsModal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+function exportStudentList() {
+    moduleBuilder.showToast('Exporting student list...', 'info');
+    closeBulkActionsModal();
+}
+
+function sendBulkMessage() {
+    closeBulkActionsModal();
+    moduleBuilder.showToast('Bulk message feature coming soon!', 'info');
+}
+
+function bulkGradeExtension() {
+    closeBulkActionsModal();
+    moduleBuilder.showToast('Bulk extension feature coming soon!', 'info');
+}
+
+function generateProgressReport() {
+    closeBulkActionsModal();
+    moduleBuilder.showToast('Generating progress report...', 'info');
+}
+
+function filterStudentList() {
+    const searchTerm = document.getElementById('searchStudents').value.toLowerCase();
+    const statusFilter = document.getElementById('studentFilterStatus').value;
+    const studentCards = document.querySelectorAll('.student-card');
+    
+    studentCards.forEach(card => {
+        const studentName = card.getAttribute('data-student-name').toLowerCase();
+        const studentEmail = card.getAttribute('data-student-email').toLowerCase();
+        
+        const matchesSearch = studentName.includes(searchTerm) || studentEmail.includes(searchTerm);
+        const matchesStatus = statusFilter === 'all'; // For now, show all since we don't have status data
+        
+        if (matchesSearch && matchesStatus) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
 
 // Assignment creation functions
@@ -11862,135 +12404,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('essayGradeModal')">Cancel</button>
             <button type="button" class="btn btn-success" onclick="saveEssayGrade()">Save Grade</button>
-        </div>
-    </div>
-</div>
-
-<!-- Student Progress Modal -->
-<div class="modal-overlay" id="studentProgressModal">
-    <div class="modal-content large-modal">
-        <div class="modal-header">
-            <h5 class="modal-title">
-                <i class="fas fa-chart-line"></i>
-                <span id="progressStudentName">Student Progress</span>
-            </h5>
-            <button type="button" class="modal-close" onclick="closeModal('studentProgressModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-            <!-- Loading State -->
-            <div id="progressLoadingState" class="loading-state">
-                <div class="spinner"></div>
-                <p>Loading student progress...</p>
-            </div>
-
-            <!-- Progress Content -->
-            <div id="progressContent" style="display: none;">
-                <!-- Overview Section -->
-                <div class="progress-overview-section">
-                    <div class="overview-stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="overallProgress">0%</h4>
-                                <p>Overall Progress</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-book"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="modulesCompleted">0/0</h4>
-                                <p>Modules Completed</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-clipboard-check"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="assignmentsSubmitted">0/0</h4>
-                                <p>Assignments Submitted</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="stat-info">
-                                <h4 id="averageScore">0%</h4>
-                                <p>Average Score</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modules Progress Section -->
-                <div class="progress-section">
-                    <h6 class="section-title">
-                        <i class="fas fa-book-open"></i>
-                        Module Progress
-                    </h6>
-                    <div id="modulesProgressContainer" class="modules-progress">
-                        <!-- Modules will be populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Lessons Progress Section -->
-                <div class="progress-section">
-                    <h6 class="section-title">
-                        <i class="fas fa-graduation-cap"></i>
-                        Recent Lesson Activity
-                    </h6>
-                    <div id="lessonsProgressContainer" class="lessons-progress">
-                        <!-- Lessons will be populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Assignments Progress Section -->
-                <div class="progress-section">
-                    <h6 class="section-title">
-                        <i class="fas fa-clipboard-list"></i>
-                        Assignment Progress
-                    </h6>
-                    <div id="assignmentsProgressContainer" class="assignments-progress">
-                        <!-- Assignments will be populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Recent Activity Section -->
-                <div class="progress-section">
-                    <h6 class="section-title">
-                        <i class="fas fa-clock"></i>
-                        Recent Activity
-                    </h6>
-                    <div id="recentActivityContainer" class="recent-activity">
-                        <!-- Recent activity will be populated dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div id="progressErrorState" class="error-state" style="display: none;">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h4>Unable to Load Progress</h4>
-                <p id="progressErrorMessage">An error occurred while loading student progress.</p>
-                <button class="btn btn-primary" onclick="retryLoadProgress()">
-                    <i class="fas fa-refresh"></i>
-                    Retry
-                </button>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('studentProgressModal')">Close</button>
-            <button type="button" class="btn btn-primary" onclick="exportProgressReport()" id="exportProgressBtn" style="display: none;">
-                <i class="fas fa-download"></i>
-                Export Report
-            </button>
         </div>
     </div>
 </div>

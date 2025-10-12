@@ -137,38 +137,85 @@ class BadgeService:
     
     @staticmethod
     def _check_troubleshooting_badges(user_id, score, metadata):
-        """Check and award troubleshooting-related badges"""
+        """Check and award troubleshooting-related badges - Requires ALL 7 Foundation Phases Complete"""
         badges = []
         
-        # Troubleshooting Pro - Perfect score (100%)
-        if score == 100:
+        # Define all 19 foundation modules across 7 phases
+        foundation_modules = [
+            # Phase 1: Device Discovery
+            'meet-pc', 'meet-switch', 'meet-router',
+            # Phase 2: Topologies & Structure
+            'bus-topology', 'ring-topology', 'star-topology',
+            # Phase 3: Device Functionality
+            'switch-function', 'router-function', 'hub-function',
+            # Phase 4: Connectivity Patterns
+            'pc-to-pc', 'pc-to-switch', 'switch-to-router',
+            # Phase 5: Real-World Networks
+            'small-office', 'home-network',
+            # Phase 6: Enterprise Topologies
+            'network-expansion', 'multi-floor',
+            # Phase 7: Network Addressing
+            'device-addresses', 'connectivity-testing', 'troubleshooting-basics'
+        ]
+        
+        # Count how many unique foundation modules the user has completed
+        completed_modules = ChallengeScore.query.filter_by(
+            user_id=user_id,
+            challenge_type='troubleshooting'
+        ).with_entities(ChallengeScore.metadata).all()
+        
+        # Extract unique module categories from metadata
+        unique_completed = set()
+        for (meta,) in completed_modules:
+            if meta and isinstance(meta, dict):
+                category = meta.get('category')
+                if category in foundation_modules:
+                    unique_completed.add(category)
+        
+        all_phases_complete = len(unique_completed) >= 19
+        
+        print(f"[Badge Check] User {user_id} has completed {len(unique_completed)}/19 foundation modules")
+        print(f"[Badge Check] All phases complete: {all_phases_complete}")
+        
+        # Troubleshooting Pro - Requires ALL 7 phases (19 modules) complete
+        if all_phases_complete and score == 100:
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='troubleshooting_pro',
                 badge_name='Troubleshooting Pro',
-                badge_description='Zero Mistakes Achievement!',
+                badge_description='Completed All 7 Foundation Phases!',
                 challenge_type='troubleshooting',
                 earned_score=score,
                 badge_rarity='legendary',
-                metadata=metadata
+                metadata={
+                    **metadata,
+                    'completed_modules': len(unique_completed),
+                    'all_phases_complete': True
+                }
             )
             if is_new:
                 badges.append(badge.to_dict())
+                print(f"[Badge Award] ✅ Troubleshooting Pro badge awarded to user {user_id}!")
         
-        # Network Detective - 75%+
-        elif score >= 75:
+        # Network Detective - Requires ALL 7 phases complete (removed score requirement)
+        elif all_phases_complete:
             badge, is_new = UserBadge.award_badge(
                 user_id=user_id,
                 badge_id='network_detective',
                 badge_name='Network Detective',
-                badge_description='Strong Troubleshooting Skills!',
+                badge_description='Completed All Foundation Learning Phases!',
                 challenge_type='troubleshooting',
                 earned_score=score,
                 badge_rarity='rare',
-                metadata=metadata
+                metadata={
+                    **metadata,
+                    'completed_modules': len(unique_completed),
+                    'all_phases_complete': True
+                }
             )
             if is_new:
                 badges.append(badge.to_dict())
+                print(f"[Badge Award] ✅ Network Detective badge awarded to user {user_id}!")
         
         return badges
     
