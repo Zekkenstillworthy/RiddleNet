@@ -737,13 +737,28 @@ def save_osi_score():
         )
         db.session.add(new_score)
         
+        # Get existing challenge score to merge metadata
+        from user.models.challenge_score import ChallengeScore
+        existing_challenge = ChallengeScore.query.filter_by(
+            user_id=user_id, 
+            challenge_type='osi'
+        ).first()
+        
+        # Merge existing challenge_data with new data
+        merged_challenge_data = {}
+        if existing_challenge and existing_challenge.challenge_metadata:
+            merged_challenge_data = existing_challenge.challenge_metadata.get('challenge_data', {}).copy()
+        
+        # Update with new challenge data
+        if challenge_data:
+            merged_challenge_data.update(challenge_data)
+        
         # Prepare metadata for ChallengeScore
         metadata = {'layer_accuracy': layer_accuracy}
-        if challenge_data:
-            metadata['challenge_data'] = challenge_data
+        if merged_challenge_data:
+            metadata['challenge_data'] = merged_challenge_data
         
         # Save to new ChallengeScore table
-        from user.models.challenge_score import ChallengeScore
         challenge_score = ChallengeScore.save_score(
             user_id=user_id,
             challenge_type='osi',
@@ -765,6 +780,12 @@ def save_osi_score():
             )
         
         db.session.commit()
+        
+        # Debug: Log saved challenge data
+        print(f"[OSI Score Save] User {user_id}:")
+        print(f"  Score: {score}")
+        print(f"  Challenge Data: {merged_challenge_data}")
+        print(f"  Skip Badge Check: {skip_badge_check}")
         
         # MVP FIX: Return early for Level 1 completion (skip badge check)
         if skip_badge_check:

@@ -3022,7 +3022,13 @@ function closeCompletionCelebration() {
     if (celebration) {
         celebration.style.opacity = '0';
         celebration.style.transition = 'opacity 0.3s ease-in-out';
-        setTimeout(() => celebration.remove(), 300);
+        setTimeout(() => {
+            celebration.remove();
+            // Update UI to reflect current completion status
+            initializeChallengeUI();
+            // Show the challenge start modal again to allow user to review or retry levels
+            document.getElementById('osiChallengeStartModal').style.display = 'flex';
+        }, 300);
     }
 }
 
@@ -3409,11 +3415,12 @@ function showFinalCompletionCelebration(combinedScore) {
 // Save level score to backend
 // Async version that returns a Promise for sequential saving
 function saveLevelScoreAsync(level, levelScore) {
-  // MVP FIX: For Level 1, send partial data WITHOUT badge check
+  // MVP FIX: Always include both level scores to maintain state
   const challengeData = {
     level: level,
-    [`level${level}_score`]: levelScore,
-    both_levels_complete: false // MVP: Prevents badge award on Level 1
+    level1_score: level === 1 ? levelScore : level1Score, // Include both scores
+    level2_score: level === 2 ? levelScore : 0, // Set level2_score when completing level 2
+    both_levels_complete: false // MVP: Prevents badge award until final save
   };
   
   return fetch('/save_osi_score', {
@@ -3430,6 +3437,7 @@ function saveLevelScoreAsync(level, levelScore) {
   .then(response => response.json())
   .then(data => {
     console.log(`✅ Level ${level} score saved:`, data);
+    console.log(`📊 Challenge Data: level1=${challengeData.level1_score}, level2=${challengeData.level2_score}`);
     // MVP: Don't show badge notification for Level 1
     if (level === 1) {
       console.log('🔓 Level 2 unlocked - no badge yet');
