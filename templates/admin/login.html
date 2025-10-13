@@ -355,9 +355,10 @@
                 <input type="email" name="email" placeholder="Email Address" required autocomplete="email">
                 <i class='bx bxs-envelope'></i>
             </div>
-            <div class="input-box">
-                <input type="password" name="password" placeholder="Password" required>
+            <div class="input-box" style="position: relative;">
+                <input type="password" name="password" id="adminPassword" placeholder="Password" required>
                 <i class='bx bxs-lock-alt'></i>
+                <i class='bx bx-show toggle-password' id="toggleAdminPassword" style="position: absolute; right: 45px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); font-size: 1.3rem; transition: color 0.3s;" title="Show password"></i>
             </div>
             
             <div class="remember-forgot">
@@ -381,5 +382,45 @@
             <p style="margin-bottom: 10px;">Default admin: <b>Imstillworthy</b> | <b>Zekken9103</b></p>
         </div>-->
     </div>
+
+    <script>
+        // Password visibility toggle for admin login
+        const togglePassword = document.getElementById('toggleAdminPassword');
+        const passwordInput = document.getElementById('adminPassword');
+
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function() {
+                // Toggle password visibility
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Toggle icon
+                if (type === 'text') {
+                    this.classList.remove('bx-show');
+                    this.classList.add('bx-hide');
+                    this.setAttribute('title', 'Hide password');
+                    this.style.color = 'var(--cyber-glow)';
+                } else {
+                    this.classList.remove('bx-hide');
+                    this.classList.add('bx-show');
+                    this.setAttribute('title', 'Show password');
+                    this.style.color = 'var(--text-secondary)';
+                }
+            });
+
+            // Hover effect
+            togglePassword.addEventListener('mouseenter', function() {
+                if (passwordInput.getAttribute('type') === 'password') {
+                    this.style.color = 'var(--cyber-glow)';
+                }
+            });
+
+            togglePassword.addEventListener('mouseleave', function() {
+                if (passwordInput.getAttribute('type') === 'password') {
+                    this.style.color = 'var(--text-secondary)';
+                }
+            });
+        }
+    </script>
 </body>
 </html>

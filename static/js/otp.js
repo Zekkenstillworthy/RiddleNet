@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const requestOtpBtn = document.getElementById('requestOtp');
     if (requestOtpBtn) {
         requestOtpBtn.addEventListener('click', function() {
-            const username = document.getElementById('login-username').value;
-            if (!username) {
-                alert('Please enter your username first');
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                alert('Please enter your email address first');
                 return;
             }
             
@@ -21,14 +21,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 otpInput.placeholder = "OTP Code";
             }
             
-            console.log('Sending OTP for user:', username);
+            console.log('Sending OTP for email:', email);
             fetch("/send_otp", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ username })
+                body: JSON.stringify({ email: email })
             })
             .then(response => response.json())
             .then(data => {

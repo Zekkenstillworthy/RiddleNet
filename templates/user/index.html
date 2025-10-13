@@ -1486,11 +1486,12 @@
                 {% endif %}
                 
                 <div class="input-group">
-                    <input type="text" name="username" id="login-username" placeholder="Username" class="input-field" required autocomplete="off">
+                    <input type="email" name="email" id="login-email" placeholder="Email Address" class="input-field" required autocomplete="email">
                 </div>
                 
-                <div class="input-group">
-                    <input type="password" name="password" placeholder="Password" class="input-field" required>
+                <div class="input-group" style="position: relative;">
+                    <input type="password" name="password" id="loginPassword" placeholder="Password" class="input-field" required>
+                    <i class='bx bx-show toggle-password' id="toggleLoginPassword" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: rgba(255, 255, 255, 0.5); font-size: 1.3rem; transition: all 0.3s; z-index: 10;" title="Show password"></i>
                 </div>
                 
                 <div id="message" class="message-container"></div>
@@ -1531,8 +1532,9 @@
                     <input type="email" name="email" placeholder="Email" class="input-field" required autocomplete="off">
                 </div>
                 
-                <div class="input-group">
-                    <input type="password" name="password" placeholder="Password" class="input-field" required>
+                <div class="input-group" style="position: relative;">
+                    <input type="password" name="password" id="signupPassword" placeholder="Password" class="input-field" required>
+                    <i class='bx bx-show toggle-password' id="toggleSignupPassword" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: rgba(255, 255, 255, 0.5); font-size: 1.3rem; transition: all 0.3s; z-index: 10;" title="Show password"></i>
                 </div>
                 
                 <div id="signup-message" class="message-container"></div>
@@ -2337,64 +2339,15 @@
                     }
                     
                     // Add visual feedback
-                    submitButton.classList.add('websocket-processing');
+                    if (submitButton) {
+                        submitButton.classList.add('websocket-processing');
+                    }
                     
                     // Let the normal form submission proceed
                     // WebSocket events will handle the response
                 });
             }
-            
-            // Enhanced signup success continuation
-            setTimeout(() => {
-                // Reset forms and switch to login
-                const authContainer = document.getElementById('authContainer');
-                const toggleBtn = document.getElementById('toggleBtn');
-                
-                if (authContainer && toggleBtn) {
-                    authContainer.classList.remove('signup-mode');
-                    toggleBtn.innerHTML = '<i class="bx bx-user-plus"></i> Sign Up';
-                    isSignupMode = false;
-                }
-                
-                // Hide message and clear authentication state
-                messageElement.className = 'message-container';
-                messageElement.style.display = 'none';
-                
-                if (websocketManager) {
-                    websocketManager.clearAuthenticationState(formElement);
-                }
-                
-                // Re-enable button
-                submitButton.disabled = false;
-                submitButton.style.opacity = '1';
-            }, 2000);
-            })
-            .catch(error => {
-                if (error === 'Registration error') return;
-                
-                // Show general error
-                messageElement.className = 'message-container error-message show';
-                messageElement.textContent = 'An error occurred. Please try again.';
-                
-                if (websocketManager) {
-                    websocketManager.showAuthenticationError(formElement);
-                }
-                
-                console.error('Error:', error);
-                
-                // Re-enable submit button
-                submitButton.disabled = false;
-                submitButton.style.opacity = '1';
-                
-                // Auto-hide after 5 seconds
-                setTimeout(() => {
-                    messageElement.className = 'message-container';
-                    messageElement.style.display = 'none';
-                    if (websocketManager) {
-                        websocketManager.clearAuthenticationState(formElement);
-                    }
-                }, 5000);
-            });
+        });
         
         // Initialize WebSocket visual manager and form handlers
         document.addEventListener('DOMContentLoaded', function() {
@@ -2442,6 +2395,53 @@
                 });
             }
         });
+
+        // Password visibility toggle functionality
+        function setupPasswordToggle(toggleId, inputId) {
+            const toggleBtn = document.getElementById(toggleId);
+            const passwordInput = document.getElementById(inputId);
+
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle password visibility
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Toggle icon
+                    if (type === 'text') {
+                        this.classList.remove('bx-show');
+                        this.classList.add('bx-hide');
+                        this.setAttribute('title', 'Hide password');
+                        this.style.color = 'var(--cyber-glow)';
+                    } else {
+                        this.classList.remove('bx-hide');
+                        this.classList.add('bx-show');
+                        this.setAttribute('title', 'Show password');
+                        this.style.color = 'rgba(255, 255, 255, 0.5)';
+                    }
+                });
+
+                // Hover effect
+                toggleBtn.addEventListener('mouseenter', function() {
+                    if (passwordInput.getAttribute('type') === 'password') {
+                        this.style.color = 'var(--cyber-glow)';
+                    }
+                });
+
+                toggleBtn.addEventListener('mouseleave', function() {
+                    if (passwordInput.getAttribute('type') === 'password') {
+                        this.style.color = 'rgba(255, 255, 255, 0.5)';
+                    }
+                });
+            }
+        }
+
+        // Initialize password toggles for both login and signup forms
+        setupPasswordToggle('toggleLoginPassword', 'loginPassword');
+        setupPasswordToggle('toggleSignupPassword', 'signupPassword');
     </script>
 </body>
 </html>

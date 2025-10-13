@@ -41,9 +41,11 @@
         --text-secondary: #B3E5FC;
         --text-muted: #7DD3FC;
 
-        /* Layout */
-        --sidebar-width: 280px;
-        --sidebar-collapsed-width: 80px;
+        /* Layout - Optimized for game content */
+        /* Dynamic sidebar width variable (updated via body classes & media queries) */
+        --current-sidebar-width: var(--sidebar-width);
+        --sidebar-width: 220px; /* Reduced from 280px to prevent game content cutoff */
+        --sidebar-collapsed-width: 115px; /* Increased to 85px for better icon spacing and touch targets */
         --transition-speed: 0.3s;
         --transition-fast: 0.15s;
         --border-radius: 16px;
@@ -51,11 +53,6 @@
         --border-radius-xl: 24px;
         --shadow-lg: 0 25px 50px -12px rgba(0, 212, 255, 0.3);
         --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.6);
-    /* Dynamic sidebar width variable (updated via body classes & media queries) */
-    --current-sidebar-width: var(--sidebar-width);
-    /* MVP FIX: Updated from 280px to 300px for better spacing */
-    --sidebar-width: 300px;
-    --sidebar-collapsed-width: 88px;
 
         /* Gradients */
         --gradient-primary: linear-gradient(135deg, var(--cyber-glow), var(--network-purple));
@@ -169,13 +166,12 @@
         top: 0;
         left: 0;
         width: var(--sidebar-width);
-        height: 100vh; /* keep full viewport height */
-        min-height: 100vh; /* ensure height never shrinks on collapse */
+        height: 100vh;
         background: var(--surface);
         backdrop-filter: blur(20px);
         border-right: 2px solid var(--border-color);
         color: var(--text-primary);
-        /* Only animate width/transform to avoid any height animation on collapse */
+        /* Only animate width to avoid any height animation on collapse */
         transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
                     transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
                     box-shadow var(--transition-speed) ease,
@@ -184,6 +180,8 @@
         /* Allow toggle to protrude */
         overflow: visible;
         box-shadow: var(--shadow-lg);
+        display: flex;
+        flex-direction: column;
     }
 
     #sidebar::before {
@@ -221,19 +219,21 @@
         overflow: hidden;
     }
 
-    /* MVP FIX: Adjust collapsed state padding */
+    /* MVP FIX: Adjust collapsed state padding - optimized for 85px width */
     #sidebar.collapsed ul li a {
         justify-content: center;
-        padding: 16px 12px;
+        padding: 14px 12px;
+        min-height: 52px; /* Consistent height with open state */
     }
 
     #sidebar.collapsed ul li a i {
         margin-right: 0;
+        font-size: 1.4rem; /* Slightly larger icons for better visibility */
     }
 
     /* Sidebar inner scroll container: maintain fixed sidebar height and scroll content instead */
     .sidebar-scroll {
-        height: 100%;
+        flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
         /* MVP FIX: Add horizontal padding for better spacing */
@@ -241,6 +241,8 @@
         box-sizing: border-box;
         /* Prevent layout shift from children when collapsing */
         will-change: scroll-position;
+        display: flex;
+        flex-direction: column;
     }
 
     #sidebar .logo-details {
@@ -312,11 +314,11 @@
     /* Sidebar Toggle Button - Enhanced Canva Style */
     .sidebar-toggle {
         position: absolute;
-        right: -18px;
+        right: -20px; /* Increased from -18px for easier clicking */
         top: 50%;
         transform: translateY(-50%);
-        width: 36px;
-        height: 36px;
+        width: 40px; /* Increased from 36px for better touch target */
+        height: 40px; /* Increased from 36px for better touch target */
         background: var(--surface);
         border: 3px solid var(--cyber-glow);
         border-radius: 50%;
@@ -418,7 +420,7 @@
     }
 
     #sidebar ul li {
-        margin-bottom: 6px;
+        margin-bottom: 14px; /* Increased for better vertical spacing between icons */
         position: relative;
     }
 
@@ -427,8 +429,9 @@
         align-items: center;
         color: var(--text-secondary);
         text-decoration: none;
-        /* MVP FIX: Increased padding for better touch targets */
-        padding: 16px 18px;
+        /* Optimized padding for better touch targets and visual consistency */
+        padding: 14px 18px;
+        min-height: 52px;
         border-radius: 12px;
         font-weight: 500;
         /* MVP FIX: Increased font size for better readability */
@@ -520,30 +523,65 @@
         position: relative;
         z-index: 1;
     }
-
-    #sidebar.collapsed ul li a span {
-        opacity: 0;
-        width: 0;
-    }
-
-    #sidebar.collapsed ul li a {
-        justify-content: center;
-        padding: 16px 12px;
-    }
-
-    #sidebar.collapsed ul li a i {
-        margin-right: 0;
-    }
     
     /* User Profile at Top (Refactored) */
-    .user-profile-top {position:relative;padding:10px 14px 14px;border-bottom:1px solid var(--border-color);}    
+    /* MVP FIX: Center user icon in sidebar */
+    .user-profile-top {
+        position: relative;
+        padding: 10px 14px 14px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
     .user-profile-top::after {content:'';position:absolute;bottom:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,var(--cyber-glow),transparent);}    
-    .user-profile-top .profile-info {display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.07);border-radius:14px;text-decoration:none;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease;cursor:pointer;position:relative;overflow:hidden;}
+    .user-profile-top .profile-info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 14px;
+        text-decoration: none;
+        transition: background .25s ease,border-color .25s ease,box-shadow .25s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
     .user-profile-top .profile-info:hover,.user-profile-top .profile-info:focus-visible {background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.4);box-shadow:0 4px 14px -2px rgba(0,212,255,0.25);outline:none;}
-    .user-profile-top .profile-avatar {width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--cyber-glow),var(--network-purple));display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;font-size:.95rem;box-shadow:0 0 0 2px rgba(255,255,255,0.05),0 0 12px -2px rgba(0,212,255,0.4);position:relative;overflow:hidden;flex-shrink:0;}
+    .user-profile-top .profile-avatar {
+        width: 50px; /* Increased from 46px for better visibility */
+        height: 50px; /* Increased from 46px for better visibility */
+        min-width: 50px;
+        min-height: 50px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%,var(--cyber-glow),var(--network-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #fff;
+        font-size: 1rem; /* Increased from .95rem */
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.05),0 0 14px -2px rgba(0,212,255,0.5);
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+        margin: 0 auto;
+        transition: all var(--transition-speed) ease; /* Add smooth transition */
+    }
     .user-profile-top .profile-avatar img {width:100%;height:100%;object-fit:cover;display:block;}
     .user-profile-top .avatar-fallback {width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
-    .user-profile-top .profile-meta {display:flex;flex-direction:column;min-width:0;}
+    .user-profile-top .profile-meta {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        align-items: flex-start;
+        text-align: left;
+    }
     .user-profile-top .profile-name {font-weight:600;font-size:.9rem;line-height:1.1;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;letter-spacing:.25px;}
     .user-profile-top .profile-status-line {display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:500;letter-spacing:.35px;color:var(--text-secondary);opacity:.9;}
     /* Avatar online status dot (namespaced to avoid conflicts) */
@@ -624,14 +662,51 @@
 
     /* Responsive Design - Enhanced for Mobile */
     @media (max-width: 1024px) {
-        /* MVP FIX: Don't force collapsed state on tablets - let user toggle */
-        /* Removed: forcing sidebar width and hiding text labels */
-        /* The toggle button now works at all screen sizes */
+        /* Tablet: Convert sidebar to hamburger menu */
+        .mobile-toggle {
+            display: flex;
+            width: 52px;
+            height: 52px;
+            top: 16px;
+            left: 16px;
+            position: fixed;
+            z-index: 1000;
+        }
+
+        #sidebar {
+            transform: translateX(-100%);
+        }
+
+        #sidebar.mobile-open {
+            transform: translateX(0);
+        }
+
+        .main-content {
+            margin-left: 0 !important;
+        }
+
+        /* Hide desktop toggle on tablet */
+        .sidebar-toggle {
+            display: none;
+        }
+
+        /* Show hamburger menu label push */
+        .page-header h1,
+        .classes-header h1 {
+            margin-left: 70px;
+        }
     }
 
     @media (max-width: 768px) {
         :root {
             --sidebar-width: 300px; /* Wider on mobile for better touch */
+        }
+        
+        /* MVP FIX: "My Classes" label overlap with hamburger menu */
+        .page-header h1,
+        .classes-header h1 {
+            margin-left: 60px; /* Push text right of mobile toggle */
+            font-size: 1.5rem; /* Slightly smaller on mobile */
         }
         
         .mobile-toggle {
@@ -640,6 +715,8 @@
             height: 56px;
             top: 16px;
             left: 16px;
+            position: absolute;
+            z-index: 1000;
         }
         
         .mobile-toggle i {
@@ -717,14 +794,21 @@
             display: none;
         }
         
-        /* Enhanced mobile profile section */
+        /* MVP FIX: Enhanced mobile profile section with centered user icon */
+        .user-profile-top {
+            padding: 1rem 0.5rem;
+        }
+        
         .user-profile-top .profile-info {
             padding: 16px 20px;
+            justify-content: center;
         }
         
         .user-profile-top .profile-avatar {
             width: 52px;
             height: 52px;
+            min-width: 52px;
+            min-height: 52px;
         }
         
         .user-profile-top .profile-name {

@@ -881,12 +881,12 @@ def login():
         return render_template('user/index.html', next=next_url)
     
     # Otherwise, handle the login POST request
-    username = request.form.get('username')
+    email = request.form.get('email')  # Changed from username
     password = request.form.get('password')
     otp = request.form.get('otp')
     
     # Debug info
-    print(f"Login attempt for: {username}")
+    print(f"Login attempt for: {email}")  # Changed from username
     print(f"OTP provided: {'Yes' if otp else 'No'}")
     
     # Send WebSocket notification for login attempt start
@@ -894,7 +894,7 @@ def login():
         socketio = get_socketio()
         if socketio:
             socketio.emit('user_login_activity', {
-                'username': username,
+                'email': email,  # Changed from username
                 'action': 'login_attempt_started',
                 'timestamp': datetime.utcnow().isoformat(),
                 'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
@@ -903,18 +903,18 @@ def login():
     except Exception as ws_error:
         print(f"WebSocket login attempt notification failed: {str(ws_error)}")
     
-    # Find the user by username
-    user = UserModel.query.filter_by(username=username).first()
+    # Find the user by email instead of username
+    user = UserModel.query.filter_by(email=email).first()
     
     if not user:
-        print(f"User not found: {username}")
+        print(f"User not found: {email}")
         
         # Send WebSocket notification for failed login (user not found)
         try:
             socketio = get_socketio()
             if socketio:
                 socketio.emit('user_login_activity', {
-                    'username': username,
+                    'email': email,
                     'action': 'login_failed',
                     'reason': 'user_not_found',
                     'timestamp': datetime.utcnow().isoformat(),
@@ -923,13 +923,13 @@ def login():
         except Exception as ws_error:
             print(f"WebSocket login failure notification failed: {str(ws_error)}")
         
-        return render_template('user/index.html', message='Invalid username.')
+        return render_template('user/index.html', message='Invalid email address.')
     
     # Debug info
     print(f"User found: {user.username}, TOTP enabled: {user.totp_enabled}, TOTP secret exists: {'Yes' if user.totp_secret else 'No'}")
       # Validate password
     if not user.check_password(password):
-        print(f"Invalid password for user: {username}")
+        print(f"Invalid password for user: {email}")
         
         # Send WebSocket notification for failed login (invalid password)
         try:
@@ -937,7 +937,8 @@ def login():
             if socketio:
                 socketio.emit('user_login_activity', {
                     'user_id': user.id,
-                    'username': username,
+                    'email': email,
+                    'username': user.username,
                     'action': 'login_failed',
                     'reason': 'invalid_password',
                     'timestamp': datetime.utcnow().isoformat(),
@@ -946,10 +947,10 @@ def login():
         except Exception as ws_error:
             print(f"WebSocket login failure notification failed: {str(ws_error)}")
         
-        return render_template('user/index.html', message='Invalid password.')      # Validate OTP if TOTP is enabled for this user
+        return render_template('user/index.html', message='Invalid email or password.')      # Validate OTP if TOTP is enabled for this user
     if user.totp_enabled:
         if not otp:
-            print(f"OTP required but not provided for user: {username}")
+            print(f"OTP required but not provided for user: {email}")
             
             # Send WebSocket notification for missing OTP
             try:
@@ -957,7 +958,8 @@ def login():
                 if socketio:
                     socketio.emit('user_login_activity', {
                         'user_id': user.id,
-                        'username': username,
+                        'email': email,
+                        'username': user.username,
                         'action': 'login_failed',
                         'reason': 'otp_required_but_not_provided',
                         'timestamp': datetime.utcnow().isoformat(),
@@ -971,7 +973,7 @@ def login():
         try:
             # Check if OTP matches and hasn't expired (10 minute validity)
             if user.otp != otp:
-                print(f"Invalid OTP code for user: {username}")
+                print(f"Invalid OTP code for user: {email}")
                 
                 # Send WebSocket notification for invalid OTP
                 try:
@@ -979,7 +981,8 @@ def login():
                     if socketio:
                         socketio.emit('user_login_activity', {
                             'user_id': user.id,
-                            'username': username,
+                            'email': email,
+                            'username': user.username,
                             'action': 'login_failed',
                             'reason': 'invalid_otp',
                             'timestamp': datetime.utcnow().isoformat(),
@@ -995,7 +998,7 @@ def login():
             if user.otp_generated_at:
                 otp_age = current_time - user.otp_generated_at
                 if otp_age.total_seconds() > 600:  # 10 minutes in seconds
-                    print(f"Expired OTP code for user: {username}")
+                    print(f"Expired OTP code for user: {email}")
                     
                     # Send WebSocket notification for expired OTP
                     try:
@@ -1003,7 +1006,8 @@ def login():
                         if socketio:
                             socketio.emit('user_login_activity', {
                                 'user_id': user.id,
-                                'username': username,
+                                'email': email,
+                                'username': user.username,
                                 'action': 'login_failed',
                                 'reason': 'otp_expired',
                                 'otp_age_minutes': round(otp_age.total_seconds() / 60, 2),
@@ -1015,7 +1019,7 @@ def login():
                     
                     return render_template('user/index.html', message='OTP code has expired. Please click "Request OTP" for a new code.')
             else:
-                print(f"OTP generation timestamp missing for user: {username}")
+                print(f"OTP generation timestamp missing for user: {email}")
                 
                 # Send WebSocket notification for missing OTP timestamp
                 try:
@@ -1023,7 +1027,8 @@ def login():
                     if socketio:
                         socketio.emit('user_login_activity', {
                             'user_id': user.id,
-                            'username': username,
+                            'email': email,
+                            'username': user.username,
                             'action': 'login_failed',
                             'reason': 'otp_timestamp_missing',
                             'timestamp': datetime.utcnow().isoformat(),
@@ -1040,7 +1045,7 @@ def login():
             db.session.commit()
             
         except Exception as e:
-            print(f"Error validating OTP for user {username}: {str(e)}")
+            print(f"Error validating OTP for user {email}: {str(e)}")
             
             # Send WebSocket notification for OTP validation error
             try:
@@ -1048,7 +1053,8 @@ def login():
                 if socketio:
                     socketio.emit('user_login_activity', {
                         'user_id': user.id,
-                        'username': username,
+                        'email': email,
+                        'username': user.username,
                         'action': 'login_failed',
                         'reason': 'otp_validation_error',
                         'error': str(e),
@@ -1063,7 +1069,7 @@ def login():
     # Set user in session (FIXED INDENTATION)
     session['user_id'] = user.id
     session['auth_namespace'] = 'user'  # CRITICAL FIX: Set user namespace
-    print(f"Login successful for user: {username}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")
+    print(f"Login successful for user: {user.username}, email: {email}, user_id: {user.id}, namespace: {session.get('auth_namespace')}")
     
     # Use Flask-Login for proper login and authentication
     # Remember=True ensures the user stays logged in for the session
@@ -1093,7 +1099,7 @@ def login():
                     notification_service.send_admin_notification(
                         notification_type=NotificationType.SECURITY_ALERT,
                         title="Admin Login Detected",
-                        message=f"Admin user {username} logged in from {request.environ.get('REMOTE_ADDR', 'unknown')}",
+                        message=f"Admin user {user.username} (email: {email}) logged in from {request.environ.get('REMOTE_ADDR', 'unknown')}",
                         priority=NotificationPriority.HIGH
                     )
             except Exception as enhanced_error:
@@ -1103,9 +1109,9 @@ def login():
                 # Notify admin of successful login
                 socketio.emit('user_login_activity', {
                     'user_id': user.id,
-                    'username': username,
+                    'username': user.username,
+                    'email': email,
                     'action': 'login_successful',
-                    'email': user.email,
                     'timestamp': datetime.utcnow().isoformat(),
                     'ip_address': request.environ.get('REMOTE_ADDR', 'unknown'),
                     'user_agent': request.headers.get('User-Agent', 'unknown')
@@ -1114,11 +1120,11 @@ def login():
                 # Send welcome notification to user's personal room
                 socketio.emit('login_success', {
                     'status': 'success',
-                    'message': f'Welcome back, {username}!',
+                    'message': f'Welcome back, {user.username}!',
                 'timestamp': datetime.utcnow().isoformat()
             }, room=f'user_{user.id}')
             
-            print(f"WebSocket login success notifications sent for user: {username}")
+            print(f"WebSocket login success notifications sent for user: {user.username} (email: {email})")
     except Exception as ws_error:
         print(f"WebSocket login success notification failed: {str(ws_error)}")
     
@@ -1200,15 +1206,15 @@ def send_otp():
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         try:
             data = request.get_json()
-            username = data.get('username')
+            email = data.get('email')
             
-            if not username:
-                return jsonify({'status': 'error', 'message': 'Username is required'}), 400
+            if not email:
+                return jsonify({'status': 'error', 'message': 'Email address is required'}), 400
             
-            # Find the user in the database
-            user = UserModel.query.filter_by(username=username).first()
+            # Find the user in the database by email
+            user = UserModel.query.filter_by(email=email).first()
             if not user:
-                return jsonify({'status': 'error', 'message': 'User not found'}), 404
+                return jsonify({'status': 'error', 'message': 'User not found with this email address'}), 404
             
             # Check if user has an email
             if not user.email:
@@ -1231,9 +1237,9 @@ def send_otp():
                     # Notify admin room about OTP request
                     socketio.emit('user_otp_activity', {
                         'user_id': user.id,
-                        'username': username,
+                        'username': user.username,
+                        'email': email,
                         'action': 'otp_requested',
-                        'email': user.email,
                         'timestamp': datetime.utcnow().isoformat(),
                         'ip_address': request.environ.get('REMOTE_ADDR', 'unknown')
                     }, room='admin_room')
@@ -1245,7 +1251,7 @@ def send_otp():
                         'timestamp': datetime.utcnow().isoformat()
                     }, room=f'user_{user.id}')
                     
-                    print(f"WebSocket notifications sent for OTP request: {username}")
+                    print(f"WebSocket notifications sent for OTP request: {user.username} (email: {email})")
             except Exception as ws_error:
                 print(f"WebSocket notification failed: {str(ws_error)}")
             
@@ -1260,9 +1266,9 @@ def send_otp():
                         # Notify admin of successful OTP delivery
                         socketio.emit('user_otp_activity', {
                             'user_id': user.id,
-                            'username': username,
+                            'username': user.username,
+                            'email': email,
                             'action': 'otp_sent_successfully',
-                            'email': user.email,
                             'timestamp': datetime.utcnow().isoformat()
                         }, room='admin_room')
                         
@@ -1284,9 +1290,9 @@ def send_otp():
                         # Notify admin of failed OTP delivery
                         socketio.emit('user_otp_activity', {
                             'user_id': user.id,
-                            'username': username,
+                            'username': user.username,
+                            'email': email,
                             'action': 'otp_failed',
-                            'email': user.email,
                             'error': 'SMTP delivery failed',
                             'timestamp': datetime.utcnow().isoformat()
                         }, room='admin_room')
@@ -1315,7 +1321,7 @@ def send_otp():
                 socketio = get_socketio()
                 if socketio:
                     socketio.emit('user_otp_activity', {
-                        'username': username if 'username' in locals() else 'unknown',
+                        'email': email if 'email' in locals() else 'unknown',
                         'action': 'otp_error',
                         'error': str(e),
                         'timestamp': datetime.utcnow().isoformat()

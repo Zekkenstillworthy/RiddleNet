@@ -333,18 +333,26 @@
     box-sizing: border-box;
   }
 
+  .selected-type-container {
+    grid-area: type;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+  }
+
   .selected-type {
-    font-size: clamp(13px, 2.5vw, 16px);
+    font-size: clamp(9px, 1.6vw, 12px);
     font-weight: 600;
     background: linear-gradient(135deg, #1a5490, #0c1445);
     color: #ffffff;
-    padding: clamp(6px, 1.5vw, 10px) clamp(12px, 3vw, 18px);
-    border-radius: 20px;
+    padding: clamp(3px, 0.8vw, 6px) clamp(8px, 1.5vw, 12px);
+    border-radius: 12px;
     border: 2px solid rgba(0, 212, 255, 0.4);
-    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
-    margin-top: clamp(3px, 1vh, 6px);
     animation: none;
     -webkit-text-fill-color: #ffffff;
     background-clip: unset;
@@ -353,16 +361,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(3px, 0.8vw, 5px);
   }
 
   .selected-type .type-icon {
-    margin-right: 8px;
-    font-size: 18px;
+    margin-right: clamp(3px, 0.8vw, 5px);
+    font-size: clamp(14px, 1.8vw, 16px);
+    flex-shrink: 0;
   }
 
   .selected-type .type-name {
     color: #00d4ff;
     font-weight: 700;
+    flex-shrink: 0;
   }
 
   @keyframes glow {
@@ -431,8 +444,13 @@
   }/* MVP View: Ensure parent containers don't clip feedback */
   .cable,
   .rj45-connector {
-    margin: clamp(6px, 1.5vh, 10px) 0;
-    padding: clamp(8px, 2vw, 12px);
+    margin: 0;
+    margin-top: clamp(2px, 0.5vh, 4px); /* Reduced top margin */
+    margin-bottom: clamp(4px, 1vh, 6px);
+    margin-left: 0; /* Align to left like game-header */
+    padding: clamp(6px, 1.5vw, 10px);
+    padding-top: clamp(4px, 1vh, 6px); /* Reduced top padding */
+    padding-left: clamp(2px, 0.8vw, 6px); /* Further reduced left padding for tighter alignment */
     background: rgba(15, 15, 35, 0.8);
     border-radius: 8px;
     border: 1px solid rgba(0, 212, 255, 0.3);
@@ -1179,6 +1197,269 @@
   /* Landscape mobile styles moved to landscape-optimizations.css for consistency */
   /* This prevents duplicate styles and ensures consistent rendering on load and after JS initialization */
 
+  /* ========================================
+     ADDITIONAL LANDSCAPE DEVICE FIXES
+     667x375, 896x414, 844x390, 932x430, 915x412
+     ======================================== */
+
+  /* iPhone SE Landscape (667x375) */
+  @media (min-width: 667px) and (max-height: 375px) and (orientation: landscape) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 12px 10px;
+      max-width: 98%;
+      width: 98%;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(92vh - 150px);
+    }
+
+    /* Container optimization for ultra-compact screen */
+    .container {
+      padding: clamp(4px, 1vw, 6px) !important;
+      margin: 2px auto !important;
+      width: calc(100% - 4px) !important;
+      max-width: calc(100vw - 4px) !important;
+      height: auto !important;
+      min-height: calc(100vh - 4px) !important;
+      max-height: calc(100vh - 4px) !important;
+    }
+
+    /* Game content compact layout */
+    .game-content {
+      padding: clamp(2px, 0.6vw, 4px);
+      padding-top: clamp(30px, 5vh, 36px);
+      gap: clamp(2px, 0.5vh, 3px);
+      overflow: visible;
+    }
+
+    /* Tighter cable section spacing */
+    .cable-sections {
+      gap: clamp(2px, 0.5vw, 4px);
+      margin: 0;
+      margin-top: clamp(1px, 0.3vh, 2px); /* Reduced top margin */
+      margin-bottom: clamp(2px, 0.5vh, 3px);
+      margin-left: 0; /* Left align */
+      padding-left: 0; /* Remove padding */
+    }
+
+    .cable-section {
+      margin: 0;
+      margin-left: 0; /* Left align */
+      padding: 0;
+      padding-left: 0; /* Remove padding */
+    }
+
+    .cable, .rj45-connector {
+      padding: clamp(4px, 1vw, 6px);
+      padding-top: clamp(2px, 0.5vh, 4px); /* Reduced top padding */
+      padding-left: clamp(4px, 1vw, 6px); /* Match game-header compact padding */
+      margin: 0;
+      margin-top: clamp(1px, 0.3vh, 2px); /* Reduced top margin */
+      margin-bottom: clamp(2px, 0.5vh, 4px);
+      margin-left: 0;
+    }
+
+    .game-header {
+      padding-left: clamp(4px, 1vw, 6px);
+      margin-left: 0;
+      grid-template-columns: auto auto auto;
+      grid-template-areas: "score type timer";
+      gap: clamp(4px, 1vw, 6px);
+    }
+
+    .score-display {
+      gap: clamp(4px, 1vw, 6px);
+    }
+
+    .score-item {
+      padding: clamp(2px, 0.8vw, 4px) clamp(4px, 1vw, 6px);
+    }
+
+    .selected-type {
+      font-size: clamp(8px, 1.5vw, 10px);
+      padding: clamp(2px, 0.6vw, 4px) clamp(6px, 1.2vw, 8px);
+      border-radius: 10px;
+    }
+
+    .selected-type .type-icon {
+      font-size: 12px;
+      margin-right: 4px;
+    }
+
+    /* Smaller wire elements for ultra-compact */
+    .wire, .wire-slot {
+      width: clamp(28px, 4.2vw, 34px);
+      height: clamp(28px, 4.2vw, 34px);
+      font-size: clamp(7px, 1.3vw, 9px);
+      min-width: 28px;
+      min-height: 28px;
+    }
+
+    /* Compact score display */
+    .score-item {
+      padding: clamp(2px, 0.4vw, 3px) clamp(3px, 0.6vw, 5px);
+      min-width: clamp(30px, 6.5vw, 38px);
+    }
+
+    .score-value {
+      font-size: clamp(9px, 1.7vw, 11px);
+    }
+
+    .score-label {
+      font-size: clamp(6px, 1.2vw, 8px);
+    }
+
+    /* Compact header */
+    h1 {
+      font-size: clamp(0.85rem, 2.8vw, 1rem);
+      margin-bottom: clamp(2px, 0.5vh, 4px);
+    }
+
+    h2 {
+      font-size: clamp(11px, 2.3vw, 13px);
+      margin-bottom: clamp(2px, 0.5vh, 3px);
+    }
+
+    .action-buttons, .lowered-button {
+      gap: clamp(3px, 0.8vw, 5px);
+      margin-top: clamp(2px, 0.6vh, 4px);
+    }
+
+    .action-buttons button, .lowered-button button {
+      min-width: clamp(70px, 13vw, 90px);
+      height: clamp(24px, 4.2vh, 30px);
+      padding: clamp(4px, 1vh, 6px) clamp(8px, 1.5vw, 12px);
+      font-size: clamp(9px, 1.7vw, 11px);
+    }
+  }
+
+  /* iPhone 12 Pro Max Landscape (896x414) */
+  @media (min-width: 844px) and (max-width: 896px) and (max-height: 414px) and (orientation: landscape) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 15px 12px;
+      max-width: 96%;
+      width: 96%;
+      max-height: 90vh;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .game-content {
+      padding: 5px;
+      padding-top: 45px;
+    }
+
+    .wire, .wire-slot {
+      width: 40px;
+      height: 40px;
+      font-size: 10px;
+    }
+  }
+
+  /* iPhone 14 Landscape (844x390) */
+  @media (min-width: 844px) and (max-height: 390px) and (orientation: landscape) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 14px 12px;
+      max-width: 96%;
+      width: 96%;
+      max-height: 92vh;
+    }
+
+    .game-content {
+      padding: 3px;
+      padding-top: 40px;
+      gap: 4px;
+    }
+
+    .cable-sections {
+      gap: 4px;
+      margin: 4px 0;
+    }
+
+    .wire, .wire-slot {
+      width: clamp(36px, 5vw, 42px);
+      height: clamp(36px, 5vw, 42px);
+      font-size: clamp(9px, 1.6vw, 10px);
+      min-width: 36px;
+      min-height: 36px;
+    }
+
+    .action-buttons button, .lowered-button button {
+      padding: clamp(7px, 1.6vh, 9px) clamp(12px, 2.2vw, 16px);
+      font-size: clamp(11px, 2.2vw, 13px);
+    }
+  }
+
+  /* iPhone 14 Pro Max Landscape (932x430) */
+  @media (min-width: 915px) and (max-width: 932px) and (max-height: 430px) and (orientation: landscape) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 18px 15px;
+      max-width: 94%;
+      width: 94%;
+      max-height: 88vh;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .game-content {
+      padding: 4px;
+      padding-top: 45px;
+      gap: 5px;
+    }
+
+    .cable-sections {
+      gap: 5px;
+      margin: 5px 0;
+    }
+
+    .wire, .wire-slot {
+      width: clamp(40px, 5.2vw, 45px);
+      height: clamp(40px, 5.2vw, 45px);
+      font-size: clamp(10px, 1.8vw, 11px);
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .action-buttons button, .lowered-button button {
+      padding: clamp(8px, 1.8vh, 10px) clamp(14px, 2.5vw, 18px);
+      font-size: clamp(12px, 2.4vw, 14px);
+    }
+  }
+
+  /* Samsung Galaxy S20 Landscape (915x412) */
+  @media (min-width: 915px) and (max-height: 412px) and (orientation: landscape) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 16px 14px;
+      max-width: 95%;
+      width: 95%;
+      max-height: 90vh;
+    }
+
+    .game-content {
+      padding: 5px;
+      padding-top: 46px;
+    }
+  }
+
   @media (max-width: 480px) {
     body {
       min-width: 320px;
@@ -1191,6 +1472,19 @@
       width: calc(100% - 8px);
       max-width: calc(100vw - 8px);
       min-height: calc(100vh - 8px);
+    }
+    
+    /* Modal text adjustments for small screens */
+    .crimping-intro-content p,
+    .scoring-description-content p,
+    .wiring-selection-content p {
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    
+    .wiring-option .option-description {
+      font-size: 11px;
     }
     
     h1 {
@@ -1354,11 +1648,268 @@
     }
   }
 
+  /* ========================================
+     MOBILE RESPONSIVE FIXES FOR SPECIFIC DEVICES
+     Target: 667x375, 896x414, 844x390, 932x430, 915x412
+     ======================================== */
+
+  /* iPhone SE (375x667) Portrait */
+  @media (max-width: 375px) and (max-height: 667px) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 20px 15px;
+      max-width: 95%;
+      width: 95%;
+      border-radius: 16px;
+      max-height: 80vh;
+    }
+
+    .crimping-intro-content h2,
+    .scoring-description-content h2,
+    .wiring-selection-content h2 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .game-content {
+      padding: 4px;
+      padding-top: 50px;
+    }
+
+    .wire, .wire-slot {
+      width: 40px;
+      height: 40px;
+      font-size: 9px;
+    }
+  }
+
+  /* iPhone 12/13/14 (390x844) Portrait */
+  @media (min-width: 390px) and (max-width: 390px) and (max-height: 844px) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 25px 18px;
+      max-width: 92%;
+      width: 92%;
+      max-height: 82vh;
+    }
+
+    .game-content {
+      padding: 6px;
+      padding-top: 55px;
+    }
+
+    .wire, .wire-slot {
+      width: 44px;
+      height: 44px;
+      font-size: 10px;
+    }
+  }
+
+  /* iPhone 14 Pro Max (430x932) Portrait */
+  @media (min-width: 414px) and (max-width: 430px) and (max-height: 932px) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 30px 20px;
+      max-width: 90%;
+      width: 90%;
+      max-height: 85vh;
+    }
+
+    .game-content {
+      padding: 8px;
+      padding-top: 60px;
+    }
+
+    .wire, .wire-slot {
+      width: 46px;
+      height: 46px;
+      font-size: 11px;
+    }
+  }
+
   /* Landscape mobile orientation (phones in landscape) */
   @media (max-width: 915px) and (max-height: 430px) and (orientation: landscape) {
     body {
       min-width: 480px;
       min-height: 320px;
+    }
+
+    /* Critical landscape fixes for modals */
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content {
+      padding: 15px 12px;
+      max-width: 96%;
+      width: 96%;
+      max-height: 90vh;
+      border-radius: 12px;
+    }
+
+    .crimping-intro-content h2,
+    .scoring-description-content h2,
+    .wiring-selection-content h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .crimping-intro-content .intro-visual {
+      font-size: 40px;
+    }
+
+    .crimping-intro-content .intro-text p {
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .crimping-benefits {
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .benefit-item {
+      padding: 10px;
+      gap: 6px;
+    }
+
+    .benefit-icon {
+      font-size: 22px;
+    }
+
+    .benefit-item span:last-child {
+      font-size: 12px;
+    }
+
+    .proceed-btn,
+    .proceed-button {
+      padding: 10px 20px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .scoring-category {
+      padding: 8px;
+    }
+
+    .scoring-category h4 {
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .scoring-category li {
+      font-size: 11px;
+      margin-bottom: 3px;
+    }
+
+    .scoring-tips {
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .scoring-tips h4 {
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .scoring-tips p {
+      font-size: 12px;
+    }
+
+    .wiring-options {
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .wiring-option {
+      padding: 12px 15px;
+      min-height: 50px;
+    }
+
+    .wiring-option .option-icon {
+      font-size: 24px;
+      width: 35px;
+    }
+
+    .wiring-option .option-title {
+      font-size: 14px;
+    }
+
+    .modal-close-btn {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      font-size: 16px;
+      top: 10px;
+      right: 10px;
+    }
+
+    .game-content {
+      padding: clamp(2px, 0.5vw, 4px);
+      padding-top: clamp(4px, 1vh, 8px); /* Reduced from 38px-45px */
+      gap: clamp(2px, 0.5vh, 4px); /* Reduced gap */
+    }
+
+    .cable-sections {
+      gap: clamp(3px, 0.8vw, 5px);
+      margin: 0;
+      margin-top: clamp(2px, 0.5vh, 4px); /* Reduced top margin */
+      margin-bottom: clamp(3px, 0.8vh, 5px);
+      margin-left: 0; /* Left align */
+      padding-left: 0; /* Remove padding */
+    }
+
+    .cable-section {
+      margin: 0;
+      margin-left: 0; /* Left align */
+      padding: 0;
+      padding-left: 0; /* Remove padding */
+    }
+
+    .cable, .rj45-connector {
+      padding: clamp(6px, 1.5vw, 10px);
+      padding-top: clamp(3px, 0.8vh, 5px); /* Reduced top padding */
+      padding-left: clamp(6px, 1.5vw, 10px); /* Match game-header padding */
+      margin: 0;
+      margin-top: clamp(2px, 0.5vh, 4px); /* Reduced top margin */
+      margin-bottom: clamp(4px, 1vh, 6px);
+      margin-left: 0;
+    }
+
+    .game-header {
+      padding-left: clamp(6px, 1.5vw, 10px);
+      margin-left: 0;
+      grid-template-columns: minmax(auto, 1fr) auto auto;
+      grid-template-areas: "score type timer";
+      gap: clamp(6px, 1.5vw, 10px);
+    }
+
+    .score-display {
+      gap: clamp(5px, 1.2vw, 8px);
+    }
+
+    .score-item {
+      padding: clamp(3px, 0.8vw, 5px) clamp(5px, 1.2vw, 8px);
+    }
+
+    .selected-type {
+      font-size: clamp(9px, 1.8vw, 11px);
+      padding: clamp(3px, 0.8vw, 5px) clamp(8px, 1.5vw, 10px);
     }
     
     .container {
@@ -1413,15 +1964,8 @@
       padding: clamp(2px, 0.8vw, 4px) clamp(4px, 1.2vw, 6px);
     }
     
-    .cable-sections {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: clamp(6px, 1.5vw, 10px);
-      padding: clamp(3px, 1vw, 6px);
-    }
-    
     .cable-section {
-      padding: clamp(5px, 1.5vw, 8px);
+      padding: clamp(4px, 1.2vw, 7px);
     }
     
     h2 {
@@ -1430,16 +1974,16 @@
     }
     
     .cable, .rj45-connector {
-      padding: clamp(5px, 1.5vw, 8px);
+      padding: clamp(4px, 1.2vw, 7px);
       margin: clamp(2px, 0.8vh, 4px) 0;
     }
     
     .wire, .wire-slot {
-      width: clamp(36px, 8vw, 44px);
-      height: clamp(36px, 8vw, 44px);
-      font-size: clamp(8px, 1.6vw, 10px);
-      min-width: 38px;
-      min-height: 38px;
+      width: clamp(34px, 5vw, 42px);
+      height: clamp(34px, 5vw, 42px);
+      font-size: clamp(8px, 1.5vw, 10px);
+      min-width: 34px;
+      min-height: 34px;
     }
     
     .wires, .wire-slots {
@@ -1450,15 +1994,15 @@
     }
     
     button {
-      min-width: clamp(90px, 18vw, 120px);
-      height: clamp(32px, 6vh, 40px);
-      font-size: clamp(12px, 2vw, 14px);
-      padding: clamp(5px, 1.2vw, 8px) clamp(10px, 2vw, 14px);
+      min-width: clamp(85px, 16vw, 110px);
+      height: clamp(30px, 5.5vh, 38px);
+      font-size: clamp(11px, 1.8vw, 13px);
+      padding: clamp(5px, 1vh, 7px) clamp(9px, 1.8vw, 13px);
     }
     
     .lowered-button, .action-buttons {
-      margin-top: clamp(4px, 1vh, 8px);
-      gap: clamp(5px, 1.2vw, 8px);
+      margin-top: clamp(3px, 0.8vh, 6px);
+      gap: clamp(4px, 1vw, 6px);
       flex-wrap: wrap;
     }
     
@@ -1569,33 +2113,34 @@
 
   /* Gamified UI Elements */
   .game-header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "score type timer";
     align-items: center;
+    gap: clamp(8px, 2vw, 12px);
     margin-bottom: clamp(8px, 1.5vh, 12px);
+    margin-left: 0;
     padding: clamp(6px, 1.5vw, 12px);
+    padding-left: clamp(6px, 1.5vw, 12px);
     background: rgba(0, 212, 255, 0.1);
     border-radius: 8px;
     border: 1px solid rgba(0, 212, 255, 0.2);
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    gap: clamp(8px, 2vw, 12px);
     width: 100%;
     box-sizing: border-box;
   }
 
   .score-display {
+    grid-area: score;
     display: flex;
     gap: clamp(6px, 1.5vw, 10px);
     align-items: center;
-    flex-wrap: wrap;
-    flex: 1 1 auto;
+    flex-wrap: nowrap;
     min-width: 0;
   }
 
   .score-item {
     text-align: center;
-    padding: clamp(3px, 1vw, 6px) clamp(6px, 1.5vw, 10px);
+    padding: clamp(3px, 1vw, 5px) clamp(5px, 1.2vw, 8px);
     background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(9, 9, 121, 0.2));
     border-radius: 6px;
     border: 1px solid rgba(0, 212, 255, 0.3);
@@ -1703,19 +2248,19 @@
     animation: fadeIn 0.4s ease-out;
   }  .scoring-description-content {
     background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-    border-radius: 24px;
-    padding: 25px;
+    border-radius: clamp(16px, 3vw, 24px);
+    padding: clamp(15px, 3vw, 25px);
     text-align: center;
     box-shadow: 
       0 25px 50px rgba(0, 0, 0, 0.7),
       0 0 0 1px rgba(0, 212, 255, 0.3),
       0 0 100px rgba(0, 212, 255, 0.1);
     border: 2px solid rgba(0, 212, 255, 0.2);
-    max-width: 900px;
-    width: 95%;
+    max-width: min(900px, 96vw);
+    width: 96%;
     height: auto;
-    max-height: 70vh;
-    overflow: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
     animation: slideInUp 0.5s ease-out;
     box-sizing: border-box;
@@ -1782,37 +2327,47 @@
     100% { transform: rotate(360deg); }
   }
   .scoring-description-content h2 {
-    font-size: 32px;
+    font-size: clamp(20px, 5vw, 32px);
     font-weight: 800;
     background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 20px;
+    margin-bottom: clamp(12px, 2vh, 20px);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
+    gap: clamp(8px, 2vw, 15px);
+    flex-wrap: wrap;
   }  .scoring-description-content p {
-    font-size: 16px;
+    font-size: clamp(13px, 2.5vw, 16px);
     color: #e2e8f0;
     line-height: 1.5;
-    margin-bottom: 18px;
+    margin-bottom: clamp(18px, 3.5vh, 24px);
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
     font-weight: 500;
+    word-wrap: break-word;
   }
 
   .modal-body-wrapper {
-    max-height: calc(75vh - 200px);
-    overflow: hidden;
+    max-height: calc(90vh - 140px);
+    overflow-x: hidden;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
     padding-right: 0;
+    padding-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
   }  .scoring-breakdown {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 15px 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: clamp(8px, 1.5vw, 12px);
+    margin: clamp(10px, 2vh, 15px) 0;
     text-align: left;
     width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
   }.scoring-category {
     background: rgba(0, 212, 255, 0.05);
     border: 1px solid rgba(0, 212, 255, 0.2);
@@ -1835,7 +2390,7 @@
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, #00d4ff, transparent);
-    border-radius: 16px 16px 0 0;
+    border-radius: clamp(12px, 2vw, 16px) clamp(12px, 2vw, 16px) 0 0;
   }
 
   .scoring-category:hover {
@@ -1845,12 +2400,13 @@
   }
   .scoring-category h4 {
     color: #00d4ff;
-    font-size: 18px;
+    font-size: clamp(14px, 2.8vw, 18px);
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: clamp(6px, 1.2vh, 10px);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: clamp(5px, 1vw, 8px);
+    flex-wrap: wrap;
   }
 
   .scoring-category ul {
@@ -1860,11 +2416,12 @@
   }
   .scoring-category li {
     color: #cbd5e0;
-    font-size: 14px;
-    margin-bottom: 6px;
-    padding-left: 18px;
+    font-size: clamp(11px, 2.2vw, 14px);
+    margin-bottom: clamp(6px, 1.2vw, 8px);
+    padding-left: clamp(18px, 3vw, 22px);
     position: relative;
     font-weight: 500;
+    line-height: 1.5;
   }
 
   .scoring-category li::before {
@@ -1897,21 +2454,22 @@
     background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
     color: white;
     border: none;
-    padding: 18px 45px;
-    border-radius: 16px;
-    font-size: 18px;
+    padding: clamp(12px, 2.5vh, 18px) clamp(25px, 5vw, 45px);
+    border-radius: clamp(12px, 2vw, 16px);
+    font-size: clamp(14px, 2.8vw, 18px);
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
-    margin: 10px auto 0 auto;
-    min-width: 220px;
+    margin: clamp(20px, 4vh, 30px) auto 10px auto;
+    min-width: min(180px, 80vw);
+    max-width: 90%;
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: clamp(6px, 1.5vw, 10px);
   }
 
   .proceed-button::before {
@@ -1937,61 +2495,270 @@
 
   .proceed-button:active {
     transform: translateY(-1px);
-  }  /* Responsive Design for Scoring Modal */
-  @media (max-width: 1024px) {
+  }  /* ========================================
+     MVP RESPONSIVE: SCORING MODAL MOBILE FIXES
+     Target: 667x375 to 932x430 landscape devices
+     ======================================== */
+
+  /* iPhone SE Landscape (667x375) - Ultra Compact */
+  @media (min-width: 667px) and (max-height: 375px) and (orientation: landscape) {
     .scoring-description-content {
-      padding: 15px;
-      max-width: 95%;
-      max-height: 75vh;
-      overflow: hidden;
-    }
-    
-    .scoring-breakdown {
-      gap: 10px;
-      margin: 15px 0;
-    }
-    
-    .scoring-category {
-      padding: 8px;
-    }
-
-    .scoring-category h4 {
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-
-    .scoring-category li {
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .scoring-tips {
-      padding: 12px;
-      margin: 15px 0;
-    }
-
-    .scoring-tips h4 {
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .scoring-description-content {
-      padding: 12px;
+      padding: 12px 10px;
       max-width: 98%;
-      max-height: 80vh;
-      overflow: hidden;
+      width: 98%;
+      max-height: 92vh;
+      border-radius: 12px;
     }
 
     .scoring-description-content h2 {
-      font-size: 24px;
-      margin-bottom: 15px;
+      font-size: 18px;
+      margin-bottom: 8px;
+      gap: 6px;
+    }
+
+    .scoring-description-content p {
+      font-size: 12px;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(88vh - 120px) !important;
+      padding: 10px 12px 20px !important;
+      overflow-y: scroll !important;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .scoring-category {
+      padding: 6px;
+    }
+
+    .scoring-category h4 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      gap: 4px;
+    }
+
+    .scoring-category li {
+      font-size: 11px !important;
+      line-height: 1.5 !important;
+      margin-bottom: 6px !important;
+      padding-left: 14px;
+    }
+
+    .proceed-button {
+      padding: 10px 25px !important;
+      font-size: 13px;
+      margin-top: 18px !important;
+    }
+
+    .modal-close-btn {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      font-size: 16px;
+      top: 8px;
+      right: 8px;
+    }
+  }
+
+  /* iPhone 14 Landscape (844x390) - Compact */
+  @media (min-width: 844px) and (max-height: 390px) and (orientation: landscape) {
+    .scoring-description-content {
+      padding: 14px 12px;
+      max-width: 96%;
+      width: 96%;
+      max-height: 90vh;
+      border-radius: 14px;
+    }
+
+    .scoring-description-content h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .scoring-description-content p {
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(86vh - 130px) !important;
+      padding-bottom: 20px;
+      overflow-y: scroll;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px !important;
+      margin: 10px 0;
+    }
+
+    .scoring-category {
+      padding: 7px;
+    }
+
+    .scoring-category h4 {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .scoring-category li {
+      font-size: 11px;
+      margin-bottom: 6px;
+      line-height: 1.5;
+      padding-left: 16px;
+    }
+
+    .proceed-button {
+      padding: 12px 28px;
+      font-size: 14px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* iPhone 12 Pro Max Landscape (896x414) - Standard */
+  @media (min-width: 844px) and (max-width: 896px) and (max-height: 414px) and (orientation: landscape) {
+    .scoring-description-content {
+      padding: 15px 12px;
+      max-width: 95%;
+      width: 95%;
+      max-height: 90vh;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(88vh - 140px);
+      padding-bottom: 20px;
+      overflow-y: scroll;
+    }
+
+    .scoring-category li {
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .proceed-button {
+      margin-top: 22px;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* Samsung Galaxy S20 Landscape (915x412) - Balanced */
+  @media (min-width: 915px) and (max-height: 412px) and (orientation: landscape) {
+    .scoring-description-content {
+      padding: 16px 14px;
+      max-width: 94%;
+      width: 94%;
+      max-height: 88vh;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(86vh - 135px);
+      padding-bottom: 20px;
+      overflow-y: scroll;
+    }
+
+    .scoring-category li {
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .proceed-button {
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* iPhone 14 Pro Max Landscape (932x430) - Spacious */
+  @media (min-width: 915px) and (max-width: 932px) and (max-height: 430px) and (orientation: landscape) {
+    .scoring-description-content {
+      padding: 18px 15px;
+      max-width: 92%;
+      width: 92%;
+      max-height: 88vh;
+    }
+
+    .scoring-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .modal-body-wrapper {
+      max-height: calc(86vh - 140px);
+      padding-bottom: 20px;
+      overflow-y: scroll;
+    }
+
+    .scoring-category {
+      padding: 10px;
+    }
+
+    .scoring-category li {
+      line-height: 1.5;
+      margin-bottom: 7px;
+    }
+
+    .proceed-button {
+      margin-top: 25px;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* General landscape optimization for all mobile devices */
+  @media (max-width: 932px) and (max-height: 430px) and (orientation: landscape) {
+    .scoring-description-content,
+    .scoring-description-content * {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    .scoring-description-modal {
+      align-items: center;
+      padding: 0;
+    }
+
+    .modal-close-btn {
+      z-index: 100;
+    }
+  }
+
+  /* Portrait mode optimization */
+  @media (max-width: 480px) and (orientation: portrait) {
+    .scoring-description-content {
+      padding: 15px 12px;
+      max-width: 96%;
+      width: 96%;
+      max-height: 85vh;
+      border-radius: 16px;
+    }
+
+    .scoring-description-content h2 {
+      font-size: 22px;
+      margin-bottom: 12px;
     }
 
     .scoring-description-content p {
       font-size: 14px;
-      margin-bottom: 15px;
+      margin-bottom: 18px;
+      padding-bottom: 8px;
     }
 
     .scoring-breakdown {
@@ -2000,39 +2767,37 @@
       margin: 12px 0;
     }
 
-    .scoring-category {
-      padding: 6px;
-    }
-
-    .scoring-category h4 {
-      font-size: 15px;
-      margin-bottom: 6px;
+    .modal-body-wrapper {
+      max-height: calc(82vh - 140px);
+      padding-bottom: 20px;
+      overflow-y: scroll;
     }
 
     .scoring-category li {
-      font-size: 12px;
-      margin-bottom: 3px;
-    }
-
-    .scoring-tips {
-      padding: 10px;
-      margin: 12px 0;
-    }
-
-    .scoring-tips h4 {
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-
-    .scoring-tips p {
-      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 6px;
     }
 
     .proceed-button {
-      padding: 15px 35px;
-      font-size: 16px;
-      margin: 10px auto 0 auto;
-      min-width: 200px;
+      padding: 14px 30px;
+      font-size: 15px;
+      min-width: min(160px, 85vw);
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+  }
+
+  /* Universal mobile overflow prevention for scoring modal */
+  @media (max-width: 932px) {
+    .scoring-description-content {
+      overflow-x: hidden !important;
+    }
+
+    .scoring-breakdown,
+    .scoring-category,
+    .modal-body-wrapper {
+      overflow-x: hidden;
+      max-width: 100%;
     }
   }
 
@@ -2064,7 +2829,10 @@
     border: 2px solid rgba(0, 212, 255, 0.2);
     max-width: 700px;
     width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
     animation: slideInUp 0.5s ease-out;
+    box-sizing: border-box;
   }
 
   .crimping-intro-content::before {
@@ -2176,6 +2944,8 @@
     .crimping-intro-content {
       padding: 30px 20px;
       max-width: 95%;
+      max-height: 85vh;
+      overflow-y: auto;
     }
     
     .crimping-intro-content h2 {
@@ -2200,6 +2970,8 @@
     .wiring-selection-content {
       padding: 25px 18px;
       max-width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
     }
     
     .wiring-selection-content h2 {
@@ -2213,6 +2985,8 @@
     .wiring-option {
       padding: 15px;
       min-height: 65px;
+      width: 100%;
+      box-sizing: border-box;
     }
     
     .wiring-option .option-title {
@@ -2231,6 +3005,25 @@
     
     #tutorialStep p {
       font-size: 18px;
+    }
+    
+    /* Scoring description modal tablet */
+    .scoring-description-content {
+      padding: 20px 16px;
+      max-width: 92%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    
+    .scoring-breakdown {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    
+    /* Game content area */
+    .game-content {
+      padding: 5px;
+      padding-top: 50px;
     }
   }
 
@@ -2434,6 +3227,7 @@
     overflow-y: auto;
     animation: slideInUp 0.5s ease-out;
     position: relative;
+    box-sizing: border-box;
   }
 
   @keyframes slideInUp {
@@ -2471,6 +3265,8 @@
     justify-content: center;
     margin: 30px 0;
     width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }  .wiring-option {
     background: linear-gradient(135deg, #1e3a5f, #0f1f3d);
     color: #ffffff;
@@ -2677,23 +3473,30 @@
     .wiring-selection-content {
       padding: 25px 20px;
       max-width: 95%;
+      max-height: 85vh;
+      overflow-y: auto;
     }
     
     .wiring-options {
       flex-direction: column;
       gap: 15px;
     }
-      .wiring-option {
+    
+    .wiring-option {
       min-width: auto;
       width: 100%;
       max-width: none;
       flex: none;
       padding: 25px 20px;
+      box-sizing: border-box;
+      word-wrap: break-word;
     }
     
     .scoring-info {
       padding: 20px;
       margin: 20px 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     
     .scoring-info h3 {
@@ -2702,6 +3505,32 @@
     
     .scoring-info li {
       font-size: 13px;
+    }
+  }
+  
+  /* Universal mobile overflow prevention */
+  @media (max-width: 932px) {
+    .crimping-intro-content,
+    .scoring-description-content,
+    .wiring-selection-content,
+    .game-content {
+      overflow-x: hidden !important;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+    
+    .crimping-intro-content *,
+    .scoring-description-content *,
+    .wiring-selection-content *,
+    .game-content * {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Ensure game content is always flush left on mobile landscape */
+    .game-content {
+      padding-left: 0 !important;
+      margin-left: 0 !important;
     }
   }
 
@@ -2723,6 +3552,8 @@
       padding: 20px 15px;
       max-width: 96%;
       border-radius: 16px;
+      max-height: 85vh;
+      overflow-y: auto;
     }
     
     .crimping-intro-content h2 {
@@ -2745,6 +3576,35 @@
       font-size: 16px;
       width: 100%;
       max-width: 200px;
+    }
+    
+    /* Ensure modals are scrollable on small screens */
+    .scoring-description-content {
+      padding: 15px 12px;
+      max-width: 96%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    
+    .wiring-selection-content {
+      padding: 15px 12px;
+      max-width: 96%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    
+    /* Fix game content padding - keep flush left on small screens */
+    .game-content {
+      padding: 3px;
+      padding-top: 45px;
+      padding-left: 0 !important;
+      margin-left: 0 !important;
+    }
+    
+    /* Scrollable modal body */
+    .modal-body-wrapper {
+      max-height: calc(85vh - 180px);
+      overflow-y: auto;
     }
     
     /* Tutorial modal responsive */
@@ -2774,6 +3634,7 @@
   }
   
   .timer-display {
+    grid-area: timer;
     display: flex;
     align-items: center;
     gap: clamp(3px, 0.8vw, 5px);
@@ -2783,11 +3644,12 @@
     border: 1px solid rgba(255, 107, 107, 0.3);
     color: #ff6b6b;
     font-weight: 700;
-    font-size: clamp(14px, 2.5vw, 17px);
+    font-size: clamp(12px, 2vw, 16px);
     white-space: nowrap;
     flex-shrink: 0;
     position: relative;
     z-index: 5000;
+    justify-self: end;
   }
 
   .combo-display {
@@ -2968,27 +3830,33 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    padding: clamp(0px, 0.5vw, 4px);
-    padding-top: clamp(60px, 8vh, 80px); /* ADDED: Extra top padding for feedback tooltips */
-    overflow-x: hidden;
-    overflow-y: visible; /* CHANGED: Allow vertical overflow for tooltips */
+    padding: clamp(2px, 0.8vw, 6px);
+    padding-top: clamp(4px, 1vh, 8px); /* Reduced from 55px-75px to 4px-8px */
+    padding-left: 0; /* Align game content flush to the left */
+    overflow: visible; /* CHANGED: Prevent cable sections from being cut off */
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    gap: clamp(2px, 0.5vh, 4px); /* Reduced gap */
+    margin-left: 0; /* Ensure no extra left margin */
   }
   
   /* MVP View: Cable sections - prevent feedback clipping */
   .cable-sections {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: clamp(6px, 1.5vw, 10px);
-    margin: clamp(6px, 1.5vh, 10px) 0;
+    gap: clamp(4px, 1.2vw, 8px);
+    margin: 0;
+    margin-top: clamp(2px, 0.5vh, 4px); /* Reduced top margin */
+    margin-bottom: clamp(4px, 1vh, 6px);
+    margin-left: 0; /* Align to left edge */
+    padding-left: 0; /* Remove left padding */
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: visible; /* CHANGED: Allow tooltips to overflow grid */
+    overflow: visible;
   }
 
   .cable-section {
@@ -2997,11 +3865,17 @@
     min-height: 0;
     overflow: visible; /* CHANGED: Allow feedback tooltips */
     box-sizing: border-box;
+    padding-left: 0; /* Remove left padding */
+    margin-left: 0; /* Align to left */
+    margin-top: 0; /* Align to top */
+    padding-top: 0; /* Align to top */
   }
 
   .cable-section .cable,
   .cable-section .rj45-connector {
-    margin: clamp(4px, 1vh, 6px) 0;
+    margin: 0;
+    margin-top: clamp(2px, 0.5vh, 4px); /* Reduced top margin */
+    margin-bottom: clamp(4px, 1vh, 6px);
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
@@ -3552,17 +4426,18 @@
   }
 
   .result-actions {
-    padding: 25px 30px;
+    padding: 20px 25px;
     background: rgba(255, 255, 255, 0.02);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
-    gap: 15px;
+    flex-direction: column;
+    gap: 12px;
     justify-content: center;
-    flex-wrap: wrap;
+    align-items: stretch;
   }
 
   .action-btn {
-    padding: 15px 25px;
+    padding: 14px 24px;
     border: none;
     border-radius: 12px;
     font-size: 16px;
@@ -3571,8 +4446,8 @@
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-width: 140px;
+    gap: 10px;
+    width: 100%;
     justify-content: center;
   }
 
@@ -4025,10 +4900,6 @@
           <span class="score-label">Score</span>
         </div>
         <div class="score-item">
-          <span class="score-value" id="accuracy">100%</span>
-          <span class="score-label">Accuracy</span>
-        </div>
-        <div class="score-item">
           <span class="score-value" id="wireCount">0/16</span>
           <span class="score-label">Wires</span>
         </div>
@@ -4037,6 +4908,7 @@
           <span class="score-label">Combo</span>
         </div>
       </div>
+      <div id="selectedTypeContainer" class="selected-type-container"></div>
       <div class="timer-display">
         <i class="fas fa-clock"></i>
         <span id="timer">05:00</span>
@@ -4045,7 +4917,7 @@
 
    
 
-    <h1 id="mainTitle"></h1>
+    <h1 id="mainTitle" style="display: none;"></h1>
 
     <div class="game-content">      <!-- Wiring Type Selection (Hidden - now handled by popup) -->
       <div class="wiring-type" style="display: none;">
@@ -4166,8 +5038,6 @@
         <h2>🔌 Welcome to Cable Crimping!</h2>
         
         <div class="intro-body">
-          <div class="intro-visual">⚡</div>
-          
           <div class="intro-text">
             <p><strong>Learn professional UTP cable termination!</strong></p>
             <p>Cable crimping is the process of attaching connectors, such as RJ45, to network cables to ensure a secure and reliable connection. It is a fundamental skill in networking that allows proper data transmission between devices.</p>
@@ -4219,42 +5089,14 @@
         <h2><i class="fas fa-trophy"></i> Crimping Challenge</h2>
         
         <div class="modal-body-wrapper">
-          <p>Perfect your UTP cable crimping skills! Dual scoring system tracks your accuracy and performance.</p>
 
           <div class="scoring-breakdown">
             <div class="scoring-category">
-              <h4><i class="fas fa-bullseye"></i> Accuracy Score</h4>
+              <h4><i class="fas fa-bullseye"></i> Scoring</h4>
               <ul>
-                <li>16 wire positions total</li>
                 <li><strong>6.25%</strong> per correct wire</li>
-                <li><strong>75%+</strong> saves your score</li>
-              </ul>
-            </div>
-            
-            <div class="scoring-category">
-              <h4><i class="fas fa-gamepad"></i> Live Points</h4>
-              <ul>
-                <li><strong>+100</strong> correct placement</li>
-                <li><strong>+10</strong> combo bonus</li>
-                <li><strong>-50</strong> wrong placement</li>
-              </ul>
-            </div>
-            
-            <div class="scoring-category">
-              <h4><i class="fas fa-clock"></i> Game Info</h4>
-              <ul>
-                <li><strong>5-minute</strong> time limit</li>
-                <li>Real-time progress tracking</li>
-                <li>Achievement notifications</li>
-              </ul>
-            </div>
-            
-            <div class="scoring-category">
-              <h4><i class="fas fa-lightbulb"></i> Quick Tips</h4>
-              <ul>
-                <li><strong>Study T568B</strong> wire pattern</li>
-                <li><strong>Work systematically</strong> 1-8</li>
-                <li><strong>Build combos</strong> for bonuses</li>
+                <li><strong>75%+</strong> to pass</li>
+                <li><strong>5 minutes</strong> time limit</li>
               </ul>
             </div>
           </div>
@@ -4661,9 +5503,9 @@
         difficultyColor = '#ef4444'; // Red
       }
       
-      // Update the h1 content with the indicator
-      mainTitle.innerHTML = `
-        
+      // Update the selected type container in game header
+      const selectedTypeContainer = document.getElementById("selectedTypeContainer");
+      selectedTypeContainer.innerHTML = `
         <div class="selected-type">
           <span class="type-icon">${icon}</span>
           <span class="type-name" style="color: ${difficultyColor}">${difficultyLabel}</span>

@@ -129,11 +129,12 @@ class TroubleshootingController:
         db.session.add(progress)
         
         # Save to new ChallengeScore table (MVP)
+        # Use match_percentage (0-100) which is already normalized
         from user.models.challenge_score import ChallengeScore
         challenge_score = ChallengeScore.save_score(
             user_id=user_id,
             challenge_type='troubleshooting',
-            score=match_percentage,  # Use match percentage as score
+            score=match_percentage,  # Already normalized 0-100 percentage
             metadata={
                 'scenario_id': scenario.id,
                 'time_taken': time_taken,
@@ -318,6 +319,18 @@ class TroubleshootingController:
             
             total_score = base_score + time_bonus
             
+            # 🔧 FIX: Normalize score to 0-100 percentage for leaderboard consistency
+            # Convert raw score (which can be 100-320) to percentage (0-100)
+            # Easy challenges: base_score=100, max=120 -> normalize to 100%
+            # Medium challenges: base_score=200, max=220 -> normalize to 100%
+            # Hard challenges: base_score=300, max=320 -> normalize to 100%
+            max_possible_score = base_score + 20  # Max score includes 20 point time bonus
+            normalized_score = min((total_score / max_possible_score) * 100, 100.0)
+            
+            print(f"📊 Score calculation:")
+            print(f"   Raw score: {total_score} (base: {base_score}, bonus: {time_bonus})")
+            print(f"   Normalized: {normalized_score:.1f}% (for leaderboard)")
+            
             # Determine challenge type based on difficulty
             difficulty = challenge_info['difficulty']
             if difficulty == 'easy':
@@ -329,12 +342,12 @@ class TroubleshootingController:
             else:
                 challenge_type = 'linkup_easy'
             
-            # Save to ChallengeScore table (MVP system)
+            # Save to ChallengeScore table (MVP system) using normalized score
             from user.models.challenge_score import ChallengeScore
             challenge_score = ChallengeScore.save_score(
                 user_id=user_id,
                 challenge_type=challenge_type,
-                score=total_score,
+                score=normalized_score,  # Use normalized 0-100 score
                 metadata={
                     'scenario_id': scenario_id,
                     'scenario_name': challenge_info['name'],

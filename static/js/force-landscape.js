@@ -32,9 +32,10 @@
         '  <div class="flo-card">' +
         '    <div class="rotate-icon">📱↔️</div>' +
         '    <div class="portrait-message">' +
-        '      <h2>Rotate to Landscape</h2>' +
-        '      <p>For the best experience, please rotate your device to landscape mode.</p>' +
-        '      <p style="color: #00D9FF; font-weight: 600;">We\'ll automatically enter fullscreen for an immersive learning experience.</p>' +
+        '      <h2>MVP: Rotate to Landscape</h2>' +
+        '      <p>For the optimal MVP experience, please rotate your device to landscape mode.</p>' +
+        '      <p style="color: #00D9FF; font-weight: 600; margin-top: 1rem;"><i class="fas fa-expand-arrows-alt"></i> We\'ll automatically enter fullscreen for an immersive learning experience.</p>' +
+        '      <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 0.5rem;">This challenge is optimized for landscape viewing</p>' +
         '    </div>' +
         '  </div>' +
         '</div>'
