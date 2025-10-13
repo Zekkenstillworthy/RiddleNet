@@ -1884,12 +1884,18 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Questions functionality ready');
     
     {% if lesson %}
-    // Scroll-based lesson progress tracking
+    // Scroll-based lesson progress tracking - DISABLED
+    // Progress is now only updated when user explicitly clicks "Complete Lesson"
     let lastScrollTime = Date.now();
     let timeSpent = 0;
     let lastReportedProgress = {{ lesson_progress.progress_percentage if lesson_progress else 0 }};
     
     function updateReadingProgress() {
+        // DISABLED: No longer tracking progress based on scroll position
+        // Users must click "Complete Lesson" button to mark as complete
+        return;
+        
+        /* ORIGINAL SCROLL TRACKING CODE - DISABLED
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         
@@ -1915,6 +1921,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (progress > lastReportedProgress && progress > {{ lesson_progress.progress_percentage if lesson_progress else 0 }}) {
             updateLessonProgress(progress);
         }
+        */
     }
     
     function updateLessonProgress(progressPercent) {
@@ -1993,21 +2000,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Track reading progress on scroll
-    let scrollTimeout;
-    window.addEventListener('scroll', function() {
-        // Debounce scroll updates
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(updateReadingProgress, 100);
-    });
+    // Track reading progress on scroll - DISABLED
+    // Scroll tracking removed - users must click "Complete Lesson" button
+    // let scrollTimeout;
+    // window.addEventListener('scroll', function() {
+    //     // Debounce scroll updates
+    //     clearTimeout(scrollTimeout);
+    //     scrollTimeout = setTimeout(updateReadingProgress, 100);
+    // });
     
     // Track time spent (update every 15 seconds)
     setInterval(() => {
         timeSpent += 0.25; // Add 15 seconds every 15 seconds
     }, 15000);
     
-    // Initial progress update
-    updateReadingProgress();
+    // Initial progress update - DISABLED
+    // updateReadingProgress();
     {% endif %}
 });
 
@@ -2175,11 +2183,12 @@ function completeLesson() {
                 completeBtn.style.display = 'none';
             }
             
-            if (typeof showNotification === 'function') {
-                showNotification('Lesson marked as complete! 🎉', 'success');
-            } else {
-                alert('Lesson marked as complete!');
-            }
+            // No notification shown - lesson marked as complete silently
+            // if (typeof showNotification === 'function') {
+            //     showNotification('Lesson marked as complete! 🎉', 'success');
+            // } else {
+            //     alert('Lesson marked as complete!');
+            // }
         } else {
             if (typeof showNotification === 'function') {
                 showNotification(data.message || 'Error completing lesson', 'error');

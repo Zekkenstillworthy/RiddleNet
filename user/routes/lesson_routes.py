@@ -112,25 +112,36 @@ def complete_lesson(class_id, lesson_id):
         if current_user not in class_obj.students:
             return jsonify({'success': False, 'message': 'Not enrolled'}), 403
         
-        # Check if lesson requires simulation completion
-        if lesson.requires_simulation_completion and lesson.simulation_ids:
-            incomplete_simulations = []
-            for sim_id in lesson.simulation_ids:
-                sim = Simulation.query.get(sim_id)
-                if sim:
-                    user_progress = SimulationAttempt.query.filter_by(
-                        user_id=current_user.id,
-                        simulation_id=sim.id,
-                        is_completed=True
-                    ).first()
-                    if not user_progress:
-                        incomplete_simulations.append(sim.title)
-            
-            if incomplete_simulations:
-                return jsonify({
-                    'success': False,
-                    'message': f'Please complete the following simulations first: {", ".join(incomplete_simulations)}'
-                }), 400
+        # DISABLED: Check if lesson requires simulation completion
+        # Users can now complete lessons without finishing required simulations
+        # if lesson.requires_simulation_completion and lesson.simulation_ids:
+        #     incomplete_simulations = []
+        #     # Ensure simulation_ids is a list (could be JSON string from DB)
+        #     sim_ids = lesson.simulation_ids
+        #     if isinstance(sim_ids, str):
+        #         import json
+        #         try:
+        #             sim_ids = json.loads(sim_ids)
+        #         except (json.JSONDecodeError, ValueError):
+        #             sim_ids = []
+        #     
+        #     if isinstance(sim_ids, list):
+        #         for sim_id in sim_ids:
+        #             sim = Simulation.query.get(sim_id)
+        #             if sim:
+        #                 user_progress = SimulationAttempt.query.filter_by(
+        #                     user_id=current_user.id,
+        #                     simulation_id=sim.id,
+        #                     is_completed=True
+        #                 ).first()
+        #                 if not user_progress:
+        #                     incomplete_simulations.append(sim.title)
+        #     
+        #     if incomplete_simulations:
+        #         return jsonify({
+        #             'success': False,
+        #             'message': f'Please complete the following simulations first: {", ".join(incomplete_simulations)}'
+        #         }), 400
         
         # Get or create lesson progress
         lesson_progress = LessonProgress.query.filter_by(
@@ -159,13 +170,14 @@ def complete_lesson(class_id, lesson_id):
         
         return jsonify({
             'success': True,
-            'message': 'Lesson marked as complete!',
+            'message': '',  # No notification message
             'completion_date': lesson_progress.completed_at.isoformat()
         })
         
     except Exception as e:
-        current_app.logger.error(f"Error completing lesson {lesson_id}: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error completing lesson'}), 500
+        db.session.rollback()
+        current_app.logger.error(f"Error completing lesson {lesson_id}: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error completing lesson: {str(e)}'}), 500
 
 @lesson_bp.route('/class/<int:class_id>/lesson/<int:lesson_id>/progress', methods=['POST'])
 @user_required

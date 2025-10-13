@@ -50,38 +50,73 @@ def decimal_to_float(obj):
 @login_required
 def index():
     """Admin dashboard root - accessible via /admin/"""
-    # Get basic stats - ensure we're using the correct tables
-    total_users = User.query.count()
-    total_scores = Score.query.count()
+    # Get classes managed by this admin
+    from admin.models.class_model import Class, class_students
+    admin_classes = Class.query.filter_by(created_by=current_user.id).all()
+    admin_class_ids = [cls.id for cls in admin_classes]
     
-    # Handle case where questions might be in either question or questions table
-    # We'll detect which one has data and use it
-    question_count_main = Question.query.count()
+    # Get students enrolled in those classes
+    student_ids = []
+    if admin_class_ids:
+        student_ids = db.session.query(class_students.c.user_id).filter(
+            class_students.c.class_id.in_(admin_class_ids)
+        ).distinct().all()
+        student_ids = [sid[0] for sid in student_ids]
     
-    # Get recent scores for dashboard table
-    recent_scores = Score.query.order_by(desc(Score.date_attempted)).limit(10).all()
+    # Get basic stats - filtered to admin's students only
+    if student_ids:
+        total_users = User.query.filter(User.id.in_(student_ids)).count()
+        total_scores = Score.query.filter(Score.user_id.in_(student_ids)).count()
+    else:
+        total_users = 0
+        total_scores = 0
+    
+    # Count QuestionGroups assigned to the admin's classes (not all questions in database)
+    if admin_classes:
+        # Get all unique question groups from all the admin's classes
+        question_groups_set = set()
+        for cls in admin_classes:
+            if cls.question_groups:
+                for qg in cls.question_groups:
+                    question_groups_set.add(qg.id)
+        question_count_main = len(question_groups_set)
+    else:
+        question_count_main = 0
+    
+    # Get recent scores for dashboard table - filtered to admin's students only
+    if student_ids:
+        recent_scores = Score.query.filter(Score.user_id.in_(student_ids)).order_by(desc(Score.date_attempted)).limit(10).all()
+    else:
+        recent_scores = []
     
     # Enhanced Score Analytics for Dashboard Overview
     
-    # 1. Score distribution data for chart - adjusted based on actual score data
-    score_dist = {
-        'very_low': Score.query.filter(Score.score < 0.6).count(),  # Less than 20%
-        'low': Score.query.filter(and_(Score.score >= 0.6, Score.score < 1.2)).count(),  # 20-40%
-        'medium': Score.query.filter(and_(Score.score >= 1.2, Score.score < 1.8)).count(),  # 40-60%
-        'high': Score.query.filter(and_(Score.score >= 1.8, Score.score < 2.4)).count(),  # 60-80%
-        'very_high': Score.query.filter(Score.score >= 2.4).count()  # 80%+
-    }
+    # 1. Score distribution data for chart - adjusted based on actual score data, filtered to admin's students
+    if student_ids:
+        score_dist = {
+            'very_low': Score.query.filter(Score.user_id.in_(student_ids), Score.score < 0.6).count(),  # Less than 20%
+            'low': Score.query.filter(Score.user_id.in_(student_ids), and_(Score.score >= 0.6, Score.score < 1.2)).count(),  # 20-40%
+            'medium': Score.query.filter(Score.user_id.in_(student_ids), and_(Score.score >= 1.2, Score.score < 1.8)).count(),  # 40-60%
+            'high': Score.query.filter(Score.user_id.in_(student_ids), and_(Score.score >= 1.8, Score.score < 2.4)).count(),  # 60-80%
+            'very_high': Score.query.filter(Score.user_id.in_(student_ids), Score.score >= 2.4).count()  # 80%+
+        }
+    else:
+        score_dist = {'very_low': 0, 'low': 0, 'medium': 0, 'high': 0, 'very_high': 0}
     
     # 2. Performance trends - last 30 days
     today = datetime.now().date()
     last_30_days = [(today - timedelta(days=i)) for i in range(29, -1, -1)]
     
-    # Daily score averages for trend analysis
+    # Daily score averages for trend analysis - filtered to admin's students
     daily_performance = []
     for date_obj in last_30_days:
-        daily_avg = Score.query.filter(
-            func.date(Score.date_attempted) == date_obj
-        ).with_entities(func.avg(Score.score)).scalar() or 0
+        if student_ids:
+            daily_avg = Score.query.filter(
+                Score.user_id.in_(student_ids),
+                func.date(Score.date_attempted) == date_obj
+            ).with_entities(func.avg(Score.score)).scalar() or 0
+        else:
+            daily_avg = 0
         
         # Convert Decimal to float if needed
         if isinstance(daily_avg, Decimal):
@@ -100,21 +135,28 @@ def index():
             'avg_score': float(percentage_avg)  # Ensure it's float, not Decimal
         })    # 3. User activity data - last 7 days for dashboard
     activity_dates = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
-      # Count active users per day (users who attempted a quiz)
+      # Count active users per day (users who attempted a quiz) - filtered to admin's students
     active_users = []
     for date_str in activity_dates:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-        count = Score.query.filter(
-            func.date(Score.date_attempted) == date_obj
-        ).with_entities(Score.user_id).distinct().count()
+        if student_ids:
+            count = Score.query.filter(
+                Score.user_id.in_(student_ids),
+                func.date(Score.date_attempted) == date_obj
+            ).with_entities(Score.user_id).distinct().count()
+        else:
+            count = 0
         active_users.append(count)
-      # 4. Enhanced category analytics
+      # 4. Enhanced category analytics - filtered to admin's students
     categories = ['riddle', 'topology', 'troubleshoot', 'crimping']
     category_analytics = {}
     category_avg = {}
     
     for cat in categories:
-        scores = Score.query.filter(Score.category == cat).all()
+        if student_ids:
+            scores = Score.query.filter(Score.user_id.in_(student_ids), Score.category == cat).all()
+        else:
+            scores = []
         if scores:
             score_values = [float(s.score) if isinstance(s.score, Decimal) else s.score for s in scores]
             avg_score = sum(score_values) / len(score_values)
@@ -146,34 +188,48 @@ def index():
             }
             category_avg[cat] = 0
     
-    # 5. Top performing users (for dashboard overview)
-    top_performers = (
-        db.session.query(
-            User.username,
-            func.max(Score.score).label('highest_score'),
-            func.avg(Score.score).label('avg_score'),
-            func.count(Score.id).label('total_attempts')
+    # 5. Top performing users (for dashboard overview) - filtered to admin's students
+    if student_ids:
+        top_performers = (
+            db.session.query(
+                User.username,
+                func.max(Score.score).label('highest_score'),
+                func.avg(Score.score).label('avg_score'),
+                func.count(Score.id).label('total_attempts')
+            )
+            .join(Score)
+            .filter(User.id.in_(student_ids))
+            .group_by(User.id, User.username)
+            .order_by(desc(func.max(Score.score)))
+            .limit(5)
+            .all()
         )
-        .join(Score)
-        .group_by(User.id, User.username)
-        .order_by(desc(func.max(Score.score)))
-        .limit(5)
-        .all()
-    )
+    else:
+        top_performers = []
     
-    # 6. Score insights and alerts
-    score_insights = {
-        'total_this_week': Score.query.filter(
+    # 6. Score insights and alerts - filtered to admin's students
+    if student_ids:
+        score_insights = {
+            'total_this_week': Score.query.filter(
+                Score.user_id.in_(student_ids),
+                Score.date_attempted >= (today - timedelta(days=7))
+            ).count(),
+            'avg_this_week': 0,
+            'trend_vs_last_week': 'stable'
+        }
+        
+        # Calculate weekly average
+        this_week_scores = Score.query.filter(
+            Score.user_id.in_(student_ids),
             Score.date_attempted >= (today - timedelta(days=7))
-        ).count(),
-        'avg_this_week': 0,
-        'trend_vs_last_week': 'stable'
-    }
-    
-    # Calculate weekly average
-    this_week_scores = Score.query.filter(
-        Score.date_attempted >= (today - timedelta(days=7))
-    ).all()
+        ).all()
+    else:
+        score_insights = {
+            'total_this_week': 0,
+            'avg_this_week': 0,
+            'trend_vs_last_week': 'stable'
+        }
+        this_week_scores = []
     
     if this_week_scores:
         score_values = [float(s.score) if isinstance(s.score, Decimal) else s.score for s in this_week_scores]
@@ -188,18 +244,21 @@ def index():
     
     # ...existing code for question difficulty, activity logs, etc...
     
-    # Question difficulty distribution
-    question_difficulty = {
-        'easy': EssayResponse.query.filter(EssayResponse.graded_score >= 80).count(),
-        'medium': EssayResponse.query.filter(and_(EssayResponse.graded_score >= 60, 
-                                                 EssayResponse.graded_score < 80)).count(),
-        'hard': EssayResponse.query.filter(EssayResponse.graded_score < 60).count()
-    }
+    # Question difficulty distribution - filtered to admin's students
+    if student_ids:
+        question_difficulty = {
+            'easy': EssayResponse.query.filter(EssayResponse.user_id.in_(student_ids), EssayResponse.graded_score >= 80).count(),
+            'medium': EssayResponse.query.filter(EssayResponse.user_id.in_(student_ids), and_(EssayResponse.graded_score >= 60, 
+                                                     EssayResponse.graded_score < 80)).count(),
+            'hard': EssayResponse.query.filter(EssayResponse.user_id.in_(student_ids), EssayResponse.graded_score < 60).count()
+        }
+    else:
+        question_difficulty = {'easy': 0, 'medium': 0, 'hard': 0}
     
     if sum(question_difficulty.values()) == 0:
         question_difficulty = {'easy': 2, 'medium': 1, 'hard': 1}
     
-    # Recent system activity logs
+    # Recent system activity logs - filtered to admin's students
     activity_logs = []
     try:
         db_activity_logs = ActivityLog.query.order_by(desc(ActivityLog.timestamp)).limit(4).all()
@@ -210,8 +269,8 @@ def index():
                     'message': log.message,
                     'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 })
-        else:
-            essays = EssayResponse.query.order_by(desc(EssayResponse.submission_date)).limit(4).all()
+        elif student_ids:
+            essays = EssayResponse.query.filter(EssayResponse.user_id.in_(student_ids)).order_by(desc(EssayResponse.submission_date)).limit(4).all()
             for essay in essays:
                 action_type = 'essay' if not essay.is_graded else 'edit'
                 activity_logs.append({
@@ -228,18 +287,22 @@ def index():
             }
         ]
     
-    # System alerts
+    # System alerts - filtered to admin's students
     system_alerts = []
-    unreviewed_essays = EssayResponse.query.filter_by(is_graded=False).count()
-    if unreviewed_essays > 0:
-        system_alerts.append({
-            'message': f'{unreviewed_essays} unreviewed essay responses require attention',
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        })
-      # Low performance alert
-    recent_low_scores = Score.query.filter(
-        and_(Score.date_attempted >= (today - timedelta(days=7)), Score.score < 1.0)
-    ).count()
+    if student_ids:
+        unreviewed_essays = EssayResponse.query.filter(EssayResponse.user_id.in_(student_ids), EssayResponse.is_graded==False).count()
+        if unreviewed_essays > 0:
+            system_alerts.append({
+                'message': f'{unreviewed_essays} unreviewed essay responses require attention',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+        # Low performance alert
+        recent_low_scores = Score.query.filter(
+            Score.user_id.in_(student_ids),
+            and_(Score.date_attempted >= (today - timedelta(days=7)), Score.score < 1.0)
+        ).count()
+    else:
+        recent_low_scores = 0
     if recent_low_scores > 5:
         system_alerts.append({
             'message': f'{recent_low_scores} low scores this week - consider reviewing content difficulty',

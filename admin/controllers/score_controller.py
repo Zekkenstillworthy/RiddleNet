@@ -15,21 +15,40 @@ class ScoreController:
     @score_bp.route('/scores')
     @login_required
     def index():
-        scores = Score.query.order_by(Score.date_attempted.desc()).all()
+        # Get classes managed by this admin
+        from admin.models.class_model import Class, class_students
+        admin_classes = Class.query.filter_by(created_by=current_user.id).all()
+        admin_class_ids = [cls.id for cls in admin_classes]
         
-        # Fetch users for the user list view
-        users = User.query.all()
+        # Get students enrolled in those classes
+        student_ids = []
+        if admin_class_ids:
+            student_ids = db.session.query(class_students.c.user_id).filter(
+                class_students.c.class_id.in_(admin_class_ids)
+            ).distinct().all()
+            student_ids = [sid[0] for sid in student_ids]
         
-        category_stats = (
-            db.session.query(
-                Score.category, 
-                func.count(Score.id).label('count'),
-                func.avg(Score.score).label('avg_score'),
-                func.max(Score.score).label('max_score')
+        # Filter scores to only those from students in admin's classes
+        if student_ids:
+            scores = Score.query.filter(Score.user_id.in_(student_ids)).order_by(Score.date_attempted.desc()).all()
+            users = User.query.filter(User.id.in_(student_ids)).all()
+            
+            category_stats = (
+                db.session.query(
+                    Score.category, 
+                    func.count(Score.id).label('count'),
+                    func.avg(Score.score).label('avg_score'),
+                    func.max(Score.score).label('max_score')
+                )
+                .filter(Score.user_id.in_(student_ids))
+                .group_by(Score.category)
+                .all()
             )
-            .group_by(Score.category)
-            .all()
-        )
+        else:
+            # Admin has no classes or students
+            scores = []
+            users = []
+            category_stats = []
         
         return render_template(
             'admin/scores.html', 

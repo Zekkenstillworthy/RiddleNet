@@ -37,11 +37,11 @@ class AuthController:
                 flash('You were logged out of the student session. Please log in with admin credentials.', 'info')
             
         if request.method == 'POST':
-            username = request.form.get('username')
+            email = request.form.get('email')
             password = request.form.get('password')
             
             # Debug logging
-            print(f"Login attempt for username: {username}")
+            print(f"Login attempt for email: {email}")
             # IMPORTANT BUGFIX EXPLANATION:
             # Previously this function had an inner "from admin.models.user import Admin" inside
             # the authenticated branch above. Because of that import statement, Python treated
@@ -50,8 +50,8 @@ class AuthController:
             # the later reference to Admin below raised:
             #   UnboundLocalError: cannot access local variable 'Admin' where it is not associated with a value
             # Removing the function-scoped import (we already have a module-level import) resolves this.
-            # Try to find the user in the Admin table
-            admin = Admin.query.filter_by(username=username).first()
+            # Try to find the user in the Admin table by email
+            admin = Admin.query.filter_by(email=email).first()
             
             if admin and admin.check_password(password):
                 # CRITICAL FIX: Set admin namespace BEFORE login_user
@@ -105,9 +105,9 @@ class AuthController:
             print(f"Email: {email}")
             
             # Validation
-            if not username or not password:
-                flash('Username and password are required', 'error')
-                print("❌ Validation failed: Missing username or password")
+            if not username or not password or not email:
+                flash('Username, email, and password are required', 'error')
+                print("❌ Validation failed: Missing required fields")
                 return render_safe_template('admin/signup.html')
             
             if password != confirm_password:

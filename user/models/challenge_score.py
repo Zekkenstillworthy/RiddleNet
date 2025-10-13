@@ -88,11 +88,30 @@ class ChallengeScore(db.Model):
                 self.first_completed_at = datetime.utcnow()
             self.last_completed_at = datetime.utcnow()
         
-        # Update metadata
+        # Update metadata with deep merge for challenge_data
         if metadata:
             if self.challenge_metadata is None:
                 self.challenge_metadata = {}
-            self.challenge_metadata.update(metadata)
+            
+            # Deep merge challenge_data to preserve both level1 and level2 scores
+            if 'challenge_data' in metadata and 'challenge_data' in self.challenge_metadata:
+                # Merge nested challenge_data dict
+                existing_challenge_data = self.challenge_metadata.get('challenge_data', {})
+                new_challenge_data = metadata.get('challenge_data', {})
+                merged_challenge_data = {**existing_challenge_data, **new_challenge_data}
+                
+                # DEBUG: Log merge process
+                print(f"🔍 DEEP MERGE DEBUG:")
+                print(f"  Existing: {existing_challenge_data}")
+                print(f"  New: {new_challenge_data}")
+                print(f"  Merged: {merged_challenge_data}")
+                
+                # Update metadata with merged challenge_data
+                self.challenge_metadata.update(metadata)
+                self.challenge_metadata['challenge_data'] = merged_challenge_data
+            else:
+                # No nested challenge_data to merge, use regular update
+                self.challenge_metadata.update(metadata)
         
         self.updated_at = datetime.utcnow()
     
@@ -118,10 +137,12 @@ class ChallengeScore(db.Model):
     @staticmethod
     def get_or_create(user_id, challenge_type):
         """Get existing challenge score or create new one"""
+        # Force refresh from database to get latest committed data
+        # This prevents race conditions when multiple saves happen rapidly
         challenge_score = ChallengeScore.query.filter_by(
             user_id=user_id,
             challenge_type=challenge_type
-        ).first()
+        ).with_for_update().first()  # Adds SELECT FOR UPDATE lock
         
         if not challenge_score:
             challenge_score = ChallengeScore(
@@ -129,6 +150,11 @@ class ChallengeScore(db.Model):
                 challenge_type=challenge_type
             )
             db.session.add(challenge_score)
+            # Flush to get the ID and lock the row
+            db.session.flush()
+        else:
+            # Refresh to get latest data from database
+            db.session.refresh(challenge_score)
         
         return challenge_score
     
@@ -146,7 +172,13 @@ class ChallengeScore(db.Model):
     @staticmethod
     def get_user_stats(user_id):
         """Get aggregated stats for a user across all challenges"""
-        challenges = ChallengeScore.query.filter_by(user_id=user_id).all()
+        # Define the 4 main challenge types for dashboard statistics
+        MAIN_CHALLENGE_TYPES = ['crimping', 'osi', 'troubleshooting', 'quiz']
+        
+        # Only query the 4 main challenge types
+        challenges = ChallengeScore.query.filter_by(user_id=user_id).filter(
+            ChallengeScore.challenge_type.in_(MAIN_CHALLENGE_TYPES)
+        ).all()
         
         if not challenges:
             return {
@@ -157,14 +189,22 @@ class ChallengeScore(db.Model):
                 'completion_rate': 0.0
             }
         
+        # Count only completed challenges from the main 4 types
         completed = sum(1 for c in challenges if c.is_completed)
+        
+        # Calculate average score correctly: sum of best scores / 4 (max possible)
         total_score = sum(c.best_score for c in challenges)
+        average_score = total_score / 4  # Always divide by 4 (total challenges)
+        
+        # Cap display average at 100% for cleaner UI (individual scores can still exceed 100%)
+        display_average = min(average_score, 100.0)
+        
         total_attempts = sum(c.total_attempts for c in challenges)
         
         return {
             'total_challenges_completed': completed,
             'total_challenges': 4,  # crimping, osi, troubleshooting, quiz
-            'average_score': total_score / len(challenges) if challenges else 0.0,
+            'average_score': display_average,  # Capped at 100% for display
             'total_attempts': total_attempts,
             'completion_rate': (completed / 4) * 100
         }

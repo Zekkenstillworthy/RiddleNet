@@ -3183,9 +3183,16 @@ function handleLevelComplete() {
     // Show final completion celebration
     showFinalCompletionCelebration(combinedScore);
     
-    // Save Level 2 and combined score
-    saveLevelScore(2, finalScore);
-    saveFinalChallengeScore(combinedScore);
+    // Save Level 2 first, THEN save combined score (sequential to prevent race condition)
+    console.log('💾 Saving Level 2 score first...');
+    saveLevelScoreAsync(2, finalScore).then(() => {
+      console.log('✅ Level 2 saved, now saving final combined score...');
+      saveFinalChallengeScore(combinedScore);
+    }).catch(error => {
+      console.error('❌ Failed to save Level 2:', error);
+      // Still try to save final score even if Level 2 save failed
+      saveFinalChallengeScore(combinedScore);
+    });
   }
 }
 
@@ -3400,7 +3407,8 @@ function showFinalCompletionCelebration(combinedScore) {
 }
 
 // Save level score to backend
-function saveLevelScore(level, levelScore) {
+// Async version that returns a Promise for sequential saving
+function saveLevelScoreAsync(level, levelScore) {
   // MVP FIX: For Level 1, send partial data WITHOUT badge check
   const challengeData = {
     level: level,
@@ -3408,7 +3416,7 @@ function saveLevelScore(level, levelScore) {
     both_levels_complete: false // MVP: Prevents badge award on Level 1
   };
   
-  fetch('/save_osi_score', {
+  return fetch('/save_osi_score', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -3426,8 +3434,24 @@ function saveLevelScore(level, levelScore) {
     if (level === 1) {
       console.log('🔓 Level 2 unlocked - no badge yet');
     }
-  })
-  .catch(error => {
+    
+    // Update UI immediately for Level 2 completion
+    if (level === 2) {
+      console.log('🔄 Updating Level 2 UI status to Completed');
+      const level2Status = document.querySelector('.level-status-display:nth-child(2) .level-completion-status');
+      if (level2Status) {
+        level2Status.innerHTML = `<i class="fas fa-check-circle"></i> Completed (${levelScore}%)`;
+        level2Status.style.color = 'var(--success-color)';
+        console.log('✅ Level 2 UI updated to show completion');
+      }
+    }
+    return data; // Return data for promise chain
+  });
+}
+
+// Legacy non-async version for Level 1 (fire and forget)
+function saveLevelScore(level, levelScore) {
+  saveLevelScoreAsync(level, levelScore).catch(error => {
     console.error(`❌ Error saving Level ${level} score:`, error);
   });
 }
@@ -3627,6 +3651,7 @@ function initializeChallengeUI() {
     console.log('🔍 Checking level completion status...');
     console.log('  Level 1 Complete:', level1Complete, '- Score:', level1Score);
     console.log('  Level 2 Complete:', level2Complete, '- Score:', level2Score);
+    // Debug: values already captured in level1Complete/level2Complete via Jinja at variable init
     
     // Update Level 1 status
     const level1Card = document.getElementById('level1Card');

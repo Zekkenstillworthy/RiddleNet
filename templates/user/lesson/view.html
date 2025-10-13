@@ -682,12 +682,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Reading progress tracking
+    // Reading progress tracking - DISABLED
+    // Progress is now only updated when user explicitly clicks "Complete Lesson"
     let lastScrollTime = Date.now();
     let timeSpent = 0;
     const startTime = Date.now();
     
     function updateReadingProgress() {
+        // DISABLED: No longer tracking progress based on scroll position
+        // Users must click "Complete Lesson" button to mark as complete
+        return;
+        
+        /* ORIGINAL SCROLL TRACKING CODE - DISABLED
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         const progress = Math.min(100, (scrollTop / scrollHeight) * 100);
@@ -698,6 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (progress > {{ lesson_progress.progress_percentage if lesson_progress else 0 }}) {
             updateLessonProgress(progress);
         }
+        */
     }
     
     function updateLessonProgress(progressPercent) {
@@ -723,16 +730,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Track reading progress
-    window.addEventListener('scroll', updateReadingProgress);
+    // Track reading progress - DISABLED
+    // Scroll tracking removed - users must click "Complete Lesson" button
+    // window.addEventListener('scroll', updateReadingProgress);
     
     // Track time spent
     setInterval(() => {
         timeSpent += 0.25; // Add 15 seconds every 15 seconds
     }, 15000);
     
-    // Initial progress update
-    updateReadingProgress();
+    // Initial progress update - DISABLED
+    // updateReadingProgress();
 });
 
 function completeLesson() {
@@ -755,21 +763,21 @@ function completeLesson() {
             document.getElementById('lesson-progress').style.width = '100%';
             document.getElementById('progress-text').textContent = '100% Complete';
             
-            // Hide the complete button and show success message
+            // Hide the complete button - lesson marked as complete silently
             btn.style.display = 'none';
             
-            // Show completion card
-            const progressCard = document.querySelector('.sidebar-card');
-            const completionCard = document.createElement('div');
-            completionCard.className = 'completion-card';
-            completionCard.innerHTML = `
-                <h4><i class="fas fa-check-circle"></i> Completed!</h4>
-                <p>Just completed - Great work!</p>
-            `;
-            progressCard.appendChild(completionCard);
+            // Update completion status silently - no notifications
+            // const progressCard = document.querySelector('.sidebar-card');
+            // const completionCard = document.createElement('div');
+            // completionCard.className = 'completion-card';
+            // completionCard.innerHTML = `
+            //     <h4><i class="fas fa-check-circle"></i> Completed!</h4>
+            //     <p>Just completed - Great work!</p>
+            // `;
+            // progressCard.appendChild(completionCard);
             
-            // Show success notification
-            showNotification('Lesson completed successfully!', 'success');
+            // No notification shown - lesson completes silently
+            // showNotification('Lesson completed successfully!', 'success');
         } else {
             showNotification(data.message || 'Error completing lesson', 'error');
             btn.innerHTML = originalText;

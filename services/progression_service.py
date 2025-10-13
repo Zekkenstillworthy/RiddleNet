@@ -134,13 +134,12 @@ class ProgressionService:
                 if module_progress.is_completed and not module_progress.completed_at:
                     module_progress.completed_at = datetime.utcnow()
             
-            self.db.session.commit()
+            # Note: Don't commit here - let the caller handle the transaction
             return module_progress
             
         except Exception as e:
-            self.db.session.rollback()
             print(f"Error updating module progress: {e}")
-            return None
+            raise  # Re-raise the exception so the caller can handle it
     
     def get_next_unlocked_simulation(self, user_id, learning_path_id):
         """Get the next unlocked simulation in a learning path - Learning Paths removed"""

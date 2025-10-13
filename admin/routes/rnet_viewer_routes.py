@@ -13,13 +13,13 @@ import base64
 from io import BytesIO
 
 # Create blueprint
-rnet_viewer_bp = Blueprint('rnet_viewer', __name__, url_prefix='/rnet')
+rnet_viewer_bp = Blueprint('rnet_viewer', __name__, url_prefix='/admin/rnet')
 
 
 @rnet_viewer_bp.route('/viewer')
 def view_rnet_file():
     """Display RNet file viewer interface"""
-    return render_template('admin/rnet_file_viewer.html')
+    return render_template('admin/rnet_file_viewer.html', active_page='rnet_viewer')
 
 
 @rnet_viewer_bp.route('/api/parse', methods=['POST'])

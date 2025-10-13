@@ -612,12 +612,16 @@ def osi_simulation():
     
     if osi_challenge and osi_challenge.challenge_metadata:
         challenge_data = osi_challenge.challenge_metadata.get('challenge_data', {})
+        both_levels_complete = bool(challenge_data.get('both_levels_complete', False))
+        level2_score_val = challenge_data.get('level2_score', 0)
         level_completion_data = {
             'level1_complete': challenge_data.get('level1_score', 0) > 0,  # Any score means completed
-            'level2_complete': challenge_data.get('level2_score', 0) > 0,
+            # Consider level 2 complete if explicit score exists OR final flag is set
+            'level2_complete': (level2_score_val if isinstance(level2_score_val, (int, float)) else 0) > 0 or both_levels_complete,
             'level1_score': challenge_data.get('level1_score', 0),
-            'level2_score': challenge_data.get('level2_score', 0),
-            'combined_score': osi_challenge.best_score
+            'level2_score': level2_score_val if isinstance(level2_score_val, (int, float)) else 0,
+            'combined_score': osi_challenge.best_score,
+            'both_levels_complete': both_levels_complete
         }
     
     return render_template('user/osi-simulation.html', 
