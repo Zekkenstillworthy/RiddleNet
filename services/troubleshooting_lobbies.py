@@ -428,8 +428,9 @@ class LobbyManager:
         self._lock = threading.RLock()
         self._cleanup_timer = None
         self._persistence_enabled = True  # Enable database persistence
+        self._db_loaded = False  # Flag to track if DB has been loaded
         self.start_cleanup_timer()
-        self._load_active_lobbies_from_db()
+        # Don't load from DB in __init__ - will be loaded on first access within app context
     
     def start_cleanup_timer(self):
         """Start periodic cleanup of inactive lobbies"""
@@ -450,6 +451,21 @@ class LobbyManager:
         self._cleanup_timer = threading.Timer(300, cleanup_task)
         self._cleanup_timer.daemon = True
         self._cleanup_timer.start()
+    
+    def _ensure_db_loaded(self):
+        """Ensure database lobbies are loaded (called on first access within app context)"""
+        if not self._db_loaded and self._persistence_enabled:
+            with self._lock:
+                if not self._db_loaded:  # Double-check after acquiring lock
+                    try:
+                        self._load_active_lobbies_from_db()
+                        self._db_loaded = True
+                    except Exception as e:
+                        # If loading fails, continue without persistence but log error
+                        if current_app:
+                            current_app.logger.error(f"❌ Error loading lobbies from database: {e}")
+                        else:
+                            print(f"❌ Error loading lobbies from database: {e}")
     
     def _load_active_lobbies_from_db(self):
         """Load active lobbies from database on startup"""
@@ -521,6 +537,8 @@ class LobbyManager:
     
     def create_lobby(self, creator_id: str, creator_name: str, lobby_config: dict, creator_profile_image: str = None) -> TroubleshootingLobby:
         """Create a new troubleshooting lobby"""
+        self._ensure_db_loaded()  # Ensure DB is loaded before any lobby operations
+        
         with self._lock:
             lobby_id = str(uuid.uuid4())[:8].upper()
             
@@ -557,6 +575,8 @@ class LobbyManager:
     
     def join_lobby(self, lobby_id: str, user_id: str, user_info: dict) -> dict:
         """Join an existing lobby"""
+        self._ensure_db_loaded()  # Ensure DB is loaded before any lobby operations
+        
         with self._lock:
             if lobby_id not in self.lobbies:
                 return {'success': False, 'error': 'Session not found'}
@@ -670,6 +690,8 @@ class LobbyManager:
     
     def get_lobby_by_id(self, lobby_id: str) -> Optional[TroubleshootingLobby]:
         """Get lobby by ID"""
+        self._ensure_db_loaded()  # Ensure DB is loaded before any lobby operations
+        
         with self._lock:
             return self.lobbies.get(lobby_id)
     
