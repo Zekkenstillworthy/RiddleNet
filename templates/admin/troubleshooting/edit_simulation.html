@@ -673,8 +673,7 @@
 
     /* Enhanced sidebar content */
     .collaboration-sidebar .sidebar-content {
-        padding: 30px 24px 24px;
-        padding-top: 80px;
+        padding: 24px;
         height: 100%;
         overflow-y: auto;
         transition: all 0.4s ease;
@@ -1709,18 +1708,22 @@
 
     .device-categories {
         display: flex;
+        gap: 1.5rem;
         overflow: hidden;
+        padding: 0.75rem 1rem;
         align-items: center;
-        justify-content: space-around;
+        justify-content: center;
         flex-wrap: nowrap;
         width: 100%;
+        max-width: 100vw;
         min-height: 65px;
     }
 
     .device-category {
         min-width: 180px;
-
-        width: 500;
+        flex-shrink: 1;
+        flex: 1;
+        max-width: 220px;
     }
 
     .category-title {
@@ -1740,30 +1743,31 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 0.75rem;
         max-width: 100%;
-        overflow: hidden;
+        overflow: visible;
         padding: 0.5rem;
-        grid-auto-rows: minmax(72px, auto);
+        grid-auto-rows: minmax(90px, auto);
     }
 
     .device-item {
         width: 60px;
-        height: 70px;
+        min-height: 85px;
+        height: auto;
         background: rgba(15, 23, 42, 0.9);
         border: 2px solid rgba(255, 255, 255, 0.15);
         border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 8px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
-        overflow: hidden;
-        margin: 0;
-        padding: 6px;
+        overflow: visible;
+        margin: 0 0 8px 0;
+        padding: 10px 4px 12px 4px;
         box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        gap: 4px;
     }
 
     .device-item:hover {
@@ -1779,14 +1783,18 @@
     }
 
     .device-icon {
-        font-size: 1.2rem;
+        font-size: 1.25rem;
         color: var(--text-primary);
         transition: all 0.3s ease;
+        flex-shrink: 0;
+        margin: 0;
+        line-height: 1;
     }
 
-    .device-item img {
-        width: 20px;
-        height: 20px;
+    .device-item img.device-image {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
         filter: brightness(1.1);
         transition: all 0.3s ease;
     }
@@ -1796,7 +1804,7 @@
         transform: scale(1.1);
     }
 
-    .device-item:hover img {
+    .device-item:hover img.device-image {
         filter: brightness(1.3) drop-shadow(0 0 3px rgba(0, 217, 255, 0.5));
         transform: scale(1.1);
     }
@@ -1827,30 +1835,50 @@
 
     .device-label {
         display: block !important;
-        opacity: 0.9 !important;
+        opacity: 1 !important;
         transform: none !important;
         position: static !important;
-        font-size: 0.65rem;
-        letter-spacing: 0.25px;
-        margin: 2px 0 0 0;
-        padding: 0;
+        font-size: 0.68rem;
+        letter-spacing: 0.3px;
+        margin: 0;
+        padding: 2px 4px;
         background: transparent !important;
         box-shadow: none !important;
         color: var(--text-secondary);
         text-align: center;
-        max-width: 70px;
+        max-width: 100%;
+        width: 100%;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow: visible;
+        text-overflow: clip;
         pointer-events: none;
-        font-weight: 500;
-        line-height: 1;
+        font-weight: 600;
+        line-height: 1.2;
         transition: color 0.3s ease;
     }
 
     .device-item:hover .device-label {
         color: var(--text-primary);
         opacity: 1;
+    }
+
+    /* Custom scrollbar for device-categories */
+    .device-categories::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .device-categories::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
+
+    .device-categories::-webkit-scrollbar-thumb {
+        background: var(--cyber-glow);
+        border-radius: 3px;
+    }
+
+    .device-categories::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 217, 255, 0.8);
     }
 
     /* Minimized palette state */
@@ -2627,12 +2655,17 @@
         }
 
         .device-categories {
-            gap: 1rem;
+            gap: 1.5rem;
+            padding: 0.75rem;
         }
 
         .device-category {
-            min-width: 160px;
-            max-width: 200px;
+            min-width: 180px;
+            max-width: 350px;
+        }
+
+        .device-grid {
+            gap: 0.5rem;
         }
     }
 
@@ -2687,20 +2720,27 @@
         }
 
         .device-categories {
-            gap: 0.75rem;
-            padding: 0.5rem 0.75rem;
-            flex-wrap: wrap;
-            justify-content: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            overflow-x: auto;
         }
 
         .device-category {
-            min-width: 120px;
-            max-width: 160px;
+            min-width: 150px;
+            max-width: 200px;
+            flex: 0 0 auto;
         }
 
         .device-grid {
             grid-template-columns: repeat(3, 1fr);
             gap: 0.5rem;
+        }
+
+        .device-item {
+            width: 55px;
+            min-height: 75px;
         }
 
         .palette-top-bar {
@@ -2743,7 +2783,12 @@
 
         .device-item {
             width: 50px;
-            height: 60px;
+            min-height: 70px;
+        }
+
+        .device-item img.device-image {
+            width: 40px;
+            height: 40px;
         }
 
         .device-icon {
@@ -3009,15 +3054,15 @@
             <div class="palette-title">
                 <i class="fas fa-layer-group"></i>
                 Network Devices
+                <button class="palette-toggle touch-enhanced" aria-expanded="true">
+                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                </button>
             </div>
-            <button class="palette-toggle" onclick="toggleDevicePalette()" aria-expanded="true">
-                <i class="fas fa-chevron-down" id="palette-toggle-icon" aria-hidden="true"></i>
-            </button>
         </div>
     </div>
 
     <!-- Device Categories Content -->
-    <div class="device-categories" id="palette-content">
+    <div class="device-categories">
         <!-- Network Infrastructure -->
         <div class="device-category">
             <div class="category-title">
@@ -3025,21 +3070,23 @@
                 Network Infrastructure
             </div>
             <div class="device-grid">
+                <!-- MVP: Router with custom image -->
                 <div class="device-item" data-device-type="router" draggable="true">
-                    <i class="fas fa-project-diagram device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                     <span class="device-label">Router</span>
                     <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                 </div>
+                <!-- MVP: Switch with custom image -->
                 <div class="device-item" data-device-type="switch" draggable="true">
-                    <i class="fas fa-ethernet device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                     <span class="device-label">Switch</span>
                     <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                 </div>
-
-                <div class="device-item" data-device-type="firewall" draggable="true">
-                    <i class="fas fa-shield-alt device-icon"></i>
-                    <span class="device-label">Firewall</span>
-                    <div class="device-tooltip">Network Firewall - Security device</div>
+                <!-- MVP: Hub with custom image (uses Switch image) -->
+                <div class="device-item" data-device-type="hub" draggable="true">
+                    <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Hub" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
+                    <span class="device-label">Hub</span>
+                    <div class="device-tooltip">Network Hub - Basic connectivity device</div>
                 </div>
             </div>
         </div>
@@ -3051,25 +3098,11 @@
                 Computing Devices
             </div>
             <div class="device-grid">
-                <div class="device-item" data-device-type="server" draggable="true">
-                    <i class="fas fa-server device-icon"></i>
-                    <span class="device-label">Server</span>
-                    <div class="device-tooltip">Server - Provides network services</div>
-                </div>
-                <div class="device-item" data-device-type="pc" draggable="true">
-                    <i class="fas fa-desktop device-icon"></i>
-                    <span class="device-label">Workstation</span>
-                    <div class="device-tooltip">Desktop Computer - End user device</div>
-                </div>
+                <!-- MVP: Laptop with custom image (uses PC image) -->
                 <div class="device-item" data-device-type="laptop" draggable="true">
-                    <i class="fas fa-laptop device-icon"></i>
+                    <img src="{{ url_for('static', filename='img/PC.png') }}" alt="Laptop" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                     <span class="device-label">Laptop</span>
                     <div class="device-tooltip">Laptop Computer - Portable end user device</div>
-                </div>
-                <div class="device-item" data-device-type="mobile" draggable="true">
-                    <i class="fas fa-mobile-alt device-icon"></i>
-                    <span class="device-label">Mobile</span>
-                    <div class="device-tooltip">Mobile Device - Smartphone or tablet</div>
                 </div>
             </div>
         </div>
@@ -3081,20 +3114,20 @@
                 Tools & Actions
             </div>
             <div class="device-grid">
-                <div class="device-item" data-device-type="cable" draggable="true">
-                    <i class="fas fa-plug device-icon"></i>
-                    <span class="device-label">Connection</span>
-                    <div class="device-tooltip">Network Cable - Connect devices</div>
+                <div class="device-item" data-device-type="wired" draggable="true">
+                    <i class="fas fa-ethernet device-icon"></i>
+                    <span class="device-label">Wired</span>
+                    <div class="device-tooltip">Wired Connection - Ethernet cable</div>
                 </div>
-                <div class="action-btn device-item" onclick="clearCanvas()">
+                <div class="device-item" data-device-type="wireless" draggable="true">
+                    <i class="fas fa-wifi device-icon"></i>
+                    <span class="device-label">Wireless</span>
+                    <div class="device-tooltip">Wireless Connection - Wi-Fi link</div>
+                </div>
+                <div class="action-btn device-item" onclick="deleteSelected()">
                     <i class="fas fa-trash-alt device-icon"></i>
-                    <span class="device-label">Clear All</span>
-                    <div class="device-tooltip">Clear all devices from canvas</div>
-                </div>
-                <div class="action-btn device-item" onclick="toggleConnectMode()" id="connect-mode-btn">
-                    <i class="fas fa-project-diagram device-icon"></i>
-                    <span class="device-label">Connect</span>
-                    <div class="device-tooltip">Toggle connection mode</div>
+                    <span class="device-label">Delete</span>
+                    <div class="device-tooltip">Delete selected devices and connections</div>
                 </div>
             </div>
         </div>
@@ -3102,15 +3135,10 @@
     </div>
 </div><!-- Right Collaboration Sidebar -->
 <div class="collaboration-sidebar collapsed" id="collaboration-sidebar">
-
-
     <!-- Collapsed State Icons -->
     <div class="collapsed-icons">
         <div class="collapsed-icon active" data-tooltip="Active Sessions" onclick="switchCollaborationTab('sessions')">
             <i class="fas fa-users"></i>
-        </div>
-        <div class="collapsed-icon" data-tooltip="Live Performance" onclick="switchCollaborationTab('performance')">
-            <i class="fas fa-chart-line"></i>
         </div>
         <div class="collapsed-icon" data-tooltip="Chat" onclick="switchCollaborationTab('chat')">
             <i class="fas fa-comments"></i>
@@ -3133,10 +3161,6 @@
                 <i class="fas fa-users"></i>
                 <span>Sessions</span>
             </button>
-            <button class="panel-tab" data-tab="performance">
-                <i class="fas fa-chart-line"></i>
-                <span>Performance</span>
-            </button>
             <button class="panel-tab" data-tab="chat">
                 <i class="fas fa-comments"></i>
                 <span>Chat</span>
@@ -3149,8 +3173,6 @@
 
         <!-- Active Sessions Tab -->
         <div id="sessions-tab-content" class="tab-content active">
-
-
             <div class="section-header">
                 <h4>Active Lobbies</h4>
                 <button class="btn-modern" onclick="createNewLobby()">
@@ -3186,49 +3208,6 @@
             </div>
         </div>
 
-        <!-- Live Performance Tab -->
-        <div id="performance-tab-content" class="tab-content">
-            <div class="performance-metrics">
-                <div class="metric-card">
-                    <h4>Real-time Analytics</h4>
-                    <div class="performance-chart" id="performance-chart">
-                        <!-- Chart will be rendered here -->
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <h4>User Activity</h4>
-                    <div class="activity-list" id="activity-list">
-                        <div class="activity-item">
-                            <i class="fas fa-user-edit"></i>
-                            <span>Admin edited topology</span>
-                            <time>2 min ago</time>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="metric-card">
-                    <h4>Session Quality</h4>
-                    <div class="quality-indicators">
-                        <div class="quality-item">
-                            <span class="quality-label">Latency</span>
-                            <span class="quality-value" id="latency-value">--ms</span>
-                            <div class="quality-bar">
-                                <div class="quality-fill" style="width: 85%; background: var(--success-color);"></div>
-                            </div>
-                        </div>
-                        <div class="quality-item">
-                            <span class="quality-label">Sync Rate</span>
-                            <span class="quality-value" id="sync-rate-value">--%</span>
-                            <div class="quality-bar">
-                                <div class="quality-fill" style="width: 92%; background: var(--success-color);"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Chat Tab -->
         <div id="chat-tab-content" class="tab-content">
             <div class="chat-container">
@@ -3247,8 +3226,6 @@
                 </div>
             </div>
         </div>
-
-
 
         <!-- Settings Tab -->
         <div id="settings-tab-content" class="tab-content">
@@ -3269,14 +3246,6 @@
                         Show real-time cursors
                     </label>
                     <p class="setting-description">Display other users' cursor positions</p>
-                </div>
-
-                <div class="setting-item">
-                    <label>
-                        <input type="checkbox" id="voice-chat-enabled">
-                        Enable voice chat
-                    </label>
-                    <p class="setting-description">Allow voice communication during collaboration</p>
                 </div>
 
                 <div class="setting-item">
@@ -3313,7 +3282,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Mobile Collaboration Toggle Button -->
 <div class="mobile-collaboration-toggle" id="mobile-collaboration-toggle" onclick="toggleCollaborationSidebar()"
@@ -3817,6 +3785,20 @@
 
             const iconClass = deviceIcons[device.type] || 'fas fa-network-wired';
 
+            // MVP: Custom device image mapping (matching user interface)
+            const deviceImages = {
+                'router': '{{ url_for("static", filename="img/Router.png") }}',
+                'switch': '{{ url_for("static", filename="img/Switch.png") }}',
+                'pc': '{{ url_for("static", filename="img/PC.png") }}',
+                'computer': '{{ url_for("static", filename="img/PC.png") }}',
+                'server': '{{ url_for("static", filename="img/Router.png") }}',
+                'laptop': '{{ url_for("static", filename="img/PC.png") }}',
+                'hub': '{{ url_for("static", filename="img/Switch.png") }}',
+                'firewall': '{{ url_for("static", filename="img/Router.png") }}',
+                'access-point': '{{ url_for("static", filename="img/Router.png") }}'
+            };
+            const deviceImage = deviceImages[device.type] || deviceImages['pc'];
+
             // Status-based styling
             const statusColors = {
                 'normal': 'var(--success-color)',
@@ -3828,7 +3810,8 @@
 
             deviceElement.innerHTML = `
             <div class="device-icon">
-                <i class="${iconClass}"></i>
+                <img src="${deviceImage}" alt="${device.type}" class="device-image" style="width: 48px; height: 48px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <i class="${iconClass}" style="display: none; font-size: 32px;"></i>
             </div>
             <div class="device-label">${device.name}</div>
             <div class="device-status ${device.status}">${device.config?.ip || ''}</div>
@@ -5454,6 +5437,47 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
         }
     }
 
+    function deleteSelected() {
+        if (!editor) return;
+
+        const selectedDevices = editor.devices.filter(d => d.selected);
+        const selectedConnections = editor.connections.filter(c => c.selected);
+
+        if (selectedDevices.length === 0 && selectedConnections.length === 0) {
+            editor.showToast('No devices or connections selected', 'info');
+            return;
+        }
+
+        const confirmMsg = `Delete ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)?`;
+        if (!confirm(confirmMsg)) return;
+
+        // Delete selected devices
+        selectedDevices.forEach(device => {
+            // Remove device element from canvas
+            const deviceElement = document.querySelector(`[data-device-id="${device.id}"]`);
+            if (deviceElement) {
+                deviceElement.remove();
+            }
+            // Remove connections attached to this device
+            editor.connections = editor.connections.filter(conn => 
+                conn.from !== device.id && conn.to !== device.id
+            );
+        });
+
+        // Remove devices from array
+        editor.devices = editor.devices.filter(d => !d.selected);
+
+        // Delete selected connections
+        editor.connections = editor.connections.filter(c => !c.selected);
+
+        editor.selectedDevice = null;
+        editor.updateConnections();
+        editor.showToast(`Deleted ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)`, 'success');
+
+        // Sync connectivity console
+        try { window.connectivityTester?.updateDeviceList?.(); } catch (_) { }
+    }
+
 
     function toggleDevicePalette() {
         const palette = document.getElementById('device-palette');
@@ -6915,7 +6939,6 @@ FastEthernet0/1 up up 192.168.2.1</div>`;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
 
 <!-- Include tutorial editor JS -->
-<script src="{{ url_for('static', filename='js/tutorial-editor.js') }}"></script>
 
 <!-- Initialize WebSocket for real-time simulation updates -->
 <script>

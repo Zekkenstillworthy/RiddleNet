@@ -106,6 +106,14 @@ class SplitSessionInterface(SecureCookieSessionInterface):
                 return self.session_class()
 
         # WebSocket (or ambiguous) – inspect both cookies and pick the most appropriate
+        # First, try to determine context from Referer header (for Socket.IO handshakes)
+        referer = request.headers.get('Referer', '').lower()
+        print(f"🍪 SplitSession: WebSocket/ambiguous path, Referer: {referer}")
+        
+        # If Referer indicates admin context, prefer admin cookie
+        prefer_admin = '/admin' in referer
+        print(f"🍪 SplitSession: Prefer admin based on Referer: {prefer_admin}")
+        
         sessions = []
         max_age = int(app.permanent_session_lifetime.total_seconds())
         for name in (ADMIN_COOKIE, USER_COOKIE):
@@ -115,19 +123,33 @@ class SplitSessionInterface(SecureCookieSessionInterface):
             try:
                 data = serializer.loads(raw, max_age=max_age)
                 sessions.append((name, data))
+                print(f"🍪 SplitSession: Loaded {name} with namespace: {data.get('auth_namespace')}")
             except BadSignature:
+                print(f"🍪 SplitSession: Bad signature for {name}")
                 continue
             except Exception as e:
                 app.logger.warning(f"🍪 Error loading {name}: {str(e)}")
                 continue
 
-        # Prefer admin namespace if present
+        # If referer indicates admin context, prefer admin session
+        if prefer_admin:
+            for name, data in sessions:
+                if name == ADMIN_COOKIE or data.get("auth_namespace") == "admin":
+                    print(f"🍪 SplitSession: Returning admin session based on Referer")
+                    return self.session_class(data)
+        
+        # Otherwise prefer user session (for non-admin contexts)
         for name, data in sessions:
-            if data.get("auth_namespace") == "admin":
+            if name == USER_COOKIE or data.get("auth_namespace") != "admin":
+                print(f"🍪 SplitSession: Returning user session (default)")
                 return self.session_class(data)
-        # Otherwise return first available (user or empty)
+        
+        # Fallback: return first available session
         if sessions:
+            print(f"🍪 SplitSession: Fallback - returning first available session")
             return self.session_class(sessions[0][1])
+        
+        print(f"🍪 SplitSession: No valid sessions found, returning empty")
         return self.session_class()
 
     # ---------- SAVE SESSION ----------

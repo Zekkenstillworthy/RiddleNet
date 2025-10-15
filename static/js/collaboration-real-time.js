@@ -8,6 +8,7 @@ class CollaborationRealTime {
         this.socket = null;
         this.isConnected = false;
         this.currentSession = null;
+    this.sessionId = null;
         this.currentUser = null;
         this.teamMembers = new Map();
         this.deviceLocks = new Map();
@@ -19,6 +20,11 @@ class CollaborationRealTime {
         this.chatInput = null;
         this.participantsList = null;
         this.sessionStatus = null;
+        
+        // Cursor tracking
+        this.cursors = new Map(); // Map of userId -> cursor DOM element
+        this.cursorContainer = null;
+        this.lastCursorUpdate = Date.now();
         
         // Event handlers
         this.eventHandlers = new Map();
@@ -33,7 +39,7 @@ class CollaborationRealTime {
             reconnectInterval: 3000,
             heartbeatInterval: 30000,
             chatMaxMessages: 100,
-            cursorUpdateThrottle: 100
+            cursorUpdateThrottle: 8 // Ultra-smooth 120fps (1000ms / 120 = 8.33ms)
         };
         
         // State
@@ -51,17 +57,23 @@ class CollaborationRealTime {
      * Initialize the collaboration system
      */
     init() {
-        console.log('🤝 Initializing Collaboration Real-Time System');
+        console.log('🤝 [DEBUG] ============================================');
+        console.log('🤝 [DEBUG] Initializing Collaboration Real-Time System');
+        console.log('🤝 [DEBUG] ============================================');
         
         this.setupSocketConnection();
         this.setupUIElements();
         this.setupEventListeners();
         this.loadCurrentUser();
+        this.initializeCursorTracking(); // Initialize cursor tracking
+        
+        console.log('🤝 [DEBUG] After loadCurrentUser - this.currentUser:', this.currentUser);
         
         // Check if user is already in a session
         this.checkExistingSession();
         
-        console.log('✅ Collaboration system initialized');
+        console.log('✅ [DEBUG] Collaboration system initialized');
+        console.log('🤝 [DEBUG] ============================================');
     }
     
     /**
@@ -143,8 +155,11 @@ class CollaborationRealTime {
         
         this.socket.on('team_session_status', (data) => {
             if (data.success && data.in_session) {
-                this.currentSession = data.session;
-                this.emit('session_status_updated', data.session);
+                const sessionPayload = data.session || { session_id: data.session_id };
+                this.updateSessionContext(sessionPayload, 'status_event');
+                this.emit('session_status_updated', this.currentSession);
+            } else if (data.success && !data.in_session) {
+                this.clearSessionContext('status_event');
             }
         });
         
@@ -225,7 +240,13 @@ class CollaborationRealTime {
         });
         
         // Cursor updates
-        this.socket.on('team_cursor_moved', (data) => {
+        this.socket.on('cursor_moved', (data) => {
+            console.log('🖱️ ============================================');
+            console.log('🖱️ [SOCKET] Cursor moved event received from backend!');
+            console.log('🖱️ [SOCKET] Incoming cursor data:', data);
+            console.log('🖱️ [SOCKET] User:', data.username, '| ID:', data.user_id);
+            console.log('🖱️ [SOCKET] Position:', data.position);
+            console.log('🖱️ ============================================');
             this.handleCursorUpdate(data);
         });
     }
@@ -274,6 +295,12 @@ class CollaborationRealTime {
         
         this.socket.on('collaboration_participant_left', (data) => {
             console.log('👋 Participant left session:', data);
+            
+            // Remove cursor for the user who left
+            if (data.user_id) {
+                this.removeCursor(data.user_id);
+            }
+            
             this.handleChatMessage({
                 id: 'leave_' + Date.now(),
                 user_id: 'system',
@@ -400,21 +427,25 @@ class CollaborationRealTime {
             this.cleanup();
         });
         
-        // Mouse movement for cursor tracking (throttled)
-        document.addEventListener('mousemove', (e) => {
-            this.throttledCursorUpdate(e);
-        });
+        // NOTE: Mouse movement listener is set up in initializeCursorTracking()
+        // No need for duplicate listener here
     }
     
     /**
      * Load current user information
      */
     loadCurrentUser() {
+        console.log('🔍 [DEBUG] Loading current user...');
+        console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
+        console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
+        
         // Try to get user from various sources
         if (window.currentUser) {
             this.currentUser = window.currentUser;
+            console.log('✅ [DEBUG] Current user loaded from window.currentUser:', this.currentUser);
         } else if (window.sessionUser) {
             this.currentUser = window.sessionUser;
+            console.log('✅ [DEBUG] Current user loaded from window.sessionUser:', this.currentUser);
         } else {
             // Try to extract from DOM or session
             const userElement = document.querySelector('[data-user-id]');
@@ -423,21 +454,126 @@ class CollaborationRealTime {
                     id: userElement.dataset.userId,
                     username: userElement.dataset.username || 'Unknown'
                 };
+                console.log('✅ [DEBUG] Current user loaded from DOM element:', this.currentUser);
+                console.log('🔍 [DEBUG] DOM element:', userElement);
+            } else {
+                console.error('❌ [DEBUG] No user element found with [data-user-id]');
             }
         }
         
-        console.log('👤 Current user loaded:', this.currentUser);
+        console.log('👤 [DEBUG] Final current user loaded:', this.currentUser);
     }
     
     /**
      * Check if user is already in a session
      */
     checkExistingSession() {
+        console.log('🔍 [DEBUG] Checking existing session...');
+        console.log('🔍 [DEBUG] Current user before session check:', this.currentUser);
+        
         if (this.isConnected) {
             this.socket.emit('get_team_session_status');
         }
+        
+        // Set up periodic user verification to prevent session poisoning
+        this.startUserVerification();
     }
     
+    /**
+     * Start periodic user verification to prevent session poisoning
+     */
+    startUserVerification() {
+        // Verify user information every 5 seconds
+        this.userVerificationInterval = setInterval(() => {
+            const previousUser = this.currentUser ? {...this.currentUser} : null;
+            this.loadCurrentUser();
+            
+            // Check if user changed
+            if (previousUser && this.currentUser) {
+                if (String(previousUser.id) !== String(this.currentUser.id) || 
+                    previousUser.username !== this.currentUser.username) {
+                    console.warn('⚠️ [DEBUG] USER CHANGED DETECTED!');
+                    console.warn('⚠️ [DEBUG] Previous user:', previousUser);
+                    console.warn('⚠️ [DEBUG] Current user:', this.currentUser);
+                    
+                    // Emit user changed event
+                    this.emit('user_changed', {
+                        previous: previousUser,
+                        current: this.currentUser
+                    });
+                }
+            }
+        }, 5000);
+    }
+    
+    /**
+     * Stop user verification
+     */
+    stopUserVerification() {
+        if (this.userVerificationInterval) {
+            clearInterval(this.userVerificationInterval);
+            this.userVerificationInterval = null;
+        }
+    }
+    
+    /**
+     * Determine canonical session identifier from payload
+     */
+    extractSessionId(sessionData) {
+        if (!sessionData) {
+            return null;
+        }
+        const candidates = [
+            sessionData.id,
+            sessionData.session_id,
+            sessionData.sessionId,
+            sessionData.code,
+            sessionData.session_code
+        ];
+        const sessionId = candidates.find((value) => value !== undefined && value !== null && value !== '');
+        if (!sessionId) {
+            console.warn('⚠️ [SESSION DEBUG] Session identifier missing in payload:', sessionData);
+        }
+        return sessionId || null;
+    }
+
+    /**
+     * Update local session context with server payload
+     */
+    updateSessionContext(sessionData, source = 'unknown') {
+        if (!sessionData) {
+            this.clearSessionContext(source);
+            return;
+        }
+
+        const mergedSession = {
+            ...(this.currentSession || {}),
+            ...sessionData
+        };
+
+        const sessionId = this.extractSessionId(mergedSession);
+        if (sessionId) {
+            mergedSession.id = mergedSession.id || sessionId;
+            this.sessionId = sessionId;
+            console.log(`✅ [SESSION DEBUG] Session ID set (${source}):`, this.sessionId);
+        } else {
+            console.warn(`⚠️ [SESSION DEBUG] Unable to resolve session ID (${source})`);
+        }
+
+        this.currentSession = mergedSession;
+    }
+
+    /**
+     * Clear local session context and reset tracking
+     */
+    clearSessionContext(source = 'unknown') {
+        if (this.sessionId || this.currentSession) {
+            console.log(`🧹 [SESSION DEBUG] Clearing session context (${source})`);
+        }
+        this.sessionId = null;
+        this.currentSession = null;
+    }
+
     // ===== SESSION MANAGEMENT =====
     
     /**
@@ -659,6 +795,10 @@ class CollaborationRealTime {
             return;
         }
         
+        console.log('🔍 [DEBUG] Preparing to send chat message...');
+        console.log('🔍 [DEBUG] Current user:', this.currentUser);
+        console.log('🔍 [DEBUG] Current session:', this.currentSession);
+        
         const messageData = {
             message: message,
             session_id: this.currentSession.id,
@@ -667,7 +807,10 @@ class CollaborationRealTime {
             username: this.currentUser?.username || 'Anonymous'
         };
         
-        console.log('💬 Sending chat message:', messageData);
+        console.log('💬 [DEBUG] Sending chat message:', messageData);
+        console.log('🔍 [DEBUG] User ID type:', typeof messageData.user_id);
+        console.log('🔍 [DEBUG] Username:', messageData.username);
+        
         // Send to server (don't render locally, wait for server response)
         this.socket.emit('collaboration_chat_message', messageData);
     }
@@ -676,28 +819,43 @@ class CollaborationRealTime {
      * Handle chat message
      */
     handleChatMessage(data) {
-        console.log('💬 Received chat message:', data);
+        console.log('💬 [DEBUG] Received chat message:', data);
+        console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
+        console.log('🔍 [DEBUG] Message username:', data.username);
+        console.log('🔍 [DEBUG] Current user:', this.currentUser);
+        console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
 
         // Deduplicate: if message has an id we've already processed, skip
         const msgId = data.id || (data.timestamp + '_' + data.user_id + '_' + (data.message||data.content||''));
         if (this._processedChatIds.has(msgId)) {
-            console.log('💬 Skipping duplicate message:', msgId);
+            console.log('💬 [DEBUG] Skipping duplicate message:', msgId);
             return;
         }
         this._recordChatId(msgId);
         
-        // Add to local chat history first
-        this.addChatMessage(data);
+        console.log('🔍 [DEBUG] Processing new message ID:', msgId);
         
-        // Update team session manager chat if available
-        if (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function') {
+        // If sidebar chat (teamSessionManager) handles UI, avoid double-render
+        const sidebarChatAvailable = (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function');
+        console.log('🔍 [DEBUG] Sidebar chat available:', sidebarChatAvailable);
+        
+        if (sidebarChatAvailable) {
+            // Update local history only (no UI)
+            this.chatHistory.push(data);
+            if (this.chatHistory.length > this.config.chatMaxMessages) {
+                this.chatHistory.shift();
+            }
+            this.updateChatMessageCounter();
+            // Render via sidebar chat
+            console.log('🔍 [DEBUG] Delegating to teamSessionManager.addTeamChatMessage');
             window.teamSessionManager.addTeamChatMessage(data);
+        } else {
+            // Fallback to local UI rendering
+            console.log('🔍 [DEBUG] Using fallback local UI rendering');
+            this.addChatMessage(data);
         }
         
-        // Update enhanced team session manager if available
-        if (window.enhancedTeamSessionManager && typeof window.enhancedTeamSessionManager.addChatMessage === 'function') {
-            window.enhancedTeamSessionManager.addChatMessage(data);
-        }
+        // Enhanced manager UI disabled in MVP; sidebar chat handles rendering
         
         // Emit chat event for other components
         this.emit('chat_message', data);
@@ -721,9 +879,9 @@ class CollaborationRealTime {
      */
     reloadVisibleChatContainers() {
         const chatContainers = [
+            'chat-messages',
             'chat-messages-container',
             'team-chat-messages',
-            'enhanced-chat-messages',
             'collaboration-chat-messages'
         ];
         chatContainers.forEach(id => {
@@ -781,9 +939,9 @@ class CollaborationRealTime {
     displayChatMessage(data) {
         // Find chat containers and update them
         const chatContainers = [
+            'chat-messages',
             'chat-messages-container',
             'team-chat-messages', 
-            'enhanced-chat-messages',
             'collaboration-chat-messages'
         ];
         
@@ -799,16 +957,32 @@ class CollaborationRealTime {
      * Add message to a specific container with unified styling
      */
     addMessageToContainer(container, data) {
+        console.log('🔍 [DEBUG] addMessageToContainer called');
+        console.log('🔍 [DEBUG] Message data:', data);
+        console.log('🔍 [DEBUG] Message user_id:', data.user_id, '(type:', typeof data.user_id, ')');
+        console.log('🔍 [DEBUG] Current user ID:', this.currentUser?.id, '(type:', typeof this.currentUser?.id, ')');
+        
         const messageDiv = document.createElement('div');
         
         // Determine message type and ownership for unified styling
         let messageClass = 'unified-chat-message';
-        if (data.isOwnMessage || (this.currentUser && data.user_id === this.currentUser.id)) {
+        // Convert both IDs to strings for proper comparison (handles string vs number mismatch)
+        const currentUserId = this.currentUser ? String(this.currentUser.id) : null;
+        const messageUserId = data.user_id ? String(data.user_id) : null;
+        
+        console.log('🔍 [DEBUG] Comparing IDs - Current:', currentUserId, 'Message:', messageUserId);
+        console.log('🔍 [DEBUG] IDs match:', currentUserId === messageUserId);
+        console.log('🔍 [DEBUG] isOwnMessage flag:', data.isOwnMessage);
+        
+        if (data.isOwnMessage || (currentUserId && messageUserId && currentUserId === messageUserId)) {
             messageClass += ' own-message';
+            console.log('✅ [DEBUG] This is OWN message - adding own-message class');
         } else if (data.message_type === 'system') {
             messageClass += ' system-message';
+            console.log('✅ [DEBUG] This is SYSTEM message');
         } else {
             messageClass += ' other-message';
+            console.log('✅ [DEBUG] This is OTHER user message - adding other-message class');
         }
         
         messageDiv.className = messageClass;
@@ -818,9 +992,15 @@ class CollaborationRealTime {
             minute: '2-digit'
         }) : 'now';
         
+        // Display "You" for current user's messages, otherwise show username
+        const displayName = (currentUserId && messageUserId && currentUserId === messageUserId) ? 'You' : (data.username || 'Unknown');
+        
+        console.log('🔍 [DEBUG] Display name will be:', displayName);
+        console.log('🔍 [DEBUG] Message class:', messageClass);
+        
         messageDiv.innerHTML = `
             <div class="unified-message-header">
-                <span class="unified-message-author">${data.username || 'Unknown'}</span>
+                <span class="unified-message-author">${displayName}</span>
                 <span class="unified-message-time">${timestamp}</span>
             </div>
             <div class="unified-message-content">${data.message || data.content || ''}</div>
@@ -828,6 +1008,8 @@ class CollaborationRealTime {
         
         container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
+        
+        console.log('✅ [DEBUG] Message added to container');
     }
     
     /**
@@ -836,9 +1018,9 @@ class CollaborationRealTime {
     updateChatUI(data) {
         // Find chat containers and update them
         const chatContainers = [
+            'chat-messages',
             'chat-messages-container',
             'team-chat-messages',
-            'enhanced-chat-messages',
             'collaboration-chat-messages'
         ];
         
@@ -870,6 +1052,7 @@ class CollaborationRealTime {
         this.chatHistory = [];
         
         const chatContainers = [
+            'chat-messages',
             'chat-messages-container',
             'team-chat-messages',
             'enhanced-chat-messages', 
@@ -904,24 +1087,6 @@ class CollaborationRealTime {
     // ===== CURSOR TRACKING =====
     
     /**
-     * Update cursor position (throttled)
-     */
-    throttledCursorUpdate(event) {
-        if (!this.currentSession) return;
-        
-        if (this.cursorUpdateThrottleTimer) {
-            clearTimeout(this.cursorUpdateThrottleTimer);
-        }
-        
-        this.cursorUpdateThrottleTimer = setTimeout(() => {
-            this.updateCursorPosition({
-                x: event.clientX,
-                y: event.clientY
-            });
-        }, this.config.cursorUpdateThrottle);
-    }
-    
-    /**
      * Update cursor position
      */
     updateCursorPosition(position) {
@@ -929,8 +1094,9 @@ class CollaborationRealTime {
             return;
         }
         
-        this.socket.emit('team_cursor_update', {
-            position: position
+        this.socket.emit('update_cursor_position', {
+            x: position.x,
+            y: position.y
         });
     }
 
@@ -941,7 +1107,8 @@ class CollaborationRealTime {
      * Handle session created
      */
     handleSessionCreated(data) {
-        this.currentSession = data.session || { session_id: data.session_id };
+        const sessionPayload = data.session || { session_id: data.session_id };
+        this.updateSessionContext(sessionPayload, 'session_created');
         this.emit('session_created', data);
     }
     
@@ -949,18 +1116,19 @@ class CollaborationRealTime {
      * Handle session joined
      */
     handleSessionJoined(data) {
-        this.currentSession = data.session;
-        this.networkState = data.session?.network_state || {};
+        const sessionPayload = data.session || { session_id: data.session_id };
+        this.updateSessionContext(sessionPayload, 'session_joined');
+        this.networkState = this.currentSession?.network_state || {};
         
         // Load existing chat history
-        if (data.session?.recent_chat) {
-            this.chatHistory = data.session.recent_chat;
+        if (this.currentSession?.recent_chat) {
+            this.chatHistory = this.currentSession.recent_chat;
             this.loadChatHistory();
         }
         
         // Load team members
-        if (data.session?.participants) {
-            this.updateTeamMembers(data.session.participants);
+        if (this.currentSession?.participants) {
+            this.updateTeamMembers(this.currentSession.participants);
         }
         
         this.emit('session_joined', data);
@@ -970,7 +1138,7 @@ class CollaborationRealTime {
      * Handle session left
      */
     handleSessionLeft(data) {
-        this.currentSession = null;
+        this.clearSessionContext('session_left');
         this.networkState = {};
         this.teamMembers.clear();
         this.deviceLocks.clear();
@@ -1123,9 +1291,552 @@ class CollaborationRealTime {
      * Handle cursor update
      */
     handleCursorUpdate(data) {
-        this.emit('cursor_updated', data);
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Handling cursor update');
+        console.log('🖱️ [CURSOR DEBUG] Raw data received:', data);
+        
+        // Backend sends: {user_id, username, position: {x, y}, color, profile_image}
+        // Normalize to: {user_id, username, x, y, color, profile_image}
+        const normalizedData = {
+            user_id: data.user_id,
+            username: data.username,
+            x: data.position?.x || data.x || 0,
+            y: data.position?.y || data.y || 0,
+            color: data.color,
+            profile_image: data.profile_image
+        };
+        
+        console.log('🖱️ [CURSOR DEBUG] Normalized data:', normalizedData);
+        console.log('🖱️ [CURSOR DEBUG] Current user ID:', this.currentUser?.id);
+        console.log('🖱️ [CURSOR DEBUG] Is own cursor?', String(normalizedData.user_id) === String(this.currentUser?.id));
+        
+        this.updateCursorPosition(normalizedData.user_id, normalizedData);
+        this.emit('cursor_updated', normalizedData);
+        
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+    }
+
+    // ===== CURSOR TRACKING METHODS =====
+
+    /**
+     * Initialize cursor tracking system
+     */
+    initializeCursorTracking() {
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Initializing cursor tracking system');
+        console.log('🖱️ [CURSOR DEBUG] Current user:', this.currentUser);
+        console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        
+        // Create cursor container
+        this.setupCursorContainer();
+        
+        // Setup mouse move tracking with throttling
+        let lastEmit = 0;
+        const throttle = 8; // Ultra-smooth 120fps (1000ms / 120 = 8.33ms)
+        
+        console.log('🖱️ [CURSOR DEBUG] Setting up mousemove listener with throttle:', throttle + 'ms');
+        
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            if (now - lastEmit < throttle) return;
+            
+            lastEmit = now;
+            console.log('🖱️ [CURSOR DEBUG] Mouse moved to:', e.clientX, e.clientY);
+            this.throttledCursorUpdate(e.clientX, e.clientY);
+        });
+        
+        // Setup scroll tracking to update viewport
+        let lastScrollEmit = 0;
+        const scrollThrottle = 500; // Update viewport less frequently
+        
+        console.log('👁️ [VIEWPORT DEBUG] Setting up scroll listener with throttle:', scrollThrottle + 'ms');
+        
+        window.addEventListener('scroll', () => {
+            const now = Date.now();
+            if (now - lastScrollEmit < scrollThrottle) return;
+            
+            lastScrollEmit = now;
+            console.log('👁️ [VIEWPORT DEBUG] Scroll detected, updating viewport');
+            
+            // Get current mouse position (use last known position)
+            const lastX = this.lastMouseX || 0;
+            const lastY = this.lastMouseY || 0;
+            
+            this.throttledCursorUpdate(lastX, lastY);
+        }, { passive: true });
+        
+        // Track last mouse position for scroll updates
+        document.addEventListener('mousemove', (e) => {
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+        }, { passive: true });
+        
+        console.log('✅ [CURSOR DEBUG] Cursor tracking initialized successfully');
+    }
+
+    /**
+     * Setup cursor container in DOM
+     */
+    setupCursorContainer() {
+        console.log('🖱️ [CURSOR DEBUG] Setting up cursor container...');
+        
+        // Check if container already exists
+        if (this.cursorContainer) {
+            console.log('🖱️ [CURSOR DEBUG] Container already exists:', this.cursorContainer);
+            return;
+        }
+        
+        // Create container
+        this.cursorContainer = document.createElement('div');
+        this.cursorContainer.id = 'collaboration-cursors';
+        this.cursorContainer.style.position = 'fixed';
+        this.cursorContainer.style.top = '0';
+        this.cursorContainer.style.left = '0';
+        this.cursorContainer.style.width = '100%';
+        this.cursorContainer.style.height = '100%';
+        this.cursorContainer.style.pointerEvents = 'none';
+        this.cursorContainer.style.zIndex = '9999';
+        
+        document.body.appendChild(this.cursorContainer);
+        
+        console.log('✅ [CURSOR DEBUG] Cursor container created and appended to body');
+        console.log('🖱️ [CURSOR DEBUG] Container element:', this.cursorContainer);
+        console.log('🖱️ [CURSOR DEBUG] Container in DOM:', document.getElementById('collaboration-cursors'));
+    }
+
+    /**
+     * Create cursor element for a user
+     * @param {Number} userId - User ID
+     * @param {String} username - Username to display
+     * @param {String} color - Color scheme (user-1 through user-6)
+     */
+    createCursor(userId, username, color = 'user-1') {
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Creating cursor for user:', userId);
+        console.log('🖱️ [CURSOR DEBUG] Username:', username);
+        console.log('🖱️ [CURSOR DEBUG] Color class:', color);
+        
+        // Create cursor wrapper
+        const cursor = document.createElement('div');
+        cursor.className = `collaboration-cursor ${color}`;
+        cursor.id = `cursor-${userId}`;
+        cursor.style.position = 'absolute';
+        cursor.style.willChange = 'transform';
+        cursor.dataset.userId = userId;
+        
+        console.log('🖱️ [CURSOR DEBUG] Cursor element created:', cursor);
+        
+        // Create avatar circle
+        const avatar = document.createElement('div');
+        avatar.className = 'cursor-avatar';
+        avatar.dataset.user = this.getUserColorIndex(userId);
+        
+        console.log('🖱️ [CURSOR DEBUG] Avatar element created:', avatar);
+        
+        // Create username label
+        const label = document.createElement('div');
+        label.className = 'cursor-username';
+        label.textContent = username;
+        
+        console.log('🖱️ [CURSOR DEBUG] Username label created:', label);
+        
+        // Assemble cursor
+        cursor.appendChild(avatar);
+        cursor.appendChild(label);
+        
+        // Store in map
+        this.cursors.set(userId, cursor);
+        console.log('🖱️ [CURSOR DEBUG] Cursor stored in map. Total cursors:', this.cursors.size);
+        
+        // Add to container
+        if (!this.cursorContainer) {
+            console.error('❌ [CURSOR DEBUG] Cursor container not found! Re-creating...');
+            this.setupCursorContainer();
+        }
+        
+        this.cursorContainer.appendChild(cursor);
+        
+        console.log('✅ [CURSOR DEBUG] Cursor added to container');
+        console.log('🖱️ [CURSOR DEBUG] Container children count:', this.cursorContainer.children.length);
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        
+        return cursor;
+    }
+
+    /**
+     * Get color index for user (1-6)
+     * @param {Number} userId - User ID
+     * @returns {Number} Color index (1-6)
+     */
+    getUserColorIndex(userId) {
+        return ((userId - 1) % 6) + 1;
+    }
+
+    /**
+     * Load user avatar image
+     * @param {Number} userId - User ID
+     * @param {HTMLElement} avatarElement - Avatar element to populate
+     * @param {String} profileImage - Optional profile image URL
+     * @param {String} username - Username for fallback
+     */
+    async loadUserAvatar(userId, avatarElement, profileImage = null, username = null) {
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Loading avatar for user:', userId);
+        console.log('🖱️ [CURSOR DEBUG] Profile image provided?', !!profileImage, profileImage);
+        console.log('🖱️ [CURSOR DEBUG] Avatar element:', avatarElement);
+        
+        try {
+            // If profile image provided directly, use it
+            if (profileImage) {
+                console.log('🖱️ [CURSOR DEBUG] Using provided profile image...');
+                const img = document.createElement('img');
+                img.className = 'cursor-profile-img';
+                img.src = profileImage;
+                img.alt = username || 'User Avatar';
+                
+                img.onload = () => {
+                    console.log('✅ [CURSOR DEBUG] Profile image loaded successfully');
+                    avatarElement.innerHTML = '';
+                    avatarElement.appendChild(img);
+                };
+                
+                img.onerror = () => {
+                    console.log('❌ [CURSOR DEBUG] Profile image failed to load, using fallback');
+                    this.setAvatarFallback(avatarElement, username, userId);
+                };
+                
+                // Show loading state briefly
+                avatarElement.innerHTML = '<div class="cursor-fallback-avatar">...</div>';
+                
+                console.log('🖱️ [CURSOR DEBUG] ============================================');
+                return;
+            }
+            
+            // Try to fetch user profile picture from API
+            console.log('🖱️ [CURSOR DEBUG] No profile image provided, fetching from API...');
+            console.log('🖱️ [CURSOR DEBUG] Fetching:', `/api/user/${userId}/avatar`);
+            const response = await fetch(`/api/user/${userId}/avatar`);
+            
+            console.log('🖱️ [CURSOR DEBUG] API response status:', response.status);
+            console.log('🖱️ [CURSOR DEBUG] API response OK?', response.ok);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('🖱️ [CURSOR DEBUG] API response data:', data);
+                
+                if (data.avatar_url) {
+                    console.log('🖱️ [CURSOR DEBUG] Avatar URL found:', data.avatar_url);
+                    const img = document.createElement('img');
+                    img.className = 'cursor-profile-img';
+                    img.src = data.avatar_url;
+                    img.alt = data.username || username || 'User';
+                    
+                    img.onload = () => {
+                        console.log('✅ [CURSOR DEBUG] Avatar loaded from API');
+                        avatarElement.innerHTML = '';
+                        avatarElement.appendChild(img);
+                    };
+                    
+                    img.onerror = () => {
+                        console.log('❌ [CURSOR DEBUG] API avatar failed to load, using fallback');
+                        this.setAvatarFallback(avatarElement, data.username || username, userId);
+                    };
+                    
+                    console.log('🖱️ [CURSOR DEBUG] ============================================');
+                    return;
+                }
+            }
+            
+            // Fallback: Use first letter of username
+            console.log('⚠️ [CURSOR DEBUG] No avatar available, using letter fallback');
+            this.setAvatarFallback(avatarElement, username, userId);
+            console.log('🖱️ [CURSOR DEBUG] ============================================');
+            
+        } catch (error) {
+            console.warn('❌ [CURSOR DEBUG] Error loading avatar for user', userId, ':', error);
+            this.setAvatarFallback(avatarElement, username, userId);
+            console.log('🖱️ [CURSOR DEBUG] ============================================');
+        }
     }
     
+    /**
+     * Set avatar fallback with first letter
+     * @param {HTMLElement} avatarElement - Avatar element
+     * @param {String} username - Username
+     * @param {Number} userId - User ID
+     */
+    setAvatarFallback(avatarElement, username, userId) {
+        const firstLetter = (username || '?')[0].toUpperCase();
+        const fallback = document.createElement('div');
+        fallback.className = 'cursor-fallback-avatar';
+        fallback.textContent = firstLetter;
+        fallback.dataset.user = this.getUserColorIndex(userId);
+        
+        avatarElement.innerHTML = '';
+        avatarElement.appendChild(fallback);
+        
+        console.log('🖱️ [CURSOR DEBUG] Fallback letter set to:', firstLetter);
+    }
+
+    /**
+     * Update cursor position for a user
+     * @param {Number} userId - User ID
+     * @param {Object} data - Cursor data {x, y, username, color, profile_image, viewport}
+     */
+    updateCursorPosition(userId, data) {
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Updating cursor position for user:', userId);
+        console.log('🖱️ [CURSOR DEBUG] Position data:', { x: data.x, y: data.y });
+        console.log('🖱️ [CURSOR DEBUG] Viewport data:', data.viewport);
+        console.log('🖱️ [CURSOR DEBUG] Current user ID:', this.currentUser?.id);
+        
+        // Skip own cursor
+        if (userId === this.currentUser?.id || String(userId) === String(this.currentUser?.id)) {
+            console.log('🖱️ [CURSOR DEBUG] Skipping own cursor (matched user ID)');
+            console.log('🖱️ [CURSOR DEBUG] ============================================');
+            return;
+        }
+        
+        console.log('🖱️ [CURSOR DEBUG] This is NOT own cursor - proceeding');
+        
+        let cursor = this.cursors.get(userId);
+        console.log('🖱️ [CURSOR DEBUG] Cursor exists in map?', !!cursor);
+        
+        // Create cursor if it doesn't exist
+        if (!cursor) {
+            console.log('🖱️ [CURSOR DEBUG] Cursor does not exist - creating new one');
+            const colorClass = data.color ? `user-${data.color}` : this.getUserColorClass(userId);
+            console.log('🖱️ [CURSOR DEBUG] Color class to use:', colorClass);
+            
+            cursor = this.createCursor(userId, data.username, colorClass);
+            
+            // Load profile image after cursor is created
+            const avatar = cursor.querySelector('.cursor-avatar');
+            this.loadUserAvatar(userId, avatar, data.profile_image, data.username);
+        } else {
+            // Update profile image if cursor already exists but image might have changed
+            const avatar = cursor.querySelector('.cursor-avatar');
+            const existingImg = avatar.querySelector('.cursor-profile-img');
+            
+            // If profile image provided and different from current, update it
+            if (data.profile_image && (!existingImg || existingImg.src !== data.profile_image)) {
+                console.log('🖱️ [CURSOR DEBUG] Updating profile image for existing cursor');
+                this.loadUserAvatar(userId, avatar, data.profile_image, data.username);
+            }
+        }
+        
+        // Update position with smooth transform (no translate offset, handled by CSS)
+        const transformValue = `translate(${data.x}px, ${data.y}px)`;
+        cursor.style.transform = transformValue;
+        
+        console.log('🖱️ [CURSOR DEBUG] Cursor transform set to:', transformValue);
+        
+        // Update username if changed
+        const label = cursor.querySelector('.cursor-username');
+        if (label && label.textContent !== data.username) {
+            console.log('🖱️ [CURSOR DEBUG] Updating username from', label.textContent, 'to', data.username);
+            label.textContent = data.username;
+        }
+        
+        // Update or create viewport indicator
+        if (data.viewport) {
+            this.updateViewportIndicator(userId, data.viewport, data.username);
+        }
+        
+        console.log('✅ [CURSOR DEBUG] Cursor position updated successfully');
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+    }
+    
+    /**
+     * Update or create viewport indicator for a user
+     * @param {Number} userId - User ID
+     * @param {Object} viewport - Viewport data {x, y, width, height}
+     * @param {String} username - Username
+     */
+    updateViewportIndicator(userId, viewport, username) {
+        console.log('👁️ [VIEWPORT DEBUG] Updating viewport for user:', userId, username);
+        console.log('👁️ [VIEWPORT DEBUG] Viewport data:', viewport);
+        
+        if (!this.viewportIndicators) {
+            this.viewportIndicators = new Map();
+        }
+        
+        let indicator = this.viewportIndicators.get(userId);
+        
+        // Create viewport indicator if it doesn't exist
+        if (!indicator) {
+            console.log('👁️ [VIEWPORT DEBUG] Creating new viewport indicator');
+            indicator = document.createElement('div');
+            indicator.className = 'viewport-indicator';
+            indicator.dataset.userId = userId;
+            
+            // Add username label
+            const label = document.createElement('div');
+            label.className = 'viewport-label';
+            label.textContent = `${username}'s view`;
+            indicator.appendChild(label);
+            
+            this.cursorContainer.appendChild(indicator);
+            this.viewportIndicators.set(userId, indicator);
+            
+            console.log('✅ [VIEWPORT DEBUG] Viewport indicator created');
+        }
+        
+        // Update viewport position and size
+        indicator.style.left = `${viewport.x}px`;
+        indicator.style.top = `${viewport.y}px`;
+        indicator.style.width = `${viewport.width}px`;
+        indicator.style.height = `${viewport.height}px`;
+        
+        // Get color class from cursor
+        const cursor = this.cursors.get(userId);
+        if (cursor) {
+            const colorClass = cursor.className.match(/user-\d+/)?.[0] || 'user-1';
+            indicator.className = `viewport-indicator ${colorClass}`;
+        }
+        
+        console.log('✅ [VIEWPORT DEBUG] Viewport indicator updated');
+    }
+
+    /**
+     * Remove cursor for a user
+     * @param {Number} userId - User ID
+     */
+    removeCursor(userId) {
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+        console.log('🖱️ [CURSOR DEBUG] Removing cursor for user:', userId);
+        
+        const cursor = this.cursors.get(userId);
+        console.log('🖱️ [CURSOR DEBUG] Cursor found in map?', !!cursor);
+        
+        if (cursor) {
+            console.log('🖱️ [CURSOR DEBUG] Cursor element:', cursor);
+            console.log('🖱️ [CURSOR DEBUG] Cursor parent:', cursor.parentElement);
+            console.log('🖱️ [CURSOR DEBUG] Removing cursor from DOM...');
+            
+            cursor.remove();
+            this.cursors.delete(userId);
+            
+            console.log('✅ [CURSOR DEBUG] Cursor removed successfully');
+            console.log('🖱️ [CURSOR DEBUG] Remaining cursors:', this.cursors.size);
+        } else {
+            console.log('⚠️ [CURSOR DEBUG] No cursor found for user ID:', userId);
+        }
+        
+        // Also remove viewport indicator
+        if (this.viewportIndicators) {
+            const viewport = this.viewportIndicators.get(userId);
+            if (viewport) {
+                console.log('👁️ [VIEWPORT DEBUG] Removing viewport indicator for user:', userId);
+                viewport.remove();
+                this.viewportIndicators.delete(userId);
+                console.log('✅ [VIEWPORT DEBUG] Viewport indicator removed');
+            }
+        }
+        
+        console.log('🖱️ [CURSOR DEBUG] ============================================');
+    }
+
+    /**
+     * Get color class for user
+     * @param {Number} userId - User ID
+     * @returns {String} Color class (user-1 through user-6)
+     */
+    getUserColorClass(userId) {
+        console.log('🖱️ [CURSOR DEBUG] Getting color class for user:', userId);
+        
+        // Cycle through 6 color options
+        const colorIndex = ((userId - 1) % 6) + 1;
+        const colorClass = `user-${colorIndex}`;
+        
+        console.log('🖱️ [CURSOR DEBUG] Calculated color index:', colorIndex);
+        console.log('🖱️ [CURSOR DEBUG] Color class:', colorClass);
+        
+        return colorClass;
+    }
+
+    /**
+     * Throttled cursor update (called on mouse move)
+     */
+    throttledCursorUpdate(x, y) {
+        console.log('🖱️ [CURSOR DEBUG] Throttled cursor update called');
+        console.log('🖱️ [CURSOR DEBUG] Position: x=', x, 'y=', y);
+        console.log('🖱️ [CURSOR DEBUG] Session ID:', this.sessionId);
+        
+        if (!this.sessionId) {
+            console.log('⚠️ [CURSOR DEBUG] No session ID - not emitting cursor position');
+            return; // Not in a session
+        }
+        
+        const now = Date.now();
+        const timeSinceLastUpdate = now - this.lastCursorUpdate;
+        
+        console.log('🖱️ [CURSOR DEBUG] Time since last update:', timeSinceLastUpdate, 'ms');
+        console.log('🖱️ [CURSOR DEBUG] Throttle threshold:', this.config.cursorUpdateThrottle, 'ms');
+        
+        if (timeSinceLastUpdate < this.config.cursorUpdateThrottle) {
+            console.log('🖱️ [CURSOR DEBUG] Update throttled (too soon)');
+            return; // Throttle
+        }
+        
+        this.lastCursorUpdate = now;
+        
+        // Get viewport information
+        const viewport = this.getViewportInfo();
+        
+        const emitData = {
+            session_id: this.sessionId,
+            x: x,
+            y: y,
+            username: this.currentUser?.username || 'Unknown',
+            user_id: this.currentUser?.id,
+            viewport: viewport // Add viewport data
+        };
+        
+        console.log('✅ [CURSOR DEBUG] Emitting cursor position to server:');
+        console.log('🖱️ [CURSOR DEBUG] Emit data:', emitData);
+        
+        // Emit cursor position to other users
+        this.socket.emit('update_cursor_position', emitData);
+    }
+    
+    /**
+     * Get current viewport information
+     */
+    getViewportInfo() {
+        return {
+            x: window.scrollX || window.pageXOffset,
+            y: window.scrollY || window.pageYOffset,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollWidth: document.documentElement.scrollWidth,
+            scrollHeight: document.documentElement.scrollHeight
+        };
+    }
+
+    /**
+     * Clean up all cursors (when leaving session)
+     */
+    cleanupCursors() {
+        console.log('🧹 Cleaning up all cursors');
+        
+        for (const [userId, cursor] of this.cursors.entries()) {
+            cursor.remove();
+        }
+        
+        this.cursors.clear();
+        
+        // Also clean up viewport indicators
+        if (this.viewportIndicators) {
+            console.log('🧹 Cleaning up all viewport indicators');
+            for (const [userId, viewport] of this.viewportIndicators.entries()) {
+                viewport.remove();
+            }
+            this.viewportIndicators.clear();
+        }
+    }
+
 
 
     // ===== UI UPDATES =====
@@ -1356,9 +2067,10 @@ class CollaborationRealTime {
      * Cleanup resources
      */
     cleanup() {
-        console.log('🧹 Cleaning up collaboration system');
+        console.log('🧹 [DEBUG] Cleaning up collaboration system');
         
         this.stopHeartbeat();
+        this.stopUserVerification();
         
         if (this.cursorUpdateThrottleTimer) {
             clearTimeout(this.cursorUpdateThrottleTimer);
@@ -1377,7 +2089,7 @@ class CollaborationRealTime {
         this.chatMessageHandlers = [];
         this.deviceLockHandlers = [];
         
-        console.log('✅ Collaboration cleanup complete');
+        console.log('✅ [DEBUG] Collaboration cleanup complete');
     }
 }
 
@@ -1385,6 +2097,90 @@ class CollaborationRealTime {
 
 // Create global instance
 window.collaborationRealTime = new CollaborationRealTime();
+
+// ===== DEBUG CONSOLE COMMANDS =====
+
+// Debug: Check current user info
+window.debugUserInfo = function() {
+    console.log('🔍 [DEBUG] ============= USER INFO DEBUG =============');
+    console.log('🔍 [DEBUG] window.currentUser:', window.currentUser);
+    console.log('🔍 [DEBUG] window.sessionUser:', window.sessionUser);
+    console.log('🔍 [DEBUG] collaborationRealTime.currentUser:', window.collaborationRealTime.currentUser);
+    
+    const sessionDataElement = document.getElementById('session-data');
+    if (sessionDataElement) {
+        console.log('🔍 [DEBUG] session-data element found:');
+        console.log('🔍 [DEBUG]   - userId:', sessionDataElement.dataset.userId);
+        console.log('🔍 [DEBUG]   - username:', sessionDataElement.dataset.username);
+    } else {
+        console.error('❌ [DEBUG] session-data element NOT found');
+    }
+    
+    const userElements = document.querySelectorAll('[data-user-id]');
+    console.log('🔍 [DEBUG] Found', userElements.length, 'elements with [data-user-id]');
+    userElements.forEach((el, idx) => {
+        console.log(`🔍 [DEBUG] Element ${idx}:`, {
+            id: el.id,
+            userId: el.dataset.userId,
+            username: el.dataset.username,
+            element: el
+        });
+    });
+    
+    console.log('🔍 [DEBUG] ==========================================');
+};
+
+// Debug: Refresh current user
+window.debugRefreshUser = function() {
+    console.log('🔄 [DEBUG] Manually refreshing current user...');
+    window.collaborationRealTime.loadCurrentUser();
+    console.log('✅ [DEBUG] User refreshed. New value:', window.collaborationRealTime.currentUser);
+};
+
+// Debug: Check chat history
+window.debugChatHistory = function() {
+    console.log('🔍 [DEBUG] ============= CHAT HISTORY DEBUG =============');
+    console.log('🔍 [DEBUG] Total messages:', window.collaborationRealTime.chatHistory.length);
+    window.collaborationRealTime.chatHistory.forEach((msg, idx) => {
+        console.log(`🔍 [DEBUG] Message ${idx}:`, {
+            user_id: msg.user_id,
+            username: msg.username,
+            message: msg.message || msg.content,
+            timestamp: msg.timestamp,
+            isOwn: String(msg.user_id) === String(window.collaborationRealTime.currentUser?.id)
+        });
+    });
+    console.log('🔍 [DEBUG] ==========================================');
+};
+
+// Debug: Force user ID comparison
+window.debugUserComparison = function(messageUserId) {
+    const currentUserId = window.collaborationRealTime.currentUser?.id;
+    console.log('🔍 [DEBUG] ============= USER ID COMPARISON =============');
+    console.log('🔍 [DEBUG] Current User ID:', currentUserId, '(type:', typeof currentUserId, ')');
+    console.log('🔍 [DEBUG] Message User ID:', messageUserId, '(type:', typeof messageUserId, ')');
+    console.log('🔍 [DEBUG] String Current:', String(currentUserId));
+    console.log('🔍 [DEBUG] String Message:', String(messageUserId));
+    console.log('🔍 [DEBUG] Match (===):', currentUserId === messageUserId);
+    console.log('🔍 [DEBUG] Match (String):', String(currentUserId) === String(messageUserId));
+    console.log('🔍 [DEBUG] ==========================================');
+};
+
+// Debug: Test send message
+window.debugSendTestMessage = function(text = 'Test message') {
+    console.log('🔍 [DEBUG] Sending test message:', text);
+    window.collaborationRealTime.sendChatMessage(text);
+};
+
+// Expose to console
+console.log('✅ [DEBUG] Debug console commands available:');
+console.log('  - debugUserInfo(): Check current user information');
+console.log('  - debugRefreshUser(): Refresh current user from DOM');
+console.log('  - debugChatHistory(): View all chat messages');
+console.log('  - debugUserComparison(messageUserId): Compare user IDs');
+console.log('  - debugSendTestMessage(text): Send a test message');
+
+// ===== END DEBUG CONSOLE COMMANDS =====
 
 // Expose convenience methods
 window.createTeamSession = (simulationId, teamMembers, settings) => {

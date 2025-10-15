@@ -1,6 +1,8 @@
 """
 Real-time Collaborative Troubleshooting Lobby System
 Figma/Canva-style collaborative sessions for network troubleshooting
+
+Now with PostgreSQL persistence for lobby recovery and durability
 """
 
 from dataclasses import dataclass, field
@@ -418,20 +420,25 @@ class TroubleshootingLobby:
 
 
 class LobbyManager:
-    """Manages all troubleshooting lobbies"""
+    """Manages all troubleshooting lobbies with database persistence"""
     
     def __init__(self):
         self.lobbies: Dict[str, TroubleshootingLobby] = {}
         self.user_lobby_map: Dict[str, str] = {}  # user_id -> lobby_id
         self._lock = threading.RLock()
         self._cleanup_timer = None
+        self._persistence_enabled = True  # Enable database persistence
         self.start_cleanup_timer()
+        self._load_active_lobbies_from_db()
     
     def start_cleanup_timer(self):
         """Start periodic cleanup of inactive lobbies"""
         def cleanup_task():
             try:
                 self.cleanup_inactive_lobbies()
+                # Also cleanup old database records
+                if self._persistence_enabled:
+                    self._cleanup_old_db_lobbies()
             except Exception as e:
                 current_app.logger.error(f"Error in lobby cleanup: {e}")
             finally:
@@ -443,6 +450,74 @@ class LobbyManager:
         self._cleanup_timer = threading.Timer(300, cleanup_task)
         self._cleanup_timer.daemon = True
         self._cleanup_timer.start()
+    
+    def _load_active_lobbies_from_db(self):
+        """Load active lobbies from database on startup"""
+        if not self._persistence_enabled:
+            return
+        
+        try:
+            from services.lobby_persistence import lobby_persistence
+            active_lobbies = lobby_persistence.get_all_active_lobbies()
+            
+            for lobby_data in active_lobbies:
+                if lobby_data:
+                    # Recreate TroubleshootingLobby from database data
+                    lobby = TroubleshootingLobby(
+                        id=lobby_data['id'],
+                        name=lobby_data['name'],
+                        scenario_type=lobby_data['scenario_type'],
+                        scenario_id=lobby_data['scenario_id'],
+                        max_participants=lobby_data['max_participants'],
+                        class_id=lobby_data.get('class_id'),
+                        creator_id=lobby_data.get('creator_id'),
+                        creator_name=lobby_data.get('creator_name'),
+                        participants=lobby_data.get('participants', {}),
+                        network_state=lobby_data.get('network_state', {}),
+                        device_locks=lobby_data.get('device_locks', {}),
+                        cli_history=lobby_data.get('cli_history', {}),
+                        created_at=lobby_data.get('created_at', datetime.utcnow()),
+                        is_active=lobby_data.get('is_active', True),
+                        is_locked=lobby_data.get('is_locked', False),
+                        progress=lobby_data.get('progress', {}),
+                        chat_history=lobby_data.get('chat_history', [])
+                    )
+                    
+                    self.lobbies[lobby.id] = lobby
+                    
+                    # Rebuild user mapping
+                    for user_id in lobby.participants.keys():
+                        self.user_lobby_map[user_id] = lobby.id
+            
+            if active_lobbies:
+                current_app.logger.info(f"✅ Loaded {len(active_lobbies)} active lobbies from database")
+        
+        except Exception as e:
+            current_app.logger.error(f"❌ Error loading lobbies from database: {e}")
+    
+    def _save_lobby_to_db(self, lobby: TroubleshootingLobby):
+        """Save lobby to database"""
+        if not self._persistence_enabled:
+            return
+        
+        try:
+            from services.lobby_persistence import lobby_persistence
+            lobby_persistence.save_lobby(lobby)
+            
+            # Save all active participants
+            for user_id, participant_info in lobby.participants.items():
+                lobby_persistence.save_participant(lobby.id, user_id, participant_info)
+            
+        except Exception as e:
+            current_app.logger.error(f"❌ Error saving lobby {lobby.id} to database: {e}")
+    
+    def _cleanup_old_db_lobbies(self):
+        """Clean up old lobbies from database"""
+        try:
+            from services.lobby_persistence import lobby_persistence
+            lobby_persistence.cleanup_old_lobbies(hours=24)
+        except Exception as e:
+            current_app.logger.error(f"❌ Error cleaning up old database lobbies: {e}")
     
     def create_lobby(self, creator_id: str, creator_name: str, lobby_config: dict, creator_profile_image: str = None) -> TroubleshootingLobby:
         """Create a new troubleshooting lobby"""
@@ -474,6 +549,10 @@ class LobbyManager:
             lobby.add_chat_message('system', f"Welcome to {lobby.name}! Session created successfully.", 'system')
             
             current_app.logger.info(f"Created lobby {lobby_id} by user {creator_name}")
+            
+            # Save to database
+            self._save_lobby_to_db(lobby)
+            
             return lobby
     
     def join_lobby(self, lobby_id: str, user_id: str, user_info: dict) -> dict:
@@ -511,6 +590,15 @@ class LobbyManager:
                 lobby.add_chat_message('system', f"{user_info['username']} joined the session", 'system')
                 
                 current_app.logger.info(f"User {user_info['username']} joined lobby {lobby_id}")
+                
+                # Save to database
+                try:
+                    from services.lobby_persistence import lobby_persistence
+                    lobby_persistence.save_participant(lobby_id, user_id, lobby.participants[user_id])
+                    lobby_persistence.save_chat_message(lobby_id, lobby.chat_history[-1])
+                except Exception as e:
+                    current_app.logger.error(f"Error saving participant to database: {e}")
+                
                 return {'success': True, 'lobby': lobby}
             
             return {'success': False, 'error': 'Failed to join session'}
@@ -529,10 +617,25 @@ class LobbyManager:
                 lobby.remove_participant(user_id)
                 lobby.add_chat_message('system', f"{username} left the session", 'system')
                 
+                # Mark participant as inactive in database
+                try:
+                    from services.lobby_persistence import lobby_persistence
+                    lobby_persistence.mark_participant_inactive(lobby_id, user_id)
+                    lobby_persistence.save_chat_message(lobby_id, lobby.chat_history[-1])
+                except Exception as e:
+                    current_app.logger.error(f"Error updating participant in database: {e}")
+                
                 # If lobby is empty or creator left, mark as inactive
                 if not lobby.participants or user_id == lobby.creator_id:
                     lobby.is_active = False
                     current_app.logger.info(f"Lobby {lobby_id} marked as inactive")
+                    
+                    # Mark lobby as closed in database
+                    try:
+                        from services.lobby_persistence import lobby_persistence
+                        lobby_persistence.close_lobby(lobby_id)
+                    except Exception as e:
+                        current_app.logger.error(f"Error closing lobby in database: {e}")
             
             del self.user_lobby_map[user_id]
             current_app.logger.info(f"User {user_id} left lobby {lobby_id}")

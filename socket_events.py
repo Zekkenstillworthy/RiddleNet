@@ -1160,6 +1160,7 @@ def handle_cursor_update(data):
     try:
         lobby = lobby_manager.get_user_lobby(str(current_user.id))
         if not lobby:
+            print(f"⚠️ No lobby found for user {current_user.id}")
             return
         
         position = {
@@ -1167,18 +1168,33 @@ def handle_cursor_update(data):
             'y': data.get('y', 0)
         }
         
+        # Extract viewport data if provided
+        viewport = data.get('viewport')
+        
         lobby.update_participant_cursor(str(current_user.id), position)
         lobby_manager.update_participant_activity(str(current_user.id))
         
         # Broadcast cursor position to other participants
-        room_name = f"troubleshooting_lobby_{lobby.id}"
-        emit('cursor_moved', {
+        # Use the same room name format as join_team_lobby
+        room_name = f"lobby_{lobby.id}"
+        
+        cursor_data = {
             'user_id': str(current_user.id),
             'username': current_user.username,
             'position': position,
             'color': lobby.participants[str(current_user.id)]['color'],
             'profile_image': current_user.profile_img
-        }, room=room_name, include_self=False)
+        }
+        
+        # Add viewport data if available
+        if viewport:
+            cursor_data['viewport'] = viewport
+            print(f"👁️ [VIEWPORT] User {current_user.username} viewport: {viewport}")
+        
+        print(f"🖱️ [CURSOR] Emitting cursor_moved to room: {room_name}")
+        print(f"🖱️ [CURSOR] Data: {cursor_data}")
+        
+        emit('cursor_moved', cursor_data, room=room_name, include_self=False)
         
     except Exception as e:
         print(f"❌ Error updating cursor: {str(e)}")
@@ -1765,7 +1781,14 @@ def handle_send_lobby_chat(data):
 def handle_collaboration_chat_message(data):
     """Handle chat message in collaboration session"""
     try:
-        print(f"💬 Received collaboration chat message from {current_user.username}: {data}")
+        print(f"💬 [DEBUG] ============================================")
+        print(f"💬 [DEBUG] Received collaboration chat message")
+        print(f"💬 [DEBUG] current_user.id: {current_user.id} (type: {type(current_user.id)})")
+        print(f"💬 [DEBUG] current_user.username: {current_user.username}")
+        print(f"💬 [DEBUG] Data received: {data}")
+        print(f"💬 [DEBUG] Data user_id: {data.get('user_id')} (type: {type(data.get('user_id'))})")
+        print(f"💬 [DEBUG] Data username: {data.get('username')}")
+        print(f"💬 [DEBUG] ============================================")
         
         message = data.get('message', '').strip()
         session_id = data.get('session_id')
@@ -1778,27 +1801,37 @@ def handle_collaboration_chat_message(data):
             emit('collaboration_chat_error', {'error': 'Session ID required'})
             return
         
-        # Create standardized message object
+        # CRITICAL FIX: Use current_user from Flask-Login, NOT from client data!
+        # Client data can be stale/poisoned, always trust server-side session
         chat_message = {
             'id': str(uuid.uuid4()) if 'uuid' in globals() else f'msg_{int(time.time())}',
-            'user_id': str(current_user.id),
-            'username': current_user.username,
+            'user_id': str(current_user.id),  # ← From Flask-Login session (trusted)
+            'username': current_user.username,  # ← From Flask-Login session (trusted)
             'message': message,
             'message_type': 'text',
             'timestamp': datetime.utcnow().isoformat(),
             'session_id': session_id
         }
         
+        print(f"💬 [DEBUG] Created chat_message with TRUSTED data:")
+        print(f"💬 [DEBUG]   - user_id: {chat_message['user_id']}")
+        print(f"💬 [DEBUG]   - username: {chat_message['username']}")
+        print(f"💬 [DEBUG]   - message: {chat_message['message']}")
+        
         # Use collaboration service if available
         if collaboration_service:
             result = collaboration_service.send_chat_message(
                 session_id=session_id,
-                user_id=str(current_user.id),
+                user_id=str(current_user.id),  # ← Use trusted current_user
                 message=message,
                 message_type='text'
             )
             
+            print(f"💬 [DEBUG] Collaboration service result: {result}")
+            
             if result['success']:
+                print(f"💬 [DEBUG] Broadcasting message with user_id={result['message']['user_id']}, username={result['message']['username']}")
+                
                 # Broadcast to all session participants
                 emit('collaboration_chat_message', {
                     'success': True,
@@ -1809,10 +1842,12 @@ def handle_collaboration_chat_message(data):
                 # Also emit as team_chat_message for compatibility
                 emit('team_chat_message', result['message'], room=f'session_{session_id}')
                 
-                print(f"✅ Chat message sent and broadcasted: {message[:50]}...")
+                print(f"✅ [DEBUG] Chat message sent and broadcasted: {message[:50]}...")
             else:
+                print(f"❌ [DEBUG] Collaboration service error: {result['error']}")
                 emit('collaboration_chat_error', {'error': result['error']})
         else:
+            print(f"💬 [DEBUG] Using fallback (no collaboration service)")
             # Fallback: broadcast directly to session room
             emit('collaboration_chat_message', {
                 'success': True,
@@ -1823,10 +1858,12 @@ def handle_collaboration_chat_message(data):
             # Also emit as team_chat_message for compatibility
             emit('team_chat_message', chat_message, room=f'session_{session_id}')
             
-            print(f"✅ Chat message broadcasted (fallback): {message[:50]}...")
+            print(f"✅ [DEBUG] Chat message broadcasted (fallback): {message[:50]}...")
             
     except Exception as e:
-        print(f"❌ Error handling collaboration chat message: {str(e)}")
+        print(f"❌ [DEBUG] Error handling collaboration chat message: {str(e)}")
+        import traceback
+        traceback.print_exc()
         emit('collaboration_chat_error', {
             'error': f'Failed to send message: {str(e)}'
         })

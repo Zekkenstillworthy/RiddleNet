@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/unified-chat.css') }}">
 <link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/auto-landscape.css') }}">
 
 <style>
     /* Base from troubleshoot.html with dynamic simulation adaptations */
@@ -46,87 +45,221 @@
         --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
         --shadow-cyber: 0 0 30px rgba(0, 217, 255, 0.4);
 
-        /* Missing device and spacing variables */
-        --space-xs: 8px;
-        --space-sm: 12px;
-        --space-md: 16px;
-        --space-lg: 24px;
-        --space-xl: 32px;
-        --device-size-md: 60px;
-    }
-    
-    /* ========================================
-       LANDSCAPE ORIENTATION OPTIMIZATIONS
-       ======================================== */
-    
-    /* Mobile Landscape Mode - Dynamic Simulation */
-    @media screen and (max-width: 896px) and (orientation: landscape) {
-        .simulation-wrapper {
-            flex-direction: row;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        /* Header becomes vertical or hidden in landscape */
-        .simulation-header {
-            display: none; /* Hide header to maximize space */
-        }
-        
-        /* Main simulation area optimized for landscape */
-        .simulation-main {
-            flex: 2.5;
-            height: 100vh;
+        /* Team Chat Styles */
+        .team-chat {
+            border-top: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
+            height: 200px;
         }
-        
-        /* Canvas/workspace area */
-        .simulation-canvas, .topology-canvas {
-            height: 100vh;
-            width: 100%;
-        }
-        
-        /* Device palette and controls side panel */
-        .device-palette-container, .controls-sidebar {
+
+        .chat-messages {
             flex: 1;
-            max-width: 35vw;
-            height: 100vh;
+            padding: 0.75rem;
             overflow-y: auto;
-            border-left: 1px solid var(--glass-border);
-            background: var(--glass-bg);
+            font-size: 0.8rem;
         }
-        
-        /* Device grid optimized for landscape side panel */
-        .device-grid {
+
+        .chat-message {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-message.own,
+        .chat-message.own-message {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            margin-left: 2rem;
+        }
+
+        .chat-author {
+            font-weight: 600;
+            color: var(--cyber-glow);
+            font-size: 0.7rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-text {
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .chat-input-container {
             display: flex;
-            flex-direction: column;
-            gap: var(--space-xs);
-            padding: var(--space-sm);
+            padding: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 0.5rem;
         }
-        
-        .device-item {
-            min-height: var(--touch-target-min);
-            width: 100%;
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--cyber-glow);
+        }
+
+        .chat-send-btn {
+            background: var(--cyber-glow);
+            border: none;
+            border-radius: 6px;
+            color: var(--background);
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
+            justify-content: center;
+            cursor: pointer;
         }
-        
-        /* Configuration panels */
-        .config-panel, .properties-panel {
-            height: 100vh;
-            overflow-y: auto;
+
+        .chat-send-btn:hover {
+            background: transparent;
+            color: var(--cyber-glow);
+            border: 1px solid var(--cyber-glow);
         }
-        
-        /* Modal adjustments for landscape */
-        .modal, .dialog {
-            width: 80vw;
-            height: 60vh;
-            max-width: 800px;
-            max-height: 500px;
+
+        /* Performance sidebar chat overrides */
+        #chat-section .chat-container {
+            position: static;
+            bottom: auto;
+            right: auto;
+            left: auto;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            max-height: 320px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: none;
+            transform: none;
+            opacity: 1;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            transition: none;
         }
-        
-        /* Toolbar optimizations */
+
+        #chat-section .chat-messages-container {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.35), rgba(30, 41, 59, 0.55));
+            min-height: 180px;
+            max-height: 220px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px;
+        }
+
+        #chat-section .chat-message {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        #chat-section .chat-input-container {
+            padding: 12px 0 0;
+            border-top: none;
+            background: transparent;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #chat-section .chat-participants-count {
+            background: rgba(59, 130, 246, 0.18);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        #chat-section .chat-input-wrapper {
+            flex: 1;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+        /* Embedded chat responsiveness */
+        @media screen and (max-width: 1024px) {
+            #chat-section .chat-container {
+                max-height: none;
+            }
+
+            #chat-section .chat-messages-container {
+                max-height: 260px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            #chat-section .chat-container {
+                max-height: none;
+                border-radius: 14px;
+            }
+
+            #chat-section .chat-messages-container {
+                min-height: 160px;
+                max-height: 200px;
+                padding: 10px;
+            }
+
+            #chat-section .chat-input-container {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            #chat-section .chat-participants-count {
+                justify-content: center;
+                padding: 8px 10px;
+                font-size: 0.75rem;
+            }
+
+            #chat-section .chat-input-wrapper {
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            #chat-section .chat-input {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+
+            #chat-section .chat-send-btn {
+                width: 48px;
+                height: 48px;
+            }
+        }
+        }
+
+        #chat-section .chat-input {
+            background: transparent;
+            border: none;
+            padding: 0 4px;
+            font-size: 0.85rem;
+        }
+
+        #chat-section .chat-input:focus {
+            border: none;
+        }
+
+        #chat-section .chat-send-btn {
+            border-radius: 50px;
+            width: 34px;
+            height: 34px;
+            border: none;
+            color: var(--background);
+        }
         .toolbar {
             flex-direction: column;
             height: 100vh;
@@ -1916,13 +2049,15 @@
         position: fixed;
         z-index: 9999;
         pointer-events: none;
-        transition: all 0.1s ease-out;
-        transform: translate(-50%, -50%);
+        /* Ultra-smooth 120fps with minimal transition time */
+        transition: transform 0.016s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: transform;
+        transform-origin: top left;
     }
     
     .cursor-avatar {
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         border: 3px solid var(--cyber-glow);
         background: var(--surface);
@@ -1930,13 +2065,18 @@
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        font-size: 12px;
+        font-size: 14px;
         color: var(--text-primary);
         position: relative;
-        box-shadow: 0 2px 12px rgba(0, 217, 255, 0.4);
+        box-shadow: 0 4px 16px rgba(0, 217, 255, 0.5), 0 0 0 2px rgba(0, 217, 255, 0.1);
         backdrop-filter: blur(10px);
         overflow: hidden;
-        transition: all 0.3s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .cursor-avatar:hover {
+        transform: scale(1.12);
+        box-shadow: 0 6px 20px rgba(0, 217, 255, 0.6), 0 0 0 3px rgba(0, 217, 255, 0.2);
     }
     
     .cursor-profile-img {
@@ -1944,6 +2084,8 @@
         height: 100%;
         object-fit: cover;
         border-radius: 50%;
+        pointer-events: none;
+        user-select: none;
     }
     
     .cursor-fallback-avatar {
@@ -2070,6 +2212,93 @@
     .cursor-avatar[data-user="4"]::before { background: linear-gradient(135deg, #ff8c94, #ff758c); }
     .cursor-avatar[data-user="5"]::before { background: linear-gradient(135deg, #c44569, #b71540); }
     .cursor-avatar[data-user="6"]::before { background: linear-gradient(135deg, #40739e, #2c3e50); }
+    
+    /* ===== VIEWPORT INDICATORS ===== */
+    .viewport-indicator {
+        position: fixed;
+        border: 2px dashed rgba(0, 217, 255, 0.5);
+        pointer-events: none;
+        z-index: 9998;
+        transition: all 0.3s ease;
+        background: rgba(0, 217, 255, 0.05);
+        backdrop-filter: blur(2px);
+    }
+    
+    .viewport-indicator.user-1 {
+        border-color: rgba(255, 107, 107, 0.6);
+        background: rgba(255, 107, 107, 0.05);
+    }
+    
+    .viewport-indicator.user-2 {
+        border-color: rgba(78, 205, 196, 0.6);
+        background: rgba(78, 205, 196, 0.05);
+    }
+    
+    .viewport-indicator.user-3 {
+        border-color: rgba(255, 230, 109, 0.6);
+        background: rgba(255, 230, 109, 0.05);
+    }
+    
+    .viewport-indicator.user-4 {
+        border-color: rgba(255, 140, 148, 0.6);
+        background: rgba(255, 140, 148, 0.05);
+    }
+    
+    .viewport-indicator.user-5 {
+        border-color: rgba(196, 69, 105, 0.6);
+        background: rgba(196, 69, 105, 0.05);
+    }
+    
+    .viewport-indicator.user-6 {
+        border-color: rgba(64, 115, 158, 0.6);
+        background: rgba(64, 115, 158, 0.05);
+    }
+    
+    .viewport-label {
+        position: absolute;
+        top: -26px;
+        left: 0;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+    }
+    
+    .viewport-indicator.user-1 .viewport-label {
+        background: rgba(255, 107, 107, 0.9);
+        border-color: rgba(255, 107, 107, 0.5);
+    }
+    
+    .viewport-indicator.user-2 .viewport-label {
+        background: rgba(78, 205, 196, 0.9);
+        border-color: rgba(78, 205, 196, 0.5);
+    }
+    
+    .viewport-indicator.user-3 .viewport-label {
+        background: rgba(255, 230, 109, 0.9);
+        border-color: rgba(255, 230, 109, 0.5);
+        color: #333;
+    }
+    
+    .viewport-indicator.user-4 .viewport-label {
+        background: rgba(255, 140, 148, 0.9);
+        border-color: rgba(255, 140, 148, 0.5);
+    }
+    
+    .viewport-indicator.user-5 .viewport-label {
+        background: rgba(196, 69, 105, 0.9);
+        border-color: rgba(196, 69, 105, 0.5);
+    }
+    
+    .viewport-indicator.user-6 .viewport-label {
+        background: rgba(64, 115, 158, 0.9);
+        border-color: rgba(64, 115, 158, 0.5);
+    }
 
     /* ===== ENHANCED TEAM CHAT BOX ===== */
     /* All chat styles moved to unified-chat.css for consistency across user and admin interfaces */
@@ -2272,6 +2501,10 @@
     .feedback-section {
         padding: 20px 24px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feedback-section.flash {
+        animation: pulse 1.5s ease-in-out;
     }
 
     .feedback-section:last-child {
@@ -4728,17 +4961,6 @@
         }
     }
     
-    /* ========== Team Chat Styles ========== */
-    .team-chat-toggle.has-new-message {
-        animation: chatPulse 1s infinite;
-        background: #dc3545 !important;
-    }
-    
-    @keyframes chatPulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-    }
-    
     .chat-message {
         margin-bottom: 12px;
         padding: 8px 12px;
@@ -4806,8 +5028,6 @@
 
 {% block content %}
 <div class="simulation-wrapper dynamic-simulation">
-    <!-- Hidden session data for safe JS access -->
-    <div id="session-data" data-user-id="{{ session.user_id|default('') }}" data-username="{{ session.username|default('') }}" style="display: none;"></div>
     <!-- Header -->
     <div class="simulation-header">
         <div class="header-left">
@@ -4820,28 +5040,6 @@
             </div>
         </div> 
         <div class="header-right">
-            <!-- Canvas Tools moved from canvas area -->
-            <div class="canvas-tools header-tools">
-                <button class="tool-btn active" data-tool="select" title="Select Tool">
-                    <i class="fas fa-mouse-pointer"></i>
-                </button>
-                <button class="tool-btn" data-tool="move" title="Move Tool">
-                    <i class="fas fa-arrows-alt"></i>
-                </button>
-                <button class="tool-btn" data-tool="delete" title="Delete Tool">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <div class="tool-separator"></div>
-                <button class="tool-btn" data-tool="wired" title="Wired Connection">
-                    <i class="fas fa-minus"></i>
-                    <span class="label">Wired</span>
-                </button>
-                <button class="tool-btn" data-tool="wireless" title="Wireless Connection">
-                    <i class="fas fa-wifi"></i>
-                    <span class="label">Wireless</span>
-                </button>
-            </div>
-            
             <div class="bottom-actions">
                 <button id="submit-btn" class="btn btn-success" style="display: none;">
                     <i class="fas fa-check"></i>
@@ -4914,19 +5112,22 @@
                         Network Infrastructure
                     </div>
                     <div class="device-grid">
+                        <!-- MVP: Router with custom image -->
                         <div class="device-item" data-device-type="router" draggable="true">
-                            <i class="fas fa-project-diagram device-icon"></i>
+                            <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                             <span class="device-label">Router</span>
                             <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                         </div>
+                        <!-- MVP: Switch with custom image -->
                         <div class="device-item" data-device-type="switch" draggable="true">
-                            <i class="fas fa-ethernet device-icon"></i>
+                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                             <span class="device-label">Switch</span>
                             <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                         </div>
                        
+                        <!-- MVP: Hub with custom image (uses Switch image) -->
                         <div class="device-item" data-device-type="hub" draggable="true">
-                            <i class="fas fa-circle-nodes device-icon"></i>
+                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Hub" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                             <span class="device-label">Hub</span>
                             <div class="device-tooltip">Network Hub - Basic connectivity device</div>
                         </div>
@@ -4940,45 +5141,36 @@
                         Computing Devices
                     </div>
                     <div class="device-grid">
-                        <div class="device-item" data-device-type="server" draggable="true">
-                            <i class="fas fa-server device-icon"></i>
-                            <span class="device-label">Server</span>
-                            <div class="device-tooltip">Server - Provides network services</div>
-                        </div>
-                        <div class="device-item" data-device-type="computer" draggable="true">
-                            <i class="fas fa-desktop device-icon"></i>
-                            <span class="device-label">Computer</span>
-                            <div class="device-tooltip">Desktop Computer - End user device</div>
-                        </div>
+                        <!-- MVP: Laptop with custom image (uses PC image) -->
                         <div class="device-item" data-device-type="laptop" draggable="true">
-                            <i class="fas fa-laptop device-icon"></i>
+                            <img src="{{ url_for('static', filename='img/PC.png') }}" alt="Laptop" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
                             <span class="device-label">Laptop</span>
                             <div class="device-tooltip">Laptop Computer - Portable end user device</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Mobile & Communication -->
+                <!-- Tools & Actions -->
                 <div class="device-category">
                     <div class="category-title">
-                        <i class="fas fa-mobile-alt"></i>
-                        Mobile & Communication
+                        <i class="fas fa-tools"></i>
+                        Tools & Actions
                     </div>
                     <div class="device-grid">
-                        <div class="device-item" data-device-type="phone" draggable="true">
-                            <i class="fas fa-phone device-icon"></i>
-                            <span class="device-label">IP Phone</span>
-                            <div class="device-tooltip">IP Phone - Voice over IP device</div>
+                        <div class="device-item" data-device-type="wired" draggable="true">
+                            <i class="fas fa-ethernet device-icon"></i>
+                            <span class="device-label">Wired</span>
+                            <div class="device-tooltip">Wired Connection - Ethernet cable</div>
                         </div>
-                        <div class="device-item" data-device-type="tablet" draggable="true">
-                            <i class="fas fa-tablet-alt device-icon"></i>
-                            <span class="device-label">Tablet</span>
-                            <div class="device-tooltip">Tablet - Mobile computing device</div>
+                        <div class="device-item" data-device-type="wireless" draggable="true">
+                            <i class="fas fa-wifi device-icon"></i>
+                            <span class="device-label">Wireless</span>
+                            <div class="device-tooltip">Wireless Connection - Wi-Fi link</div>
                         </div>
-                        <div class="device-item" data-device-type="mobile" draggable="true">
-                            <i class="fas fa-mobile-alt device-icon"></i>
-                            <span class="device-label">Mobile</span>
-                            <div class="device-tooltip">Mobile Phone - Wireless communication device</div>
+                        <div class="action-btn device-item" onclick="deleteSelected()">
+                            <i class="fas fa-trash-alt device-icon"></i>
+                            <span class="device-label">Delete</span>
+                            <div class="device-tooltip">Delete selected devices and connections</div>
                         </div>
                     </div>
                 </div>
@@ -5131,28 +5323,7 @@
                     </div>
                 </div>
 
-                <!-- Available Sessions -->
-                <div class="feedback-section">
-                    <h4><i class="fas fa-globe"></i> Available Sessions</h4>
-                    <div class="sessions-list" id="sessions-list">
-                        <div class="session-card empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-users-slash"></i>
-                            </div>
-                            <div class="empty-text">No active sessions found</div>
-                            <div class="session-actions-group">
-                                <button class="create-session-btn" id="browse-lobbies-btn">
-                                    <i class="fas fa-search"></i>
-                                    Browse Sessions
-                                </button>
-                                <button class="create-session-btn secondary" id="refresh-lobbies-btn">
-                                    <i class="fas fa-sync-alt"></i>
-                                    Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
 
                 <!-- My Active Session -->
                 <div class="feedback-section" id="active-session-section" style="display: block;">
@@ -5232,7 +5403,7 @@
                 <!-- Team Chat -->
                 <div class="feedback-section" id="chat-section">
                     <h4><i class="fas fa-comments"></i> Team Chat</h4>
-                    <div class="chat-container">
+                    <div class="chat-container" id="team-chat">
                         <div class="chat-messages-container" id="chat-messages">
                             <div class="chat-message system">
                                 <div class="message-content">
@@ -6910,8 +7081,18 @@ window.teamSessionManager = {
             // Update collaboration system session info
             const collab = this.ensureCollaborationSystem();
             if (collab) {
-                collab.currentSession = data.lobby;
-                console.log('🤝 [TEAM SESSION] Updated collaboration system session:', data.lobby);
+                if (typeof collab.updateSessionContext === 'function') {
+                    collab.updateSessionContext(data.lobby, 'team_session_manager_join');
+                    this.currentSession = collab.currentSession;
+                    console.log('🤝 [TEAM SESSION] Synced collaboration system session:', collab.currentSession);
+                    console.log('[TEAM SESSION] Active session ID:', collab.sessionId);
+                } else {
+                    collab.currentSession = data.lobby;
+                    if (typeof collab.extractSessionId === 'function') {
+                        collab.sessionId = collab.extractSessionId(data.lobby);
+                    }
+                    console.log('🤝 [TEAM SESSION] Updated collaboration system session (fallback):', data.lobby);
+                }
             }
             
             // Update UI to show current session
@@ -6942,7 +7123,15 @@ window.teamSessionManager = {
             // Clear collaboration system session info
             const collab = this.ensureCollaborationSystem();
             if (collab) {
-                collab.currentSession = null;
+                if (typeof collab.clearSessionContext === 'function') {
+                    collab.clearSessionContext('team_session_manager_leave');
+                } else {
+                    collab.currentSession = null;
+                    collab.sessionId = null;
+                }
+                if (typeof collab.cleanupCursors === 'function') {
+                    collab.cleanupCursors();
+                }
                 console.log('🤝 [TEAM SESSION] Cleared collaboration system session');
             }
         } else {
@@ -7249,14 +7438,7 @@ window.teamSessionManager = {
 
     // Toggle team chat visibility
     toggleTeamChat() {
-        const chatElement = document.getElementById('team-chat');
-        if (chatElement) {
-            if (chatElement.style.display === 'none') {
-                chatElement.style.display = 'flex';
-            } else {
-                chatElement.style.display = 'none';
-            }
-        }
+        this.toggleChat();
     },
     
     // Send a team chat message
@@ -7529,7 +7711,8 @@ window.teamSessionManager = {
         }
         
         const currentUserId = this.getCurrentUserId();
-        const isCurrentUser = messageData.user_id === currentUserId || messageData.user_id === String(currentUserId);
+        // Convert both to strings for proper comparison (handles string vs number mismatch)
+        const isCurrentUser = String(messageData.user_id) === String(currentUserId);
         const messageClass = isCurrentUser ? 'chat-message own' : 'chat-message';
         
         // Format timestamp if available
@@ -7546,11 +7729,14 @@ window.teamSessionManager = {
             timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         
+        // Display "You" for current user's messages, otherwise show username
+        const displayName = isCurrentUser ? 'You' : (messageData.username || 'Unknown User');
+        
         // Create message HTML with better styling and structure
         const messageHtml = `
             <div class="${messageClass}" data-user-id="${messageData.user_id}" data-message-id="${Date.now()}">
                 <div class="chat-message-header">
-                    <span class="chat-author">${messageData.username || 'Unknown User'}</span>
+                    <span class="chat-author">${displayName}</span>
                     <span class="chat-time">${timeStr}</span>
                 </div>
                 <div class="chat-text">${this.sanitizeMessage(messageData.message)}</div>
@@ -7565,17 +7751,17 @@ window.teamSessionManager = {
         
         // Show chat if it's hidden and this is a new message from another user
         if (!isCurrentUser) {
-            const chatElement = document.getElementById('team-chat');
-            const chatToggle = document.getElementById('team-chat-toggle');
-            
-            if (chatElement && chatElement.style.display === 'none') {
-                // Flash the chat toggle to indicate new message
-                if (chatToggle) {
-                    chatToggle.classList.add('has-new-message');
-                    setTimeout(() => {
-                        chatToggle.classList.remove('has-new-message');
-                    }, 3000);
-                }
+            const performanceSidebar = document.getElementById('performance-sidebar');
+            const chatSection = document.getElementById('chat-section');
+
+            if (performanceSidebar) {
+                performanceSidebar.classList.add('flash');
+                setTimeout(() => performanceSidebar.classList.remove('flash'), 1500);
+            }
+
+            if (chatSection) {
+                chatSection.classList.add('flash');
+                setTimeout(() => chatSection.classList.remove('flash'), 1500);
             }
         }
         
@@ -7808,203 +7994,59 @@ window.teamSessionManager = {
         console.log('💬 [CHAT DEBUG] Initializing chat interface...');
         
         // Find or create chat elements
-        let teamChatContainer = document.getElementById('team-chat');
-        let chatToggle = document.getElementById('team-chat-toggle');
-        
+        const teamChatContainer = document.getElementById('team-chat');
+        const chatToggle = document.getElementById('team-chat-toggle');
+
         if (!teamChatContainer) {
-            console.log('💬 [CHAT DEBUG] Creating team chat container...');
-            
-            // Create main chat container
-            teamChatContainer = document.createElement('div');
-            teamChatContainer.id = 'team-chat';
-            teamChatContainer.className = 'team-chat-container';
-            teamChatContainer.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                width: 300px;
-                height: 400px;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                z-index: 1050;
-                display: none;
-                flex-direction: column;
-            `;
-            
-            // Create chat header
-            const chatHeader = document.createElement('div');
-            chatHeader.className = 'chat-header';
-            chatHeader.style.cssText = `
-                padding: 12px;
-                background: #007bff;
-                color: white;
-                font-weight: 600;
-                border-radius: 8px 8px 0 0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            `;
-            chatHeader.innerHTML = `
-                <span>Team Chat</span>
-                <button onclick="window.teamSessionManager.toggleChat()" style="background: none; border: none; color: white; font-size: 16px; cursor: pointer;">×</button>
-            `;
-            
-            // Create messages container
-            const chatMessages = document.createElement('div');
-            chatMessages.id = 'chat-messages';
-            chatMessages.className = 'chat-messages';
-            chatMessages.style.cssText = `
-                flex: 1;
-                overflow-y: auto;
-                padding: 12px;
-                background: #f8f9fa;
-            `;
-            
-            // Create input container
-            const chatInputContainer = document.createElement('div');
-            chatInputContainer.className = 'chat-input-container';
-            chatInputContainer.style.cssText = `
-                padding: 12px;
-                border-top: 1px solid #eee;
-                display: flex;
-                gap: 8px;
-            `;
-            
-            const chatInput = document.createElement('input');
-            chatInput.type = 'text';
-            chatInput.id = 'team-chat-input';
-            chatInput.placeholder = 'Type a message...';
-            chatInput.style.cssText = `
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 14px;
-            `;
-            
-            const sendButton = document.createElement('button');
-            sendButton.textContent = 'Send';
-            sendButton.onclick = () => this.sendChatMessage();
-            sendButton.style.cssText = `
-                padding: 8px 16px;
-                background: #007bff;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            `;
-            
-            // Handle Enter key in chat input
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.sendChatMessage();
-                }
-            });
-            
-            // Assemble chat container
-            chatInputContainer.appendChild(chatInput);
-            chatInputContainer.appendChild(sendButton);
-            
-            teamChatContainer.appendChild(chatHeader);
-            teamChatContainer.appendChild(chatMessages);
-            teamChatContainer.appendChild(chatInputContainer);
-            
-            // Add to body
-            document.body.appendChild(teamChatContainer);
+            console.warn('💬 [CHAT DEBUG] Team chat container not found in live performance panel');
+        } else {
+            teamChatContainer.style.display = '';
+            teamChatContainer.dataset.integrated = 'true';
         }
-        
-        // Find or create chat toggle button
-        if (!chatToggle) {
-            console.log('💬 [CHAT DEBUG] Creating chat toggle button...');
-            
-            chatToggle = document.createElement('button');
-            chatToggle.id = 'team-chat-toggle';
-            chatToggle.className = 'team-chat-toggle';
-            chatToggle.innerHTML = '<i class="fas fa-comments"></i>';
-            chatToggle.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
-                background: #007bff;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                font-size: 20px;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                z-index: 1049;
-                display: none;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-            `;
-            
-            chatToggle.onclick = () => this.toggleChat();
-            
-            // Add hover effects
-            chatToggle.addEventListener('mouseenter', () => {
-                chatToggle.style.background = '#0056b3';
-                chatToggle.style.transform = 'scale(1.1)';
-            });
-            
-            chatToggle.addEventListener('mouseleave', () => {
-                chatToggle.style.background = '#007bff';
-                chatToggle.style.transform = 'scale(1)';
-            });
-            
-            document.body.appendChild(chatToggle);
+
+        if (chatToggle) {
+            chatToggle.remove();
         }
-        
-        // Show chat toggle button when in team session
-        if (this.currentSession) {
-            chatToggle.style.display = 'flex';
-            console.log('💬 [CHAT DEBUG] Chat toggle button shown');
-        }
-        
-        console.log('💬 [CHAT DEBUG] Chat interface initialized successfully');
+
+        console.log('💬 [CHAT DEBUG] Chat interface bound to performance panel');
     },
     
     // Toggle chat visibility
     toggleChat() {
-        const chatContainer = document.getElementById('team-chat');
-        const chatToggle = document.getElementById('team-chat-toggle');
-        
+        const chatSection = document.getElementById('chat-section');
+        const chatContainer = document.getElementById('team-chat') || chatSection;
+
         if (!chatContainer) {
             console.error('💬 [CHAT DEBUG] Chat container not found');
             return;
         }
-        
-        const isVisible = chatContainer.style.display !== 'none';
-        
-        if (isVisible) {
-            chatContainer.style.display = 'none';
-            if (chatToggle) {
-                chatToggle.style.display = 'flex';
-            }
-        } else {
-            chatContainer.style.display = 'flex';
-            if (chatToggle) {
-                chatToggle.style.display = 'none';
-            }
-            
-            // Focus on input when opening chat
-            const chatInput = document.getElementById('team-chat-input');
-            if (chatInput) {
-                setTimeout(() => chatInput.focus(), 100);
+
+        const performanceSidebar = document.getElementById('performance-sidebar');
+        if (performanceSidebar) {
+            performanceSidebar.classList.add('active');
+            performanceSidebar.classList.add('flash');
+            setTimeout(() => performanceSidebar.classList.remove('flash'), 1500);
+        }
+
+        if (chatSection) {
+            chatSection.classList.add('flash');
+            setTimeout(() => chatSection.classList.remove('flash'), 1500);
+            if (typeof chatSection.scrollIntoView === 'function') {
+                chatSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
-        
-        console.log('💬 [CHAT DEBUG] Chat visibility toggled:', !isVisible);
+
+        const chatInput = document.getElementById('collaboration-chat-input') || document.getElementById('team-chat-input');
+        if (chatInput) {
+            setTimeout(() => chatInput.focus({ preventScroll: true }), 150);
+        }
+
+        console.log('💬 [CHAT DEBUG] Chat section focused in performance panel');
     },
     
     // Send a chat message
     sendChatMessage() {
-        const chatInput = document.getElementById('team-chat-input');
+        const chatInput = document.getElementById('collaboration-chat-input') || document.getElementById('team-chat-input');
         if (!chatInput) {
             console.error('💬 [CHAT DEBUG] Chat input not found');
             return;
@@ -8031,18 +8073,11 @@ window.teamSessionManager = {
     
     // Hide chat interface
     hideChatInterface() {
-        const chatContainer = document.getElementById('team-chat');
-        const chatToggle = document.getElementById('team-chat-toggle');
-        
-        if (chatContainer) {
-            chatContainer.style.display = 'none';
+        const chatSection = document.getElementById('chat-section');
+        if (chatSection) {
+            chatSection.classList.remove('flash');
         }
-        
-        if (chatToggle) {
-            chatToggle.style.display = 'none';
-        }
-        
-        console.log('💬 [CHAT DEBUG] Chat interface hidden');
+        console.log('💬 [CHAT DEBUG] Chat interface reset to integrated view');
     }
 };
 
@@ -13770,6 +13805,10 @@ Fa0/4               Desg FWD 19        128.4    P2p`;
     
     loadSteps() {
         const container = document.getElementById('steps-container');
+        if (!container) {
+            console.warn('⚠️ steps-container element not found in DOM');
+            return;
+        }
         container.innerHTML = '';
         
         if (!Array.isArray(this.steps) || this.steps.length === 0) {
@@ -15720,6 +15759,50 @@ function clearCanvas() {
     if (window.simulation) {
         window.simulation.clearCanvas();
     }
+}
+
+function deleteSelected() {
+    if (!window.simulation) return;
+
+    const selectedDevices = window.simulation.networkDevices.filter(d => d.selected);
+    const selectedConnections = window.simulation.connections?.filter(c => c.selected) || [];
+
+    if (selectedDevices.length === 0 && selectedConnections.length === 0) {
+        window.simulation.showToast('No devices or connections selected', 'info');
+        return;
+    }
+
+    const confirmMsg = `Delete ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)?`;
+    if (!confirm(confirmMsg)) return;
+
+    // Delete selected devices
+    selectedDevices.forEach(device => {
+        // Remove connections attached to this device
+        if (window.simulation.connections) {
+            window.simulation.connections = window.simulation.connections.filter(conn => 
+                conn.from !== device.id && conn.to !== device.id
+            );
+        }
+    });
+
+    // Remove devices from array
+    window.simulation.networkDevices = window.simulation.networkDevices.filter(d => !d.selected);
+
+    // Delete selected connections
+    if (window.simulation.connections) {
+        window.simulation.connections = window.simulation.connections.filter(c => !c.selected);
+    }
+
+    window.simulation.selectedDevice = null;
+    window.simulation.redrawCanvas();
+    window.simulation.showToast(`Deleted ${selectedDevices.length} device(s) and ${selectedConnections.length} connection(s)`, 'success');
+
+    // Track deletion action
+    window.trackPerformanceAction?.('delete_selected', {
+        devicesDeleted: selectedDevices.length,
+        connectionsDeleted: selectedConnections.length,
+        timestamp: Date.now()
+    });
 }
 
 function autoArrangeDevices() {
@@ -17871,6 +17954,9 @@ window.testButtonState = testButtonState;
 (function initCurrentUser() {
     try {
         const el = document.getElementById('session-data');
+        if (!el) {
+            console.error('[DYNAMIC-SIM] ❌ #session-data element not found!');
+        }
         const userId = el?.dataset?.userId || null;
         const username = el?.dataset?.username || '';
         window.currentUser = {
@@ -17879,7 +17965,11 @@ window.testButtonState = testButtonState;
             is_admin: false,
             profile_img: null
         };
-        console.log('[DYNAMIC-SIM] Initialized currentUser from DOM dataset:', window.currentUser);
+        console.log('[DYNAMIC-SIM] ✅ Initialized currentUser from #session-data:', window.currentUser);
+        console.log('[DYNAMIC-SIM] 🔍 Session data element attributes:', {
+            userId: el?.dataset?.userId,
+            username: el?.dataset?.username
+        });
     } catch (e) {
         console.warn('[DYNAMIC-SIM] Failed to initialize currentUser, using defaults.', e);
         window.currentUser = { id: null, username: '', is_admin: false, profile_img: null };
@@ -18091,6 +18181,11 @@ window.enhancedTeamSessionManager = {
             });
             
             window.collaborationRealTime.on('chat_message', (data) => {
+                // MVP: Let sidebar chat handle UI if available
+                if (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function') {
+                    console.log('💬 [MVP CHAT] Sidebar chat will render message; skipping enhanced manager render');
+                    return;
+                }
                 this.addChatMessage(data);
             });
             
@@ -18114,8 +18209,9 @@ window.enhancedTeamSessionManager = {
      * Create enhanced UI elements
      */
     createUI() {
-        this.createFloatingChatToggle();
-        this.createEnhancedChatContainer();
+        // MVP: Use integrated sidebar chat only; do not create floating UI
+        console.log('💬 [MVP CHAT] Using sidebar chat only; enhanced UI disabled');
+        // Do not create floating toggle or enhanced container
         this.createCursorContainer();
     },
     
@@ -18123,62 +18219,18 @@ window.enhancedTeamSessionManager = {
      * Create floating chat toggle button
      */
     createFloatingChatToggle() {
-        this.floatingChatToggle = document.createElement('button');
-        this.floatingChatToggle.className = 'floating-chat-toggle';
-        this.floatingChatToggle.innerHTML = '<i class="fas fa-comments"></i>';
-        this.floatingChatToggle.title = 'Toggle Team Chat';
-        this.floatingChatToggle.style.display = 'none'; // Hidden until in session
-        
-        document.body.appendChild(this.floatingChatToggle);
+        // MVP: Don't create floating toggle, chat is in the sidebar
+        console.log('💬 [MVP CHAT] Floating toggle disabled, using sidebar');
+        this.floatingChatToggle = null;
     },
     
     /**
      * Create enhanced chat container
      */
     createEnhancedChatContainer() {
-        const chatHTML = `
-            <div class="enhanced-chat-container" id="enhanced-chat-container">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <i class="fas fa-comments"></i>
-                        Team Chat
-                        <span class="chat-participants-count" id="chat-participants-count">0</span>
-                    </div>
-                    <button class="chat-minimize-btn" id="chat-minimize-btn">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
-                
-                <div class="chat-members-preview" id="chat-members-preview">
-                    <div class="members-preview-list" id="members-preview-list">
-                        <!-- Members will be populated here -->
-                    </div>
-                </div>
-                
-                <div class="chat-messages-container" id="enhanced-chat-messages">
-                    <div class="chat-message system">
-                        <div class="message-content">Team chat is ready! Start collaborating with your teammates.</div>
-                    </div>
-                </div>
-                
-                <div class="chat-typing-indicator" id="chat-typing-indicator">
-                    <span id="typing-users"></span>
-                </div>
-                
-                <div class="chat-input-section">
-                    <div class="chat-input-wrapper">
-                        <textarea class="enhanced-chat-input" id="enhanced-chat-input" 
-                                placeholder="Type a message..." rows="1"></textarea>
-                        <button class="chat-send-button" id="enhanced-chat-send-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', chatHTML);
-        this.chatContainer = document.getElementById('enhanced-chat-container');
+        // MVP: Don't create floating chat, use the sidebar chat instead
+        console.log('💬 [MVP CHAT] Using sidebar chat, enhanced container disabled');
+        this.chatContainer = document.getElementById('team-chat') || document.getElementById('chat-section') || null;
     },
     
     /**
@@ -18318,63 +18370,39 @@ window.enhancedTeamSessionManager = {
      * Bind event listeners
      */
     bindEvents() {
-        // Floating chat toggle
+        // Floating chat toggle (disabled in MVP)
         if (this.floatingChatToggle) {
             this.floatingChatToggle.addEventListener('click', () => {
                 this.toggleChat();
             });
         }
-        
-        // Chat minimize button
-        const minimizeBtn = document.getElementById('chat-minimize-btn');
-        if (minimizeBtn) {
-            minimizeBtn.addEventListener('click', () => {
-                this.toggleChat();
-            });
-        }
-        
-        // Chat input handling
-        const chatInput = document.getElementById('enhanced-chat-input');
-        const chatSendBtn = document.getElementById('enhanced-chat-send-btn');
-        
-        if (chatInput && chatSendBtn) {
-            // Auto-resize textarea
-            chatInput.addEventListener('input', () => {
-                chatInput.style.height = 'auto';
-                chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
-                
-                // Enable/disable send button
-                chatSendBtn.disabled = !chatInput.value.trim();
-            });
-            
-            // Send message on Enter (not Shift+Enter)
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendChatMessage();
-                }
-            });
-            
-            // Send button click
-            chatSendBtn.addEventListener('click', () => {
-                this.sendChatMessage();
-            });
-        }
+        // Input/minimize handling are managed by the sidebar chat (MVP)
+        console.log('💬 [MVP CHAT] Input/minimize handling managed by sidebar chat');
     },
     
     /**
      * Toggle chat visibility
      */
     toggleChat() {
-        if (this.chatContainer) {
-            const isActive = this.chatContainer.classList.contains('active');
-            
-            if (isActive) {
-                this.chatContainer.classList.remove('active');
-                this.floatingChatToggle.classList.remove('has-notification');
-            } else {
-                this.chatContainer.classList.add('active');
-                this.scrollChatToBottom();
+        // Forward to sidebar chat toggle/focus
+        if (window.teamSessionManager && typeof window.teamSessionManager.toggleChat === 'function') {
+            console.log('💬 [MVP CHAT] Toggling sidebar chat');
+            window.teamSessionManager.toggleChat();
+            return;
+        }
+        // Fallback: focus the chat section in performance sidebar
+        const performanceSidebar = document.getElementById('performance-sidebar');
+        if (performanceSidebar) {
+            performanceSidebar.classList.add('active');
+            performanceSidebar.classList.add('flash');
+            setTimeout(() => performanceSidebar.classList.remove('flash'), 1500);
+        }
+        const chatSection = document.getElementById('chat-section');
+        if (chatSection) {
+            chatSection.classList.add('flash');
+            setTimeout(() => chatSection.classList.remove('flash'), 1500);
+            if (typeof chatSection.scrollIntoView === 'function') {
+                chatSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     },
@@ -18383,22 +18411,23 @@ window.enhancedTeamSessionManager = {
      * Send chat message
      */
     sendChatMessage() {
-        const chatInput = document.getElementById('enhanced-chat-input');
+        // MVP: Use sidebar chat input if needed
+        const chatInput = document.getElementById('collaboration-chat-input') || document.getElementById('team-chat-input');
         if (!chatInput || !chatInput.value.trim()) return;
-        
+
         const message = chatInput.value.trim();
-        
+
         // Send through collaboration system
         if (window.collaborationRealTime) {
             window.collaborationRealTime.sendChatMessage(message);
         }
-        
+
         // Clear input
         chatInput.value = '';
-        chatInput.style.height = 'auto';
+        if (chatInput.style) chatInput.style.height = 'auto';
         
-        // Disable send button
-        const chatSendBtn = document.getElementById('enhanced-chat-send-btn');
+        // Disable send button if present
+        const chatSendBtn = document.getElementById('collaboration-send-chat-btn') || document.getElementById('team-chat-send-btn');
         if (chatSendBtn) {
             chatSendBtn.disabled = true;
         }
@@ -18408,14 +18437,19 @@ window.enhancedTeamSessionManager = {
      * Add chat message to UI
      */
     addChatMessage(data) {
-        const messagesContainer = document.getElementById('enhanced-chat-messages');
+        const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
         
-        const isOwnMessage = data.user_id === this.getCurrentUserId();
+        // Convert both to strings for proper comparison (handles string vs number mismatch)
+        const currentUserId = this.getCurrentUserId();
+        const isOwnMessage = String(data.user_id) === String(currentUserId);
         const messageTime = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
         });
+        
+        // Display "You" for current user's messages, otherwise show username
+        const displayName = isOwnMessage ? 'You' : data.username;
         
         // Create message element
         const messageElement = document.createElement('div');
@@ -18429,12 +18463,12 @@ window.enhancedTeamSessionManager = {
                 </div>
             `;
         } else {
-            const avatarLetter = data.username.charAt(0).toUpperCase();
+            const avatarLetter = displayName.charAt(0).toUpperCase();
             
             // Create avatar content based on whether profile image is available
             let avatarContent = '';
             if (data.profile_image && data.profile_image !== 'None' && data.profile_image !== null) {
-                avatarContent = `<img src="/static/img/profiles/${data.profile_image}" alt="${data.username}" class="chat-profile-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                avatarContent = `<img src="/static/img/profiles/${data.profile_image}" alt="${displayName}" class="chat-profile-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                <div class="chat-fallback-avatar" style="display: none;">${avatarLetter}</div>`;
             } else {
                 avatarContent = `<div class="chat-fallback-avatar">${avatarLetter}</div>`;
@@ -18446,7 +18480,7 @@ window.enhancedTeamSessionManager = {
                 </div>
                 <div class="chat-message-content">
                     <div class="chat-message-header">
-                        <span class="chat-message-username">${this.escapeHtml(data.username)}</span>
+                        <span class="chat-message-username">${this.escapeHtml(displayName)}</span>
                         <span class="chat-message-time">${messageTime}</span>
                     </div>
                     <div class="message-bubble">${this.escapeHtml(data.message)}</div>
@@ -18482,7 +18516,7 @@ window.enhancedTeamSessionManager = {
         }
         
         // Show notification if chat is closed
-        if (!this.chatContainer.classList.contains('active')) {
+        if (this.floatingChatToggle && this.chatContainer && !this.chatContainer.classList.contains('active')) {
             this.floatingChatToggle.classList.add('has-notification');
         }
         
@@ -18507,7 +18541,7 @@ window.enhancedTeamSessionManager = {
      * Scroll chat to bottom
      */
     scrollChatToBottom() {
-        const messagesContainer = document.getElementById('enhanced-chat-messages');
+        const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -18566,9 +18600,9 @@ window.enhancedTeamSessionManager = {
         
         this.currentSession = sessionData;
         
-        // Show enhanced UI elements
+        // Enhanced UI elements disabled in MVP; ensure sidebar chat is visible where applicable
         if (this.floatingChatToggle) {
-            this.floatingChatToggle.style.display = 'flex';
+            this.floatingChatToggle.style.display = 'none';
         }
         
         // Load existing participants
@@ -18578,10 +18612,12 @@ window.enhancedTeamSessionManager = {
             });
         }
         
-        // Load chat history
+        // Load chat history into sidebar chat (MVP)
         if (sessionData.recent_chat) {
             sessionData.recent_chat.forEach(message => {
-                this.addChatMessage(message);
+                if (window.teamSessionManager && typeof window.teamSessionManager.addTeamChatMessage === 'function') {
+                    window.teamSessionManager.addTeamChatMessage(message);
+                }
             });
         }
         
@@ -18617,7 +18653,7 @@ window.enhancedTeamSessionManager = {
         // Clear UI
         this.updateParticipantsUI();
         
-        const messagesContainer = document.getElementById('enhanced-chat-messages');
+        const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) {
             messagesContainer.innerHTML = `
                 <div class="chat-message system">
