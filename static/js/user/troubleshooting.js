@@ -28,7 +28,34 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedDevice = null;
     let selectedConnection = null;
     
+    // Preload device images
+    const deviceImages = {};
+    const imageMap = {
+        'router': '/static/img/Router.png',
+        'switch': '/static/img/Switch.png',
+        'hub': '/static/img/Switch.png', // Using switch image for hub
+        'pc': '/static/img/PC.png',
+        'computer': '/static/img/PC.png',
+        'laptop': '/static/img/PC.png', // Using PC image for laptop
+        'server': '/static/img/server.png',
+        'printer': '/static/img/PC.png', // Using PC image for printer
+        'access-point': '/static/img/access-point.png',
+        'firewall': '/static/img/firewall.png',
+        'cloud': '/static/img/server.png', // Using server image for cloud
+        'internet': '/static/img/Router.png' // Using router image for internet
+    };
+    
+    // Load all device images
+    function preloadDeviceImages() {
+        Object.keys(imageMap).forEach(deviceType => {
+            const img = new Image();
+            img.src = imageMap[deviceType];
+            deviceImages[deviceType] = img;
+        });
+    }
+    
     // Initialize the page
+    preloadDeviceImages();
     initPage();
     
     function initPage() {
@@ -256,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function drawDevice(device) {
-        // MVP Enhancement: Better device rendering with glow effects and clear visibility
+        // MVP Enhancement: Better device rendering with images and glow effects
         const size = 50;
         const isSelected = device.selected || false;
         const isHovered = device === hoveredDevice;
@@ -274,10 +301,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.fillRect(device.x - size/2 + 2, device.y - size/2 + 2, size, size);
         
         // Draw device background
-        ctx.fillStyle = getDeviceColor(device.type);
-        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'; // Dark background
         ctx.fillRect(device.x - size/2, device.y - size/2, size, size);
-        ctx.globalAlpha = 1.0;
         
         // Draw device border
         const borderColor = isSelected ? '#39FF14' : (isHovered ? '#00D9FF' : '#F8FAFC');
@@ -285,21 +310,34 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.lineWidth = isSelected ? 3 : (isHovered ? 3 : 2);
         ctx.strokeRect(device.x - size/2, device.y - size/2, size, size);
         
-        // Draw device icon/type indicator with clear text representation
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        // Draw device image instead of symbols
+        const deviceType = device.type.toLowerCase();
+        const deviceImage = deviceImages[deviceType];
         
-        // Use clear abbreviated text for device type
-        const deviceLabel = getDeviceShortLabel(device.type);
-        
-        // Draw device type abbreviation
-        ctx.font = 'bold 16px Arial';
-        ctx.fillText(deviceLabel, device.x, device.y - 8);
-        
-        // Draw device icon symbol below
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText(getDeviceSymbol(device.type), device.x, device.y + 6);
+        if (deviceImage && deviceImage.complete) {
+            // Calculate image size to fit within device box with padding
+            const imgSize = size - 10; // 5px padding on each side
+            const imgX = device.x - imgSize/2;
+            const imgY = device.y - imgSize/2;
+            
+            try {
+                ctx.drawImage(deviceImage, imgX, imgY, imgSize, imgSize);
+            } catch (e) {
+                // Fallback to text if image fails to draw
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(getDeviceShortLabel(device.type), device.x, device.y);
+            }
+        } else {
+            // Fallback to text if image not loaded
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(getDeviceShortLabel(device.type), device.x, device.y);
+        }
         
         // Draw device label with background for readability
         ctx.font = '12px Arial';

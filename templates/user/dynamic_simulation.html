@@ -4,11 +4,10 @@
 <title>{{ simulation.title }} | RiddleNet</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/network-device-configurator.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mvp-device-interfaces.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/collaboration-manager.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/unified-chat.css') }}">
-<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/force-landscape.css') }}">
+<link rel="icon" href="{{ url_for('static', filename='img/Logo.png') }}">
 
 <style>
     /* Base from troubleshoot.html with dynamic simulation adaptations */
@@ -294,6 +293,124 @@
         width: 100%;
         box-sizing: border-box;
     }
+    
+    /* Fullscreen Mode Styles */
+    body.fullscreen {
+        overflow: hidden;
+    }
+    
+    body.fullscreen .simulation-wrapper {
+        height: 100vh;
+        width: 100vw;
+    }
+    
+    body.fullscreen .canvas-container {
+        margin: 0;
+        border-radius: 0;
+        height: calc(100vh - 80px) !important;
+    }
+    
+    body.fullscreen #device-palette {
+        left: 0;
+        right: 0;
+        width: 100vw;
+        border-radius: 0;
+        transform: none;
+    }
+    
+    body.fullscreen .performance-sidebar,
+    body.fullscreen .steps-panel {
+        display: none;
+    }
+
+    /* Exit Fullscreen Button */
+    .exit-fullscreen-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 2px solid var(--cyber-glow);
+        border-radius: 12px;
+        color: var(--cyber-glow);
+        font-size: 1.25rem;
+        cursor: pointer;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3), 
+                    0 0 40px rgba(0, 217, 255, 0.2);
+        animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    body.fullscreen .exit-fullscreen-btn {
+        display: flex;
+    }
+
+    .exit-fullscreen-btn:hover {
+        background: rgba(0, 217, 255, 0.2);
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 6px 30px rgba(0, 217, 255, 0.5), 
+                    0 0 60px rgba(0, 217, 255, 0.4);
+    }
+
+    .exit-fullscreen-btn:active {
+        transform: scale(0.95) rotate(90deg);
+    }
+
+    .exit-fullscreen-btn i {
+        transition: transform 0.3s ease;
+    }
+
+    .exit-fullscreen-btn:hover i {
+        transform: scale(1.1);
+    }
+
+    /* Tooltip for exit fullscreen button */
+    .exit-fullscreen-btn::before {
+        content: 'Exit Fullscreen (Esc)';
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        padding: 6px 12px;
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid var(--cyber-glow);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .exit-fullscreen-btn:hover::before {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Pulsing glow animation */
+    @keyframes pulseGlow {
+        0%, 100% {
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3), 
+                        0 0 40px rgba(0, 217, 255, 0.2);
+        }
+        50% {
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.5), 
+                        0 0 50px rgba(0, 217, 255, 0.3);
+        }
+    }
+
+    /* Mobile Responsive - Consolidated in main breakpoints below */
 
     .simulation-wrapper {
         display: flex;
@@ -449,12 +566,12 @@
         flex-direction: row;
         overflow: hidden;
         transition: all 0.3s ease;
-        padding-bottom: 200px; /* Space for fixed device palette - increased to prevent overlap */
+        padding-bottom: 120px;
     }
 
     /* Adjust simulation-content when device palette is minimized */
     body.palette-minimized .simulation-content {
-        padding-bottom: 50px; /* Reduced padding for minimized palette */
+        padding-bottom: 120px;
     }
 
     /* Removed old sibling-based layout rule (steps panel now on right) */
@@ -544,20 +661,42 @@
         color: var(--neon-green);
     }
 
-    /* Device Labels */
-    .device-label {
+    /* Device Labels - Centered on Canvas */
+    .network-device .device-label {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: var(--text-primary);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 10;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 217, 255, 0.3);
+    }
+    
+    /* Device Labels in Palette - Keep below device */
+    #device-palette .device-label {
         position: absolute;
         top: 100%;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: var(--text-primary);
-        padding: 0.2rem 0.5rem;
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0.2rem 0.4rem;
         border-radius: 4px;
-        font-size: 0.7rem;
+        font-size: 0.68rem;
         white-space: nowrap;
-    margin-top: 4px;
-    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.3);
+        margin-top: 4px;
+        box-shadow: none;
+        border: none;
+        pointer-events: none;
     }
 
     /* Drop Zones for Devices */
@@ -629,49 +768,55 @@
         bottom: 0;
         left: var(--current-sidebar-width);
         right: 0;
+        width: auto;
         background: var(--glass-bg);
         border-top: 2px solid var(--glass-border);
         backdrop-filter: blur(20px);
         z-index: 1000;
         display: flex;
         flex-direction: column;
-        transition: all 0.3s ease, left var(--transition-speed) ease;
+        transition: all var(--transition-speed) ease;
         box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.4);
-        overflow: hidden;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 140px;
+        max-height: 140px;
+        transform: none;
     }
 
     .palette-top-bar {
-        background: rgba(0, 0, 0, 0.3);
-        border-bottom: 1px solid rgba(0, 217, 255, 0.2);
-        padding: 0.5rem 1rem;
-        flex-shrink: 0;
+        display: none;
+    }
+
+    .palette-toggle {
+        display: none;
     }
 
     .palette-section {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        flex-wrap: wrap;
-        padding: 0.125rem;
+        flex-wrap: nowrap;
+        padding: 0.5rem;
     }
 
     .palette-section.left-section {
-        flex: 1;
+        flex: 1 1 auto;
         justify-content: flex-start;
-        min-width: 280px;
+        min-width: 250px;
     }
 
     .palette-section.center-section {
-        flex: 2;
+        flex: 2 1 auto;
         justify-content: center;
-        gap: 2rem;
-        min-width: 320px;
+        gap: 1.5rem;
+        min-width: 300px;
     }
 
     .palette-section.right-section {
-        flex: 1;
+        flex: 1 1 auto;
         justify-content: flex-end;
-        min-width: 280px;
+        min-width: 250px;
     }
 
     .palette-header {
@@ -709,47 +854,40 @@
         display: flex;
         gap: 1.5rem;
         overflow: hidden;
-        padding: 0.75rem 1rem;
-        align-items: center;
-        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        align-items: flex-start;
+        justify-content: space-evenly;
         flex-wrap: nowrap;
         width: 100%;
-        max-width: 100vw;
-        min-height: 65px;
+        height: 100%;
     }
 
     .device-category {
-        min-width: 180px;
-        flex-shrink: 1;
-        flex: 1;
-        max-width: 220px;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+        display: flex;
+        justify-content: center;
     }
 
     .category-title {
-        font-size: 0.7rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        display: none;
     }
 
     .device-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 0.75rem;
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
         max-width: 100%;
         overflow: visible;
-        padding: 0.5rem;
-        grid-auto-rows: minmax(90px, auto);
+        padding: 0.25rem;
+        justify-content: center;
+        align-items: center;
     }
 
     .device-item {
         width: 60px;
-        min-height: 85px;
+        min-height: 75px;
         height: auto;
         background: rgba(15, 23, 42, 0.9);
         border: 2px solid rgba(255, 255, 255, 0.15);
@@ -757,17 +895,14 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* Use flex-start so gap + explicit spacer control vertical rhythm */
         justify-content: flex-start;
-        /* Provide consistent vertical rhythm */
-    gap: 8px; /* increased gap between icon and label for clearer separation */
+        gap: 6px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: visible;
-        margin: 0 0 8px 0;
-        /* Extra top padding gives breathing room above icon; slightly more bottom for shadow */
-        padding: 10px 4px 12px 4px;
+        margin: 0;
+        padding: 8px 4px 10px 4px;
         box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
@@ -852,19 +987,6 @@
 
     .device-item:hover .device-label {
         color: var(--text-primary);
-    }
-
-    /* Minimized palette state */
-    #device-palette.minimized {
-        min-height: 45px;
-    }
-
-    #device-palette.minimized .device-categories {
-        display: none;
-    }
-
-    #device-palette.minimized .palette-title {
-        font-size: 0.8rem;
     }
 
     .palette-section {
@@ -1024,7 +1146,9 @@
     }
     
     /* Mobile Responsiveness */
+    /* ===== MOBILE BREAKPOINT (≤768px) ===== */
     @media screen and (max-width: 768px) {
+        /* Team Chat Widget */
         .team-chat-widget {
             width: 300px;
             bottom: 10px;
@@ -1049,9 +1173,31 @@
         .chat-messages-container {
             height: 250px;
         }
+
+        /* Exit Fullscreen Button */
+        .exit-fullscreen-btn {
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+        }
+
+        .exit-fullscreen-btn::before {
+            content: 'Exit';
+            font-size: 0.7rem;
+            padding: 4px 8px;
+        }
     }
     
+    /* Tablet Breakpoint - styles consolidated in main breakpoint */
+    @media screen and (max-width: 1024px) and (min-width: 769px) {
+        /* Tablet-specific overrides if needed */
+    }
+
+    /* ===== LANDSCAPE MOBILE BREAKPOINT (≤896px) ===== */
     @media screen and (max-width: 896px) and (orientation: landscape) {
+        /* Team Chat Widget */
         .team-chat-widget {
             width: 280px;
             max-height: 300px;
@@ -1059,6 +1205,19 @@
         
         .chat-messages-container {
             height: 180px;
+        }
+
+        /* Exit Fullscreen Button */
+        .exit-fullscreen-btn {
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+
+        .exit-fullscreen-btn::before {
+            display: none;
         }
     }
     
@@ -1120,41 +1279,6 @@
         font-size: 24px;
     }
     
-    /* Mobile Collaboration Toggle Button */
-    .mobile-collaboration-toggle {
-        display: none;
-        position: fixed;
-        bottom: 100px;
-        right: 20px;
-        width: 56px;
-        height: 56px;
-        background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(20px);
-        border: 2px solid var(--success-color);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 1600;
-        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3), 0 0 20px rgba(76, 175, 80, 0.2);
-        transition: all var(--transition-speed) ease;
-    }
-
-    .mobile-collaboration-toggle:hover {
-        transform: scale(1.1);
-        box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4), 0 0 30px rgba(76, 175, 80, 0.3);
-    }
-
-    .mobile-collaboration-toggle:active {
-        transform: scale(0.95);
-    }
-
-    .mobile-collaboration-toggle i {
-        color: var(--success-color);
-        font-size: 24px;
-    }
-    
     .performance-sidebar {
         position: fixed;
         top: 5%;
@@ -1174,6 +1298,57 @@
         transform: translateY(-5%) translateX(100%);
         opacity: 0;
         overflow: hidden;
+    }
+
+    /* Sidebar Tabs */
+    .sidebar-tabs {
+        display: flex;
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 2px solid var(--glass-border);
+        padding: 0;
+        margin: 0;
+    }
+
+    .sidebar-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 1rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sidebar-tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+    }
+
+    .sidebar-tab.active {
+        color: var(--cyber-glow);
+        background: rgba(0, 217, 255, 0.1);
+        border-bottom-color: var(--cyber-glow);
+    }
+
+    .sidebar-tab i {
+        font-size: 1rem;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
     }
 
     .performance-sidebar.active {
@@ -2003,18 +2178,18 @@
     }
 
     /* Show/hide sections based on collaboration state */
-    .collaboration-sidebar.in-session #active-session-section,
-    .collaboration-sidebar.in-session #team-members-section {
+    .performance-sidebar.in-session #active-session-section,
+    .performance-sidebar.in-session #team-members-section {
         display: block !important;
     }
 
-    .collaboration-sidebar.in-session .sessions-list .empty-state {
+    .performance-sidebar.in-session .sessions-list .empty-state {
         display: none;
     }
 
-    /* Responsive adjustments for collaboration sidebar */
+    /* Responsive adjustments for unified sidebar */
     @media (max-width: 768px) {
-        .collaboration-sidebar {
+        .performance-sidebar {
             width: 100vw;
             height: 100vh;
             top: 0;
@@ -2022,22 +2197,21 @@
             border-radius: 0;
         }
 
-        .collaboration-sidebar.active {
+        .performance-sidebar.active {
             transform: translateX(0);
         }
 
-        .collaboration-toggle {
+        .performance-toggle {
             display: none;
         }
 
-        .mobile-collaboration-toggle {
+        .mobile-performance-toggle {
             display: flex !important;
         }
     }
 
-    /* Show mobile toggles on larger screens as well */
+    /* Show mobile toggle on larger screens as well */
     @media (min-width: 769px) {
-        .mobile-collaboration-toggle,
         .mobile-performance-toggle {
             display: flex !important;
         }
@@ -3176,7 +3350,7 @@
         border-radius: 0 var(--border-radius) var(--border-radius) 0;
     }
 
-    /* Responsive Design (consolidated) */
+    /* Responsive Design - Device Palette Adjustments for Mobile & Tablet */
     @media (max-width: 1200px) {
         .dynamic-simulation .steps-panel { width: 360px; }
         .dynamic-simulation .canvas-container { margin: 0.75rem; }
@@ -3185,51 +3359,88 @@
         .dynamic-simulation .steps-panel { width: 320px; }
         .dynamic-simulation .simulation-header { padding: 1rem 1.25rem; }
         .dynamic-simulation .simulation-title { font-size: 1.25rem; }
-        .dynamic-simulation .device-categories { gap: 1rem; }
-        .dynamic-simulation .device-category { min-width: 160px; max-width: 200px; }
+
+        /* Device Palette - Tablet & Mobile Base */
+        #device-palette {
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 0.35rem 0.75rem;
+            height: auto;
+            max-height: none;
+            overflow-y: visible;
+        }
+
+        .device-categories {
+            padding: 0 0.75rem;
+            gap: 0.75rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            justify-content: flex-start;
+        }
+
+        .device-category {
+            flex: 0 0 auto;
+        }
+
+        .device-grid {
+            gap: 0.5rem;
+        }
+
+        .device-item {
+            width: 56px;
+            min-height: auto;
+            padding: 6px 4px;
+        }
+
+        .device-item img {
+            width: 18px;
+            height: 18px;
+        }
+
+        #device-palette .device-label {
+            position: static;
+            transform: none;
+            margin-top: 4px;
+            font-size: 0.65rem;
+            white-space: normal;
+            text-align: center;
+        }
     }
     @media (max-width: 768px) {
         .dynamic-simulation .simulation-content { flex-direction: column; }
         .dynamic-simulation .steps-panel { width:100%; height:45vh; border-left:none; border-top:2px solid var(--glass-border); margin:0; border-radius:0; }
         .dynamic-simulation .canvas-container { height:55vh; margin:0.25rem; }
-        .dynamic-simulation .device-categories { gap: 0.75rem; padding: 0.5rem 0.75rem; }
-        .dynamic-simulation .device-category { min-width: 140px; max-width: 180px; }
-        .dynamic-simulation .device-grid { grid-template-columns: repeat(3, 1fr); }
-        .dynamic-simulation .palette-top-bar { padding: 0.25rem 0.75rem; }
+
+        /* Device Palette - Compact Mobile Adjustments */
+        #device-palette {
+            padding: 0.35rem 0.5rem;
+        }
+
+        .device-categories {
+            padding: 0 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .device-item {
+            width: 52px;
+            padding: 5px 3px;
+        }
+
+        .device-item img {
+            width: 16px;
+            height: 16px;
+        }
+
+        .device-label {
+            font-size: 0.6rem;
+            letter-spacing: 0;
+        }
+
+        .device-tooltip {
+            display: none;
+        }
     }
-    @media (max-width: 600px) {
-        .device-categories { flex-wrap: wrap; justify-content: center; padding: 0.5rem; }
-        .device-category { min-width: 120px; max-width: 160px; }
-        .device-grid { grid-template-columns: repeat(2, 1fr); }
-        .palette-top-bar { padding: 0.25rem 0.5rem; }
-        .palette-title { font-size: 0.8rem; }
-    }
-    /* Always show device labels in palette */
-    #device-palette .device-grid { grid-auto-rows: minmax(95px, auto); }
-    #device-palette .device-item { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; }
-    #device-palette .device-item .device-label { 
-        display:block !important;
-        opacity:1 !important;
-        transform:none !important;
-        position:static !important;
-        font-size:0.65rem;
-        letter-spacing:.25px;
-    /* Margin no longer needed; spacing provided by flex gap */
-    margin:0;
-        padding:2px 4px;
-        background:transparent !important;
-        box-shadow:none !important;
-        color:var(--text-secondary, #94a3b8);
-        text-align:center;
-        max-width:100%;
-        width:100%;
-        white-space:nowrap;
-        overflow:visible;
-        text-overflow:clip;
-        pointer-events:none;
-        line-height:1.2;
-    }
-    #device-palette .device-item:hover .device-label { color:var(--text-primary, #f1f5f9); opacity:1; }
 
     /* Achievement Notifications */
     .achievement-notification {
@@ -5028,27 +5239,6 @@
 
 {% block content %}
 <div class="simulation-wrapper dynamic-simulation">
-    <!-- Header -->
-    <div class="simulation-header">
-        <div class="header-left">
-            <button class="back-btn" onclick="window.location.href='/class/7/module/15'">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <div>
-                <div class="simulation-type">{{ simulation.simulation_type }}</div>
-                <h1 class="simulation-title">{{ simulation.title }}</h1>
-            </div>
-        </div> 
-        <div class="header-right">
-            <div class="bottom-actions">
-                <button id="submit-btn" class="btn btn-success" style="display: none;">
-                    <i class="fas fa-check"></i>
-                    Submit Answer
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Content -->
     <div class="simulation-content">
     <div class="simulation-main">
@@ -5090,44 +5280,27 @@
         
         <!-- Enhanced Device Palette (moved outside simulation-main) -->
         <div id="device-palette">
-            <!-- Device Palette Top Bar -->
-            <div class="palette-top-bar">
-                <div class="palette-header">
-                    <div class="palette-title">
-                        <i class="fas fa-layer-group"></i>
-                        Network Devices
-                        <button class="palette-toggle touch-enhanced" aria-expanded="true">
-                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Device Categories Content -->
             <div class="device-categories">
                 <!-- Network Infrastructure -->
                 <div class="device-category">
-                    <div class="category-title">
-                        <i class="fas fa-network-wired"></i>
-                        Network Infrastructure
-                    </div>
                     <div class="device-grid">
                         <!-- MVP: Router with custom image -->
                         <div class="device-item" data-device-type="router" draggable="true">
-                            <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
+                            <img src="{{ url_for('static', filename='img/Router.png') }}" alt="Router" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Router</span>
                             <div class="device-tooltip">Network Router - Routes traffic between networks</div>
                         </div>
                         <!-- MVP: Switch with custom image -->
                         <div class="device-item" data-device-type="switch" draggable="true">
-                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
+                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Switch" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Switch</span>
                             <div class="device-tooltip">Network Switch - Connects devices in a network</div>
                         </div>
                        
                         <!-- MVP: Hub with custom image (uses Switch image) -->
                         <div class="device-item" data-device-type="hub" draggable="true">
-                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Hub" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
+                            <img src="{{ url_for('static', filename='img/Switch.png') }}" alt="Hub" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Hub</span>
                             <div class="device-tooltip">Network Hub - Basic connectivity device</div>
                         </div>
@@ -5136,14 +5309,10 @@
 
                 <!-- Computing Devices -->
                 <div class="device-category">
-                    <div class="category-title">
-                        <i class="fas fa-desktop"></i>
-                        Computing Devices
-                    </div>
                     <div class="device-grid">
                         <!-- MVP: Laptop with custom image (uses PC image) -->
                         <div class="device-item" data-device-type="laptop" draggable="true">
-                            <img src="{{ url_for('static', filename='img/PC.png') }}" alt="Laptop" class="device-icon device-image" style="width: 48px; height: 48px; object-fit: contain;">
+                            <img src="{{ url_for('static', filename='img/PC.png') }}" alt="Laptop" class="device-icon device-image" style="width: 40px; height: 40px; object-fit: contain;">
                             <span class="device-label">Laptop</span>
                             <div class="device-tooltip">Laptop Computer - Portable end user device</div>
                         </div>
@@ -5152,23 +5321,19 @@
 
                 <!-- Tools & Actions -->
                 <div class="device-category">
-                    <div class="category-title">
-                        <i class="fas fa-tools"></i>
-                        Tools & Actions
-                    </div>
                     <div class="device-grid">
                         <div class="device-item" data-device-type="wired" draggable="true">
-                            <i class="fas fa-ethernet device-icon"></i>
+                            <i class="fas fa-ethernet device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Wired</span>
                             <div class="device-tooltip">Wired Connection - Ethernet cable</div>
                         </div>
                         <div class="device-item" data-device-type="wireless" draggable="true">
-                            <i class="fas fa-wifi device-icon"></i>
+                            <i class="fas fa-wifi device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Wireless</span>
                             <div class="device-tooltip">Wireless Connection - Wi-Fi link</div>
                         </div>
                         <div class="action-btn device-item" onclick="deleteSelected()">
-                            <i class="fas fa-trash-alt device-icon"></i>
+                            <i class="fas fa-trash-alt device-icon" style="font-size: 1.5rem;"></i>
                             <span class="device-label">Delete</span>
                             <div class="device-tooltip">Delete selected devices and connections</div>
                         </div>
@@ -5178,10 +5343,10 @@
             </div>
         </div>
 
-        <!-- Enhanced Performance Feedback Sidebar - Based on troubleshoot.html -->
+        <!-- Enhanced Performance & Collaboration Sidebar - Unified -->
         <div id="performance-sidebar" class="performance-sidebar">
             <!-- Performance Toggle Button -->
-            <div id="performance-toggle" class="performance-toggle" title="Toggle Performance Feedback">
+            <div id="performance-toggle" class="performance-toggle" title="Toggle Performance & Collaboration">
                 <i class="fas fa-chart-line"></i>
                 <span class="toggle-text">LIVE PERFORMANCE</span>
             </div>
@@ -5189,12 +5354,26 @@
             <!-- Sidebar Content -->
             <div class="sidebar-content">
                 <div class="sidebar-header">
-                    <h3><i class="fas fa-chart-line"></i> LIVE PERFORMANCE</h3>
-                    <button class="close-sidebar" id="close-performance-sidebar" title="Close Performance Panel">
+                    <h3 style="flex: 1; margin: 0;"><i class="fas fa-chart-line"></i> PERFORMANCE & COLLABORATION</h3>
+                    <button class="close-sidebar" id="close-performance-sidebar" title="Close Panel">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 
+                <!-- Tab Navigation -->
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" data-tab="performance" id="performance-tab">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Performance</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="collaboration" id="collaboration-tab">
+                        <i class="fas fa-users"></i>
+                        <span>Collaboration</span>
+                    </button>
+                </div>
+                
+                <!-- Performance Tab Content -->
+                <div class="tab-content active" id="performance-content">
                 <!-- Real-time Score Display -->
                 <div class="feedback-section">
                     <h4><i class="fas fa-trophy"></i> Current Score</h4>
@@ -5284,31 +5463,11 @@
                         </div>
                     </div>
                 </div>
-
-               
-
-
-               
-            </div>
-        </div>
-
-        <!-- Enhanced Collaboration Sidebar -->
-        <div id="collaboration-sidebar" class="collaboration-sidebar">
-            <!-- Collaboration Toggle Button -->
-            <div id="collaboration-toggle" class="collaboration-toggle" title="Toggle Collaboration Panel">
-                <i class="fas fa-users"></i>
-                <span class="toggle-text">COLLABORATION</span>
-            </div>
-            
-            <!-- Sidebar Content -->
-            <div class="sidebar-content">
-                <div class="sidebar-header">
-                    <h3><i class="fas fa-users"></i> COLLABORATION HUB</h3>
-                    <button class="close-sidebar" id="close-collaboration-sidebar" title="Close Collaboration Panel">
-                        <i class="fas fa-times"></i>
-                    </button>
                 </div>
-                
+                <!-- End Performance Tab Content -->
+
+                <!-- Collaboration Tab Content -->
+                <div class="tab-content" id="collaboration-content">
                 <!-- Connection Status Card -->
                 <div class="feedback-section">
                     <div class="status-card">
@@ -5441,17 +5600,14 @@
                         </div>
                     </div>
                 </div>
+                </div>
+                <!-- End Collaboration Tab Content -->
             </div>
         </div>
 
         <!-- Mobile Performance Toggle Button -->
         <div class="mobile-performance-toggle" id="mobile-performance-toggle">
             <i class="fas fa-chart-line"></i>
-        </div>
-        
-        <!-- Mobile Collaboration Toggle Button -->
-        <div class="mobile-collaboration-toggle" id="mobile-collaboration-toggle">
-            <i class="fas fa-users"></i>
         </div>
         
 
@@ -6135,7 +6291,7 @@ window.teamSessionManager = {
      */
     initializeUIElements() {
         this.uiElements = {
-            sidebar: document.getElementById('collaboration-sidebar'),
+            sidebar: document.getElementById('performance-sidebar'),
             sessionsList: document.getElementById('sessions-list'),
             activeSessionSection: document.getElementById('active-session-section'),
             participantsList: document.getElementById('team-members-list'),
@@ -7208,12 +7364,12 @@ window.teamSessionManager = {
         // Update participant list with animation
         this.updateParticipantsList();
         
-        // Flash collaboration sidebar to draw attention
-        const collabSidebar = document.getElementById('collaboration-sidebar');
-        if (collabSidebar) {
-            collabSidebar.classList.add('flash');
+        // Flash performance sidebar to draw attention to collaboration section
+        const performanceSidebar = document.getElementById('performance-sidebar');
+        if (performanceSidebar) {
+            performanceSidebar.classList.add('flash');
             setTimeout(() => {
-                collabSidebar.classList.remove('flash');
+                performanceSidebar.classList.remove('flash');
             }, 2000);
         }
         
@@ -8230,35 +8386,19 @@ function applyCollaborationSettings(settings) {
         console.log('Updated simulation collab config:', collab);
     }
     
-    // Show/hide collaboration sidebar toggle based on settings
-    const collaborationToggle = document.getElementById('collaboration-toggle');
-    const mobileCollaborationToggle = document.getElementById('mobile-collaboration-toggle');
+    // Collaboration is now part of the unified performance sidebar
+    // No separate toggle needed - performance sidebar includes collaboration
     
     if (settings.max_team_size && parseInt(settings.max_team_size) > 1) {
-        // Show collaboration toggle buttons
-        if (collaborationToggle) {
-            collaborationToggle.style.display = 'flex';
-        }
-        if (mobileCollaborationToggle) {
-            mobileCollaborationToggle.style.display = 'flex';
-        }
+        // Collaboration enabled
+        console.log('✅ Collaboration enabled - included in performance sidebar');
         
         // Update collaboration sidebar display
         if (window.simulation && typeof window.simulation.updateCollaborationDisplay === 'function') {
             window.simulation.updateCollaborationDisplay();
         }
-        
-        console.log('✅ Collaboration enabled - sidebar toggle visible');
     } else {
-        // Hide collaboration toggle buttons
-        if (collaborationToggle) {
-            collaborationToggle.style.display = 'none';
-        }
-        if (mobileCollaborationToggle) {
-            mobileCollaborationToggle.style.display = 'none';
-        }
-        
-        console.log('❌ Collaboration disabled - sidebar toggle hidden');
+        console.log('❌ Collaboration disabled');
     }
     
     // Update collaboration badge in header
@@ -8815,40 +8955,11 @@ class DynamicSimulation {
             });
         }
 
-        // ===== COLLABORATION SIDEBAR EVENT LISTENERS =====
-        
-        const collaborationToggle = document.getElementById('collaboration-toggle');
-        const collaborationSidebar = document.getElementById('collaboration-sidebar');
-        const mobileCollaborationToggle = document.getElementById('mobile-collaboration-toggle');
-        const closeCollaborationBtn = document.getElementById('close-collaboration-sidebar');
-        
-        console.log('🤝 Setting up collaboration sidebar event listeners...');
-        console.log('Collaboration toggle:', collaborationToggle ? 'found' : 'not found');
-        console.log('Collaboration sidebar:', collaborationSidebar ? 'found' : 'not found');
-        console.log('Mobile collaboration toggle:', mobileCollaborationToggle ? 'found' : 'not found');
-        console.log('Close collaboration button:', closeCollaborationBtn ? 'found' : 'not found');
-        
-        if (collaborationToggle && collaborationSidebar) {
-            collaborationToggle.addEventListener('click', () => {
-                console.log('🖱️ Collaboration toggle clicked');
-                this.toggleCollaborationSidebar();
-            });
-        }
-        
-        if (mobileCollaborationToggle && collaborationSidebar) {
-            mobileCollaborationToggle.addEventListener('click', () => {
-                console.log('🖱️ Mobile collaboration toggle clicked');
-                this.toggleCollaborationSidebar();
-            });
-        }
-        
-        if (closeCollaborationBtn && collaborationSidebar) {
-            closeCollaborationBtn.addEventListener('click', () => {
-                console.log('🖱️ Close collaboration button clicked');
-                this.closeCollaborationSidebar();
-            });
-        }
+        // ===== COLLABORATION SECTION (now part of unified sidebar) =====
 
+        // Set up sidebar tabs
+        this.setupSidebarTabs();
+        
         // Set up collaboration action button event listeners
         const browseLobbyBtn = document.getElementById('browse-lobbies-btn');
         const refreshLobbiesBtn = document.getElementById('refresh-lobbies-btn');
@@ -10817,13 +10928,13 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         console.log('📊 Performance sidebar closed');
     }
     
-    // ===== COLLABORATION SIDEBAR MANAGEMENT =====
+    // ===== COLLABORATION SECTION MANAGEMENT (now part of unified sidebar) =====
     
     toggleCollaborationSidebar() {
-        console.log('🤝 toggleCollaborationSidebar called');
-        const sidebar = document.getElementById('collaboration-sidebar');
+        console.log('🤝 toggleCollaborationSidebar called (now in unified sidebar)');
+        const sidebar = document.getElementById('performance-sidebar');
         if (!sidebar) {
-            console.log('❌ Collaboration sidebar element not found');
+            console.log('❌ Performance sidebar element not found');
             return;
         }
         
@@ -10831,21 +10942,34 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         console.log(`🤝 Sidebar current state: ${isActive ? 'active' : 'inactive'}`);
         
         if (isActive) {
-            this.closeCollaborationSidebar();
+            // If already open, scroll to collaboration section
+            const sidebarContent = document.querySelector('#performance-sidebar .sidebar-content');
+            if (sidebarContent) {
+                // Find collaboration header and scroll to it
+                const collabHeader = sidebarContent.querySelector('h3:has(i.fa-users)');
+                if (collabHeader) {
+                    collabHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
         } else {
             this.showCollaborationSidebar();
         }
     }
     
     showCollaborationSidebar() {
-        const sidebar = document.getElementById('collaboration-sidebar');
+        const sidebar = document.getElementById('performance-sidebar');
         if (!sidebar) {
-            console.log('❌ Cannot show collaboration sidebar - element not found');
+            console.log('❌ Cannot show performance sidebar - element not found');
             return;
         }
         
-        console.log('🤝 Adding active class to collaboration sidebar');
+        console.log('🤝 Opening unified sidebar and switching to collaboration tab');
         sidebar.classList.add('active');
+        
+        // Switch to collaboration tab after sidebar opens
+        setTimeout(() => {
+            this.switchSidebarTab('collaboration');
+        }, 100);
         
         // Update centralized state
         this.setState('isCollaborationSidebarVisible', true);
@@ -10853,23 +10977,62 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
         // Update collaboration display
         this.updateCollaborationDisplay();
         
-        console.log('🤝 Collaboration sidebar opened');
+        console.log('🤝 Collaboration section opened (part of unified sidebar)');
     }
     
     closeCollaborationSidebar() {
-        const sidebar = document.getElementById('collaboration-sidebar');
-        if (!sidebar) {
-            console.log('❌ Cannot close collaboration sidebar - element not found');
-            return;
+        // Collaboration is now part of performance sidebar
+        // Just scroll to top of sidebar content to show performance section
+        const sidebarContent = document.querySelector('#performance-sidebar .sidebar-content');
+        if (sidebarContent) {
+            sidebarContent.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        
-        console.log('🤝 Removing active class from collaboration sidebar');
-        sidebar.classList.remove('active');
         
         // Update centralized state
         this.setState('isCollaborationSidebarVisible', false);
         
-        console.log('🤝 Collaboration sidebar closed');
+        console.log('🤝 Scrolled to performance section');
+    }
+    
+    // ===== SIDEBAR TAB MANAGEMENT =====
+    
+    setupSidebarTabs() {
+        const performanceTab = document.getElementById('performance-tab');
+        const collaborationTab = document.getElementById('collaboration-tab');
+        
+        if (performanceTab) {
+            performanceTab.addEventListener('click', () => this.switchSidebarTab('performance'));
+        }
+        
+        if (collaborationTab) {
+            collaborationTab.addEventListener('click', () => this.switchSidebarTab('collaboration'));
+        }
+        
+        console.log('📑 Sidebar tabs initialized');
+    }
+    
+    switchSidebarTab(tabName) {
+        // Update tab buttons
+        const tabs = document.querySelectorAll('.sidebar-tab');
+        tabs.forEach(tab => {
+            if (tab.dataset.tab === tabName) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        
+        // Update tab content
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(content => {
+            if (content.id === `${tabName}-content`) {
+                content.classList.add('active');
+            } else {
+                content.classList.remove('active');
+            }
+        });
+        
+        console.log(`📑 Switched to ${tabName} tab`);
     }
     
     updateCollaborationDisplay() {
@@ -13072,6 +13235,36 @@ rtt min/avg/max/mdev = 0.25/0.28/0.31/0.024 ms`;
     
     setupDevicePalette() {
         console.log('🔧 Setting up Enhanced Device Palette');
+        
+        // Debug: Log device palette structure
+        const devicePalette = document.getElementById('device-palette');
+        if (devicePalette) {
+            const paletteSections = devicePalette.querySelectorAll('.palette-section');
+            const deviceItems = devicePalette.querySelectorAll('.device-item');
+            const deviceCategories = devicePalette.querySelectorAll('.device-category');
+            
+            console.log('🎨 Device Palette Structure:', {
+                paletteSections: paletteSections.length,
+                deviceItems: deviceItems.length,
+                deviceCategories: deviceCategories.length,
+                paletteClasses: devicePalette.className,
+                paletteId: devicePalette.id
+            });
+            
+            // Log each device item for debugging
+            deviceItems.forEach((item, index) => {
+                const styles = window.getComputedStyle(item);
+                console.log(`📦 Device Item ${index + 1}:`, {
+                    type: item.dataset.deviceType,
+                    width: item.offsetWidth,
+                    height: item.offsetHeight,
+                    computedWidth: styles.width,
+                    computedHeight: styles.height,
+                    display: styles.display,
+                    flexDirection: styles.flexDirection
+                });
+            });
+        }
         
         // Setup drag and drop for devices
         const devices = document.querySelectorAll('.device-item[draggable="true"]');
@@ -16007,6 +16200,22 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Debug: Log device palette initialization
+    const devicePalette = document.getElementById('device-palette');
+    if (devicePalette) {
+        console.log('🎨 Device Palette Found:', {
+            element: devicePalette,
+            computedStyle: window.getComputedStyle(devicePalette),
+            width: devicePalette.offsetWidth,
+            height: devicePalette.offsetHeight,
+            left: devicePalette.offsetLeft,
+            position: window.getComputedStyle(devicePalette).position,
+            display: window.getComputedStyle(devicePalette).display
+        });
+    } else {
+        console.error('❌ Device Palette Not Found!');
+    }
+    
     const rawSim = document.getElementById('simulation-data');
     const rawProgress = document.getElementById('progress-data');
     const simulationData = rawSim ? JSON.parse(rawSim.textContent) : {};
@@ -16251,6 +16460,56 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     console.log('🎯 Dynamic Simulation initialized with enhanced event system and performance tracking');
+    
+    // Debug: Monitor window resize and device palette responsiveness
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const devicePalette = document.getElementById('device-palette');
+            if (devicePalette) {
+                const styles = window.getComputedStyle(devicePalette);
+                console.log('📐 Window Resized - Device Palette:', {
+                    windowWidth: window.innerWidth,
+                    windowHeight: window.innerHeight,
+                    paletteWidth: devicePalette.offsetWidth,
+                    paletteHeight: devicePalette.offsetHeight,
+                    paletteLeft: styles.left,
+                    paletteRight: styles.right,
+                    paletteBottom: styles.bottom,
+                    palettePosition: styles.position,
+                    paletteDisplay: styles.display,
+                    paletteTransform: styles.transform,
+                    orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'
+                });
+            }
+        }, 250);
+    });
+    
+    // Debug: Monitor media query changes
+    const mediaQueries = [
+        { name: 'Mobile', query: window.matchMedia('(max-width: 768px)') },
+        { name: 'Tablet', query: window.matchMedia('(max-width: 1024px) and (min-width: 769px)') },
+        { name: 'Landscape', query: window.matchMedia('(max-width: 896px) and (orientation: landscape)') }
+    ];
+    
+    mediaQueries.forEach(mq => {
+        mq.query.addEventListener('change', (e) => {
+            console.log(`📱 Media Query Changed - ${mq.name}:`, e.matches);
+            const devicePalette = document.getElementById('device-palette');
+            if (devicePalette && e.matches) {
+                const styles = window.getComputedStyle(devicePalette);
+                console.log(`📐 ${mq.name} Breakpoint Active - Device Palette:`, {
+                    width: devicePalette.offsetWidth,
+                    height: devicePalette.offsetHeight,
+                    computedWidth: styles.width,
+                    computedHeight: styles.height,
+                    left: styles.left,
+                    right: styles.right
+                });
+            }
+        });
+    });
 });
 
 // Enhanced Performance Feedback System for Dynamic Simulations - Network Learning Arena Compatible
@@ -19433,7 +19692,6 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/collaboration-real-time.js') }}"></script>
 
 <!-- Auto-Landscape Optimization System -->
-<script src="{{ url_for('static', filename='js/auto-landscape-optimizer.js') }}"></script>
 
 <script src="{{ url_for('static', filename='js/force-landscape.js') }}"></script>
 <script>

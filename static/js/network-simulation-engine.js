@@ -30,6 +30,9 @@ class NetworkSimulationEngine {
         // MVP Presenter State
         this.currentConfigDevice = null;
         
+    // Device imagery cache
+    this.deviceImages = {};
+        
         // Viewport Management
         this.zoom = 1.0;
         this.panOffset = { x: 0, y: 0 };
@@ -40,6 +43,7 @@ class NetworkSimulationEngine {
         this.deviceTypes = {
             router: { 
                 icon: 'fas fa-project-diagram', 
+                image: '/static/img/Router.png',
                 color: '#3B82F6', 
                 defaultPorts: 4,
                 canRoute: true,
@@ -47,6 +51,7 @@ class NetworkSimulationEngine {
             },
             switch: { 
                 icon: 'fas fa-ethernet', 
+                image: '/static/img/Switch.png',
                 color: '#10B981', 
                 defaultPorts: 24,
                 canRoute: false,
@@ -54,6 +59,7 @@ class NetworkSimulationEngine {
             },
             hub: { 
                 icon: 'fas fa-circle-nodes', 
+                image: '/static/img/Switch.png',
                 color: '#F59E0B', 
                 defaultPorts: 8,
                 canRoute: false,
@@ -61,6 +67,7 @@ class NetworkSimulationEngine {
             },
             'access-point': { 
                 icon: 'fas fa-wifi', 
+                image: '/static/img/access-point.png',
                 color: '#8B5CF6', 
                 defaultPorts: 1,
                 canRoute: false,
@@ -68,6 +75,7 @@ class NetworkSimulationEngine {
             },
             firewall: { 
                 icon: 'fas fa-shield-alt', 
+                image: '/static/img/firewall.png',
                 color: '#EF4444', 
                 defaultPorts: 2,
                 canRoute: true,
@@ -75,6 +83,7 @@ class NetworkSimulationEngine {
             },
             computer: { 
                 icon: 'fas fa-desktop', 
+                image: '/static/img/PC.png',
                 color: '#6B7280', 
                 defaultPorts: 1,
                 canRoute: false,
@@ -82,6 +91,7 @@ class NetworkSimulationEngine {
             },
             laptop: { 
                 icon: 'fas fa-laptop', 
+                image: '/static/img/PC.png',
                 color: '#6B7280', 
                 defaultPorts: 1,
                 canRoute: false,
@@ -89,6 +99,7 @@ class NetworkSimulationEngine {
             },
             server: { 
                 icon: 'fas fa-server', 
+                image: '/static/img/server.png',
                 color: '#1F2937', 
                 defaultPorts: 2,
                 canRoute: false,
@@ -96,6 +107,7 @@ class NetworkSimulationEngine {
             },
             printer: { 
                 icon: 'fas fa-print', 
+                image: '/static/img/PC.png',
                 color: '#7C3AED', 
                 defaultPorts: 1,
                 canRoute: false,
@@ -138,6 +150,8 @@ class NetworkSimulationEngine {
                 hasConsole: false 
             }
         };
+
+        this.loadDeviceImages();
         
         // Animation and Rendering
         this.animationFrame = null;
@@ -149,6 +163,24 @@ class NetworkSimulationEngine {
         this.init();
     }
     
+    loadDeviceImages() {
+        Object.entries(this.deviceTypes).forEach(([type, info]) => {
+            if (!info.image) {
+                return;
+            }
+
+            const img = new Image();
+            img.src = info.image;
+            img.onload = () => {
+                this.deviceImages[type] = img;
+                this.needsRender = true;
+            };
+            img.onerror = () => {
+                console.warn('⚠️ Failed to load device image', type, info.image);
+            };
+        });
+    }
+
     init() {
         console.log('🚀 Initializing Network Simulation Engine');
         
@@ -384,6 +416,7 @@ class NetworkSimulationEngine {
             // Provide a name alias for configurators expecting device.name
             name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${this.deviceIdCounter - 1}`,
             icon: typeInfo.icon,
+            image: typeInfo.image || null,
             color: typeInfo.color,
             selected: false,
             config: this.getDefaultDeviceConfig(type),
@@ -998,21 +1031,34 @@ class NetworkSimulationEngine {
         // Device background
         this.ctx.fillStyle = device.selected ? 
             'rgba(57, 255, 20, 0.2)' : 'rgba(15, 23, 42, 0.9)';
-        this.ctx.strokeStyle = device.selected ? '#39FF14' : device.color;
         this.ctx.lineWidth = device.selected ? 3 / this.zoom : 2 / this.zoom;
         
         this.ctx.fillRect(x - size/2, y - size/2, size, size);
+
+        const deviceImage = (device.image && this.deviceImages[device.type]) ? this.deviceImages[device.type] : null;
+        const canDrawImage = deviceImage && deviceImage.complete && deviceImage.naturalWidth > 0;
+        
+        if (canDrawImage) {
+            const drawWidth = device.width;
+            const drawHeight = device.height;
+            const drawX = x - drawWidth / 2;
+            const drawY = y - drawHeight / 2;
+            this.ctx.save();
+            this.ctx.globalAlpha = device.selected ? 0.95 : 1;
+            this.ctx.drawImage(deviceImage, drawX, drawY, drawWidth, drawHeight);
+            this.ctx.restore();
+        } else {
+            // Device icon fallback when image is unavailable
+            this.ctx.fillStyle = device.selected ? '#39FF14' : '#F8FAFC';
+            this.ctx.font = `${20 / this.zoom}px "Font Awesome 6 Free"`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            let iconChar = this.getIconChar(device.type);
+            this.ctx.fillText(iconChar, x, y);
+        }
+
+        this.ctx.strokeStyle = device.selected ? '#39FF14' : device.color;
         this.ctx.strokeRect(x - size/2, y - size/2, size, size);
-        
-        // Device icon (using text as placeholder for FontAwesome icons)
-        this.ctx.fillStyle = device.selected ? '#39FF14' : '#F8FAFC';
-        this.ctx.font = `${20 / this.zoom}px "Font Awesome 6 Free"`;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        
-        // Get icon character based on device type
-        let iconChar = this.getIconChar(device.type);
-        this.ctx.fillText(iconChar, x, y);
         
         // Device label
         if (this.showLabels) {

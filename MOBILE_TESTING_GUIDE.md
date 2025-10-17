@@ -1,413 +1,302 @@
-# 🧪 Mobile Responsive Testing Guide - Crimping Simulation
+# Visual Testing Guide - Mobile Responsive Simulation
 
-## Quick Test Checklist
+## Quick Visual Verification Checklist
 
-### ⚡ 5-Minute Quick Test
-
-1. **Open DevTools**
-   - Press `F12`
-   - Click Device Toolbar icon (or `Ctrl+Shift+M`)
-
-2. **Test These Key Widths**
-   ```
-   ✅ 320px - iPhone SE (smallest)
-   ✅ 375px - iPhone 12 mini
-   ✅ 414px - iPhone 12 Pro Max
-   ✅ 768px - iPad Portrait
-   ```
-
-3. **Verify These Elements**
-   - [ ] Stats bar in 2x2 grid (4 cards visible)
-   - [ ] Timer spans full width
-   - [ ] Progress bar at bottom, 95% width
-   - [ ] No horizontal scrolling at any width
-   - [ ] All text readable (no zooming needed)
-
-### 📱 Detailed Testing Steps
-
-#### Test 1: Portrait Mode (320px)
+### 🖥️ Desktop View (1200px+)
 ```
-Device: iPhone SE
-Width: 320px
-Height: 568px
+Expected Layout:
+┌──────────────────────────────────────────────────┐
+│ [← Back]  Network Simulation      [Submit] [🔧] │ ← Header
+├──────────────────────────────────────────────────┤
+│ ┌────────────────────────┐ ┌──────────────────┐ │
+│ │                        │ │ STEPS PANEL      │ │
+│ │   CANVAS AREA          │ │ ✓ Step 1         │ │
+│ │   Network Diagram      │ │ ⏺ Step 2        │ │
+│ │   [Devices draggable]  │ │ ○ Step 3         │ │
+│ │                        │ │                  │ │
+│ └────────────────────────┘ └──────────────────┘ │
+├──────────────────────────────────────────────────┤
+│ 🖧 DEVICE PALETTE (Fixed Bottom)                 │
+│ [Router][Switch][Hub][PC][Laptop][Wired]...      │
+└──────────────────────────────────────────────────┘
+
+✓ Steps panel on RIGHT side
+✓ Device palette at BOTTOM
+✓ Canvas takes majority of space
+✓ Sidebars hidden (toggle via buttons)
 ```
 
-**Check:**
-- [ ] Stats: 2 rows x 2 columns
-- [ ] Timer: Full width, red background
-- [ ] Progress: Bottom position, visible
-- [ ] Wires: Minimum 44x44px
-- [ ] Buttons: Easily tappable
-- [ ] No horizontal scroll
-
-**Expected Font Sizes:**
-- Stat values: ~16px
-- Stat labels: ~10px
-- Timer: ~22px
-- H1: ~18px
-
-#### Test 2: Medium Mobile (375px)
+### 📱 Mobile View (< 768px)
 ```
-Device: iPhone 12 mini
-Width: 375px
-Height: 667px
-```
+Expected Layout:
+┌─────────────────────────┐
+│ [←] Network Sim    [🔧] │ ← Compact Header
+├─────────────────────────┤
+│                         │
+│                         │
+│    CANVAS AREA          │ ← 50vh height
+│    Network Diagram      │
+│                         │
+│                         │
+├─────────────────────────┤
+│                         │
+│    STEPS PANEL          │ ← Below canvas
+│    (Scrollable)         │
+│                         │
+└─────────────────────────┘
 
-**Check:**
-- [ ] Larger fonts via clamp()
-- [ ] More breathing room
-- [ ] Progress bar centered
-- [ ] Wire spacing comfortable
-- [ ] All touch targets 44px+
-
-**Expected Font Sizes:**
-- Stat values: ~16-18px
-- Stat labels: ~10-11px
-- Timer: ~22-24px
-
-#### Test 3: Large Mobile (414px)
-```
-Device: iPhone 12 Pro Max
-Width: 414px
-Height: 896px
-```
-
-**Check:**
-- [ ] Stats more spacious
-- [ ] Fonts scale up smoothly
-- [ ] Game area well-proportioned
-- [ ] Controls easy to reach
-
-#### Test 4: Tablet Portrait (768px)
-```
-Device: iPad Mini
-Width: 768px
-Height: 1024px
-```
-
-**Check:**
-- [ ] Stats still in grid
-- [ ] Maximum font sizes reached
-- [ ] Progress bar prominent
-- [ ] Desktop-like feel
-
-#### Test 5: Landscape Mobile (667x375)
-```
-Device: iPhone 12 in landscape
-Width: 667px
-Height: 375px
-```
-
-**Check:**
-- [ ] Stats horizontal (single row)
-- [ ] Progress panel fixed right side
-- [ ] Game area 2-column layout
-- [ ] Compact but functional
-- [ ] No vertical overflow
-
-### 🎯 Visual Inspection Points
-
-#### Stats Bar
-```css
-Portrait Mobile:
-┌─────────┬─────────┐
-│  Score  │Accuracy │ ← 2x2 Grid
-├─────────┼─────────┤
-│  Wires  │  Combo  │
-└─────────┴─────────┘
-
-Landscape Mobile:
-┌──────┬────────┬──────┬──────┬───────┐
-│Score │Accuracy│ Wires│Combo │ Timer │ ← Horizontal
-└──────┴────────┴──────┴──────┴───────┘
-```
-
-#### Progress Panel
-```css
-Portrait: Bottom of screen, 95% width
-┌─────────────────────────────────────┐
-│ Progress: 25%                       │
-│ ▓▓▓▓▓▓░░░░░░░░░░░░░░░░░ (95%)     │
-└─────────────────────────────────────┘
-
-Landscape: Fixed right side, 200px width
-│ Progress │
-│   25%    │ ← Fixed
-│ ▓▓▓▓▓░░  │    Right
-│          │
-```
-
-### 🖱️ Interaction Tests
-
-#### Touch Test 1: Wire Drag-and-Drop
-1. Tap and hold a wire
-2. Should see:
-   - Wire scales to 1.08x
-   - Shadow increases
-   - Z-index lifts wire above others
-3. Drag to slot
-4. Release to drop
-
-**Pass Criteria:**
-- [ ] Smooth 60fps dragging
-- [ ] Clear visual feedback
-- [ ] No accidental scrolling
-- [ ] Wire snaps to slot correctly
-
-#### Touch Test 2: Button Taps
-1. Tap stat cards, buttons, timer
-2. Should see:
-   - Scale down to 0.96-0.98x
-   - Brief opacity change (buttons)
-   - Immediate response (< 50ms)
-
-**Pass Criteria:**
-- [ ] All buttons respond
-- [ ] No double-tap zoom
-- [ ] Clear active state
-- [ ] Minimum 44x44px touch area
-
-#### Touch Test 3: Fullscreen Toggle
-1. Tap fullscreen button (top-right)
-2. Should see:
-   - Button scales/rotates
-   - Enters fullscreen smoothly
-   - Icon changes (expand ↔ compress)
-
-**Pass Criteria:**
-- [ ] Button visible and accessible
-- [ ] Doesn't overlap content
-- [ ] Works in portrait and landscape
-- [ ] Safe area insets respected
-
-### 📏 Measurement Tests
-
-#### Use Browser DevTools
-```javascript
-// Open Console (F12), paste this:
-
-// Check touch target sizes
-document.querySelectorAll('.score-item, .wire, .wire-slot, button').forEach(el => {
-  const rect = el.getBoundingClientRect();
-  const size = Math.min(rect.width, rect.height);
-  if (size < 44) {
-    console.error(`❌ ${el.className} too small: ${size.toFixed(0)}px`);
-  } else {
-    console.log(`✅ ${el.className}: ${size.toFixed(0)}px`);
-  }
-});
-
-// Check for horizontal overflow
-if (document.body.scrollWidth > window.innerWidth) {
-  console.error('❌ Horizontal overflow detected!');
-} else {
-  console.log('✅ No horizontal overflow');
-}
-
-// Check font sizes
-document.querySelectorAll('.score-value, .score-label, #timer').forEach(el => {
-  const fontSize = parseFloat(window.getComputedStyle(el).fontSize);
-  console.log(`${el.className || el.id}: ${fontSize.toFixed(1)}px`);
-});
-```
-
-### 🎨 Visual Regression Checklist
-
-#### Colors
-- [ ] Cyan (#00d4ff) for values - visible
-- [ ] Gray (#8892b0) for labels - readable
-- [ ] Red timer background - prominent
-- [ ] Progress gradient - smooth
-
-#### Spacing
-- [ ] No elements touching edges
-- [ ] Comfortable gaps between cards
-- [ ] Progress bar centered
-- [ ] Adequate padding throughout
-
-#### Typography
-- [ ] No text truncation
-- [ ] Readable at arm's length
-- [ ] No font size jumps between breakpoints
-- [ ] Line heights appropriate
-
-#### Layout
-- [ ] No overlapping elements
-- [ ] Consistent alignment
-- [ ] Balanced composition
-- [ ] Clear hierarchy
-
-### 🔄 Orientation Change Test
-
-1. Start in portrait (375x667)
-2. Rotate to landscape (667x375)
-3. Observe transitions:
-   - [ ] Stats reflow to horizontal
-   - [ ] Progress panel moves to fixed position
-   - [ ] Game area reorganizes to 2 columns
-   - [ ] No layout flash or shift
-   - [ ] Smooth CSS transitions
-
-### 🌐 Cross-Browser Testing
-
-#### Chrome Mobile (Android)
-- [ ] Open simulation
-- [ ] Test touch interactions
-- [ ] Verify drag-and-drop
-- [ ] Check fullscreen
-
-#### Safari Mobile (iOS)
-- [ ] Test safe area insets (notch)
-- [ ] Verify webkit prefixes work
-- [ ] Check drag-and-drop
-- [ ] Test fullscreen (may differ)
-
-#### Samsung Internet
-- [ ] Basic functionality
-- [ ] Touch responsiveness
-- [ ] Visual rendering
-
-### 📊 Performance Testing
-
-#### Use Chrome DevTools Performance Tab
-1. Start recording
-2. Drag 5-10 wires
-3. Stop recording
-4. Check:
-   - [ ] FPS: 60fps (green line)
-   - [ ] No long tasks (> 50ms)
-   - [ ] Smooth paint operations
-   - [ ] No layout thrashing
-
-#### Lighthouse Mobile Audit
-1. Open DevTools
-2. Go to Lighthouse tab
-3. Select "Mobile"
-4. Run audit
-5. Target scores:
-   - Performance: 90+
-   - Accessibility: 95+
-   - Best Practices: 90+
-
-### ⚠️ Common Issues & Solutions
-
-**Issue**: Stats overlapping at 320px
-**Check**: Grid layout should prevent this
-**Fix**: If overlapping, reduce padding/font size
-
-**Issue**: Horizontal scroll appears
-**Check**: Inspect element causing overflow
-**Fix**: Add `max-width: 100%` and `overflow-x: hidden`
-
-**Issue**: Touch not working on wires
-**Check**: `touch-action: none` applied?
-**Fix**: Ensure no conflicting touch handlers
-
-**Issue**: Progress bar not visible
-**Check**: `order: 100` moving it to bottom?
-**Fix**: Scroll down to see it, or check z-index
-
-**Issue**: Fullscreen button hidden
-**Check**: `top` and `right` positioning
-**Fix**: Verify safe-area-inset values
-
-### ✅ Test Report Template
-
-```markdown
-# Mobile Responsive Test Report
-
-**Date**: 2025-10-05
-**Tester**: [Your Name]
-**Device/Emulator**: Chrome DevTools
-
-## Screen Size Tests
-- [ ] 320px: PASS / FAIL - Notes: ___
-- [ ] 375px: PASS / FAIL - Notes: ___
-- [ ] 414px: PASS / FAIL - Notes: ___
-- [ ] 768px: PASS / FAIL - Notes: ___
-
-## Interaction Tests
-- [ ] Wire drag-drop: PASS / FAIL - Notes: ___
-- [ ] Button taps: PASS / FAIL - Notes: ___
-- [ ] Fullscreen: PASS / FAIL - Notes: ___
-
-## Visual Tests
-- [ ] No horizontal scroll: PASS / FAIL
-- [ ] All text readable: PASS / FAIL
-- [ ] Touch targets 44px+: PASS / FAIL
-- [ ] Proper spacing: PASS / FAIL
-
-## Performance
-- [ ] 60fps dragging: PASS / FAIL
-- [ ] < 100ms interaction: PASS / FAIL
-- [ ] Smooth transitions: PASS / FAIL
-
-## Issues Found
-1. ___
-2. ___
-3. ___
-
-## Overall Status
-✅ APPROVED / ❌ NEEDS WORK
-```
-
-### 🚀 Automated Testing (Optional)
-
-```javascript
-// Paste in Console for automated checks
-
-const tests = {
-  noHorizontalScroll: () => document.body.scrollWidth <= window.innerWidth,
+Floating Buttons (Right Edge):
+  ┌───┐
+  │ 📊 │ ← Performance (Cyan) - Top
+  └───┘
   
-  touchTargetsValid: () => {
-    const elements = document.querySelectorAll('.score-item, .wire, button');
-    return Array.from(elements).every(el => {
-      const rect = el.getBoundingClientRect();
-      return Math.min(rect.width, rect.height) >= 44;
-    });
-  },
+  ┌───┐
+  │ 👥 │ ← Collaboration (Green) - Middle
+  └───┘
   
-  minFontSize: () => {
-    const elements = document.querySelectorAll('*');
-    return Array.from(elements).every(el => {
-      const fontSize = parseFloat(window.getComputedStyle(el).fontSize);
-      return fontSize >= 10 || fontSize === 0; // 0 for hidden elements
-    });
-  },
-  
-  statsVisible: () => {
-    const stats = document.querySelectorAll('.score-item');
-    return stats.length === 4 && Array.from(stats).every(stat => {
-      const rect = stat.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    });
-  }
-};
+  ┌───┐
+  │ 📦 │ ← Device Palette (Purple) - Bottom
+  └───┘
 
-// Run all tests
-Object.entries(tests).forEach(([name, test]) => {
-  const passed = test();
-  console.log(`${passed ? '✅' : '❌'} ${name}: ${passed ? 'PASS' : 'FAIL'}`);
-});
+Device Palette (Hidden by default):
+┌──────────┐
+│ 📦 Devices│
+│ ────────  │
+│ [Router]  │ ← Slides in from LEFT
+│ [Switch]  │    when purple button tapped
+│ [Hub]     │
+│ [PC]      │
+│ (scroll)  │
+└──────────┘
+
+✓ Vertical stack: Header → Canvas → Steps
+✓ Canvas is 50% of viewport height
+✓ Steps panel below (not beside)
+✓ Device palette slides from LEFT side
+✓ Three floating action buttons visible
 ```
 
----
+## Step-by-Step Testing
 
-## 🎓 Testing Best Practices
+### Test 1: Desktop Layout ✅
+1. **Open**: `http://127.0.0.1:5001/dynamic/simulation/70`
+2. **Browser width**: > 1200px
+3. **Expected**:
+   - [ ] Header spans full width
+   - [ ] Canvas on left, Steps panel on right
+   - [ ] Device palette fixed at bottom
+   - [ ] No floating buttons visible
+   - [ ] Devices draggable to canvas
+   - [ ] Steps panel scrollable if needed
 
-1. **Test Real Devices**: DevTools is great, but test on actual phones if possible
-2. **Test Slowly**: Take time to observe transitions and interactions
-3. **Test Edge Cases**: Try 320px, 768px boundaries
-4. **Test Both Orientations**: Portrait AND landscape
-5. **Test Touch Gestures**: Actually drag wires with mouse/trackpad
-6. **Test Different Browsers**: Chrome, Firefox, Safari, Edge
-7. **Document Issues**: Screenshot and note specific problems
-8. **Retest Fixes**: After fixing, run full test suite again
+### Test 2: Tablet Landscape (1024px)
+1. **Resize**: Browser to 1024px width
+2. **Expected**:
+   - [ ] Similar to desktop but narrower
+   - [ ] Floating buttons appear on right edge
+   - [ ] Clicking cyan button opens Performance sidebar
+   - [ ] Clicking green button opens Collaboration sidebar
+   - [ ] Device palette still at bottom (condensed)
+   - [ ] Layout remains horizontal
 
----
+### Test 3: Tablet Portrait (768px)
+1. **Resize**: Browser to 768px width
+2. **Expected**:
+   - [ ] Layout starts transitioning to vertical
+   - [ ] Canvas and steps side-by-side OR stacked
+   - [ ] Floating buttons clearly visible
+   - [ ] Device palette adapts to narrower space
+   - [ ] Touch targets easy to hit
 
-**Happy Testing!** 🧪📱
+### Test 4: Mobile Portrait (< 768px) ⭐ KEY TEST
+1. **Resize**: Browser to 375px width (iPhone size)
+2. **Expected**:
 
-If you find any issues, refer to:
-- `CRIMPING_GAME_MOBILE_RESPONSIVE_IMPLEMENTATION.md` for implementation details
-- `CRIMPING_FULLSCREEN_GUIDE.md` for fullscreen-specific guidance
+   **Header (Top)**
+   - [ ] Back button on left (easy to tap)
+   - [ ] Title visible but compact
+   - [ ] Tools/submit button on right
+   - [ ] No overflow or wrapping issues
+
+   **Canvas Area (Middle)**
+   - [ ] Full width of screen
+   - [ ] Height is ~50% of viewport
+   - [ ] Network diagram visible and interactive
+   - [ ] Device drag-and-drop still works
+   - [ ] No horizontal scrolling
+
+   **Steps Panel (Below Canvas)**
+   - [ ] Full width
+   - [ ] Scrollable vertically
+   - [ ] Not overlapping canvas
+   - [ ] Steps clearly readable
+   - [ ] Collapse button works
+
+   **Floating Buttons (Right Edge)**
+   - [ ] Three circular buttons stacked vertically
+   - [ ] From top to bottom: Cyan, Green, Purple
+   - [ ] Each button ~50px × 50px
+   - [ ] Easy to tap (good spacing)
+   - [ ] Visible over all content
+
+3. **Tap Purple Button** (Device Palette)
+   - [ ] Panel slides in from LEFT side
+   - [ ] Width: ~280px (doesn't cover all screen)
+   - [ ] Shows device categories vertically
+   - [ ] 3 columns of device icons
+   - [ ] Each device icon tappable
+   - [ ] Device labels visible
+   - [ ] Scrollable vertically if needed
+   - [ ] Tap outside palette to close
+
+4. **Tap Cyan Button** (Performance)
+   - [ ] Full-screen overlay appears
+   - [ ] Slides in from right
+   - [ ] Shows current score, metrics, progress
+   - [ ] Close button in header works
+   - [ ] Tap cyan button again to close
+
+5. **Tap Green Button** (Collaboration)
+   - [ ] Full-screen overlay appears
+   - [ ] Shows session info, team members
+   - [ ] Chat interface visible
+   - [ ] Close button works
+   - [ ] Tap green button again to close
+
+### Test 5: Small Mobile (< 600px)
+1. **Resize**: Browser to 320px width (small phone)
+2. **Expected**:
+   - [ ] All content still accessible
+   - [ ] Device palette: 2 columns instead of 3
+   - [ ] Floating buttons slightly smaller (~45px)
+   - [ ] Text remains readable
+   - [ ] No critical features hidden
+
+### Test 6: Mobile Landscape
+1. **Rotate**: Device to landscape mode
+2. **Expected**:
+   - [ ] Canvas height increases (70vh)
+   - [ ] More horizontal space utilized
+   - [ ] Floating buttons adjust position
+   - [ ] Device palette still functional
+   - [ ] Steps panel height optimized
+
+### Test 7: Interaction Testing (Mobile)
+**Device Drag and Drop**
+- [ ] Tap device in palette
+- [ ] Drag to canvas
+- [ ] Device places on canvas
+- [ ] Device selectable
+- [ ] Device deletable
+
+**Touch Targets**
+- [ ] All buttons > 44px × 44px
+- [ ] Easy to tap without zoom
+- [ ] No accidental taps
+- [ ] Proper spacing between elements
+
+**Scrolling**
+- [ ] Canvas doesn't scroll (fixed height)
+- [ ] Steps panel scrolls vertically
+- [ ] Device palette scrolls vertically
+- [ ] No horizontal scroll anywhere
+
+**Overlay Management**
+- [ ] Opening sidebar closes others
+- [ ] Back button closes overlays
+- [ ] Tap outside closes device palette
+- [ ] No multiple overlays open simultaneously
+
+## Common Issues to Check
+
+### ❌ Problem: Device palette still at bottom on mobile
+**Fix**: Ensure browser width is < 768px. Hard refresh (Ctrl+Shift+R).
+
+### ❌ Problem: Floating buttons not visible
+**Fix**: Check z-index, ensure they're not behind other elements.
+
+### ❌ Problem: Canvas too small on mobile
+**Fix**: Check viewport height, should be ~50vh (half screen).
+
+### ❌ Problem: Steps panel overlapping canvas
+**Fix**: Verify flex-direction is column, not row.
+
+### ❌ Problem: Device palette too narrow
+**Fix**: Should be 280px on mobile, 260px on small mobile.
+
+### ❌ Problem: Sidebars not full screen on mobile
+**Fix**: Check width and height are 100vw and 100vh.
+
+## Browser-Specific Testing
+
+### Chrome Mobile
+- [ ] Open Chrome DevTools
+- [ ] Toggle device toolbar (Ctrl+Shift+M)
+- [ ] Select "iPhone 12 Pro" or similar
+- [ ] Test all interactions
+
+### Safari iOS (Real Device)
+- [ ] Test on actual iPhone
+- [ ] Check touch interactions
+- [ ] Verify no iOS-specific bugs
+- [ ] Test in both orientations
+
+### Firefox Mobile Emulator
+- [ ] F12 → Responsive Design Mode
+- [ ] Test different device presets
+- [ ] Verify rendering consistency
+
+## Visual Indicators of Success
+
+✅ **Desktop**: Traditional sidebar layout, palette at bottom
+✅ **Tablet**: Floating buttons appear, condensed layout
+✅ **Mobile**: Vertical stack, LEFT-side palette, three FABs
+✅ **All Sizes**: No horizontal scrolling
+✅ **All Sizes**: All interactive elements accessible
+✅ **All Sizes**: Touch targets appropriately sized
+
+## Performance Checks
+
+- [ ] Page loads quickly on mobile network
+- [ ] Smooth transitions (no lag)
+- [ ] No layout shifts during load
+- [ ] Images/icons load properly
+- [ ] No console errors
+
+## Screenshot Locations to Test
+
+1. **1920×1080** (Desktop Full HD)
+2. **1366×768** (Laptop)
+3. **1024×768** (Tablet Landscape)
+4. **768×1024** (Tablet Portrait)
+5. **414×896** (iPhone 11 Pro Max)
+6. **375×667** (iPhone SE)
+7. **360×640** (Android Small)
+
+## Final Verification
+
+Before marking as complete:
+- [ ] All layouts tested at breakpoints
+- [ ] No console errors on any device
+- [ ] All interactive elements functional
+- [ ] Touch targets meet accessibility standards
+- [ ] No content overflow or clipping
+- [ ] Floating buttons always accessible
+- [ ] Device palette slides smoothly
+- [ ] Sidebars open/close properly
+- [ ] Original desktop functionality intact
+
+## Sign-off Checklist
+
+- [ ] Desktop: Tested ✅
+- [ ] Tablet Landscape: Tested ✅
+- [ ] Tablet Portrait: Tested ✅
+- [ ] Mobile Portrait: Tested ✅
+- [ ] Mobile Landscape: Tested ✅
+- [ ] Small Mobile: Tested ✅
+- [ ] Touch Interactions: Tested ✅
+- [ ] All Browsers: Tested ✅
+
+**Status**: Ready for Production ✅
+**Date**: _____________
+**Tester**: _____________

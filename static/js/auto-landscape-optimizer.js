@@ -359,6 +359,92 @@
                     el.classList.remove(cls);
                 });
             });
+
+            // Reset inline styles applied during optimization to avoid persistent distortion
+            this.resetInlineLandscapeStyles(config);
+        }
+
+        resetInlineLandscapeStyles(config) {
+            switch (this.currentPage) {
+                case 'dynamic-simulation': {
+                    const wrapper = document.querySelector(config.selectors.wrapper);
+                    if (wrapper) {
+                        wrapper.style.flexDirection = '';
+                        wrapper.style.height = '';
+                    }
+
+                    const canvas = document.querySelector(config.selectors.canvas);
+                    if (canvas) {
+                        canvas.style.height = '';
+                    }
+
+                    const paletteElements = document.querySelectorAll(config.selectors.palette);
+                    paletteElements.forEach(palette => {
+                        palette.style.maxWidth = '';
+                        palette.style.height = '';
+                    });
+
+                    const headers = document.querySelectorAll('.simulation-header, .breadcrumb');
+                    headers.forEach(header => {
+                        header.style.display = '';
+                    });
+                    break;
+                }
+                case 'admin-simulation-edit': {
+                    const navbar = document.querySelector(config.selectors.navbar);
+                    if (navbar) {
+                        navbar.style.height = '';
+                    }
+
+                    const canvas = document.querySelector(config.selectors.canvas);
+                    if (canvas) {
+                        canvas.style.height = '';
+                    }
+
+                    const properties = document.querySelector(config.selectors.properties);
+                    if (properties) {
+                        properties.style.maxWidth = '';
+                        properties.style.height = '';
+                    }
+                    break;
+                }
+                case 'troubleshooting': {
+                    const container = document.querySelector(config.selectors.wrapper);
+                    if (container) {
+                        container.style.display = '';
+                        container.style.flexDirection = '';
+                        container.style.height = '';
+                        container.style.padding = '';
+                    }
+
+                    const diagram = document.querySelector(config.selectors.diagram);
+                    if (diagram) {
+                        diagram.style.flex = '';
+                        diagram.style.height = '';
+                    }
+
+                    const panel = document.querySelector(config.selectors.panel);
+                    if (panel) {
+                        panel.style.flex = '';
+                        panel.style.height = '';
+                        panel.style.overflowY = '';
+                    }
+
+                    const performance = document.querySelector(config.selectors.performance);
+                    if (performance) {
+                        performance.style.width = '';
+                        performance.style.height = '';
+                    }
+
+                    const headers = document.querySelectorAll('.simulation-header, .breadcrumb');
+                    headers.forEach(header => {
+                        header.style.display = '';
+                    });
+                    break;
+                }
+                default:
+                    break;
+            }
         }
 
         optimizeDynamicSimulation(config) {
