@@ -50,12 +50,15 @@ def decimal_to_float(obj):
 @login_required
 def index():
     """Admin dashboard root - accessible via /admin/"""
-    # Get classes managed by this admin
+    # MVP FIX: Ensure new admin/instructor accounts start with zero data
+    # Only show data for classes created by this specific admin/instructor
     from admin.models.class_model import Class, class_students
+    
+    # CRITICAL: Filter classes by created_by to ensure data isolation per admin
     admin_classes = Class.query.filter_by(created_by=current_user.id).all()
     admin_class_ids = [cls.id for cls in admin_classes]
     
-    # Get students enrolled in those classes
+    # Get students enrolled ONLY in this admin's classes
     student_ids = []
     if admin_class_ids:
         student_ids = db.session.query(class_students.c.user_id).filter(
@@ -63,11 +66,13 @@ def index():
         ).distinct().all()
         student_ids = [sid[0] for sid in student_ids]
     
-    # Get basic stats - filtered to admin's students only
+    # MVP FIX: All stats are now filtered to admin's students only
+    # New admins will see zero counts until they create classes and enroll students
     if student_ids:
         total_users = User.query.filter(User.id.in_(student_ids)).count()
         total_scores = Score.query.filter(Score.user_id.in_(student_ids)).count()
     else:
+        # New admin with no classes/students yet - show zero data
         total_users = 0
         total_scores = 0
     

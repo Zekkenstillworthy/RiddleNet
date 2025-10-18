@@ -571,33 +571,43 @@ def module_detail(class_id, module_id):
                     if isinstance(raw_value, str):
                         import json, ast
                         s = raw_value.strip()
-                        # If it looks like JSON list
-                        if (s.startswith('[') and s.endswith(']')) or (s.startswith('"') and s.endswith('"')):
-                            try:
-                                parsed = json.loads(s)
-                                if isinstance(parsed, list):
-                                    return parsed
-                                if isinstance(parsed, str):  # A single quoted string
-                                    return [parsed]
-                            except Exception:
-                                try:
-                                    parsed = ast.literal_eval(s)
-                                    if isinstance(parsed, list):
-                                        return parsed
-                                except Exception:
-                                    pass
-                        # Fallback: split on commas
-                        return [p.strip() for p in s.split(',') if p.strip()]
+                        # Try to parse as JSON first (handles proper JSON arrays and strings)
+                        try:
+                            parsed = json.loads(s)
+                            if isinstance(parsed, list):
+                                return parsed
+                            if isinstance(parsed, str):  # A single quoted string
+                                return [parsed]
+                        except Exception:
+                            pass
+                        
+                        # Try Python literal evaluation
+                        try:
+                            parsed = ast.literal_eval(s)
+                            if isinstance(parsed, list):
+                                return parsed
+                        except Exception:
+                            pass
+                        
+                        # If not JSON/Python literal, split on commas or newlines
+                        if '\n' in s:
+                            return [p.strip() for p in s.split('\n') if p.strip()]
+                        else:
+                            return [p.strip() for p in s.split(',') if p.strip()]
                     # Any other type -> wrap
                     return [str(raw_value)]
 
                 try:
-                    active_lesson.learning_objectives = _normalize_list_field(getattr(active_lesson, 'learning_objectives', []))
+                    raw_objectives = getattr(active_lesson, 'learning_objectives', [])
+                    print(f"DEBUG: Raw learning_objectives for lesson {active_lesson.id}: {repr(raw_objectives)} (type: {type(raw_objectives)})")
+                    active_lesson.learning_objectives = _normalize_list_field(raw_objectives)
+                    print(f"DEBUG: Normalized learning_objectives: {active_lesson.learning_objectives}")
                 except Exception as nerr:
                     print(f"Normalization error (learning_objectives) for lesson {active_lesson.id}: {nerr}")
                     active_lesson.learning_objectives = []
                 try:
-                    active_lesson.key_concepts = _normalize_list_field(getattr(active_lesson, 'key_concepts', []))
+                    raw_concepts = getattr(active_lesson, 'key_concepts', [])
+                    active_lesson.key_concepts = _normalize_list_field(raw_concepts)
                 except Exception as nerr:
                     print(f"Normalization error (key_concepts) for lesson {active_lesson.id}: {nerr}")
                     active_lesson.key_concepts = []

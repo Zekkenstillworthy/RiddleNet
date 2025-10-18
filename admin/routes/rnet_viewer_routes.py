@@ -113,8 +113,6 @@ def parse_rnet_file():
                 'title': simulation.get('title'),
                 'description': simulation.get('description'),
                 'simulation_type': simulation.get('simulation_type'),
-                'category': simulation.get('category'),
-                'difficulty': simulation.get('difficulty'),
                 'estimated_duration': simulation.get('estimated_duration')
             },
             'verification_info': {

@@ -1653,3 +1653,92 @@ def save_task_configuration(simulation_id):
         
     except Exception as e:
         return jsonify({'error': f'Failed to save task configuration: {str(e)}'}), 500
+
+
+# ===== TASK ASSIGNMENT VALIDATION API =====
+
+@admin_simulation_bp.route('/api/<int:simulation_id>/task-assignments', methods=['GET'])
+@login_required
+@teacher_required
+def get_task_assignments(simulation_id):
+    """Get all task assignments for a simulation"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        
+        class_id = request.args.get('class_id', type=int)
+        status = request.args.get('status')
+        
+        query = TaskAssignment.query.filter_by(simulation_id=simulation_id)
+        
+        if class_id:
+            query = query.filter_by(class_id=class_id)
+        if status:
+            query = query.filter_by(status=status)
+        
+        assignments = query.all()
+        
+        return jsonify({
+            'success': True,
+            'assignments': [a.to_dict(include_validation=True, include_simulation=False) for a in assignments],
+            'total': len(assignments)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting task assignments: {str(e)}")
+        return jsonify({'error': f'Failed to get task assignments: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/task-assignment/<int:assignment_id>', methods=['GET'])
+@login_required
+def get_task_assignment(assignment_id):
+    """Get specific task assignment (student or teacher)"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        
+        assignment = TaskAssignment.query.get_or_404(assignment_id)
+        
+        # Check permission: student can only view their own, teachers can view all
+        if not current_user.is_teacher and assignment.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        return jsonify({
+            'success': True,
+            'assignment': assignment.to_dict(include_validation=True, include_simulation=True)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting task assignment: {str(e)}")
+        return jsonify({'error': f'Failed to get task assignment: {str(e)}'}), 500
+
+
+@admin_simulation_bp.route('/api/task-assignment/<int:assignment_id>/grade', methods=['POST'])
+@login_required
+@teacher_required
+def grade_task_assignment(assignment_id):
+    """Instructor grades a task assignment"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        from admin import db
+        
+        data = request.json
+        grade = data.get('grade')
+        feedback = data.get('feedback', '')
+        
+        if grade is None:
+            return jsonify({'error': 'Grade is required'}), 400
+        
+        assignment = TaskAssignment.query.get_or_404(assignment_id)
+        assignment.grade_assignment(grade, feedback)
+        assignment.return_assignment()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assignment graded successfully',
+            'assignment': assignment.to_dict()
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error grading task assignment: {str(e)}")
+        return jsonify({'error': f'Failed to grade assignment: {str(e)}'}), 500

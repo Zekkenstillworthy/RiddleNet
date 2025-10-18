@@ -17,7 +17,6 @@ class ClassAnnouncement(db.Model):
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    priority = db.Column(db.String(20), default='normal')  # low, normal, high, urgent
     is_published = db.Column(db.Boolean, default=False)
     
     # Organization - moved from topic to module
@@ -40,7 +39,6 @@ class ClassAnnouncement(db.Model):
             'class_id': self.class_id,
             'title': self.title,
             'message': self.message,
-            'priority': self.priority,
             'is_published': self.is_published,
             'module_id': self.module_id,
             'sort_order': self.sort_order,
@@ -65,7 +63,6 @@ class ClassAssignment(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     points = db.Column(db.Integer, default=100)
     assignment_type = db.Column(db.String(50), default='assignment')  # assignment, quiz, project
-    category = db.Column(db.String(50), default='general')  # general, networking1, networking2, security, etc.
     is_published = db.Column(db.Boolean, default=False)
     
     # Submission Settings
@@ -107,7 +104,6 @@ class ClassAssignment(db.Model):
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'points': self.points,
             'assignment_type': self.assignment_type,
-            'category': self.category,
             'is_published': self.is_published,
             'allow_file_uploads': getattr(self, 'allow_file_uploads', True),
             'allowed_file_types': getattr(self, 'allowed_file_types', 'pdf,doc,docx,txt,jpg,png,zip'),

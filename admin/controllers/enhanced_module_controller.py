@@ -209,7 +209,6 @@ def create_module(class_id):
         learning_objectives = request.form.get('learning_objectives', '').strip()
         module_content = request.form.get('content', '').strip()  # Get content for lessons, not module
         estimated_duration = int(request.form.get('estimated_duration', 60))
-        difficulty_level = request.form.get('difficulty_level', 'intermediate')
         order_index = int(request.form.get('order_index', 1))
         is_active = bool(request.form.get('is_active'))
         is_published = bool(request.form.get('is_published'))
@@ -245,7 +244,7 @@ def create_module(class_id):
             module.is_published = is_published
         if hasattr(module, 'requires_sequential_completion'):
             module.requires_sequential_completion = requires_sequential_completion
-        # Note: difficulty_level and required_materials fields don't exist in the Module model
+        # Note: required_materials field doesn't exist in the Module model
         
         db.session.add(module)
         

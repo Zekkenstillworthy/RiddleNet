@@ -2857,8 +2857,6 @@ select::-webkit-scrollbar-thumb {
 }
 
 /* Additional specific selectors for stubborn elements */
-#assignmentPriority option,
-#assignmentCategory option,
 .form-select option,
 .class-selector option {
     background: #1a1a2e !important;
@@ -2866,8 +2864,6 @@ select::-webkit-scrollbar-thumb {
     color: #F8FAFC !important;
 }
 
-#assignmentPriority option:hover,
-#assignmentCategory option:hover,
 .form-select option:hover,
 .class-selector option:hover {
     background: #2a2a3e !important;
@@ -2875,8 +2871,6 @@ select::-webkit-scrollbar-thumb {
     color: #00D9FF !important;
 }
 
-#assignmentPriority option:checked,
-#assignmentCategory option:checked,
 .form-select option:checked,
 .class-selector option:checked {
     background: #001f3f !important;
@@ -4895,28 +4889,6 @@ select::-webkit-scrollbar-thumb {
     font-weight: 500;
 }
 
-.difficulty-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.difficulty-badge.easy {
-    background: var(--success-color);
-    color: white;
-}
-
-.difficulty-badge.medium {
-    background: var(--warning-color);
-    color: white;
-}
-
-.difficulty-badge.hard {
-    background: var(--danger-color);
-    color: white;
-}
-
 .assign-btn {
     background: var(--accent-color);
     color: white;
@@ -5480,9 +5452,7 @@ select::-webkit-scrollbar-thumb {
                                         <button class="action-btn icon-only" onclick="viewStudentProfile({{ student.id }})" title="View Profile">
                                             <i class="fas fa-user"></i>
                                         </button>
-                                        <button class="action-btn icon-only" onclick="editStudentDeadlines({{ student.id }})" title="Edit Deadlines">
-                                            <i class="fas fa-clock"></i>
-                                        </button>
+                                        
                                         <button class="action-btn icon-only" onclick="sendMessageToStudent({{ student.id }})" title="Send Message">
                                             <i class="fas fa-envelope"></i>
                                         </button>
@@ -5985,20 +5955,6 @@ select::-webkit-scrollbar-thumb {
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="assignmentCategory" class="form-label-with-tooltip">
-                                Category
-                                <span class="help-icon" data-tooltip="Helps organize assignments by subject area" data-tooltip-position="top">?</span>
-                            </label>
-                            <select class="form-select" id="assignmentCategory" data-enhance="true">
-                                <option value="general" data-category="general">General</option>
-                                <option value="networking1" data-category="networking1">Networking 1</option>
-                                <option value="networking2" data-category="networking2">Networking 2</option>
-                                <option value="troubleshooting" data-category="troubleshooting">Troubleshooting</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="form-check">
@@ -6140,31 +6096,6 @@ select::-webkit-scrollbar-thumb {
                     <div class="form-group col-6">
                         <label for="editAssignmentPoints" class="form-label cyber-label">Points</label>
                         <input type="number" class="form-control cyber-input" id="editAssignmentPoints" min="0" step="1" placeholder="100">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-6">
-                        <label for="editAssignmentPriority" class="form-label cyber-label">Priority</label>
-                        <select class="form-control cyber-select" id="editAssignmentPriority">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                    </div>
-                    <div class="form-group col-6">
-                        <label for="editAssignmentCategory" class="form-label cyber-label">Category</label>
-                        <select class="form-control cyber-select" id="editAssignmentCategory">
-                            <option value="general">General</option>
-                            <option value="homework">Homework</option>
-                            <option value="project">Project</option>
-                            <option value="quiz">Quiz</option>
-                            <option value="exam">Exam</option>
-                            <option value="lab">Lab Work</option>
-                            <option value="presentation">Presentation</option>
-                            <option value="discussion">Discussion</option>
-                        </select>
                     </div>
                 </div>
 
@@ -6581,9 +6512,6 @@ select::-webkit-scrollbar-thumb {
                         <p id="viewAssignmentPriority"></p>
                     </div>
                     <div class="detail-group">
-                        <h6>Category</h6>
-                        <p id="viewAssignmentCategory"></p>
-                    </div>
                 </div>
                 
                 <div class="detail-row">
@@ -7125,34 +7053,11 @@ function showSimulationAssignmentModal() {
                                         <option value="Troubleshooting">Troubleshooting</option>
                                     </select>
                                 </div>
-                                <div class="form-group half">
-                                    <label class="form-label">Category *</label>
-                                    <select id="simCategory" class="form-select" required>
-                                        <option value="">Select category...</option>
-                                        <option value="Subnetting">Subnetting</option>
-                                        <option value="Routing">Routing</option>
-                                        <option value="Switching">Switching</option>
-                                        <option value="VLAN">VLAN</option>
-                                        <option value="Security">Security</option>
-                                        <option value="Troubleshooting">Troubleshooting</option>
-                                    </select>
-                                </div>
                             </div>
                             
-                            <div class="form-row">
-                                <div class="form-group half">
-                                    <label class="form-label">Difficulty Level</label>
-                                    <select id="simDifficulty" class="form-select">
-                                        <option value="Beginner">Beginner</option>
-                                        <option value="Intermediate">Intermediate</option>
-                                        <option value="Advanced">Advanced</option>
-                                        <option value="Expert">Expert</option>
-                                    </select>
-                                </div>
-                                <div class="form-group half">
-                                    <label class="form-label">Duration (minutes)</label>
-                                    <input type="number" id="simDuration" class="form-input" placeholder="30" min="5" max="180">
-                                </div>
+                            <div class="form-group">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" id="simDuration" class="form-input" placeholder="30" min="5" max="180">
                             </div>
                             
                             <div class="form-group">
@@ -7229,7 +7134,6 @@ function loadAvailableSimulations() {
                                 <h3>${simulation.title}</h3>
                                 <p>${simulation.description || 'No description available'}</p>
                                 <div class="option-features">
-                                    <span class="feature-tag">${simulation.difficulty || 'Medium'}</span>
                                     <span class="feature-tag">${simulation.simulation_type || 'General'}</span>
                                     <span class="feature-tag">${simulation.estimated_duration || 30} min</span>
                                 </div>
@@ -7413,8 +7317,6 @@ function createNewSimulation() {
         title: document.getElementById('simTitle').value,
         description: document.getElementById('simDescription').value,
         simulation_type: document.getElementById('simType').value,
-        category: document.getElementById('simCategory').value,
-        difficulty: document.getElementById('simDifficulty').value || 'Beginner',
         estimated_duration: parseInt(document.getElementById('simDuration').value) || 30,
         learning_objectives: document.getElementById('simObjectives').value.split('\n').filter(obj => obj.trim()),
         is_published: true,
@@ -7662,9 +7564,6 @@ function viewStudentProfile(studentId) {
                                     </div>
                                     ` : ''}
                                     <div class="profile-actions">
-                                        <button class="action-btn secondary" onclick="closeStudentProfileModal(); editStudentDeadlines(${studentId})">
-                                            <i class="fas fa-clock"></i> Edit Deadlines
-                                        </button>
                                         <button class="action-btn primary" onclick="closeStudentProfileModal(); sendMessageToStudent(${studentId})">
                                             <i class="fas fa-envelope"></i> Send Message
                                         </button>
@@ -7698,176 +7597,6 @@ function closeStudentProfileModal() {
         modal.classList.remove('show');
         setTimeout(() => modal.remove(), 300);
     }
-}
-
-function editStudentDeadlines(studentId) {
-    // Show edit deadline popup modal
-    const studentCard = document.querySelector(`[data-student-id="${studentId}"]`);
-    const studentName = studentCard ? studentCard.getAttribute('data-student-name') : 'Student';
-    
-    const modalHtml = `
-        <div class="modal-overlay" id="editDeadlineModal" onclick="closeEditDeadlineModal()">
-            <div class="modal-content large-modal" onclick="event.stopPropagation()">
-                <div class="modal-header">
-                    <h3><i class="fas fa-clock"></i> Edit Deadlines for ${studentName}</h3>
-                    <button class="modal-close" onclick="closeEditDeadlineModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="deadline-editor-container">
-                        <div class="info-banner">
-                            <i class="fas fa-info-circle"></i>
-                            <p>Modify assignment deadlines and grant extensions for this student.</p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Select Assignment</label>
-                            <select class="form-select" id="deadlineAssignmentSelect" onchange="loadAssignmentDeadlineInfo()">
-                                <option value="">Choose an assignment...</option>
-                                <option value="1">Assignment 1: Network Fundamentals</option>
-                                <option value="2">Assignment 2: Routing Protocols</option>
-                                <option value="3">Quiz 1: Chapter 1-3</option>
-                            </select>
-                        </div>
-                        
-                        <div id="deadlineEditForm" style="display: none;">
-                            <div class="detail-group">
-                                <h6>Current Deadline</h6>
-                                <p id="currentDeadline">-</p>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">New Deadline</label>
-                                <input type="datetime-local" class="form-control" id="newDeadlineInput">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Extension Reason</label>
-                                <select class="form-select" id="extensionReason">
-                                    <option value="">Select a reason...</option>
-                                    <option value="illness">Illness</option>
-                                    <option value="technical">Technical Difficulties</option>
-                                    <option value="family">Family Emergency</option>
-                                    <option value="academic">Academic Accommodation</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Additional Notes (Optional)</label>
-                                <textarea class="form-control" id="extensionNotes" rows="3" placeholder="Add any additional notes about this extension..."></textarea>
-                            </div>
-                            
-                            <div class="form-check" style="margin-top: 16px;">
-                                <input type="checkbox" id="notifyStudent" checked>
-                                <label for="notifyStudent">
-                                    <strong>Notify student via email</strong>
-                                    <small>Student will receive an email notification about the deadline change</small>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="action-btn secondary" onclick="closeEditDeadlineModal()">Cancel</button>
-                    <button class="action-btn primary" onclick="saveDeadlineExtension(${studentId})" id="saveDeadlineBtn" disabled>
-                        <i class="fas fa-save"></i> Save Extension
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    setTimeout(() => {
-        document.getElementById('editDeadlineModal').classList.add('show');
-    }, 10);
-}
-
-function closeEditDeadlineModal() {
-    const modal = document.getElementById('editDeadlineModal');
-    if (modal) {
-        modal.classList.remove('show');
-        setTimeout(() => modal.remove(), 300);
-    }
-}
-
-function loadAssignmentDeadlineInfo() {
-    const select = document.getElementById('deadlineAssignmentSelect');
-    const form = document.getElementById('deadlineEditForm');
-    const saveBtn = document.getElementById('saveDeadlineBtn');
-    
-    if (select.value) {
-        form.style.display = 'block';
-        saveBtn.disabled = false;
-        
-        // Simulate loading deadline info
-        const currentDeadline = document.getElementById('currentDeadline');
-        currentDeadline.textContent = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleString();
-        
-        // Set default new deadline to 7 days from now
-        const newDeadlineInput = document.getElementById('newDeadlineInput');
-        const futureDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-        newDeadlineInput.value = futureDate.toISOString().slice(0, 16);
-    } else {
-        form.style.display = 'none';
-        saveBtn.disabled = true;
-    }
-}
-
-function saveDeadlineExtension(studentId) {
-    const assignmentId = document.getElementById('deadlineAssignmentSelect').value;
-    const newDeadline = document.getElementById('newDeadlineInput').value;
-    const reason = document.getElementById('extensionReason').value;
-    const notes = document.getElementById('extensionNotes').value;
-    const notifyStudent = document.getElementById('notifyStudent').checked;
-    
-    if (!assignmentId) {
-        moduleBuilder.showToast('Please select an assignment', 'error');
-        return;
-    }
-    
-    if (!newDeadline) {
-        moduleBuilder.showToast('Please set a new deadline', 'error');
-        return;
-    }
-    
-    if (!reason) {
-        moduleBuilder.showToast('Please select a reason for the extension', 'error');
-        return;
-    }
-    
-    // Prepare extension data
-    const extensionData = {
-        assignment_id: assignmentId,
-        new_deadline: newDeadline,
-        reason: reason,
-        notes: notes,
-        notify_student: notifyStudent
-    };
-    
-    // Send to backend API
-    fetch(`/admin/api/student/${studentId}/deadline-extension`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(extensionData)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            moduleBuilder.showToast('Deadline extension granted successfully!', 'success');
-            closeEditDeadlineModal();
-        } else {
-            moduleBuilder.showToast(result.error || 'Error extending deadline', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving deadline extension:', error);
-        moduleBuilder.showToast('Error saving deadline extension', 'error');
-    });
 }
 
 function sendMessageToStudent(studentId) {
@@ -8397,8 +8126,6 @@ function createAssignment() {
     const instructions = document.getElementById('assignmentInstructions').value.trim();
     const dueDate = document.getElementById('assignmentDueDate').value;
     const points = document.getElementById('assignmentPoints').value;
-    const priority = document.getElementById('assignmentPriority').value;
-    const category = document.getElementById('assignmentCategory').value;
     const published = document.getElementById('assignmentPublished').checked;
     
     if (!title || !description) {
@@ -8417,8 +8144,6 @@ function createAssignment() {
         instructions: instructions,
         due_date: dueDate || null,
         points: points ? parseInt(points) : null,
-        priority: priority,
-        category: category,
         is_published: published
     };
     
@@ -8716,15 +8441,12 @@ function loadSimulationsTabContent(container) {
                                                     <i class="fas fa-${simulation.is_published ? 'check-circle' : 'clock'}"></i>
                                                     ${simulation.is_published ? 'Published' : 'Draft'}
                                                 </span>
-                                                <span><i class="fas fa-signal"></i> ${simulation.difficulty || 'Medium'}</span>
                                                 <span><i class="fas fa-clock"></i> ${simulation.estimated_duration || 30} min</span>
                                                 ${simulation.simulation_type ? `<span><i class="fas fa-tag"></i> ${simulation.simulation_type}</span>` : ''}
                                             </div>
                                         </div>
                                         <div class="module-actions">
-                                            <button class="action-btn icon-only" onclick="manageCollaboration(${simulation.id})" title="Collaboration Controls">
-                                                <i class="fas fa-users"></i>
-                                            </button>
+                                            
                                             <button class="action-btn icon-only" onclick="editSimulation(${simulation.id})" title="Edit Simulation">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -9228,7 +8950,6 @@ function loadModuleAvailableSimulations() {
                             <p>${sim.description || 'No description'}</p>
                             <div class="content-meta">
                                 <span class="badge">${sim.category}</span>
-                                <span class="difficulty-badge ${sim.difficulty.toLowerCase()}">${sim.difficulty}</span>
                                 <span><i class="fas fa-clock"></i> ${sim.estimated_duration} min</span>
                             </div>
                         </div>
@@ -9759,8 +9480,6 @@ function populateEditAssignmentModal(assignment) {
         document.getElementById('editAssignmentInstructions').value = assignment.instructions || '';
         document.getElementById('editAssignmentDueDate').value = assignment.due_date ? new Date(assignment.due_date).toISOString().slice(0, 16) : '';
         document.getElementById('editAssignmentPoints').value = assignment.points || '';
-        document.getElementById('editAssignmentPriority').value = assignment.priority || 'medium';
-        document.getElementById('editAssignmentCategory').value = assignment.category || 'general';
         document.getElementById('editAssignmentPublished').checked = assignment.is_published || false;
         
         console.log('✅ Edit modal populated successfully');
@@ -9811,8 +9530,6 @@ function updateAssignment() {
         instructions: document.getElementById('editAssignmentInstructions').value,
         due_date: document.getElementById('editAssignmentDueDate').value,
         points: document.getElementById('editAssignmentPoints').value,
-        priority: document.getElementById('editAssignmentPriority').value,
-        category: document.getElementById('editAssignmentCategory').value,
         is_published: document.getElementById('editAssignmentPublished').checked
     };
 
@@ -10226,24 +9943,20 @@ function forceDropdownDarkTheme() {
         });
     });
     
-    // Specifically target assignment form selects
-    const assignmentPriority = document.getElementById('assignmentPriority');
-    const assignmentCategory = document.getElementById('assignmentCategory');
+    // Specifically target class selector
     const classSelector = document.getElementById('classSelector');
     
-    [assignmentPriority, assignmentCategory, classSelector].forEach(select => {
-        if (select) {
-            select.style.backgroundColor = '#1a1a2e';
-            select.style.border = '1px solid #00D9FF';
-            select.style.color = '#F8FAFC';
-            
-            const options = select.querySelectorAll('option');
-            options.forEach(option => {
-                option.style.backgroundColor = '#1a1a2e';
-                option.style.color = '#F8FAFC';
-            });
-        }
-    });
+    if (classSelector) {
+        classSelector.style.backgroundColor = '#1a1a2e';
+        classSelector.style.border = '1px solid #00D9FF';
+        classSelector.style.color = '#F8FAFC';
+        
+        const options = classSelector.querySelectorAll('option');
+        options.forEach(option => {
+            option.style.backgroundColor = '#1a1a2e';
+            option.style.color = '#F8FAFC';
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {

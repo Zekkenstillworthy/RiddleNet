@@ -54,8 +54,27 @@ class UserController:
     @user_bp.route('/users')
     @login_required
     def index():
-        # Get regular users with their stats
-        users = AdminUser.query.order_by(AdminUser.created_at.desc()).all()
+        # MVP FIX: Only show students enrolled in THIS admin's classes
+        # Get classes created by current admin
+        from admin.models.class_model import Class, class_students
+        
+        admin_classes = Class.query.filter_by(created_by=current_user.id).all()
+        admin_class_ids = [cls.id for cls in admin_classes]
+        
+        # Get student IDs enrolled in this admin's classes
+        student_ids = []
+        if admin_class_ids:
+            student_ids = db.session.query(class_students.c.user_id).filter(
+                class_students.c.class_id.in_(admin_class_ids)
+            ).distinct().all()
+            student_ids = [sid[0] for sid in student_ids]
+        
+        # Only get users (students) that are in THIS admin's classes
+        if student_ids:
+            users = AdminUser.query.filter(AdminUser.id.in_(student_ids)).order_by(AdminUser.created_at.desc()).all()
+        else:
+            users = []  # New admin with no classes/students yet
+        
         user_stats = []
         for user in users:
             scores_count = AdminScore.query.filter_by(user_id=user.id).count()
@@ -73,7 +92,8 @@ class UserController:
                 'highest_score': highest_score
             })
         
-        # Get admin users
+        # MVP FIX: Only show admin accounts (admins table is shared, but that's intentional)
+        # Admins can see other admin accounts for collaboration purposes
         admins = Admin.query.order_by(Admin.created_at.desc()).all()
         
         # Ensure admins have required fields

@@ -626,5 +626,177 @@ def restart_simulation(simulation_id):
         current_app.logger.error(f"Error restarting simulation: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ===== TASK ASSIGNMENT API ENDPOINTS =====
+
+@user_simulation_bp.route('/api/<int:simulation_id>/task-assignment', methods=['GET'])
+@login_required
+def get_user_task_assignment(simulation_id):
+    """Get user's task assignment for a simulation"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not assignment:
+            return jsonify({
+                'success': True,
+                'assignment': None,
+                'message': 'No task assignment found'
+            })
+        
+        return jsonify({
+            'success': True,
+            'assignment': assignment.to_dict(include_validation=True, include_simulation=True)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting task assignment: {str(e)}")
+        return jsonify({'error': f'Failed to get task assignment: {str(e)}'}), 500
+
+
+@user_simulation_bp.route('/api/<int:simulation_id>/validate-progress', methods=['POST'])
+@login_required
+def validate_task_progress(simulation_id):
+    """Validate student's current progress against task requirements"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No progress data provided'}), 400
+        
+        # Get or create task assignment
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not assignment:
+            # Check if simulation has task config enabled
+            simulation = Simulation.query.get_or_404(simulation_id)
+            task_config = simulation.task_config or {}
+            
+            if not task_config.get('enabled'):
+                return jsonify({'error': 'Task assignments not enabled for this simulation'}), 400
+            
+            # Create new assignment
+            assignment = TaskAssignment(
+                simulation_id=simulation_id,
+                user_id=current_user.id,
+                status='in_progress',
+                started_at=datetime.utcnow()
+            )
+            db.session.add(assignment)
+        
+        # Update progress
+        assignment.update_progress(
+            devices_placed=data.get('devices_placed'),
+            devices_configured=data.get('devices_configured'),
+            connections_made=data.get('connections_made'),
+            cli_history=data.get('cli_history')
+        )
+        
+        # Validate progress
+        validation_result = assignment.validate_progress()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'validation': validation_result['validation'],
+            'auto_grade_score': validation_result['auto_grade_score'],
+            'completion_percentage': validation_result['completion_percentage'],
+            'assignment_id': assignment.id
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error validating task progress: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': f'Failed to validate progress: {str(e)}'}), 500
+
+
+@user_simulation_bp.route('/api/<int:simulation_id>/submit-task', methods=['POST'])
+@login_required
+def submit_task_assignment(simulation_id):
+    """Submit task assignment for grading"""
+    try:
+        from admin.models.task_assignment import TaskAssignment
+        
+        data = request.json or {}
+        
+        assignment = TaskAssignment.query.filter_by(
+            simulation_id=simulation_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not assignment:
+            return jsonify({'error': 'No task assignment found'}), 404
+        
+        if assignment.status == 'submitted':
+            return jsonify({'error': 'Assignment already submitted'}), 400
+        
+        # Final validation and score calculation
+        validation_result = assignment.validate_progress()
+        
+        # Submit assignment
+        assignment.submit_assignment(auto_grade_score=validation_result['auto_grade_score'])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Task submitted successfully',
+            'assignment': assignment.to_dict(include_validation=True),
+            'validation': validation_result['validation'],
+            'auto_grade_score': validation_result['auto_grade_score']
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error submitting task: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': f'Failed to submit task: {str(e)}'}), 500
+
+
+@user_simulation_bp.route('/api/<int:simulation_id>/task-config', methods=['GET'])
+@login_required
+def get_simulation_task_config(simulation_id):
+    """Get task configuration for a simulation (student view)"""
+    try:
+        simulation = Simulation.query.get_or_404(simulation_id)
+        task_config = simulation.task_config or {}
+        
+        # Only return if task mode is enabled
+        if not task_config.get('enabled'):
+            return jsonify({
+                'success': True,
+                'task_config': None,
+                'message': 'Task assignments not enabled for this simulation'
+            })
+        
+        # Remove sensitive data like grading weights (students don't need to see exact percentages)
+        student_task_config = {
+            'enabled': task_config.get('enabled'),
+            'device_requirements': task_config.get('device_requirements', []),
+            'connection_requirements': task_config.get('connection_requirements', []),
+            'cli_requirements': task_config.get('cli_requirements', {}),
+            'instructions': task_config.get('instructions', ''),
+            'time_limit_minutes': task_config.get('time_limit_minutes'),
+            'task_mode': task_config.get('task_mode', 'combined')
+        }
+        
+        return jsonify({
+            'success': True,
+            'task_config': student_task_config
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting task config: {str(e)}")
+        return jsonify({'error': f'Failed to get task config: {str(e)}'}), 500
+
+
 # Export blueprint
 __all__ = ['user_simulation_bp']
