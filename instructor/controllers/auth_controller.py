@@ -27,7 +27,7 @@ class AuthController:
         # If already authenticated as instructor, redirect to dashboard
         if current_user.is_authenticated and isinstance(current_user, Instructor):
             print("✅ Already authenticated as Instructor, redirecting to dashboard")
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('dashboard.dashboard_alias'))
         
         # Show instructor landing page
         return render_safe_template('instructor/landing.html')
@@ -48,7 +48,7 @@ class AuthController:
         if current_user.is_authenticated:
             if isinstance(current_user, Instructor):
                 print("✅ Already authenticated as Instructor, redirecting to dashboard")
-                return redirect(url_for('dashboard.index'))
+                return redirect(url_for('dashboard.dashboard_alias'))
             else:  # Different user namespace -> force logout & show admin login
                 print("⚠️ Authenticated as different user type, logging out")
                 logout_user()
@@ -96,7 +96,7 @@ class AuthController:
                     # Only redirect to admin URLs to prevent open redirects
                     return redirect(next_url)
                 # Redirect to the canonical admin dashboard
-                return redirect(url_for('dashboard.index'))
+                return redirect(url_for('dashboard.dashboard_alias'))
             else:
                 flash('Invalid admin credentials', 'error')
         
