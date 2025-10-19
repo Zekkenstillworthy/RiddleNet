@@ -30,7 +30,8 @@ from instructor.services.analytics_service import AnalyticsService
 logger = logging.getLogger(__name__)
 
 # Create dashboard blueprint
-dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/admin')
+# Note: url_prefix is empty because it's already set to '/instructor' in run.py
+dashboard_bp = Blueprint('dashboard', __name__)
 
 # Initialize analytics service
 analytics_service = AnalyticsService()
